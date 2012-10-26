@@ -214,14 +214,19 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
       System.arraycopy(_inners, i*dim2, newInners, i*d2, dim2)
     throw new Error("Implementation not yet finished.")
   }
-  private var _inners = new Array[Tensor1](dim1*dim2) // Array.fill(dim1*dim2)(newTensor1(dim3)) // TODO We shouldn't pre-fill this array; leave it sparse
+  protected val _inners = new Array[Tensor1](dim1*dim2) // Array.fill(dim1*dim2)(newTensor1(dim3)) // TODO We shouldn't pre-fill this array; leave it sparse
   override def apply(i:Int, j:Int, k:Int): Double = {
     assert(i*dim2+j < dim1*dim2, "len="+length+" dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
     val t1 = _inners(i*dim2+j)
     if (t1 ne null) t1.apply(k) else 0.0 }
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
-  override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
+  override def update(i:Int, v: Double): Unit = update(i/dim2/dim3, (i/dim3)%dim2, i%dim3, v)
+  override def update(i:Int, j:Int, k:Int, v:Double): Unit = {
+    var in = _inners(i*dim2+j)
+    if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }
+    in.update(k, v)
+  }
   /** Get the inner Tensor1 at first two dimensions index i,j.  Create it if necessary. */
   def inner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }; in }
   /** Get the inner Tensor1 at first two dimensions index i.  Create it if necessary. */
@@ -261,7 +266,14 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
 }
 // TODO Consider also Dense1LayeredTensor3 with an InnerTensor2
 class Dense2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val newTensor1:Int=>Tensor1) extends Dense2LayeredTensorLike3 {
-  override def blankCopy = new Dense2LayeredTensor3(dim1, dim2, dim3, newTensor1)  
+  override def blankCopy = new Dense2LayeredTensor3(dim1, dim2, dim3, newTensor1)
+  override def copy = {
+    val c = new Dense2LayeredTensor3(dim1, dim2, dim3, newTensor1)
+    val innerCopy = _inners.map(t => if (t == null) null else t.copy)
+    System.arraycopy(innerCopy, 0, c._inners, 0, innerCopy.length)
+    c
+  }
+
 }
 
 trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
