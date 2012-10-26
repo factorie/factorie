@@ -15,6 +15,8 @@ New in version 1.0.0-M2:
 	- trait Model independent of context, ModelWithContext[C] can unroll given any context
 
 * NLP
+	- Abstracted dependency parser prediction for easily dropping in alternative classifiers.
+	- Bootstrapping for improved dependency parser training.
 
 * Inference
 	- BPSummary is more efficient, includes an abstract version
