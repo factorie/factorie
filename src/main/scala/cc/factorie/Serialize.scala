@@ -12,8 +12,8 @@ object Serializer {
 
   def serialize[T](toSerialize: T, file: File, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
     file.createNewFile()
-    val fileStream = new FileOutputStream(file)
-    val writer = new PrintStream(if (gzip) new GZIPOutputStream(fileStream) else fileStream)
+    val fileStream = new BufferedOutputStream(new FileOutputStream(file))
+    val writer = new PrintStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
     serializer.serialize(toSerialize, writer)
     writer.close()
   }
