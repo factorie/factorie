@@ -1,8 +1,18 @@
 ---
 title: factorie
+layout: default
 ---
 
 FACTORIE is a toolkit for deployable probabilistic modeling, implemented as a software library in Scala. It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.  Key features:
+
+```scala
+
+  object Test {
+    def f(): Unit = {}
+  }
+
+
+```
 
 * It is object-oriented, enabling encapsulation, abstraction and inheritance in the definition of random variables, factors, inference and learning methods.
 * It is scalable, with demonstrated success on problems with many millions of variables and factors, and on models that have changing structure, such as case factor diagrams.  It has also been plugged into a database back-end, representing a new approach to probabilistic databases capable of handling billions of variables.

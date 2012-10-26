@@ -1,5 +1,6 @@
 ---
 title: "factorie: Variables Tutorial"
+layout: default
 ---
 
 ```scala
