@@ -54,8 +54,8 @@ object LDA5 {
     }
     println("topic2times counts "+topic2times.map(_.length).toSeq)
     topic2times.foreach(a => println(topic2times.indexOf(a)+"  "+a.toSeq.groupBy(a=>a).map(t => (t._1, t._2.length)).toSeq.sortBy(t => t._1)))
-    val topic2mean = Array.tabulate(numTopics)(i => if (topic2times(i).length > 0) maths.sampleMean(topic2times(i)) else 0.5)
-    val topic2variance = Array.tabulate(numTopics)(i => if (topic2times(i).length > 0) maths.sampleVariance(topic2times(i), topic2mean(i)) else 0.25)
+    val topic2mean = Array.tabulate(numTopics)(i => if (topic2times(i).length > 1) maths.sampleMean(topic2times(i)) else 0.5)
+    val topic2variance = Array.tabulate(numTopics)(i => if (topic2times(i).length > 1) maths.sampleVariance(topic2times(i), topic2mean(i)) else 0.25)
     timeMeans := topic2mean
     for (i <- 0 until numTopics) {
       timeAlphas(i) = cc.factorie.generative.MaximizeBetaByMomentMatching.maxAlpha(topic2mean(i), topic2variance(i))
