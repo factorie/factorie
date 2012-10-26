@@ -37,7 +37,7 @@ trait Tensor2 extends Tensor {
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
-  def matrixVector(t: Tensor): Tensor1 = {
+  def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
     activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
@@ -51,7 +51,6 @@ trait Tensor2 extends Tensor {
   override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def blankCopy: Tensor2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
-
 
 trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
@@ -84,7 +83,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
-  override def matrixVector(t: Tensor): Tensor1 = {
+  override def *(t: Tensor1): Tensor1 = {
 //    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
     val newArray = newT.asArray

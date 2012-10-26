@@ -48,8 +48,6 @@ trait Tensor extends MutableDoubleSeq {
   def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
-  def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
-  def /(that:Tensor): Tensor = throw new Error("Not yet implemented")
   def normalized: Tensor = { val t = copy; t.normalize; t } // TODO Make this return Proportions, then fix BP
   def expNormalized: Tensor = { val t = copy; t.expNormalize; t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
