@@ -28,7 +28,7 @@ class TestProposalSamplers extends TestCase {
   }
 
   private def newFactor1(n1: BinVar, score0: Double, score1: Double) =
-    new TupleFactorWithStatistics1(n1) {
+    new FactorWithStatistics1(n1) {
       factor =>
       //def _1 = n1
         def score(v:BinVar#Value): Double = if (v == LabelDomain(0)) score0 else score1
