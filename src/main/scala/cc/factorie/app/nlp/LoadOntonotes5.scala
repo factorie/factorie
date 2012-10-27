@@ -45,7 +45,7 @@ object LoadOntonotes5 {
         val lemma = fields(3)
         val partOfSpeech = fields(5)
         val parentIdx = fields(7).toInt - 1
-        val depLabel = fields(8)
+        val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
