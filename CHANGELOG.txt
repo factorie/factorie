@@ -37,8 +37,6 @@ New in version 1.0.0-M2:
 * Serialization
 	- gzip support
 
-* Misc
-
 New in version 1.0.0-M1:
 ---
 
