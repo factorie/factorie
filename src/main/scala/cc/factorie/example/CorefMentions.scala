@@ -175,7 +175,7 @@ object CorefMentionsDemo {
         }
       })
 
-      var sampler = new MHSampler[Null](model) {
+      val sampler = new MHSampler[Null](model) {
         temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList): Double = {
@@ -220,7 +220,7 @@ object CorefMentionsDemo {
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("Beginning inference and learning")
-      learner.processContexts(null, 3000) // 3000
+      learner.processContexts(List(null), 3000) // 3000
     }
 
 }
