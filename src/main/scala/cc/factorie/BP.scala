@@ -593,7 +593,7 @@ object InferByBPChainSum extends InferByBP {
   def apply(varying:Seq[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying, model)
 }
 
-object InferByBPChainMax extends InferByBP {
+object MaximizeByBPChain extends Maximize with InferByBP {
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
     case _ => None

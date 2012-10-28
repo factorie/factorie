@@ -117,11 +117,12 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   def apply(i:Int): E = _chainseq(i)
   def length = _chainseq.length
   @inline final def links: IndexedSeq[E] = _chainseq
-  def +=(e:E): Unit = {
+  def +=(e:E): this.type = {
     e._setChainPosition(this, _chainseq.length)
     _chainseq += e
+    this
   }
-  def ++=(es:Iterable[E]): Unit = es.foreach(+=(_))
+  def ++=(es:Iterable[E]): this.type = { es.foreach(+=(_)); this }
   def asSeq: IndexedSeq[E] = _chainseq
 }
 

@@ -17,11 +17,12 @@
 package cc.factorie
 import cc.factorie.la._
 
-/** Implements Geoff Hinton's Constrastive Divergence, obtaining a gradient after one step away from the true configuration.
+/** Implements Geoff Hinton's Contrastive Divergence, obtaining a gradient after one step away from the true configuration.
     This implementation assumes that the initial configuration is the truth. 
     @author Andrew McCallum
     @since 0.8
  */
+// TODO Make a new version of this that is like SampleRankTrainer
 abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model) {
   def updateWeights: Unit
   var difflist : DiffList = null

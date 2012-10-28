@@ -92,7 +92,7 @@ object ChainNER2 {
     //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
     val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, InferByBPChainSum))
     val trainer = new BatchTrainer(model)
-    val predictor = InferByBPChainMax // new VariableSettingsSampler[ChainNerLabel](model, null)
+    val predictor = MaximizeByBPChain // new VariableSettingsSampler[ChainNerLabel](model, null)
     while (!trainer.optimizer.isConverged) {
       trainer.processExamples(pieces)
       (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
