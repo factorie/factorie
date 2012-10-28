@@ -1,5 +1,6 @@
 ---
-title: "factorie: Publications"
+title: "Publications"
+layout: default
 ---
 
 Publications

@@ -6,46 +6,47 @@
         <link rel="stylesheet" type="text/css" href="/assets/css/pygments/default.css" media="screen" />
         <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
 
-        <style type="text/css">
-
-            .pre {
-            
-            }
-
-        </style>
-
         <title>Factorie: {{ page.title }}</title>
     </head>
 
     <body>
         <div class="container">
             <div class="page-header">
-                <h1><img width="100px" src="/assets/images/factorie-logo55.png"> Factorie</h1>
+                <h1><img width="100px" src="/assets/images/factorie-logo.svg"> Factorie</h1>
             </div>
 
 
-            <!--
             <div class="row">
                 <div class="span3">
-                    <ul class="nav nav-list">  
+            <!-- >
+                    <ul class="nav nav-list">
                             <li class="nav-header">List header</li>  
-                            <li class="active"><a href="#"><i class="icon-white icon-home"></i> Home</a></li>  
-                            <li><a href="#"><i class="icon-book"></i> Library</a></li>  
-                            <li><a href="#"><i class="icon-pencil"></i> Applications</a></li>  
+                            <li class="active"><a href="#"><i class="icon-white"></i> Home</a></li>  
+                            <li><a href="#"><i class="icon-white"></i> Library</a></li>  
+                            <li><a href="#"><i class="icon-white"></i> Applications</a></li>  
                             <li class="nav-header">Another list header</li>  
-                            <li><a href="#"><i class="icon-user"></i> Profile</a></li>  
-                            <li><a href="#"><i class="icon-cog"></i> Settings</a></li>  
+                            <li><a href="#"><i class="icon-white"></i> Profile</a></li>  
+                            <li><a href="#"><i class="icon-white"></i> Settings</a></li>  
                             <li class="divider"></li>  
-                            <li><a href="#"><i class="icon-flag"></i> Help</a></li>  
+                            <li><a href="#"><i class="icon-white"></i> Help</a></li>  
+                    </ul-->
+		    <ul  class="nav nav-list">
+		      {% assign pages_list = site.pages %}
+		      {% assign group = 'sameer %}
+		      {% include pages_list %}
+		      <!-- {% generate_navigation %} -->
+		      <li class="divider"></li>  
+		      <li><a href="http://www.iesl.cs.umass.edu"><i class="icon-white"></i>IESL</a></li>  
+		      <li><a href="htpp://groups.google.com/a/factorie.cs.umass.edu/discuss"><i class="icon-white"></i>Mailing List</a></li>  
                     </ul>
-                </div>
-                <div class="span9">
-                    {{ content }}
-                </div>
-            </div>
-            -->
+		</div>
+		<div class="span9">
+		  {{ content }}
+		</div>
+	    </div>
+            <!-- -->
 
-
+	    <!--
             <div class="row">
                 <div class="span12">
 
@@ -61,7 +62,10 @@
 
 
                 </div>
-            </div> <!-- /row -->
+            </div>
+	    -->
+	    
+	    
             <hr>
             <footer>
             <p>

@@ -1,12 +1,7 @@
 ---
-title: "factorie: Variables Tutorial"
+title: "Tutorial 1: Variables"
 layout: default
 ---
-
-```scala
-
-
-```
 
 Variables Tutorial
 =================

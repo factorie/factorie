@@ -1,5 +1,6 @@
 ---
-title: "factorie: Sponsors"
+title: "Sponsors"
+layout: default
 ---
 
 Sponsors

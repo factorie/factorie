@@ -1,11 +1,7 @@
 ---
-title: "factorie: Family Tutorial"
+title: "Tutorial 2.1: Families"
+layout: default
 ---
-
-```scala
-
-
-```
 
 Family Tutorial
 ===============
