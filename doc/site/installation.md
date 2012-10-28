@@ -1,5 +1,6 @@
 ---
-title: "factorie: Installation"
+title: "Installation"
+layout: default
 ---
 
 Installation
@@ -71,23 +72,26 @@ This results in multiple files in the target directory, including `factorie-XX.X
 
 In the pom.xml file for your project, add the following in the repositories section:
 
-    <repositories>
-      ...
-      <repository>
-        <id>IESL Releases</id>
-        <name>IESL Repo</name>
-        <url>https://dev-iesl.cs.umass.edu/nexus/content/groups/public</url>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>
-        <releases>
-          <enabled>true</enabled>
-        </releases>
-      </repository>
-    </repositories>
+```xml
+<repositories>
+  ...
+  <repository>
+    <id>IESL Releases</id>
+    <name>IESL Repo</name>
+    <url>https://dev-iesl.cs.umass.edu/nexus/content/groups/public</url>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+    <releases>
+      <enabled>true</enabled>
+    </releases>
+  </repository>
+</repositories>
+```
  
 Then add the following in the dependencies section:
 
+```xml
     <dependencies>
       <dependency>
         <groupId>cc.factorie</groupId>
@@ -95,3 +99,4 @@ Then add the following in the dependencies section:
         <version>1.0.0-M1</version>
       </dependency>
     <dependencies>
+```

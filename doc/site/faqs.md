@@ -1,5 +1,6 @@
 ---
-title: "factorie: FAQs"
+title: "FAQs"
+layout: default
 ---
 
 FAQs

@@ -46,3 +46,8 @@ project/plugins/src_managed/
 
 # ensime (emacs scala mode)
 .ensime
+
+# website specific ignores
+_cache
+static-site
+_site

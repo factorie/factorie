@@ -1,11 +1,7 @@
 ---
-title: "factorie: Model Tutorial"
+title: "Tutorial 3: Model"
+layout: default
 ---
-
-```scala
-
-
-```
 
 Model Tutorial
 ==============

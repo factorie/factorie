@@ -1,5 +1,6 @@
 ---
-title: "factorie: Download"
+title: "Download"
+layout: default
 ---
 
 Download

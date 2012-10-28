@@ -1,5 +1,6 @@
 ---
-title: "factorie: Changelog"
+title: "Changelog"
+layout: default
 ---
 
 Changelog

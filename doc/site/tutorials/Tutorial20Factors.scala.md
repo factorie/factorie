@@ -1,11 +1,7 @@
 ---
-title: "factorie: Factor Tutorial"
+title: "Tutorial 2.0: Factors"
+layout: default
 ---
-
-```scala
-
-
-```
 
 Factor Tutorial
 ==============
