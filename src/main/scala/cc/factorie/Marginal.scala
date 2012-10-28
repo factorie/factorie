@@ -37,11 +37,8 @@ class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportio
   def this(f:Factor1[V1]) = this (f._1, null)
   //def variables = Seq(_1)
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
-  protected var _proportions = proportions1 // Cannot use default arguments to create because no access to _1 in default argument values
-  def proportions: Proportions1 = {
-    if (proportions1 eq null) _proportions = new DenseProportions1(_1.domain.dimensionDomain.size)
-    _proportions
-  }
+  protected var _proportions = if (proportions1 == null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1
+  def proportions: Proportions1 = _proportions
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.masses.+=(d.intValue, w); case d:DiscreteTensorVar => throw new Error("Not yet implemented") }
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
   // TODO Somehow use TensorAccumulator for something like this
@@ -116,7 +113,7 @@ object DiscreteMarginal {
 class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends Marginal {
   def variables = Seq(_1)
   def setToMaximize(implicit d:DiffList): Unit = {
-    var i = 0;
+    var i = 0
     while (i < _1.length) {
       _1.set(i, proportionsSeq(i).maxIndex)(d)
       i += 1
