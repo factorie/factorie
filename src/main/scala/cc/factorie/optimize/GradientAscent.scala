@@ -13,30 +13,56 @@
    limitations under the License. */
 
 package cc.factorie.optimize
+
 import cc.factorie._
 import cc.factorie.la._
 
 /** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
 class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     weights.+=(gradient, rate)
     rate = nextRate(rate)
   }
-  def nextRate(oldRate:Double): Double = oldRate // TODO What should go here?
-  def isConverged = false // TODO What to put here?
+  def nextRate(oldRate: Double): Double = oldRate
+  // TODO What should go here?
+  def isConverged = false
+  // TODO What to put here?
   def reset(): Unit = {}
+}
+
+// This implements the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
+class L2ProjectedGradientAscent(l2: Double = 0.1,  k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
+  private var step = 1
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    if (step == 1) {
+      // make sure weights start off with ||w|| <= 1 / sqrt(rate)
+      val weightsNorm = weights.twoNorm
+      if (weightsNorm > 1 / math.sqrt(l2))
+        weights /= (weightsNorm * math.sqrt(l2))
+    }
+    val eta_t = rate / (l2 * step)
+    weights *= (1 - eta_t * l2)
+    weights += (gradient, eta_t / k)
+    val projCoeff = math.min(1, (1 / math.sqrt(l2)) / weights.twoNorm)
+    weights *= projCoeff
+    step += 1
+  }
+  def isConverged = false
+  def reset(): Unit = {
+    step = 1
+  }
 }
 
 // Note: This implementation is slower than it should be in the online case, but should be fast enough in batch mode
 class L2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
-    gradient += (weights, -l2)
+  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    gradient +=(weights, -l2)
     super.step(weights, gradient, value, margin)
   }
 }
 
 class SparseL2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     super.step(weights, gradient, value, margin)
     weights *= (1.0 - rate * l2)
   }
@@ -56,25 +82,25 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
-      logger.info("GradientAscent converged: old value="+oldValue+" new value="+value+" tolerance="+valueTolerance)
+      logger.info("GradientAscent converged: old value=" + oldValue + " new value=" + value + " tolerance=" + valueTolerance)
       _isConverged = true
       return
     }
     // Check for convergence by gradient
     val gradientTwoNorm = gradient.twoNorm
     if (gradientTwoNorm < gradientTolerance) {
-      logger.info("GradientAscent converged: gradient twoNorm="+gradient.twoNorm+" tolerance="+gradientTolerance)
+      logger.info("GradientAscent converged: gradient twoNorm=" + gradient.twoNorm + " tolerance=" + gradientTolerance)
       _isConverged = true
       return
     }
 
     if (lineOptimizer eq null) {
       // Before giving the BackTrackLineOptimizer a line direction to search, ensure it isn't too steep
-     // if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
+      // if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
       lineOptimizer = new BackTrackLineOptimizer(gradient, gradient.copy, stepSize)
       oldValue = value
     }

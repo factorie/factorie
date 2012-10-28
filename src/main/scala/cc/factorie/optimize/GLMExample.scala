@@ -33,6 +33,27 @@ object ObjectiveFunctions {
       else loss += -math.max(0, prediction(i) - 1)
       i += 1
     }
+    val predictedLabel = prediction.maxIndex
+    val gradient =
+    if (label == predictedLabel)
+      new UniformTensor1(prediction.size, 0.0)
+    else {
+      val g = new DenseTensor1(prediction.size, 0.0)
+      g(label) += 1.0
+      g(predictedLabel) += -1.0
+      g
+    }
+    (loss, gradient)
+  }
+  // This one has a hot index in the gradient for every margin violation, not just the biggest one
+  // However this messes with projected gradient stuff by making the norm too big
+  val hingeMultiClassObjective2: MultiClassObjectiveFunction = (prediction, label) => {
+    var loss = 0.0; var i = 0; val len = prediction.length
+    while (i < len) {
+      if (i == label) loss += -math.max(0, 1 - prediction(label))
+      else loss += -math.max(0, prediction(i) - 1)
+      i += 1
+    }
     val gradient = new DenseTensor1(prediction.size, 0.0)
     i = 0; var isPerfectlyClassified = true
     while (i < len) {
@@ -55,7 +76,7 @@ class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveF
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
     if (value != null) value.accumulate(loss)
-    if (weight != 0.0) sgrad *= weight
+    if (weight != 1.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
     // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
     //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
@@ -108,7 +129,7 @@ object GlmTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = ObjectiveFunctions.hingeMultiClassObjective
+    val loss = ObjectiveFunctions.hingeMultiClassObjective2
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     //val modelWithWeights = new ModelWithWeightsImpl(model)
@@ -117,7 +138,7 @@ object GlmTest {
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-            val strategy = new BatchTrainer(model, new ConfidenceWeighting(model))
+            val strategy = new BatchTrainer(model, new L2ProjectedGradientAscent(k = pieces.size, rate = 1.0))
 //            val strategy = new SGDTrainer(new ConfidenceWeighting(model), model)
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
