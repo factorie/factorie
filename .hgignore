@@ -50,3 +50,4 @@ project/plugins/src_managed/
 # website specific ignores
 _cache
 static-site
+_site
