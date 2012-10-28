@@ -117,7 +117,7 @@ object GlmTest {
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-            val strategy = new BatchTrainer(new ConfidenceWeighting(model), model)
+            val strategy = new BatchTrainer(model, new ConfidenceWeighting(model))
 //            val strategy = new SGDTrainer(new ConfidenceWeighting(model), model)
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
@@ -130,7 +130,7 @@ object GlmTest {
     var perfectAccuracy = false
     while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
-      strategy.processAll(pieces)
+      strategy.processExamples(pieces)
 
       //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
 

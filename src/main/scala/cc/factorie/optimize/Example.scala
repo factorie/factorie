@@ -33,31 +33,11 @@ trait Example[-M<:Model] {
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
 }
 
-
-//class BPMaxLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], infer:InferByBP) extends Example[Variable] {
-//  labels.foreach(_.setToTarget(null)) // TODO What if someone else changes these values after Example construction!
-//  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-//    val summary = infer.infer(labels, model).get
-//    // The log loss is - score + log Z
-//    if (value != null)
-//      value.accumulate(modelElement2Iterable(model).currentScore(labels) - summary.logZ)
-//
-//    if (gradient != null) {
-//      summary.bpFactors.foreach(f => {
-//        val factor = f.factor.asInstanceOf[DotFamily#Factor]
-//        gradient.accumulate(factor.family, factor.currentStatistics)
-//        f.accumulateExpectedStatisticsInto(gradient.accumulator(factor.family), -1.0)
-//        //gradient.accumulate(factor.family, f.calculateMarginal * -1) // TODO No this is wrong, because the BPFactor may have lower rank than its Factor; e.g. BPFactor2Factor3
-//      })
-//    }
-//  }
-//}
-
-class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Example[Model] {
+/** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
+class LikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
-    //val model2 = modelElement2Iterable(model)
     if (value != null)
       value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
     // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
@@ -70,88 +50,41 @@ class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) exten
   }
 }
 
-// Explorations in a MaxLikelihoodExample that will work on Model[C] for arbitrary C.  But Infer.infer would have to work with Model[C].  Tricky.
-//class MaxLikelihoodExample2[C](context:C, infer:Infer) extends Example[C] {
-//  def accumulateExampleInto(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-//    val varying: Iterable[Variable] = context match { case vs:Iterable[Variable] if (vs.forall(_.isInstanceOf[Variable])) => vs }
-//    val summary = infer.infer(varying, model).get
-//    val model2 = modelElement2Iterable(model)
-//    if (value != null)
-//      value.accumulate(model2.assignmentScore(context, TargetAssignment) - summary.logZ)
-//    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
-//    if (gradient != null) {
-//      model2.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
-//        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
-//        gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
-//      })
-//    }
-//  }
-//}
-
-//class MaxLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](labels:Seq[V], infer:Infer) extends Example[Variable] {
-//  private var _model: Model = null
-//  private var _constraints: WeightsTensor = null
-//  // Use cached constraints Tensor if the model id has not changed since the last call
-//  def constraints(model:Model): WeightsTensor = if (_model eq model) _constraints else {
-//    _model = model
-//    _constraints = model.newDenseWeightsTensor // TODO Can't afford to keep something this big for every Example :-(
-//    labels.foreach(_.setToTarget(null))
-//    modelElement2Iterable(model).factorsOfFamilyClass(labels, classOf[DotFamily]).foreach(f => constraints(f.family) += f.currentStatistics)
-//    _constraints
-//  }
-//  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
-//    val summary = infer.infer(labels, model).get
-//    if (value ne null)
-//      value.accumulate(model.currentScore(labels) - summary.logZ)
-//    if (gradient ne null) summary.marginals.foreach(m => {
-//      throw new Error("Implementation not yet finished") // Need to be able to get factors from Marginals?
-//    })
-//  }
-//}
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
-class DiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model] {
+class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](label:V) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
-    val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
-    labels.foreach(_.setToTarget(null)) // TODO But what if someone changes the values after this construction?
-    for (label <- labels) {
-      // TODO This could still be made more efficient, because we unroll for label.proportions, and then again below. 
-      val proportions = label.proportions(model)
-      if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
-      if (gradient ne null) {
-        val factors = model.factorsOfFamilies(label, familiesToUpdate)
-        var i = 0
-        while (i < proportions.length) {
-          label := i
-          val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
-          factors.foreach(f => {
-            gradient.accumulate(f.family, f.currentStatistics, p) // TODO Consider instance weights here also?
-          })
-          i += 1
-        }
+    val factors = model.factorsOfFamilyClass[DotFamily](label)
+    val proportions = label.proportions(factors)
+    if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+    if (gradient ne null) {
+      val assignment = new DiscreteAssignment1(label, 0)
+      var i = 0
+      while (i < proportions.length) {
+        assignment.intValue1 = i
+        val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+        factors.foreach(f => gradient.accumulate(f.family, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
+        i += 1
       }
     }
   }
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors is allowed to change based on the DiscreteVar value. */
-class CaseFactorDiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model] {
+class CaseFactorDiscreteLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](label:V) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
-    val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
-    labels.foreach(_.setToTarget(null)) // TODO But what if someone changes the values after this construction?
-    for (label <- labels) {
-      val proportions = label.proportions(model)
-      if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
-      if (gradient ne null) {
-        var i = 0
-        while (i < proportions.length) {
-          label := i
-          val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
-          model.factorsOfFamilies(label, familiesToUpdate).foreach(f => {
-            gradient.accumulate(f.family, f.currentStatistics, p) // TODO Consider instance weights here also?
-          })
-          i += 1
-        }
+    val proportions = label.caseFactorProportions(model)
+    if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+    if (gradient ne null) {
+      var i = 0
+      while (i < proportions.length) {
+        label := i
+        val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+        // Note that label must be mutable here because there is no way to get different factors with an Assignment.  A little sad. -akm
+        model.factorsOfFamilyClass[DotFamily](label).foreach(f => {
+          gradient.accumulate(f.family, f.currentStatistics, p) // TODO Consider instance weights here also?
+        })
+        i += 1
       }
     }
   }

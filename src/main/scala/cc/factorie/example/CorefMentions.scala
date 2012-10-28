@@ -216,11 +216,11 @@ object CorefMentionsDemo {
           }
         }
       }
-      val learner = new SampleRank(sampler, new MIRA)
+      val learner = new SampleRankTrainer(sampler, new MIRA)
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("Beginning inference and learning")
-      learner.process(null, 3000) // 3000
+      learner.processContexts(null, 3000) // 3000
     }
 
 }

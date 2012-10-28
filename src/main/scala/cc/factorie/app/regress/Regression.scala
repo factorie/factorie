@@ -3,7 +3,7 @@ package cc.factorie.app.regress
 import cc.factorie._
 import app.classify.LabelList
 import cc.factorie.la._
-import cc.factorie.optimize.LimitedMemoryBFGS
+import cc.factorie.optimize.LBFGS
 import java.io.File
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 
@@ -53,7 +53,7 @@ object LinearRegressionTrainer {
     val explanatorySize = exampleExplanatory.value.dimensions.reduce((a,b)=>a*b)
     val weights = new DenseTensor2(dependentSize, explanatorySize)
     //val optimizer = new cc.factorie.optimize.ConjugateGradient()
-    val optimizer = new cc.factorie.optimize.LimitedMemoryBFGS()
+    val optimizer = new cc.factorie.optimize.LBFGS()
     val gradient = new DenseTensor2(weights.dim1, weights.dim2)
     while(!optimizer.isConverged) {
       gradient.zero()

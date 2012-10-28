@@ -133,10 +133,10 @@ class ChainNer {
       //printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent) //ConfidenceWeightedUpdates { temperature = 0.01 }
+      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new StepwiseGradientAscent) //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (iteration <- 1 until 3) {
-        learner.processAll(trainLabels)
+        learner.processContexts(trainLabels)
         predictor.processAll(testLabels)
         printEvaluation(trainDocuments, testDocuments, iteration.toString)
         //learner.learningRate *= 0.9
@@ -180,7 +180,7 @@ class ChainNer {
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.subModels(0), model.subModels(1))
-      val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
+      val localPredictor = new IteratedConditionalModes[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)

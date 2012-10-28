@@ -65,10 +65,10 @@ object ChainNER1a {
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingLossObjective)))
-    val learner = new SGDTrainer(new optimize.AROW(model), model)
+    val learner = new SGDTrainer(model, new optimize.AROW(model))
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
-      learner.processAll(pieces)
+      learner.processExamples(pieces)
       predictor.processAll(testLabels)
       println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))
       println("Test Acccuracy = "+HammingLossObjective.accuracy(testLabels))

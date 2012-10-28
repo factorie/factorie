@@ -537,9 +537,10 @@ class ChainNer2 {
 //		    }
 //		      optimizer.optimize()
 //		      optimizer.optimize()
-      val pieces = vars.map(v => new MaxLikelihoodExample(v.toSeq, InferByBPChainSum))
-      val trainer = new BatchTrainer(new L2RegularizedLBFGS(), model)
-      (1 to 100).foreach(i => trainer.processAll(pieces))
+      val examples = vars.map(v => new LikelihoodExample(v.toSeq, InferByBPChainSum))
+      val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
+			trainer.trainFromExamples(examples)
+      //(1 to 100).foreach(i => trainer.processExamples(examples))
 
       (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
@@ -553,9 +554,9 @@ class ChainNer2 {
 
       // Train primary (independent classifier) model
       // Train secondary (markov) model
-      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent(1.0))
+      val learner1 = new SampleRankTrainer(new GibbsSampler(model, objective), new StepwiseGradientAscent(1.0))
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      val predictor1 = new VariableSettingsSampler[ChainNerLabel](model) {temperature=0.01}
+      val predictor1 = new IteratedConditionalModes[ChainNerLabel](model) // {temperature=0.01}
 
 
       //(trainDocuments ++ testDocuments).foreach(d => initSecondaryFeatures(d))
@@ -568,7 +569,7 @@ class ChainNer2 {
       }*/
       
       for (iteration <- 1 until 8) {
-        learner1.processAll(trainLabels)
+        learner1.processContexts(trainLabels)
         predictor1.processAll(testLabels)
         printEvaluation(trainDocuments, testDocuments, iteration.toString)
         //learner.learningRate *= 0.9
@@ -603,9 +604,10 @@ class ChainNer2 {
 //		    }
 //		      optimizer1.optimize()
 //		      optimizer1.optimize()
-        val pieces = vars1.map(v => new MaxLikelihoodExample(v.toSeq, InferByBPChainSum))
-        val trainer = new BatchTrainer(new L2RegularizedLBFGS, model)
-        (1 to 100).foreach(i => trainer.processAll(pieces))
+      val examples = vars1.map(v => new LikelihoodExample(v.toSeq, InferByBPChainSum))
+      val trainer = new BatchTrainer(model)
+			trainer.trainFromExamples(examples)
+      //(1 to 100).foreach(i => trainer.processExamples(pieces))
 		      
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
@@ -615,12 +617,12 @@ class ChainNer2 {
 	} else {
       
       // Train secondary (markov) model
-      	val learner = new SampleRank(new GibbsSampler(model2, objective), new MIRA)
+      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new MIRA)
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       	val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
 
       	for (iteration <- 1 until 8) {
-        	learner.processAll(trainLabels)
+        	learner.processContexts(trainLabels)
         	predictor.processAll(testLabels)
         	printEvaluation(trainDocuments, testDocuments, iteration.toString)
         	//learner.learningRate *= 0.9
@@ -843,7 +845,7 @@ class ChainNer2 {
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.subModels(0), model.subModels(1))
-      val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
+      val localPredictor = new IteratedConditionalModes[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)

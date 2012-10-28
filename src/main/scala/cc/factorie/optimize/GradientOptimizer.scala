@@ -12,3 +12,11 @@ trait GradientOptimizer {
   def reset(): Unit
 }
 
+/** Include L2 regularization (Gaussian with given scalar as the diagonal covariance) in the gradient and value. */
+trait L2Regularization extends GradientOptimizer {
+  var variance: Double = 0.1
+  abstract override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double) {
+    gradient += (weights, -variance)
+    super.step(weights, gradient, value - variance * (weights dot weights), margin)
+  }
+}

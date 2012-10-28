@@ -280,7 +280,7 @@ class SpanNER {
         super.proposalsHook(proposals)
       }
     }
-    val learner = new SampleRank(sampler, new MIRA)
+    val learner = new SampleRankTrainer(sampler, new MIRA)
     
     
     // Train!
@@ -288,7 +288,7 @@ class SpanNER {
       println("Iteration "+i) 
       // Every third iteration remove all the predictions
       if (i % 3 == 0) { println("Removing all spans"); (trainDocuments ++ testDocuments).foreach(_.clearSpans(null)) }
-      learner.processAll(trainDocuments.map(_.tokens).flatten)
+      learner.processContexts(trainDocuments.map(_.tokens).flatten)
       //learner.learningRate *= 0.9
       predictor.processAll(testDocuments.map(_.tokens).flatten)
       println("*** TRAIN OUTPUT *** Iteration "+i); if (verbose) { trainDocuments.foreach(printDocument _); println; println }

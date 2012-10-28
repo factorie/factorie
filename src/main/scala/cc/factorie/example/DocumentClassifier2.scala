@@ -80,10 +80,10 @@ object DocumentClassifier2 {
     println(model.factors(Seq(trainVariables.head)))
 
     // Train and test
-    val learner = new SampleRank(new GibbsSampler(model, objective), new MIRA)
+    val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new MIRA)
     val predictor = new GibbsSampler(model)
     for (i <- 0 until 10) {
-      learner.processAll(trainVariables)
+      learner.processContexts(trainVariables)
       predictor.processAll(testVariables)
       println ("Train accuracy = "+ HammingLossObjective.accuracy(trainVariables))
       println ("Test  accuracy = "+ HammingLossObjective.accuracy(testVariables))

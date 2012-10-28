@@ -19,7 +19,7 @@ import cc.factorie.optimize._
 import la.{Tensor1, Tensor}
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 
-class MaxEntSampleRankTrainer extends ClassifierTrainer {
+class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
@@ -27,8 +27,8 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
     val sampler = new GibbsSampler(cmodel, HammingLossObjective) {
       override def pickProposal(proposals: Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
     }
-    val learner = new SampleRank(sampler, new MIRA)
-    learner.processAll(il, iterations)
+    val learner = new SampleRankTrainer(sampler, optimizer)
+    learner.processContexts(il, iterations)
     new ModelBasedClassifier[L](cmodel, il.head.domain)
   }
 }
@@ -43,10 +43,10 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
       weight = il.instanceWeight(l)))
     if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
     // Do the training by BFGS
-    val lbfgs = new L2RegularizedLBFGS(l2 = 1 / l2)
-    val strategy = new BatchTrainer(lbfgs, cmodel)
+    val lbfgs = new optimize.LBFGS with L2Regularization { variance = 1 / l2 } // TODO Why 1/l2? -akm
+    val strategy = new BatchTrainer(cmodel, lbfgs)
     while (!strategy.isConverged)
-      strategy.processAll(pieces)
+      strategy.processExamples(pieces)
     new ModelBasedClassifier[L](cmodel, il.head.domain) {val weights = cmodel.evidenceTemplate.weights}
   }
 }

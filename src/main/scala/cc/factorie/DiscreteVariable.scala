@@ -22,6 +22,40 @@ trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] {
   def domain: DiscreteDomain
   def value: DiscreteValue
   def intValue = value.intValue
+  /** Return the distribution over values of this variable given some factors (which presumably neighbor this DiscreteVar)
+      and given that all other variables' values are fixed. */
+  def proportions(factors:Iterable[Factor]): Proportions1 = {
+    val l = domain.size 
+    val distribution = new DenseTensor1(l)
+    val assignment = new DiscreteAssignment1(this, 0)
+    var score = 0.0
+    var i = 0
+    while (i < l) {
+      assignment.intValue1 = i
+      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+      distribution(i) = score
+      i += 1
+    }
+    distribution.expNormalize()
+    new NormalizedTensorProportions1(distribution, checkNormalization=false)
+  }
+  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
+  def proportions(model:Model): Proportions1 = proportions(model.factors(this))
+
+  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
+  def caseFactorProportions(model:Model): Proportions1 = {
+    val l = domain.size 
+    val distribution = new DenseTensor1(l)
+    val assignment = new DiscreteAssignment1(this, 0)
+    var i = 0
+    while (i < l) {
+      assignment.intValue1 = i
+      distribution(i) = model.assignmentScore(this, assignment)  // compute score of variable with value 'i'
+      i += 1
+    }
+    distribution.expNormalize()
+    new NormalizedTensorProportions1(distribution, checkNormalization=false)
+  }
   override def toString = printName+"("+intValue+")"
 }
 
@@ -53,37 +87,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     if (d ne null) d += new DiscreteVariableDiff(__value, newValue)
     __value = newValue
   }
-  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
-  def proportions(model:Model): Proportions1 = {
-    val l = domain.size 
-    val distribution = new DenseTensor1(l)
-    val factors = model.factors(this)
-    val assignment = new DiscreteAssignment1(this, 0)
-    var score = 0.0
-    var i = 0
-    while (i < l) {
-      assignment.intValue1 = i
-      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
-      distribution(i) = score
-      i += 1
-    }
-    distribution.expNormalize()
-    new NormalizedTensorProportions1(distribution, checkNormalization=false)
-  }
-  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
-  def caseFactorProportions(model:Model): Proportions1 = {
-    val l = domain.size 
-    val distribution = new DenseTensor1(l)
-    val assignment = new DiscreteAssignment1(this, 0)
-    var i = 0
-    while (i < l) {
-      assignment.intValue1 = i
-      distribution(i) = model.assignmentScore(this, assignment)  // compute score of variable with value 'i'
-      i += 1
-    }
-    distribution.expNormalize()
-    new NormalizedTensorProportions1(distribution, checkNormalization=false)
-  }
+
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable = MutableDiscreteVar.this
     @inline final def redo = MutableDiscreteVar.this.set(newValue)(null)

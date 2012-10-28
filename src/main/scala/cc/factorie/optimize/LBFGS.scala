@@ -19,8 +19,11 @@ import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.ArrayBuffer
 
+// TODO What kind of regularization would be used with LBFGS other than L2?
+// If nothing, then incorporate it directly into LBFGS. -akm
+
 /**Maximize using Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
-class LimitedMemoryBFGS(val numIterations: Double = 1000) extends GradientOptimizer with FastLogging {
+class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
 
@@ -237,12 +240,9 @@ class LimitedMemoryBFGS(val numIterations: Double = 1000) extends GradientOptimi
   }
 }
 
-class L2RegularizedLBFGS(var l2: Double = 0.1) extends LimitedMemoryBFGS {
-  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double) {
-    //println("in step")
-    gradient += (weights, -l2)
-    //println("added grad")
-    super.step(weights, gradient, value - l2 * (weights dot weights), margin)
-    //println("super stepped")
-  }
-}
+//class L2RegularizedLBFGS(var l2: Double = 0.1) extends LBFGS {
+//  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double) {
+//    gradient += (weights, -l2)
+//    super.step(weights, gradient, value - l2 * (weights dot weights), margin)
+//  }
+//}

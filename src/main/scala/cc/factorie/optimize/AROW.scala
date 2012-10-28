@@ -4,6 +4,8 @@ import cc.factorie.la._
 import cc.factorie.la.Tensor
 import cc.factorie.maths
 
+// TODO Change this so it doesn't require the "model" constructor argument, and instead gets the weights from the "step" call.
+// Then AROW can be the default optimizer in SGDTrainer.
 class AROW(model:Model, learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model,learningMargin) {
   //parameters specific to the algorithm
   //

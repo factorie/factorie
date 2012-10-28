@@ -42,6 +42,7 @@ trait Sampler[C] {
   var processCount = 0
   /** The number of calls to process that resulted in a change (a non-empty DiffList) */
   var changeCount = 0
+  // TODO Consider renaming this to "processContext"? -akm
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
     val processingWithoutContext = (null == context)
@@ -95,13 +96,7 @@ trait Sampler[C] {
 }
 
 
-// So we can call super in traits that override these methods
-// TODO Is there a better way to do this?
-// TODO Remove this and put ProposalSampler instead?  But then problems with SampleRank trait re-overriding methods it shouldn't?  Look into this. 
-//trait ProposalSampler0 {
-//  def proposalsHook(proposals:Seq[Proposal]): Unit
-//  def proposalHook(proposal:Proposal): Unit
-//}
+
 
 /** Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore.
     Proposal objects come from abstract method "proposals". 
@@ -131,13 +126,8 @@ trait ProposalSampler[C] extends Sampler[C] {
   def proposalHook(proposal:Proposal): Unit = proposalHooks(proposal)
 }
 
-// Not intended for users.  Here just so that SampleRank can override it.
-// TODO is there a better way to do this?
-//trait SettingsSampler0 {
-//  def objective: Model
-//}
 
-/** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
+/** Tries each one of the settings in the Iterator provided by the abstract method "settings(C)", 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
 abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) extends ProposalSampler[C] {
@@ -148,8 +138,9 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
       Provides access to all different possible worlds we will evaluate for each call to 'process' */ 
   def settings(context:C) : SettingIterator
 
-  val proposalsCache = collection.mutable.ArrayBuffer[Proposal]() // TODO This is not thread-safe; remove it
+  //val proposalsCache = collection.mutable.ArrayBuffer[Proposal]() // TODO This is not thread-safe; remove it
   def proposals(context:C): Seq[Proposal] = {
+    val result = new ArrayBuffer[Proposal]
     // the call to 'next' is actually what causes the change in state to happen
     var i = 0
     val si = settings(context)
@@ -157,22 +148,21 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
       val d = si.next
       assert(model ne null) // TODO!!! Clean up and delete this
       val (m,o) = d.scoreAndUndo(model, objective)
-      if (proposalsCache.length == i) proposalsCache.append(null)
-      proposalsCache(i) = new Proposal(d, m, o, m/temperature)
+      //if (proposalsCache.length == i) proposalsCache.append(null)
+      result += new Proposal(d, m, o, m/temperature)
       i += 1
     }
-    if (proposalsCache.length > i) {
-      proposalsCache.trimEnd(proposalsCache.length - i)
-    }
-    assert(proposalsCache.length == i)
+    //if (proposalsCache.length > i) proposalsCache.trimEnd(proposalsCache.length - i)
+    //assert(proposalsCache.length == i)
     //val s = settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
     //if (s.exists(p=>p.modelScore > 0.0)) { s.foreach(p => println(p.modelScore+" "+model)); println("SettingsSampler^") }
-    proposalsCache.toSeq
+    //proposalsCache.toSeq
+    result
   } 
 }
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
-abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
+abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
 }
 
@@ -231,8 +221,8 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, o
   }
 }
 
-// TODO Rename IteratedConditionalModes /* Besag's Iterated Conditional Modes */
-class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
+/** Besag's Iterated Conditional Modes.  Visit a variable, and set it to its highest scoring value (based on current value of its factors' neighbors). */
+class IteratedConditionalModes[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 

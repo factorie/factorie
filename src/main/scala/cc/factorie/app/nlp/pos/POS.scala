@@ -102,9 +102,10 @@ object POS {
 //      }
 //    }
 //    optimizer.optimize()
-    val pieces = labels.map(l => new optimize.MaxLikelihoodExample(l, InferByBPChainSum))
-    val trainer = new optimize.BatchTrainer(new optimize.L2RegularizedLBFGS, PosModel)
-    (1 to 100).foreach(i =>trainer.processAll(pieces))
+    val examples = labels.map(l => new optimize.LikelihoodExample(l, InferByBPChainSum))
+    val trainer = new optimize.BatchTrainer(PosModel)
+    trainer.trainFromExamples(examples)
+    //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
     PosModel.save(modelFile)
     test(documents, "train")

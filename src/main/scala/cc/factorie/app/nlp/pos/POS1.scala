@@ -84,7 +84,7 @@ class POS1 {
   def process(document:Document): Unit = {
     for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.category(0)) // init value doens't matter
     val localModel = new CombinedModel(PosModel.templates(0), PosModel.templates(1))
-    val localPredictor = new VariableSettingsGreedyMaximizer[PosLabel](localModel)
+    val localPredictor = new IteratedConditionalModes[PosLabel](localModel)
     for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)
     val predictor = new VariableSettingsSampler[PosLabel](PosModel)
     for (i <- 0 until 3; label <- document.tokens.map(_.attr[PosLabel])) predictor.process(label)
@@ -146,10 +146,10 @@ object POS1 extends POS1 {
 
       // Train for 5 iterations
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new SampleRank(new GibbsSampler(PosModel, HammingLossObjective), new MIRA)
+      val learner = new SampleRankTrainer(new GibbsSampler(PosModel, HammingLossObjective), new MIRA)
       val predictor = new VariableSettingsSampler[PosLabel](PosModel)
       for (i <- 1 until 2) {
-        learner.processAll(trainLabels)
+        learner.processContexts(trainLabels)
         predictor.processAll(testLabels)
         printEvaluation(i.toString)
       }
