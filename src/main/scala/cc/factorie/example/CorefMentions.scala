@@ -175,7 +175,7 @@ object CorefMentionsDemo {
         }
       })
 
-      var sampler = new MHSampler[Null](model) {
+      val sampler = new MHSampler[Null](model) {
         temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList): Double = {
