@@ -42,7 +42,7 @@ trait Infer {
   def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = None
 }
 
-// TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 also. -akm
+// TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 => DiscretesSummary also. -akm
 object InferDiscrete1 extends Infer {
   // TODO Consider renaming this "asArray"
   def array(d:DiscreteVariable, model:Model): Array[Double] = {

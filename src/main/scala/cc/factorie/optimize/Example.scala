@@ -34,8 +34,24 @@ trait Example[-M<:Model] {
 }
 
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
-class LikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Example[Model] {
+class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+    if (labels.size == 0) return
+    val summary = infer.infer(labels, model).get
+    if (value != null)
+      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
+    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
+    if (gradient != null) {
+      model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
+        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+        gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
+      })
+    }
+  }
+}
+
+class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer) extends Example[ModelWithContext[C]] {
+  def accumulateExampleInto(model: ModelWithContext[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
     if (value != null)
@@ -52,7 +68,7 @@ class LikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends 
 
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
-class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](label:V) extends Example[Model] {
+class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](val label:V) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     val factors = model.factorsOfFamilyClass[DotFamily](label)
     val proportions = label.proportions(factors)
@@ -71,7 +87,7 @@ class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](label:V) extends Example[
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors is allowed to change based on the DiscreteVar value. */
-class CaseFactorDiscreteLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](label:V) extends Example[Model] {
+class CaseFactorDiscreteLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](val label:V) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))

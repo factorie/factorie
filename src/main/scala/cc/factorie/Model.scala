@@ -94,6 +94,7 @@ trait Model {
   def currentScore(vars:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(vars)) sum += f.currentScore; sum }
   def currentScore(d:Diff): Double = { var sum = 0.0; for (f <- factors(d)) sum += f.currentScore; sum }
   def currentScore(dl:DiffList): Double = { var sum = 0.0; for (f <- factors(dl)) sum += f.currentScore; sum }
+  // ...using not current values, but the values in an Assignment
   def assignmentScore(variable:Variable, assignment:Assignment): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.assignmentScore(assignment); sum }
   def assignmentScore(vars:Iterable[Variable], assignment:Assignment): Double = { var sum = 0.0; for (f <- factors(vars)) sum += f.assignmentScore(assignment); sum }
   def assignmentScore(d:Diff, assignment:Assignment): Double = { var sum = 0.0; for (f <- factors(d)) sum += f.assignmentScore(assignment); sum }
@@ -232,10 +233,9 @@ class CombinedModel(theSubModels:Model*) extends Model {
 
 class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {
   val templates = new ArrayBuffer[ModelAsTemplate] ++= theSubModels
-  def +=(model:ModelAsTemplate): Unit = templates += model
-  def ++=(models:Iterable[ModelAsTemplate]): Unit = templates ++= models
+  def +=[M<:ModelAsTemplate](model:M): M = { templates += model; model }
+  def ++=[M<:ModelAsTemplate](models:Iterable[M]): Iterable[M] = { templates ++= models; models }
   def factors(context:Variable): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-  //override def newFactorsCollection: Set[Factor] = new collection.mutable.HashSet[Factor]
   override def addFactors(variable:Variable, result:Set[Factor]): Unit = { templates.foreach(_.addFactors(variable, result)); result }
   //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
@@ -259,50 +259,8 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {
   def model: ModelWithContext[C1]
-  //override def newFactorsCollection: ArrayBuffer[Factor] = new collection.mutable.ArrayBuffer[Factor]
-  //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C2, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
   override def variables = model.variables
   override def factors = model.factors
   override def families = model.families
 }
-
-//class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
-//  def factors(context:DiffList): Iterable[Factor] = {
-//    val result = new collection.mutable.LinkedHashSet[Factor]
-//    assert(model ne null)
-//    assert(context ne null)
-//    assert(context.variables.forall(_ ne null))
-//    context.variables.foreach(v => model.addFactors(v, result))
-//    result
-//  }
-//}
-
-//class Variable2IterableModel[V<:Variable](val model:Model[V]) extends ProxyModel[V,Iterable[V]] {
-//  def factors(context:Iterable[V]): Iterable[Factor] = {
-//    val result = new collection.mutable.LinkedHashSet[Factor]
-//    context.foreach(v => model.addFactors(v, result))
-//    result
-//  }
-//}
-
-//class Element2IterableModel[C](val model:ModelWithContext[C]) extends ProxyModel[C,Iterable[C]] {
-//  def factors(v:Variable): Iterable[Factor] = { val result = newFactorsCollection; addFactors(v, result); result }
-//  override def addFactors(variable:Variable, result:Set[Factor]): Unit = model.addFactors(variable, result)
-//  //def factors(contexts:Iterable[C]): Unit = { val result = newFactorsCollection; contexts.foreach(c => model.addFactors(c, result)); result }
-////  def factors(context:Iterable[C]): Iterable[Factor] = {
-////    val result = new collection.mutable.LinkedHashSet[Factor]
-////    context.foreach(v => model.addFactors(v, result))
-////    result
-////  }
-//}
-
-//class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
-//  def factors(dl:DiffList): Iterable[Factor] = {
-//    val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
-//    dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
-//    result
-//  }  
-//}
-
-
 

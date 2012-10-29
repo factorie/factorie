@@ -1,7 +1,9 @@
 package cc.factorie.example
+import cc.factorie._
 
 
 object TutorialIntroduction {
+  def main(args:Array[String]): Unit = { println("TutorialIntroduction") }
   
   /*&
 
@@ -9,6 +11,7 @@ FACTORIE is a toolkit for deployable probabilistic modeling, implemented as a so
 It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.
 Its key features include the following:
 
+- It supports straightforward descent in layers of abstraction---from command-line tools, to succinct scripting, to customized models and inference procedures---no impenetrable black-boxes.
 - It is object-oriented, enabling encapsulation, abstraction and inheritance in the definition of random variables, factors, inference and learning methods.
 - It is scalable, with demonstrated success on problems with billions of variables and factors, and on models that have changing structure, such as case factor diagrams.  It has also been plugged into a database back-end, representing a new approach to probabilistic databases capable of handling many billions of variables.
 - It is flexible, supporting multiple modeling and inference paradigms.  Its original emphasis was on conditional random fields, undirected graphical models, MCMC inference, online training, and discriminative parameter estimation.  However, it now also supports directed generative models (such as latent Dirichlet allocation), and has support for variational inference, including belief propagation and mean-field methods.
@@ -28,41 +31,50 @@ FACTORIE has been successfully applied to various tasks in natural language proc
 - ontology alignment
 - latent-variable generative models, including latent Dirichlet allocation.
 
-The following code declares data, model, inference and learning for a linear-chain CRF for word segmentation.
-Detailed explanations for this code are given later in the tutorial.
-Here we intend to provide merely a flavor.
-*/
+This series of tutorial provides a detailed tutorial on the FACTORIE framework.  
 
-  import cc.factorie._
-  import cc.factorie.la._
-  import cc.factorie.optimize._
+Before descending into details, here are three examples to give you briefly a flavor of FACTORIE usage.
+
+First, an example command-line tool.  The following reads textual documents from three directories corresponding to three classes, 
+creates a bag-of-words feature vector representation, does a 50/50 train/test split,
+trains a maximum-entropy classifier, prints results on the training and test data, then saves the trained classifier
+
+fac classify --read-text-dirs sports politics arts --trainer MaxEnt --training-portion 0.5 --write-classifier my-classifer 
+
+The following code declares data, model, inference and learning for a linear-chain CRF for part-of-speech tagging.
+ */
+
+  import cc.factorie._            // The base library: variables, factors
+  import cc.factorie.la._         // Linear algebra
+  import cc.factorie.optimize._   // Gradient-based optimization and training
   // Declare random variable types
   object TokenDomain extends CategoricalDomain[String]
   class Token(str:String) extends CategoricalVariable(str) { def domain = TokenDomain }
-  class Label(value:Boolean, val token:Token) extends LabeledBooleanVariable(value) with ChainLink[Label,Sentence]
-  class Sentence extends Chain[Sentence,Label]
-  // Create random variables for data
-  val data = List("See him run", "One fine day", "Into thin air")
-  val sentences = for (s <- data) yield new Sentence ++= s.map(c => new Label(true, new Token(c.toString)))
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(str:String, val token:Token) extends LabeledCategoricalVariable(str) { def domain = LabelDomain }
+  class LabelSeq extends scala.collection.mutable.ArrayBuffer[Label]
+  // Create random variables from data
+  val data = List("See/V Spot/N run/V", "Spot/N is/V a/DET big/J dog/N", "He/N is/V fast/J")
+  val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => { val a = s.split("/"); new Label(a(0), new Token(a(1)))})
   // Define a model
   val model = new Model {
-    val markov = new DotFamilyWithStatistics2[Label,Label] { lazy val weights = new DenseTensor2(BooleanDomain.size, BooleanDomain.size)}
-    val observ = new DotFamilyWithStatistics2[Label,Token] { lazy val weights = new DenseTensor2(BooleanDomain.size, TokenDomain.size)}
-    def factors(v:Variable) = v match {
-      case l:Label => List(new markov.Factor(l, l), new observ.Factor(l, l.token))
-      case _ => Nil
+    // Two families of factors, where factor scores are dot-products of sufficient statistics and weights (which will be trained below)
+    val markov = new DotFamilyWithStatistics2[Label,Label] { lazy val weights = new DenseTensor2(LabelDomain.size, LabelDomain.size) }
+    val observ = new DotFamilyWithStatistics2[Label,Token] { lazy val weights = new DenseTensor2(LabelDomain.size, TokenDomain.size) }
+    override def families = Seq(markov, observ)
+    // Given some variables, return the collection of factors that neighbor them.
+    override def factors(labels:Iterable[Variable]) = labels match {
+      case labels:LabelSeq => labels.map(label => new observ.Factor(label, label.token)) ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
     }
+    def factors(v:Variable) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
   val trainer = new BatchTrainer(model, new ConjugateGradient)
-  trainer.processExamples(sentences.map(l => new LikelihoodExample(l.asSeq, InferByBPChainSum)))
-  // Inference on test data, letting FACTORIE choose the inference method.
-  sentences.foreach(s => Maximize(s.asSeq, model))
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, InferByBPChainSum)))
+  // Inference on the same data.  We could let FACTORIE choose the inference method, 
+  // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
+  labelSequences.foreach(labels => BP.inferChainMax(labels, model))
+  // Print the learned parameters on the Markov factors.
+  println(model.markov.weights)
   
-/*&    
-Sponsors
----
-
-Research and development of FACTORIE is supported in part by the UMass Center for Intelligent Information Retrieval; in part by Google, in part by the National Science Foundation under NSF grant #IIS-0803847, #IIS-0326249 and #CNS-0551597; in part by Army prime contract number W911NF-07-1-0216 and University of Pennsylvania subaward number 103-548106; and in part by SRI International subcontract #27-001338 and ARFL prime contract #FA8750-09-C-0181. Any opinions, findings and conclusions or recommendations expressed in this material are the authors' and do not necessarily reflect those of the sponsors.
-*/
 }
