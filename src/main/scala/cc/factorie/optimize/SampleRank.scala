@@ -118,6 +118,7 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
+  def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model]): Unit = {

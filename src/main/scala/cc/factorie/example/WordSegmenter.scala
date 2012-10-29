@@ -128,8 +128,8 @@ object WordSegmenterDemo {
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
     var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
-    var sampler = new VariableSettingsSampler[Label](model)
-    val predictor = new SamplingMaximizer(sampler)
+    //var sampler = new VariableSettingsSampler[Label](model); val predictor = new SamplingMaximizer(sampler)
+    val predictor = new IteratedConditionalModes[Label](model)
     
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
@@ -145,7 +145,8 @@ object WordSegmenterDemo {
       println("Loading model parameters from "+args(0))
       model.load(args(0))
       //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-      predictor.maximize(testVariables, iterations=6, rounds=2)
+      //predictor.maximize(testVariables, iterations=6, rounds=2)
+      predictor.processAll(testVariables)
       println ("Test  accuracy = "+ objective.accuracy(testVariables))
       System.exit(0)
     }
@@ -160,8 +161,9 @@ object WordSegmenterDemo {
       learner.processContexts(trainVariables, 2)
       //learner.processAll(trainVariables, 2)
       //learner.learningRate *= 0.8
-      sampler.processAll(testVariables, 2)
-      sampler.temperature *= 0.8
+      predictor.processAll(testVariables)
+      //sampler.processAll(testVariables, 2)
+      //sampler.temperature *= 0.8
       println("Train accuracy = "+ objective.accuracy(trainVariables))
       println("Test  accuracy = "+ objective.accuracy(testVariables))
       println()
@@ -172,7 +174,8 @@ object WordSegmenterDemo {
     //(trainVariables ++ testVariables).foreach(_.setRandomly)
     //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
     //val predictor = new SamplingMaximizer(sampler)
-    predictor.maximize(testVariables, iterations=6, rounds=2)
+    //predictor.maximize(testVariables, iterations=6, rounds=2)
+    predictor.processAll(testVariables)
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
 
 

@@ -220,7 +220,7 @@ object CorefMentionsDemo {
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("Beginning inference and learning")
-      learner.processContexts(null, 3000) // 3000
+      learner.processContext(null, 3000) // 3000
     }
 
 }
