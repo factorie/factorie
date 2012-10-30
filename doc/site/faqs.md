@@ -1,6 +1,8 @@
 ---
 title: "FAQs"
 layout: default
+weight: 4
+group: doc
 ---
 
 FAQs
@@ -8,20 +10,17 @@ FAQs
 
 If your concerns are not addressed by any of the following, please email us at discuss@factorie.cs.umass.edu.
 
-How do I set the size of the Domain of a discrete variable?
----
+### How do I set the size of the Domain of a discrete variable?
 
 Use the DomainSize annotation as follows.
 
     @DomainSize(6) class DieRoll(initialFaceValue:Int) extends Discrete(initialFaceValue)
 
-How do I perform Gibbs/BlockGibbs Sampling for Undirected models?
----
+### How do I perform Gibbs/BlockGibbs Sampling for Undirected models?
 
 See VariableSettingsSampler for Gibbs, and VariablesSettingsSampler for Block Gibbs (notice the "s" after Variable)
 
-How do I print the weights?
----
+### How do I print the weights?
 
 Here example code for TemplateWithDotStatistics2:
 
@@ -46,8 +45,7 @@ If you don't see names of CategoricalVectorDomains, add the following to that do
       AffinityDomain.getCategory(idx).toString
     }
 
-My Maven build is failing because it cannot retrieve dependencies from the IESL repository?
----
+### My Maven build is failing because it cannot retrieve dependencies from the IESL repository?
 
 In other words, if your error looks like the following:
 

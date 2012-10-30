@@ -1,6 +1,8 @@
 ---
 title: "Installation"
 layout: default
+weight: 1
+group: doc
 ---
 
 Installation
@@ -11,13 +13,13 @@ Requirements
 
 FACTORIE has been successfully installed and tested on MacOS, Linux, and Windows with Cygwin. If you encounter difficulties installing FACTORIE please let us know at discuss@factorie.cs.umass.edu.
 
-Compilation of FACTORIE relies on Apache Maven, a software project management and build tool. Maven automatically downloads the project dependencies, including additional Java packages and even the correct version of the Scala compiler.
+Compilation of FACTORIE relies on [Apache Maven](http://maven.apache.org/), a software project management and build tool. Maven automatically downloads the project dependencies, including additional Java packages and even the correct version of the Scala compiler.
 
 # Software Requirements
 
-* Java >= 1.5
-* Apache Maven >= 2.2
-* Scala >= 2.9.1 -- Maven will install Scala for you, so no need to install separately.
+* [Java](http://www.java.com/getjava/) >= 1.5
+* [Apache Maven](http://maven.apache.org/) >= 2.2
+* [Scala](http://www.scala-lang.org/) >= 2.9.1 -- Maven will install Scala for you, so no need to install separately.
 
 Step-by-step Installation
 ---
@@ -32,9 +34,9 @@ Step-by-step Installation
 
 2. Obtain the FACTORIE source. You can do this by downloading and unpacking the FACTORIE tar.gz available from the Download page.
 
-        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M1-src.tar.gz
-        $ tar xzf factorie-1.0.0-M1-src.tar.gz
-        $ cd factorie-1.0.0-M1
+        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M2-src.tar.gz
+        $ tar xzf factorie-1.0.0-M2-src.tar.gz
+        $ cd factorie-1.0.0-M2
         $ ls
         LICENSE.txt pom.xml src
 
@@ -53,7 +55,7 @@ Step-by-step Installation
 
     Sometimes the tests fail if you are using the latest Mercurial version. However, if tests fail for a release version, please contact the mailing list.
 
-Next we recommend looking at the example code in `src/main/scala/cc/factorie/example`. Some of these examples are documented on our Examples page.
+Next we recommend reading the [tutorials](tutorials.html), and looking at the example code in `src/main/scala/cc/factorie/example`.
 
 Factorie as a Library
 ---
@@ -96,7 +98,16 @@ Then add the following in the dependencies section:
       <dependency>
         <groupId>cc.factorie</groupId>
         <artifactId>factorie</artifactId>
-        <version>1.0.0-M1</version>
+        <version>1.0.0-M2</version>
       </dependency>
     <dependencies>
+```
+
+### As an sbt Dependency
+
+In your `build.sbt` file, add the following:
+
+```
+resolvers += "IESL Release" at "http://dev-iesl.cs.umass.edu/nexus/content/groups/public"
+libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M2"
 ```

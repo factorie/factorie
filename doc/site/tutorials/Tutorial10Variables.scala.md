@@ -1,6 +1,7 @@
 ---
 title: "Tutorial 1: Variables"
 layout: default
+group: tutorial
 ---
 
 Variables Tutorial

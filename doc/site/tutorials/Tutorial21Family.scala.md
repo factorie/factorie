@@ -1,6 +1,7 @@
 ---
 title: "Tutorial 2.1: Families"
 layout: default
+group: tutorial
 ---
 
 Family Tutorial
