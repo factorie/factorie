@@ -30,8 +30,44 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
+  var HSq: Tensor = null
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    val eta = rate
+//    val l2 = 0.1
+//    gradient += (weights, -l2)
+    if (HSq == null) { HSq = gradient.blankCopy }
+    for (template <- gradient.asInstanceOf[WeightsTensor].families)
+      (weights.asInstanceOf[WeightsTensor](template),
+       gradient.asInstanceOf[WeightsTensor](template),
+       HSq.asInstanceOf[WeightsTensor](template)) match {
+        case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor) =>
+//          println(hSq)
+          val wArr = w.asArray
+          val gArr = g.asArray
+          val hArr = hSq.asArray
+          var i = 0
+          val len = wArr.length
+          while (i < len) {
+            hArr(i) += math.pow(gArr(i), 2)
+            val h = math.sqrt(hArr(i)) + delta
+            val t1 = eta / h
+            val t2 = wArr(i) + t1 * gArr(i)
+//            val t3 = l1 * eta / h
+//            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
+            wArr(i) = t2
+            i += 1
+          }
+      }
+  }
+  def reset(): Unit = {
+    HSq = null
+  }
+  def isConverged: Boolean = false
+}
+
 // This implements the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
-class L2ProjectedGradientAscent(l2: Double = 0.1,  k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
+class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
   private var step = 1
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     if (step == 1) {
@@ -42,7 +78,7 @@ class L2ProjectedGradientAscent(l2: Double = 0.1,  k: Int = 1, rate: Double = 1.
     }
     val eta_t = rate / (l2 * step)
     weights *= (1 - eta_t * l2)
-    weights += (gradient, eta_t / k)
+    weights +=(gradient, eta_t / k)
     val projCoeff = math.min(1, (1 / math.sqrt(l2)) / weights.twoNorm)
     weights *= projCoeff
     step += 1
