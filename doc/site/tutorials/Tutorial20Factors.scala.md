@@ -1,6 +1,7 @@
 ---
 title: "Tutorial 2.0: Factors"
 layout: default
+group: tutorial
 ---
 
 Factor Tutorial

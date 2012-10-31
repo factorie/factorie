@@ -1,114 +1,19 @@
 ---
-title: "Changelog"
+title: Factorie 0.10.1 released
 layout: default
-weight: 1
-group: suffix
+group: news
+categories: news
 ---
 
-Changelog
-===
+## Factorie 0.10.1 released
+ &raquo; by {{ site.author_sameer }} on {{ page.date | date_to_string }}
 
-## New in version 1.0.0-M2:
+After a long delay, the latest version of Factorie has been released. Numerous major features have been added, and significant renames and refactoring has been performed. 
 
+* Executable Jar: **[factorie-0.10.1.jar](http://factorie.googlecode.com/files/factorie-0.10.1.jar)**
+* Source files: [factorie-0.10.1-src.tar.gz](http://factorie.googlecode.com/files/factorie-0.10.1-src.tar.gz)
 
-* Documentation
-	- markdown based website, the source for which is checked into the repository
-	- Tutorial on Domains
-	- more assertions throughout the code (including tutorials)
-	- better Tutorial prettifier
-
-* Models and Templates
-	- Factors can provide statistics and scores on any Assignment and valueTensors
-	- trait Model independent of context, ModelWithContext[C] can unroll given any context
-
-* NLP
-
-* Inference
-	- BPSummary is more efficient, includes an abstract version
-
-* Optimization and Training
-	- Pieces are now Examples, Learners are Trainers
-	- MaxlikelihoodExample is efficient in computing constraints
-	- SampleRankExample replaces old trainer, almost as efficient
-
-* Tensors
-	- Filled in more of the missing cases in Tensors
-	- Fixed indexing bugs in a few Tensor types
-	- OuterTensors that efficiently represent the outer product between Tensors
-
-* Serialization
-	- gzip support
-
-* Misc
-
-## New in version 1.0.0-M1:
-
-
-* Models and Templates
-	- All templates are now Models
-	- Models are now parameterized by the type of things they can score
-	- It is possible to write code that does not deduplicate factors
-
-* NLP
-	- new Ontonotes Loader
-	- new Nonprojective Dependency parser
-
-* Inference
-	- Summary class now maintains the marginals, and is common to Samplers and BP
-	- Reimplementation of BP to be more efficient
-
-* Optimization & Training
-	- efficient L2-regularized SVM training
-	- integration with app.classify
-	- support for parallel batch and online training with a Piece API
-	- support for Hogwild (including Hogwild SampleRank)
-
-* Tensors
-	- all new la package that replaces the earlier Vector classes with Tensors
-	- Tensors can be multi-dimensional, with implementations that independently choose sparsity/singleton for each dimension
-	- weights and features now use Tensors
-
-* Serialization
-	- Serialization exists in a different class
-
-* Misc
-	- Added Tutorials to walkthrough model construction
-	- Cleaned examples so that they work (added a test that makes sure they do)
-
-## New in version 0.10.2:
-
-
-* NLP
-	- Customized forward-backward and viterbi for chain models
-	- changes to the coreference data structures that support hierarchical models
-	- new data loaders
-	- models can be loaded from JARs (POS model in IESL Nexus)
-	- initial dependency parser
-
-* BP
-	- Refactoring to be faster and cleaner interface, with bugfixes
-	- Caching of scores and values
-	- MaxProduct works even when multiple MAP states
-	- TimingBP to compare performance of the different variants of BP in the codebase
-	- maxMarginal with threshold, to support PR curves
-	- some initial parallelization
-
-* Max likelihood training
-	- convenience constructors for selecting which families to update
-	- pieces can use families for inference that are not updated
-
-* Trainer that uses Stochastic gradient descent
-
-* Cubbie
-	- new united interface for serialization/persistence (including mongodb support)
-
-* Hierarchical Coref Model
-	- added model that supports arbitrarily deep and wide hierarchy of entites, aka Wick, Singh, McCallum, ACL 2012
-
-* Gzip saving/loading of models
-* Data loaders for bibtex, dblp, etc.
-* Better support for limitedValues and sparse domains on factors
-* Code cleanup, including deletion of inner/outer factors
+Here's an incomplete changelog:
 
 ## New in version 0.10.1:
 
@@ -142,8 +47,8 @@ etc.
 
 * Redesigned cc.factorie.generative package
 
-## New in version 0.10.0:
-
+New in version 0.10.0:
+---
 
 * Variable 'value' methods:
 
@@ -272,8 +177,8 @@ modeling package, but they are not yet finished or usable. The code
 is being checked in now in order to facilitate others' work on the
 undirected models.
 
-## New in Version 0.9.0:
-
+New in Version 0.9.0:
+---
 
 Rudimentary optimize package includes ConjugateGradient and
 LimitedMemoryBFGS.
@@ -297,6 +202,4 @@ now in its own separate package: cc.factorie.generative.
 
 Many variables have been renamed to better match standard names in
 statistics, including EnumVariable => CategoricalVariable.
-
-## New in Version 0.8.1:
 

@@ -1,6 +1,7 @@
 ---
 title: "Tutorial 3: Model"
 layout: default
+group: tutorial
 ---
 
 Model Tutorial

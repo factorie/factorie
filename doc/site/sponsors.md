@@ -1,6 +1,8 @@
 ---
 title: "Sponsors"
 layout: default
+weight: 3
+group: suffix
 ---
 
 Sponsors

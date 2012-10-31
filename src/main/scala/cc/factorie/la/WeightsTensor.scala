@@ -71,6 +71,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   override def :=(t:DoubleSeq): Unit = t match {
     case t:WeightsTensor => _map.keys.foreach(k => if (t(k) eq null) apply(k).zero() else apply(k) := t(k))
   }
+  override def +=(i: Int, v: Double): Unit = _map.keys.foreach(k => apply(k) += (i, v))
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:WeightsTensor => t._map.keys.foreach(k => apply(k).+=(t.apply(k), f))
   }
