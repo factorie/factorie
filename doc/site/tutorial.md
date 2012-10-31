@@ -8,9 +8,9 @@ group: doc
 # Tutorials
 
 <ul>
-  {% for page in site.pages reversed %}
+  {% for page in site.pages %}
   {% if page.group == "tutorial" %}
-    <li> <a href="{{ BASE_PATH }}{{ page.url }}">{{ page.title }}</a></li>
+    <li> <a href="{{ site.baseurl }}{{ page.url }}">{{ page.title }}</a></li>
   {% endif %}
   {% endfor %}
 </ul>
