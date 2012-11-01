@@ -109,6 +109,14 @@ class TestExamples {
     cc.factorie.example.GaussianMixtureDemo.main(emptyArgs)
   }
 
+  @Test def testMultivariateGaussianDemo() {
+    cc.factorie.example.MultivariateGaussianDemo.main(emptyArgs)
+  }
+
+  @Test def testMultivariateGaussianMixtureDemo() {
+    cc.factorie.example.MultivariateGaussianMixtureDemo.main(emptyArgs)
+  }
+
   @Test def testGrid() {
     cc.factorie.example.Grid.main(emptyArgs)
   }

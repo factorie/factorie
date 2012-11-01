@@ -93,8 +93,8 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
     The zero-arg constructor should only be used by subclasses
     (e.g. so that CategoricalVariable can use its domain for value lookup),
     and should never be called by users. */
-class TensorVariable extends MutableTensorVar[Tensor] {
-  def this(initialValue:Tensor) = { this(); set(initialValue)(null) } 
+class TensorVariable[T <: Tensor] extends MutableTensorVar[T] {
+  def this(initialValue: T) = { this(); set(initialValue)(null) }
   //def init(initialValue:Value) = { _set(initialValue) }
   def domain: TensorDomain = TensorDomain // TODO Really?  What about future DiscreteVariable and CategoricalVariable?
 }

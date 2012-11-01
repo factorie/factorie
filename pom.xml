@@ -97,6 +97,12 @@ limitations under the License.
       <version>2.7.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>net.sourceforge.parallelcolt</groupId>
+      <artifactId>parallelcolt</artifactId>
+      <version>0.10.0</version>
+    </dependency>        
+	
   </dependencies>
 
   <distributionManagement>

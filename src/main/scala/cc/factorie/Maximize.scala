@@ -32,7 +32,12 @@ trait Maximize extends Infer {
    usually maximum likelihood. 
    @author Andrew McCallum */
 class MaximizeSuite extends Maximize {
-  def defaultSuite = Seq(MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions, cc.factorie.generative.MaximizeGaussianMean, cc.factorie.generative.MaximizeGaussianVariance, MaximizeByBPChain)
+  def defaultSuite = Seq(
+    MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions,
+    cc.factorie.generative.MaximizeGaussianMean, cc.factorie.generative.MaximizeGaussianVariance, MaximizeByBPChain
+//    ,    cc.factorie.generative.MaximizeMultivariateGaussianMean,
+//    cc.factorie.generative.MaximizeMultivariateGaussianCovariance
+  )
   val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
   suite ++= defaultSuite
   //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
@@ -42,7 +47,7 @@ class MaximizeSuite extends Maximize {
     var option: Option[Summary[Marginal]] = None
     val iterator = suite.iterator
     while (option == None && iterator.hasNext) {
-      option = iterator.next.infer(varying, model, summary)
+      option = iterator.next().infer(varying, model, summary)
     }
     option
   }

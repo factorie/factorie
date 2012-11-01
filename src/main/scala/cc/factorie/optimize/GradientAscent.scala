@@ -30,6 +30,8 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+// This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
+// "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
 class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
   var HSq: Tensor = null
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {

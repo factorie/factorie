@@ -45,6 +45,10 @@ trait Tensor1 extends Tensor {
       def activeDomains = dimensions.map(d => new RangeIntSeq(0, d)).toArray
     }
   }
+  def +(t: Tensor1): Tensor1 = super.+(t).asInstanceOf[Tensor1]
+  def -(t: Tensor1): Tensor1 = super.-(t).asInstanceOf[Tensor1]
+  // TODO: * could be either dot or outer.  Resolve 1xN vs Nx1 status of Tensor1
+  // def *(t: Tensor1): Double = this dot t
   @inline final def length: Int = dim1
   override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def blankCopy: Tensor1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)

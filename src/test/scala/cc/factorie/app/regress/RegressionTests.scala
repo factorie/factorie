@@ -12,11 +12,11 @@ import org.junit.Test
  * To change this template use File | Settings | File Templates.
  */
 
-class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList = null) extends TensorVariable {
+class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList = null) extends TensorVariable[Tensor1] {
   set(new DenseTensor1(1))
   value(0) = y
 
-  val inner = new TensorVariable
+  val inner = new TensorVariable[Tensor1]
   inner.set(new DenseTensor1(2))
   inner(0) = x0
   inner(1) = x1
@@ -30,7 +30,7 @@ class RegressionTests {
     val y1 = new MyTensorVariable(2, 1, 5)
     val y2 = new MyTensorVariable(1, 1, 3)
 
-    val regressor = LinearRegressionTrainer.train[TensorVariable, MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0)
+    val regressor = LinearRegressionTrainer.train[TensorVariable[Tensor1], MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0)
     assert(math.abs(regressor.regress(y0).dependantValue(0) - 4) < 0.01)
     assert(math.abs(regressor.regress(y1).dependantValue(0) - 5) < 0.01)
     assert(math.abs(regressor.regress(y2).dependantValue(0) - 3) < 0.01)

@@ -26,7 +26,7 @@ class NonBinaryFeatures(val labelName: String, val instanceName: String, val dom
   extends FeatureVectorVariable[String] with Features {}
 
 // A TUI for training, running and diagnosing classifiers
-object ClassifyTUI {
+object Classify {
 
   /* Sample Usages:
   *
