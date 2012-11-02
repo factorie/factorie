@@ -71,7 +71,6 @@ import util.DoubleAccumulator
 //  def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
 //}
 
-// TODO Move this to cc.factorie.optimize
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model] {
   var learningMargin = 1.0
@@ -112,10 +111,10 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
   }
 }
 
-// TODO Move this to cc.factorie.optimize
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
 class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.MIRA) extends optimize.Trainer[Model] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
+  def this(sampler:ProposalSampler[C]) = this(sampler.model, sampler, new optimize.MIRA)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))

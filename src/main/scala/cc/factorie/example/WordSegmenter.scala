@@ -131,10 +131,11 @@ object WordSegmenterDemo {
     //var sampler = new VariableSettingsSampler[Label](model); val predictor = new SamplingMaximizer(sampler)
     val predictor = new IteratedConditionalModes[Label](model)
     
-    testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    println ("Initial test accuracy = "+ objective.accuracy(testVariables))
+    (trainVariables ++ testVariables).foreach(_.setRandomly())
+    println ("Initial train accuracy = "+ objective.accuracy(testVariables))
+    println ("Initial test  accuracy = "+ objective.accuracy(testVariables))
     
     val exampleFactors = model.factors(trainVariables.tail.head)
     println("Example Factors: "+exampleFactors.mkString(", "))
@@ -154,9 +155,13 @@ object WordSegmenterDemo {
     // Sample and Learn!
     //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    val learner = new optimize.SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    //val learner = new optimize.SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
     //learner.learningRate = 1.0
+    println("Pre-training:")
+    println("Train accuracy = "+ objective.accuracy(trainVariables))
+    println("Test  accuracy = "+ objective.accuracy(testVariables))
     for (i <- 0 until 7) {
       learner.processContexts(trainVariables, 2)
       //learner.processAll(trainVariables, 2)

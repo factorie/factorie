@@ -132,6 +132,14 @@ trait DotFamily extends TensorFamily {
 
 }
 
+import cc.factorie.util._
+class DotFamilyCubbie(val family:DotFamily) extends Cubbie {
+  val weights = AnySlot[Tensor]("weights")
+  weights := family.weights
+  def fetch: DotFamily = family
+}
+
+
 
 ///** Related factors may be associated with a Family.
 //    Those factors may share parameters or other attributes that may be stored in the Family. */

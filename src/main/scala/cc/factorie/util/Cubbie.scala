@@ -387,7 +387,6 @@ class Cubbie {
     }
   }
 
-  //case class AnySlot(override val name:String) extends PrimitiveSlot[Any](name) // Too dangerous?
   case class IntSlot(override val name: String) extends PrimitiveSlot[Int](name)
 
   case class BooleanSlot(override val name: String) extends PrimitiveSlot[Boolean](name)
@@ -397,8 +396,13 @@ class Cubbie {
   case class StringSlot(override val name: String) extends PrimitiveSlot[String](name)
 
   case class DateSlot(override val name: String) extends PrimitiveSlot[java.util.Date](name)
-
   // TODO We need other primitive types supported in BSON
+
+  /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
+      FACTORIE uses this to store Tensors (because copying them to a DoubleListSlot would take too much memory for dependency parsing).
+      So Cubbie serialization of DotFamily only works for PrintStream serialization, not BSON and JSON. */
+  case class AnySlot[A<:Any](override val name:String) extends PrimitiveSlot[A](name)
+  
   /**
    * A slot containing a list of primitives.
    * @param name the name of the slot.

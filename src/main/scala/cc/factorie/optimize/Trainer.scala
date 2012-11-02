@@ -31,7 +31,6 @@ trait OnlineTrainer[M<:Model] extends Trainer[M] {
   def processExample(example:Example[M]): Unit
 }
 
-// TODO Re-order the constructor arguments to Trainer: model, optimizer
 
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */

@@ -24,7 +24,7 @@ trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with Categori
   def domain: CategoricalDomain[C]
   def value: CategoricalValue[C]
   def categoryValue: C = if (value ne null) value.category else null.asInstanceOf[C]
-  override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
+  override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + ")"
 }
 
 trait MutableCategoricalVar[V<:CategoricalValue[C],C] extends CategoricalVar[V,C] with MutableDiscreteVar[V] {

@@ -107,6 +107,7 @@ trait Model {
   def itemizedModel(dl:DiffList): ItemizedModel = new ItemizedModel(factors(dl))
   
   // Some Model subclasses have a list of Families to which all its factors belong
+  // TODO Should we move families to some Model subclass? -akm
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
   def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
   def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
@@ -157,6 +158,18 @@ trait ModelWithContext[-C] extends Model {
 trait DotFamilyModel extends Model {
   //abstract override def families: Seq[DotFamily]
 }
+
+
+import cc.factorie.util._
+class ModelCubbie(val model:Model) extends Cubbie {
+  val families = CubbieListSlot[DotFamilyCubbie]("families", () => throw new Error)
+  families := model.families.map({case df:DotFamily => new DotFamilyCubbie(df)})
+}
+
+// To actually do serialization
+// new CubbieFileSerializer(new File("foo")).serialize(new ModelCubbie(model))
+// class CubbieFileSerializer { def serialize(c:Cubbie): Unit = { for (elt <- c._map) elt._2 match { case i:Int => ... ; case t:Tensor => ... }
+
 
 // TODO Is this used?
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */

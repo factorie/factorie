@@ -128,6 +128,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
 
   var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
+  //def stringToCategory(s:String): C = s.asInstanceOf[C]
   var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {
     if (_frozenByLoader) return // Already initialized by loader, don't read again
@@ -148,13 +149,17 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     var willFreeze = false
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     if (string2T eq null) {
-      while ({line = reader.readLine; line != null})
-        this.index(line.asInstanceOf[C]) // this cast shouldn't be necessary
-    }
-    else {
-      while ({line = reader.readLine; line != null})
-        this.index(string2T(line))
-    }
+     while ({line = reader.readLine; line != null})
+       this.index(line.asInstanceOf[C]) // this cast shouldn't be necessary
+   }
+   else {
+     while ({line = reader.readLine; line != null})
+       this.index(string2T(line))
+   }
+
+    
+//    while ({line = reader.readLine; line != null})
+//      this.index(stringToCategory(line))
     if (willFreeze) { freeze(); _frozenByLoader = true }
   }
 
@@ -210,12 +215,29 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
 }
 
 
-
-
-
 object CategoricalDomain {
   val NULL_INDEX = -1
 }
+
+import cc.factorie.util._
+class CategoricalDomainCubbie extends Cubbie {
+  val size = IntSlot("size")
+  val frozen = BooleanSlot("frozen")
+  val categories = StringListSlot("end")
+    def store(d:CategoricalDomain[String]): this.type = {
+    size := d.size
+    frozen := d.frozen
+    categories := d.categories
+    this
+  }
+  def fetch(d:CategoricalDomain[String]): CategoricalDomain[String] = {
+    for (c <- categories.value) d.index(c)
+    if (frozen.value) d.freeze()
+    d
+  }
+}
+
+
 
 
 /* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
