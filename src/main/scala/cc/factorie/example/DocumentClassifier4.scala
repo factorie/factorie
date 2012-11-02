@@ -33,7 +33,9 @@ object DocumentClassifier4 {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
-    "\\w+".r.findAllIn(Source.fromFile(file, "ISO-8859-1").mkString).foreach(regexMatch => this += regexMatch.toString)
+    var str = Source.fromFile(file, "ISO-8859-1").mkString
+    str = str.substring(str.indexOf("\n\n"))
+    "\\w+".r.findAllIn(str).foreach(regexMatch => this += regexMatch.toString)
   }
   object LabelDomain extends CategoricalDomain[String]
   class Label(name: String, val document: Document) extends LabeledCategoricalVariable(name) {
@@ -57,6 +59,7 @@ object DocumentClassifier4 {
         docLabels += new Document(file).label
       }
     }
+    println("Read "+docLabels.size+" documents, having vocabulary size "+DocumentDomain.dimensionSize)
 
     // Make a test/train split
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
@@ -69,6 +72,7 @@ object DocumentClassifier4 {
       //if (useBoostedClassifier) new AdaBoostDecisionStumpTrainer().train(trainLabels) else 
       //new ID3DecisionTreeTrainer().train(trainLabels)
       new MaxEntTrainer().train(trainLabels)
+      //new NaiveBayesTrainer().train(trainLabels)
 
     // Test decision tree
 
@@ -81,6 +85,19 @@ object DocumentClassifier4 {
     println("Train accuracy = " + trainTrial.accuracy)
     println("Test  accuracy = " + testTrial.accuracy)
     println("Number of ms to train/test: " + (System.currentTimeMillis - start))
+    
+    // Print highest weights
+//    val weights = classifier.asInstanceOf[classify.ModelBasedClassifier[Label]].model.asInstanceOf[classify.LogLinearModel[Label,Document]].evidenceTemplate.weights
+//    val elements = weights.activeElements.toSeq.sortBy(_._2).reverse
+//    println("Class labels: "+LabelDomain.categories.mkString(" "))
+//    for (e <- elements.take(100)) {
+//      val i = e._1
+//      val w = e._2
+//      val ci = weights.index1(i)
+//      val fi = weights.index2(i)
+//      println("%7f %-10s %s".format(w, DocumentDomain.dimensionDomain.category(fi), LabelDomain.category(ci)))
+//    }
+    
     //    println(classifier.model
     //      .asInstanceOf[DecisionTreeStatistics2Base[Label#ValueType,Document#ValueType]]
     //      .splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
