@@ -193,8 +193,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       var i = 0
       while (i < len) {
         val zi = doc.zs.intValue(i)
-        phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
-        doc.theta.tensor.+=(zi, 1.0)
+        phis(zi).tensor.masses.+=(doc.ws.intValue(i), 1.0)
+        doc.theta.tensor.masses.+=(zi, 1.0)
         i += 1
       }
     }
