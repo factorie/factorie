@@ -58,6 +58,9 @@ object Observations {
     for (i <- 0 until size) (vf(observations(i))) ++= extraFeatures(i)
   }
   
+  // TODO Note that the methods below do not obey Sentence boundaries:  they will add offset conjunctions across the sentence boundary, 
+  // even if "observations" contains only the words in the a Sentence.
+  
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], offsetConjunctions:Seq[Int]*): Unit = 
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
   /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
@@ -89,7 +92,7 @@ object Observations {
   private def appendConjunctions[A<:Observation[A]](t:A, vf:A=>CategoricalTensorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
     val result = new ArrayBuffer[List[(String,Int)]];
     val offset: Int = offsets.head
-    val t2 = t.next(offset)
+    val t2 = t.next(offset)  // TODO Note: here is where we should be obeying Sentence boundaries.
     val adding: Seq[String] = 
       if (t2 == null) { if (/*t.position +*/ offset < 0) List("<START>") else List("<END>") }
       else if (regex != null) vf(t2).activeCategories.filter(str => str.matches(regex)) // Only include features that match pattern 
