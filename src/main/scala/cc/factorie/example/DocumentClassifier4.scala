@@ -34,7 +34,8 @@ object DocumentClassifier4 {
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     var str = Source.fromFile(file, "ISO-8859-1").mkString
-    str = str.substring(str.indexOf("\n\n"))
+    val headerIndex = str.indexOf("\n\n")
+    if (headerIndex > 0) str = str.substring(headerIndex)
     "\\w+".r.findAllIn(str).foreach(regexMatch => this += regexMatch.toString)
   }
   object LabelDomain extends CategoricalDomain[String]
