@@ -121,7 +121,7 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model]): Unit = {
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor)
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
     val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
     if (marginAccumulator.value != 0.0) // There was a ranking error and a gradient was placed in the accumulator

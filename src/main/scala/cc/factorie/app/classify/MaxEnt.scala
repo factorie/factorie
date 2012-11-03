@@ -33,7 +33,7 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
   }
 }
 
-class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
+class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val pieces = il.map(l => new GLMExample(
@@ -43,11 +43,11 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
       weight = il.instanceWeight(l)))
     if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
     // Do the training by BFGS
-    val lbfgs = new optimize.LBFGS with L2Regularization { variance = 1 / l2 } // TODO Why 1/l2? -akm
+    val lbfgs = new optimize.LBFGS with L2Regularization { variance = variance }
     val strategy = new BatchTrainer(cmodel, lbfgs)
     while (!strategy.isConverged)
       strategy.processExamples(pieces)
-    new ModelBasedClassifier[L](cmodel, il.head.domain) {val weights = cmodel.evidenceTemplate.weights}
+    new ModelBasedClassifier[L](cmodel, il.head.domain)
   }
 }
 

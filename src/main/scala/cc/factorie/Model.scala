@@ -123,6 +123,7 @@ trait Model {
   }
   def newBlankWeightsTensor: Tensor = weightsTensor.blankCopy
   // TODO Make these just return Tensor, not WeightsTensor
+  // TODO These methods don't properly copy the weights tensor since they don't preserve the dimension. Add sizeproxy? -luke
   def newBlankDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
   def newBlankSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 

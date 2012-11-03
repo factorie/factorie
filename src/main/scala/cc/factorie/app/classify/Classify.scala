@@ -142,7 +142,10 @@ object Classify {
     // Helper functions
     def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
-      val text2 = if (opts.readTextSkipHeader.value) text.substring(text.indexOf("\n\n")) else text
+      val text2 = if (opts.readTextSkipHeader.value) Some(text.indexOf("\n\n"))
+          .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))
+          .filter(-1 !=).map(text.substring(_)).getOrElse(text)
+        else text
       val text3 = if (opts.readTextPreserveCase.value) text2 else text2.toLowerCase
       for (gramSize <- opts.readTextGramSizes.value)
         for (words <- segmenter(text3).filterNot(stoplist.contains(_)).sliding(gramSize))
