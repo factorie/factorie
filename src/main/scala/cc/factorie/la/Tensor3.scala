@@ -175,6 +175,36 @@ class SparseBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Spar
   override def blankCopy: SparseBinaryTensor3 = new SparseBinaryTensor3(dim1, dim2, dim3)
 }
 
+trait Tensor3ElementIterator extends DoubleSeqIterator with Iterator[Tensor3ElementIterator] {
+  def index: Int
+  def index1: Int
+  def index2: Int
+  def index3: Int
+  def value: Double
+}
+
+class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Tensor3 with SparseIndexedTensor {
+  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain2: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain3: IntSeq = throw new Error("Not yet implemented")
+  def activeElements3: Tensor3ElementIterator = {
+    _makeReadable
+    new Tensor3ElementIterator { // Must not change _indexs and _values during iteration!
+      var i = 0
+      def hasNext = i < _npos
+      def index = _indices(i-1)
+      def index1 = SparseIndexedTensor3.this.index1(_indices(i-1))
+      def index2 = SparseIndexedTensor3.this.index2(_indices(i-1))
+      def index3 = SparseIndexedTensor3.this.index3(_indices(i-1))
+      def value = _values(i-1)
+      def next = { i += 1; this }
+    }
+  }
+  override def blankCopy: SparseIndexedTensor3 = new SparseIndexedTensor3(dim1, dim2, dim3)
+  override def copy: SparseIndexedTensor3 = { val t = new SparseIndexedTensor3(dim1, dim2, dim3); this.copyInto(t); t }
+}
+
+
 trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def singleIndex1: Int
   def singleIndex2: Int
@@ -228,6 +258,7 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }
     in.update(k, v)
   }
+  override def zero(): Unit = { val len = _inners.length; var i = 0; while (i < len) { val in = _inners(i); if (in ne null) inner(i).zero(); i += 1 }}
   /** Get the inner Tensor1 at first two dimensions index i,j.  Create it if necessary. */
   def inner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }; in }
   /** Get the inner Tensor1 at first two dimensions index i.  Create it if necessary. */
@@ -250,11 +281,13 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
     case t:Singleton2BinaryLayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) else 0.0 }
     case t:Singleton2LayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) * t.singleValue1 * t.singleValue2 else 0.0 }
-    case t:SparseBinaryTensor3 =>
+    case t:Dense2LayeredTensor3 => { var r = 0.0; val len = _inners.length; var i = 0; while (i < len) { val in1 = _inners(i); val in2 = t._inners(i); if ((in1 ne null) && (in2 ne null)) r += in1 dot in2; i += 1 }; r }
+    case t:SparseBinaryTensor3 => {
       /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/
       val tArr = t.activeDomain.array; val tLen = tArr.length; var s = 0.0; var i = 0
       while (i < tLen) { s += apply(tArr(i)); i += 1 }
       s
+    }
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)

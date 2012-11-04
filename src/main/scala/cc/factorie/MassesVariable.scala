@@ -95,7 +95,7 @@ class GrowableDenseMasses1(sizeProxy:Iterable[Any]) extends ProxyGrowableDenseTe
 }
 
 class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Masses1 with UniformTensor /*Like1 with Masses1*/ {
-  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
   def dim1 = sizeProxy.size
   def massTotal = sizeProxy.size * uniformValue
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
@@ -103,7 +103,7 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
   def isDense = false
-  def activeDomain1 = activeIndices
+  def activeDomain = activeIndices
   //def activeDomain = activeDomain1
   def apply(index:Int): Double = {
     if (countsTotal == 0) 0.0

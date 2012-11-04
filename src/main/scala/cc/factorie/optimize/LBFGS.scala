@@ -72,11 +72,11 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
   def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     if (_isConverged) return
     //todo: is the right behavior to set _isConverged = true if exceeded numIters?
-    if(iterations > numIterations){ logger.warn("failed to converge: too many iterations");_isConverged = true; return}
+    if (iterations > numIterations) { logger.warn("LBFGS: Failed to converge: too many iterations"); _isConverged = true; return }
 
     //if first time in, initialize
-    if(g == null){
-      logger.info("LimitedMemoryBFGS: Initial value = " + value)
+    if (g == null) {
+      logger.debug("LBFGS: Initial value = " + value)
 
       iterations = 0
       s = new ArrayBuffer[Tensor]
@@ -94,7 +94,7 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
 
 
       if (direction.twoNorm == 0) {
-        logger.info("initial L-BFGS initial gradient is zero; saying converged");
+        logger.info("LBFGS: Initial initial gradient is zero; saying converged");
         g = null
         _isConverged = true
         //return true;
@@ -122,29 +122,29 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
       lineMaximizer.step(weights, gradient, value, initialStepSize)
     }
     //else{
-    if(lineMaximizer.isConverged){
+    if (lineMaximizer.isConverged) {
       //first, check for convergence:
       iterations += 1
-      logger.info("LimitedMemoryBFGS: At iteration " + iterations + ", value = " + value);
+      logger.debug("LBFGS: At iteration " + iterations + ", value = " + value);
       //params and g are just aliases for the names of the variables passed in
       g = gradient
       params = weights
 
 
       if (2.0 * math.abs(value - oldValue) <= tolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
-        logger.info("Exiting L-BFGS on termination #1:\nvalue difference below tolerance (oldValue: " + oldValue + " newValue: " + value)
+        logger.debug("LBFGS: Exiting on termination #1: value difference below tolerance (oldValue: " + oldValue + " newValue: " + value)
         _isConverged = true
         return
       }
       val gg = g.twoNorm
       if (gg < gradientTolerance) {
-        logger.trace("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
+        logger.trace("LBFGS: Exiting on termination #2: gradient=" + gg + " < " + gradientTolerance)
         _isConverged = true
         return
       }
 
       if (gg == 0.0) {
-        logger.trace("Exiting L-BFGS on termination #3: \ngradient==0.0")
+        logger.trace("LBFGS: Exiting on termination #3: gradient==0.0")
         _isConverged = true
         return
       }

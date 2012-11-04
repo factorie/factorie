@@ -18,6 +18,7 @@ import cc.factorie.util._
 
 
 // Note: Many Tensor-like methods are actually implemented in DoubleSeq
+// Tensor adds capabilities for copying, and more explicit sparsity.
 
 /** An N-dimensional collection of Doubles. */
 trait Tensor extends MutableDoubleSeq {
@@ -33,6 +34,7 @@ trait Tensor extends MutableDoubleSeq {
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
   //def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  // TODO!! Change this to use TensorElementIterator instead
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
   def exists(f:(Double)=>Boolean): Boolean = !forallActiveElements((i,v) => !f(v))
@@ -55,6 +57,7 @@ trait Tensor extends MutableDoubleSeq {
   def printLength = 50
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
 }
+
 
 object Tensor {
   
@@ -206,7 +209,7 @@ object Tensor {
           //println("Tensor.outer3 dim1="+t1.dim1+" dim2="+t2.dim1+" dim3="+t3.dim1+"  t2="+t2)
           val t = new SparseBinaryTensor3(t1.dim1, t2.dim1, t3.dim1)
           // TODO This next line is inefficient
-          val t2Arr = t2.activeDomain1.array; val t3Arr = t3.activeDomain1.array
+          val t2Arr = t2.activeDomain1.asArray; val t3Arr = t3.activeDomain1.asArray
           val t2Len = t2.activeDomain1.length; val t3Len = t3.activeDomain1.length
           var j = 0
           while (j < t2Len) {
