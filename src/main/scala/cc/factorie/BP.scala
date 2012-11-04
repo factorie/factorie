@@ -119,8 +119,8 @@ class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable,
       case _ => Tensor.sum(edges.filter(_ != e).map(_.messageFromFactor)) 
     }
   }
-  def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO
-  def calculateMarginal: Tensor1 = calculateBelief.expNormalized.asInstanceOf[Tensor1]
+  def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO Make this more efficient for cases of 1, 2, 3 edges.
+  def calculateMarginal: Tensor1 = { val result = calculateBelief; result.expNormalize(); result.asInstanceOf[Tensor1] }
   override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)  // TODO Think about avoiding re-calc every time
   override def value1: DiscreteVar#Value = _1.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
@@ -156,6 +156,8 @@ trait BPFactor extends DiscreteMarginal {
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
 abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
   override def scores: Tensor1
+  def hasLimitedDiscreteValues1: Boolean
+  def limitedDiscreteValues1: SparseBinaryTensor1
   edge1.bpFactor = this; edge1.factorNeighborIndex = 0
   val edges = Seq(edge1)
   def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1() }
@@ -163,13 +165,15 @@ abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVa
   def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   // TODO See about caching this when possible
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
-  override def calculateMarginalTensor: Tensor1 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor1]
+  override def calculateMarginalTensor: Tensor1 = { val result = calculateBeliefsTensor; result.expNormalize(); result.asInstanceOf[Tensor1] }
   override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor, false)
   def calculateOutgoing1: Tensor1 = scores
 }
 
 // A BPFactor1 with underlying model Factor1, with the one neighbor varying
 class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
+  def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
+  def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
     case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor1]
     case _ => {
@@ -188,6 +192,8 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
 class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
+  def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
+  def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = {
     val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
     val len = edge1.variable.domain.size
@@ -212,6 +218,8 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
   override def scores: Tensor2
   def calculateOutgoing1: Tensor
   def calculateOutgoing2: Tensor
+  def hasLimitedDiscreteValues12: Boolean
+  def limitedDiscreteValues12: SparseBinaryTensor2
   edge1.bpFactor = this; edge1.factorNeighborIndex = 0
   edge2.bpFactor = this; edge1.factorNeighborIndex = 1
   val edges = Seq(edge1, edge2)
@@ -234,15 +242,36 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
 //      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
     result
   }
-  override def calculateMarginalTensor: Tensor2 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor2]
+  override def calculateMarginalTensor: Tensor2 = { val result = calculateBeliefsTensor; result.expNormalize; result.asInstanceOf[Tensor2] }
   override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginalTensor, false)
 }
 
 trait BPFactor2SumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
-      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
+    if (hasLimitedDiscreteValues12) {
+      //println("BPFactor2SumProduct calculateOutgoing1")
+      val indices: Array[Int] = limitedDiscreteValues12._indices
+      val len = limitedDiscreteValues12._indicesLength; var ii = 0
+      while (ii < len) {
+        val ij = indices(ii)
+        val i = scores.index1(ij)
+        val j = scores.index2(ij)
+        result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j)) // TODO This could be scores(ij)
+        ii += 1
+      }
+    } else {
+      val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
+      while (i < leni) {
+        j = 0; while (j < lenj) {
+          result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
+          j += 1
+        }
+        i += 1
+      }
+    }
+//    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
+//      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
     result
   }
   def calculateOutgoing2: Tensor = {
@@ -317,6 +346,8 @@ trait BPFactor2MaxProduct { this: BPFactor2 =>
 abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
   // TODO Consider making this calculate scores(i,j) on demand, with something like
   // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
+  val hasLimitedDiscreteValues12: Boolean = factor.hasLimitedDiscreteValues12
+  def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = factor match {
     // TODO: this only works if statistics has not been overridden. See TestBP.loop2 for an example where this fails.
     case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weights.isInstanceOf[Tensor2]) => {
@@ -332,7 +363,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
         j = 0
         while (j < lenj) {
           valueTensor.singleIndex2 = j
-          result(i, j) = factor.valuesScore(valueTensor)
+          if (hasLimitedDiscreteValues12 && !factor.limitedDiscreteValues12.contains(result.singleIndex(i,j))) result(i, j) = Double.NegativeInfinity
+          else result(i, j) = factor.valuesScore(valueTensor)
           j += 1
         }
         i += 1
@@ -354,29 +386,55 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
 // Note that the varying neighbors are assumed to be factor._1 and factor._2, and the constant neighbor factor._3
 abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
+  val hasLimitedDiscreteValues12: Boolean = factor.hasLimitedDiscreteValues12
+  def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = {
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
-    for (i <- 0 until edge1.variable.domain.size) {
+    val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0
+    while (i < leni) {
       valueTensor.singleIndex1 = i
-      for (j <- 0 until edge2.variable.domain.size) {
+      j = 0
+      while (j < lenj) {
         valueTensor.singleIndex2 = j
-        result(i, j) = factor.valuesScore(valueTensor)
+        if (hasLimitedDiscreteValues12 && !factor.limitedDiscreteValues12.contains(result.singleIndex(i,j))) result(i, j) = Double.NegativeInfinity
+        else result(i, j) = factor.valuesScore(valueTensor)
+        j += 1
       }
+      i += 1
     }
+//    for (i <- 0 until edge1.variable.domain.size) {
+//      valueTensor.singleIndex1 = i
+//      for (j <- 0 until edge2.variable.domain.size) {
+//        valueTensor.singleIndex2 = j
+//        if (hasLimitedDiscreteValues12 && !factor.limitedDiscreteValues12.contains(result.singleIndex(i,j))) result(i, j) = Double.NegativeInfinity
+//        else result(i, j) = factor.valuesScore(valueTensor)
+//      }
+//    }
     result
   }
   /** Add into the accumulator the factor's statistics, weighted by the marginal probability of the varying values involved. */
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
     val marginal = calculateMarginalTensor
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
-    for (i <- 0 until edge1.variable.domain.size) {
+    val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0
+    while (i < leni) {
       valueTensor.singleIndex1 = i
-      for (j <- 0 until edge2.variable.domain.size) {
+      j = 0
+      while (j < lenj) {
         valueTensor.singleIndex2 = j
-        accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
+        if (!hasLimitedDiscreteValues12 || factor.limitedDiscreteValues12.contains(marginal.singleIndex(i,j))) accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
+        j += 1
       }
+      i += 1
     }
+//    for (i <- 0 until edge1.variable.domain.size) {
+//      valueTensor.singleIndex1 = i
+//      for (j <- 0 until edge2.variable.domain.size) {
+//        valueTensor.singleIndex2 = j
+//        accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
+//      }
+//    }
   }
   override def marginalTensorStatistics: Tensor = factor._2.value match {
     case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginalTensor, t2))
@@ -456,6 +514,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
+  // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
   override def logZ: Double = _bpFactors.values.head.calculateLogZ
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {

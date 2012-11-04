@@ -170,6 +170,7 @@ trait SparseBinaryTensorLike3 extends Tensor3 with SparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def activeDomain3 = throw new Error("Not yet implemented")
+  def +=(i:Int, j:Int, k:Int): Unit = _insertSortedNoDuplicates(singleIndex(i,j,k))
 }
 class SparseBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends SparseBinaryTensorLike3 {
   override def blankCopy: SparseBinaryTensor3 = new SparseBinaryTensor3(dim1, dim2, dim3)

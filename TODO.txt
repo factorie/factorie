@@ -21,6 +21,7 @@ Fix copyright year [McCallum]
 Write JUnit tests for cc.factorie.la [Vilnis?]
 Liblinear-like L1 SVM... [Martin]
 No holes in Tensor dot products [Passos]
+Remove unused classes from cc.factorie.util [McCallum]
 
 More examples:
 Tutorial examples [McCallum]
@@ -66,6 +67,8 @@ Get rid of dependency on Java bibtex parser library
 Implement parameter averaging
 
 Future:
+Implement beam search for BP.
+Make LDA faster and multi-threaded [Bakalov]
 Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)
  Consider naming the current Template something more specific, e.g. "NeighborTemplate"

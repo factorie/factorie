@@ -62,8 +62,12 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
     def valuesTensor: Tensor = null
   }
   // For implementing sparsity in belief propagation
-//  def isLimitingValuesIterator = false
-//  def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = Iterator.empty
+  def hasLimitedDiscreteValues123: Boolean = limitedDiscreteValues123.activeDomainSize > 0
+  def limitedDiscreteValues123: SparseBinaryTensor3 = throw new Error("This Factor type does not implement limitedDiscreteValues123: "+getClass)
+  def hasLimitedDiscreteValues12: Boolean = limitedDiscreteValues12.activeDomainSize > 0
+  def limitedDiscreteValues12: SparseBinaryTensor2 = throw new Error("This Factor type does not implement limitedDiscreteValues12: "+getClass)
+  def hasLimitedDiscreteValues1: Boolean = limitedDiscreteValues1.activeDomainSize > 0
+  def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
 
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.

@@ -29,7 +29,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), 0.5, eps)
+    assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
   
   @Test def v1f1UnequalPotentialsSum {
@@ -41,7 +41,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), e(2) / (e(2) + e(1)), eps)
+    assertEquals(e(2) / (e(2) + e(1)), fg.marginal(v).proportions(0), eps)
   }
   
   @Test def v1f2Test1 {

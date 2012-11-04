@@ -209,6 +209,7 @@ class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val sin
 trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
+  def +=(i:Int, j:Int): Unit = _insertSortedNoDuplicates(singleIndex(i,j))
 }
 class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)

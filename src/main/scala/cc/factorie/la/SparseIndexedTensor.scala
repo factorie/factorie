@@ -28,7 +28,7 @@ trait SparseIndexedTensor extends Tensor {
   private var __npos = 0 // the number of positions in _values and _indices that are actually being used
   private var _sorted = 0 // The number of positions in _values & _indices where indices are sorted; if _sorted == _npos then ready for use
   
-  // TODO Avoid making these public
+  // TODO Avoid making these public?  But used in BP now. -akm
   def _values = __values
   def _indices = __indices
   def _npos = __npos
@@ -182,9 +182,31 @@ trait SparseIndexedTensor extends Tensor {
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
   }
-  /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multipllied by factor "f". */
+  /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < __npos) { a(__indices(i)+offset) += f * __values(i); i += 1 }}
   
+  override def expNormalize(): Double = {
+    var max = Double.MinValue
+    var i = 0; 
+    while (i < __npos) { if (max < __values(i)) max = __values(i); i += 1 }
+    var sum = 0.0
+    i = 0
+    while (i < __npos) {
+      val e = math.exp(__values(i) - max)  //update(i, math.exp(apply(i) - max))
+      __values(i) = e
+      sum += e
+      i += 1
+    }
+    i = 0
+    while (i < __npos) {
+      __values(i) /= sum
+      i += 1
+    }
+    sum
+  }
+
+  
+  // TODO Use copyInto instead?
   def cloneFrom(t:SparseIndexedTensor): Unit = {
     makeReadable
     //t._length = _length

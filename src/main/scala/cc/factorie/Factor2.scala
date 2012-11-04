@@ -84,10 +84,14 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
   def valueScores2(tensor1:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
 
   // For implementing sparsity in belief propagation
-  def hasLimitedDiscreteValues = false
-  def limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = throw new Error("Not implemented")
-  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = values.foreach(t => addLimitedDiscreteValues(t._1, t._2)) // throw new Error("Not implemented") // limitedDiscreteValues ++= values
-  def addLimitedDiscreteValues(i:Int, j:Int): Unit = throw new Error("Not implemented")
+  def hasLimitedDiscreteValues12 = limitedDiscreteValues12.activeDomainSize > 0
+  def limitedDiscreteValues12: SparseBinaryTensor2 = throw new Error("This Factor type does not implement limitedDiscreteValues12: "+getClass)
+  def addLimitedDiscreteValues12(i:Int, j:Int): Unit = limitedDiscreteValues12.+=(i, j)
+  def addLimitedDiscreteCurrentValues12: Unit = addLimitedDiscreteValues12(_1.asInstanceOf[DiscreteVar].intValue, _2.asInstanceOf[DiscreteVar].intValue)
+  def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
+  def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
+  def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
+  def addLimitedDiscreteCurrentValues1: Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
   
   
 //  def isLimitingValuesIterator = false
@@ -246,10 +250,10 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     override def valuesStatistics(tensor:Tensor): Tensor = Family2.this.valuesStatistics(tensor)
     //override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
-    override def hasLimitedDiscreteValues = Family2.this.hasLimitedDiscreteValues
-    override def limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = Family2.this.limitedDiscreteValues
+    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.limitedDiscreteValues12
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1
     //override def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = Family2.this.addLimitedDiscreteValues(values)
-    override def addLimitedDiscreteValues(i:Int, j:Int): Unit = Family2.this.addLimitedDiscreteValues(i, j)
+    //override def addLimitedDiscreteValues(i:Int, j:Int): Unit = Family2.this.addLimitedDiscreteValues(i, j)
   }
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
@@ -270,16 +274,10 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   }
 
   // For implementing sparsity in belief propagation
-  var hasLimitedDiscreteValues: Boolean = false
-  lazy val limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = new scala.collection.mutable.HashSet[(Int,Int)]
-  lazy val limitedDiscreteValues1: collection.mutable.Set[Int] = new scala.collection.mutable.HashSet[Int]
-  lazy val limitedDiscreteValues2: collection.mutable.Set[Int] = new scala.collection.mutable.HashSet[Int]
-  //def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
-  def addLimitedDiscreteValues(i:Int, j:Int): Unit = {
-    limitedDiscreteValues += ((i,j))
-    limitedDiscreteValues1 += i
-    limitedDiscreteValues2 += j
-  }
+  def hasLimitedDiscreteValues12 = limitedDiscreteValues12.activeDomainSize > 0
+  lazy val limitedDiscreteValues12: SparseBinaryTensor2 = new SparseBinaryTensor2(0,0) // TODO What dim1, dim2 can we give here?
+  def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
+  lazy val limitedDiscreteValues1: SparseBinaryTensor1 = new SparseBinaryTensor1(0) // TODO What dim1 can we give here?
 
 //  // Cached Statistics
 //  private var cachedStatisticsArray: Array[StatisticsType] = null

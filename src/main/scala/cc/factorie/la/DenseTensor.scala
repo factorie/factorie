@@ -94,5 +94,27 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:SparseBinaryTensorLike1 => t.=+(__values, offset, f)
     case t:DenseTensor => { val len = t.length; var i = 0; while (i < len) { __values(i+offset) += f * t.__values(i); i += 1 }}
   }
+
+  // A little faster than the MutableDoubleSeq implementation because it can access the __values array directly
+  override def expNormalize(): Double = {
+    var max = Double.MinValue
+    var i = 0; val l = length
+    while (i < l) { if (max < __values(i)) max = __values(i); i += 1 }
+    var sum = 0.0
+    i = 0
+    while (i < l) {
+      val e = math.exp(__values(i) - max)  //update(i, math.exp(apply(i) - max))
+      __values(i) = e
+      sum += e
+      i += 1
+    }
+    i = 0; while (i < l) {
+      __values(i) = __values(i) / sum
+      i += 1
+    }
+    //println("DenseTensor.expNormalize "+__values.mkString(" "))
+    sum
+  }
+
 }
 

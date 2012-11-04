@@ -19,6 +19,7 @@ import cc.factorie.util._
 trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer with SparseDoubleSeq {
   def isDense = false
   def activeDomain = new ArrayIntSeq(_array)
+  override def activeDomainSize = _length
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val len = _length; var i = 0; while (i < len) { f(_array(i), 1.0); i += 1 }}
@@ -27,6 +28,9 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
     def hasNext = i < _length
     def next = { i += 1 ; (_array(i-1), 1.0) }
   }
+  /** Efficient (but dangerous) direct access to underlying array of indices.  Note that the array.length may be larger than the number of indices. */
+  def _indices: Array[Int] = _array
+  def _indicesLength: Int = _length // TODO Remove because we have activeDomainSize?
   override def sum: Double = _length.toDouble
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0

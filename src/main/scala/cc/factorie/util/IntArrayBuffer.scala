@@ -123,7 +123,7 @@ trait ProtectedIntArrayBuffer {
     else if (x < midval) _containsSorted(x, start, middle)
     else _containsSorted(x, middle+1, end)
   }
-  protected def _containsSorted(x:Int): Boolean = _containsSorted(x, 0, _size)
+  protected def _containsSorted(x:Int): Boolean = _indexForInsertSorted(x) != -1 // _containsSorted(x, 0, _size)
 
   protected def _clear(): Unit = { _arr = new Array[Int](_initialCapacity); _size = 0; _lastIndex = 0 }
   protected def _sizeHint(len: Int) = if (len >= _size && len >= 1) _setCapacity(len)
