@@ -30,14 +30,14 @@ trait IntSeq {
     while (i < len) { a.append(f(apply(i))); i += 1 }
     a
   }
-  def foreach(f:Int=>Unit): Unit = { var i = 0; val l = length; while (i < l) { f(apply(i)); i += 1 } }
-  def forElements(f:(Int,Int)=>Unit): Unit = { var i = 0; while (i < length) { f(i, apply(i)); i += 1 } }
-  def contains(d:Int): Boolean = { var i = length; while (i >= 0) if (d == apply(i)) return true; false }
-  def forall(f:Int=>Boolean): Boolean = { var i = length; while (i >= 0) if (!f(apply(i))) return false; true } 
-  def foldLeft[B<:AnyRef](z:B)(f:(B,Int)=>B): B = throw new Error
-  def indexOf(d:Int): Int = { var i = 0; while (i < length) { if (d == apply(i)) return i }; -1 }
-  def max: Int = { var m = Int.MinValue; var i = 0; while (i < length) { if (!(m >= apply(i))) m = apply(i) }; m }
-  def min: Int = { var m = Int.MinValue; var i = 0; while (i < length) { if (!(m <= apply(i))) m = apply(i) }; m }
+  def foreach(f:Int=>Unit): Unit = { val len = length; var i = 0; while (i < len) { f(apply(i)); i += 1 } }
+  def forElements(f:(Int,Int)=>Unit): Unit = { val len = length; var i = 0; while (i < len) { f(i, apply(i)); i += 1 } }
+  def contains(d:Int): Boolean = { val len = length; var i = 0; while (i < len) { if (d == apply(i)) return true; i += 1 }; false }
+  def forall(f:Int=>Boolean): Boolean = { val len = length; var i = 0; while (i < len) { if (!f(apply(i))) return false; i += 1 }; true }
+  def foldLeft[B<:AnyRef](z:B)(f:(B,Int)=>B): B = { var acc = z; this.foreach(el => acc = f(acc, el)); acc }
+  def indexOf(d:Int): Int = { val len = length; var i = 0; while (i < len) { if (d == apply(i)) return i; i += 1 }; -1 }
+  def max: Int = { val len = length; var m = Int.MinValue; var i = 0; while (i < len) { if (!(m >= apply(i))) m = apply(i); i += 1 }; m }
+  def min: Int = { val len = length; var m = Int.MaxValue; var i = 0; while (i < len) { if (!(m <= apply(i))) m = apply(i); i += 1 }; m }
   def asArray: Array[Int] = toArray // To be overridden for efficiency in some subclasses
   def asSeq: IndexedSeq[Int] = new IndexedSeq[Int] {
     final def length = IntSeq.this.length

@@ -16,7 +16,7 @@ package cc.factorie.app.classify
 
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.la.Tensor
+import la.{DenseTensor1, Tensor}
 
 class ID3DecisionTreeTrainer extends ClassifierTrainer {
   var iterations = 10
@@ -26,8 +26,8 @@ class ID3DecisionTreeTrainer extends ClassifierTrainer {
       il.labelToFeatures,
       il.labelDomain,
       il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val instanceWeights = il.map(il.instanceWeight(_))
-    dmodel.train(il, instanceWeights)
+    val instanceWeights = il.map(il.instanceWeight(_)).toArray
+    dmodel.train(il, new DenseTensor1(instanceWeights))
     new ModelBasedClassifier[L](dmodel, il.head.domain)
   }
 }

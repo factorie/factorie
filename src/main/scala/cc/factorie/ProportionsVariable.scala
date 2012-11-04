@@ -96,6 +96,7 @@ trait DenseProportions extends Proportions {
     val mt = masses.massTotal
     if (mt == 0.0) 1.0 / length else masses.apply(index) / mt
   }
+  // Should this method be here? it's a really good way to get bugs when you're looking for masses.massTotal -luke
   def massTotal = 1.0
   def isDense = true
   override def zero(): Unit = masses.zero()
@@ -206,7 +207,10 @@ class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
     val len = math.min(n, masses.numPositions)
     val result = new cc.factorie.util.TopN[String](len)
     var i = 0
-    while (i < len) result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal) 
+    while (i < len) {
+      result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal)
+      i += 1
+    }
     result
   }
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = masses.sampleIndex(massTotal)(r)

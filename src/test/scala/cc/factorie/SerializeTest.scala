@@ -10,7 +10,7 @@ import collection.mutable.ArrayBuffer
 class SerializeTests extends JUnitSuite {
 
   @Test def test(): Unit = {
-    val fileName = "c:\\serializerTest"
+    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize").getAbsolutePath
     // Read data and create Variables
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
@@ -36,10 +36,10 @@ class SerializeTests extends JUnitSuite {
 
     val modelFile = new File(fileName)
 
-    Serializer.serialize(model, modelFile)
+    CubbieFileSerializer.serialize(new ModelCubbie(model), modelFile)
 
     val deserializedModel = new SegmenterModel
-    Serializer.deserialize(deserializedModel, modelFile)
+    CubbieFileSerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
 
     println("Original model family weights: ")
     model.families.foreach({case f: DotFamily => println(f.weights)})

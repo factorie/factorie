@@ -62,7 +62,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
       //println("InfoGain feature="+instanceDomain.dimensionDomain.asInstanceOf[CategoricalDomain[String]].category(featureIndex))
       //println("InfoGain targetProportions="+targetProportions.masses)
       //println("InfoGain featureTargetProp="+featureTargetProportions(featureIndex).masses)
-      val entropyWithFeature = if (featureTargetProportions(featureIndex).massTotal > 0) featureTargetProportions(featureIndex).entropy else 0.0
+      val entropyWithFeature = if (featureTargetProportions(featureIndex).masses.massTotal > 0) featureTargetProportions(featureIndex).entropy else 0.0
       val normWithoutFeature = numInstances - featureCount(featureIndex)
       val entropyWithoutFeature = 
         if (normWithoutFeature > 0) {

@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-import la.Tensor
+import la.{SparseBinaryTensorLike1, SparseTensor1, Tensor1, Tensor}
 import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
 
 /**A template for factors who scores are the log-probability of
@@ -36,9 +36,9 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
   override def statistics(value1:S1, value2:S2): StatisticsType = (value1, value2)
   // Fixme: DiscreteVar should have value: Value not value: DiscreteValue... but then can't override. Need VarLike?
   def statistics(f: FactorType): StatisticsType = (f._1.value.asInstanceOf[S1], f._2.value.asInstanceOf[S2])
-  def train(labels: Iterable[V1]): Unit = train(labels.flatMap(unroll1(_)).map(statistics(_)), getInstanceWeight = None)
-  def train(labels: Iterable[V1], getInstanceWeight: Int => Double): Unit =
-    train(labels.map(unroll1(_)).flatten.map(f => statistics(f._1.value.asInstanceOf[S1], f._2.value.asInstanceOf[S2])), getInstanceWeight = Some(getInstanceWeight))
+  def train(labels: Iterable[V1]): Unit = train(labels.flatMap(unroll1(_)).map(statistics(_)), instanceWeights = None)
+  def train(labels: Iterable[V1], instanceWeights: Tensor1): Unit =
+    train(labels.map(unroll1(_)).flatten.map(f => statistics(f._1.value.asInstanceOf[S1], f._2.value.asInstanceOf[S2])), instanceWeights = Some(instanceWeights))
 
   type State
   def getPerNodeState(stats: Seq[StatisticsType]): State
@@ -69,10 +69,10 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
     decisionTree.toSeq.flatMap(inner(_))
   }
 
-  def train(stats: Iterable[StatisticsType], maxDepth: Int = 100, getInstanceWeight: Option[Int => Double] = None): Unit = {
+  def train(stats: Iterable[StatisticsType], maxDepth: Int = 100, instanceWeights: Option[Tensor1] = None): Unit = {
     val tree =
-      if (maxDepth < 1000) trainTree(stats.toSeq, 0, maxDepth, Set.empty[(Int, Double)], getInstanceWeight)
-      else trainTreeNoMaxDepth(stats.toSeq, maxDepth, getInstanceWeight)
+      if (maxDepth < 1000) trainTree(stats.toSeq, 0, maxDepth, Set.empty[(Int, Double)], instanceWeights)
+      else trainTreeNoMaxDepth(stats.toSeq, maxDepth, instanceWeights)
     //println(tree)
     decisionTree = Some(tree)
   }
@@ -84,20 +84,20 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
 
   def score(s1: S1, s2: S2): Double = score(statistics(s1, s2), decisionTree.get)
 
-  private def trainTree(stats: Seq[StatisticsType], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], getInstanceWeight: Option[Int => Double]): DTree = {
+  private def trainTree(stats: Seq[StatisticsType], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], instanceWeights: Option[Tensor1]): DTree = {
     if (maxDepth < depth || stats.map(_._1).distinct.length == 1 || shouldStop(stats, depth)) {
       DTLeaf(makeProportions(stats))
     } else {
-      val (featureIdx, threshold) = getSplittingFeatureAndThreshold(stats.toArray, usedFeatures, getInstanceWeight)
+      val (featureIdx, threshold) = getSplittingFeatureAndThreshold(stats.toArray, usedFeatures, instanceWeights)
       val (statsWithFeature, statsWithoutFeature) = stats.partition(hasFeature(featureIdx, _, threshold))
       @inline def trainChildTree(childStats: Seq[StatisticsType]): DTree =
-        if (childStats.length > 0) trainTree(childStats, depth + 1, maxDepth, usedFeatures + ((featureIdx, threshold)), getInstanceWeight)
+        if (childStats.length > 0) trainTree(childStats, depth + 1, maxDepth, usedFeatures + ((featureIdx, threshold)), instanceWeights)
         else DTLeaf(makeProportions(stats))
       DTBranch(trainChildTree(statsWithFeature), trainChildTree(statsWithoutFeature), featureIdx, threshold)
     }
   }
 
-  private def trainTreeNoMaxDepth(startingSamples: Seq[StatisticsType], maxDepth: Int, getInstanceWeight: Option[Int => Double]): DTree = {
+  private def trainTreeNoMaxDepth(startingSamples: Seq[StatisticsType], maxDepth: Int, instanceWeights: Option[Tensor1]): DTree = {
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
@@ -118,7 +118,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
       if (maxDepth < depth || samples.map(_._1).distinct.length == 1 || shouldStop(samples, depth)) {
         updateIntMap(nodes, heapIdx, DTLeaf(makeProportions(samples)))
       } else {
-        val (featureIdx, threshold) = getSplittingFeatureAndThreshold(samples.toArray, usedFeatures, getInstanceWeight)
+        val (featureIdx, threshold) = getSplittingFeatureAndThreshold(samples.toArray, usedFeatures, instanceWeights)
         @inline def pushChildWork(childStats: Seq[StatisticsType], childIdx: Int) =
           if (childStats.length > 0) todo.push((childStats, usedFeatures + ((featureIdx, threshold)), depth + 1, childIdx))
           else updateIntMap(nodes, childIdx, DTLeaf(makeProportions(samples)))
@@ -153,21 +153,44 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
     val numFeatures = stats(0)._2.length
     val numSamples = stats.length
     val possibleThresholds = new Array[Array[Double]](numFeatures)
+    var s = 0
+    val featureValues = Array.fill(numFeatures)(ArrayBuilder.make[Double]())
+    while (s < numSamples) {
+      stats(s)._2 match {
+        case sT: SparseTensor1 =>
+          val sIndices = sT._indices
+          val sValues = sT._values
+          val len = sValues.length
+          var i = 0
+          while (i < len) {
+            featureValues(sIndices(i)) += sValues(i)
+            i += 1
+          }
+        case sT: SparseBinaryTensorLike1 =>
+          val dom = sT.activeDomain1
+          val len = dom.length
+          val dArr = dom.array
+          var i = 0
+          while (i < len) {
+            featureValues(dArr(i)) += 1.0
+            i += 1
+          }
+        case sT => sT.foreachActiveElement((f, v) => featureValues(f) += v)
+      }
+      s += 1
+    }
     var f = 0
     while (f < numFeatures) {
-      val featureValues = ArrayBuilder.make[Double]()
-      var s = 0
-      while (s < numSamples) {
-        featureValues += stats(s)._2(f)
-        s += 1
-      }
-      val sorted = featureValues.result()
+      val ab = featureValues(f)
+      ab += 0.0
+      val sorted = featureValues(f).result()
       java.util.Arrays.sort(sorted)
       val thresholds = ArrayBuilder.make[Double]()
       var last = sorted(0)
-      s = 0
+      var s = 0
       while (s < sorted.length) {
-        if (last < sorted(s)) {thresholds += ((sorted(s) + last) / 2); last = sorted(s) }
+        val srt = sorted(s)
+        if (last < srt) { thresholds += ((srt + last) / 2); last = srt }
         s += 1
       }
       possibleThresholds(f) = thresholds.result()
@@ -176,9 +199,9 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
     possibleThresholds
   }
 
-  private def getSplittingFeatureAndThreshold(stats: Array[StatisticsType], usedFeatures: Set[(Int, Double)], getInstanceWeight: Option[Int => Double]): (Int, Double) = {
-    val useInstanceWeights = getInstanceWeight.isDefined
-    val instanceWeight = getInstanceWeight.getOrElse(null)
+  private def getSplittingFeatureAndThreshold(stats: Array[StatisticsType], usedFeatures: Set[(Int, Double)], instanceWeights: Option[Tensor1]): (Int, Double) = {
+    val useInstanceWeights = instanceWeights.isDefined
+    val instanceWeight = instanceWeights.getOrElse(null)
     val state = getPerNodeState(stats)
     val numSamples = stats.length
     val numFeatures = stats.head._2.length
@@ -201,7 +224,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
             props.masses += (labelIndex(stats(sampleIdx)), if (!useInstanceWeights) 1.0 else instanceWeight(sampleIdx))
             sampleIdx += 1
           }
-          if (proportionsWith.massTotal > 0 && proportionsWithout.massTotal > 0) {
+          if (proportionsWith.masses.massTotal > 0 && proportionsWithout.masses.massTotal > 0) {
             val infogain = evaluateSplittingCriteria(state, proportionsWith, proportionsWithout)
             if (infogain > maxValue) {
               maxValue = infogain
@@ -242,9 +265,9 @@ trait InfoGainSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar]
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   def evaluateSplittingCriteria(withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double = {
     // we're using information gain modulo the constant factor of base entropy
-    val numFeatures = withFeature.massTotal + withoutFeature.massTotal
-    val pctWith = withFeature.massTotal / numFeatures
-    val pctWithout = withoutFeature.massTotal / numFeatures
+    val numFeatures = withFeature.masses.massTotal + withoutFeature.masses.massTotal
+    val pctWith = withFeature.masses.massTotal / numFeatures
+    val pctWithout = withoutFeature.masses.massTotal / numFeatures
     val infoGainMinusBaseEntropy = -(pctWith * withFeature.entropy + pctWithout * withoutFeature.entropy)
     infoGainMinusBaseEntropy
   }
@@ -256,9 +279,9 @@ trait GainRatioSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
   def getPerNodeState(stats: Seq[StatisticsType]): State =
     makeProportions(stats).entropy
   def evaluateSplittingCriteria(baseEntropy: State, withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double = {
-    val numFeatures = withFeature.massTotal + withoutFeature.massTotal
-    val pctWith = withFeature.massTotal / numFeatures
-    val pctWithout = withoutFeature.massTotal / numFeatures
+    val numFeatures = withFeature.masses.massTotal + withoutFeature.masses.massTotal
+    val pctWith = withFeature.masses.massTotal / numFeatures
+    val pctWithout = withoutFeature.masses.massTotal / numFeatures
     val infoGain = baseEntropy - (pctWith * withFeature.entropy + pctWithout * withoutFeature.entropy)
     val intrinsicValue = -(pctWith * math.log(pctWith) / math.log(2) + pctWithout * math.log(pctWithout) / math.log(2))
     infoGain / intrinsicValue
