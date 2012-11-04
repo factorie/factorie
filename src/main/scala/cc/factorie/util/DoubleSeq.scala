@@ -126,7 +126,6 @@ trait DoubleSeq {
   }
   //def pr(i:Int, normalizer:Double): Double = apply(i) / normalizer
   
-  // def copy: DoubleSeq = DoubleSeq(this.toArray) // TODO We really should make a version of this that uses CanBuildFrom[] tricks to preserve return type
   /** Return the values as an Array[Double].  Guaranteed to be a copy, not just a pointer to an internal array that would change with changes to the DoubleSeq */
   def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < length) { a(i) = apply(i); i += 1 }; a }
   def asArray: Array[Double] = toArray // Can be overridden for further efficiency
@@ -152,6 +151,16 @@ trait DoubleSeq {
   def mkString(sep:String): String = mkString("", sep, "")
   def mkString: String = mkString("")
 }
+
+/** Used to iterate over the contents of a DoubleSeq, with access to both the index and the value,
+    but, unlike an Iterator[(Int,Double)], not needing to allocate memory for each iteration. 
+    Typical usage:  for (e <- myDoubleSeq.elements) println("index="+e.index+" value="+e.value) */
+// TODO Put this into usage, replacing foreachActiveElement.  -akm
+trait DoubleSeqIterator extends Iterator[DoubleSeqIterator] {
+  def index: Int
+  def value: Double
+}
+
 
 /** An IndexedSeq[Double] backed by an array, just used as a return type for DoubleSeq.toSeq. */
 class ArrayIndexedSeqDouble(val array:Array[Double]) extends IndexedSeq[Double] {
@@ -182,6 +191,7 @@ object DoubleSeq {
 trait SparseDoubleSeq extends DoubleSeq {
   def activeDomain: IntSeq
   def activeDomainSize: Int
+  // TODO Remove this when DoubleSeqIterator is put in place. -akm
   // We are relying on "f" getting properly @specialized
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   // TODO Should we also override def map(f:(Double)=>Double): DoubleSeq  ???

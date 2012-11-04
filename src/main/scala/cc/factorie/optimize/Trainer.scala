@@ -38,14 +38,18 @@ class BatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new 
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   val marginAccumulator = new LocalDoubleAccumulator(0.0)
-  // TODO This is sad:  The optimizer determins which of gradient/value/margin it needs, but we don't know here
+  // TODO This is sad:  The optimizer determines which of gradient/value/margin it needs, but we don't know here
   // so we create them all, possibly causing the Example to do more work.
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
     gradientAccumulator.tensor.zero()
     valueAccumulator.value = 0.0
+    marginAccumulator.value = 0.0
+    val startTime = System.currentTimeMillis
     examples.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator))
-    logger.info("Gradient Norm: " + gradientAccumulator.tensor.oneNorm + "\nLoss: " + valueAccumulator.value)
+    val ellapsedTime = System.currentTimeMillis - startTime
+    val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
+    logger.info("GradientNorm: %-10g  value %-10g %s".format(gradientAccumulator.tensor.oneNorm, valueAccumulator.value, timeString))
     optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
   }
   def isConverged = optimizer.isConverged

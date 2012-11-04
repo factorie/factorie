@@ -81,7 +81,7 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
   val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
   def massTotal = 1.0
   def dim1 = masses.length
-  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, masses.length)
+  def activeDomain = new cc.factorie.util.RangeIntSeq(0, masses.length)
   def isDense = true
   @inline final override def apply(index:Int) = {
     val result = 1.0 / masses.length
@@ -107,7 +107,7 @@ class DenseProportions1(override val dim1:Int) extends Proportions1 with DensePr
   def this(a:Array[Double]) = { this(a.length); this.masses += a }
   def this(dim1:Int, uniformValue:Double) = { this(dim1); this.masses += uniformValue }
   val masses = new DenseMasses1(dim1)
-  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 class DenseProportions2(override val dim1:Int, override val dim2:Int) extends Proportions2 with DenseProportions {
   val masses = new DenseMasses2(dim1, dim2)
@@ -134,7 +134,7 @@ class DenseProportions4(override val dim1:Int, override val dim2:Int, override v
 class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions1 with DenseProportions {
   override def dim1 = sizeProxy.size
   val masses = new GrowableDenseMasses1(sizeProxy)
-  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
 /** An immutable Proportions from a pre-normalized Tensor. */
@@ -148,7 +148,7 @@ abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boo
 class NormalizedTensorProportions1(tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
-  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain = _tensor.activeDomain
   def masses = this
 }
 class NormalizedTensorProportions2(tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
@@ -188,7 +188,7 @@ class NormalizedTensorProportions4(tensor:Tensor4, checkNormalization:Boolean = 
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
   def massTotal = 1.0
-  def activeDomain1 = masses.activeDomain1  // throw new Error("Not implemented")
+  def activeDomain = masses.activeDomain  // throw new Error("Not implemented")
   def isDense = false
   var prior: Masses = null  // TODO We need somehow to say that this isDeterministic function of this.prior.
   

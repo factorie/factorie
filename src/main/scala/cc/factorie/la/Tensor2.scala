@@ -216,7 +216,7 @@ class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensor
   //override def copy = new SparseBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
-trait Tensor2ElementIterator extends Iterator[Tensor2ElementIterator] {
+trait Tensor2ElementIterator extends DoubleSeqIterator with Iterator[Tensor2ElementIterator] {
   def index: Int
   def index1: Int
   def index2: Int
@@ -239,6 +239,7 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Spar
     }
   }
   override def blankCopy: SparseIndexedTensor2 = new SparseIndexedTensor2(dim1, dim2)
+  override def copy: SparseIndexedTensor2 = { val t = new SparseIndexedTensor2(dim1, dim2); this.copyInto(t); t }
 }
 
 ///** A Tensor2 that has dense storage, but a sparse activeDomain. */

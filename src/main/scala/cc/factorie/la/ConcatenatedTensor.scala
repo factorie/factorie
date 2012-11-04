@@ -26,7 +26,7 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
   lazy val lengthsSums: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = lengths(0); var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i); i += 1 }; a }
   lazy val offsets: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = 0; var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i-1); i += 1 }; a }
   lazy val dim1 = lengths.sum
-  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain: IntSeq = throw new Error("Not yet implemented")
   // Careful!  This will be very slow.  You should really try to use the more specific methods, such as += 
   def apply(index:Int): Double = {
     throw new Error("This is very slow.  I'm throwing an error here to find situations where this would be called, and then we should try to find a faster alternative.")

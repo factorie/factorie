@@ -128,6 +128,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
 
   var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
+  // TODO Use this instead: -akm
   //def stringToCategory(s:String): C = s.asInstanceOf[C]
   var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {

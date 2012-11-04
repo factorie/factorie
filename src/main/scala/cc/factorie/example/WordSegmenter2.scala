@@ -19,6 +19,7 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
+import cc.factorie.optimize._
 
 object WordSegmenterDemo2 { 
   
@@ -55,6 +56,7 @@ object WordSegmenterDemo2 {
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
+    override def families = Seq(bias, obs, markov, obsmarkov) 
     def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {
@@ -114,7 +116,13 @@ object WordSegmenterDemo2 {
     val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
     println("Example Factors: "+exampleFactors.mkString(", "))
   
-
+    val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
+    val trainer = new BatchTrainer(model)
+    trainer.trainFromExamples(trainSet.map(sentence => new LikelihoodExample(sentence.asSeq.map(_.label), InferByBPChainSum)))
+    for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)
+    println ("Train accuracy = "+ objective.accuracy(trainVariables))
+    println ("Test  accuracy = "+ objective.accuracy(testVariables))
+    println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
   }
 
   val data = Array(

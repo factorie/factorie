@@ -29,7 +29,7 @@ final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTens
   def domain = RealDomain
   @inline final def dim1 = 1
   @inline final def singleIndex = 0
-  def activeDomain1 = new cc.factorie.util.SingletonIntSeq(singleIndex)
+  def activeDomain = new cc.factorie.util.SingletonIntSeq(singleIndex)
   @inline final def doubleValue: Double = singleValue // TODO Consider swapping singleIndex <-> intValue
   @inline final def intValue: Int = singleValue.toInt // TODO Consider swapping singleIndex <-> intValue
   override def toString: String = singleValue.toString

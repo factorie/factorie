@@ -27,9 +27,11 @@ trait SparseIndexedTensor extends Tensor {
   private var _positions: Array[Int] = null // a dense array containing the index into _indices and _values; not yet implemented
   private var __npos = 0 // the number of positions in _values and _indices that are actually being used
   private var _sorted = 0 // The number of positions in _values & _indices where indices are sorted; if _sorted == _npos then ready for use
-  protected def _values = __values
-  protected def _indices = __indices
-  protected def _npos = __npos
+  
+  // TODO Avoid making these public
+  def _values = __values
+  def _indices = __indices
+  def _npos = __npos
   private def setCapacity(cap:Int): Unit = {
     assert(cap >= __npos)
     val newInd = new Array[Int](cap)
@@ -41,7 +43,12 @@ trait SparseIndexedTensor extends Tensor {
   private def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
   def trim: Unit = setCapacity(__npos)
   
-  //def length: Int = if (_length < 0) _sizeProxy.size else _length
+  // TODO There must already be functions somewhere that do this.
+  private def copyarray(a:Array[Double]): Array[Double] = { if (a eq null) return null; val r = new Array[Double](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
+  private def copyarray(a:Array[Int]): Array[Int] = { if (a eq null) return null; val r = new Array[Int](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
+  def copyInto(t:SparseIndexedTensor): Unit = { t.__values = copyarray(__values); t.__indices = copyarray(__indices); t._positions = copyarray(_positions); t.__npos = __npos; t._sorted = _sorted }
+  
+  //def length: Int = if (_sizeProxy ne null) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; __npos }
   def activeDomain: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(__indices, __npos) } // TODO Consider making more efficient
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < __npos) { f(__indices(i), __values(i)); i += 1 } }

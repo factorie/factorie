@@ -53,7 +53,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
     alam2 = 0.0
   }
     def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
-    logger.warn("BackTrackLineOptimizer step value="+value)
+    logger.debug("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
       origWeights = weights.copy
@@ -62,7 +62,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
       val sum = line.twoNorm
       if (sum > initialStepSize) line *= (initialStepSize / sum) // If gradient is too steep, bring it down to gradientNormMax
       slope = gradient dot line     //todo, it's redundant, and expensive to do both gradient.twoNorm and gradient dot line when they're the same
-      logger.warn("BackTrackLineOptimizer slope="+slope)
+      logger.debug("BackTrackLineOptimizer slope="+slope)
       if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
 
       // Set alamin
@@ -85,7 +85,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
       // Set oldValue and origValue
       oldValue = value
       origValue = value
-      logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
+      logger.debug("BackTrackLineOptimizer line factor="+(alam-oldAlam))
       if(!_isConverged) weights.+=(line, alam - oldAlam)
 
     }else{
@@ -98,7 +98,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
         // value is infinite; we have jumped into unstable territory.  Scale down jump
         tmplam =.2 * alam
         if (alam < alamin) {
-          logger.warn("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
+          logger.debug("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
           _isConverged = true // Exiting backtrack: jump to small; using previous parameters
         }
       }else if (alam == oldAlam){
@@ -129,7 +129,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
       if(alam == oldAlam) _isConverged = true
 
       if(!_isConverged){
-        logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
+        logger.debug("BackTrackLineOptimizer line factor="+(alam-oldAlam))
         weights.+=(line, alam - oldAlam)
       }
 
@@ -138,7 +138,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
     // Check for convergence
     if (alam < alamin || !origWeights.different(weights, absTolx)) {
       weights := origWeights
-      logger.warn("EXITING BACKTRACK: Jump too small (alamin=" + alamin + "). Exiting and using xold.");
+      logger.debug("EXITING BACKTRACK: Jump too small (alamin=" + alamin + "). Exiting and using xold.");
       _isConverged = true // Convergence on change in params
     }
   }
