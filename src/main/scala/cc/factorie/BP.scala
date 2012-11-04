@@ -136,24 +136,20 @@ trait BPFactor extends DiscreteMarginal {
   def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
   def scores: Tensor // All local scores across all dimensions of varying neighbors; does not use messages from variables
   /** Unnormalized log scores over values of varying neighbors */
-  def calculateBeliefs: Tensor
+  def calculateBeliefsTensor: Tensor
   /** The logSum of all entries in the beliefs tensor */
-  def calculateLogZ: Double = calculateBeliefs match {
+  def calculateLogZ: Double = calculateBeliefsTensor match {
     case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
     case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
   }
   /** Normalized probabilities over values of varying neighbors */
-  def calculateMarginal: Tensor = calculateBeliefs.expNormalized
+  def calculateMarginalTensor: Tensor = calculateBeliefsTensor.expNormalized
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
-  override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
+  override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
   /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
   /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
   def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
-  /** Add to t the normalized probabilities over values of all neighbors. */
-  //def addExpectationInto(t:Tensor, f:Double): Unit
-//  /** Add into the accumulator factor statistics for varying values, weighted by the BPFactor's marginal distribution of the varying values. */
-//  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit
 }
 
 
@@ -166,9 +162,9 @@ abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVa
   override def updateOutgoing(): Unit = updateOutgoing1()
   def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   // TODO See about caching this when possible
-  def calculateBeliefs: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
-  override def calculateMarginal: Tensor1 = calculateBeliefs.expNormalized.asInstanceOf[Tensor1]
-  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)
+  def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
+  override def calculateMarginalTensor: Tensor1 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor1]
+  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor, false)
   def calculateOutgoing1: Tensor1 = scores
 }
 
@@ -177,7 +173,6 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
   val scores: Tensor1 = factor match {
     case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor1]
     case _ => {
-      // TODO Make this more efficient by getting factor.family.weights when we can
       val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
       val result = new DenseTensor1(edge1.variable.domain.size)
       val len = edge1.variable.domain.size; var i = 0; while (i < len) {
@@ -188,34 +183,25 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
       result
     }
   }
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
-  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginal) 
+  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
 class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
   val scores: Tensor1 = {
     val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
-    val result = new DenseTensor1(edge1.variable.domain.size)
-    val len = edge1.variable.domain.size; var i = 0; while (i < len) {
+    val len = edge1.variable.domain.size
+    val result = new DenseTensor1(len)
+    var i = 0; while (i < len) {
       valueTensor.singleIndex1 = i
       result(i) = factor.valuesScore(valueTensor)
       i += 1
     }
     result
   }
-//  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
-//    val marginal = calculateMarginal
-//    // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
-//    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      valueTensor.singleIndex1 = i
-//      accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i) * f)
-//    }
-//  }
   override def marginalTensorStatistics: Tensor = factor._2.value match {
-    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginal, t2))
-    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginal, t2))
+    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginalTensor, t2))
+    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginalTensor, t2))
   }
     
 }
@@ -234,7 +220,7 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
   def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   def updateOutgoing2(): Unit = edge2.messageFromFactor = calculateOutgoing2
   // TODO See about caching this when possible
-  def calculateBeliefs: Tensor2 = {
+  def calculateBeliefsTensor: Tensor2 = {
     val result = new DenseTensor2(edge1.messageFromVariable.length, edge2.messageFromVariable.length)
     val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
     while (j < lenj) {
@@ -248,8 +234,8 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
 //      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
     result
   }
-  override def calculateMarginal: Tensor2 = calculateBeliefs.expNormalized.asInstanceOf[Tensor2]
-  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginal, false)
+  override def calculateMarginalTensor: Tensor2 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor2]
+  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginalTensor, false)
 }
 
 trait BPFactor2SumProduct { this: BPFactor2 =>
@@ -361,8 +347,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
       result
     }
   }
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
-  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginal) 
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginalTensor), f)
+  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
@@ -382,7 +368,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
   }
   /** Add into the accumulator the factor's statistics, weighted by the marginal probability of the varying values involved. */
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
-    val marginal = calculateMarginal
+    val marginal = calculateMarginalTensor
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
@@ -393,7 +379,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
     }
   }
   override def marginalTensorStatistics: Tensor = factor._2.value match {
-    case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginal, t2))
+    case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginalTensor, t2))
   }
 }
 
@@ -415,9 +401,9 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
   def calculateOutgoing1: Tensor = throw new Error("Not yet implemented")
   def calculateOutgoing2: Tensor = throw new Error("Not yet implemented")
   def calculateOutgoing3: Tensor = throw new Error("Not yet implemented")
-  def calculateBeliefs: Tensor3 = throw new Error("Not yet implemented")
-  override def calculateMarginal: Tensor3 = calculateBeliefs.expNormalized.asInstanceOf[Tensor3]
-  override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
+  def calculateBeliefsTensor: Tensor3 = throw new Error("Not yet implemented")
+  override def calculateMarginalTensor: Tensor3 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor3]
+  override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
   //def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
 }
