@@ -80,7 +80,7 @@ class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0
     }
     val eta_t = rate / (l2 * step)
     weights *= (1 - eta_t * l2)
-    weights +=(gradient, eta_t / k)
+    weights += (gradient, eta_t / k)
     val projCoeff = math.min(1, (1 / math.sqrt(l2)) / weights.twoNorm)
     weights *= projCoeff
     step += 1
