@@ -183,7 +183,8 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 // TODO Use SparseBinaryTensor here
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
-  def activeDomain = new TruncatedArrayIntSeq(_array, _length)
+  def activeDomain: TruncatedArrayIntSeq = new TruncatedArrayIntSeq(_array, _length)
+  override def activeDomain1: TruncatedArrayIntSeq = activeDomain
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _length) { f(_array(i), 1.0); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
     var i = 0

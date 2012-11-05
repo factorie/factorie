@@ -169,7 +169,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
         case sT: SparseBinaryTensorLike1 =>
           val dom = sT.activeDomain1
           val len = dom.length
-          val dArr = dom.asArray
+          val dArr = dom.array
           var i = 0
           while (i < len) {
             featureValues(dArr(i)) += 1.0

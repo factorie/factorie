@@ -27,7 +27,7 @@ trait DoubleSeq {
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; true }
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
-  def foldLeft[B](z:B)(f:(B,Double)=>B): B = { var acc = z; foreach(el => f(acc, el)); acc }
+  def foldLeft[B](z:B)(f:(B,Double)=>B): B = { var acc = z; foreach(el => acc = f(acc, el)); acc }
   def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
   final def =+(a:Array[Double]): Unit = =+(a, 0, 1.0)
   final def =+(a:Array[Double], offset:Int): Unit = =+(a, offset, 1.0)
@@ -61,7 +61,7 @@ trait DoubleSeq {
     }
     math.sqrt(sum)
   }
-  def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false } // TODO Inefficient when sparse
+  def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; false } // TODO Inefficient when sparse
   def dot(ds:DoubleSeq): Double = ds match {
     case t:SparseDoubleSeq => { assert(length == t.length); var result = 0.0; t.foreachActiveElement((i,v) => result += apply(i)*v); result}
     case t:DoubleSeq => { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
