@@ -66,7 +66,7 @@ object ChainNER4 {
   )
   
   // The training objective
-  val objective = new HammingLossTemplate[Label]
+  val objective = new HammingTemplate[Label]
   
 
 

@@ -48,7 +48,7 @@ class ChainNerModel extends CombinedModel(
   }
 )
 
-class ChainNerObjective extends HammingLossTemplate[ChainNerLabel]
+class ChainNerObjective extends HammingTemplate[ChainNerLabel]
 
   
 class ChainNer {

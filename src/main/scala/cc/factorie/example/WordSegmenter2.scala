@@ -79,7 +79,7 @@ object WordSegmenterDemo2 {
     }
   }
 
-  val objective = new HammingLossTemplate[Label]
+  val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
     implicit val random = new scala.util.Random 

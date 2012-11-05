@@ -52,7 +52,7 @@ object PosModel extends TemplateModel {
   this += trans
 }
 
-object PosObjective extends HammingLossTemplate[PosLabel]
+object PosObjective extends HammingTemplate[PosLabel]
 
 object POS {
 

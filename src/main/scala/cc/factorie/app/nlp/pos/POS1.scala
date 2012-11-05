@@ -146,7 +146,7 @@ object POS1 extends POS1 {
 
       // Train for 5 iterations
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new SampleRankTrainer(new GibbsSampler(PosModel, HammingLossObjective), new MIRA)
+      val learner = new SampleRankTrainer(new GibbsSampler(PosModel, HammingObjective), new MIRA)
       val predictor = new VariableSettingsSampler[PosLabel](PosModel)
       for (i <- 1 until 2) {
         learner.processContexts(trainLabels)

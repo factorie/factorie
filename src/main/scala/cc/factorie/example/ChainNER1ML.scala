@@ -82,7 +82,7 @@ object ChainNER1ML {
     val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, InferByBPChainSum))
     val learner = new BatchTrainer(model)
     (1 to 10).foreach(_ => learner.processExamples(examples))
-    val objective = HammingLossObjective
+    val objective = HammingObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {

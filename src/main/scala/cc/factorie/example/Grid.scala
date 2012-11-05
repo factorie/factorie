@@ -87,7 +87,7 @@ object Grid {
     val image = createDonut(1.0, 50, 20, 7.5, Pair(25.0, 25.0))
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
-    val objective = new HammingLossTemplate[Pixel]
+    val objective = new HammingTemplate[Pixel]
     println("True accuracy: " + objective.accuracy(pixels))
     printImage(image)
     pixels.foreach(_.setUsingObserved)

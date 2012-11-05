@@ -72,7 +72,7 @@ object ChainNER2 {
   )
   
   // The training objective
-  val objective = new HammingLossTemplate[Label]
+  val objective = new HammingTemplate[Label]
   
 
   def main(args: Array[String]): Unit = {

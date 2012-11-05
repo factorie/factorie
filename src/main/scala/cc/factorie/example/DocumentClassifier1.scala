@@ -72,9 +72,9 @@ object DocumentClassifier1 {
     //println(model.factors(trainVariables.head))
 
     // Train and test
-    val learner = new SampleRankTrainer(new GibbsSampler(model, HammingLossObjective), new MIRA)
+    val learner = new SampleRankTrainer(new GibbsSampler(model, HammingObjective), new MIRA)
     val predictor = new GibbsSampler(model)
-    def objective = new HammingLossTemplate[Label]
+    def objective = new HammingTemplate[Label]
     for (i <- 0 until 10) {
       learner.processContexts(trainVariables)
       predictor.processAll(testVariables)

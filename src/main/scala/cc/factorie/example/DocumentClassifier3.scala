@@ -53,7 +53,7 @@ object DocumentClassifier3 {
     }
   )
 
-  val objective = new HammingLossTemplate[Label]
+  val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 
@@ -83,8 +83,8 @@ object DocumentClassifier3 {
     val predictor = new IteratedConditionalModes[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
-    println ("Train accuracy = "+ HammingLossObjective.accuracy(trainVariables))
-    println ("Test  accuracy = "+ HammingLossObjective.accuracy(testVariables))
+    println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))
+    println ("Test  accuracy = "+ HammingObjective.accuracy(testVariables))
 
   }
 }

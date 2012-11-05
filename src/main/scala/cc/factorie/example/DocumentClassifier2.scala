@@ -22,7 +22,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.HammingLossObjective$
+import cc.factorie.HammingObjective
 
 /** A raw document classifier without using any of the facilities of cc.factorie.app.classify.document,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
@@ -53,7 +53,7 @@ object DocumentClassifier2 {
     }
   )
 
-  val objective = new HammingLossTemplate[Label]
+  val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 
@@ -85,8 +85,8 @@ object DocumentClassifier2 {
     for (i <- 0 until 10) {
       learner.processContexts(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ HammingLossObjective.accuracy(trainVariables))
-      println ("Test  accuracy = "+ HammingLossObjective.accuracy(testVariables))
+      println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))
+      println ("Test  accuracy = "+ HammingObjective.accuracy(testVariables))
     }
 
   }

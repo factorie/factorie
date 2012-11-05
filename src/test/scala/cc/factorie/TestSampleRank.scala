@@ -63,7 +63,7 @@ object TestSampleRank {
     val labels = List("n", "y").map(s => new Instance(s)).map(_.label)
     println("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
     println("feature tensors:\n"+labels.map(l => l.instance.tensor.toString+"\n"))
-    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, HammingLossObjective), new cc.factorie.optimize.StepwiseGradientAscent)
+    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, HammingObjective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.logLevel = 10
     learner.processContexts(labels)
     labels.foreach(l => l.set(0)(null)); println("Set to 0")
@@ -72,6 +72,6 @@ object TestSampleRank {
     labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
     MaximizeDiscrete(labels, model); println("Set to max")
     labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
-    println("Train accuracy "+labels.map(l => HammingLossObjective.currentScore(l)).sum / labels.length)
+    println("Train accuracy "+labels.map(l => HammingObjective.currentScore(l)).sum / labels.length)
   }
 }
