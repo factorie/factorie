@@ -491,9 +491,11 @@ object BPSummary {
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
   def ring: BPRing
+  def factors: Iterable[Factor]
   def bpVariable(v:DiscreteVar): BPVariable1
   def bpFactors: Iterable[BPFactor]
   def bpVariables: Iterable[BPVariable1]
+  def marginal(v: DiscreteVar): BPVariable1
 }
 
 /** A collection of marginals inferred by belief propagation.  

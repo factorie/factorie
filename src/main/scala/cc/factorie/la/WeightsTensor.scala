@@ -27,7 +27,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   def families = _map.keys
   def dim1: Int = _map.values.map(_.length).sum // TODO This should really never be called, I think.  Should we print a warning? -akm
   override def dimensionsMatch(t:Tensor): Boolean = t match {
-    case t:WeightsTensor => _map.keys.toSeq equals t._map.keys.toSeq
+    case t:WeightsTensor => true // We can never know whether an element is simply missing due to sparsity.  Was: _map.keys.toSeq equals t._map.keys.toSeq
     case _ => false
   }
   // Careful!  This will be very slow.  You should really try to use the more specific methods, such as += 
@@ -49,7 +49,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   def update(f:DotFamily, t:Tensor) = _map(f) = t
   override def *=(d:Double): Unit = _map.values.foreach(_.*=(d))
   protected def sumOverTensors(f:Tensor=>Double): Double = { var s = 0.0; _map.values.foreach(s += f(_)); s }
-  override def oneNorm: Double = sumOverTensors(_.twoNorm)
+  override def oneNorm: Double = if (_map.size == 0) 0.0 else sumOverTensors(_.twoNorm)
   override def twoNormSquared: Double = sumOverTensors(_.twoNormSquared)
   //override def toArray: Array[Double] = throw new Error("Cannot be implemented.")
   override def toArray: Array[Double] = { val a = new Array[Double](dim1); var offset = 0; _map.values.foreach(t => { System.arraycopy(t.asArray, 0, a, offset, t.length); offset += t.length }); a }

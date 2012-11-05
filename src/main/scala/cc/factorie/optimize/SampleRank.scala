@@ -79,9 +79,9 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     require(margin != null, "The SampleRankExample needs a margin accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
-    val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
-    val (bestObjective1, bestObjective2) = proposals.max2ByDouble(_.objectiveScore)
-    val marg = bestModel1.modelScore - bestModel.modelScore
+    val (bestModel1, bestModel2) = proposals.max2ByDouble(_.modelScore)
+    val bestObjective1 = proposals.maxByDouble(_.objectiveScore)
+    val marg = bestModel1.modelScore - bestModel2.modelScore
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       bestObjective1.diff.redo
@@ -92,7 +92,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel1.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      margin.accumulate(marg)
+      margin.accumulate(marg) // TODO Should this be something different? -akm
     }
     else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
@@ -100,10 +100,10 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       bestObjective1.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel.diff.redo
-      model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel.diff.undo
-      model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      bestModel2.diff.redo
+      model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      bestModel2.diff.undo
+      model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
@@ -121,10 +121,12 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model]): Unit = {
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
+    //println("SampleRankTrainer.process(Example)")
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
     val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
-    if (marginAccumulator.value != 0.0) // There was a ranking error and a gradient was placed in the accumulator
+    //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
+    if (gradientAccumulator.tensor.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
       optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
   }
   def processExamples(examples: Iterable[Example[Model]]): Unit = examples.foreach(p => process(p))
