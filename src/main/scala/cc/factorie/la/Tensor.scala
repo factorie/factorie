@@ -93,24 +93,39 @@ object Tensor {
     case 2 => new GrowableDenseTensor2(dims(0), dims(1))
     case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
-  def newSparse(t:Tensor): Tensor = t match {
-    case t:WeightsTensor => new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
-    case t:Tensor1 => new SparseTensor1(t.dim1)
-    case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
-    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_))
-    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4, new SparseTensor1(_))
+  def newSparse(t:Tensor): Tensor = {
+    if (t.dimensions.foldLeft(1)((a, b) => a*b) <= 100)
+      newDense(t)
+    else
+      t match {
+        case t:WeightsTensor => new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
+        case t:Tensor1 => new SparseTensor1(t.dim1)
+        case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
+        case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_))
+        case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4, new SparseTensor1(_))
+    }
   }
-  def newSparse(dims:Int*): Tensor = dims match {
-    case Seq(d1) => new SparseTensor1(d1)
-    case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_))
-    case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_))
-    case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_))
+  def newSparse(dims:Int*): Tensor = {
+    if (dims.foldLeft(1)((a, b) => a*b) <= 100)
+      newDense(dims.toArray)
+    else
+      dims match {
+        case Seq(d1) => new SparseTensor1(d1)
+        case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_))
+        case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_))
+        case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_))
+      }
   }
-  def newSparse(dims:Array[Int]): Tensor = dims.length match {
-    case 1 => new SparseTensor1(dims(0))
-    case 2 => new DenseLayeredTensor2(dims(0), dims(1), new SparseTensor1(_))
-    case 3 => new Dense2LayeredTensor3(dims(0), dims(1), dims(2), new SparseTensor1(_))
-    case 4 => new Dense3LayeredTensor4(dims(0), dims(1), dims(2), dims(3), new SparseTensor1(_))
+  def newSparse(dims:Array[Int]): Tensor = {
+    if (dims.foldLeft(1)((a, b) => a*b) <= 100)
+      newDense(dims)
+    else
+      dims.length match {
+        case 1 => new SparseTensor1(dims(0))
+        case 2 => new DenseLayeredTensor2(dims(0), dims(1), new SparseTensor1(_))
+        case 3 => new Dense2LayeredTensor3(dims(0), dims(1), dims(2), new SparseTensor1(_))
+        case 4 => new Dense3LayeredTensor4(dims(0), dims(1), dims(2), dims(3), new SparseTensor1(_))
+      }
   }
   
   def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {
