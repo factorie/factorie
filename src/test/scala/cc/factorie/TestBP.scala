@@ -350,12 +350,12 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val fg2 = BP.inferChainSum(vars.toSeq, model)
     assertEquals(fg2.logZ, math.log(z), 0.001)
 
-    val vars2 = Seq(v1, v2)
+    val vars2 = Seq(v1, v3)
     var z2 = 0.0
     for (i <- Seq(0, 1); j <- Seq(0, 1)) {
       v1.set(i)(null)
-      v2.set(j)(null)
-      z2 += math.exp(model.currentScore(Seq(v1, v2)))
+      v3.set(j)(null)
+      z2 += math.exp(model.currentScore(vars2))
     }
 
     assertEquals(math.log(z2), BP.inferChainSum(vars2, model).logZ, 0.001)
