@@ -58,6 +58,15 @@ class TestTensor {
         assertEquals(20.0*20 + 2*2 + 5*5, t1 dot t2, 0.001)
         t1 += (t2, 0.1)
         assertEquals(t1(10), 22, 0.01)
+
+        t1 *= 0.5
+        assertEquals(11, t1(10), 0.001)
+
+        try {
+          assertEquals(22, (t1*2)(10), 0.001)
+        } catch {
+          case e: Error => assert(e.getMessage.contains("Method copy not defined"))
+        }
       }
     }
   }
