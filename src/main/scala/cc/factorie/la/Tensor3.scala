@@ -63,6 +63,7 @@ trait DenseTensorLike3 extends Tensor3 with DenseTensor {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:Dense2LayeredTensor3 => t.=+(_values, 0, f)
     case t:Tensor3 => super.+=(t, f)
+    case t:Tensor => super.+=(t,f)
   }
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 {
@@ -289,6 +290,25 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
       while (i < tLen) { s += apply(tArr(i)); i += 1 }
       s
     }
+    case t:DenseTensor => {
+      var res = 0.0
+      var i = 0
+      while (i < _inners.length) {
+        _inners(i) match {
+          case in:DenseTensor =>
+            var j = 0
+            while (j < in.length) {
+              res += t(singleIndex(i / dim2, i % dim2, j))*in(j)
+              j += 1
+            }
+          case in:SparseIndexedTensor => in.foreachActiveElement((x,v) => res += t(singleIndex(i / dim2, i % dim2, x))*v)
+        }
+        i += 1
+      }
+      res
+    }
+    case t:SparseIndexedTensor => {var res = 0.0; t.foreachActiveElement((i, x) => res += this(i)*x); res}
+    case t:DoubleSeq => assert(false, t.getClass.getName + " doesn't match") ; 0.0
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)
@@ -297,6 +317,23 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:Dense2LayeredTensorLike3 => { val len = t._inners.length; var i = 0; while (i < len) { val in = t._inners(i); if (in ne null) inner(i).+=(in, f); i += 1 }}
     case t:SparseBinaryTensor3 => { var s = 0.0; t.foreachActiveElement((i,v) => +=(i, f)) }
     case t:Singleton2BinaryLayeredTensorLike3 => { val in = inner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f) }
+    case t:DenseTensor => {
+      var i = 0
+      while (i < _inners.length) {
+        _inners(i) match {
+          case in:DenseTensor =>
+            var j = 0
+            while (j < in.length) {
+              in(j) += t(singleIndex(i / dim2, i % dim2, j))*f
+              j += 1
+            }
+          case in:SparseIndexedTensor => in.foreachActiveElement((x,v) => in(x) += t(singleIndex(i / dim2, i % dim2, x))*f)
+        }
+        i += 1
+      }
+    }
+    case t:SparseIndexedTensor => t.foreachActiveElement((i, x) => this(i) += f*x)
+    case t:DoubleSeq => assert(false, t.getClass.getName + " doesn't match")
   }
 }
 // TODO Consider also Dense1LayeredTensor3 with an InnerTensor2

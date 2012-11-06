@@ -90,6 +90,7 @@ trait SparseIndexedTensor extends Tensor {
       case v:SingletonBinaryTensor1 => apply(v.singleIndex)
       case v:SingletonTensor1 => apply(v.singleIndex) * v.singleValue
       case v:SparseIndexedTensor => {
+        v.makeReadable
         val v1 = if (this.__npos < v.__npos) this else v
         val v2 = if (v.__npos< this.__npos) v else this
         var i = 0; var j = -1; var j2 = 0
@@ -182,6 +183,8 @@ trait SparseIndexedTensor extends Tensor {
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this(i) += arr(i)*f  ; i += 1} }
+    case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
+    case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
