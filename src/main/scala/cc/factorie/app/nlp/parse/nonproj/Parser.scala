@@ -232,6 +232,23 @@ abstract class TrainParser {
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
     
+    
+    def testSingle(c: ParserClassifier, ss: Seq[Sentence], extraText: String = ""): Unit = {
+      if (ss.nonEmpty) {
+	    println(extraText)
+	    println("------------")
+	    testAcc(c, ss)
+	    println("\n")
+      }
+    }
+    
+    def testAll(c: ParserClassifier, extraText: String = ""): Unit = {
+      println("\n")
+      testSingle(c, sentences,     "Train " + extraText)
+      testSingle(c, devSentences,  "Dev "   + extraText)
+      testSingle(c, testSentences, "Test "  + extraText)
+    }
+    
     // Load other parameters
     val numBootstrappingIterations = bootstrapping.value.toInt
     
@@ -253,34 +270,14 @@ abstract class TrainParser {
 	  save(c, modelFolder, gzip = true)
 	  println("...DONE")
       
-      println("\nTrain Regular")
-      println("------------")
-      testAcc(c, sentences)
-      println("\nDev Regular")
-      println("------------")
-      testAcc(c, devSentences)
-      println("\nTest Regular")
-      println("------------")
-      testAcc(c, testSentences)
-      
+	  testAll(c)
+	  
       trainingVs = null // GC the old training labels
       
       for (i <- 0 until numBootstrappingIterations) {
         val cNew = boosting(c, sentences)
       
-        println("Train Boosting " + i)
-        println("--------------")
-        testAcc(cNew, sentences)
-        if (!devSentences.isEmpty) {
-          println("Dev Boosting" + i)
-          println("------------")
-          testAcc(cNew, devSentences)
-        }
-        if (!testSentences.isEmpty) {
-          println("Test Boosting" + i)
-          println("------------")
-          testAcc(cNew, testSentences)
-        }
+        testAll(cNew, "Boosting" + i)
       
         // save the model
         modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
@@ -292,13 +289,8 @@ abstract class TrainParser {
 	  
     }
     else {
-      
       val c = load(modelFolder, gzip = true)
-      
-      println("Test")
-      println("------------")
-      testAcc(c, testSentences)
-      
+      testAll(c)
     }
     
   }
