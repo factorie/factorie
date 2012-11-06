@@ -18,8 +18,8 @@ import cc.factorie.generative._
 /** The result of inference: a collection of Marginal objects. */
 trait Summary[+M<:Marginal] {
   def marginals: Iterable[M]
-  def getMarginal(vs:Variable*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) } 
   def marginal(vs:Variable*): M // TODO Think carefully about how order of arguments should not matter.
+  def getMarginal(vs:Variable*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) } 
   def marginal(factor:Factor): M = marginal(factor.variables:_*)
   def marginalTensorStatistics(factor:Factor): la.Tensor = throw new Error("Not yet implemented ")
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!

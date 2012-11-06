@@ -151,7 +151,11 @@ class POS2 extends Infer with util.FastLogging {
   def printAccuracy(msg:String, documents:Iterable[Document]): Unit = {
     //documents.foreach(apply(_))
     //val icm = new IteratedConditionalModes[PosLabel](model, null); for (doc <- documents; token <- doc.tokens) icm.process(token.attr[PosLabel])
-    for (doc <- documents) BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)
+    for (doc <- documents) {
+      val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
+      //summary.setToMaximize(null)
+      //for (bpf <- summary.bpFactors) println("POS2.printAccuracy "+bpf.calculateLogZ); println("---")
+    }
     logger.info(msg+" token accuracy = "+HammingObjective.accuracy(documents.flatMap(_.tokens.map(_.attr[PosLabel]))))
   }
 
