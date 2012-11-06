@@ -511,13 +511,13 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   def marginals: Iterable[DiscreteMarginal] = _bpFactors.values ++ _bpVariables.values
   def marginal(vs: Variable*): DiscreteMarginal = vs.size match {
     case 1 => _bpVariables(vs.head.asInstanceOf[DiscreteVar])
-    case 2 => {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); factors.head} // Need to actually combine if more than one
+    case 2 => {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
   }
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
-  override def logZ: Double = _bpFactors.values.head.calculateLogZ
+  override def logZ: Double = _bpFactors.values.last.calculateLogZ
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
@@ -584,18 +584,19 @@ object BP {
       }
     }
   }
-  def inferTreeSum(varying:Set[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
+  def inferTreeSum(varying:Iterable[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
     val summary = BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
-    val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
+    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
     BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
   }
-  def inferTreeMarginalMax(varying:Set[DiscreteVar], model:Model, root:DiscreteVar = null): BPSummary = {
+  def inferTreeMarginalMax(varying:Iterable[DiscreteVar], model:Model, root:DiscreteVar = null): BPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
+    if (varying.size == 0) return summary 
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
-    val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
+    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
     BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
@@ -615,6 +616,8 @@ object BP {
       case _ => {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
+        //val bfsSeq = BPUtil.bfs(varying.toSet, summary.bpVariable(varying.head), false)
+        //throw new Error("This is not yet working. -akm")
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
         // Send all messages from observations to labels in parallel
@@ -645,14 +648,14 @@ object BP {
       case 0 => {}
       case 1 => summary.bpFactors.foreach(_.updateOutgoing())
       case _ => {
-        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]) // this includes both Factor1[Label], Factor2[Label,Features]
+        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]] // this includes both Factor1[Label], Factor2[Label,Features]
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         // Send all messages from observations to labels in parallel
         obsBPFactors.foreach(_.updateOutgoing())
         // Send forward messages
         for (f <- markovBPFactors) {
-          f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
+          f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor // TODO Note that Markov factors must in sequence order!  Assert this somewhere!
           f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
         // Send backward messages
@@ -660,6 +663,8 @@ object BP {
           f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
           f.edge2.bpFactor.updateOutgoing(f.edge1)   // send message from factor to neighbor2
         }
+        // Send messages out to obs factors so that they have the right logZ
+        obsBPFactors.foreach(f => f.edge1.bpVariable.updateOutgoing(f.edge1))
         // Update marginals    //summary.bpVariables.foreach(_.updateProportions)
         // TODO Also update BPFactor marginals
       }
