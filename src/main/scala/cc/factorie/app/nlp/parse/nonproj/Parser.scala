@@ -9,8 +9,10 @@ import cc.factorie.app.nlp.parse.nonproj.ParserSupport._
 import collection.mutable.ListBuffer
 import collection.mutable.HashSet
 import collection.mutable.ArrayBuffer
+import io.Source
 import java.io.File
 import java.io.PrintStream
+import java.io.PrintWriter
 import java.io.BufferedReader
 import java.io.FileReader
 
@@ -28,10 +30,63 @@ trait ParserClassifier {
 }
 
 // The standard SVM one-vs-all classifier
+// The interface here is simpler than it seems: we're only saving, loading, and classifying.
+// To clean this up, we need better serialization support.
 class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable]) extends ParserClassifier {
   
-  def save(file: File, gzip: Boolean): Unit = Serializer.serialize( backingClassifier.model, file, gzip = gzip)
-  def load(file: File, gzip: Boolean): Unit = Serializer.deserialize(backingClassifier.model, file, gzip = gzip)
+  private var _gzip = false
+  
+  private def saveModel(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "model")
+    Serializer.serialize( backingClassifier.model, file, gzip = _gzip)
+  }
+  
+  private def loadModel(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "model")
+    Serializer.deserialize( backingClassifier.model, file, gzip = _gzip)
+  }
+  
+  private def saveLabelDomain(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "label-domain")
+    val pw = new PrintWriter(file)
+    for (c <- DecisionDomain.categories.drop(1)) // drop the default category
+      pw.println("%d %d %s" format (c.leftOrRightOrNo, c.shiftOrReduceOrPass, c.label))
+    pw.close()
+  }
+  
+  val DecisionLine = """(-?\d) (-?\d) (.*)""".r
+  private def loadLabelDomain(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "label-domain")
+    for (l <- Source.fromFile(file).getLines())
+      l match { case DecisionLine(leftRight, shiftReduce, label) => DecisionDomain.index(new ParseDecision(leftRight.toInt, shiftReduce.toInt, label)) }
+    DecisionDomain.freeze()
+  }
+  
+  private def saveFeatureDomain(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
+    Serializer.serialize(NonProjParserFeaturesDomain.dimensionDomain, file, gzip = _gzip)
+  }
+  
+  private def loadFeatureDomain(folder: File): Unit = {
+    val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
+    Serializer.deserialize(NonProjParserFeaturesDomain.dimensionDomain, file, gzip = _gzip)
+    NonProjParserFeaturesDomain.freeze()
+  }
+  
+  def save(folder: File, gzip: Boolean): Unit = { 
+    _gzip = gzip
+    saveModel(folder)
+    saveLabelDomain(folder)
+    saveFeatureDomain(folder)
+  }
+  
+  def load(folder: File, gzip: Boolean): Unit = { 
+    _gzip = gzip
+    loadLabelDomain(folder)
+    loadFeatureDomain(folder)
+    loadModel(folder)
+  }
+  
   def classify(v: ParseDecisionVariable): ParseDecision =
     DecisionDomain.category(backingClassifier.classify(v).bestLabelIndex)
   
@@ -48,11 +103,11 @@ class TrainParserSVM extends TrainParser {
   
   def getEmptyModel(): Model = new TemplateModel(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](lTof, DecisionDomain, NonProjParserFeaturesDomain))
   
-  def save(c: ParserClassifier, file: File, gzip: Boolean): Unit = c.asInstanceOf[BaseParserClassifier].save(file, gzip)
+  def save(c: ParserClassifier, folder: File, gzip: Boolean): Unit = c.asInstanceOf[BaseParserClassifier].save(folder, gzip)
   
-  def load(file: File, gzip: Boolean): ParserClassifier = {
+  def load(folder: File, gzip: Boolean): ParserClassifier = {
     val c = new BaseParserClassifier(new ModelBasedClassifier(getEmptyModel(), DecisionDomain))
-    c.load(file, gzip)
+    c.load(folder, gzip)
     c
   }
   
@@ -67,7 +122,7 @@ abstract class TrainParser {
   
   def train[V <: ParseDecisionVariable](vs: Seq[V]): ParserClassifier
   
-  def save(c: ParserClassifier, file: File, gzip: Boolean = true): Unit
+  def save(c: ParserClassifier, folder: File, gzip: Boolean = true): Unit
   
   def load(file: File, gzip: Boolean = true): ParserClassifier
   
@@ -149,7 +204,7 @@ abstract class TrainParser {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFiles =  new CmdOption("train", List(""), "FILE...", "")
       val testFiles =  new CmdOption("test", List(""), "FILE...", "")
-      val devFiles =   new CmdOption("dev", List(""), "FILE", "") { override def required = true }
+      val devFiles =   new CmdOption("dev", List(""), "FILE", "")
       val ontonotes = new CmdOption("onto", "", "", "")
       val cutoff    = new CmdOption("cutoff", "0", "", "")
       val loadModel = new CmdOption("load", "", "", "")
@@ -159,49 +214,52 @@ abstract class TrainParser {
     opts.parse(args)
     import opts._
     
+    
+    // Load the sentences
     var loader = LoadConll2008.fromFilename(_)
     if (ontonotes.wasInvoked)
       loader = LoadOntonotes5.fromFilename(_)
       
-    val numBootstrappingIterations = bootstrapping.value.toInt
+    def loadSentences(o: CmdOption[List[String]]): Seq[Sentence] = {
+      if (o.wasInvoked) o.value.flatMap(f => loader(f).head.sentences)
+      else Seq.empty[Sentence]
+    }
     
-    val sentences =   trainFiles.value.flatMap(f => loader(f).head.sentences)
-    
-    var devSentences = Seq.empty[Sentence]
-    if (devFiles.wasInvoked)
-      devSentences = devFiles.value.flatMap(f => loader(f).head.sentences)
-      
-    var testSentences = Seq.empty[Sentence]
-    if (testFiles.wasInvoked)
-      testSentences = testFiles.value.flatMap(f => loader(f).head.sentences)
+    val sentences = loadSentences(trainFiles)
+    val devSentences = loadSentences(devFiles)
+    val testSentences = loadSentences(testFiles)
     
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
     
+    // Load other parameters
+    val numBootstrappingIterations = bootstrapping.value.toInt
+    
     var modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString() + ".parser"
-    var modelFile: File = new File(modelUrl)
+    var modelFolder: File = new File(modelUrl)
     
-    // generate training (even if predicting -- to fill domain)
-    var trainingVs = generateDecisions(sentences, new Parser(0)) 
-    
-    NonProjParserFeaturesDomain.freeze()
-    
-	println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
-    
+    // Do training if we weren't told to load a model
     if (!loadModel.wasInvoked) {
-	  modelFile.createNewFile()
+	  modelFolder.mkdir()
+	  
+      var trainingVs = generateDecisions(sentences, new Parser(0)) 
+      NonProjParserFeaturesDomain.freeze()
+	  println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
 	  
 	  var c = train(trainingVs)
 	  
 	  // save the initial model
 	  println("Saving the model...")
-	  save(c, modelFile, gzip = true)
+	  save(c, modelFolder, gzip = true)
 	  println("...DONE")
       
-      println("Train Regular")
+      println("\nTrain Regular")
       println("------------")
       testAcc(c, sentences)
-      println("Test Regular")
+      println("\nDev Regular")
+      println("------------")
+      testAcc(c, devSentences)
+      println("\nTest Regular")
       println("------------")
       testAcc(c, testSentences)
       
@@ -225,8 +283,9 @@ abstract class TrainParser {
         }
       
         // save the model
-        val currModelFile = new File(modelFile.getAbsolutePath() + "-bootstrap-iter=" + i)
-        save(cNew, currModelFile, gzip = true)
+        modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
+        modelFolder.mkdir()
+        save(cNew, modelFolder, gzip = true)
         
         c = cNew
       }
@@ -234,9 +293,8 @@ abstract class TrainParser {
     }
     else {
       
-      val c = load(modelFile, gzip = true)
+      val c = load(modelFolder, gzip = true)
       
-      testAcc(c, sentences)
       println("Test")
       println("------------")
       testAcc(c, testSentences)
