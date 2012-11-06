@@ -1,7 +1,7 @@
 package cc.factorie.example
 
 import cc.factorie._
-//import bp.specialized.Viterbi
+import bp.specialized.Viterbi
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions
 import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
@@ -72,9 +72,11 @@ object PerceptronPOS {
   def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = HammingObjective.accuracy(ls)
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
-  def predictSentence(vs: Seq[PosLabel]): Unit =
-    BP.inferChainMax(vs, PosModel)
-    //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+  def predictSentence(vs: Seq[PosLabel]): Unit = {
+    //BP.inferChainMax(vs, PosModel)
+    //println("Viterbin'...")
+    Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+  }
 
   def train(
         documents: Seq[Document],
@@ -92,7 +94,7 @@ object PerceptronPOS {
         test(devDocuments, label = "dev")
     }
 
-    val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 0).toArray
+    val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 1).toArray
     val learner = new StructuredPerceptron[PosLabel](PosModel, new cc.factorie.optimize.MIRA) {
       def predict(vs: Seq[PosLabel]) = predictSentence(vs)
     }
