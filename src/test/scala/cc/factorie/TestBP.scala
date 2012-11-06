@@ -123,6 +123,14 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     }
     assertEquals(0.5, fg.marginal(v1).proportions(0), eps)
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
+
+    assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg.logZ, 0.001)
+
+    val fg2 = BP.inferChainSum(Seq(v1, v2), model)
+    assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg2.logZ, 0.001)
+
+    val fg3 = BP.inferTreeSum(Seq(v1, v2).toSet, model)
+    assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg3.logZ, 0.001)
   }
   
   @Test def v2f1VaryingOne {
