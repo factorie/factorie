@@ -133,6 +133,30 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg3.logZ, 0.001)
   }
   
+  @Test def v2f2VaryingBoth {
+    println("V2F1: varying both")
+    // a sequence of two variables, one factor
+    val v1 = new BinVar(1)
+    val v2 = new BinVar(0)
+
+    // create template between v1 and v2
+    val model = new ItemizedModel(newFactor2(v1, v2, 10, 0), newFactor1(v1, 2, 1))
+    val vars: Set[DiscreteVar] = Set(v1, v2)
+
+    val logZ = math.log(
+      math.exp(10 + 2) // 0 0
+      + math.exp(0 + 2)// 0 1
+      + math.exp(0 + 1)// 1 0
+      + math.exp(10 + 1)// 1 1
+    )
+
+    val fg2 = BP.inferChainSum(Seq(v1, v2), model)
+    assertEquals(logZ, fg2.logZ, 0.001)
+
+    val fg3 = BP.inferTreeSum(Seq(v1, v2).toSet, model)
+    assertEquals(logZ, fg3.logZ, 0.001)
+  }
+
   @Test def v2f1VaryingOne {
     println("V2F1: varying one")
     // a sequence of two variables, one factor
@@ -312,6 +336,19 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assertEquals(0.5, fg.marginal(v3).proportions(0), eps)
     assertEquals(v1.intValue, 0)
     assertEquals(v2.intValue, 1)
+
+    var z = 0.0
+    for (i <- Seq(0, 1); j <- Seq(0, 1); k <- Seq(0, 1)) {
+      v1.set(i)(null)
+      v2.set(j)(null)
+      v3.set(k)(null)
+      z += math.exp(model.currentScore(Seq(v1, v2, v3)))
+    }
+
+    assertEquals(fg.logZ, math.log(z), 0.001)
+
+    val fg2 = BP.inferChainSum(vars.toSeq, model)
+    assertEquals(fg2.logZ, math.log(z), 0.001)
   }
   
   @Test def tree7 {
