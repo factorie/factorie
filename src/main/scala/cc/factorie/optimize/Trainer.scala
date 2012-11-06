@@ -86,14 +86,14 @@ class InlineSGDTrainer(val model:LogLinearModel[_,_], val optimizer:GradientOpti
 }
 
 class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MIRA) extends Trainer[M] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
-  val valueAccumulator = new LocalDoubleAccumulator
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     examples.foreach(example => {
       gradientAccumulator.tensor.zero()
-      example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
+      example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
     })
   }
   def isConverged = false

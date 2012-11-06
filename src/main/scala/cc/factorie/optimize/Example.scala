@@ -38,9 +38,11 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
+
     if (value != null)
       value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
     // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
+
     if (gradient != null) {
       model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
         gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))

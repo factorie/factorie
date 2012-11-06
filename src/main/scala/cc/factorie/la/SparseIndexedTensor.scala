@@ -181,6 +181,8 @@ trait SparseIndexedTensor extends Tensor {
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
+    case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this(i) += arr(i)*f  ; i += 1} }
+    case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < __npos) { a(__indices(i)+offset) += f * __values(i); i += 1 }}
