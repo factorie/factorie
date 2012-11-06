@@ -92,7 +92,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel1.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      margin.accumulate(marg) // TODO Should this be something different? -akm
+      margin.accumulate(bestObjective1.modelScore - bestModel1.modelScore)
     }
     else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
