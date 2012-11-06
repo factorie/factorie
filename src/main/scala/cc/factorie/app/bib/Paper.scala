@@ -21,10 +21,12 @@ import cc.factorie.app.nlp.coref._
 trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable] extends Cubbie {
   val canopies = new StringListSlot("canopies")
   val inferencePriority = new DoubleSlot("ipriority")
+  val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
   val parentRef = RefSlot("parentRef", () => newEntityCubbie)
   val isMention = BooleanSlot("isMention")
   val groundTruth = new StringSlot("gt")
   val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
+  val mentionCount = new IntSlot("mc")
   def newEntityCubbie:EntityCubbie[T]
   def fetch(e:T) ={
     e.priority = inferencePriority.value
@@ -32,6 +34,7 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
     e.isObserved=isMention.value
     e.attr[IsEntity].set(e.isRoot)(null)
     e.attr[EntityExists].set(e.isConnected)(null)
+    e.attr[MentionCountVariable].set(mentionCount.value)(null)
     if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
     if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     //note that entity parents are set externally not inside the cubbie
@@ -43,6 +46,7 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
     isMention := e.attr[IsMention].booleanValue
     if(e.parentEntity!=null)parentRef := e.parentEntity.id
     if(e.groundTruth != None)groundTruth := e.groundTruth.get
+    mentionCount := e.attr[MentionCountVariable].value
   }
 }
 
@@ -56,6 +60,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   protected var _author:AuthorEntity=null
 
  val index = IntSlot("idx")
+  val title = StringSlot("title")
   val firstName = StringSlot("fn")
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
@@ -76,7 +81,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   //val keywordsTensor = new CubbieSlot("keywordst", () => new BagOfWordsCubbie)
   //val venuesTensor = new CubbieSlot("venuest", () => new BagOfWordsCubbie)
   //val coauthorsTensor = new CubbieSlot("coauthorst", () => new BagOfWordsCubbie)
-  val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
+//  val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
 //  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
     super.fetch(e)
@@ -93,7 +98,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
     e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
     if(year.isDefined)e.attr[Year] := year.value
-
+    if(title.isDefined)e.attr[Title].set(title.value)(null)
     //
 //    e.attr[TensorBagOfTopics] ++= topicsTensor.value.fetch
 //    e.attr[TensorBagOfVenues] ++= venuesTensor.value.fetch
@@ -119,6 +124,8 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     firstNameBag := new BagOfWordsCubbie().store(e.attr[BagOfFirstNames].value)
     middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
     year := e.attr[Year].intValue
+    title := e.attr[Title].value
+
     //
 //    topicsTensor := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
 //    venuesTensor := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
@@ -154,7 +161,9 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
   val venue = StringSlot("venue") // booktitle, journal,...
   val series = StringSlot("series")
   val year = IntSlot("year")
+  val dataSource = StringSlot("source")
   val keywords = new CubbieSlot("keywords", () => new BagOfWordsCubbie)
+  val titles = new CubbieSlot("titles", () => new BagOfWordsCubbie)
   val volume = IntSlot("volume")
   val number = IntSlot("number")
   val chapter = StringSlot("chapter")
@@ -163,7 +172,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
   //val address = StringSlot("address") // An attribute of the venue?
   val edition = StringSlot("edition")
   val url = StringSlot("url") // But we want to be able to display multiple URLs in the web interface
-  val pid = RefSlot("pid", () => new PaperCubbie) // paper id; the paper mention chosen as the canonical child
+  //val pid = RefSlot("pid", () => new PaperCubbie) // paper id; the paper mention chosen as the canonical child
   def paper:PaperEntity=_paper
   def newEntityCubbie:EntityCubbie[PaperEntity] = new PaperCubbie
   override def fetch(e:PaperEntity) ={
@@ -173,20 +182,25 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     e.attr[BagOfTopics] ++= topics.value.fetch
     e.attr[BagOfAuthors] ++= authors.value.fetch
     e.attr[BagOfAuthors] ++= venueBag.value.fetch
-    e.attr[BagOfAuthors] ++= keywords.value.fetch
+    e.attr[BagOfKeywords] ++= keywords.value.fetch
+    e.attr[BagOfTitles] ++= titles.value.fetch
     e.attr[Year] := year.value
+    e.attr[Title] := title.value
+    e.dataSource = dataSource.value
     e._id = this.id.toString
   }
   override def store(e:PaperEntity) ={
     super.store(e)
-    title := e.attr[Title].value
     if(e.promotedMention.value!=null)pid := e.promotedMention.value
     if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
     topics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
     authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
-    venueBag := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
-    keywords := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    venueBag := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
+    keywords := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
+    titles := new BagOfWordsCubbie().store(e.attr[BagOfTitles].value)
     year := e.attr[Year].intValue
+    title := e.attr[Title].value
+    dataSource := e.dataSource
     this.id=e.id
   }
 }

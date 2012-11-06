@@ -317,7 +317,6 @@ trait AuthorModelOptions extends ExperimentOptions{
   val bagTopicsShift = new CmdOption("model-author-bag-topics-shift", -0.25, "N", "Shift for bag-of-topics cosine distance template (author coreference model).")
   val bagTopicsEntropy = new CmdOption("model-author-bag-topics-entropy", 0.75, "N", "Penalty on bag of topics entropy  (author coreference model).")
   val bagTopicsPrior = new CmdOption("model-author-bag-topics-prior", 0.25, "N", "Bag of co-author prior penalty, formula is bag.size/bag.oneNorm*weight.")
-
   val entitySizeExponent = new CmdOption("model-author-size-prior-exponent", 1.2, "N", "Exponent k for rewarding entity size: w*|e|^k")
   val entitySizeWeight = new CmdOption("model-author-size-prior-weight", 0.05, "N", "Weight w for rewarding entity size: w*|e|^k.")
   //author names
@@ -326,10 +325,22 @@ trait AuthorModelOptions extends ExperimentOptions{
 //  val bagMiddleInitialWeight = new CmdOption("model-author-bag-middle-initial-weight", 4.0, "N", "Penalty for first initial mismatches.")
 //  val bagMiddleNameWeight = new CmdOption("model-author-bag-middle-name-weight", 4.0, "N", "Penalty for first name mismatches")
   //structural priors
-  val entityExistencePenalty = new CmdOption("model-author-entity-penalty", 2.0, "N", "Penalty for a top-level entity existing")
-  val subEntityExistencePenalty = new CmdOption("model-author-subentity-penalty", 0.25, "N", "Penalty for a subentity existing")
-
+  val entityExistencePenalty = new CmdOption("model-author-entity-penalty", 2.0, "N", "Penalty for a top-level author entity existing")
+  val subEntityExistencePenalty = new CmdOption("model-author-subentity-penalty", 0.25, "N", "Penalty for an author subentity existing")
   val bagFirstNamePenalty = new CmdOption("model-author-firstname-penalty", 16.0, "N", "Penalty for having multiple first names")
   val bagMiddleNamePenalty = new CmdOption("model-author-middlename-penalty", 16.0, "N", "Penalty for having multiple middle names")
+}
 
+trait PaperModelOptions extends ExperimentOptions{
+  val paperBagOfTitlesWeight = new CmdOption("model-paper-bag-titles-weight", 4.0, "N", "Penalty for bag-of-papers cosine distance template (paper coreference model).")
+  val paperBagOfTitlesShift = new CmdOption("model-paper-bag-titles-shift", -0.125, "N", "Shift for bag-of-papers cosine distance template (paper coreference model).")
+  val paperBagTitlesEntropy = new CmdOption("model-paper-bag-titles-entropy", 0.0, "N", "Entropy penalty for bag-of-titles cosine distance template (paper coreference model).")
+  val paperBagTitlesPrior = new CmdOption("model-paper-bag-titles-prior", 0.0, "N", "Prior for bag-of-titles cosine distance template (paper coreference model).")
+  val paperBagOfAuthorsWeight = new CmdOption("model-paper-bag-authors-weight", 4.0, "N", "Penalty for bag-of-authors cosine distance template (paper coreference model).")
+  val paperBagOfAuthorsShift = new CmdOption("model-paper-bag-authors-shift", -0.125, "N", "Shift for bag-of-authors cosine distance template (paper coreference model).")
+  val paperBagAuthorsEntropy = new CmdOption("model-paper-bag-authors-entropy", 0.0, "N", "Entropy penalty for bag-of-authors cosine distance template (paper coreference model).")
+  val paperBagAuthorsPrior = new CmdOption("model-paper-bag-authors-prior", 0.0, "N", "Prior for bag-of-authors cosine distance template (paper coreference model).")
+  val paperYearPenalty = new CmdOption("model-paper-year-penalty-title", 4, "N", "Penalizes mismatching years (paper coreference model).")
+  val paperEntityExistencePenalty = new CmdOption("model-paper-entity-penalty", 2.0, "N", "Penalty for a top-level paper entity existing (paper coreference model).")
+  val paperSubEntityExistencePenalty = new CmdOption("model-paper-subentity-penalty", 0.25, "N", "Penalty for a paper subentity existing (paper coreference model).")
 }

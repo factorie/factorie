@@ -16,7 +16,7 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
   var groundTruth:Option[String] = None
   val bagOfTruths = new BagOfTruths(this)    
-  def flagAsMention:Unit = {isObserved=true;isMention.set(true)(null)}
+  def flagAsMention:Unit = {isObserved=true;isMention.set(true)(null);numMentionsInSubtree.set(1)(null)}
   def isEntity = attr[IsEntity]
   def isMention = attr[IsMention]
   def exists = attr[EntityExists]
@@ -66,7 +66,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   //def reestimateAttributes(e:T):Unit 
   protected var entities:ArrayBuffer[T] = null
   protected var deletedEntities:ArrayBuffer[T] = null
-  def getEntities = entities.filter(_.isConnected)
+  def getEntities:Seq[T] = entities.filter(_.isConnected)
   def getDeletedEntities = {
     val deleted = new HashSet[T]
     for(d<-deletedEntities)deleted += d
@@ -109,7 +109,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     deletedEntities ++= es.filter(!_.isConnected)
     es.clear
     es++=cleanEntities
-    println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
+    //println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
   }
   //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/

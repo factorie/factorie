@@ -6,50 +6,85 @@ import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 
+/*
+object CiteSeeRLabeledDataLoader{
+  var pid2paper:HashMap[String,PaperEntity] = null
+  case class CiteSeerFields(author_id:String,author_cluster_id:String,normalized_author:String,full_author:String,author_number_in_paper:String,paper_id:String,title:String)
+  implicit def arr2tuple(s:Array[String]):(String,Tuple8[String,String,String,String,String,String,String,String])
+  def load(file:File):Seq[PaperEntity] = {
+    pid2paper = new HashMap[String,PaperEntity]
+    
+  }
+  def loadPaper(line:String):PaperEntity = {
+    val fields = CiteSeerFields(line.split(" | ")) //author_id | author_cluster_id | normalized_author | full_author | author_number_in_paper | paper_id | paper_cluster_id | title
+    val paperEntity = pid2paper.getOrElseUpdate(fields.paper_id,new PaperEntity("",true))
+    paperEntity
+  }
+}
+*/
+
 object RexaCitationLoader{
   var numPapers = 0
   var numReferences = 0
+  var numAuthors = 0
+  var numAuthorsSkipped = 0
+  var numAuthorsProcessed = 0
+  var numPapersSkipped = 0
   def loadFromList(file:File):Seq[PaperEntity] ={
+    numPapers = 0
+    numReferences = 0
+    numAuthors = 0
+    numAuthorsSkipped = 0
+    numAuthorsProcessed = 0
     println("About to load REXA data from " + file)
     val result = new ArrayBuffer[PaperEntity]
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
     var line = reader.readLine
+    var lineCount = 0
     while(line!=null){
       result ++= loadFile(new File(line))
       line=reader.readLine
+      lineCount += 1
+      if(lineCount % 1000 == 0)print(".")
+      if(lineCount % 20000 == 0)println(" #auths: "+numAuthors + " #auths-skipped: "+numAuthorsSkipped+" #auths-processed: "+numAuthorsProcessed)
     }
     println("Finished loading "+numPapers + " papers and "+numReferences + " references. Total: "+(numPapers+numReferences)+".")
-    result
+    val finalResult=result.filter((p:PaperEntity)=>{p.title.titleHash.value.length>0||p.authors.size>0})
+    println("  Filtered vacuuous papers, final paper count: "+finalResult.size)
+    finalResult
   }
   def loadFile(file:File):Seq[PaperEntity] ={
     val docFactory:DocumentBuilderFactory = DocumentBuilderFactory.newInstance
     val docBuilder:DocumentBuilder = docFactory.newDocumentBuilder
     if(!file.exists()) error("Couldn't find file " + file + ", aborting load.")
     val result = new ArrayBuffer[PaperEntity]
-    val doc:Document = docBuilder.parse(file)
-    val content = doc.getElementsByTagName("content")
-    if(content.getLength==1){
-      val contentChildren = content.item(0).getChildNodes
-      for(i<-0 until contentChildren.getLength){
-        val contentType = contentChildren.item(i).getNodeName
-        val contentFieldNodes = contentChildren.item(i).getChildNodes
-        if(contentType == "headers"){
-          val paper = processPaper(contentChildren.item(i))
-          result += paper
-          numPapers += 1
-        }
-        if(contentType == "biblio"){
-          for(j<-0 until contentFieldNodes.getLength){
-            val biblioNode = contentFieldNodes.item(j)
-            result += processPaper(biblioNode)
-            numReferences += 1
+    var docOpt:Option[Document] = None
+    try{docOpt = Some(docBuilder.parse(file))}catch{case e:Exception => {}}
+    for(doc<-docOpt){
+      val content = doc.getElementsByTagName("content")
+      if(content.getLength==1){
+        val contentChildren = content.item(0).getChildNodes
+        for(i<-0 until contentChildren.getLength){
+          val contentType = contentChildren.item(i).getNodeName
+          val contentFieldNodes = contentChildren.item(i).getChildNodes
+          if(contentType == "headers"){
+            val paper = processPaper(contentChildren.item(i))
+            result += paper
+            numPapers += 1
+          }
+          if(contentType == "biblio"){
+            for(j<-0 until contentFieldNodes.getLength){
+              val biblioNode = contentFieldNodes.item(j)
+              result += processPaper(biblioNode,true)
+              numReferences += 1
+            }
           }
         }
       }
     }
     result
   }
-  protected def processPaper(paperNode:Node):PaperEntity ={
+  protected def processPaper(paperNode:Node, ref:Boolean=false):PaperEntity ={
     val paperAttributeNodes = paperNode.getChildNodes
     val paper = new PaperEntity("",true)
     for(j <- 0 until paperAttributeNodes.getLength){
@@ -62,9 +97,16 @@ object RexaCitationLoader{
           paperAttributeNodes.item(j).getChildNodes
           val authorNodes = paperAttributeNodes.item(j).getChildNodes
           for(k <- 0 until authorNodes.getLength){
-            val authorMention = getAuthor(authorNodes.item(k))
-            authorMention.paper = paper
-            paper.authors += authorMention
+            if(authorNodes.item(k).getNodeName == "author"){
+              numAuthors += 1
+              val authorMentionOpt = getAuthor(authorNodes.item(k))
+              for(authorMention <- authorMentionOpt){
+                numAuthorsProcessed += 1
+                authorMention.paper = paper
+                paper.authors += authorMention
+              }
+              if(authorMentionOpt == None)numAuthorsSkipped += 1
+            }
           }
         }
         case "note" => {}
@@ -76,18 +118,29 @@ object RexaCitationLoader{
     }
     paper
   }
-  protected def getAuthor(authorNode:Node):AuthorEntity ={
+  protected def getAuthor(authorNode:Node):Option[AuthorEntity] ={
+    val authorFields = authorNode.getChildNodes
     var (f,m,l) = ("","","")
-    val name = authorNode.getNodeName
-    val text = FeatureUtils.normalizeName(authorNode.getTextContent)
-    name match{
-      case "author-first" => f=text
-      case "author-middle" => m=text
-      case "author-last" => l=text
-      case _ => {}
+    //println("Parsing author")
+    //println("  node name: "+authorNode.getNodeName)
+    for(i<-0 until authorFields.getLength){
+      val name = authorFields.item(i).getNodeName
+      val text = FeatureUtils.normalizeName(authorFields.item(i).getTextContent)
+      name match{
+        case "author-first" => f=text
+        case "author-middle" => m=text
+        case "author-last" => l=text
+        case _ => {}//{println("  not recognized name field: "+name)}
+      }
     }
-    val result = new AuthorEntity(f,m,l,true)
-    result
+    if(f.length>0 || m.length>0 || l.length>0){
+      val result = new AuthorEntity(f,m,l,true)
+      result.flagAsMention
+      Some(result)
+    }
+    else { //author has no name
+      None
+    }
   }
 }
 
@@ -99,22 +152,17 @@ object AclAnthologyReader{
   }
   def makePaperEntity(record:String):PaperEntity ={
     val paperEntity = new PaperEntity("",true)
-
     val Matcher = """id\s=\s\{.+?\}\s*[\r\n]"""+
        """author\s=\s\{(.*?)\}\s*[\r\n]"""+
        """title\s=\s\{(.*?)\}\s*[\r\n]"""+
        """venue\s=\s\{(.*?)\}\s*[\r\n]"""+
        """year\s=\s\{(\d{4}?)\}""" r
-
     val Matcher(authorList,title,venue,year) = record
-
     getAuthors(authorList).foreach(paperEntity.authors+=_)
     if(!title.equals("")) paperEntity.title.set(title)(null)
     paperEntity.attr[VenueName]:=venue
     paperEntity.attr[Year] := year.toInt
-
     paperEntity
-
     //    val AuthorMatcher = """author\s=\s\{(.+?)\}""".r
     //    val TitleMatcher = """title\s=\s\{(.+?)\}""".r
     //    val TitleMatcher(title) = record
@@ -130,8 +178,8 @@ object AclAnthologyReader{
     val MatcherType4 = """\s*(.+?)\s*,\s*(.+?)\s*""".r
     val MatcherType5 = """\s*,?\s*(.+?)\s*""".r
     println("authors list: "+authorList)
-    authorList.split(";").flatMap(xs => {
-      println("  xs: "+xs)
+    val result = authorList.split(";").flatMap(xs => {
+      //println("  xs: "+xs)
       xs match {
         case MatcherType1(last,jr,first,middle)=> {
           //println("  Case 1 (l,j,f,m): f="+first+" m="+middle+" l="+last+" jr="+jr)
@@ -159,24 +207,25 @@ object AclAnthologyReader{
         }
       }
     })
+    result.foreach(_.flagAsMention)
+    result
   }
 }
-
 
 object BibReader{
   var skipped=0
   var numParsed=0
   var readErrors = new HashMap[String,Int]
-  def loadBibTexDirMultiThreaded(bibDir:File):Seq[PaperEntity] ={
+  def loadBibTexDirMultiThreaded(bibDir:File, loadAuthors:Boolean=true):Seq[PaperEntity] ={
     var count = 0
     //var result = new ArrayBuffer[PaperEntity]
-    if(!bibDir.isDirectory)return loadBibTeXFile(bibDir)
+    if(!bibDir.isDirectory)return loadBibTeXFile(bibDir,loadAuthors)
     val files = bibDir.listFiles.filter(_.isFile)
     val result = new Array[Seq[PaperEntity]](files.length)
     println("Mult-threaded load, about to load "+files.length + " .bib files")
     val startTime = System.currentTimeMillis
     for(file <- files.par){
-      val bibs = loadBibTeXFile(file)
+      val bibs = loadBibTeXFile(file, loadAuthors)
       synchronized{
         result(count)=bibs
         count += 1
@@ -195,25 +244,25 @@ object BibReader{
     result.filter(_ != null).flatMap(_.toSeq).toSeq
     //result
   }
-  def loadBibTexDir(bibDir:File):Seq[PaperEntity] = {
+  def loadBibTexDir(bibDir:File,loadAuthors:Boolean=true):Seq[PaperEntity] = {
     var count = 0
     var result = new ArrayBuffer[PaperEntity]
     val files = bibDir.listFiles.filter(_.isFile)
     val startTime = System.currentTimeMillis
     for(file <- files){
-      result ++= loadBibTeXFile(file)
+      result ++= loadBibTeXFile(file,loadAuthors)
       count += 1
       if(count % 10 == 0)print(".")
       if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Time: "+((System.currentTimeMillis-startTime)/1000L))
     }
     result
   }
-  def loadBibTeXFile(file:File):Seq[PaperEntity] ={
+  def loadBibTeXFile(file:File,loadAuthors:Boolean=true):Seq[PaperEntity] ={
     val result = new ArrayBuffer[PaperEntity]
     val fileText = scala.io.Source.fromFile(file).toArray.mkString
-    loadBibTeXFile(fileText,file,result)
+    loadBibTeXFileText(fileText,file,result,loadAuthors)
   }
-  def loadBibTeXFile(fileText:String,file:File,result:ArrayBuffer[PaperEntity]):Seq[PaperEntity]={
+  def loadBibTeXFileText(fileText:String,file:File,result:ArrayBuffer[PaperEntity], loadAuthors:Boolean=true):Seq[PaperEntity]={
     var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
     try{
       val docOrError = Dom.stringToDom(fileText, false)
@@ -224,7 +273,7 @@ object BibReader{
           //(error+" doc: "+file.getName)
           val split = fileText.split("@")
           if(split.length>=3){
-            for(s <- split)loadBibTeXFile("@"+s,file,result)
+            for(s <- split)loadBibTeXFileText("@"+s,file,result,loadAuthors)
             skipped += 1
           }
         }
@@ -250,21 +299,24 @@ object BibReader{
       //result += paperEntity
       val entryType = entry.ty
       //val authors = new ArrayBuffer[AuthorEntity]
-      for(author <- entry.authors.getOrElse(Nil)){
-        val first = author.first
-        val middle = author.von
-        var last = author.last
-        val authorEntity = new AuthorEntity(first,middle,last,true)
-        val labelTest = last.split("\\[")
-        if(labelTest.length==2){
-          if(labelTest(1).matches("[0-9]+\\]")){
-            authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
-            //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
-            last = labelTest(0)
-            authorEntity.fullName.setLast(last)(null)
+      if(loadAuthors){
+        for(author <- entry.authors.getOrElse(Nil)){
+          val first = author.first
+          val middle = author.von
+          var last = author.last
+          val authorEntity = new AuthorEntity(first,middle,last,true)
+          authorEntity.flagAsMention
+          val labelTest = last.split("\\[")
+          if(labelTest.length==2){
+            if(labelTest(1).matches("[0-9]+\\]")){
+              authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
+              //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
+              last = labelTest(0)
+              authorEntity.fullName.setLast(last)(null)
+            }
           }
+          paperEntity.authors += authorEntity
         }
-        paperEntity.authors += authorEntity
       }
       for(editor <- entry.editors.getOrElse(Nil)){
         //TODO
@@ -301,6 +353,94 @@ object BibReader{
 
 object RexaLabeledLoader{
   var noAuthorInFocusCount = 0
+  def loadFromXMLDir(rexaDir:File):Seq[PaperEntity] ={
+    val result = new ArrayBuffer[PaperEntity]
+    for(file <- rexaDir.listFiles)result ++= loadFromXMLFile(file)
+    println("Loaded "+ result.size + " paper mentions from labeled rexa data (xml): " + rexaDir.getAbsolutePath)
+    result
+  }
+  def loadFromXMLFile(xmlFile:File):Seq[PaperEntity] ={
+    val docFactory:DocumentBuilderFactory = DocumentBuilderFactory.newInstance
+    val docBuilder:DocumentBuilder = docFactory.newDocumentBuilder
+    val doc:Document = docBuilder.parse(xmlFile)
+    val nodes:NodeList = doc.getElementsByTagName("references").item(0).getChildNodes
+    val result = new ArrayBuffer[PaperEntity]
+    for(i <- 0 until nodes.getLength){
+      val node:Node = nodes.item(i)
+      val paperMention = new PaperEntity("", true)
+      paperMention.flagAsMention
+      result += paperMention
+      addFieldsForRexa(node,paperMention)
+    }
+    result
+  }
+  protected def addFieldsForRexa(node:Node,paperMention:PaperEntity) : Unit ={
+    val nodes = node.getChildNodes
+    var authorLastNameInFocus:Option[String] = None
+    var label:Option[String] = None
+    var authorInFocus:Option[String] = None
+    for(i<-0 until nodes.getLength){
+      val node = nodes.item(i)
+      val text = node.getTextContent
+      node.getNodeName match{
+        case "authors" => {
+          val authorNodes = node.getChildNodes
+          for(j<-0 until authorNodes.getLength){
+            val authorNode = authorNodes.item(j)
+            authorNode.getNodeName match{
+              case "author" => processAuthor(authorNode)
+              case "author_in_focus" => processAuthor(authorNode).groundTruth=label
+              case _ => {}
+            }
+          }
+        }
+        case "title" => paperMention.title.set(text)(null)
+        case "year" => {
+          val textN = text.replaceAll("[^0-9]","")
+          if(textN.length>0)paperMention.year.set(textN.toInt)(null)
+        }
+        case "pages" => {}
+        case "booktitle" => {paperMention.venueName.set(text)(null)}
+        case "journal" => {paperMention.venueName.set(text)(null)}
+        case "month" => {}
+        case "volume" => {}
+        case "lastname_in_focus" => {authorLastNameInFocus = Some(text)}
+        case "meta" => {label = Some(node.getAttributes.getNamedItem("cluster_no").getTextContent)}
+        case "keywords" => {paperMention.bagOfKeywords ++= FeatureUtils.filterFieldNameForMongo(text.toLowerCase).split(",").map(_.trim)}
+        case "school" => {}
+        case "institution" => {}
+        case "location" => {}
+        case _ => {}
+      }
+    }
+    def processAuthor(authorNode:Node):AuthorEntity ={
+      val authorText = authorNode.getTextContent//authorNode.getNodeValue
+      val authorMention = new AuthorEntity
+      authorMention.flagAsMention
+      authorMention.fullName.setFirst("")(null);authorMention.fullName.setMiddle("")(null);authorMention.fullName.setLast("")(null)
+      paperMention.authors += authorMention
+      authorMention.paper = paperMention
+      val (f,m,l) = FeatureUtils.extractFML(authorText)
+      authorMention.fullName.setFirst(f)(null)
+      authorMention.fullName.setMiddle(m)(null)
+      authorMention.fullName.setLast(l)(null)
+      /*
+      val split = authorText.replaceAll("(Jr\\.|Sr\\.)","").split(" ")
+      if(split.length>1){
+        authorMention.fullName.setFirst(split(0))(null)
+        authorMention.fullName.setLast(split(split.length-1))(null)
+        if(split.length>2){
+          var middle = ""
+          for(k<-1 until split.length-1)middle += split(k)
+          authorMention.fullName.setMiddle(middle)(null)
+        }
+      }else {
+        authorMention.fullName.setLast(split(0))(null)
+      }
+      */
+      authorMention
+    }
+  }
   def load(rexaDir:File):Seq[PaperEntity]={
     var result = new ArrayBuffer[PaperEntity]
     for(ambiguousNameDir <- rexaDir.listFiles){
@@ -335,6 +475,7 @@ object RexaLabeledLoader{
           case "authorlist" => {
             for(authorString <- value.split("%%")){
               val author = new AuthorEntity("f","m","l",true)
+              author.flagAsMention
               author.fullName.setFirst(extractFlatSGML(authorString,"f"))(null)
               author.fullName.setMiddle(extractFlatSGML(authorString,"m"))(null)
               author.fullName.setLast(extractFlatSGML(authorString,"l"))(null)
@@ -405,7 +546,6 @@ object RexaLabeledLoader{
     string.substring(start,end)
   }
 }
-
 
 /*
 object AronDataLoader{
@@ -509,7 +649,7 @@ object DBLPLoader{
       val bibtexReferenceType = node.getNodeName //\in {article,inproceedings,proceedings}
       //println(" -bibReferenceType: "+bibtexReferenceType)
       if(filterBib(bibtexReferenceType)){
-        val paperMention = new PaperEntity
+        val paperMention = new PaperEntity("", true)
         paperMention.flagAsMention
         result += paperMention
         bibtexReferenceType match{
@@ -535,6 +675,7 @@ object DBLPLoader{
   protected def filterBib(s:String):Boolean = (s=="article" || s=="inproceedings")
   protected def addFieldsForDBLP(node:Node,paperMention:PaperEntity) : Unit ={
     val nodes = node.getChildNodes
+    var authorLastNameInFocus:Option[String] = None
     for(i<-0 until nodes.getLength){
       val node = nodes.item(i)
       //println("node:"+node)

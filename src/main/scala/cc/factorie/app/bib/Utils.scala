@@ -13,45 +13,51 @@ import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
 
 object FeatureUtils{
-/*
-  def cosineDistance(v1:SparseIndexedTensor,v2:SparseIndexedTensor):Double ={
-    val numerator = v1 dot v2
-    val denominator = v1.twoNorm * v2.twoNorm
-    if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
-  }
-  def cosineDistance(v1:SparseIndexedTensor,v2:SparseIndexedTensor):Double ={
-
-  }*/
-  /*
-    def cosineSimilarity(that:BagOfWords,deduct:BagOfWords):Double ={
-    //val smaller = if(this.size<that.size)this else that
-    //val larger = if(that.size<this.size)this else that
-    val numerator:Double = this.deductedDot(that,deduct)
-    if(numerator!=0.0){
-      val thatL2Norm = Math.sqrt(deduct.l2Norm*deduct.l2Norm+that.l2Norm*that.l2Norm - 2*(deduct * that))
-      val denominator:Double = this.l2Norm*thatL2Norm
-      if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
-    } else 0.0
-  }
-  def cosineSimilarity(that:BagOfWords):Double = {
-    val numerator:Double = this * that
-    val denominator:Double = this.l2Norm*that.l2Norm
-    if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
-  }
-        case v:SparseIndexedTensor => {
-        val v1 = if (this._npos < v._npos) this else v
-        val v2 = if (v._npos< this._npos) v else this
-        var i = 0; var j = -1; var j2 = 0
-        var result = 0.0
-        while (i < v1._npos) {
-          j2 = v2.position(v1._indexs(i), j+1)
-          if (j2 >= 0) { result += v1._values(i) * v2._values(j2); j = j2 }
-          i += 1
+  val MatcherType1 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s+(.+?)\s*""".r
+  val MatcherType2 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s*""".r
+  val MatcherType3 = """\s*(.+?)\s*,\s*(.+?)\s+(.+?)\s*""".r
+  val MatcherType4 = """\s*(.+?)\s*,\s*(.+?)\s*""".r
+  val MatcherType5 = """\s*,?\s*(.+?)\s*""".r
+  def extractFML(nameString:String):(String,String,String) ={
+    var (f,m,l) = ("","","")
+    println("Name string: "+nameString)
+    nameString match{
+      case MatcherType1(last,jr,first,middle) => {f=first;m=middle;l=last;println("  matcher 1")}//(f,m,l)=(first,middle,last)
+      case MatcherType2(last,jr,first) => {f=first;l=last;println("  matcher 2")}//(f,l)=(first,last)
+      case MatcherType3(last,first,middle)=> {f=first;m=middle;l=last;println("  matcher 3")}//(f,m,l)=(first,middle,last)
+      case MatcherType4(last,first) => {f=first;l=last;println("  matcher 4")}//(f,l)=(first,last)
+      //case MatcherType5(last) => {l=last;println("matcher 5")}
+      case _ => {
+        val cleanNameString = normalizeName(nameString)
+        println("  no matcher")
+        val split = cleanNameString.replaceAll("(Jr\\.|Sr\\.|Professor|Prof\\.|Dr\\.)","").split(" ")
+        if(split.length>1){
+          f = split(0)
+          l = split(split.length-1)
+          if(split.length>2 && split.length<7){
+            var middle = ""
+            for(k<-1 until split.length-1)middle += split(k)+" "
+            m=middle.trim
+          }
+        }else{
+          l=split(0)
         }
-        result
       }
-   */
+    }
+    (f,m,l)
+  }
 
+
+
+
+  def titleHash(title:String):String = deAccent(title).toLowerCase.replaceAll("[^a-z ]","").replaceAll(" +"," ")
+  def paperHash(paper:PaperEntity):String ={
+    var result = new StringBuffer
+    result.append(limit(titleHash(paper.title.value.replaceAll("[aeiou]","")),10))
+    if(paper.authors.size>0)result.append(deAccent(firstInitialLastName(paper.authors.head)).toLowerCase)
+    result.toString
+  }
+  def limit(s:String,size:Int):String = if(s.length>=size)s else s.substring(0,size)
   //venue projections
   //def isInitial(s:String) = s.matches("[a-z]( [a-z])?")
   def isInitial(s:String) = (s.length==1 && s(0)>='a' && s(0)<='z') || (s.length==3 && s.charAt(1)==' ' && s(0)>='a' && s(0)<='z' && s(2)>='a' && s(2)<='z')
@@ -69,7 +75,7 @@ object FeatureUtils{
     val result = keywords.split(",;")
     result.map(_.trim)
   }
-  def normalizeName(name:String) = deAccent(name).replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
+  def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
   def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
   def deAccent(s:String):String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+","")
@@ -201,7 +207,8 @@ object FeatureUtils{
     val paper = author.paper
     if(paper!=null){
       if(paper.attr[Year].intValue != -1)author.attr[Year] := paper.attr[Year].intValue
-      author.fullName.setSuffix(paper.title.value)(null)
+      //author.fullName.setSuffix(paper.title.value)(null)
+      author.title.set(paper.title.value)(null)
       author.bagOfTopics.add(paper.bagOfTopics.value)(null)
       for(coAuthor <- paper.authors){
         if(coAuthor.ne(author)){
@@ -250,43 +257,39 @@ object EntityUtils{
     println("  *number of inferred entities with no children: "+numZeroChildren)
     println("  *number of inferred entities with one child: "+numOneChild)
   }
-  def makeSingletons(entities:Seq[AuthorEntity]):Seq[AuthorEntity] ={
+  def makeSingletons[E<:HierEntity](entities:Seq[E]):Seq[E] ={
     for(e <- entities)
       e.setParentEntity(null)(null)
     entities.filter(_.isObserved).toSeq
   }
-  def collapseOnCanopyAndTopics(entities:Seq[AuthorEntity]) = collapseOn(entities,(e:AuthorEntity) => {
+  def collapseOnTitleHash(entities:Seq[PaperEntity]) = collapseOn[PaperEntity](entities,(e:PaperEntity) =>{if(e.title.titleHash.value!=null && e.title.titleHash.value.length>0)Some(e.title.titleHash.value) else None},()=>new PaperEntity,(e:PaperEntity) => {e.title.set(e.childEntitiesIterator.next.asInstanceOf[PaperEntity].title.value)(null)})
+  def collapseOnCanopyAndTopics(entities:Seq[AuthorEntity]) = collapseOn[AuthorEntity](entities,(e:AuthorEntity) => {
     val fmlCanopy = new AuthorFLNameCanopy(e)
     val topics = e.bagOfTopics.value.asHashMap.toList.sortBy(_._2).reverse.take(2).map(_._1)
     if(topics.length==0)None else Some(fmlCanopy.canopyName+topics.mkString(" "))
-  })
-
-  def collapseOnTruth(entities:Seq[AuthorEntity]) = collapseOn(entities,(e:AuthorEntity)=>{e.groundTruth})
-  def collapseOn(entities:Seq[AuthorEntity], collapser:AuthorEntity=>Option[String]):Seq[AuthorEntity] ={
-    val result = new ArrayBuffer[AuthorEntity]
+  },
+  ()=>new AuthorEntity,
+  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)}
+  )
+  def collapseOnTruth(entities:Seq[AuthorEntity]) = collapseOn[AuthorEntity](entities,(e:AuthorEntity)=>{e.groundTruth},()=>new AuthorEntity,  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)})
+  def collapseOn[E<:HierEntity](entities:Seq[E], collapser:E=>Option[String], newEntity:()=>E, propagater:E=>Unit):Seq[E] ={
+    val result = new ArrayBuffer[E]
     result ++= makeSingletons(entities)
-    val key2entities = new HashMap[String,ArrayBuffer[AuthorEntity]]
+    val key2entities = new HashMap[String,ArrayBuffer[E]]
     for(e <- entities.filter(collapser(_) != None)){
       val rep = collapser(e).get
-      key2entities.getOrElse(rep,{val r = new ArrayBuffer[AuthorEntity];key2entities(rep)=r;r}) += e
+      key2entities.getOrElse(rep,{val r = new ArrayBuffer[E];key2entities(rep)=r;r}) += e
     }
     for((label,trueCluster) <- key2entities){
       if(trueCluster.size>1){
-        val root = new AuthorEntity
+        val root = newEntity()
         result += root
         for(e<-trueCluster){
           e.setParentEntity(root)(null)
           for(bag <- e.attr.all[BagOfWordsVariable])root.attr(bag.getClass).add(bag.value)(null)
-/*
-          root.attr[BagOfCoAuthors].add(e.attr[BagOfCoAuthors].value)(null)
-          root.attr[BagOfVenues].add(e.attr[BagOfVenues].value)(null)
-          root.attr[BagOfKeywords].add(e.attr[BagOfKeywords].value)(null)
-          root.attr[BagOfFirstNames].add(e.attr[BagOfFirstNames].value)(null)
-          root.attr[BagOfMiddleNames].add(e.attr[BagOfMiddleNames].value)(null)
-          root.attr[BagOfTruths].add(e.attr[BagOfTruths].value)(null)
-          */
         }
-        root.fullName.setFullName(trueCluster.head.fullName)(null)
+        propagater(root)
+        //root.fullName.setFullName(trueCluster.head.fullName)(null)
       }
     }
     result
@@ -548,7 +551,8 @@ object EntityUtils{
   }
   def defaultFeaturesToPrintForAuthors(e:Entity):Seq[String] = {
     val bags = defaultFeaturesToPrint(e)
-    if(e.isObserved) Seq("title: "+e.attr[FullName].suffix) ++ bags else bags
+    if(e.isObserved) Seq("title: "+e.attr[Title].value) ++ bags else bags
+    //if(e.isObserved) Seq("title: "+e.attr[FullName].suffix) ++ bags else bags
   }
   def prettyPrintAuthors(entities:Seq[AuthorEntity]):Unit = {
     var count = 0
@@ -561,9 +565,11 @@ object EntityUtils{
       sizeDist(size) = sizeDist.getOrElse(size,0) + 1
       count += 1
     }
+    /*
     println("\n\n------SINGLETONS-----")
     println("Printing singletons")
     for(e <- singletons)prettyPrintAuthor(e)
+    */
     println("\nEntity size distribution")
     val sorted = sizeDist.toList.sortBy(_._2).reverse
     println(sorted)
@@ -573,7 +579,7 @@ object EntityUtils{
   def prettyPrintAuthor(e:AuthorEntity):Unit ={
     val authorString = entityStringPretty(e,
       (e:Entity)=>{
-        var result:String ="size:"+e.numLeaves+"id:"+e.id.toString+";name:"+e.attr[FullName].toString+" (first:"+bagToString(e.attr[BagOfFirstNames].value)+" middle:"+bagToString(e.attr[BagOfMiddleNames].value)+")"
+        var result:String ="num-leaves:"+e.numLeaves+" mcount:"+e.attr[MentionCountVariable].value+"id:"+e.id.toString+";name:"+e.attr[FullName].toString+" (first:"+bagToString(e.attr[BagOfFirstNames].value)+" middle:"+bagToString(e.attr[BagOfMiddleNames].value)+")"
         //var result:String = "id:"+e.id.toString.substring(e.id.toString.length-7,e.id.toString.length)+" name:"+e.attr[FullName].toString+" (first:"+bagToString(e.attr[BagOfFirstNames].value)+" middle:"+bagToString(e.attr[BagOfMiddleNames].value)+")"
         if(e.asInstanceOf[AuthorEntity].groundTruth!=None)result="truth:"+e.asInstanceOf[AuthorEntity].groundTruth.get+";"+result
         if(e.childEntitiesSize>1)result = "purity="+shortDecimal.format(purity(e))+";"+result
@@ -696,23 +702,30 @@ object LDAUtils{
       val writeModel =     new CmdOption("write-model", "lda-model.txt", "FILENAME", "Save LDA state, writing alphas and phis")
       val readModel =     new CmdOption("read-model", "lda-model.txt", "FILENAME", "Save LDA state, writing alphas and phis")
       val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
+      val initialSubset = new CmdOption("initial-subset", 0.05, "N", "Portion of the data to use to initialize the topics.")
+      val initialIterations = new CmdOption("initial-iterations", 500, "N", "Initial iterations.")
     }
     opts.parse(args)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
-    val papers = new ArrayBuffer[PaperEntity]
+    //val papers = new ArrayBuffer[PaperEntity]
+    var docs = new ArrayBuffer[String]
     if(opts.dblpLocation.value.toLowerCase!="none"){
       StopWatch.start("Load DBLP")
-      papers ++= DBLPLoader.loadDBLPData(opts.dblpLocation.value)
+      val papers = DBLPLoader.loadDBLPData(opts.dblpLocation.value)
       val time = StopWatch.stop/1000L
       println("Loading DBLP took: "+time+" seconds.")
+      println("Mapping to strings.")
+      docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
     }
     if(opts.bibDirectory.value.toLowerCase!="none"){
       StopWatch.start("Load BibTex")
-      papers ++= BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value))
+      val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false)
       val time = StopWatch.stop/1000L
       println("Loading BibTeX took: "+time+" seconds.")
+      docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
     }
-    println("Number of papers: "+papers.size)
+    println("Number of papers: "+docs.size)
+    /*
     if(opts.readModel.wasInvoked){
       StopWatch.start("Reading model")
       val lda = this.loadLDAModelFromAlphaAndPhi(new File(opts.readModel.value))
@@ -721,12 +734,43 @@ object LDAUtils{
       this.inferTopicsForPapers(papers,lda,mySegmenter)
       StopWatch.stop
     }
+    */
 
     if(opts.writeModel.wasInvoked){
       StopWatch.start("Training LDA...")
       val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model)
-      for(paper<-papers){
-        val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
+      if(opts.initialIterations.wasInvoked && opts.initialIterations.value>0){
+        val subsetSize = (opts.initialSubset.value * docs.size.toDouble).toInt
+        println("Initializing on subset of the data: " + subsetSize)
+        //val randomIndices = random.shuffle(1 until (subsetSize-1))
+        //val randomSubset = new ArrayBuffer[String]
+        //for(randomIndex <- randomIndices)randomSubset += docs(randomIndex)
+        cc.factorie.random.shuffle(docs)
+        val randomSubset = new ArrayBuffer[String]
+        val foldInData = new ArrayBuffer[String]
+        for(i<-0 until subsetSize)randomSubset += docs(i)
+        for(i<-subsetSize until docs.size)foldInData += docs(i)
+        docs = foldInData
+        println("About to run on subset of data for "+opts.initialIterations.value + " iterations.")
+        for(paper <- randomSubset){
+          val doc = Document.fromString(WordSeqDomain,lda.documents.size+"",paper,segmenter=mySegmenter)
+          //val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
+          if (doc.length >= 3) lda.addDocument(doc)
+          if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
+        }
+        if (opts.initialIterations.value > 0) {
+          val startTime = System.currentTimeMillis
+          if (opts.numThreads.value > 1)
+            lda.inferTopicsMultithreaded(opts.numThreads.value, opts.initialIterations.value, diagnosticInterval = 10, diagnosticShowPhrases = false)
+          else
+            lda.inferTopics(opts.initialIterations.value, fitAlphaInterval = Int.MaxValue, diagnosticInterval = 10, diagnosticShowPhrases = false)
+          println("Finished initial inference in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+        }
+        println("Done, about to fold in "+ docs.size + " documents.")
+      }
+      for(paper<-docs){
+        val doc = Document.fromString(WordSeqDomain,lda.documents.size+"",paper,segmenter=mySegmenter)
+        //val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
         if (doc.length >= 3) lda.addDocument(doc)
         if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
       }
