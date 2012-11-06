@@ -77,13 +77,16 @@ abstract class TrainParser {
   
   def generateDecisions(ss: Seq[Sentence], p: Parser): Seq[ParseDecisionVariable] = {
 
-    val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
+    //val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
     
-    val vs = ss.par.zipWithIndex.flatMap { case (s, i) => 
-	  if (i % 1000 == 0)
-	    println("Parsed: " + i)
+//    val vs = ss.par.zipWithIndex.flatMap { case (s, i) => 
+    val vs = ss.par.flatMap { s => 
+//	  if (i % 1000 == 0)
+//	    println("Parsed: " + i)
+      
+      val parser = new Parser(mode = p.mode); parser.predict = p.predict;
 	    
-      val parser = parsers.get 
+      //val parser = parsers.get 
 	  parser.clear()
 	    
       parser.parse(s)
