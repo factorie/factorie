@@ -196,6 +196,8 @@ trait SparseIndexedTensor extends Tensor {
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this(i) += arr(i)*f  ; i += 1} }
     case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
     case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
+    case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this(i) += f) }
+    case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this(i) += f) }
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
