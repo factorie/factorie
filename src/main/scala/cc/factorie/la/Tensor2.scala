@@ -71,7 +71,23 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
     //case t:DenseLayeredTensorLike2 => { val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
     case t:DenseLayeredTensorLike2 => t.=+(_values, f)
+    case t:SparseIndexedTensor2 => t.=+(_values, f)
     case t:DoubleSeq => super.+=(t, f)
+  }
+  override def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
+    case (ds: SparseIndexedTensor2, factor: DenseTensor2) =>
+      ds._makeReadable
+      val indices = ds._indices
+      val values = ds._values
+      val numIndices = indices.size
+      var i = 0
+      while (i < numIndices) {
+        val curIdx = indices(i)
+        _values(curIdx) += values(i) * factor._values(curIdx) * scalar
+        i += 1
+      }
+    case (ds:SparseDoubleSeq, factor) => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i)*scalar)) }
+    case (ds:DoubleSeq, factor) => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
   }
 }
 

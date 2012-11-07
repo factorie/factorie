@@ -84,6 +84,17 @@ trait SparseIndexedTensor extends Tensor {
     if (pos < 0) 0.0 else __values(pos)
   }
 
+  override def twoNormSquared: Double = {
+    makeReadable
+    val l = __npos; var result = 0.0; var i = 0
+    while (i < l) {
+      val v = __values(i)
+      result += v * v
+      i += 1
+    }
+    result
+  }
+
   override def dot(v:DoubleSeq): Double = {
     makeReadable
     v match {

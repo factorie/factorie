@@ -105,8 +105,12 @@ object GlmTest {
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
+    val text = Source.fromFile(file, "ISO-8859-1").mkString
+    val text2 = Some(text.indexOf("\n\n"))
+        .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))
+        .filter(-1 !=).map(text.substring(_)).getOrElse(text)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
-    "\\w+".r.findAllIn(Source.fromFile(file, "ISO-8859-1").mkString).foreach(regexMatch => this += regexMatch.toString)
+    "\\w+".r.findAllIn(text2).foreach(regexMatch => this += regexMatch.toString)
   }
   object LabelDomain extends CategoricalDomain[String]
   class Label(name: String, val document: Document) extends LabeledCategoricalVariable(name) {
@@ -138,8 +142,8 @@ object GlmTest {
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-            val strategy = new BatchTrainer(model, new L2ProjectedGradientAscent(k = pieces.size, rate = 1.0))
-//            val strategy = new SGDTrainer(new ConfidenceWeighting(model), model)
+//            val strategy = new BatchTrainer(model, new L2ProjectedGradientAscent(k = pieces.size, rate = 1.0, l2 = 0.25))
+    val strategy = new SGDTrainer(model, new StepwiseGradientAscent(rate = 0.01))
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
 //    lbfgs.tolerance = 0.05

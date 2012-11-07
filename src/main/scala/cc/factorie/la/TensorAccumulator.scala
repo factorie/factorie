@@ -106,9 +106,10 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
           val t2Iter = t2.activeElements
           while (t2Iter.hasNext) {
             val (idx2, v2) = t2Iter.next()
-            myT(offset + idx2) += (v1 * v2)
+            myT += (offset + idx2, v1 * v2)
           }
         }
+        if (myT.isInstanceOf[SparseIndexedTensor]) myT.asInstanceOf[SparseIndexedTensor]._makeReadable
     }
   }
   def combine(a: Accumulator[Tensor]): Unit = a match {
