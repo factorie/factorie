@@ -299,13 +299,25 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
   }
   def calculateOutgoing2: Tensor = {
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
-    val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
-    while (j < lenj) {
-      i = 0; while (i < leni) {
-        result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
-        i += 1
+    if (hasLimitedDiscreteValues12) {
+      val indices: Array[Int] = limitedDiscreteValues12._indices
+      val len = limitedDiscreteValues12._indicesLength; var ii = 0
+      while (ii < len) {
+        val ij = indices(ii)
+        val i = scores.index1(ij)
+        val j = scores.index2(ij)
+        result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i)) // TODO This could be scores(ij)
+        ii += 1
       }
-      j += 1
+    } else {
+      val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
+      while (j < lenj) {
+        i = 0; while (i < leni) {
+          result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
+          i += 1
+        }
+        j += 1
+      }
     }
 //    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
 //      result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
