@@ -133,7 +133,7 @@ object GlmTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = ObjectiveFunctions.hingeMultiClassObjective2
+    val loss = ObjectiveFunctions.hingeMultiClassObjective
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     //val modelWithWeights = new ModelWithWeightsImpl(model)
@@ -143,7 +143,8 @@ object GlmTest {
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model, new L2ProjectedGradientAscent(k = pieces.size, rate = 1.0, l2 = 0.25))
-    val strategy = new SGDTrainer(model, new StepwiseGradientAscent(rate = 0.01))
+    val strategy = new SGDTrainer(model, new ConfidenceWeighting(model))
+
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
 //    lbfgs.tolerance = 0.05
