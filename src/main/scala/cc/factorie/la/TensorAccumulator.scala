@@ -63,6 +63,7 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
         val t1Size = t1.size
         val myTValues = myT.asArray
         val t1Values = t1.asArray
+        val t2ActiveLength = t2.activeDomainSize
         val t2Indices = t2._indices
         val t2Values = t2._values
         var idx1 = 0
@@ -70,7 +71,7 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
           val v1 = t1Values(idx1)
           val offset = t2Size * idx1
           var t2i = 0
-          while (t2i < t2Indices.length) {
+          while (t2i < t2ActiveLength) {
             val idx2 = t2Indices(t2i)
             val v2 = t2Values(t2i)
             myTValues(offset + idx2) += (v1 * v2)
