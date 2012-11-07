@@ -65,7 +65,7 @@ class POS2 extends Infer with util.FastLogging {
     
     override def factors(labels:Iterable[Variable]): Iterable[Factor] = labels match {
       case labels:IndexedSeq[PosLabel] => {
-        //println("POS2.model.factors labels.size="+labels.size)
+        //println("EpsilonPOS.model.factors labels.size="+labels.size)
         val result = new collection.mutable.ArrayBuffer[Factor]
         var prevLabel: PosLabel = null
         for (label <- labels) {
@@ -154,7 +154,7 @@ class POS2 extends Infer with util.FastLogging {
     for (doc <- documents) {
       val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
       //summary.setToMaximize(null)
-      //for (bpf <- summary.bpFactors) println("POS2.printAccuracy "+bpf.calculateLogZ); println("---")
+      //for (bpf <- summary.bpFactors) println("EpsilonPOS.printAccuracy "+bpf.calculateLogZ); println("---")
     }
     logger.info(msg+" token accuracy = "+HammingObjective.accuracy(documents.flatMap(_.tokens.map(_.attr[PosLabel]))))
   }

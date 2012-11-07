@@ -86,12 +86,16 @@ class InlineSGDTrainer(val model:LogLinearModel[_,_], val optimizer:GradientOpti
 }
 
 class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MIRA) extends Trainer[M] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+  var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
 
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     examples.foreach(example => {
-      gradientAccumulator.tensor.zero()
+      // FIXME: creating a new one every go round is infinitely faster than zero-ing the old tensor - should this be?
+      // also, the answers given are different - which means there's some bug somewhere, probably using old values
+      // in the gradient sparse tensor even tho _npos is set to 0! Need to investigate this further -luke
+//      gradientAccumulator.tensor.zero()
+      gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
     })
