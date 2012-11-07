@@ -539,7 +539,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
-  override def logZ: Double = _bpFactors.values.last.calculateLogZ
+  override def logZ: Double = _bpFactors.values.head.calculateLogZ
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))

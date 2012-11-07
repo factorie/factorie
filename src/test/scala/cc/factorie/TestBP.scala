@@ -294,7 +294,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
         println("v" + i + " : " + fg.marginal(vars(i)).proportions)
         assertEquals(marginals(i) / Z, fg.marginal(vars(i)).proportions(0), eps)
       }
-      
+
+      assertEquals(fg.bpFactors.head.calculateLogZ, fg.bpFactors.last.calculateLogZ, 0.1)
+
       // TODO: add back logZ assertion
       //println("z : " + math.log(Z) + ", " + fg.logZ())
       //assertEquals(math.log(Z), fg.logZ(), eps)
