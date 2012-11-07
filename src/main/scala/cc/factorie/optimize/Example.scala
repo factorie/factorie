@@ -136,7 +136,7 @@ class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Va
     val worstGoodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
     val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
     if (goodScores(worstGoodIndex) < badScores(bestBadIndex) + 1) {
-      value.accumulate(goodScores(worstGoodIndex) - badScores(bestBadIndex) - 1)
+      if (value != null) value.accumulate(goodScores(worstGoodIndex) - badScores(bestBadIndex) - 1)
       GoodBadExample.addGoodBad(gradient, model, goodCandidates(worstGoodIndex), badCandidates(bestBadIndex))
     }
   }
@@ -150,7 +150,7 @@ class DominationLossExampleAllGood(goodCandidates: Seq[Variable], badCandidates:
     val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
     for (i <- 0 until goodScores.length) {
       if (goodScores(i) < badScores(bestBadIndex) + 1) {
-        value.accumulate(goodScores(i) - badScores(bestBadIndex) - 1)
+        if (value != null) value.accumulate(goodScores(i) - badScores(bestBadIndex) - 1)
         GoodBadExample.addGoodBad(gradient, model, goodCandidates(i), badCandidates(bestBadIndex))
       }
     }
