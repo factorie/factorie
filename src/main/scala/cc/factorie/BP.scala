@@ -116,7 +116,7 @@ class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable,
     edges.size match {
       case 0 => throw new Error("BPVariable1 with no edges")
       case 1 => { require(edges.head == e); new UniformTensor1(variable.domain.size, 0.0) }
-      case 2 => if (edges.head == e) edges.tail.head.messageFromFactor else if (edges.tail.head == e) edges.head.messageFromFactor else throw new Error
+      case 2 => if (edges.head == e) edges.last.messageFromFactor else if (edges.last == e) edges.head.messageFromFactor else throw new Error
       case _ => Tensor.sum(edges.filter(_ != e).map(_.messageFromFactor)) 
     }
   }
@@ -272,6 +272,7 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
+      throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
       val indices: Array[Int] = limitedDiscreteValues12._indices
       val len = limitedDiscreteValues12._indicesLength; var ii = 0
@@ -540,6 +541,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
   override def logZ: Double = _bpFactors.values.head.calculateLogZ
+  
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
@@ -647,7 +649,7 @@ object BP {
         // Send forward Viterbi messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
-          f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
+          f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
         // Do Viterbi backtrace, setting label values
         // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
@@ -678,15 +680,17 @@ object BP {
         // Send forward messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor // TODO Note that Markov factors must in sequence order!  Assert this somewhere!
-          f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
+          f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
         // Send backward messages
         for (f <- markovBPFactors.reverse) {
-          f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
-          f.edge2.bpFactor.updateOutgoing(f.edge1)   // send message from factor to neighbor2
+          f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor2 to factor
+          f.updateOutgoing(f.edge1)   // send message from factor to neighbor1
         }
         // Send messages out to obs factors so that they have the right logZ
-        obsBPFactors.foreach(f => f.edge1.bpVariable.updateOutgoing(f.edge1))
+        obsBPFactors.foreach(f => {
+          f.edge1.bpVariable.updateOutgoing(f.edge1)
+        })
         // Update marginals    //summary.bpVariables.foreach(_.updateProportions)
         // TODO Also update BPFactor marginals
       }
