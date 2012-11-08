@@ -153,6 +153,12 @@ trait BPFactor extends DiscreteMarginal {
   def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
 }
 
+trait BPFactorMaxProduct extends BPFactor {
+  override def calculateLogZ: Double = calculateBeliefsTensor match {
+    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = math.max(z, t(i)); i += 1 }; z }
+    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = math.max(z, v) }); z }
+  }
+}
 
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
 abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
@@ -191,7 +197,7 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
   override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
 }
 
-trait BPFactor1MaxProduct extends BPFactor1 {
+trait BPFactor1MaxProduct extends BPFactor1 with BPFactorMaxProduct {
   override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor]
 }
 
@@ -329,7 +335,7 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
   }
 }
 
-trait BPFactor2MaxProduct extends BPFactor2 { this: BPFactor2 =>
+trait BPFactor2MaxProduct extends BPFactor2 with BPFactorMaxProduct { this: BPFactor2 =>
   override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor] // TODO: remove the assumption that the variables are set to their maximizing values
   val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
   var edge2Max1 = new Array[Int](edge2.variable.domain.size)
