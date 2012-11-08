@@ -1,10 +1,9 @@
 package cc.factorie.optimize
 
-import cc.factorie.Model
-import cc.factorie.util.LocalDoubleAccumulator
-import cc.factorie.la.{Tensor, WeightsTensor, LocalWeightsTensorAccumulator}
-import cc.factorie.util.FastLogging
 import cc.factorie.app.classify.LogLinearModel
+import cc.factorie.{DotFamily, Family, Model}
+import cc.factorie.la.{Tensor1, Tensor, WeightsTensor, LocalWeightsTensorAccumulator}
+import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging}
 
 /**
  * Created by IntelliJ IDEA.
@@ -82,6 +81,36 @@ class InlineSGDTrainer(val model:LogLinearModel[_,_], val optimizer:GradientOpti
     })
     weights *= (1.0 - l2)
   }
+  def isConverged = false
+}
+
+class ActualInlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01) extends Trainer[M] {
+  object InlineAccumulator extends cc.factorie.la.WeightsTensorAccumulator {
+    override def accumulate(f: DotFamily, t: Tensor, w: Double = 1.0) {
+      model.weightsTensor.asInstanceOf[WeightsTensor](f) += (t,w*lrate)
+    }
+
+    def accumulate(index: Int, value: Double) {throw new Error("Purposefully not implemented")}
+
+    def accumulate(t: Tensor) { throw new Error("Purposefully not implemented")}
+
+    def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {throw new Error("Purposefully not implemented")}
+
+    def accumulate(family: DotFamily, index: Int, value: Double) {throw new Error("Purposefully not implemented")}
+
+    def accumulate(family: DotFamily, t: Tensor) {throw new Error("Purposefully not implemented")}
+
+    def accumulator(family: DotFamily) = throw new Error("Purposefully not implemented")
+
+    def combine(ta: Accumulator[Tensor]) {throw new Error("Purposefully not implemented")}
+
+    def accumulate(t: Tensor, factor: Double) {throw new Error("Purposefully not implemented")}
+  }
+
+  def processExamples(examples: Iterable[Example[M]]) {
+    examples.foreach(e => e.accumulateExampleInto(model, InlineAccumulator, null, null))
+  }
+
   def isConverged = false
 }
 
