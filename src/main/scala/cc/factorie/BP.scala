@@ -61,10 +61,10 @@ object BPMaxProductRing extends BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
     case factor:Factor1[DiscreteVar] =>  
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)))
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1))) with BPFactor1MaxProduct
     case factor:Factor2[DiscreteVar,DiscreteVar] => 
       if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
-      else new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)))
+      else new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1))) with BPFactor1MaxProduct
     case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] =>
       new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
   }
@@ -73,8 +73,8 @@ object BPMaxProductRing extends BPRing {
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
       case 1 => factor match {
-        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
-        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0))
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) with BPFactor1MaxProduct
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0)) with BPFactor1MaxProduct
       }
       case 2 => factor match {
         case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2MaxProduct
@@ -189,6 +189,10 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
     }
   }
   override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
+}
+
+trait BPFactor1MaxProduct extends BPFactor1 {
+  override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor]
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
@@ -325,7 +329,8 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
   }
 }
 
-trait BPFactor2MaxProduct { this: BPFactor2 =>
+trait BPFactor2MaxProduct extends BPFactor2 { this: BPFactor2 =>
+  override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor] // TODO: remove the assumption that the variables are set to their maximizing values
   val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
   var edge2Max1 = new Array[Int](edge2.variable.domain.size)
   def calculateOutgoing1: Tensor = {
