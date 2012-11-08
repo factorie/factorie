@@ -85,29 +85,82 @@ trait AccumulatorMaximizer extends WeightsTensorAccumulator {
 
 class GradientAccumulatorMaximizer(val weights: WeightsTensor, learningRate: Double = 0.1) extends AccumulatorMaximizer {
   def lrate : Double = learningRate
-  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) { throw new Error("Not implemented") }
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {
+    // FIXME: come back and make this more efficient - we can get away with multiplying the
+    // left tensor since its the per-label gradient - luke
+    t1 *= learningRate
+    weights(family) += new Outer1Tensor2(t1, t2)
+  }
 
   def accumulate(family: DotFamily, t: Tensor, factor: Double) { weights(family) += (t, lrate * factor) }
 
   def accumulate(family: DotFamily, index: Int, value: Double) { weights(family)(index) += lrate*value }
 }
 
-class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1) extends AccumulatorMaximizer {
+// This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
+// "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
+class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, delta: Double = 0.1) extends AccumulatorMaximizer {
   val weights = model.weightsTensor.asInstanceOf[WeightsTensor]
   val sumGradientsSquared = model.newBlankDenseWeightsTensor
-  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {throw new Error("Not implemented")}
-
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {
+    accumulate(family, new Outer1Tensor2(t1, t2), 1.0)
+  }
   def accumulate(family: DotFamily, t: Tensor, factor: Double) {
+    // FIXME "factor" argument is ignored - luke
     val w = weights(family)
     val g = sumGradientsSquared(family)
-    (w,g) match {
-      case (w:DenseTensor,t:SparseIndexedTensor) =>
+    (w, t) match {
+      case (w: DenseTensor, t: SparseIndexedTensor) =>
+//        println("case 1")
         val indices = t._indices
         val values = t._values
         var i = 0
         while (i < t.activeDomainSize) {
-          g(indices(i)) += values(i)*values(i)
-          w(indices(i)) += values(i)*learningRate/math.sqrt(g(indices(i)))
+          g += (indices(i), values(i) * values(i))
+          w += (indices(i), values(i) * learningRate / (delta + math.sqrt(g(indices(i)))))
+          i += 1
+        }
+      case (w: DenseTensor, t: Outer1Tensor2) if t.tensor2.isInstanceOf[SparseBinaryTensorLike1] =>
+//        println("case 2")
+        val l1 = t.tensor1.length
+        val l2 = t.tensor2.length
+        val t2Indices = t.tensor2.asInstanceOf[SparseBinaryTensorLike1].activeDomain
+        val wArr = w.asArray
+        val l2Active = t2Indices.length
+        var i = 0
+        while (i < l1) {
+          val t1Val = t.tensor1(i)
+          var j = 0
+          if (t1Val != 0.0)
+            while (j < l2Active) {
+              val idx = i * l2 + t2Indices.array(j)
+              g += (idx, t1Val * t1Val)
+              wArr(idx) += t1Val * learningRate / (delta + math.sqrt(g(idx)))
+              j += 1
+            }
+          i += 1
+        }
+      case (w: DenseTensor, t: Outer1Tensor2) if t.tensor2.isInstanceOf[SparseIndexedTensor] =>
+//        println("case 3")
+        val l1 = t.tensor1.length
+        val l2 = t.tensor2.length
+        val t2 = t.tensor2.asInstanceOf[SparseIndexedTensor]
+        val t2Indices = t2._indices
+        val t2Vals = t2._values
+        val wArr = w.asArray
+        val l2Active = t2.activeDomainSize
+        var i = 0
+        while (i < l1) {
+          val t1Val = t.tensor1(i)
+          var j = 0
+          if (t1Val != 0.0)
+            while (j < l2Active) {
+              val idx = i * l2 + t2Indices(j)
+              val t2Val = t2Vals(j)
+              g += (idx, t1Val * t1Val * t2Val * t2Val)
+              wArr(idx) += t1Val * t2Val * learningRate / (delta + math.sqrt(g(idx)))
+              j += 1
+            }
           i += 1
         }
     }
