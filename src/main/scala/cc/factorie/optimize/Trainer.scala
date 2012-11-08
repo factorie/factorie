@@ -98,7 +98,7 @@ class ActualInlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01) 
 
     def accumulate(family: DotFamily, index: Int, value: Double) {throw new Error("Purposefully not implemented")}
 
-    def accumulate(family: DotFamily, t: Tensor) {throw new Error("Purposefully not implemented")}
+    def accumulate(family: DotFamily, t: Tensor) {accumulate(family, t, 1.0)}
 
     def accumulator(family: DotFamily) = throw new Error("Purposefully not implemented")
 
