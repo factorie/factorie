@@ -1,10 +1,9 @@
 package cc.factorie.optimize
 
-import cc.factorie.Model
-import cc.factorie.util.LocalDoubleAccumulator
-import cc.factorie.la.{Tensor, WeightsTensor, LocalWeightsTensorAccumulator}
-import cc.factorie.util.FastLogging
 import cc.factorie.app.classify.LogLinearModel
+import cc.factorie.{DotFamily, Family, Model}
+import cc.factorie.la._
+import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging}
 
 /**
  * Created by IntelliJ IDEA.
@@ -82,6 +81,68 @@ class InlineSGDTrainer(val model:LogLinearModel[_,_], val optimizer:GradientOpti
     })
     weights *= (1.0 - l2)
   }
+  def isConverged = false
+}
+
+trait AccumulatorMaximizer extends WeightsTensorAccumulator {
+  acc : AccumulatorMaximizer =>
+  def accumulator(family: DotFamily) = new TensorAccumulator {
+    def accumulate(t: Tensor) { acc.accumulate(family, t, 1.0)}
+    def accumulate(index: Int, value: Double) { acc.accumulate(family, index, value)}
+    def accumulate(t: Tensor, factor: Double) { acc.accumulate(family, t, factor)}
+    def combine(ta: Accumulator[Tensor]) {throw new Error("Not implemented")}
+  }
+
+  def accumulate(family: DotFamily, t: Tensor) { accumulate(family, t, 1.0)}
+  def combine(ta: Accumulator[Tensor]) { throw new Error("Not implemented")}
+  def accumulate(t: Tensor, factor: Double) { throw new Error("Not implemented")}
+  def accumulate(index: Int, value: Double) { throw new Error("Not implemented")}
+  def accumulate(t: Tensor) {accumulate(t, 1.0)}
+}
+
+class GradientAccumulatorMaximizer(val weights: WeightsTensor, learningRate: Double = 0.1) extends AccumulatorMaximizer {
+  def lrate : Double = learningRate
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) { throw new Error("Not implemented") }
+
+  def accumulate(family: DotFamily, t: Tensor, factor: Double) { weights(family) += (t, lrate * factor) }
+
+  def accumulate(family: DotFamily, index: Int, value: Double) { weights(family)(index) += lrate*value }
+}
+
+class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1) extends AccumulatorMaximizer {
+  val weights = model.weightsTensor.asInstanceOf[WeightsTensor]
+  val sumGradientsSquared = model.newBlankDenseWeightsTensor
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {throw new Error("Not implemented")}
+
+  def accumulate(family: DotFamily, t: Tensor, factor: Double) {
+    val w = weights(family)
+    val g = sumGradientsSquared(family)
+    (w,g) match {
+      case (w:DenseTensor,t:SparseIndexedTensor) =>
+        val indices = t._indices
+        val values = t._values
+        var i = 0
+        while (i < indices.length) {
+          g(indices(i)) += values(i)*values(i)
+          w(indices(i)) += values(i)*learningRate/math.sqrt(g(indices(i)))
+          i += 1
+        }
+    }
+  }
+
+  def accumulate(family: DotFamily, index: Int, value: Double) {
+    sumGradientsSquared(family)(index) += value * value
+    weights(family)(index) += value * learningRate / math.sqrt(sumGradientsSquared(family)(index))
+  }
+}
+
+class ActualInlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer : AccumulatorMaximizer = null) extends Trainer[M] {
+  if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model.weightsTensor.asInstanceOf[WeightsTensor], lrate)
+
+  def processExamples(examples: Iterable[Example[M]]) {
+    examples.foreach(e => e.accumulateExampleInto(model, optimizer, null, null))
+  }
+
   def isConverged = false
 }
 
