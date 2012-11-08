@@ -206,7 +206,7 @@ trait SparseIndexedTensor extends Tensor {
           while (i < arr.length) {
             val indices = t2._indices
             var j = 0
-            while (j < indices.length) {
+            while (j < t2.activeDomainSize) {
               this(t.singleIndex(i, indices(j))) += f*t1(i)
               j += 1
             }
