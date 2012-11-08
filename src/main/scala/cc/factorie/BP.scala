@@ -272,7 +272,7 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
-      throw new Error("This code path leads to incorrect marginals")
+      //throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
       val indices: Array[Int] = limitedDiscreteValues12._indices
       val len = limitedDiscreteValues12._indicesLength; var ii = 0
