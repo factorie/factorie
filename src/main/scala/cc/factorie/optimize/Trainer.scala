@@ -67,23 +67,6 @@ class ParallelBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimize
   def isConverged = optimizer.isConverged
 }
 
-// Hacky proof of concept
-class InlineSGDTrainer(val model:LogLinearModel[_,_], val optimizer:GradientOptimizer = new MIRA, val learningRate:Double = 0.01, val l2:Double = 0.1) extends Trainer[LogLinearModel[_,_]] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
-  override def processExamples(examples: Iterable[Example[LogLinearModel[_,_]]]): Unit = {
-    val weights = model.evidenceTemplate.weightsTensor
-    examples.foreach(example => {
-      val glmExample = example.asInstanceOf[GLMExample]
-      val oldWeight = glmExample.weight
-      glmExample.weight *= learningRate
-      example.accumulateExampleInto(model, gradientAccumulator, null, null)
-      glmExample.weight = oldWeight
-    })
-    weights *= (1.0 - l2)
-  }
-  def isConverged = false
-}
-
 trait AccumulatorMaximizer extends WeightsTensorAccumulator {
   acc : AccumulatorMaximizer =>
   def accumulator(family: DotFamily) = new TensorAccumulator {
@@ -136,7 +119,7 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1) 
   }
 }
 
-class ActualInlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer : AccumulatorMaximizer = null) extends Trainer[M] {
+class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer : AccumulatorMaximizer = null) extends Trainer[M] {
   if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model.weightsTensor.asInstanceOf[WeightsTensor], lrate)
 
   def processExamples(examples: Iterable[Example[M]]) {
