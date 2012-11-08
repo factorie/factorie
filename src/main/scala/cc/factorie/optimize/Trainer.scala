@@ -84,8 +84,8 @@ trait AccumulatorMaximizer extends WeightsTensorAccumulator {
   def accumulate(t: Tensor) {accumulate(t, 1.0)}
 }
 
-class GradientAccumulatorMaximizer(val weights: WeightsTensor, learningRate: Double = 0.1) extends AccumulatorMaximizer {
-  def lrate : Double = learningRate
+class GradientAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1) extends AccumulatorMaximizer {
+  val weights = model.weightsTensor.asInstanceOf[WeightsTensor]
   def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {
     // FIXME: come back and make this more efficient - we can get away with multiplying the
     // left tensor since its the per-label gradient - luke
@@ -93,9 +93,34 @@ class GradientAccumulatorMaximizer(val weights: WeightsTensor, learningRate: Dou
     weights(family) += new Outer1Tensor2(t1, t2)
   }
 
-  def accumulate(family: DotFamily, t: Tensor, factor: Double) { weights(family) += (t, lrate * factor) }
+  def accumulate(family: DotFamily, t: Tensor, factor: Double) { weights(family) += (t, learningRate * factor) }
 
-  def accumulate(family: DotFamily, index: Int, value: Double) { weights(family)(index) += lrate*value }
+  def accumulate(family: DotFamily, index: Int, value: Double) { weights(family)(index) += learningRate * value }
+}
+
+class L2GradientAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, val l2: Double = 0.1, val projectAfter: Int = 500) extends AccumulatorMaximizer {
+  val weights = model.weightsTensor.asInstanceOf[WeightsTensor]
+  var step = 0
+  def lrate : Double = learningRate
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) {
+    // FIXME: come back and make this more efficient - we can get away with multiplying the
+    // left tensor since its the per-label gradient - luke
+    t1 *= learningRate
+    weights(family) += new Outer1Tensor2(t1, t2)
+    tryProject()
+    step += 1
+  }
+  def accumulate(family: DotFamily, t: Tensor, factor: Double) {
+    weights(family) += (t, lrate * factor)
+    tryProject()
+    step += 1
+  }
+  private def tryProject() {
+    if (step % projectAfter == 0) {
+      weights *= math.min(1, (1 / math.sqrt(l2)) / weights.twoNorm)
+    }
+  }
+  def accumulate(family: DotFamily, index: Int, value: Double) { sys.error("intentionally unimplemented") }
 }
 
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
@@ -174,7 +199,7 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
 }
 
 class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer : AccumulatorMaximizer = null) extends Trainer[M] {
-  if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model.weightsTensor.asInstanceOf[WeightsTensor], lrate)
+  if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model, lrate)
 
   def processExamples(examples: Iterable[Example[M]]) {
     examples.foreach(e => e.accumulateExampleInto(model, optimizer, null, null))
@@ -215,31 +240,19 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer) e
   def isConverged = false
 }
 
-// Hacky proof of concept
-class SGDThenBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer, val learningRate: Double = 0.01, val l2: Double = 0.1)
-  extends Trainer[M] with FastLogging {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
-  val valueAccumulator = new LocalDoubleAccumulator
-  val marginAccumulator = new LocalDoubleAccumulator
-  val batchLearner = new BatchTrainer(model, optimizer)
-  var sgdPasses = 5
-  override def processExamples(examples: Iterable[Example[M]]): Unit = {
-    if (sgdPasses > 0) {
-      valueAccumulator.value = 0.0
-      examples.foreach(example => {
-        val glmExample = example.asInstanceOf[GLMExample]
-        val oldWeight = glmExample.weight
-        glmExample.weight *= learningRate
-        example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
-        glmExample.weight = oldWeight
-      })
-      model.asInstanceOf[cc.factorie.app.classify.LogLinearModel[_,_]].evidenceTemplate.weightsTensor *= math.pow(1.0 - learningRate * l2, math.sqrt(examples.size))
-      valueAccumulator.value += -l2 * (model.weightsTensor dot model.weightsTensor)
-      logger.info("Loss: " + valueAccumulator.value)
-      sgdPasses -= 1
-    }
+class InlineSGDThenBatchTrainer[M<:Model](
+  val model: M, val lrate: Double = 0.01, val numSgdPasses: Int = 5, var sgdOptimizer: AccumulatorMaximizer = null,
+  val batchOptimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] {
+  var step = 1
+  if (sgdOptimizer == null) sgdOptimizer = new GradientAccumulatorMaximizer(model, lrate)
+  private val batchTrainer = new BatchTrainer[M](model, batchOptimizer)
+  def processExamples(examples: Iterable[Example[M]]) {
+    if (step <= numSgdPasses)
+      examples.foreach(e => e.accumulateExampleInto(model, sgdOptimizer, null, null))
     else
-      batchLearner.processExamples(examples)
+      batchTrainer.processExamples(examples)
+    step += 1
   }
-  def isConverged = optimizer.isConverged
+  def isConverged = batchTrainer.isConverged
 }
+
