@@ -3,7 +3,7 @@ package cc.factorie.optimize
 import cc.factorie.app.classify.LogLinearModel
 import cc.factorie.{DotFamily, Family, Model}
 import cc.factorie.la._
-import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging}
+import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging, ThreadLocal}
 
 /**
  * Created by IntelliJ IDEA.
@@ -57,12 +57,13 @@ class BatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new 
 class ParallelBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
-    val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
-    val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
-    val marginAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
+    val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
+    val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
+    val marginAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
     examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, marginAccumulator.get))
-    throw new Error("Not yet implemented.  Now need to gather all gradientAccumulator from each thread, combine them and pass to optimizer.")
-    optimizer.step(model.weightsTensor, gradientAccumulator.get.tensor, valueAccumulator.get.value, marginAccumulator.get.value)
+    //throw new Error("Not yet implemented.  Now need to gather all gradientAccumulator from each thread, combine them and pass to optimizer.")
+    val accumulatedGradient = gradientAccumulator.instances.drop(1).foldLeft(gradientAccumulator.instances.head){ case (prev, curr) => { prev.combine(curr); prev }}
+    optimizer.step(model.weightsTensor, accumulatedGradient.tensor, valueAccumulator.instances.head.value, marginAccumulator.instances.head.value)
   }
   def isConverged = optimizer.isConverged
 }
