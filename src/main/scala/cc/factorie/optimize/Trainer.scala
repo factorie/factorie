@@ -105,7 +105,7 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1) 
         val indices = t._indices
         val values = t._values
         var i = 0
-        while (i < indices.length) {
+        while (i < t.activeDomainSize) {
           g(indices(i)) += values(i)*values(i)
           w(indices(i)) += values(i)*learningRate/math.sqrt(g(indices(i)))
           i += 1
