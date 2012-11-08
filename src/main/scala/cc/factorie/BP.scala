@@ -649,7 +649,7 @@ object BP {
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
-  def inferChainMax(varying:Seq[DiscreteVar], model:Model): BPSummary = {
+  def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): BPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
     varying.size match {
       case 0 => {}
@@ -675,7 +675,7 @@ object BP {
         markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
-          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
+          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
         }
       }
     }
