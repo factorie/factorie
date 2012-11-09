@@ -241,6 +241,21 @@ trait SparseIndexedTensor extends Tensor {
     sum
   }
 
+  override def maxNormalize() {
+    var maxi = 0
+    var max = Double.MinValue
+    var i = 0
+    while (i < __npos) {
+      if (__values(i) > max) {
+        max = __values(i)
+        maxi = __indices(i)
+      }
+      i += 1
+    }
+    zero()
+    update(maxi, 1)
+  }
+
   
   // TODO Use copyInto instead?
   def cloneFrom(t:SparseIndexedTensor): Unit = {
