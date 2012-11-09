@@ -82,6 +82,7 @@ limitations under the License.
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
+      <!--<scope>test</scope>-->
     </dependency>
 
     <dependency>
@@ -101,8 +102,8 @@ limitations under the License.
       <groupId>net.sourceforge.parallelcolt</groupId>
       <artifactId>parallelcolt</artifactId>
       <version>0.10.0</version>
-    </dependency>        
-	
+    </dependency>
+
   </dependencies>
 
   <distributionManagement>
@@ -132,18 +133,12 @@ limitations under the License.
     <plugins>
       <!-- Adds support for building Scala -->
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.1.0</version>
         <configuration>
+          <recompileMode>incremental</recompileMode>
+          <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
@@ -165,6 +160,48 @@ limitations under the License.
             </launcher>
             -->
             <launcher>
+              <id>TrainPOS</id>
+              <mainClass>cc.factorie.example.PerceptronPOS</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+              <args>
+                <arg>--train</arg> <arg>/Users/brian/wrk-umass/data/penn/wsj_train_00-18.txt</arg>
+                <arg>--dev</arg> <arg>/Users/brian/wrk-umass/data/penn/wsj_dev_19-21.txt</arg>
+                <arg>--test</arg> <arg>/Users/brian/wrk-umass/data/penn/wsj_test_22-24.txt</arg>
+                <arg>--model</arg> <arg>/Users/brian/tmp/pos-models</arg>
+              </args>
+            </launcher>
+            <launcher>
+              <id>GLM</id>
+              <mainClass>cc.factorie.optimize.GlmTest</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+              <args>
+                  <arg>/Users/brian/Downloads/20_newsgroups/alt.atheism</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/comp.graphics</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/comp.os.ms-windows.misc</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/comp.sys.ibm.pc.hardware</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/comp.sys.mac.hardware</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/comp.windows.x</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/misc.forsale</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/rec.autos</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/rec.motorcycles</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/rec.sport.baseball</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/rec.sport.hockey</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/sci.crypt</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/sci.electronics</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/sci.med</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/sci.space</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/soc.religion.christian</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/talk.politics.guns</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/talk.politics.mideast</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/talk.politics.misc</arg>
+                  <arg>/Users/brian/Downloads/20_newsgroups/talk.religion.misc</arg>
+              </args>
+            </launcher>
+            <launcher>
               <id>LDA</id>
               <mainClass>cc.factorie.app.topics.lda.LDA</mainClass>
               <jvmArgs>
@@ -177,37 +214,41 @@ limitations under the License.
               <jvmArgs>
                 <jvmArg>-Xmx4g</jvmArg>
               </jvmArgs>
+              <args>
+                  <arg>--train=../data/conll-2008-Dep/devel.closed</arg>
+                  <arg>--dev=../data/conll-2008-Dep/trial.closed</arg>
+              </args>
             </launcher>
             <launcher>
-              <id>bib-demo</id>
-              <mainClass>cc.factorie.app.bib.Coref</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <id>parsing-test</id>
+              <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainParserSVM</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+              <args>
+                  <arg>--load</arg>
+                  <arg>--model=./model1352236740518.parser</arg>
+                  <arg>--test</arg> <arg>../data/conll-2008-Dep/devel.closed</arg>
+              </args>
             </launcher>
           </launchers>
         </configuration>
       </plugin>
 
       <!-- Assembles the jar and other release formats (tarball, etc.). -->
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>attached</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <descriptorRefs>
-            <descriptorRef>project</descriptorRef>
-          </descriptorRefs>
-          <descriptors>
-            <descriptor>src/main/assembly/src.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
+        <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+                <archive>
+                    <manifest>
+                        <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainParserSVM</mainClass>
+                    </manifest>
+                </archive>
+                <descriptorRefs>
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+            </configuration>
+        </plugin>
 
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
