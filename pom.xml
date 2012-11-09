@@ -82,7 +82,6 @@ limitations under the License.
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
-      <!--<scope>test</scope>-->
     </dependency>
 
     <dependency>
@@ -102,8 +101,8 @@ limitations under the License.
       <groupId>net.sourceforge.parallelcolt</groupId>
       <artifactId>parallelcolt</artifactId>
       <version>0.10.0</version>
-    </dependency>
-
+    </dependency>        
+	
   </dependencies>
 
   <distributionManagement>
@@ -133,12 +132,18 @@ limitations under the License.
     <plugins>
       <!-- Adds support for building Scala -->
       <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.15.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-          <recompileMode>incremental</recompileMode>
-          <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
@@ -166,7 +171,41 @@ limitations under the License.
                 <jvmArg>-Xmx4g</jvmArg>
               </jvmArgs>
             </launcher>
+            <launcher>
+              <id>parsing</id>
+              <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainParserSVM</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+            </launcher>
+            <launcher>
+              <id>bib-demo</id>
+              <mainClass>cc.factorie.app.bib.Coref</mainClass>
+              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+            </launcher>
           </launchers>
+        </configuration>
+      </plugin>
+
+      <!-- Assembles the jar and other release formats (tarball, etc.). -->
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attached</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>project</descriptorRef>
+          </descriptorRefs>
+          <descriptors>
+            <descriptor>src/main/assembly/src.xml</descriptor>
+          </descriptors>
         </configuration>
       </plugin>
 
