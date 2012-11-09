@@ -150,7 +150,8 @@ trait BPFactor extends DiscreteMarginal {
       val l = t.length
       var i = 0
       while (i < l) {
-        z += t(i) * (math.log(t(i)) + scores(i))
+        if (t(i) > 0)
+          z += t(i) * (math.log(t(i)) + scores(i))
         i += 1
       }
       z
@@ -556,6 +557,15 @@ object BPSummary {
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = apply(varying, BPSumProductRing, model)
 }
 
+object LoopyBPSummary {
+  def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
+      val summary = new LoopyBPSummary(ring)
+      val varyingSet = varying.toSet
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      summary
+    }
+}
+
 // Just in case we want to create different BPSummary implementations
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
@@ -571,7 +581,7 @@ trait AbstractBPSummary extends Summary[DiscreteMarginal] {
     Do not call this constructor directly; instead use the companion object apply methods, 
     which add the appropriate BPFactors, BPVariables and BPEdges. */
 class BPSummary(val ring:BPRing) extends AbstractBPSummary {
-  private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
+  protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
@@ -596,13 +606,9 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   }
 }
 
-
-//class ChainBPSummary(val labels:Seq[DiscreteVar], val ring:BPRing, model:Model[Seq[DiscreteVar]]) extends BPSummary2 {
-//  val bpVariables = labels.map(new BPVariable1(_))
-//  def marginal(vs:Variable*): DiscreteMarginal = vs.size match {
-//    case 1 => 
-//  }
-//}
+class LoopyBPSummary(val ring: BPRing) extends BPSummary(ring) {
+  override def logZ = _bpFactors.values.map(_.betheObjective).sum
+}
 
 
 object BPUtil {
@@ -654,6 +660,18 @@ object BP {
       }
     }
   }
+
+  def interLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) {
+    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
+    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
+    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
+    for (i <- 0 to numIterations) {
+      BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
+      BPUtil.sendAccordingToOrdering(bfsSeq)
+    }
+    summary
+  }
+
   def inferTreeSum(varying:Iterable[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
     val summary = BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
