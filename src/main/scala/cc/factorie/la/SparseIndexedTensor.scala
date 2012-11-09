@@ -60,7 +60,8 @@ trait SparseIndexedTensor extends Tensor {
       def next = { i += 1 ; (__indices(i-1), __values(i-1)) }
     }
   }
-  override def zero(): Unit = __npos = 0
+  // TODO need to assert that _sorted < __npos always. Add a "checkInvariants" method?? -luke
+  override def zero(): Unit = { __npos = 0; _sorted = 0 }
   override def sum: Double = { var s = 0.0; var i = 0; while (i < __npos) { s += __values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
