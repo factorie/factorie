@@ -1,4 +1,4 @@
-package cc.factorie.bp.specialized
+package cc.factorie.app.chain.infer
 
 /**
  * Author: martin

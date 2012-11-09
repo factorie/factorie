@@ -17,6 +17,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
+import cc.factorie.app.chain.infer._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
@@ -82,7 +83,12 @@ extends ModelWithContext[IndexedSeq[Label]] with Infer //with Trainer[ChainModel
 
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
-    val factors = this.factorsWithContext(labels)
+    ForwardBackward.search(labels, obs, markov, bias, labelToFeatures)
+    val summary = new ChainSummary
+    summary
+  }
+  def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
+    Viterbi.search(labels, obs, markov, bias, labelToFeatures)
     val summary = new ChainSummary
     summary
   }

@@ -1,4 +1,4 @@
-package cc.factorie.bp.specialized
+package cc.factorie.app.chain.infer
 
 import cc.factorie._
 import cc.factorie.la._
@@ -16,14 +16,15 @@ trait BeamSearch {
   // the contract here is: null out array elements you don't like
   def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
-  def searchAndSetToMax[OV <: DiscreteTensorVar, LV <: LabeledCategoricalVariable[_]](
+  def searchAndSetToMax[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
             vs: Seq[LV],
-            localTemplate: DotTemplateWithStatistics2[LV, OV],
-            transTemplate: DotTemplateWithStatistics2[LV, LV],
-            biasTemplate: DotTemplateWithStatistics1[LV] = null.asInstanceOf[DotTemplateWithStatistics1[LV]]
+            localTemplate: DotFamilyWithStatistics2[LV, OV],
+            transTemplate: DotFamilyWithStatistics2[LV, LV],
+            biasTemplate: DotFamilyWithStatistics1[LV] = null.asInstanceOf[DotFamilyWithStatistics1[LV]],
+            labelToFeatures: LV => OV
           ): Unit = {
 
-    val resultAssignment: Seq[Int] = search(vs, localTemplate, transTemplate, biasTemplate)
+    val resultAssignment: Seq[Int] = search(vs, localTemplate, transTemplate, biasTemplate, labelToFeatures)
     var i = 0
     while (i < vs.size) {
       vs(i).set(resultAssignment(i))(null)
@@ -31,18 +32,19 @@ trait BeamSearch {
     }
   }
 
-  def search[OV <: DiscreteTensorVar, LV <: LabeledCategoricalVariable[_]](
+  def search[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
             vs: Seq[LV],
-            localTemplate: DotTemplateWithStatistics2[LV, OV],
-            transTemplate: DotTemplateWithStatistics2[LV, LV],
-            biasTemplate: DotTemplateWithStatistics1[LV] = null.asInstanceOf[DotTemplateWithStatistics1[LV]]
+            localTemplate: DotFamilyWithStatistics2[LV, OV],
+            transTemplate: DotFamilyWithStatistics2[LV, LV],
+            biasTemplate: DotFamilyWithStatistics1[LV] = null.asInstanceOf[DotFamilyWithStatistics1[LV]],
+            labelToFeatures: LV => OV
            ): Seq[Int] = {
 
     // get localScores
     val localScores: Array[Array[Double]] = {
       val arrays = Array.fill[Array[Double]](vs.size)(Array.ofDim[Double](vs.head.domain.size))
       for ((v,vi) <- vs.zipWithIndex) {
-        val localFactor = localTemplate.factors(v).head
+        val localFactor = localTemplate.Factor(v, labelToFeatures(v))
         for ((_,di) <- v.settings.zipWithIndex)
           arrays(vi)(di) = localFactor.currentScore
       }
