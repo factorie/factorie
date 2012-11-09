@@ -59,11 +59,11 @@ class ParallelBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimize
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
-    val marginAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
-    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, marginAccumulator.get))
-    //throw new Error("Not yet implemented.  Now need to gather all gradientAccumulator from each thread, combine them and pass to optimizer.")
+    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, null))
+    
     val accumulatedGradient = gradientAccumulator.instances.drop(1).foldLeft(gradientAccumulator.instances.head){ case (prev, curr) => { prev.combine(curr); prev }}
-    optimizer.step(model.weightsTensor, accumulatedGradient.tensor, valueAccumulator.instances.head.value, marginAccumulator.instances.head.value)
+    val accumulatedValues = valueAccumulator.instances.drop(1).foldLeft(valueAccumulator.instances.head){ case (prev, curr) => { prev.combine(curr); prev }}
+    optimizer.step(model.weightsTensor, accumulatedGradient.tensor, accumulatedValues.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
 }

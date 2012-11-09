@@ -4,5 +4,5 @@ redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript", "with_toc_data"]
 
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"
-baseurl: "/~sameer/factorie"
+baseurl: ""
 factorie_logo: "factorie-logo55.png"
