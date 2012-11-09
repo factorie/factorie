@@ -600,7 +600,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
   var _logZ = Double.NaN
   override def logZ: Double = {
-    if (_logZ == Double.NaN) _logZ = _bpFactors.values.head.calculateLogZ
+    if (_logZ != _logZ) _logZ = _bpFactors.values.head.calculateLogZ
     _logZ
   }
   
