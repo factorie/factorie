@@ -250,8 +250,8 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     override def valuesStatistics(tensor:Tensor): Tensor = Family2.this.valuesStatistics(tensor)
     //override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
-    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.limitedDiscreteValues12
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1
+    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.getLimitedDiscreteValues12(this.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteTensorVar]])
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor2[DiscreteTensorVar,N2]])
     //override def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = Family2.this.addLimitedDiscreteValues(values)
     //override def addLimitedDiscreteValues(i:Int, j:Int): Unit = Family2.this.addLimitedDiscreteValues(i, j)
   }
@@ -274,10 +274,12 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   }
 
   // For implementing sparsity in belief propagation
-  def hasLimitedDiscreteValues12 = limitedDiscreteValues12.activeDomainSize > 0
-  lazy val limitedDiscreteValues12: SparseBinaryTensor2 = new SparseBinaryTensor2(0,0) // TODO What dim1, dim2 can we give here?
-  def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
-  lazy val limitedDiscreteValues1: SparseBinaryTensor1 = new SparseBinaryTensor1(0) // TODO What dim1 can we give here?
+  def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize > 0
+  protected def getLimitedDiscreteValues12(factor:Factor2[DiscreteTensorVar,DiscreteTensorVar]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
+  var limitedDiscreteValues12: SparseBinaryTensor2 = null
+  def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
+  protected def getLimitedDiscreteValues1(factor:Factor2[DiscreteTensorVar,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 } 
+  var limitedDiscreteValues1: SparseBinaryTensor1 = null
 
 //  // Cached Statistics
 //  private var cachedStatisticsArray: Array[StatisticsType] = null

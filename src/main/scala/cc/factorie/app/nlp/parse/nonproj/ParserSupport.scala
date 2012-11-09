@@ -194,7 +194,9 @@ object ParserSupport {
     }
     
     object NonProjParserFeaturesDomain extends CategoricalTensorDomain[String] //StringHashDomain(6000000)
+//    object NonProjParserFeaturesDomain extends StringHashDomain(6000000)
     class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
+    //class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends HashingBinaryFeatureVectorVariable[String] {
       override def domain = NonProjParserFeaturesDomain
       override def skipNonCategories = domain.dimensionDomain.frozen
     }

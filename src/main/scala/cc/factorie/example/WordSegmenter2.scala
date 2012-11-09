@@ -49,7 +49,7 @@ object WordSegmenterDemo2 {
     }
     object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Token] {
       factorName = "Label,Label,Token"
-      lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
+      lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
     }
     object skip extends  DotFamily2[Label,Label] {
       factorName = "Label,Label:Boolean"

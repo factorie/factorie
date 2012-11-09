@@ -1,3 +1,17 @@
+/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
+   Department of Computer Science.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+
 package cc.factorie.app.classify
 
 import cc.factorie._
@@ -68,7 +82,7 @@ object Classify {
       val readTestingInstances = new CmdOption("read-testing-instances", "instances", "FILE", "Filename from which to read the testing instances' labels and features.")
 
       val readSVMLight = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
-      val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary.")
+      val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary as opposed to counts.  Default is true.")
 
       val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
       val readTextLines = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
@@ -167,6 +181,7 @@ object Classify {
 
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
+      var numDocs = 0; var numDirs = 0
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
@@ -180,8 +195,11 @@ object Classify {
           // Use directory as label category
           textIntoFeatures(fileToString(file), features)
           labels += features.label
+          numDocs += 1
         }
+        numDirs += 1
       }
+      println("Read %d documents in %d directories." format (numDocs, numDirs))
     } else if (opts.readTextLines.wasInvoked) {
       labels ++= readInstancesFromFile(opts.readTextLines.value)
     } else if (opts.readSVMLight.wasInvoked) {
@@ -189,6 +207,10 @@ object Classify {
     } else if (opts.readInstances.wasInvoked) {
       labels ++= readInstancesFromFile(opts.readInstances.value)
     }
+
+    println("# of distinct class labels: " + LabelDomain.size)
+    println("Class labels: " + LabelDomain._elements.mkString(", "))
+    println("Vocabulary size: " + FeaturesDomain.dimensionDomain.size)
 
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
@@ -232,12 +254,19 @@ object Classify {
       validationLabels ++= valSet
     }
 
+    if (opts.printInfoGain.wasInvoked) {
+      println("Top 20 features with highest information gain: ")
+      new InfoGain(trainingLabels).top(20).foreach(println(_))
+    }
+
     if (opts.writeInstances.wasInvoked) {
       val instancesFile = new File(opts.writeInstances.value)
       instancesFile.createNewFile()
       Serialize.writeInstancesSVMLight(trainingLabels ++ testingLabels ++ validationLabels, new PrintStream(instancesFile))
     }
 
+    // to get true eval, add reference to scala-tools and use scala.tools.nsc.interpreter.IMain?? -luke
+    // see http://stackoverflow.com/questions/1183645/eval-in-scala
     val classifierTrainer = opts.trainer.value match {
       case "MaxEntTrainer" => new MaxEntTrainer()
       case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()

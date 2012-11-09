@@ -67,7 +67,16 @@ trait DoubleSeq {
     case t:DoubleSeq => { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
   }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
-  def maxIndex2: (Int,Int) = throw new Error("Not yet implemented")
+  def maxIndex2: (Int, Int) = {
+    val l = length; var i = 1
+    var max1 = 0; var max2 = 0
+    while (i < l) {
+      if (apply(max1) < apply(i)) { max2 = max1; max1 = i }
+      else if (apply(max2) < apply(i)) max2 = i
+      i += 1
+    }
+    (max1, max2)
+  }
   def containsNaN: Boolean = { val l = length; var i = 0; while (i < l) { if (apply(i) != apply(i)) return true; i += 1 }; false }  // TODO Why wouldn't apply(i).isNaN compile?
   /** Return records for the n elements with the largest values. */
   def top(n:Int): TopN[String] = new cc.factorie.util.TopN(n, this)
@@ -318,6 +327,30 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     this /= sum
     sum
     //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
+  }
+  def exponentiate() {
+    var i = 0
+    val l = length
+    while (i < l) {
+      update(i, math.exp(apply(i)))
+      i += 1
+    }
+  }
+  // Finds the maximum element of the array and sets it to 1, while setting all others to zero
+  def maxNormalize() {
+    var max = Double.MinValue
+    var maxi = 0
+    var i = 0
+    val l = length
+    while (i < l) {
+      if (apply(i) > max) {
+        max = apply(i)
+        maxi = i
+      }
+      update(i, 0)
+      i += 1
+    }
+    update(maxi, 1)
   }
   /** expNormalize, then put back into log-space. */
   def normalizeLogProb(): Double = {

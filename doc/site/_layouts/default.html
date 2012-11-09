@@ -5,7 +5,6 @@
         <link href="{{ site.baseurl }}/assets/css/bootstrap.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/pygments/default.css" media="screen" />
         <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
-
         <title>Factorie: {{ page.title }}</title>
     </head>
 
@@ -16,71 +15,17 @@
                 <a href="{{ site.baseurl }}/index.html">Factorie</a></h1>
             </div>
 
-
             <div class="row">
                 <div class="span3">
-            <!-- >
-                    <ul class="nav nav-list">
-                            <li class="nav-header">List header</li>  
-                            <li class="active"><a href="#"><i class="icon-white"></i> Home</a></li>  
-                            <li><a href="#"><i class="icon-white"></i> Library</a></li>  
-                            <li><a href="#"><i class="icon-white"></i> Applications</a></li>  
-                            <li class="nav-header">Another list header</li>  
-                            <li><a href="#"><i class="icon-white"></i> Profile</a></li>  
-                            <li><a href="#"><i class="icon-white"></i> Settings</a></li>  
-                            <li class="divider"></li>  
-                            <li><a href="#"><i class="icon-white"></i> Help</a></li>  
-                    </ul-->
-		    <ul  class="nav nav-list">
-		      {% assign pages_list = site.pages %}
-		      {% assign group = 'prefix' %}
-		      {% include pages_list %}
-                      <li class="nav-header">Documentation</li>  
-		      {% assign pages_list = site.pages %}
-		      {% assign group = 'doc' %}
-		      {% include pages_list %}
-		      <li class="divider"></li>  
-		      {% assign pages_list = site.pages %}
-		      {% assign group = 'suffix' %}
-		      {% include pages_list %}
-		      <li class="divider"></li>  
-		      <li><a href="http://www.iesl.cs.umass.edu"><i class="icon-white"></i>IESL</a></li>
-		      <li><a href="htpp://groups.google.com/a/factorie.cs.umass.edu/discuss"><i class="icon-white"></i>Mailing List</a></li>  
-                    </ul>
-		</div>
-		<div class="span9">
-		  {{ content }}
-		</div>
-	    </div>
-            <!-- -->
-
-	    <!--
-            <div class="row">
-                <div class="span12">
-
-                    <ul class="nav nav-tabs">
-                        <li class="active">
-                        <a href="#">Home</a> </li>
-                        <li><a href="#">Tutorials</a></li>
-                        <li><a href="#">Practice Editor </a></li>
-                        <li><a href="#">Gallery</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                    {{ content }}
-
-
+                    {% include nav.html %}
+                </div>
+                <div class="span9">
+                  {{ content }}
                 </div>
             </div>
-	    -->
-	    
-	    
+
             <hr>
-            <footer>
-            <p>
-            Factorie is open source software <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>. Please cite for research use.<br>
-            <a href="http://www.iesl.cs.umass.edu/">Information Extraction and Synthesis Laboratory</a> (IESL); <a href="http://www.cs.umass.edu/">Computer Science Department</a>. <a href="http://www.umass.edu/">University of Massachusetts Amherst</a>
-              </p>
-            </footer>
+            {% include footer.html %}
         </div> <!-- /container -->
 
     </body>

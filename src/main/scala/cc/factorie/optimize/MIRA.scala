@@ -19,7 +19,7 @@ class MIRA(var learningMargin:Double) extends GradientOptimizer {
   
   protected val epsilon: Double = 0.000000001
   protected def kktMultiplier(gradient:Tensor, margin:Double): Double = {
-    val l2sqrd = gradient dot gradient
+    val l2sqrd = gradient.twoNormSquared
     val error = learningMargin - margin
     var lambda = 0.0
     if (l2sqrd > 0.0 + epsilon || l2sqrd < 0.0 - epsilon)

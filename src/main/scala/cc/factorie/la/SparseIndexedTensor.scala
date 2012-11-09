@@ -60,7 +60,8 @@ trait SparseIndexedTensor extends Tensor {
       def next = { i += 1 ; (__indices(i-1), __values(i-1)) }
     }
   }
-  override def zero(): Unit = __npos = 0
+  // TODO need to assert that _sorted < __npos always. Add a "checkInvariants" method?? -luke
+  override def zero(): Unit = { __npos = 0; _sorted = 0 }
   override def sum: Double = { var s = 0.0; var i = 0; while (i < __npos) { s += __values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
@@ -82,6 +83,17 @@ trait SparseIndexedTensor extends Tensor {
     // makeReadable is called in this.position
     val pos = position(index)
     if (pos < 0) 0.0 else __values(pos)
+  }
+
+  override def twoNormSquared: Double = {
+    makeReadable
+    val l = __npos; var result = 0.0; var i = 0
+    while (i < l) {
+      val v = __values(i)
+      result += v * v
+      i += 1
+    }
+    result
   }
 
   override def dot(v:DoubleSeq): Double = {
@@ -185,6 +197,25 @@ trait SparseIndexedTensor extends Tensor {
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this(i) += arr(i)*f  ; i += 1} }
     case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
     case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
+    case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this(i) += f) }
+    case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this(i) += f) }
+    case t:Outer1Tensor2 => {
+      (t.tensor1,t.tensor2) match {
+        case (t1: DenseTensor, t2: SparseBinaryTensorLike1) =>
+          var i = 0
+          val arr = t1.asArray
+          while (i < arr.length) {
+            val indices = t2._indices
+            var j = 0
+            while (j < t2.activeDomainSize) {
+              this(t.singleIndex(i, indices(j))) += f*t1(i)
+              j += 1
+            }
+            i += 1
+          }
+        case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
+      }
+    case t:SingletonBinaryTensor => this(t.singleIndex) += f
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
@@ -208,6 +239,29 @@ trait SparseIndexedTensor extends Tensor {
       i += 1
     }
     sum
+  }
+
+  override def exponentiate() {
+    var i = 0;
+    while (i < __npos) {
+      __values(i) = math.exp(__values(i))
+      i += 1
+    }
+  }
+
+  override def maxNormalize() {
+    var maxi = 0
+    var max = Double.MinValue
+    var i = 0
+    while (i < __npos) {
+      if (__values(i) > max) {
+        max = __values(i)
+        maxi = __indices(i)
+      }
+      i += 1
+    }
+    zero()
+    update(maxi, 1)
   }
 
   

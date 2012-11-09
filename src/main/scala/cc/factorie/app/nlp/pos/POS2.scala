@@ -65,7 +65,7 @@ class POS2 extends Infer with util.FastLogging {
     
     override def factors(labels:Iterable[Variable]): Iterable[Factor] = labels match {
       case labels:IndexedSeq[PosLabel] => {
-        //println("POS2.model.factors labels.size="+labels.size)
+        //println("EpsilonPOS.model.factors labels.size="+labels.size)
         val result = new collection.mutable.ArrayBuffer[Factor]
         var prevLabel: PosLabel = null
         for (label <- labels) {
@@ -119,23 +119,30 @@ class POS2 extends Infer with util.FastLogging {
   }
   
   def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document]): Unit = {
-    model.transTemplate.limitedDiscreteValues12.zero
+    val limitDiscreteValues = true
+    //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12.zero
     for (document <- trainDocuments ++ testDocuments) {
       initPosAttr(document)
-      for (factor <- model.transTemplate.factors(document.tokens.map(_.attr[PosLabel]))) factor.asInstanceOf[Factor2[DiscreteVar,DiscreteVar]].addLimitedDiscreteCurrentValues12
+      if (limitDiscreteValues) for (factor <- model.transTemplate.factors(document.tokens.map(_.attr[PosLabel]))) factor.asInstanceOf[Factor2[DiscreteVar,DiscreteVar]].addLimitedDiscreteCurrentValues12
     }
-    println("POS.train sparse transitions "+model.transTemplate.limitedDiscreteValues12.activeDomainSize+" out of "+PosDomain.size*PosDomain.size)
-//    // Make two iterations of SampleRank training
-//    val trainer1 = new SampleRankTrainer(new GibbsSampler(model, HammingLossObjective))
-//    val labels = trainDocuments.flatMap(_.tokens.map(_.attr[PosLabel]))
-//    labels.foreach(_.setRandomly())
-//    println("First label factors: "+model.factors(labels.head))
-//    println("Third sentence factors"+model.factors(trainDocuments.toSeq(3).sentences(3).tokens.map(_.attr[PosLabel])))
-//    for (i <- 1 to 4) {
-//      //for (document <- trainDocuments) trainer1.processContexts(document.tokens.map(_.attr[PosLabel]))
-//      trainer1.processContexts(labels)
-//      printAccuracy("SampleRank Train", trainDocuments)
-//    }
+    // Make it non-limited for testing
+    if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12 += new UniformTensor2(PosDomain.size, PosDomain.size, 1.0)
+    
+    if (limitDiscreteValues) println("POS.train sparse transitions "+model.transTemplate.limitedDiscreteValues12.activeDomainSize+" out of "+PosDomain.size*PosDomain.size)
+    // Make two iterations of SampleRank training
+    val doSampleRank = false
+    if (doSampleRank) {
+      val trainer1 = new SampleRankTrainer(new GibbsSampler(model, HammingObjective))
+      val labels = trainDocuments.flatMap(_.tokens.map(_.attr[PosLabel]))
+      labels.foreach(_.setRandomly())
+      println("First label factors: "+model.factors(labels.head))
+      println("Third sentence factors"+model.factors(trainDocuments.toSeq(3).sentences(3).tokens.map(_.attr[PosLabel])))
+      for (i <- 1 to 4) {
+        //for (document <- trainDocuments) trainer1.processContexts(document.tokens.map(_.attr[PosLabel]))
+        trainer1.processContexts(labels)
+        printAccuracy("SampleRank Train", trainDocuments)
+      }
+    }
     // Then train by Likelihood LBFGS to convergence
     val examples = for (document <- trainDocuments; sentence <- document.sentences) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
     val trainer2 = new BatchTrainer(model)
@@ -151,7 +158,11 @@ class POS2 extends Infer with util.FastLogging {
   def printAccuracy(msg:String, documents:Iterable[Document]): Unit = {
     //documents.foreach(apply(_))
     //val icm = new IteratedConditionalModes[PosLabel](model, null); for (doc <- documents; token <- doc.tokens) icm.process(token.attr[PosLabel])
-    for (doc <- documents) BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)
+    for (doc <- documents) {
+      val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
+      //summary.setToMaximize(null)
+      //for (bpf <- summary.bpFactors) println("EpsilonPOS.printAccuracy "+bpf.calculateLogZ); println("---")
+    }
     logger.info(msg+" token accuracy = "+HammingObjective.accuracy(documents.flatMap(_.tokens.map(_.attr[PosLabel]))))
   }
 
