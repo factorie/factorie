@@ -19,67 +19,22 @@ import cc.factorie.util._
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
+import cc.factorie.app.chain.ChainModel
 
 class POS2 extends Infer with util.FastLogging {
-  def this(savedModelDir:String) = { this(); PosModel.load(savedModelDir)}
   
   object PosFeaturesDomain extends CategoricalTensorDomain[String]
-  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-    def domain = PosFeaturesDomain
-    //override def skipNonCategories = true
-  }
+  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
-  var useSentenceBoundaries = false
-  class PosModel extends TemplateModel {
-    // Bias term on each individual label 
-    val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
-      lazy val weights = new la.DenseTensor1(PosDomain.size)
-    }
-    // Factor between label and observed token
-    val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
-      lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
-      def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
-      def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
-    }
-    // Transition factors between two successive labels
-    val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
-      lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
-      def unroll1(label: PosLabel) = {
-        if (useSentenceBoundaries) {
-          if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil
-        } else {
-          if (label.token.hasPrev) Factor(label.token.prev.attr[PosLabel], label) else Nil
-        }
-      }
-      def unroll2(label: PosLabel) = {
-        if (useSentenceBoundaries) {
-          if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[PosLabel]) else Nil
-        } else {
-          if (label.token.hasNext) Factor(label, label.token.next.attr[PosLabel]) else Nil
-        }
-      }
-    }
-    this += biasTemplate
-    this += localTemplate
-    this += transTemplate
-    
-    override def factors(labels:Iterable[Variable]): Iterable[Factor] = labels match {
-      case labels:IndexedSeq[PosLabel] => {
-        //println("EpsilonPOS.model.factors labels.size="+labels.size)
-        val result = new collection.mutable.ArrayBuffer[Factor]
-        var prevLabel: PosLabel = null
-        for (label <- labels) {
-          result += biasTemplate.Factor(label)
-          result += localTemplate.Factor(label, label.token.attr[PosFeatures])
-          if (prevLabel ne null) result += transTemplate.Factor(prevLabel, label)
-          prevLabel = label
-        }
-        result
-      }
-    }
-    // TODO Add def factors(Sentence) for convenience
-  }
+  class PosModel extends ChainModel(
+      PosDomain,
+      PosFeaturesDomain,
+      labelToFeatures = (p: PosLabel) => p.token.attr[PosFeatures], // TODO: this is a little rough -brian
+      labelToToken = (p: PosLabel) => p.token,
+      tokenToLabel = (t: Token) => t.posLabel)
   object model extends PosModel
+      
+  var useSentenceBoundaries = false
   
   def initPosAttr(sentenceTokens:Seq[Token]): Unit = {
     if (sentenceTokens.length < 1 || sentenceTokens.head.attr[PosFeatures] != null) return
@@ -98,7 +53,6 @@ class POS2 extends Infer with util.FastLogging {
         if (token.isPunctuation) features += "PUNCTUATION"
       }
     }
-    //sentenceTokens.foreach(t => println(t.hashCode+" "+t.attr[PosFeatures])); println()
     if (addedPosFeatures)
       cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentenceTokens, (t:Token)=> t.attr[PosFeatures], List(1), List(-1))
   }
@@ -107,8 +61,15 @@ class POS2 extends Infer with util.FastLogging {
   class PosLikelihoodExample(val labels:IndexedSeq[PosLabel]) extends Example[PosModel] {
     def accumulateExampleInto(model: PosModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
-      val summary = BP.inferChainSum(labels, model)
-      if (value != null) { var incr = 0.0; summary.factors.foreach(f => incr += f.assignmentScore(TargetAssignment)); value.accumulate(incr - summary.logZ) } 
+      val (expectations, logZ) = model.featureExpectationsAndLogZ(labels)
+      
+      if (value != null) { 
+        var incr = 0.0;
+        summary.factors.foreach(f => 
+          incr += f.assignmentScore(TargetAssignment));
+        value.accumulate(incr - summary.logZ) 
+      } 
+      
       if (gradient != null) {
         summary.factors.asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
           gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
@@ -119,35 +80,35 @@ class POS2 extends Infer with util.FastLogging {
   }
   
   def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document]): Unit = {
-    val limitDiscreteValues = true
+    //val limitDiscreteValues = true
     //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12.zero
     for (document <- trainDocuments ++ testDocuments) {
       initPosAttr(document)
-      if (limitDiscreteValues) for (factor <- model.transTemplate.factors(document.tokens.map(_.attr[PosLabel]))) factor.asInstanceOf[Factor2[DiscreteVar,DiscreteVar]].addLimitedDiscreteCurrentValues12
+      //if (limitDiscreteValues) for (factor <- model.transTemplate.factors(document.tokens.map(_.attr[PosLabel]))) factor.asInstanceOf[Factor2[DiscreteVar,DiscreteVar]].addLimitedDiscreteCurrentValues12
     }
     // Make it non-limited for testing
-    if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12 += new UniformTensor2(PosDomain.size, PosDomain.size, 1.0)
+    //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12 += new UniformTensor2(PosDomain.size, PosDomain.size, 1.0)
     
-    if (limitDiscreteValues) println("POS.train sparse transitions "+model.transTemplate.limitedDiscreteValues12.activeDomainSize+" out of "+PosDomain.size*PosDomain.size)
+    //if (limitDiscreteValues) println("POS.train sparse transitions "+model.transTemplate.limitedDiscreteValues12.activeDomainSize+" out of "+PosDomain.size*PosDomain.size)
     // Make two iterations of SampleRank training
-    val doSampleRank = false
-    if (doSampleRank) {
-      val trainer1 = new SampleRankTrainer(new GibbsSampler(model, HammingObjective))
-      val labels = trainDocuments.flatMap(_.tokens.map(_.attr[PosLabel]))
-      labels.foreach(_.setRandomly())
-      println("First label factors: "+model.factors(labels.head))
-      println("Third sentence factors"+model.factors(trainDocuments.toSeq(3).sentences(3).tokens.map(_.attr[PosLabel])))
-      for (i <- 1 to 4) {
-        //for (document <- trainDocuments) trainer1.processContexts(document.tokens.map(_.attr[PosLabel]))
-        trainer1.processContexts(labels)
-        printAccuracy("SampleRank Train", trainDocuments)
-      }
-    }
+//    val doSampleRank = false
+//    if (doSampleRank) {
+//      val trainer1 = new SampleRankTrainer(new GibbsSampler(model, HammingObjective))
+//      val labels = trainDocuments.flatMap(_.tokens.map(_.attr[PosLabel]))
+//      labels.foreach(_.setRandomly())
+//      println("First label factors: "+model.factors(labels.head))
+//      println("Third sentence factors"+model.factors(trainDocuments.toSeq(3).sentences(3).tokens.map(_.attr[PosLabel])))
+//      for (i <- 1 to 4) {
+//        //for (document <- trainDocuments) trainer1.processContexts(document.tokens.map(_.attr[PosLabel]))
+//        trainer1.processContexts(labels)
+//        printAccuracy("SampleRank Train", trainDocuments)
+//      }
+//    }
     // Then train by Likelihood LBFGS to convergence
     val examples = for (document <- trainDocuments; sentence <- document.sentences) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
-    val trainer2 = new BatchTrainer(model)
-    while (!trainer2.isConverged) {
-      trainer2.processExamples(examples)
+    val trainer = new BatchTrainer(model)
+    while (!trainer.isConverged) {
+      trainer.processExamples(examples)
       printAccuracy("Train", trainDocuments)
     }
     logger.info("FINAL")
@@ -159,7 +120,8 @@ class POS2 extends Infer with util.FastLogging {
     //documents.foreach(apply(_))
     //val icm = new IteratedConditionalModes[PosLabel](model, null); for (doc <- documents; token <- doc.tokens) icm.process(token.attr[PosLabel])
     for (doc <- documents) {
-      val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
+      model.inferByMaxProduct(doc.tokens.map(_.posLabel))
+      //val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
       //summary.setToMaximize(null)
       //for (bpf <- summary.bpFactors) println("EpsilonPOS.printAccuracy "+bpf.calculateLogZ); println("---")
     }
@@ -208,7 +170,7 @@ object POS2 extends POS2 {
     def train(): Unit = {
       // Read in the data
       val trainDocuments = LoadConll2003.fromFilename(opts.trainFile.value).take(10)
-      val testDocuments = LoadConll2003.fromFilename(opts.testFile.value).take(10)
+      val testDocuments =  LoadConll2003.fromFilename(opts.testFile.value).take(10)
 
       // Add features for POS
       trainDocuments.foreach(initPosAttr(_))
@@ -222,7 +184,6 @@ object POS2 extends POS2 {
       if (opts.modelDir.wasInvoked)
         PosModel.save(opts.modelDir.value)
     }
-    
     
     def run(): Unit = {
       PosModel.load(opts.modelDir.value)
