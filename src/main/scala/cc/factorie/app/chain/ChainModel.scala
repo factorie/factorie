@@ -18,7 +18,7 @@ import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.app.chain.infer._
-import scala.collection.mutable.{ListBuffer,ArrayBuffer}
+import scala.collection.mutable.{ListBuffer,ArrayBuffer, Map}
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:DiscreteDomain,
@@ -87,10 +87,15 @@ extends ModelWithContext[IndexedSeq[Label]] with Infer //with Trainer[ChainModel
     val summary = new ChainSummary
     summary
   }
+  def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (Map[DotFamily, Tensor], Double) = {
+    ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+  }
   def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
-    Viterbi.search(labels, obs, markov, bias, labelToFeatures)
+    // this shouldn't actually set the variables, just used now for fast evaluation
+    Viterbi.searchAndSetToMax(labels, obs, markov, bias, labelToFeatures)
     val summary = new ChainSummary
     summary
+    null
   }
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
     None
