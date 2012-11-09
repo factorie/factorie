@@ -328,6 +328,30 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     sum
     //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
   }
+  def exponentiate() {
+    var i = 0
+    val l = length
+    while (i < l) {
+      update(i, math.exp(apply(i)))
+      i += 1
+    }
+  }
+  // Finds the maximum element of the array and sets it to 1, while setting all others to zero
+  def maxNormalize() {
+    var max = Double.MinValue
+    var maxi = 0
+    var i = 0
+    val l = length
+    while (i < l) {
+      if (apply(i) > max) {
+        max = apply(i)
+        maxi = i
+      }
+      update(i, 0)
+      i += 1
+    }
+    update(maxi, 1)
+  }
   /** expNormalize, then put back into log-space. */
   def normalizeLogProb(): Double = {
     // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
