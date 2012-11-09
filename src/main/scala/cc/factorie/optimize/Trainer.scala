@@ -54,7 +54,7 @@ class BatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new 
   def isConverged = optimizer.isConverged
 }
 
-class ParallelBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
+class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
@@ -69,7 +69,7 @@ class ParallelBatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimize
 }
 
 trait AccumulatorMaximizer extends WeightsTensorAccumulator {
-  acc : AccumulatorMaximizer =>
+  acc: AccumulatorMaximizer =>
   def accumulator(family: DotFamily) = new TensorAccumulator {
     def accumulate(t: Tensor) { acc.accumulate(family, t, 1.0)}
     def accumulate(index: Int, value: Double) { acc.accumulate(family, index, value)}
@@ -198,7 +198,7 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
   }
 }
 
-class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer : AccumulatorMaximizer = null) extends Trainer[M] {
+class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer: AccumulatorMaximizer = null) extends Trainer[M] {
   if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model, lrate)
 
   def processExamples(examples: Iterable[Example[M]]) {
@@ -214,11 +214,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MI
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     examples.foreach(example => {
-      // FIXME: creating a new one every go round is infinitely faster than zero-ing the old tensor - should this be?
-      // also, the answers given are different - which means there's some bug somewhere, probably using old values
-      // in the gradient sparse tensor even tho _npos is set to 0! Need to investigate this further -luke
-//      gradientAccumulator.tensor.zero()
-      gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+      gradientAccumulator.tensor.zero()
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
     })

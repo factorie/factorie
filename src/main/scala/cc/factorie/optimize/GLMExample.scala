@@ -51,6 +51,32 @@ object ObjectiveFunctions {
       }
     (loss, gradient)
   }
+  val hingeSqMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
+    var loss = 0.0; var i = 0; val len = prediction.length
+    while (i < len) {
+      if (i == label) loss += -math.pow(math.max(0, 1 - prediction(label)), 2)
+      else loss += -math.pow(math.max(0, prediction(i) - 1), 2)
+      i += 1
+    }
+    val (maxLabel1, maxLabel2) = prediction.maxIndex2
+    val gradient =
+      if (label == maxLabel1 && prediction(maxLabel1) > 1 + prediction(maxLabel2))
+        new UniformTensor1(prediction.size, 0.0)
+      else if (label == maxLabel1) {
+        val g = new DenseTensor1(prediction.size, 0.0)
+        g(label) += 2 * (prediction(maxLabel2) + 1 - prediction(label))
+        g(maxLabel2) += -2 * (prediction(maxLabel2) + 1 - prediction(label))
+        g
+      } else {
+        val g = new DenseTensor1(prediction.size, 0.0)
+        g(label) += 2 * (prediction(maxLabel1) + 1 - prediction(label))
+        g(maxLabel1) += -2 * (prediction(maxLabel1) + 1 - prediction(label))
+        g
+      }
+//    println(prediction)
+//    println(gradient)
+    (loss, gradient)
+  }
   // This one has a hot index in the gradient for every margin violation, not just the biggest one
   // However this messes with projected gradient stuff by making the norm too big
   val hingeMultiClassObjectiveOneVsAll: MultiClassObjectiveFunction = (prediction, label) => {
@@ -148,7 +174,7 @@ object GlmTest {
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-//            val strategy = new BatchTrainer(model, new L2ProjectedGradientAscent(k = pieces.size, rate = 1.0, l2 = 0.25))
+//            val strategy = new BatchTrainer(model)
     val strategy = new InlineSGDTrainer(model, optimizer = new AdagradAccumulatorMaximizer(model))
 
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
