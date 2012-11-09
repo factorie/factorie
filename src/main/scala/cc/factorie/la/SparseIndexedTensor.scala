@@ -241,6 +241,14 @@ trait SparseIndexedTensor extends Tensor {
     sum
   }
 
+  override def exponentiate() {
+    var i = 0;
+    while (i < __npos) {
+      __values(i) = math.exp(__values(i))
+      i += 1
+    }
+  }
+
   override def maxNormalize() {
     var maxi = 0
     var max = Double.MinValue

@@ -328,6 +328,14 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     sum
     //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
   }
+  def exponentiate() {
+    var i = 0
+    val l = length
+    while (i < l) {
+      update(i, math.exp(apply(i)))
+      i += 1
+    }
+  }
   // Finds the maximum element of the array and sets it to 1, while setting all others to zero
   def maxNormalize() {
     var max = Double.MinValue
