@@ -33,11 +33,11 @@ object BPSumProductRing extends BPRing {
       If "varying" is null, then any DiscreteVars are considered varying. */
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
     case factor:Factor1[DiscreteVar] =>  
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)))
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1))) with BPFactorTreeSumProduct
     case factor:Factor2[DiscreteVar,DiscreteVar] => 
       if (varying == null || (varying.contains(factor._1) && varying.contains(factor._2))) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2SumProduct
-      else if (varying.contains(factor._1)) new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)))
-      else new BPFactor1Factor2second(factor.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteVar]], new BPEdge(summary.bpVariable(factor._2)))
+      else if (varying.contains(factor._1)) new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1))) with BPFactorTreeSumProduct
+      else new BPFactor1Factor2second(factor.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteVar]], new BPEdge(summary.bpVariable(factor._2))) with BPFactorTreeSumProduct
     case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] =>
       new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2SumProduct
   }
@@ -46,8 +46,8 @@ object BPSumProductRing extends BPRing {
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
       case 1 => factor match {
-        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
-        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0))
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) with BPFactorTreeSumProduct
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0)) with BPFactorTreeSumProduct
       }
       case 2 => factor match {
         case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2SumProduct
@@ -61,10 +61,10 @@ object BPMaxProductRing extends BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
     case factor:Factor1[DiscreteVar] =>  
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1))) with BPFactor1MaxProduct
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1))) with BPFactorMaxProduct
     case factor:Factor2[DiscreteVar,DiscreteVar] => 
       if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
-      else new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1))) with BPFactor1MaxProduct
+      else new BPFactor1Factor2first(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1))) with BPFactorMaxProduct
     case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] =>
       new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
   }
@@ -73,8 +73,8 @@ object BPMaxProductRing extends BPRing {
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
       case 1 => factor match {
-        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) with BPFactor1MaxProduct
-        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0)) with BPFactor1MaxProduct
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) with BPFactorMaxProduct
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2first(factor, edges(0)) with BPFactorMaxProduct
       }
       case 2 => factor match {
         case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2MaxProduct
@@ -139,21 +139,52 @@ trait BPFactor extends DiscreteMarginal {
   /** Unnormalized log scores over values of varying neighbors */
   def calculateBeliefsTensor: Tensor
   /** The logSum of all entries in the beliefs tensor */
-  def calculateLogZ: Double = calculateBeliefsTensor match {
-    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
-    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
-  }
+  def calculateLogZ: Double
   /** Normalized probabilities over values of varying neighbors */
   def calculateMarginalTensor: Tensor = calculateBeliefsTensor.expNormalized
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
+  override def betheObjective: Double = calculateMarginalTensor match {
+    case t:DenseTensor => {
+      var z = 0.0
+      val l = t.length
+      var i = 0
+      while (i < l) {
+        if (t(i) > 0)
+          z += t(i) * (math.log(t(i)) + scores(i))
+        i += 1
+      }
+      z
+    }
+    case t:SparseIndexedTensor => {
+      var z = Double.NegativeInfinity
+      t.foreachActiveElement((i,v) => {
+        z = v * (math.log(z) + scores(i))
+      })
+      z
+    }
+  }
   /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
   /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
   def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
 }
 
+trait BPFactorTreeSumProduct extends BPFactor {
+  override def calculateMarginalTensor: Tensor = {
+    val v = calculateBeliefsTensor
+    v.expNormalize()
+    v
+  }
+  
+  def calculateLogZ: Double = calculateBeliefsTensor match {
+    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
+    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
+  }
+}
+
 trait BPFactorMaxProduct extends BPFactor {
+  override def calculateMarginalTensor: Tensor1 = calculateBeliefsTensor.maxNormalize().asInstanceOf[Tensor1]
   override def calculateLogZ: Double = calculateBeliefsTensor match {
     case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = math.max(z, t(i)); i += 1 }; z }
     case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = math.max(z, v) }); z }
@@ -172,13 +203,13 @@ abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVa
   def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   // TODO See about caching this when possible
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
-  override def calculateMarginalTensor: Tensor1 = { val result = calculateBeliefsTensor; result.expNormalize(); result.asInstanceOf[Tensor1] }
-  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor, false)
+  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor.asInstanceOf[Tensor1], false)
   def calculateOutgoing1: Tensor1 = scores
 }
 
+
 // A BPFactor1 with underlying model Factor1, with the one neighbor varying
-class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
+abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
@@ -197,12 +228,8 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
   override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
 }
 
-trait BPFactor1MaxProduct extends BPFactor1 with BPFactorMaxProduct {
-  override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor]
-}
-
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
-class BPFactor1Factor2first(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
+abstract class BPFactor1Factor2first(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = {
@@ -217,13 +244,13 @@ class BPFactor1Factor2first(val factor: Factor2[DiscreteVar,DiscreteTensorVar], 
     result
   }
   override def marginalTensorStatistics: Tensor = factor._2.value match {
-    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginalTensor, t2))
-    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginalTensor, t2))
+    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginalTensor.asInstanceOf[Tensor1], t2))
+    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginalTensor.asInstanceOf[Tensor1], t2))
   }
     
 }
 
-class BPFactor1Factor2second(val factor: Factor2[DiscreteTensorVar,DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
+abstract class BPFactor1Factor2second(val factor: Factor2[DiscreteTensorVar,DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = {
@@ -238,8 +265,8 @@ class BPFactor1Factor2second(val factor: Factor2[DiscreteTensorVar,DiscreteVar],
     result
   }
   override def marginalTensorStatistics: Tensor = factor._1.value match {
-    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginalTensor, t2))
-    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginalTensor, t2))
+    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginalTensor.asInstanceOf[Tensor1], t2))
+    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginalTensor.asInstanceOf[Tensor1], t2))
   }
 
 }
@@ -274,11 +301,10 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
 //      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
     result
   }
-  override def calculateMarginalTensor: Tensor2 = { val result = calculateBeliefsTensor; result.expNormalize; result.asInstanceOf[Tensor2] }
-  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginalTensor, false)
+  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginalTensor.asInstanceOf[Tensor2], false)
 }
 
-trait BPFactor2SumProduct { this: BPFactor2 =>
+trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
@@ -336,8 +362,7 @@ trait BPFactor2SumProduct { this: BPFactor2 =>
 }
 
 trait BPFactor2MaxProduct extends BPFactor2 with BPFactorMaxProduct { this: BPFactor2 =>
-  override def marginalTensorStatistics = factor.asInstanceOf[DotFamily#Factor].currentStatistics.asInstanceOf[Tensor] // TODO: remove the assumption that the variables are set to their maximizing values
-  val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
+  val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable
   var edge2Max1 = new Array[Int](edge2.variable.domain.size)
   def calculateOutgoing1: Tensor = {
     scores match {
@@ -461,7 +486,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
   }
   /** Add into the accumulator the factor's statistics, weighted by the marginal probability of the varying values involved. */
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
-    val marginal = calculateMarginalTensor
+    val marginal = calculateMarginalTensor.asInstanceOf[Tensor2]
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0
     while (i < leni) {
@@ -483,12 +508,12 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
 //    }
   }
   override def marginalTensorStatistics: Tensor = factor._2.value match {
-    case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginalTensor, t2))
+    case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginalTensor.asInstanceOf[Tensor2], t2))
   }
 }
 
 
-class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val edge3:BPEdge, val ring: BPRing) extends DiscreteMarginal3(edge1.bpVariable.variable, edge2.bpVariable.variable, edge3.bpVariable.variable, null) with BPFactor {
+abstract class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val edge3:BPEdge, val ring: BPRing) extends DiscreteMarginal3(edge1.bpVariable.variable, edge2.bpVariable.variable, edge3.bpVariable.variable, null) with BPFactor {
   edge1.bpFactor = this
   edge2.bpFactor = this
   edge3.bpFactor = this
@@ -506,7 +531,6 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
   def calculateOutgoing2: Tensor = throw new Error("Not yet implemented")
   def calculateOutgoing3: Tensor = throw new Error("Not yet implemented")
   def calculateBeliefsTensor: Tensor3 = throw new Error("Not yet implemented")
-  override def calculateMarginalTensor: Tensor3 = calculateBeliefsTensor.expNormalized.asInstanceOf[Tensor3]
   override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
   //def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
@@ -533,6 +557,15 @@ object BPSummary {
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = apply(varying, BPSumProductRing, model)
 }
 
+object LoopyBPSummary {
+  def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
+      val summary = new LoopyBPSummary(ring)
+      val varyingSet = varying.toSet
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      summary
+    }
+}
+
 // Just in case we want to create different BPSummary implementations
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
@@ -548,7 +581,7 @@ trait AbstractBPSummary extends Summary[DiscreteMarginal] {
     Do not call this constructor directly; instead use the companion object apply methods, 
     which add the appropriate BPFactors, BPVariables and BPEdges. */
 class BPSummary(val ring:BPRing) extends AbstractBPSummary {
-  private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
+  protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
@@ -573,13 +606,9 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   }
 }
 
-
-//class ChainBPSummary(val labels:Seq[DiscreteVar], val ring:BPRing, model:Model[Seq[DiscreteVar]]) extends BPSummary2 {
-//  val bpVariables = labels.map(new BPVariable1(_))
-//  def marginal(vs:Variable*): DiscreteMarginal = vs.size match {
-//    case 1 => 
-//  }
-//}
+class LoopyBPSummary(val ring: BPRing) extends BPSummary(ring) {
+  override def logZ = _bpFactors.values.map(_.betheObjective).sum
+}
 
 
 object BPUtil {
@@ -631,6 +660,18 @@ object BP {
       }
     }
   }
+
+  def interLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) {
+    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
+    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
+    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
+    for (i <- 0 to numIterations) {
+      BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
+      BPUtil.sendAccordingToOrdering(bfsSeq)
+    }
+    summary
+  }
+
   def inferTreeSum(varying:Iterable[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
     val summary = BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
