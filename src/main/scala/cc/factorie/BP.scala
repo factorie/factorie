@@ -144,27 +144,7 @@ trait BPFactor extends DiscreteMarginal {
   def calculateMarginalTensor: Tensor = calculateBeliefsTensor.expNormalized
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
-  /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
-  def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
-  /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
-  def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
-}
-
-trait BPFactorTreeSumProduct extends BPFactor {
-  override def calculateMarginalTensor: Tensor = {
-    val v = calculateBeliefsTensor
-    v.expNormalize()
-    v
-  }
-  
-  def calculateLogZ: Double = calculateBeliefsTensor match {
-    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
-    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
-  }
-}
-
-trait BPFactorLoopySumProduct extends BPFactorTreeSumProduct {
-  override def calculateLogZ: Double = calculateMarginalTensor match {
+  override def betheObjective: Double = calculateMarginalTensor match {
     case t:DenseTensor => {
       var z = 0.0
       val l = t.length
@@ -182,6 +162,23 @@ trait BPFactorLoopySumProduct extends BPFactorTreeSumProduct {
       })
       z
     }
+  }
+  /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
+  def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
+  /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
+  def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
+}
+
+trait BPFactorTreeSumProduct extends BPFactor {
+  override def calculateMarginalTensor: Tensor = {
+    val v = calculateBeliefsTensor
+    v.expNormalize()
+    v
+  }
+  
+  def calculateLogZ: Double = calculateBeliefsTensor match {
+    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
+    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
   }
 }
 
