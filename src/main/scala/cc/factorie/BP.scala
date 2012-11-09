@@ -598,7 +598,11 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
-  override def logZ: Double = _bpFactors.values.head.calculateLogZ
+  var _logZ = Double.NaN
+  override def logZ: Double = {
+    if (_logZ == Double.NaN) _logZ = _bpFactors.values.head.calculateLogZ
+    _logZ
+  }
   
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
@@ -606,9 +610,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
     case BPMaxProductRing => throw new Error("Not yet implemented.  Note: If you're using a chain model BP.inferChainMax already sets the variables to max values.")
     case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
   }
-  var _logZ = Double.NaN
   def expNormalize(t: Tensor) {
-    if (_logZ == Double.NaN) _logZ = logZ
     t += -logZ
     t.exponentiate()
   }
