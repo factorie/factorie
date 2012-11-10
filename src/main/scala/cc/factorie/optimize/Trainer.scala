@@ -188,6 +188,8 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
             }
           i += 1
         }
+      case _ =>
+        assert(false, "The types are not implemented: " + w.getClass.getName + " and " + t.getClass.getName)
     }
   }
 
