@@ -107,3 +107,11 @@ trait FastLogging extends Logging {
   override val logger = Logger.logger(this.getClass.getName)
 }
 
+object Timer {
+  def time[A](name: String, function: () => A): A = {
+    val t0 = System.currentTimeMillis()
+    val res = function()
+    println(name + ": " + (System.currentTimeMillis() - t0))
+    res
+  }
+}
