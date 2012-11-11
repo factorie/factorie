@@ -66,6 +66,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SingletonLayeredTensorLike2 => t dot this
     case t:DoubleSeq => super.dot(t)
   }
+  /*
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
     case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
@@ -74,6 +75,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SparseIndexedTensor2 => t.=+(_values, f)
     case t:DoubleSeq => super.+=(t, f)
   }
+  */
   override def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
     case (ds: SparseIndexedTensor2, factor: DenseTensor2) =>
       ds._makeReadable
