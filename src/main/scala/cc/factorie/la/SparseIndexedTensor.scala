@@ -194,11 +194,11 @@ trait SparseIndexedTensor extends Tensor {
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
-    case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this(i) += arr(i)*f  ; i += 1} }
-    case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
-    case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this(e._1) += e._2 * f)}
-    case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this(i) += f) }
-    case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this(i) += f) }
+    case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this += (i, arr(i)*f)  ; i += 1} }
+    case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this += (e._1, e._2 * f) )}
+    case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this +=  (e._1, e._2 * f) )}
+    case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this += (i, f) ) }
+    case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this += (i, f) ) }
     case t:Outer1Tensor2 => {
       (t.tensor1,t.tensor2) match {
         case (t1: DenseTensor, t2: SparseBinaryTensorLike1) =>
@@ -208,14 +208,14 @@ trait SparseIndexedTensor extends Tensor {
             val indices = t2._indices
             var j = 0
             while (j < t2.activeDomainSize) {
-              this(t.singleIndex(i, indices(j))) += f*t1(i)
+              this += (t.singleIndex(i, indices(j)), f*t1(i))
               j += 1
             }
             i += 1
           }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
-    case t:SingletonBinaryTensor => this(t.singleIndex) += f
+    case t:SingletonBinaryTensor => this += (t.singleIndex, f)
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
