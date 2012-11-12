@@ -95,12 +95,13 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       while (i < labels.size) {
         var j = 0
         while (j < labelDomain.size) {
-          localScores(i)(j) = bias.weights(j) + obs.score(j, labelToFeatures(labels(i)).value.asInstanceOf[Features#Value])
+          localScores(i)(j) = bias.weights(j) + obs.statisticsScore(new SingletonBinaryLayeredTensor2(labelDomain.size, featuresDomain.dimensionSize, j, labelToFeatures(labels(i)).value.asInstanceOf[Tensor1]))
           j += 1
         }
         i += 1
       }
     }
+    fillLocalScores()
 
     var localTransitionScores = null.asInstanceOf[Array[Array[Array[Double]]]]
     def fillLocalTransitionScores() {
@@ -112,7 +113,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         while (j < labelDomain.size) {
           var k = 0
           while (k < labelDomain.size) {
-            localTransitionScores(i)(j)(k) = markov.weights(j,k) + obsmarkov.score(j, k, labelToFeatures(labels(i)).value.asInstanceOf[Features#Value])
+            localTransitionScores(i)(j)(k) = markov.weights(j,k) + obsmarkov.statisticsScore(new Singleton2BinaryLayeredTensor3(labelDomain.size, labelDomain.size,featuresDomain.dimensionSize, j, k, labelToFeatures(labels(i)).value.asInstanceOf[Tensor1]))
             k += 1
           }
           j += 1
