@@ -26,7 +26,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:Catego
  val labelToToken:Label=>Token,
  val tokenToLabel:Token=>Label) 
  (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
-extends ModelWithContext[IndexedSeq[Label]] with Infer //with Trainer[ChainModel[Label,Features,Token]]
+extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
 {
   val labelClass = lm.erasure
   val featureClass = fm.erasure
@@ -45,15 +45,19 @@ extends ModelWithContext[IndexedSeq[Label]] with Infer //with Trainer[ChainModel
   }
   object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Features] {
     factorName = "Label,Label,Token"
-    lazy val weights = new la.Dense2LayeredTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize, new la.SparseTensor1(_))
+    lazy val weights = new la.Dense2LayeredTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize, new la.DenseTensor1(_))
   }
+  var useObsMarkov = true
   override def families = Seq(bias, obs, markov, obsmarkov) 
   def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
     val result = new ListBuffer[Factor]
     for (i <- 0 until labels.length) {
       result += bias.Factor(labels(i))
       result += obs.Factor(labels(i), labelToFeatures(labels(i)))
-      if (i > 0) result += markov.Factor(labels(i-1), labels(i))
+      if (i > 0) {
+        result += markov.Factor(labels(i-1), labels(i))
+        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
+      }
     }
     result
   }
@@ -67,29 +71,173 @@ extends ModelWithContext[IndexedSeq[Label]] with Infer //with Trainer[ChainModel
       result += bias.Factor(label)
       result += obs.Factor(label, labelToFeatures(label))
       val token = labelToToken(label)
-      if (token.hasPrev)
+      if (token.hasPrev) {
         result += markov.Factor(tokenToLabel(token.prev), label)
-      if (token.hasNext)
+        if (useObsMarkov)
+          result += obsmarkov.Factor(tokenToLabel(token.prev), label, labelToFeatures(label))
+      }
+      if (token.hasNext) {
         result += markov.Factor(label, tokenToLabel(token.next))
+        if (useObsMarkov)
+          result += obsmarkov.Factor(label, tokenToLabel(token.next), labelToFeatures(tokenToLabel(token.next)))
+      }
       result
     }
   }
   
-  class ChainSummary extends Summary[DiscreteMarginal] {
+  abstract class ChainSummary(val labels: Seq[Label]) extends Summary[DiscreteMarginal] {
     def marginals: Iterable[DiscreteMarginal] = Nil
     def marginal(vs:Variable*): DiscreteMarginal = null
+
+    val localScores = Array.ofDim[Double](labels.size, labelDomain.size)
+    def fillLocalScores() {
+      var i = 0
+      while (i < labels.size) {
+        var j = 0
+        while (j < labelDomain.size) {
+          localScores(i)(j) = bias.weights(j) + obs.score(j, labelToFeatures(labels(i)).value.asInstanceOf[Features#Value])
+          j += 1
+        }
+        i += 1
+      }
+    }
+
+    var localTransitionScores = null.asInstanceOf[Array[Array[Array[Double]]]]
+    def fillLocalTransitionScores() {
+      assert(useObsMarkov)
+      localTransitionScores = Array.ofDim[Double](labels.length, labelDomain.size, labelDomain.size)
+      var i = 1
+      while (i < labels.size) {
+        var j = 0
+        while (j < labelDomain.size) {
+          var k = 0
+          while (k < labelDomain.size) {
+            localTransitionScores(i)(j)(k) = markov.weights(j,k) + obsmarkov.score(j, k, labelToFeatures(labels(i)).value.asInstanceOf[Features#Value])
+            k += 1
+          }
+          j += 1
+        }
+        i += 1
+      }
+    }
+
+    def transitionScore(pos: Int, prev: Int, curr: Int): Double = {
+      if (useObsMarkov) {
+        if (localTransitionScores == null) fillLocalTransitionScores()
+        localTransitionScores(pos)(prev)(curr) + markov.weights(prev, curr)
+      } else markov.weights(prev, curr)
+    }
+    def calculateMarginalTensor(f: Factor): Tensor
+    override def marginalTensorStatistics(factor: Factor) = factor.valuesStatistics(calculateMarginalTensor(factor))
+
+  }
+
+  class ChainSummaryBP(l: Seq[Label]) extends ChainSummary(l) {
+    val alphas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
+    val betas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
+
+    def sendMessages() {
+      var j = 0
+      while (j < labelDomain.length) {
+        alphas(0)(j) = localScores(0)(j)
+        j += 1
+      }
+
+      var i = 1
+      while (i < labels.length) {
+        j = 0
+        while (j < labelDomain.length) {
+          var k = 0
+          while (k < labelDomain.length) {
+            alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + transitionScore(i, k, j))
+            k += 1
+          }
+          j += 1
+        }
+        i += 1
+      }
+
+      j = 0
+      while (j < labels.length) {
+        betas(labels.length - 1)(j) = 0
+        j += 1
+      }
+
+      i = labels.length - 2
+      while (i >= 0) {
+        j = 0
+        while (j < labelDomain.length) {
+          var k = 0
+          while (k < labelDomain.length) {
+            betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + transitionScore(i, j, k))
+            k += 1
+          }
+          j += 1
+        }
+        i -= 1
+      }
+    }
+    sendMessages()
+
+    override lazy val logZ: Double = {
+      var z = Double.NegativeInfinity
+      var i = 0
+      while (i < labelDomain.length) {
+        z = maths.sumLogProb(z, alphas(0)(i) + betas(0)(i))
+        i += 1
+      }
+      z
+    }
+
+    def calculateMarginalTensor(factor: Factor) = {
+      val f = factor.asInstanceOf[DotFamily#Factor]
+      if ((f.family eq bias) || (f.family eq obs)) {
+        val marginal = new DenseTensor1(labelDomain.length)
+        val arr = marginal.asArray
+        var i = 0
+        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
+        while (i < arr.length) {
+          arr(i) = math.exp(alphas(pos)(i) + betas(pos)(i) - logZ)
+          i += 1
+        }
+        if (f.family eq bias)
+          marginal
+        else
+          new Outer1Tensor2(marginal, f.variable(1).asInstanceOf[Features].value.asInstanceOf[Tensor1])
+      } else if ((f.family eq markov) || (f.family eq obsmarkov)) {
+        val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
+        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
+        var i = 0
+        while (i < labelDomain.length) {
+          var j = 0
+          while (j < labelDomain.length) {
+            marginal(i, j) = math.exp(alphas(pos)(i) + localScores(pos+1)(i) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
+            j += 1
+          }
+          i += 1
+        }
+        if (f.family eq markov)
+          marginal
+        else
+          new Outer2Tensor3(marginal, f.variable(2).asInstanceOf[Features].value.asInstanceOf[Tensor1])
+      } else {
+        require(false, "This Summary class can only be used with the correct ChainModel")
+        new DenseTensor1(10)
+      }
+    }
+
   }
 
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
     val factors = this.factorsWithContext(labels)
-    val summary = new ChainSummary
+    val summary = new ChainSummaryBP(labels)
     summary
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
-    None
-  }
 
+  object MarginalInference extends Infer {
+    override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(inferBySumProduct(variables.asInstanceOf[IndexedSeq[Label]]))
+  }
   // Training
   val objective = new HammingTemplate[Label]
 }

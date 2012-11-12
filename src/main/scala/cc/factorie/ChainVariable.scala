@@ -21,6 +21,7 @@ trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   def hasPrev: Boolean
   def next: This
   def prev: This
+  def position: Int
   def next(offset:Int): This = {
     if (offset < 0) return prev(-offset)
     var i = offset
