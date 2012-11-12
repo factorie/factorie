@@ -193,7 +193,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       }
 
       j = 0
-      while (j < nLabels) {
+      while (j < domainSize) {
         betas(nLabels - 1)(j) = 0
         j += 1
       }
