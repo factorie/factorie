@@ -130,7 +130,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     }
     
     def calculateMarginalTensor(f: Factor): Tensor
-    override def marginalTensorStatistics(factor: Factor) = factor.valuesStatistics(calculateMarginalTensor(factor))
+    override def marginalTensorStatistics(factor: Factor) = calculateMarginalTensor(factor)
 
   }
 
@@ -140,17 +140,19 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
     def sendMessages() {
       var j = 0
-      while (j < labelDomain.length) {
+      val domainSize = labelDomain.length
+      val nLabels = labels.length
+      while (j < domainSize) {
         alphas(0)(j) = localScores(0)(j)
         j += 1
       }
 
       var i = 1
-      while (i < labels.length) {
+      while (i < nLabels) {
         j = 0
-        while (j < labelDomain.length) {
+        while (j < domainSize) {
           var k = 0
-          while (k < labelDomain.length) {
+          while (k < domainSize) {
             alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + transitionScore(i, k, j))
             k += 1
           }
@@ -160,17 +162,17 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       }
 
       j = 0
-      while (j < labels.length) {
-        betas(labels.length - 1)(j) = 0
+      while (j < nLabels) {
+        betas(nLabels - 1)(j) = 0
         j += 1
       }
 
-      i = labels.length - 2
+      i = nLabels - 2
       while (i >= 0) {
         j = 0
-        while (j < labelDomain.length) {
+        while (j < domainSize) {
           var k = 0
-          while (k < labelDomain.length) {
+          while (k < domainSize) {
             betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + transitionScore(i, j, k))
             k += 1
           }
@@ -193,6 +195,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
     def calculateMarginalTensor(factor: Factor) = {
       val f = factor.asInstanceOf[DotFamily#Factor]
+      val ds = labelDomain.length
       if ((f.family eq bias) || (f.family eq obs)) {
         val marginal = new DenseTensor1(labelDomain.length)
         val arr = marginal.asArray
@@ -208,12 +211,13 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           new Outer1Tensor2(marginal, f.variable(1).asInstanceOf[Features].value.asInstanceOf[Tensor1])
       } else if ((f.family eq markov) || (f.family eq obsmarkov)) {
         val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
+        val arr = marginal.asArray
         val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
         var i = 0
-        while (i < labelDomain.length) {
+        while (i < ds) {
           var j = 0
-          while (j < labelDomain.length) {
-            marginal(i, j) = math.exp(alphas(pos)(i) + localScores(pos+1)(j) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
+          while (j < ds) {
+            arr(ds*i + j) = math.exp(alphas(pos)(i) + localScores(pos+1)(j) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
             j += 1
           }
           i += 1
