@@ -121,15 +121,34 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         i += 1
       }
     }
+    if (useObsMarkov) fillLocalTransitionScores()
 
-    @inline final def transitionScore(pos: Int, prev: Int, curr: Int): Double = {
-      if (useObsMarkov) {
-        if (localTransitionScores == null) fillLocalTransitionScores()
-        localTransitionScores(pos)(prev)(curr) + markov.weights(prev, curr)
-      } else markov.weights(prev, curr)
+    val nodeMarginals = ArrayBuffer[DenseTensor1]()
+    val edgeMarginals = ArrayBuffer[DenseTensor2]()
+    def computeNodeMarginal(pos: Int): Tensor1
+    def computeEdgeMarginal(pos: Int): Tensor2
+    def calculateMarginalTensor(factor: Factor) = {
+      val f = factor.asInstanceOf[DotFamily#Factor]
+      val ds = labelDomain.length
+      if ((f.family eq bias) || (f.family eq obs)) {
+        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
+        val marginal = if (nodeMarginals(pos) != null) nodeMarginals(pos) else computeNodeMarginal(pos)
+        if (f.family eq bias)
+          marginal
+        else
+          new Outer1Tensor2(marginal, f.variable(1).asInstanceOf[Features].value.asInstanceOf[Tensor1])
+      } else if ((f.family eq markov) || (f.family eq obsmarkov)) {
+        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
+        val marginal = if (edgeMarginals(pos) != null) edgeMarginals(pos) else computeEdgeMarginal(pos)
+        if (f.family eq markov)
+          marginal
+        else
+          new Outer2Tensor3(marginal, f.variable(2).asInstanceOf[Features].value.asInstanceOf[Tensor1])
+      } else {
+        require(false, "This Summary class can only be used with the correct ChainModel")
+        new DenseTensor1(10)
+      }
     }
-    
-    def calculateMarginalTensor(f: Factor): Tensor
     override def marginalTensorStatistics(factor: Factor) = calculateMarginalTensor(factor)
 
   }
@@ -137,8 +156,6 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   class ChainSummaryBP(l: Seq[Label]) extends ChainSummary(l) {
     val alphas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
     val betas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
-    val nodeMarginals = ArrayBuffer[DenseTensor1]()
-    val edgeMarginals = ArrayBuffer[DenseTensor2]()
 
     def sendMessages() {
       var j = 0
@@ -161,7 +178,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           var k = 0
           if (useObsMarkov) {
             while (k < domainSize) {
-              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + transitionScore(i, k, j))
+              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + localTransitionScores(i)(k)(j))
               k += 1
             }
           } else {
@@ -188,7 +205,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           var k = 0
           if (useObsMarkov) {
             while (k < domainSize) {
-              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + transitionScore(i, j, k))
+              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + localTransitionScores(i)(j)(k))
               k += 1
             }
           } else {
@@ -216,67 +233,50 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
     override def logZ = _logZ
 
-    def calculateMarginalTensor(factor: Factor) = {
-      val f = factor.asInstanceOf[DotFamily#Factor]
-      val ds = labelDomain.length
-      if ((f.family eq bias) || (f.family eq obs)) {
-        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
-        val marginal = if (nodeMarginals(pos) != null) nodeMarginals(pos) else {
-          val marg = new DenseTensor1(labelDomain.length)
-          val arr = marg.asArray
-          var i = 0
-          val al = alphas(pos)
-          val bl = betas(pos)
-          val lz = logZ
-          while (i < arr.length) {
-            arr(i) = math.exp(al(i) + bl(i) - lz)
-            i += 1
-          }
-          nodeMarginals(pos) = marg
-          marg
-        }
-        if (f.family eq bias)
-          marginal
-        else
-          new Outer1Tensor2(marginal, f.variable(1).asInstanceOf[Features].value.asInstanceOf[Tensor1])
-      } else if ((f.family eq markov) || (f.family eq obsmarkov)) {
-        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
-        val marginal = if (edgeMarginals(pos) != null) edgeMarginals(pos) else {
-          val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
-          val arr = marginal.asArray
-          var i = 0
-          val al = alphas(pos)
-          val bl = betas(pos+1)
-          val ls = localScores(pos+1)
-          val lz = logZ
-          val trans = markov.weights.asInstanceOf[DenseTensor2]
-          while (i < ds) {
-            var j = 0
-            if (useObsMarkov) {
-              while (j < ds) {
-                marginal(i,j) = math.exp(al(i) + ls(j) + transitionScore(pos, i, j) + bl(j) - lz)
-                j += 1
-              }
-            } else {
-              while (j < ds) {
-                marginal(i,j) = math.exp(al(i) + ls(j) + trans(i, j) + bl(j) - lz)
-                j += 1
-              }
-            }
-            i += 1
-          }
-          edgeMarginals(pos) = marginal
-          marginal
-        }
-        if (f.family eq markov)
-          marginal
-        else
-          new Outer2Tensor3(marginal, f.variable(2).asInstanceOf[Features].value.asInstanceOf[Tensor1])
-      } else {
-        require(false, "This Summary class can only be used with the correct ChainModel")
-        new DenseTensor1(10)
+    def computeNodeMarginal(pos: Int): DenseTensor1 = {
+      val marg = new DenseTensor1(labelDomain.length)
+      val arr = marg.asArray
+      var i = 0
+      val al = alphas(pos)
+      val bl = betas(pos)
+      val lz = logZ
+      while (i < arr.length) {
+        arr(i) = math.exp(al(i) + bl(i) - lz)
+        i += 1
       }
+      nodeMarginals(pos) = marg
+      marg
     }
+
+    def computeEdgeMarginal(pos: Int) : DenseTensor2 = {
+      val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
+      val arr = marginal.asArray
+      var i = 0
+      val al = alphas(pos)
+      val bl = betas(pos+1)
+      val ls = localScores(pos+1)
+      val ds = labelDomain.size
+      val lz = logZ
+      val trans = markov.weights.asInstanceOf[DenseTensor2]
+      while (i < ds) {
+        var j = 0
+        if (useObsMarkov) {
+          while (j < ds) {
+            marginal(i,j) = math.exp(al(i) + ls(j) + localTransitionScores(pos)(i)(j) + bl(j) - lz)
+            j += 1
+          }
+        } else {
+          while (j < ds) {
+            marginal(i,j) = math.exp(al(i) + ls(j) + trans(i, j) + bl(j) - lz)
+            j += 1
+          }
+        }
+        i += 1
+      }
+      edgeMarginals(pos) = marginal
+      marginal
+    }
+
 
   }
 
