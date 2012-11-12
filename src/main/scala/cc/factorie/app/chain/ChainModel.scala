@@ -152,15 +152,23 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       edgeMarginals += null
 
       var i = 1
+      val trans = markov.weights
       while (i < nLabels) {
         nodeMarginals += null
         edgeMarginals += null
         j = 0
         while (j < domainSize) {
           var k = 0
-          while (k < domainSize) {
-            alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + transitionScore(i, k, j))
-            k += 1
+          if (useObsMarkov) {
+            while (k < domainSize) {
+              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + transitionScore(i, k, j))
+              k += 1
+            }
+          } else {
+            while (k < domainSize) {
+              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + trans(k, j))
+              k += 1
+            }
           }
           j += 1
         }
@@ -178,9 +186,16 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         j = 0
         while (j < domainSize) {
           var k = 0
-          while (k < domainSize) {
-            betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + transitionScore(i, j, k))
-            k += 1
+          if (useObsMarkov) {
+            while (k < domainSize) {
+              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + transitionScore(i, j, k))
+              k += 1
+            }
+          } else {
+            while (k < domainSize) {
+              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + trans(j, k))
+              k += 1
+            }
           }
           j += 1
         }
@@ -189,7 +204,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     }
     sendMessages()
 
-    override lazy val logZ: Double = {
+    val _logZ: Double = {
       var z = Double.NegativeInfinity
       var i = 0
       while (i < labelDomain.length) {
@@ -199,6 +214,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       z
     }
 
+    override def logZ = _logZ
 
     def calculateMarginalTensor(factor: Factor) = {
       val f = factor.asInstanceOf[DotFamily#Factor]
@@ -209,10 +225,14 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           val marg = new DenseTensor1(labelDomain.length)
           val arr = marg.asArray
           var i = 0
+          val al = alphas(pos)
+          val bl = betas(pos)
+          val lz = logZ
           while (i < arr.length) {
-            arr(i) = math.exp(alphas(pos)(i) + betas(pos)(i) - logZ)
+            arr(i) = math.exp(al(i) + bl(i) - lz)
             i += 1
           }
+          nodeMarginals(pos) = marg
           marg
         }
         if (f.family eq bias)
@@ -225,14 +245,27 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
           val arr = marginal.asArray
           var i = 0
+          val al = alphas(pos)
+          val bl = betas(pos+1)
+          val ls = localScores(pos+1)
+          val lz = logZ
+          val trans = markov.weights.asInstanceOf[DenseTensor2]
           while (i < ds) {
             var j = 0
-            while (j < ds) {
-              arr(ds*i + j) = math.exp(alphas(pos)(i) + localScores(pos+1)(j) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
-              j += 1
+            if (useObsMarkov) {
+              while (j < ds) {
+                marginal(i,j) = math.exp(al(i) + ls(j) + transitionScore(pos, i, j) + bl(j) - lz)
+                j += 1
+              }
+            } else {
+              while (j < ds) {
+                marginal(i,j) = math.exp(al(i) + ls(j) + trans(i, j) + bl(j) - lz)
+                j += 1
+              }
             }
             i += 1
           }
+          edgeMarginals(pos) = marginal
           marginal
         }
         if (f.family eq markov)
