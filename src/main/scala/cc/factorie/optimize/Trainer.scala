@@ -1,9 +1,9 @@
 package cc.factorie.optimize
 
 import cc.factorie.app.classify.LogLinearModel
-import cc.factorie.{DotFamily, Family, Model}
 import cc.factorie.la._
 import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging, ThreadLocal}
+import cc.factorie._
 
 /**
  * Created by IntelliJ IDEA.
@@ -188,6 +188,41 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
             }
           i += 1
         }
+      case (w:DenseTensor, t: DiscreteValue) =>
+        val idx = t.intValue
+        g(idx) += factor*factor
+        w.asArray(idx) += factor * learningRate / (delta + math.sqrt(g(idx)))
+      case (w:DenseTensor, t: SingletonBinaryTensor) =>
+        val idx = t.singleIndex
+        g(idx) += factor*factor
+        w.asArray(idx) += factor * learningRate / (delta + math.sqrt(g(idx)))
+      case (w:DenseTensor,  t:DenseTensor) =>
+        val wArr = w.asArray
+        val gArr = g.asArray
+        val tArr = t.asArray
+        var i = 0
+        val ws = w.length
+        while (i < ws) {
+          gArr(i) += tArr(i)*factor*factor*tArr(i)
+          wArr(i) += factor*tArr(i)/(delta + math.sqrt(gArr(i)))
+          i += 1
+        }
+      case (w:DenseTensor, t:SingletonBinaryLayeredTensor2) => {
+        t.inner match {
+          case inner:SparseBinaryTensorLike1 =>
+            val indices = inner.activeDomain
+            val wArr = w.asArray
+            val gArr = g.asArray
+            var i = 0
+            while (i < indices.length) {
+              val idx = t.singleIndex(t.singleIndex1, indices(i))
+              gArr(idx) += factor * factor
+              wArr(idx) += factor * learningRate / (delta + math.sqrt(gArr(idx)))
+              i += 1
+            }
+          case _ => assert(false, "Unimplemented type: " + t.inner.getClass.getName)
+        }
+      }
       case _ =>
         assert(false, "The types are not implemented: " + w.getClass.getName + " and " + t.getClass.getName)
     }
