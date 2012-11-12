@@ -127,6 +127,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         localTransitionScores(pos)(prev)(curr) + markov.weights(prev, curr)
       } else markov.weights(prev, curr)
     }
+    
     def calculateMarginalTensor(f: Factor): Tensor
     override def marginalTensorStatistics(factor: Factor) = factor.valuesStatistics(calculateMarginalTensor(factor))
 
@@ -183,7 +184,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       var z = Double.NegativeInfinity
       var i = 0
       while (i < labelDomain.length) {
-        z = maths.sumLogProb(z, alphas(0)(i) + betas(0)(i))
+        z = maths.sumLogProb(z, alphas(labels.length-1)(i))
         i += 1
       }
       z
@@ -211,7 +212,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         while (i < labelDomain.length) {
           var j = 0
           while (j < labelDomain.length) {
-            marginal(i, j) = math.exp(alphas(pos)(i) + localScores(pos+1)(i) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
+            marginal(i, j) = math.exp(alphas(pos)(i) + localScores(pos+1)(j) + transitionScore(pos, i, j) + betas(pos+1)(j) - logZ)
             j += 1
           }
           i += 1
@@ -230,7 +231,6 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
-    val factors = this.factorsWithContext(labels)
     val summary = new ChainSummaryBP(labels)
     summary
   }
