@@ -51,7 +51,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           var i = 0
           val len = wArr.length
           while (i < len) {
-            hArr(i) += math.pow(gArr(i), 2)
+            hArr(i) += gArr(i) * gArr(i)
             val h = math.sqrt(hArr(i)) + delta
             val t1 = eta / h
             val t2 = wArr(i) + t1 * gArr(i)
@@ -64,10 +64,9 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           val wArr = w.asArray
           val hArr = hSq.asArray
           var i = 0
-          g._makeReadable
           val indices = g._indices
           val values = g._values
-          val len = g.activeDomainSize
+          val len = g._indices.length
           while (i < len) {
             val g = values(i)
             val idx = indices(i)
@@ -75,8 +74,6 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
             val h = math.sqrt(hArr(idx)) + delta
             val t1 = eta / h
             val t2 = wArr(idx) + t1 * g
-//            val t3 = l1 * eta / h
-//            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
             wArr(idx) = t2
             i += 1
           }
