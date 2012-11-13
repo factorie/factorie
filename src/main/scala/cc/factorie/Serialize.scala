@@ -4,13 +4,132 @@ import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import la.Tensor
 import collection.mutable
+import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
+import java.nio.ByteBuffer
 
 trait Serializer[-T] {
   def serialize(toSerialize: T, str: PrintStream): Unit
   def deserialize(deserializeTo: T, str: BufferedReader): Unit
 }
 
-object CubbieFileSerializer {
+object BinaryCubbieFileSerializer {
+
+  def serialize(toSerialize: Cubbie, file: File, gzip: Boolean = false): Unit = {
+    file.createNewFile()
+    val fileStream = new BufferedOutputStream(new FileOutputStream(file))
+    val s = new DataOutputStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
+    serialize(toSerialize, s)
+    s.close()
+  }
+
+  def deserialize(deserializeTo: Cubbie, file: File, gzip: Boolean = false): Unit = {
+    val fileStream = new BufferedInputStream(new FileInputStream(file))
+    val s = new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
+    deserialize(deserializeTo, s)
+    s.close()
+  }
+
+  def serialize(c: Cubbie, s: DataOutputStream): Unit = {
+    for ((k, v) <- c._map) serialize(k, v, s)
+  }
+  def deserialize(c: Cubbie, s: DataInputStream): Unit = {
+    for ((_, v) <- c._map.toSeq) {
+      val key = readString(s)
+      c._map(key) = deserializeInner(v, s.readByte, s)
+    }
+  }
+
+  private val INT: Byte = 0x01
+  private val DOUBLE: Byte = 0x02
+  private val BOOLEAN: Byte = 0x03
+  private val STRING: Byte = 0x04
+  private val TENSOR: Byte = 0x05
+  private val LIST: Byte = 0x07
+  private val MAP: Byte = 0x06
+
+  private def deserializeInner(preexisting: Any, tag: Byte, s: DataInputStream): Any = tag match {
+    case DOUBLE => s.readDouble
+    case INT => s.readInt
+    case BOOLEAN => s.readShort != 0
+    case TENSOR =>
+      val tensor = preexisting.asInstanceOf[Tensor]
+      for (_ <- 1 to s.readInt) tensor(s.readInt) = s.readDouble
+      tensor
+    case STRING => readString(s)
+    case MAP =>
+      val m = preexisting.asInstanceOf[mutable.HashMap[String, Any]]
+      for (_ <- 1 to s.readInt) {
+        val key = readString(s)
+        m(key) = deserializeInner(m(key), s.readByte, s)
+      }
+      m
+    case LIST =>
+      val innerTag = s.readByte
+      val len = s.readInt
+      val buff = new mutable.ArrayBuffer[Any]()
+      val iter = preexisting.asInstanceOf[Traversable[Any]].toIterator
+      for (_ <- 0 until len) {
+        val pre = if (iter.hasNext) iter.next() else null
+        if (!isPrimitiveTag(innerTag)) s.readByte // read and ignore the type tag
+        buff += deserializeInner(pre, innerTag, s)
+      }
+      buff
+  }
+  private def readString(s: DataInputStream): String = {
+    val bldr = new StringBuilder
+    for (_ <- 1 to s.readInt) bldr += s.readChar
+    bldr.mkString
+  }
+  private def tagForType(value: Any): Byte = value match {
+    case _: Int => INT
+    case _: Double => DOUBLE
+    case _: Boolean => BOOLEAN
+    case _: String => STRING
+    case _: Tensor => TENSOR
+    case _: mutable.HashMap[String, Any] => MAP
+    case _: Traversable[_] => LIST
+  }
+  private def isPrimitiveTag(tag: Byte): Boolean = tag match {
+    case DOUBLE | BOOLEAN | INT => true
+    case _ => false
+  }
+  private def isPrimitive(value: Any): Boolean = isPrimitiveTag(tagForType(value))
+  private def serialize(key: String, value: Any, s: DataOutputStream): Unit = {
+    if (key != "") {
+      s.writeInt(key.length)
+      key.foreach(s.writeChar(_))
+    }
+    if (!(key == "" && isPrimitive(value))) s.writeByte(tagForType(value))
+    value match {
+      case str: String =>
+        s.writeInt(str.length)
+        str.foreach(s.writeChar(_))
+      case i: Int =>
+        s.writeInt(i)
+      case bl: Boolean =>
+        s.writeShort(if (bl) 0x01 else 0x00)
+      case d: Double =>
+        s.writeDouble(d)
+      case t: Tensor =>
+        s.writeInt(t.activeDomainSize)
+        for ((i, v) <- t.activeElements; if (v != 0.0)) {
+          s.writeInt(i)
+          s.writeDouble(v)
+        }
+      case m: mutable.HashMap[String, Any] =>
+        s.writeInt(m.size)
+        for ((k, v) <- m) serialize(k, v, s)
+      case t: Traversable[Any] =>
+        val tagAsInt = t.headOption.map(tagForType(_)).getOrElse(INT)
+        s.writeByte(tagAsInt: Int)
+        s.writeInt(t.size)
+        t.foreach(x => serialize("", x, s))
+    }
+    s.flush()
+  }
+}
+
+object StringCubbieFileSerializer {
 
   def serialize(toSerialize: Cubbie, file: File, gzip: Boolean = false): Unit = {
     file.createNewFile()
