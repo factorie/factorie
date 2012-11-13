@@ -45,7 +45,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Features] {
     factorName = "Label,Label,Token"
-    lazy val weights = new la.Dense3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize)
+    lazy val weights = new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize)
   }
   var useObsMarkov = true
   override def families = Seq(bias, obs, markov, obsmarkov) 
