@@ -38,7 +38,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weights, -l2)
-    if (HSq == null) { HSq = gradient.blankCopy }
+    if (HSq == null) { HSq = weights.blankCopy }
     for (template <- gradient.asInstanceOf[WeightsTensor].families)
       (weights.asInstanceOf[WeightsTensor](template),
        gradient.asInstanceOf[WeightsTensor](template),
@@ -60,6 +60,27 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
             wArr(i) = t2
             i += 1
           }
+        case (w: DenseTensor, g: SparseIndexedTensor,  hSq: DenseTensor) =>
+          val wArr = w.asArray
+          val hArr = hSq.asArray
+          var i = 0
+          g._makeReadable
+          val indices = g._indices
+          val values = g._values
+          val len = g.activeDomainSize
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            hArr(idx) += g*g
+            val h = math.sqrt(hArr(idx)) + delta
+            val t1 = eta / h
+            val t2 = wArr(idx) + t1 * g
+//            val t3 = l1 * eta / h
+//            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
+            wArr(idx) = t2
+            i += 1
+          }
+        case _ => println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " + gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
       }
   }
   def reset(): Unit = {
