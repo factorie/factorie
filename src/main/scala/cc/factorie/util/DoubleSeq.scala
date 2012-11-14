@@ -319,6 +319,16 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     sum
     //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
   }
+  /** Exponential the elements of the array such that they are normalized to sum to one,
+      but do so efficiently by providing logZ.  Note that to maximize efficiency, this method
+      does not verify that the logZ value was the correct one to cause proper normalization. */
+  def expNormalize(logZ:Double): Unit = {
+    val l = length; var i = 0
+    while (i < l) {
+      update(i, math.exp(apply(i) - logZ))
+      i += 1
+    }
+  }
   /** expNormalize, then put back into log-space. */
   def normalizeLogProb(): Double = {
     // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
