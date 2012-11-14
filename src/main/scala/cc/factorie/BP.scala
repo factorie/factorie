@@ -185,10 +185,10 @@ trait BPFactorTreeSumProduct extends BPFactor {
 }
 
 trait BPFactorMaxProduct extends BPFactor {
-  override def calculateMarginalTensor: Tensor1 = calculateBeliefsTensor.maxNormalize().asInstanceOf[Tensor1]
+  override def calculateMarginalTensor: Tensor1 = { val t = calculateBeliefsTensor; t.maxNormalize(); t.asInstanceOf[Tensor1] }
   override def calculateLogZ: Double = calculateBeliefsTensor match {
-    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = math.max(z, t(i)); i += 1 }; z }
-    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = math.max(z, v) }); z }
+    case t:DenseTensor => { t.max }
+    case t:SparseIndexedTensor => { t._values.max }
   }
 }
 
@@ -398,13 +398,14 @@ trait BPFactor2MaxProduct extends BPFactor2 with BPFactorMaxProduct { this: BPFa
   def calculateOutgoing2: Tensor = {
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
     val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
-    while (i < leni) {
-      j = 0; while (j < lenj) {
+    while (j < lenj) {
+      i = 0
+      while (i < leni) {
         val s = scores(i,j) + edge1.messageFromVariable(i)
         if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-        j += 1
+        i += 1
       }
-      i += 1
+      j += 1
     }
 //    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size) {
 //      val s = scores(i,j) + edge1.messageFromVariable(i)
@@ -709,6 +710,7 @@ object BP {
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): BPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
+    summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorTreeSumProduct]))
     varying.size match {
       case 0 => {}
       case 1 => { summary.bpFactors.foreach(_.updateOutgoing()); summary.bpVariables.head.setToMaximize(null) }
@@ -726,6 +728,13 @@ object BP {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
           f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
+
+        for (f <- markovBPFactors.reverse) {
+          f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
+          f.updateOutgoing(f.edge1)   // send message from factor to neighbor2
+        }
+
+        obsBPFactors.foreach(f => f.edges.foreach(e => e.bpVariable.updateOutgoing(e)))
         // Do Viterbi backtrace, setting label values
         // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
         // Because we might want to run this inference, but not change global state.
