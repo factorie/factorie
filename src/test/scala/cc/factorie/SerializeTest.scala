@@ -10,7 +10,8 @@ import collection.mutable.ArrayBuffer
 class SerializeTests extends JUnitSuite {
 
   @Test def test(): Unit = {
-    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize").getAbsolutePath
+    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-model").getAbsolutePath
+    val fileName2 = java.io.File.createTempFile("FactorieTestFile", "serialize-domain").getAbsolutePath
     // Read data and create Variables
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
@@ -41,6 +42,10 @@ class SerializeTests extends JUnitSuite {
     val deserializedModel = new SegmenterModel
     BinaryCubbieFileSerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
 
+    val domainFile = new File(fileName2)
+
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(TokenDomain.dimensionDomain), domainFile)
+
     println("Original model family weights: ")
     model.families.foreach({case f: DotFamily => println(f.weights)})
     println("Deserialized model family weights: ")
@@ -50,6 +55,19 @@ class SerializeTests extends JUnitSuite {
       deserializedModel.families.map({case f: DotFamily => f.weights})
         .zip(model.families.map({case f: DotFamily => f.weights}))
         .forall({case (a, b) => a.activeElements.toSeq.sameElements(b.activeElements.toSeq)}))
+
+    println("Original domain:")
+    println(TokenDomain.dimensionDomain.toSeq.mkString(","))
+    println("Deserialized domain:")
+    val newDomain = new CategoricalTensorDomain[String] { }
+    // TODO we shouldn't have to pass the domain in the constructor and _also_ call "fetch" -luke
+    // but if we don't do that then there's nothing in the list slot and we throw an exception
+    val cubbie = new CategoricalDomainCubbie(newDomain.dimensionDomain)
+    BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
+    cubbie.fetch(newDomain.dimensionDomain)
+    println(newDomain.dimensionDomain.toSeq.mkString(","))
+
+    assert(TokenDomain.dimensionDomain.toSeq.map(_.category).sameElements(newDomain.dimensionDomain.toSeq.map(_.category)))
   }
 
   class Label(b: Boolean, val token: Token) extends LabeledBooleanVariable(b)

@@ -3,13 +3,27 @@ package cc.factorie.app.classify
 import cc.factorie.app.classify._
 import java.io.{PrintWriter, BufferedReader, PrintStream}
 import cc.factorie.la.WeightsTensor
-import cc.factorie.{Serializer, CategoricalTensorDomain, CategoricalDomain}
+import cc.factorie._
 import javax.management.remote.rmi._RMIConnection_Stub
 import java.util.zip.GZIPOutputStream
+import cc.factorie.util.Cubbie
 
 // TODO: use the builtin load and save for CategoricalDomain
 // instead of writing featurestring:value etc. just write the domain on the top line
 // and then number:number on every line. do same with classifier weights too
+
+// TODO: this doesn't work because in order for the Tensor to know how long it's supposed to be,
+// we need to have read the categories out first! -luke
+class ClassifierCubbie(cls: Classifier[Label]) extends Cubbie {
+  val labelDomain = CubbieSlot[CategoricalDomainCubbie]("labelDomain", () => throw new Error)
+  val model = CubbieSlot[ModelCubbie]("model", () => throw new Error)
+  labelDomain := new CategoricalDomainCubbie(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
+  model := new ModelCubbie(cls.asInstanceOf[ModelBasedClassifier[Label]].model)
+  def fetch(cls: Classifier[Label]) = {
+    labelDomain.value.fetch(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
+    cls
+  }
+}
 
 object Serialize {
 

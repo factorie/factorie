@@ -94,7 +94,7 @@ object Tensor {
     case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
   def newSparse(t:Tensor): Tensor = {
-    if (t.dimensions.foldLeft(1)((a, b) => a*b) <= 100)
+    if (t.length <= 100)
       newDense(t)
     else
       t match {
@@ -106,7 +106,7 @@ object Tensor {
     }
   }
   def newSparse(dims:Int*): Tensor = {
-    if (dims.foldLeft(1)((a, b) => a*b) <= 100)
+    if (dims.product <= 100)
       newDense(dims.toArray)
     else
       dims match {
@@ -117,7 +117,7 @@ object Tensor {
       }
   }
   def newSparse(dims:Array[Int]): Tensor = {
-    if (dims.foldLeft(1)((a, b) => a*b) <= 100)
+    if (dims.product <= 100)
       newDense(dims)
     else
       dims.length match {
