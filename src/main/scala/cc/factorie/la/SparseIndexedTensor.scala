@@ -142,22 +142,47 @@ trait SparseIndexedTensor extends Tensor {
   
   def _makeReadable: Unit = makeReadable
   @inline private def makeReadable: Unit = {
-    var cp = _sorted // "current position", the position next to be placed into sorted order
-    while (cp < __npos) {
-      //println("cp="+cp)
-      val ci = __indices(cp) // "current index", the index next to be placed into sorted order.
-      val cv = __values(cp) // "current value"
-      var i = _sorted - 1
-      //println("i="+i)
-      // Find the position at which the current index/value belongs
-      while (i >= 0 && __indices(i) >= ci) i -= 1
-      i += 1
-      // Put it there, shifting to make room if necessary
-      //println("Placing at position "+i)
-      if (__indices(i) == ci) { if (i != cp) __values(i) += cv else _sorted += 1 }
-      else insert(i, ci, cv, incrementNpos=false, incrementSorted=true)
-      //println("sorted="+_sorted)
-      cp += 1
+    if ((_sorted <= 10) && (__npos > 0)) {
+      // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
+      val sortedIndices = (0 to __npos-1).toArray.sortBy(i => __indices(i))
+      val newIndices = Array.ofDim[Int](__indices.length)
+      val newValues = Array.ofDim[Double](__indices.length)
+      var prevIndex = __indices(sortedIndices(0))
+      newIndices(0) = prevIndex
+      newValues(0) = __values(sortedIndices(0))
+      var i = 1
+      var j = 0
+      while (i < __npos) {
+        val idx = sortedIndices(i)
+        if (prevIndex != __indices(idx)) {
+          j += 1
+          newIndices(j) = __indices(idx)
+          prevIndex = __indices(idx)
+        }
+        newValues(j) += __values(idx)
+        i += 1
+      }
+      _sorted = j+1
+      __indices = newIndices
+      __values = newValues
+    } else {
+      var cp = _sorted // "current position", the position next to be placed into sorted order
+      while (cp < __npos) {
+        //println("cp="+cp)
+        val ci = __indices(cp) // "current index", the index next to be placed into sorted order.
+        val cv = __values(cp) // "current value"
+        var i = _sorted - 1
+        //println("i="+i)
+        // Find the position at which the current index/value belongs
+        while (i >= 0 && __indices(i) >= ci) i -= 1
+        i += 1
+        // Put it there, shifting to make room if necessary
+        //println("Placing at position "+i)
+        if (__indices(i) == ci) { if (i != cp) __values(i) += cv else _sorted += 1 }
+        else insert(i, ci, cv, incrementNpos=false, incrementSorted=true)
+        //println("sorted="+_sorted)
+        cp += 1
+      }
     }
     __npos = _sorted
     if (__npos * 1.5 > __values.length) trim

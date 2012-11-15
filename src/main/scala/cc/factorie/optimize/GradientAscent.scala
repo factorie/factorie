@@ -66,7 +66,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           var i = 0
           val indices = g._indices
           val values = g._values
-          val len = g._indices.length
+          val len = g.activeDomainSize
           while (i < len) {
             val g = values(i)
             val idx = indices(i)
