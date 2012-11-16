@@ -27,7 +27,8 @@ class EMInferencer[V<:Variable,M<:MeanField](val maximizing:Iterable[V], val mea
   def process: Unit = process(100) // TODO Make a reasonable convergence criteria
 }
 object EMInferencer {
-  def apply[V<:Variable](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize) = new EMInferencer(maximizing, new DiscreteMeanField(varying, model), model, maximizer)
+  def apply[V<:Variable](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize) = 
+    new EMInferencer(maximizing, new DiscreteMeanField(varying, model), model, maximizer)
 }
 
 object InferByEM extends Infer {

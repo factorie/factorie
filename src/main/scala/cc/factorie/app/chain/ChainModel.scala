@@ -90,15 +90,18 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     def marginal(vs:Variable*): DiscreteMarginal = null
 
     val localScores = Array.ofDim[Double](labels.size, labelDomain.size)
-    def fillLocalScores() {
-      var i = 0
-      while (i < labels.size) {
+    def fillLocalScores(): Unit = {
+      var t = 0
+      val statistics = new SingletonBinaryLayeredTensor2(labelDomain.size, featuresDomain.dimensionSize, 0, null)
+      while (t < labels.size) {
+        statistics.inner = labelToFeatures(labels(t)).value.asInstanceOf[Tensor1]
         var j = 0
         while (j < labelDomain.size) {
-          localScores(i)(j) = bias.weights(j) + obs.weights.dot(new SingletonBinaryLayeredTensor2(labelDomain.size, featuresDomain.dimensionSize, j, labelToFeatures(labels(i)).value.asInstanceOf[Tensor1]))
+          statistics.singleIndex1 = j
+          localScores(t)(j) = bias.weights(j) + obs.weights.dot(statistics)
           j += 1
         }
-        i += 1
+        t += 1
       }
     }
     fillLocalScores()
