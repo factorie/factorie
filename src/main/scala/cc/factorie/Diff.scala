@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 import scala.collection.mutable.ArrayBuffer
@@ -92,10 +90,6 @@ class DiffList extends ArrayBuffer[Diff] {
     //println("DiffList scoreAndUndo *** score diff=" + s1)
     (s1, s2)
   }
-  /** More efficient than model.factorsOf[T](difflist) when the difflist might be empty. */
-  // TODO Consider removing these methods
-  //@deprecated def factorsOf[T<:Template](model:TemplateModel)(implicit m:Manifest[T]) : Seq[T#Factor] = if (this.isEmpty) Nil else model.factorsOf[T](this)(m) 
-  //def factorsOf[T<:Template](cls:Class[T])(model:TemplateModel): Seq[T#Factor] = if (this.isEmpty) Nil else model.factorsOf(cls)(this)
   /** Appropriate printed name. */
   override def stringPrefix = "DiffList" 
 }
