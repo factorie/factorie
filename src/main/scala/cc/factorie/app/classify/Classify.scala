@@ -175,6 +175,9 @@ object Classify {
     // Read vocabulary
     if (opts.readVocabulary.wasInvoked) {
       val vocabFile = new File(opts.readVocabulary.value)
+//      val cubbie = new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain)
+//      BinaryCubbieFileSerializer.deserialize(cubbie, vocabFile)
+//      cubbie.fetch(FeaturesDomain.dimensionDomain)
       Serializer.deserialize(FeaturesDomain.dimensionDomain, vocabFile)
       FeaturesDomain.freeze()
     }
@@ -215,6 +218,7 @@ object Classify {
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
+//      BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
       Serializer.serialize(FeaturesDomain.dimensionDomain, vocabFile)
     }
 
@@ -223,6 +227,9 @@ object Classify {
       import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
+//      val cubbie = new ClassifierCubbie(classifier)
+//      BinaryCubbieFileSerializer.deserialize(cubbie, classifierFile)
+//      cubbie.fetch(classifier)
       Serializer.deserialize(classifier, classifierFile, gzip = true)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
@@ -287,6 +294,7 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       import Serialize._
+//      BinaryCubbieFileSerializer.serialize(new ClassifierCubbie(classifier), classifierFile)
       Serializer.serialize(classifier, classifierFile, gzip = true)
     }
 

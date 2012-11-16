@@ -220,12 +220,12 @@ object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
-import cc.factorie.util._
 class CategoricalDomainCubbie extends Cubbie {
   val size = IntSlot("size")
   val frozen = BooleanSlot("frozen")
   val categories = StringListSlot("end")
-    def store(d:CategoricalDomain[String]): this.type = {
+  def this(cd: CategoricalDomain[String]) = { this(); store(cd) }
+  def store(d:CategoricalDomain[String]): this.type = {
     size := d.size
     frozen := d.frozen
     categories := d.categories
@@ -237,9 +237,6 @@ class CategoricalDomainCubbie extends Cubbie {
     d
   }
 }
-
-
-
 
 /* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
    WARNING: Any indices that you use and store before trimming will not be valid after trimming!
