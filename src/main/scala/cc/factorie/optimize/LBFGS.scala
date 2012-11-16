@@ -63,8 +63,19 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
 
   def reset(): Unit = {
     _isConverged = false
-    //todo: what else needs to be reset?
-    // TODO! The various ArrayBuffers need to be cleared!  See MALLET implementation. -akm
+    step = 1.0
+    iterations = 0
+    oldValue = Double.NegativeInfinity
+    g = null
+    s = null
+    y = null
+    rho = null
+    alpha = null
+    params = null
+    oldParams = null
+    direction = null
+    oldg = null
+
   }
 
 
