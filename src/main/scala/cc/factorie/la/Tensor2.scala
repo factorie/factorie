@@ -66,6 +66,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SingletonLayeredTensorLike2 => t dot this
     case t:DoubleSeq => super.dot(t)
   }
+  /*
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
     case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
@@ -74,6 +75,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SparseIndexedTensor2 => t.=+(_values, f)
     case t:DoubleSeq => super.+=(t, f)
   }
+  */
   override def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
     case (ds: SparseIndexedTensor2, factor: DenseTensor2) =>
       ds._makeReadable
@@ -282,7 +284,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
   override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
-    if (v != 1.0 || offset != 0) super.=+(a, offset, v)
+    if (offset != 0) super.=+(a, offset, v)
     else (tensor1, tensor2) match {
           case (t1: UniformTensor1, _) if t1(0) == 0.0 => return
           case (_, t2: UniformTensor1) if t2(0) == 0.0 => return
@@ -293,7 +295,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
             val t2Values = t2.asArray
             var idx1 = 0
             while (idx1 < t1Size) {
-              val v1 = t1Values(idx1)
+              val v1 = t1Values(idx1) * v
               val offset = t2Size * idx1
               var idx2 = 0
               while (idx2 < t2Size) {
@@ -312,7 +314,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
             val t2ActiveDomainSize = t2.activeDomainSize
             var idx1 = 0
             while (idx1 < t1Size) {
-              val v1 = t1Values(idx1)
+              val v1 = t1Values(idx1) * v
               val offset = t2Size * idx1
               var t2i = 0
               while (t2i < t2ActiveDomainSize) {
@@ -331,7 +333,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
             val t1Values = t1.asArray
             var idx1 = 0
             while (idx1 < t1Size) {
-              val v1 = t1Values(idx1)
+              val v1 = t1Values(idx1) * v
               val offset = t2Size * idx1
               var t2i = 0
               while (t2i < t2IndexSeq.size) {
@@ -345,7 +347,8 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
             val t2Size = t2.size
             val t1Iter = t1.activeElements
             while (t1Iter.hasNext) {
-              val (idx1, v1) = t1Iter.next()
+              val (idx1, v1p) = t1Iter.next()
+              val v1 = v1p * v
               val offset = t2Size * idx1
               val t2Iter = t2.activeElements
               while (t2Iter.hasNext) {
@@ -353,7 +356,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
                 a(offset + idx2) += (v1 * v2)
               }
             }
-        }
+    }
   }
 }
 

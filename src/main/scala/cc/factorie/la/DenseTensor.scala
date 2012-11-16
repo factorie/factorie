@@ -68,6 +68,20 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   }
 
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryLayeredTensor2 => {
+      val i0 = t.singleIndex1
+      t.inner match {
+        case inner:SparseBinaryTensorLike1 => {
+          var i = 0
+          val indices = inner.activeDomain
+          while (i < indices.length) {
+            this(t.singleIndex(i0, indices(i))) += f
+            i += 1
+          }
+        }
+        case _ => assert(false, t.inner.getClass.getName + " doesn't match")
+      }
+    }
     case t:SingletonBinaryTensor => __values(t.singleIndex) += f
     case t:SingletonTensor => __values(t.singleIndex) += f * t.singleValue
     case t:SparseBinaryTensor => t.=+(__values, f)

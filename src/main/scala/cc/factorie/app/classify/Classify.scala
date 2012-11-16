@@ -181,6 +181,7 @@ object Classify {
 
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
+      var numDocs = 0; var numDirs = 0
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
@@ -194,8 +195,11 @@ object Classify {
           // Use directory as label category
           textIntoFeatures(fileToString(file), features)
           labels += features.label
+          numDocs += 1
         }
+        numDirs += 1
       }
+      println("Read %d documents in %d directories." format (numDocs, numDirs))
     } else if (opts.readTextLines.wasInvoked) {
       labels ++= readInstancesFromFile(opts.readTextLines.value)
     } else if (opts.readSVMLight.wasInvoked) {
@@ -203,6 +207,10 @@ object Classify {
     } else if (opts.readInstances.wasInvoked) {
       labels ++= readInstancesFromFile(opts.readInstances.value)
     }
+
+    println("# of distinct class labels: " + LabelDomain.size)
+    println("Class labels: " + LabelDomain._elements.mkString(", "))
+    println("Vocabulary size: " + FeaturesDomain.dimensionDomain.size)
 
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
@@ -246,12 +254,19 @@ object Classify {
       validationLabels ++= valSet
     }
 
+    if (opts.printInfoGain.wasInvoked) {
+      println("Top 20 features with highest information gain: ")
+      new InfoGain(trainingLabels).top(20).foreach(println(_))
+    }
+
     if (opts.writeInstances.wasInvoked) {
       val instancesFile = new File(opts.writeInstances.value)
       instancesFile.createNewFile()
       Serialize.writeInstancesSVMLight(trainingLabels ++ testingLabels ++ validationLabels, new PrintStream(instancesFile))
     }
 
+    // to get true eval, add reference to scala-tools and use scala.tools.nsc.interpreter.IMain?? -luke
+    // see http://stackoverflow.com/questions/1183645/eval-in-scala
     val classifierTrainer = opts.trainer.value match {
       case "MaxEntTrainer" => new MaxEntTrainer()
       case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()

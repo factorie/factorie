@@ -36,10 +36,10 @@ class SerializeTests extends JUnitSuite {
 
     val modelFile = new File(fileName)
 
-    CubbieFileSerializer.serialize(new ModelCubbie(model), modelFile)
+    BinaryCubbieFileSerializer.serialize(new ModelCubbie(model), modelFile)
 
     val deserializedModel = new SegmenterModel
-    CubbieFileSerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
+    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
 
     println("Original model family weights: ")
     model.families.foreach({case f: DotFamily => println(f.weights)})

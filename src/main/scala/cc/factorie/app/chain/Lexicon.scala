@@ -29,6 +29,7 @@ class Lexicon(val caseSensitive:Boolean) {
     var prev: LexiconToken = null
     def hasNext = next != null
     def hasPrev = prev != null
+    def position = lengthToEnd
     //def firstInSeq = if (prev == null) this else prev.firstInSeq
     def lengthToEnd: Int = if (next == null) 1 else 1 + next.lengthToEnd
     //def length = firstInSeq.lengthToEnd

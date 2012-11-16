@@ -107,3 +107,33 @@ trait FastLogging extends Logging {
   override val logger = Logger.logger(this.getClass.getName)
 }
 
+object Timer {
+  def time[A](name: String, function: () => A): A = {
+    val t0 = System.currentTimeMillis()
+    val res = function()
+    println(name + ": " + (System.currentTimeMillis() - t0))
+    res
+  }
+
+  var cumulativeTime = 0L
+  val timeMap = collection.mutable.HashMap[String, Long]()
+  def incrementTime[A](name: String, function: () => A): A = {
+    val t0 = System.currentTimeMillis()
+    val res = function()
+    val time = System.currentTimeMillis() - t0
+    cumulativeTime += time
+    if (!timeMap.contains(name)) timeMap(name) = 0L
+    timeMap(name) += time
+    res
+  }
+
+  def reportAndClear() {
+    println("Total time: " + cumulativeTime)
+    timeMap.iterator.toSeq.sortBy[Long](a => -a._2).foreach(pair => {
+      println(pair._1 +": " + (pair._2.toDouble / cumulativeTime) + " (" + pair._2 + ")")
+    })
+    cumulativeTime = 0
+    timeMap.clear()
+  }
+
+}
