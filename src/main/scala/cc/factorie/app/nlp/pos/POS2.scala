@@ -107,9 +107,13 @@ class POS2 extends Infer with util.FastLogging {
 //    }
     // Then train by Likelihood LBFGS to convergence
     val examples = for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
-    val trainer = new SGDTrainer(model, new AdaGrad)
+    val trainer = new BatchTrainer(model, new AdaGrad)
+    //val trainer = new SGDTrainer(model, new AdaGrad)
     while (!trainer.isConverged) {
-      trainer.processExamples(examples)
+      for ((exampleBatch, batchNumber) <- examples.grouped(1000).zipWithIndex) {
+        println("[Training] batch number: " + batchNumber)
+	    trainer.processExamples(exampleBatch)
+      }
       printAccuracy("Train", trainDocuments)
       printAccuracy("Test ", testDocuments)
       println("---------------------------")
@@ -122,8 +126,10 @@ class POS2 extends Infer with util.FastLogging {
   def printAccuracy(msg:String, documents:Iterable[Document]): Unit = {
     //documents.foreach(apply(_))
     //val icm = new IteratedConditionalModes[PosLabel](model, null); for (doc <- documents; token <- doc.tokens) icm.process(token.attr[PosLabel])
-    for (doc <- documents) {
-      model.inferByMaxProduct(doc.tokens.map(_.posLabel))
+    for ((sentenceBatch, i) <- documents.flatMap(_.sentences).grouped(1000).zipWithIndex) {
+      println("[Infer] batch number: " + i)
+      for (sentence <- sentenceBatch)
+	    model.inferByMaxProduct(sentence.tokens.map(_.posLabel))
       //val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
       //summary.setToMaximize(null)
       //for (bpf <- summary.bpFactors) println("EpsilonPOS.printAccuracy "+bpf.calculateLogZ); println("---")
@@ -162,7 +168,7 @@ object POS2 extends POS2 {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile =    new CmdOption("train", "eng.train", "FILE", "CoNLL 2003 format file from which to get training data.")
       val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.")
-      val modelDir =     new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
+      val modelPrefix =  new CmdOption("model", "pos", "DIR", "Directory in which to save the trained model.")
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
       val owpl =         new CmdOption("owpl", false, "", "")
     }
@@ -190,12 +196,11 @@ object POS2 extends POS2 {
       
       this.train(trainDocuments, testDocuments)
     
-      if (opts.modelDir.wasInvoked)
-        PosModel.save(opts.modelDir.value)
+      model.serialize(opts.modelPrefix.value)
     }
     
     def run(): Unit = {
-      PosModel.load(opts.modelDir.value)
+      model.deSerialize(opts.modelPrefix.value)
       for (filename <- opts.runFiles.value) {
         val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
         segment.Tokenizer.process(document)

@@ -270,11 +270,12 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MI
 
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
-    examples.foreach(example => {
+    examples.zipWithIndex.foreach({ case (example, i) => {
+      if (i % 1000 == 0) println(i)
       gradientAccumulator.tensor.zero()
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
-    })
+    }})
   }
   def isConverged = false
 }
