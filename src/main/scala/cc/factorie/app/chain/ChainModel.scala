@@ -50,7 +50,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     factorName = "Label,Label,Token"
     lazy val weights = new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize)
   }
-  var useObsMarkov = true
+  var useObsMarkov = false
   override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   def serialize(prefix: String) {
@@ -134,10 +134,6 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     // this shouldn't actually set the variables, just used now for fast evaluation
     Viterbi.searchAndSetToMax(labels, obs, markov, bias, labelToFeatures)
     null
-  }
-  
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
-    None
   }
 
   object MarginalInference extends Infer {

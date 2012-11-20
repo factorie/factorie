@@ -164,6 +164,7 @@ object POS2 extends POS2 {
       val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.")
       val modelDir =     new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
+      val owpl =         new CmdOption("owpl", false, "", "")
     }
     opts.parse(args)
     if (opts.trainFile.wasInvoked) train()
@@ -172,14 +173,19 @@ object POS2 extends POS2 {
         
     def train(): Unit = {
       // Read in the data
-      val trainDocuments = LoadConll2003.fromFilename(opts.trainFile.value).take(10)
-      val testDocuments =  LoadConll2003.fromFilename(opts.testFile.value).take(10)
+      val loader: (String) => Seq[Document] = {
+        if (opts.owpl.wasInvoked) LoadOWPL.fromFilename(_, (t: Token, l: String) => new PosLabel(t, l)) 
+        else LoadConll2003.fromFilename(_)
+      }
+        
+      val trainDocuments = loader(opts.trainFile.value).take(10)
+      val testDocuments =  loader(opts.testFile.value).take(10)
 
       // Add features for POS
       trainDocuments.foreach(initPosAttr(_))
       testDocuments.foreach(initPosAttr(_))
-      println("Example Token features")
-      println(trainDocuments(3).tokens.take(10).map(_.attr[PosFeatures].toString).mkString("\n"))
+      //println("Example Token features")
+      //println(trainDocuments(3).tokens.take(10).map(_.attr[PosFeatures].toString).mkString("\n"))
       println("Num TokenFeatures = "+PosFeaturesDomain.dimensionSize)
       
       this.train(trainDocuments, testDocuments)
