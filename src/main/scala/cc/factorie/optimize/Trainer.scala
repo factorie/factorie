@@ -4,6 +4,7 @@ import cc.factorie.app.classify.LogLinearModel
 import cc.factorie.la._
 import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging, ThreadLocal}
 import cc.factorie._
+import java.util.concurrent.Callable
 
 /**
  * Created by IntelliJ IDEA.
@@ -67,19 +68,21 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
   def isConverged = optimizer.isConverged
 }
 
-class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = 2*Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
+class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
+  import collection.JavaConversions._
+  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: LocalDoubleAccumulator): Seq[Callable[Object]] = es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va, null); null.asInstanceOf[Object] } } ).toSeq
+
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
   val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
-  var runnables = null.asInstanceOf[Seq[Runnable]]
+  var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (runnables eq null) {
-      runnables = examples.map(e => new Runnable {
-        def run() { e.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null) }
-      }).toSeq
+      runnables = examplesToRunnables[M](examples, model, gradientAccumulator, valueAccumulator)
     }
     if (isConverged) return
-    runnables.foreach(pool.execute(_))
+    pool.invokeAll(runnables)
+
     optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
