@@ -20,6 +20,7 @@ import cc.factorie.optimize._
 import cc.factorie.app.chain.infer._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer, Map}
 import java.io.File
+import cc.factorie.la.DenseTensor1
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -110,84 +111,25 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     }
   }
   
-  abstract class ChainSummary(val labels: Seq[Label]) extends Summary[DiscreteMarginal] {
+  trait ChainSummary extends Summary[DiscreteMarginal] {
     def marginals: Iterable[DiscreteMarginal] = Nil
     def marginal(vs:Variable*): DiscreteMarginal = null
-
-    val localScores = Array.ofDim[Double](labels.size, labelDomain.size)
-    def fillLocalScores(): Unit = {
-      var t = 0
-      val statistics = new SingletonBinaryLayeredTensor2(labelDomain.size, featuresDomain.dimensionSize, 0, null)
-      while (t < labels.size) {
-        statistics.inner = labelToFeatures(labels(t)).value.asInstanceOf[Tensor1]
-        var j = 0
-        while (j < labelDomain.size) {
-          statistics.singleIndex1 = j
-          localScores(t)(j) = bias.weights(j) + obs.weights.dot(statistics)
-          j += 1
-        }
-        t += 1
-      }
-    }
-    fillLocalScores()
-
-    var localTransitionScores = null.asInstanceOf[Array[Array[Array[Double]]]]
-    def fillLocalTransitionScores() {
-      assert(useObsMarkov)
-      localTransitionScores = Array.ofDim[Double](labels.length, labelDomain.size, labelDomain.size)
-      var i = 1
-      while (i < labels.size) {
-        var j = 0
-        while (j < labelDomain.size) {
-          var k = 0
-          while (k < labelDomain.size) {
-            localTransitionScores(i)(j)(k) = markov.weights(j,k) + obsmarkov.weights.dot(new Singleton2BinaryLayeredTensor3(labelDomain.size, labelDomain.size,featuresDomain.dimensionSize, j, k, labelToFeatures(labels(i)).value.asInstanceOf[Tensor1]))
-            k += 1
-          }
-          j += 1
-        }
-        i += 1
-      }
-    }
-    if (useObsMarkov) fillLocalTransitionScores()
-
-    val nodeMarginals = ArrayBuffer[DenseTensor1]()
-    val edgeMarginals = ArrayBuffer[DenseTensor2]()
-    def computeNodeMarginal(pos: Int): Tensor1
-    def computeEdgeMarginal(pos: Int): Tensor2
-    def calculateMarginalTensor(factor: Factor) = {
-      val f = factor.asInstanceOf[DotFamily#Factor]
-      val ds = labelDomain.length
-      if ((f.family eq bias) || (f.family eq obs)) {
-        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
-        val marginal = if (nodeMarginals(pos) != null) nodeMarginals(pos) else computeNodeMarginal(pos)
-        if (f.family eq bias)
-          marginal
-        else
-          new Outer1Tensor2(marginal, f.variable(1).asInstanceOf[Features].value.asInstanceOf[Tensor1])
-      } else if ((f.family eq markov) || (f.family eq obsmarkov)) {
-        val pos = labelToToken(f.variable(0).asInstanceOf[Label]).asInstanceOf[app.nlp.Token].sentencePosition
-        val marginal = if (edgeMarginals(pos) != null) edgeMarginals(pos) else computeEdgeMarginal(pos)
-        if (f.family eq markov)
-          marginal
-        else
-          new Outer2Tensor3(marginal, f.variable(2).asInstanceOf[Features].value.asInstanceOf[Tensor1])
-      } else {
-        require(false, "This Summary class can only be used with the correct ChainModel")
-        new DenseTensor1(10)
-      }
-    }
-    override def marginalTensorStatistics(factor: Factor) = calculateMarginalTensor(factor)
-
+    def expectations: WeightsTensor
+    def logZ: Double
   }
 
   // Inference
-  //def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
-  //  ForwardBackward.search(labels, obs, markov, bias, labelToFeatures)
-  //}
-  def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (Map[DotFamily, Tensor], Double) = {
+  def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
+    val summary = new ChainSummary {
+      val (expectations, _logZ) = ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+    }
+    summary
+  }
+  
+  def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (WeightsTensor, Double) = {
     ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
   }
+  
   def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
     // this shouldn't actually set the variables, just used now for fast evaluation
     Viterbi.searchAndSetToMax(labels, obs, markov, bias, labelToFeatures)

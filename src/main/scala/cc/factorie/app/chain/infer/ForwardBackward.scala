@@ -14,7 +14,7 @@ import collection.mutable.{HashMap, Map}
 
 object ForwardBackward {
 
-  private def nodeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]]): Array[Array[Double]] = {
+  def nodeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]]): Array[Array[Double]] = {
     val ds = alpha(0).size
 
     val marginal = Array.fill(alpha.size)(Array.fill(ds)(Double.NaN))
@@ -36,7 +36,7 @@ object ForwardBackward {
     marginal
   }
 
-  private def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Double]] = {
+  def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Double]] = {
     val ds = alpha(0).size
 
     val marginal = Array.fill(alpha.size-1)(Array.fill(ds * ds)(Double.NaN))
@@ -55,6 +55,31 @@ object ForwardBackward {
 
       // normalize the edge marginal
       logNormalize(marginal(vi), sumLogProbs(new ArrayDoubleSeq(marginal(vi))))
+      vi += 1
+    }
+
+    marginal
+  }
+  
+  def dim2edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Array[Double]]] = {
+    val ds = alpha(0).size
+
+    val marginal = Array.fill(alpha.size-1)(Array.fill(ds, ds)(Double.NaN))
+
+    var vi = 0
+    while (vi < alpha.size - 1) {
+      var i = 0
+      while (i < ds) {
+        var j = 0
+        while (j < ds) {
+          marginal(vi)(i)(j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
+          j += 1
+        }
+        i += 1
+      }
+
+      // normalize the edge marginal
+      //logNormalize(marginal(vi), sumLogProbs(new ArrayDoubleSeq(marginal(vi))))
       vi += 1
     }
 
@@ -151,7 +176,7 @@ object ForwardBackward {
             transTemplate: DotFamilyWithStatistics2[LV, LV],
             biasTemplate: DotFamilyWithStatistics1[LV],
             LabelToFeatures: LV => OV
-          ): (Map[DotFamily, Tensor], Double) = {
+          ): (WeightsTensor, Double) = {
 
     val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
 
@@ -163,6 +188,7 @@ object ForwardBackward {
     val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseTensor1(vs(0).domain.size*vs(0).domain.size)
 
     // get the node feature expectations
+    // TODO: this should really be sparse, but AdaGrad only matches dense
     val nodeExp = new SparseTensor1(localTemplate.weights.length) // statisticsVectorLength
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       var i = 0
@@ -170,17 +196,39 @@ object ForwardBackward {
         v.set(i)(null)
         val m = nodeMargs(vi)(i)
         val stats = localTemplate.Factor(v, LabelToFeatures(v)).currentStatistics
-        nodeExp += (stats * m)
+        nodeExp += (stats, m) // this is: nodeExp += stats * m
         i += 1
       }
     }
 
     val expMap: Map[DotFamily, Tensor] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
+    val expWt = new WeightsTensor
+    for ((family, tensor) <- expMap)
+      expWt.update(family, tensor)
 
     val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
 
-    (expMap, logZ)
+    (expWt, logZ)
   }
+  
+  def nodeEdgeMarginalsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+            vs: Seq[LV],
+            localTemplate: DotFamilyWithStatistics2[LV, OV],
+            transTemplate: DotFamilyWithStatistics2[LV, LV],
+            biasTemplate: DotFamilyWithStatistics1[LV],
+            LabelToFeatures: LV => OV
+          ): (Array[Array[Double]], Array[Array[Array[Double]]], Double) = {
+
+    val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
+
+    val nodeMargs = nodeMarginals(alpha, beta)
+    val edgeMargs = dim2edgeMarginals(alpha, beta, getTransScores(transTemplate))
+
+    val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
+
+    (nodeMargs, edgeMargs, logZ)
+  }
+
 
   def search[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
             vs: Seq[LV],

@@ -62,23 +62,24 @@ class POS2 extends Infer with util.FastLogging {
     def accumulateExampleInto(model: PosModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       val (expectations, logZ) = model.featureExpectationsAndLogZ(labels)
-      
+
       if (value != null) { 
         var incr = 0.0;
-        summary.factors.foreach(f => 
-          incr += f.assignmentScore(TargetAssignment));
-        value.accumulate(incr - summary.logZ) 
+        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
+        value.accumulate(incr - logZ) 
       } 
       
       if (gradient != null) {
-        summary.factors.asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
+        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
           gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
-          gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
         })
       }
+
+      for (family <- expectations.families)
+	    gradient.accumulate(family, expectations(family), -1.0)
     }
   }
-  
+
   def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document]): Unit = {
     //val limitDiscreteValues = true
     //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12.zero
@@ -105,11 +106,13 @@ class POS2 extends Infer with util.FastLogging {
 //      }
 //    }
     // Then train by Likelihood LBFGS to convergence
-    val examples = for (document <- trainDocuments; sentence <- document.sentences) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
-    val trainer = new BatchTrainer(model)
+    val examples = for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
+    val trainer = new SGDTrainer(model, new AdaGrad)
     while (!trainer.isConverged) {
       trainer.processExamples(examples)
       printAccuracy("Train", trainDocuments)
+      printAccuracy("Test ", testDocuments)
+      println("---------------------------")
     }
     logger.info("FINAL")
     printAccuracy("Train", trainDocuments)
