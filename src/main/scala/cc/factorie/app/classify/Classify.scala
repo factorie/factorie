@@ -175,11 +175,11 @@ object Classify {
     // Read vocabulary
     if (opts.readVocabulary.wasInvoked) {
       val vocabFile = new File(opts.readVocabulary.value)
-//      val cubbie = new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain)
-//      BinaryCubbieFileSerializer.deserialize(cubbie, vocabFile)
-//      cubbie.fetch(FeaturesDomain.dimensionDomain)
-      Serializer.deserialize(FeaturesDomain.dimensionDomain, vocabFile)
-      FeaturesDomain.freeze()
+      val cubbie = new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain)
+      BinaryCubbieFileSerializer.deserialize(cubbie, vocabFile) // TODO should we make an overload that doesnt req. a cubbie and reads the cubbie type from file? -luke
+      cubbie.fetch(FeaturesDomain.dimensionDomain)
+//      Serializer.deserialize(FeaturesDomain.dimensionDomain, vocabFile)
+      FeaturesDomain.freeze() // TODO should this always be frozen? otherwise weights won't match... -luke
     }
 
     // Read instances
@@ -218,8 +218,8 @@ object Classify {
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
-//      BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
-      Serializer.serialize(FeaturesDomain.dimensionDomain, vocabFile)
+      BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
+//      Serializer.serialize(FeaturesDomain.dimensionDomain, vocabFile)
     }
 
     // if readclassifier is set, then we ignore instances labels and classify them
@@ -227,10 +227,8 @@ object Classify {
       import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
-//      val cubbie = new ClassifierCubbie(classifier)
-//      BinaryCubbieFileSerializer.deserialize(cubbie, classifierFile)
-//      cubbie.fetch(classifier)
-      Serializer.deserialize(classifier, classifierFile, gzip = true)
+      BinaryCubbieFileSerializer.deserialize(new ClassifierCubbie(classifier), classifierFile)
+//      Serializer.deserialize(classifier, classifierFile, gzip = true)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
@@ -294,8 +292,8 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       import Serialize._
-//      BinaryCubbieFileSerializer.serialize(new ClassifierCubbie(classifier), classifierFile)
-      Serializer.serialize(classifier, classifierFile, gzip = true)
+      BinaryCubbieFileSerializer.serialize(new ClassifierCubbie(classifier), classifierFile)
+//      Serializer.serialize(classifier, classifierFile, gzip = true)
     }
 
     opts.evaluator.value match {

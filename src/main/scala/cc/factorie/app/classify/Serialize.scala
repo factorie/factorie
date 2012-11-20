@@ -15,14 +15,14 @@ import cc.factorie.util.Cubbie
 // TODO: this doesn't work because in order for the Tensor to know how long it's supposed to be,
 // we need to have read the categories out first! -luke
 class ClassifierCubbie(cls: Classifier[Label]) extends Cubbie {
-  val labelDomain = CubbieSlot[CategoricalDomainCubbie]("labelDomain", () => throw new Error)
+//  val labelDomain = CubbieSlot[CategoricalDomainCubbie]("labelDomain", () => throw new Error)
   val model = CubbieSlot[ModelCubbie]("model", () => throw new Error)
-  labelDomain := new CategoricalDomainCubbie(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
+//  labelDomain := new CategoricalDomainCubbie(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
   model := new ModelCubbie(cls.asInstanceOf[ModelBasedClassifier[Label]].model)
-  def fetch(cls: Classifier[Label]) = {
-    labelDomain.value.fetch(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
-    cls
-  }
+//  def fetch(cls: Classifier[Label]) = {
+//    labelDomain.value.fetch(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
+//    cls
+//  }
 }
 
 object Serialize {
@@ -36,25 +36,24 @@ object Serialize {
     def deserialize(deserializeTo: Classification[Label], reader: BufferedReader) = sys.error("Can't deserialize classifications.")
   }
 
-  implicit object ClassifierSerializer extends Serializer[Classifier[Label]] {
-    def serialize(toSerialize: Classifier[Label], str: PrintStream) = toSerialize match {
-      case cls: ModelBasedClassifier[Label] =>
-        Serializer.serialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str)
-        Serializer.serialize(cls.model, str)
-    }
-    def deserialize(deserializeTo: Classifier[Label], str: BufferedReader) = deserializeTo match {
-      case cls: ModelBasedClassifier[Label] =>
-        Serializer.deserialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str)
-        Serializer.deserialize(cls.model, str)
-    }
-  }
+//  implicit object ClassifierSerializer extends Serializer[Classifier[Label]] {
+//    def serialize(toSerialize: Classifier[Label], str: PrintStream) = toSerialize match {
+//      case cls: ModelBasedClassifier[Label] =>
+//        Serializer.serialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str)
+//        Serializer.serialize(cls.model, str)
+//    }
+//    def deserialize(deserializeTo: Classifier[Label], str: BufferedReader) = deserializeTo match {
+//      case cls: ModelBasedClassifier[Label] =>
+//        Serializer.deserialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str)
+//        Serializer.deserialize(cls.model, str)
+//    }
+//  }
 
   def writeInstancesSVMLight(labels: Iterable[Label], out: PrintStream): Unit = {
     for (label <- labels) {
       val labelStr = new StringBuilder
       labelStr ++= label.features.labelName
-      labelStr ++= (" " + label.features.instanceName)
-      label.features.tensor.foreachElement((idx, f) => {
+      label.features.tensor.foreachActiveElement((idx, f) => {
         val str = " " + label.domain.category(idx) + ":" + f.asInstanceOf[Int]
         labelStr ++= str
       })
@@ -67,16 +66,17 @@ object Serialize {
     object FeaturesDomain extends CategoricalTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
     val instances = new LabelList[Label, Features](_.features)
+    var i = 0
     for (rawInstStr <- instancesString.split("(\r\n)|\n")) {
+      i += 1
       val instStr = if (rawInstStr.contains("#")) rawInstStr.substring(0, rawInstStr.indexOf('#')) else rawInstStr
       val terms = instStr.split("\\s+")
       val rawClassStr = terms(0)
-      val instanceStr = terms(1)
       val classStr = if (rawClassStr == "+1") "1" else rawClassStr
-      val features = new NonBinaryFeatures(classStr, instanceStr, FeaturesDomain, LabelDomain)
-      for (term <- terms.drop(2); if term != "") {
+      val features = new NonBinaryFeatures(classStr, i.toString, FeaturesDomain, LabelDomain)
+      for (term <- terms.drop(1); if term != "") {
         val Array(feature, count) = term.split(":")
-        features +=(feature, count.toInt)
+        features +=(feature, count.toDouble)
       }
       instances += features.label
     }
