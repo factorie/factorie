@@ -18,9 +18,10 @@ import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
+import java.io.File
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
-(val labelDomain:DiscreteDomain,
+(val labelDomain:CategoricalDomain[String],
  val featuresDomain:CategoricalTensorDomain[String],
  val labelToFeatures:Label=>Features,
  val labelToToken:Label=>Token,
@@ -49,6 +50,29 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   var useObsMarkov = true
   override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
+
+  def serialize(prefix: String) {
+    val modelFile = new File(prefix + "-model")
+    modelFile.getParentFile.mkdirs()
+    BinaryCubbieFileSerializer.serialize(new ModelCubbie(this), modelFile)
+    val labelDomainFile = new File(prefix + "-labelDomain")
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(labelDomain), labelDomainFile)
+    val featuresDomainFile = new File(prefix + "-featuresDomain")
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(featuresDomain.dimensionDomain), featuresDomainFile)
+  }
+
+  def deSerialize(prefix: String) {
+    val modelFile = new File(prefix + "-model")
+    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix+"-model'")
+    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(this), modelFile)
+    val labelDomainFile = new File(prefix + "-labelDomain")
+    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-labelDomain'")
+    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(labelDomain), labelDomainFile)
+    val featuresDomainFile = new File(prefix + "-featuresDomain")
+    assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-featuresDomain'")
+    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(featuresDomain.dimensionDomain), featuresDomainFile)
+  }
+
   def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
     val result = new ListBuffer[Factor]
     for (i <- 0 until labels.length) {
