@@ -67,12 +67,19 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
   def isConverged = optimizer.isConverged
 }
 
-class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
+class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = 2*Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
+  val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
+  var runnables = null.asInstanceOf[Seq[Runnable]]
   def processExamples(examples: Iterable[Example[M]]): Unit = {
+    if (runnables eq null) {
+      runnables = examples.map(e => new Runnable {
+        def run() { e.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null) }
+      }).toSeq
+    }
     if (isConverged) return
-    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null))
+    runnables.foreach(pool.execute(_))
     optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
