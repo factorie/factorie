@@ -118,16 +118,17 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
   }
 }
 
-class SynchronizedWeightsTensorAccumulator(t: WeightsTensor) extends LocalWeightsTensorAccumulator(t) {
-  override def accumulator(family:DotFamily): TensorAccumulator = map.synchronized { super.accumulator(family) }
-  override def accumulate(t: Tensor) = tensor.synchronized { super.accumulate(t) }
-  override def accumulate(t: Tensor, factor:Double) = tensor.synchronized { super.accumulate(t, factor) }
-  override def accumulate(index: Int, value: Double): Unit = tensor.synchronized { super.accumulate(index,value)}
-  override def accumulate(family: DotFamily, t: Tensor): Unit = tensor.synchronized { super.accumulate(family, t) }
-  override def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor.synchronized { super.accumulate(family, index, value) }
-  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = tensor.synchronized { super.accumulate(family, tensor, factor) }
-  override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = tensor.synchronized { super.accumulateOuter(family, t1, t2) }
-  override def combine(a: Accumulator[Tensor]): Unit = tensor.synchronized { super.combine(a) }
+class SynchronizedWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
+  val l = new LocalWeightsTensorAccumulator(tensor)
+  override def accumulator(family:DotFamily): TensorAccumulator = l.synchronized { l.accumulator(family) }
+  override def accumulate(t: Tensor) = l.synchronized { l.accumulate(t) }
+  override def accumulate(t: Tensor, factor:Double) = l.synchronized { l.accumulate(t, factor) }
+  override def accumulate(index: Int, value: Double): Unit = l.synchronized { l.accumulate(index,value)}
+  override def accumulate(family: DotFamily, t: Tensor): Unit = l.synchronized { l.accumulate(family, t) }
+  override def accumulate(family: DotFamily, index: Int, value: Double): Unit = l.synchronized { l.accumulate(family, index, value) }
+  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, tensor, factor) }
+  override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = l.synchronized { l.accumulateOuter(family, t1, t2) }
+  override def combine(a: Accumulator[Tensor]): Unit = l.synchronized { l.combine(a) }
 }
 
 object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
