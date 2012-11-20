@@ -19,6 +19,7 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.File
+import org.junit.Assert._
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -62,15 +63,16 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
 
   def deSerialize(prefix: String) {
-    val modelFile = new File(prefix + "-model")
-    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix+"-model'")
-    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(this), modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-labelDomain'")
     BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(labelDomain), labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-featuresDomain'")
     BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(featuresDomain.dimensionDomain), featuresDomainFile)
+    val modelFile = new File(prefix + "-model")
+    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix+"-model'")
+    assertEquals(markov.weights.length,labelDomain.length * labelDomain.length)
+    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(this), modelFile)
   }
 
   def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
