@@ -126,7 +126,7 @@ class SynchronizedWeightsTensorAccumulator(val tensor: WeightsTensor) extends We
   override def accumulate(index: Int, value: Double): Unit = l.synchronized { l.accumulate(index,value)}
   override def accumulate(family: DotFamily, t: Tensor): Unit = l.synchronized { l.accumulate(family, t) }
   override def accumulate(family: DotFamily, index: Int, value: Double): Unit = l.synchronized { l.accumulate(family, index, value) }
-  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, tensor, factor) }
+  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, t, factor) }
   override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = l.synchronized { l.accumulateOuter(family, t1, t2) }
   override def combine(a: Accumulator[Tensor]): Unit = l.synchronized { l.combine(a) }
 }
