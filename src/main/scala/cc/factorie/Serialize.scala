@@ -55,6 +55,8 @@ object BinaryCubbieFileSerializer {
     case STRING => readString(s)
     case TENSOR =>
       val tensor = preexisting.asInstanceOf[Tensor]
+//      def dump[T](x: T, title: String): T = { println(title + ": " + x); x }
+//      repeat(dump(s.readInt(), "tensor length"))(tensor(dump(s.readInt(), "idx")) = dump(s.readDouble(), "value"))
       repeat(s.readInt())(tensor(s.readInt()) = s.readDouble())
       tensor
     case MAP =>
@@ -109,7 +111,7 @@ object BinaryCubbieFileSerializer {
       case str: String => writeString(str, s)
       case t: Tensor =>
         s.writeInt(t.activeDomainSize)
-        for ((i, v) <- t.activeElements; if (v != 0.0)) {
+        for ((i, v) <- t.activeElements) {
           s.writeInt(i)
           s.writeDouble(v)
         }

@@ -40,6 +40,7 @@ class SerializeTests extends JUnitSuite {
     val domainFile2 = new File(fileName1.getAbsolutePath)
     val domainCubbie2 = new CategoricalDomainCubbie(domain2)
     BinaryCubbieFileSerializer.deserialize(domainCubbie2, domainFile2)
+    domainCubbie2.fetch(domain2)
 
     val modelFile2 = new File(fileName2.getAbsolutePath)
     val modelCubbie2 = new ModelCubbie(model2)
