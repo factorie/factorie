@@ -17,7 +17,8 @@ package cc.factorie.app.chain
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
-import scala.collection.mutable.{ListBuffer,ArrayBuffer}
+import cc.factorie.app.chain.infer._
+import scala.collection.mutable.{ListBuffer,ArrayBuffer, Map}
 import java.io.File
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
@@ -180,137 +181,21 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
   }
 
-  class ChainSummaryBP(l: Seq[Label]) extends ChainSummary(l) {
-    val alphas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
-    val betas = Array.fill(labels.length, labelDomain.length)(Double.NegativeInfinity)
-
-    def sendMessages() {
-      var j = 0
-      val domainSize = labelDomain.length
-      val nLabels = labels.length
-      while (j < domainSize) {
-        alphas(0)(j) = localScores(0)(j)
-        j += 1
-      }
-      nodeMarginals += null
-      edgeMarginals += null
-
-      var i = 1
-      val trans = markov.weights
-      while (i < nLabels) {
-        nodeMarginals += null
-        edgeMarginals += null
-        j = 0
-        while (j < domainSize) {
-          var k = 0
-          if (useObsMarkov) {
-            while (k < domainSize) {
-              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + localTransitionScores(i)(k)(j))
-              k += 1
-            }
-          } else {
-            while (k < domainSize) {
-              alphas(i)(j) = maths.sumLogProb(alphas(i)(j), alphas(i-1)(k) + localScores(i)(j) + trans(k, j))
-              k += 1
-            }
-          }
-          j += 1
-        }
-        i += 1
-      }
-
-      j = 0
-      while (j < domainSize) {
-        betas(nLabels - 1)(j) = 0
-        j += 1
-      }
-
-      i = nLabels - 2
-      while (i >= 0) {
-        j = 0
-        while (j < domainSize) {
-          var k = 0
-          if (useObsMarkov) {
-            while (k < domainSize) {
-              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + localTransitionScores(i)(j)(k))
-              k += 1
-            }
-          } else {
-            while (k < domainSize) {
-              betas(i)(j) = maths.sumLogProb(betas(i)(j), betas(i+1)(k) + localScores(i+1)(k) + trans(j, k))
-              k += 1
-            }
-          }
-          j += 1
-        }
-        i -= 1
-      }
-    }
-    sendMessages()
-
-    val _logZ: Double = {
-      var z = Double.NegativeInfinity
-      var i = 0
-      while (i < labelDomain.length) {
-        z = maths.sumLogProb(z, alphas(labels.length-1)(i))
-        i += 1
-      }
-      z
-    }
-
-    override def logZ = _logZ
-
-    def computeNodeMarginal(pos: Int): DenseTensor1 = {
-      val marg = new DenseTensor1(labelDomain.length)
-      val arr = marg.asArray
-      var i = 0
-      val al = alphas(pos)
-      val bl = betas(pos)
-      val lz = logZ
-      while (i < arr.length) {
-        arr(i) = math.exp(al(i) + bl(i) - lz)
-        i += 1
-      }
-      nodeMarginals(pos) = marg
-      marg
-    }
-
-    def computeEdgeMarginal(pos: Int) : DenseTensor2 = {
-      val marginal = new DenseTensor2(labelDomain.length, labelDomain.length)
-      val arr = marginal.asArray
-      var i = 0
-      val al = alphas(pos)
-      val bl = betas(pos+1)
-      val ls = localScores(pos+1)
-      val ds = labelDomain.size
-      val lz = logZ
-      val trans = markov.weights.asInstanceOf[DenseTensor2]
-      while (i < ds) {
-        var j = 0
-        if (useObsMarkov) {
-          while (j < ds) {
-            marginal(i,j) = math.exp(al(i) + ls(j) + localTransitionScores(pos)(i)(j) + bl(j) - lz)
-            j += 1
-          }
-        } else {
-          while (j < ds) {
-            marginal(i,j) = math.exp(al(i) + ls(j) + trans(i, j) + bl(j) - lz)
-            j += 1
-          }
-        }
-        i += 1
-      }
-      edgeMarginals(pos) = marginal
-      marginal
-    }
-
-
-  }
-
   // Inference
-  def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
-    val summary = new ChainSummaryBP(labels)
-    summary
+  //def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
+  //  ForwardBackward.search(labels, obs, markov, bias, labelToFeatures)
+  //}
+  def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (Map[DotFamily, Tensor], Double) = {
+    ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+  }
+  def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
+    // this shouldn't actually set the variables, just used now for fast evaluation
+    Viterbi.searchAndSetToMax(labels, obs, markov, bias, labelToFeatures)
+    null
+  }
+  
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
+    None
   }
 
   object MarginalInference extends Infer {
