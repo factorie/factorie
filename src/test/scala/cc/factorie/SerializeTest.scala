@@ -1,6 +1,6 @@
 package cc.factorie
 
-import la.UniformTensor1
+import la.{DenseTensor1, UniformTensor1}
 import org.scalatest.junit.JUnitSuite
 import cc.factorie.app.bib.parser.Dom.Name
 import org.junit.Test
@@ -8,6 +8,43 @@ import java.io._
 import collection.mutable.ArrayBuffer
 
 class SerializeTests extends JUnitSuite {
+
+  @Test def testModelSerializationWithDomains {
+    object domain1 extends CategoricalDomain[String]
+    val words = "The quick brown fox jumped over the lazy dog".split(" ")
+    words.foreach(domain1.index(_))
+
+    class Model1(d: CategoricalDomain[String]) extends Model {
+      object family1 extends DotFamilyWithStatistics1[CategoricalVariable[String]] {
+        lazy val weights = new DenseTensor1(d.length)
+      }
+      override def families = Seq(family1)
+      def factors(v: Variable) = Nil
+    }
+    val model = new Model1(domain1)
+    model.family1.weights(6) = 12
+
+    val fileName1 = java.io.File.createTempFile("foo", "domain")
+    val domainFile = new File(fileName1.getAbsolutePath)
+    val domainCubbie = new CategoricalDomainCubbie(domain1)
+    BinaryCubbieFileSerializer.serialize(domainCubbie, domainFile)
+
+    val fileName2 = java.io.File.createTempFile("foo", "model")
+    val modelFile = new File(fileName2.getAbsolutePath)
+    val modelCubbie = new ModelCubbie(model)
+    BinaryCubbieFileSerializer.serialize(modelCubbie, modelFile)
+
+    object domain2 extends CategoricalDomain[String]
+    val model2 = new Model1(domain2)
+
+    val domainFile2 = new File(fileName1.getAbsolutePath)
+    val domainCubbie2 = new CategoricalDomainCubbie(domain2)
+    BinaryCubbieFileSerializer.deserialize(domainCubbie2, domainFile2)
+
+    val modelFile2 = new File(fileName2.getAbsolutePath)
+    val modelCubbie2 = new ModelCubbie(model2)
+    BinaryCubbieFileSerializer.deserialize(modelCubbie2, modelFile2)
+  }
 
   @Test def test(): Unit = {
     val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-model").getAbsolutePath
