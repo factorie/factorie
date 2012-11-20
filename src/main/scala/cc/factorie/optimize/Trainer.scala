@@ -74,15 +74,15 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
 
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
-  val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (runnables eq null) {
       runnables = examplesToRunnables[M](examples, model, gradientAccumulator, valueAccumulator)
     }
     if (isConverged) return
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
-
+    pool.shutdown()
     optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
