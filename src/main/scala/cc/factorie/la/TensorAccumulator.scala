@@ -28,7 +28,7 @@ trait WeightsTensorAccumulator extends TensorAccumulator {
 }
 
 class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
-  private val map = new collection.mutable.HashMap[DotFamily,TensorAccumulator]
+  protected val map = new collection.mutable.HashMap[DotFamily,TensorAccumulator]
   def accumulator(family:DotFamily): TensorAccumulator = map.getOrElseUpdate(family, new LocalTensorAccumulator(tensor(family))) 
   def accumulate(t: Tensor) = tensor += t
   def accumulate(t: Tensor, factor:Double) = tensor.+=(t, factor)
@@ -116,6 +116,18 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
   def combine(a: Accumulator[Tensor]): Unit = a match {
     case a: LocalWeightsTensorAccumulator => tensor += a.tensor
   }
+}
+
+class SynchronizedWeightsTensorAccumulator(t: WeightsTensor) extends LocalWeightsTensorAccumulator(t) {
+  override def accumulator(family:DotFamily): TensorAccumulator = map.synchronized { super.accumulator(family) }
+  override def accumulate(t: Tensor) = tensor.synchronized { super.accumulate(t) }
+  override def accumulate(t: Tensor, factor:Double) = tensor.synchronized { super.accumulate(t, factor) }
+  override def accumulate(index: Int, value: Double): Unit = tensor.synchronized { super.accumulate(index,value)}
+  override def accumulate(family: DotFamily, t: Tensor): Unit = tensor.synchronized { super.accumulate(family, t) }
+  override def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor.synchronized { super.accumulate(family, index, value) }
+  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = tensor.synchronized { super.accumulate(family, tensor, factor) }
+  override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = tensor.synchronized { super.accumulateOuter(family, t1, t2) }
+  override def combine(a: Accumulator[Tensor]): Unit = tensor.synchronized { super.combine(a) }
 }
 
 object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {

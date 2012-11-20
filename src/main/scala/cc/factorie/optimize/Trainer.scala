@@ -67,6 +67,17 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
   def isConverged = optimizer.isConverged
 }
 
+class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
+  val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
+  val valueAccumulator = new LocalDoubleAccumulator
+  def processExamples(examples: Iterable[Example[M]]): Unit = {
+    if (isConverged) return
+    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null))
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, Double.NaN)
+  }
+  def isConverged = optimizer.isConverged
+}
+
 trait AccumulatorMaximizer extends WeightsTensorAccumulator {
   acc: AccumulatorMaximizer =>
   def accumulator(family: DotFamily) = new TensorAccumulator {
