@@ -80,7 +80,7 @@ class POS2 extends Infer with util.FastLogging {
     }
   }
 
-  def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document]): Unit = {
+  def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], modelPrefix: String = "pos-model"): Unit = {
     //val limitDiscreteValues = true
     //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12.zero
     for (document <- trainDocuments ++ testDocuments) {
@@ -109,6 +109,7 @@ class POS2 extends Infer with util.FastLogging {
     val examples = for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
     val trainer = new BatchTrainer(model, new AdaGrad)
     //val trainer = new SGDTrainer(model, new AdaGrad)
+    var iteration = 0
     while (!trainer.isConverged) {
       for ((exampleBatch, batchNumber) <- examples.grouped(1000).zipWithIndex) {
         println("[Training] batch number: " + batchNumber)
@@ -117,7 +118,8 @@ class POS2 extends Infer with util.FastLogging {
       printAccuracy("Train", trainDocuments)
       printAccuracy("Test ", testDocuments)
       println("---------------------------")
-      model.serialize("pos-wsj-model")
+      model.serialize("pos-wsj-model-iter=" + iteration)
+      iteration += 1
     }
     logger.info("FINAL")
     printAccuracy("Train", trainDocuments)
