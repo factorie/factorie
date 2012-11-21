@@ -117,6 +117,7 @@ class POS2 extends Infer with util.FastLogging {
       printAccuracy("Train", trainDocuments)
       printAccuracy("Test ", testDocuments)
       println("---------------------------")
+      model.serialize("pos-wsj-model")
     }
     logger.info("FINAL")
     printAccuracy("Train", trainDocuments)
@@ -171,6 +172,7 @@ object POS2 extends POS2 {
       val modelPrefix =  new CmdOption("model", "pos", "DIR", "Directory in which to save the trained model.")
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
       val owpl =         new CmdOption("owpl", false, "", "")
+      val onto =         new CmdOption("onto", false, "", "")
     }
     opts.parse(args)
     if (opts.trainFile.wasInvoked) train()
@@ -181,6 +183,7 @@ object POS2 extends POS2 {
       // Read in the data
       val loader: (String) => Seq[Document] = {
         if (opts.owpl.wasInvoked) LoadOWPL.fromFilename(_, (t: Token, l: String) => new PosLabel(t, l)) 
+        else if (opts.onto.wasInvoked) LoadOntonotes5.fromFilename(_) 
         else LoadConll2003.fromFilename(_)
       }
         
