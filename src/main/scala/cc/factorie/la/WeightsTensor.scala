@@ -25,6 +25,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   }
   override def zero() = _map.valuesIterator.foreach(_.zero())
   def families = _map.keys
+  def tensors = _map.values
   def dim1: Int = _map.values.map(_.length).sum // TODO This should really never be called, I think.  Should we print a warning? -akm
   override def dimensionsMatch(t:Tensor): Boolean = t match {
     case t:WeightsTensor => true // We can never know whether an element is simply missing due to sparsity.  Was: _map.keys.toSeq equals t._map.keys.toSeq

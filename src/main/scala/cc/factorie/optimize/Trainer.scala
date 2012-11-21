@@ -280,14 +280,14 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MI
 }
 
 class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer) extends Trainer[M] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newBlankWeightsTensor }
-  val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     examples.toSeq.par.foreach(example => {
-      gradient.get.zero()
-      example.accumulateExampleInto(model, gradientAccumulator.get, null, null)
-      throw new Error("Not implemented: Next step isn't thread safe.")
-      optimizer.step(model.weightsTensor, gradient.get, 0, 0) // TODO But this isn't thread-safe!
+      val gradient = model.newBlankSparseWeightsTensor
+      val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
+      example.accumulateExampleInto(model, gradientAccumulator, null, null)
+      // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+      gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+      optimizer.synchronized { optimizer.step(model.weightsTensor, gradient, 0, 0) }
     })
   }
   def isConverged = false
