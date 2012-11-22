@@ -88,6 +88,32 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
   def isConverged = optimizer.isConverged
 }
 
+class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] {
+  import collection.JavaConversions._
+  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M): Seq[Callable[Object]] = es.map(e => {
+    new Callable[Object] { 
+      def call() = { 
+        val gradient = model.newBlankSparseWeightsTensor
+        val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
+        e.accumulateExampleInto(model, gradientAccumulator, null, null)
+        // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+        gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+        optimizer.synchronized { optimizer.step(model.weightsTensor, gradient, 0, 0) }
+        null.asInstanceOf[Object]
+      }
+    }
+  }).toSeq
+  var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
+  def processExamples(examples: Iterable[Example[M]]): Unit = {
+    if (runnables eq null) runnables = examplesToRunnables[M](examples, model)
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
+    pool.invokeAll(runnables)
+    pool.shutdown()
+  }
+  def isConverged = false
+}
+
+
 trait AccumulatorMaximizer extends WeightsTensorAccumulator {
   acc: AccumulatorMaximizer =>
   def accumulator(family: DotFamily) = new TensorAccumulator {
@@ -274,20 +300,6 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MI
       gradientAccumulator.tensor.zero()
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
-    })
-  }
-  def isConverged = false
-}
-
-class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer) extends Trainer[M] {
-  override def processExamples(examples: Iterable[Example[M]]): Unit = {
-    examples.toSeq.par.foreach(example => {
-      val gradient = model.newBlankSparseWeightsTensor
-      val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
-      example.accumulateExampleInto(model, gradientAccumulator, null, null)
-      // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
-      gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
-      optimizer.synchronized { optimizer.step(model.weightsTensor, gradient, 0, 0) }
     })
   }
   def isConverged = false
