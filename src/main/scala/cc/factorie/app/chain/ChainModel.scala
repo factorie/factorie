@@ -54,7 +54,8 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
   def serialize(prefix: String) {
     val modelFile = new File(prefix + "-model")
-    modelFile.getParentFile.mkdirs()
+    if (modelFile.getParentFile ne null)
+      modelFile.getParentFile.mkdirs()
     BinaryCubbieFileSerializer.serialize(new ModelCubbie(this), modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
     BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(labelDomain), labelDomainFile)
