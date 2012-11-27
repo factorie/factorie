@@ -80,37 +80,17 @@ class POS2 extends Infer with util.FastLogging {
     }
   }
 
-  def train(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], modelPrefix: String = "pos-model"): Unit = {
-    //val limitDiscreteValues = true
-    //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12.zero
-    for (document <- trainDocuments ++ testDocuments) {
-      initPosAttr(document)
-      //if (limitDiscreteValues) for (factor <- model.transTemplate.factors(document.tokens.map(_.attr[PosLabel]))) factor.asInstanceOf[Factor2[DiscreteVar,DiscreteVar]].addLimitedDiscreteCurrentValues12
-    }
-    // Make it non-limited for testing
-    //if (limitDiscreteValues) model.transTemplate.limitedDiscreteValues12 += new UniformTensor2(PosDomain.size, PosDomain.size, 1.0)
+  def train(
+      trainDocuments:Iterable[Document],
+      testDocuments:Iterable[Document],
+      modelPrefix: String = "pos-model",
+      numIterations: Int = 100): Unit = {
     
-    //if (limitDiscreteValues) println("POS.train sparse transitions "+model.transTemplate.limitedDiscreteValues12.activeDomainSize+" out of "+PosDomain.size*PosDomain.size)
-    // Make two iterations of SampleRank training
-//    val doSampleRank = false
-//    if (doSampleRank) {
-//      val trainer1 = new SampleRankTrainer(new GibbsSampler(model, HammingObjective))
-//      val labels = trainDocuments.flatMap(_.tokens.map(_.attr[PosLabel]))
-//      labels.foreach(_.setRandomly())
-//      println("First label factors: "+model.factors(labels.head))
-//      println("Third sentence factors"+model.factors(trainDocuments.toSeq(3).sentences(3).tokens.map(_.attr[PosLabel])))
-//      for (i <- 1 to 4) {
-//        //for (document <- trainDocuments) trainer1.processContexts(document.tokens.map(_.attr[PosLabel]))
-//        trainer1.processContexts(labels)
-//        printAccuracy("SampleRank Train", trainDocuments)
-//      }
-//    }
-    // Then train by Likelihood LBFGS to convergence
     val examples = for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
     val trainer = new BatchTrainer(model, new AdaGrad)
-    //val trainer = new SGDTrainer(model, new AdaGrad)
+    
     var iteration = 0
-    while (!trainer.isConverged) {
+    while (!trainer.isConverged && iteration < numIterations) {
       for ((exampleBatch, batchNumber) <- examples.grouped(1000).zipWithIndex) {
         println("[Training] batch number: " + batchNumber)
 	    trainer.processExamples(exampleBatch)
@@ -127,15 +107,10 @@ class POS2 extends Infer with util.FastLogging {
   }
   
   def printAccuracy(msg:String, documents:Iterable[Document]): Unit = {
-    //documents.foreach(apply(_))
-    //val icm = new IteratedConditionalModes[PosLabel](model, null); for (doc <- documents; token <- doc.tokens) icm.process(token.attr[PosLabel])
     for ((sentenceBatch, i) <- documents.flatMap(_.sentences).grouped(1000).zipWithIndex) {
       println("[Infer] batch number: " + i)
       for (sentence <- sentenceBatch)
 	    model.inferByMaxProduct(sentence.tokens.map(_.posLabel))
-      //val summary = BP.inferChainMax(doc.tokens.map(_.attr[PosLabel]), model)   // TODO Change this to a real Viterbi
-      //summary.setToMaximize(null)
-      //for (bpf <- summary.bpFactors) println("EpsilonPOS.printAccuracy "+bpf.calculateLogZ); println("---")
     }
     logger.info(msg+" token accuracy = "+HammingObjective.accuracy(documents.flatMap(_.tokens.map(_.attr[PosLabel]))))
   }
@@ -143,8 +118,8 @@ class POS2 extends Infer with util.FastLogging {
   /** Predict the part-of-speech tag of the words in the document, and store it in attr[PosLabel] */
   def apply(document:Document): Unit = {
     initPosAttr(document)
-    if (useSentenceBoundaries) for (sentence <- document.sentences) BP.inferChainMax(sentence.map(_.attr[PosLabel]), model)
-    else BP.inferChainMax(document.tokens.map(_.attr[PosLabel]), model)
+    if (useSentenceBoundaries) for (sentence <- document.sentences) model.inferByMaxProduct(sentence.map(_.attr[PosLabel]))
+    else model.inferByMaxProduct(document.tokens.map(_.attr[PosLabel]))
   }
   
   def apply(labels:Seq[PosLabel]): BPSummary = {
@@ -175,6 +150,7 @@ object POS2 extends POS2 {
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
       val owpl =         new CmdOption("owpl", false, "", "")
       val onto =         new CmdOption("onto", false, "", "")
+      val numIterations =new CmdOption("iterations", 100, "", "")
     }
     opts.parse(args)
     if (opts.trainFile.wasInvoked) train()
@@ -189,8 +165,8 @@ object POS2 extends POS2 {
         else LoadConll2003.fromFilename(_)
       }
         
-      val trainDocuments = loader(opts.trainFile.value).take(10)
-      val testDocuments =  loader(opts.testFile.value).take(10)
+      val trainDocuments = loader(opts.trainFile.value) // .take(10)
+      val testDocuments =  loader(opts.testFile.value)  //.take(10)
 
       // Add features for POS
       trainDocuments.foreach(initPosAttr(_))
@@ -199,7 +175,7 @@ object POS2 extends POS2 {
       //println(trainDocuments(3).tokens.take(10).map(_.attr[PosFeatures].toString).mkString("\n"))
       println("Num TokenFeatures = "+PosFeaturesDomain.dimensionSize)
       
-      this.train(trainDocuments, testDocuments)
+      this.train(trainDocuments, testDocuments, modelPrefix = opts.modelPrefix.value, numIterations = opts.numIterations.value)
     
       model.serialize(opts.modelPrefix.value)
     }
