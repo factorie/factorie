@@ -144,9 +144,9 @@ class TestExamples {
     cc.factorie.example.MultinomialDemo.main(emptyArgs)
   }
 
-  @Test def testPerceptronPOS() {
-    cc.factorie.example.PerceptronPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))
-  }
+  //@Test def testPerceptronPOS() {
+  //  cc.factorie.example.PerceptronPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))
+  //}
 
   @Test def testTutorial10() {
     cc.factorie.example.TutorialVariables.main(emptyArgs)

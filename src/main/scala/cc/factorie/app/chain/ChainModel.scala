@@ -128,13 +128,15 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
     val summary = new ChainSummary {
-      val (expectations, _logZ) = ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+      // TODO: wrap the nodeMarginals to match ChainSummary interface
+      val (expectations, nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
     }
     summary
   }
   
   def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (WeightsTensor, Double) = {
-    ForwardBackward.featureExpectationsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+    val (expectations, nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+    (expectations, _logZ)
   }
   
   def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {

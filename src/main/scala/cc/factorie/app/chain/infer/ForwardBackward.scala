@@ -170,13 +170,13 @@ object ForwardBackward {
     v
   }
 
-  def featureExpectationsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def featureExpectationsMarginalsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
             biasTemplate: DotFamilyWithStatistics1[LV],
             LabelToFeatures: LV => OV
-          ): (WeightsTensor, Double) = {
+          ): (WeightsTensor, Array[Array[Double]], Double) = {
 
     val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
 
@@ -208,7 +208,7 @@ object ForwardBackward {
 
     val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
 
-    (expWt, logZ)
+    (expWt, nodeMargs, logZ)
   }
   
   def nodeEdgeMarginalsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
