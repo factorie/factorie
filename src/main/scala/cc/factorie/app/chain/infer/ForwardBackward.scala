@@ -64,7 +64,7 @@ object ForwardBackward {
   def dim2edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Array[Double]]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size-1)(Array.fill[Double](ds, ds))
+    val marginal = Array.fill(alpha.size-1)(Array.ofDim[Double](ds, ds))
 
     var vi = 0
     while (vi < alpha.size - 1) {
