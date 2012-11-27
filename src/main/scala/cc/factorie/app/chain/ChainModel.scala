@@ -120,12 +120,10 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   
   trait ChainSummary extends Summary[DiscreteMarginal] {
-    def marginals: Iterable[DiscreteMarginal]
     // Do we actually want the marginal of arbitrary sets of variables? -brian
-    def marginal(vs:Variable*): DiscreteMarginal = null
+    //def marginal(vs:Variable*): DiscreteMarginal
     def marginal(v:Variable): DiscreteMarginal
     def expectations: WeightsTensor
-    def logZ: Double
   }
 
   // Inference
@@ -151,10 +149,27 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     (expectations, _logZ)
   }
   
+  // should this be more robust to labels.isEmpty? -brian
   def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
-    // this shouldn't actually set the variables, just used now for fast evaluation
-    Viterbi.searchAndSetToMax(labels, obs, markov, bias, labelToFeatures)
-    null
+    new ChainSummary {
+      private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
+      private val variables = labels
+      lazy private val _marginals = {
+        val res = new LinkedHashMap[Variable, DiscreteMarginal]
+        res ++= labels.zip(targetInts).map { case (l, t) => 
+          l -> new DiscreteMarginal1(l, new SingletonProportions1(labels.head.domain.size, t))
+        }
+      }
+      def marginals: Iterable[DiscreteMarginal] = _marginals.values
+      def marginal(v: Variable): DiscreteMarginal = _marginals(v)
+      override def setToMaximize(implicit d:DiffList): Unit = {
+        var i = 0
+        while (i < variables.length) {
+          variables(i).set(targetInts(i))(d)
+          i += 1
+        }
+      }
+    }
   }
 
   object MarginalInference extends Infer {

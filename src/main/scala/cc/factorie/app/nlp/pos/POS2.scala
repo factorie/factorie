@@ -109,8 +109,10 @@ class POS2 extends Infer with util.FastLogging {
   def printAccuracy(msg:String, documents:Iterable[Document]): Unit = {
     for ((sentenceBatch, i) <- documents.flatMap(_.sentences).grouped(1000).zipWithIndex) {
       println("[Infer] batch number: " + i)
-      for (sentence <- sentenceBatch)
-	    model.inferByMaxProduct(sentence.tokens.map(_.posLabel))
+      for (sentence <- sentenceBatch) {
+	    val summary = model.inferByMaxProduct(sentence.tokens.map(_.posLabel))
+	    summary.setToMaximize(null)
+      }
     }
     logger.info(msg+" token accuracy = "+HammingObjective.accuracy(documents.flatMap(_.tokens.map(_.attr[PosLabel]))))
   }
@@ -118,8 +120,15 @@ class POS2 extends Infer with util.FastLogging {
   /** Predict the part-of-speech tag of the words in the document, and store it in attr[PosLabel] */
   def apply(document:Document): Unit = {
     initPosAttr(document)
-    if (useSentenceBoundaries) for (sentence <- document.sentences) model.inferByMaxProduct(sentence.map(_.attr[PosLabel]))
-    else model.inferByMaxProduct(document.tokens.map(_.attr[PosLabel]))
+    if (useSentenceBoundaries) 
+      for (sentence <- document.sentences) { 
+        val summary = model.inferByMaxProduct(sentence.map(_.attr[PosLabel]))
+        summary.setToMaximize(null) 
+      }
+    else {
+      val summary = model.inferByMaxProduct(document.tokens.map(_.attr[PosLabel]))
+      summary.setToMaximize(null)
+    }
   }
   
   def apply(labels:Seq[PosLabel]): BPSummary = {
