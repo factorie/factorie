@@ -121,7 +121,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   
   trait ChainSummary extends Summary[DiscreteMarginal] {
     // Do we actually want the marginal of arbitrary sets of variables? -brian
-    //def marginal(vs:Variable*): DiscreteMarginal
+    def marginal(vs:Variable*): DiscreteMarginal = null
     def marginal(v:Variable): DiscreteMarginal
     def expectations: WeightsTensor
   }
@@ -169,6 +169,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           i += 1
         }
       }
+      def expectations = null
     }
   }
 
