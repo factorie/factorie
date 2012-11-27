@@ -17,7 +17,7 @@ object ForwardBackward {
   def nodeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]]): Array[Array[Double]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size)(Array.fill(ds)(Double.NaN))
+    val marginal = Array.fill(alpha.size)(Array.ofDim[Double](ds))
 
     // exponentiate all alphas and betas, normalize them, and then multiply them together, normalize, and store as marginals
     var vi = 0
@@ -39,7 +39,7 @@ object ForwardBackward {
   def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Double]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size-1)(Array.fill(ds * ds)(Double.NaN))
+    val marginal = Array.fill(alpha.size-1)(Array.ofDim[Double](ds * ds))
 
     var vi = 0
     while (vi < alpha.size - 1) {
@@ -64,7 +64,7 @@ object ForwardBackward {
   def dim2edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Array[Double]]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size-1)(Array.fill(ds, ds)(Double.NaN))
+    val marginal = Array.fill(alpha.size-1)(Array.fill[Double](ds, ds))
 
     var vi = 0
     while (vi < alpha.size - 1) {
