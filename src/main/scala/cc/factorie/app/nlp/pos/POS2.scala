@@ -61,12 +61,12 @@ class POS2 extends Infer with util.FastLogging {
   class PosLikelihoodExample(val labels:IndexedSeq[PosLabel]) extends Example[PosModel] {
     def accumulateExampleInto(model: PosModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
-      val (expectations, logZ) = model.featureExpectationsAndLogZ(labels)
+      val summary = model.inferBySumProduct(labels)
 
       if (value != null) { 
         var incr = 0.0;
         model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
-        value.accumulate(incr - logZ) 
+        value.accumulate(incr - summary.logZ) 
       } 
       
       if (gradient != null) {
@@ -75,8 +75,8 @@ class POS2 extends Infer with util.FastLogging {
         })
       }
 
-      for (family <- expectations.families)
-	    gradient.accumulate(family, expectations(family), -1.0)
+      for (family <- summary.expectations.families)
+	    gradient.accumulate(family, summary.expectations(family), -1.0)
     }
   }
 

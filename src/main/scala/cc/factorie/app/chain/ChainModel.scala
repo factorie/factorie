@@ -22,6 +22,7 @@ import scala.collection.mutable.{ListBuffer,ArrayBuffer, Map}
 import java.io.File
 import cc.factorie.la.DenseTensor1
 import org.junit.Assert._
+import scala.collection.mutable.LinkedHashMap
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -119,8 +120,10 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   
   trait ChainSummary extends Summary[DiscreteMarginal] {
-    def marginals: Iterable[DiscreteMarginal] = Nil
+    def marginals: Iterable[DiscreteMarginal]
+    // Do we actually want the marginal of arbitrary sets of variables? -brian
     def marginal(vs:Variable*): DiscreteMarginal = null
+    def marginal(v:Variable): DiscreteMarginal
     def expectations: WeightsTensor
     def logZ: Double
   }
@@ -128,8 +131,17 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
     val summary = new ChainSummary {
-      // TODO: wrap the nodeMarginals to match ChainSummary interface
-      val (expectations, nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+      private val (_expectations, _nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+      lazy private val _marginals = {
+        val res = new LinkedHashMap[Variable, DiscreteMarginal]
+        res ++= labels.zip(_nodeMarginals).map { case (l, m) => 
+          l -> new DiscreteMarginal1(l, new DenseProportions1(m))
+        }
+      }
+      def expectations = _expectations
+      override def logZ = _logZ
+      def marginals: Iterable[DiscreteMarginal] = _marginals.values
+      def marginal(v: Variable): DiscreteMarginal = _marginals(v)
     }
     summary
   }
