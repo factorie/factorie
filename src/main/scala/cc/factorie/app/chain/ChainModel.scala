@@ -23,6 +23,7 @@ import java.io.File
 import cc.factorie.la.DenseTensor1
 import org.junit.Assert._
 import scala.collection.mutable.LinkedHashMap
+import cc.factorie.util.DoubleAccumulator
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -119,6 +120,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     }
   }
   
+  
   trait ChainSummary extends Summary[DiscreteMarginal] {
     // Do we actually want the marginal of arbitrary sets of variables? -brian
     def marginal(vs:Variable*): DiscreteMarginal = null
@@ -178,4 +180,30 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   // Training
   val objective = new HammingTemplate[Label]
+}
+
+object ChainModel {
+  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
+    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+      if (labels.size == 0) return
+      val summary = model.inferBySumProduct(labels)
+
+      if (value != null) { 
+        var incr = 0.0;
+        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
+        value.accumulate(incr - summary.logZ) 
+      } 
+      
+      if (gradient != null) {
+        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
+          gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+        })
+      }
+
+      for (family <- summary.expectations.families)
+	    gradient.accumulate(family, summary.expectations(family), -1.0)
+    }
+  }
+  
+  def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](labels:IndexedSeq[L]) = new ChainExample(labels)
 }

@@ -57,28 +57,6 @@ class POS2 extends Infer with util.FastLogging {
       cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentenceTokens, (t:Token)=> t.attr[PosFeatures], List(1), List(-1))
   }
   def initPosAttr(document:Document): Unit = initPosAttr(document.tokens) // TODO Note that this always ignores Sentence boundaries, because Observation.addNeighborFeatureConjunctions is broken in this regard.
-  
-  class PosLikelihoodExample(val labels:IndexedSeq[PosLabel]) extends Example[PosModel] {
-    def accumulateExampleInto(model: PosModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
-      if (labels.size == 0) return
-      val summary = model.inferBySumProduct(labels)
-
-      if (value != null) { 
-        var incr = 0.0;
-        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
-        value.accumulate(incr - summary.logZ) 
-      } 
-      
-      if (gradient != null) {
-        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
-          gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
-        })
-      }
-
-      for (family <- summary.expectations.families)
-	    gradient.accumulate(family, summary.expectations(family), -1.0)
-    }
-  }
 
   def train(
       trainDocuments:Iterable[Document],
@@ -86,7 +64,10 @@ class POS2 extends Infer with util.FastLogging {
       modelPrefix: String = "pos-model",
       numIterations: Int = 100): Unit = {
     
-    val examples = for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield new PosLikelihoodExample(sentence.tokens.map(_.attr[PosLabel]))
+    val examples = {
+      for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield 
+        ChainModel.createChainExample(sentence.tokens.map(_.attr[PosLabel]))
+    }
     val trainer = new BatchTrainer(model, new StepwiseGradientAscent)
     
     var iteration = 0
