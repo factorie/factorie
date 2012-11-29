@@ -106,8 +106,8 @@ trait ProposalSampler[C] extends Sampler[C] {
   var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
   def proposals(context:C): Seq[Proposal]
   def skipEmptyProposals = true
-  def process1(context:C): DiffList = {
-    val props = proposals(context)
+  def process1(context:C): DiffList = processProposals(proposals(context))
+  def processProposals(props: Seq[Proposal]): DiffList = {
     if (props.size == 0 && skipEmptyProposals) return newDiffList
     proposalsHook(props)
     val proposal = props.size match {

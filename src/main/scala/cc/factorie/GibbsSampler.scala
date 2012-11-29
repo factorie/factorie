@@ -16,7 +16,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
   val cacheClosures = true
   def closures = new HashMap[V, GibbsSamplerClosure]
   val doProcessByHandlers = model.isInstanceOf[GenerativeModel]
-  override def process1(v:V): DiffList = if (doProcessByHandlers) processByHandlers(v) else processByProposals(v)
+  override def process1(v:V): DiffList = if (doProcessByHandlers) processByHandlers(v) else processProposals(proposals(v))
   def processByHandlers(v:V): DiffList = {
     val d = newDiffList
     // If we have a cached closure, just use it and return
@@ -35,18 +35,6 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
     }
     if (!done) throw new Error("GibbsSampler: No sampling handler found for "+factors)
     d
-  }
-  def processByProposals(v:V): DiffList = {
-    val props = proposals(v)
-    proposalsHook(props)
-    val proposal = props.size match {
-      case 0 => if (skipEmptyProposals) return newDiffList else throw new Error("No proposals created.")
-      case 1 => props.head 
-      case _ => pickProposal(props)
-    }
-    proposal.diff.redo
-    proposalHook(proposal)
-    proposal.diff
   }
 
   def proposals(v:V): Seq[Proposal] = model match {

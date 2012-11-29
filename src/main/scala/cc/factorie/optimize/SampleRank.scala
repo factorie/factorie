@@ -106,8 +106,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
     }
-    val bestProposal = proposals.maxByDouble(_.modelScore)
-    bestProposal.diff.redo
+    sampler.processProposals(proposals)
   }
 }
 
