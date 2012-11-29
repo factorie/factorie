@@ -795,6 +795,17 @@ object InferByBPTreeSum extends InferByBP {
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
+object InferByBPLoopy extends InferByBP {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+    case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
+  }
+  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
+    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
+    BP.inferLoopy(summary)
+    summary
+  }
+}
+
 object InferByBPChainSum extends InferByBP {
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))

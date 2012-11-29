@@ -149,6 +149,6 @@ package object factorie {
   //implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
   // TODO Consider making implicit conversions for IntegerVariable and RealVariable also
  
-  def assertStringEquals(expr:Any, str:String) = require(expr.toString == str)
+  def assertStringEquals(expr:Any, str:String) = require(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")
   
 }

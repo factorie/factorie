@@ -168,6 +168,10 @@ class TestExamples {
     cc.factorie.example.TutorialModel.main(emptyArgs)
   }
 
+  @Test def testTutorial40() {
+    cc.factorie.example.Tutorial40InferenceAndLearning.main(emptyArgs)
+  }
+
   @Test def testVarArgs() {
     cc.factorie.example.VarArgsDemo.main(emptyArgs)
   }
