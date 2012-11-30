@@ -15,7 +15,7 @@ $ mvn compile
 $ mvn test
 
 
-For those with Google Code check-in privledges
+For those with Google Code check-in privileges
 ===============================
 
 Please set your "username", for example in ~/.hgrc:

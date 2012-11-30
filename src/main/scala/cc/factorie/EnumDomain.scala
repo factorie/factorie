@@ -52,4 +52,4 @@ class EnumDomain extends CategoricalDomain[String] {
   }
 }
 
-// TODO Create a EnumVectorDomain
+// TODO Create a TensorEnumDomain

@@ -756,6 +756,7 @@ object BP {
       case 0 => {}
       case 1 => summary.bpFactors.foreach(_.updateOutgoing())
       case _ => {
+        // TODO There is a tricky dependency here: "varying" comes in order, and we are relying on the summary.bpFactors returning factors in chain order also!  Make this safer. -akm  
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]] // this includes both Factor1[Label], Factor2[Label,Features]
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)

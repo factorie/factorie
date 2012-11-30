@@ -36,10 +36,10 @@ object Discrete extends GenerativeFamily2[DiscreteVariable,ProportionsVariable] 
     def maxIntValue(p:Proportions): Int = p.maxIndex // TODO 
     override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
   }
-  def newFactor(a:DiscreteVariable, b:ProportionsVariable) = Factor(a, b)
-  // TODO Arrange to call this in Factor construction.
-  def factorHook(factor:Factor): Unit =
-    if (factor._1.domain.size != factor._2.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")
+  def newFactor(a:DiscreteVariable, b:ProportionsVariable) = {
+    if (a.domain.size != b.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")
+    Factor(a, b) 
+  }
 }
 
 object MaximizeGeneratedDiscrete extends Maximize {

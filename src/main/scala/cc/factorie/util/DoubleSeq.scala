@@ -328,9 +328,8 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     sum
     //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
   }
-  def exponentiate() {
-    var i = 0
-    val l = length
+  def exponentiate(): Unit = {
+    var i = 0; val l = length
     while (i < l) {
       update(i, math.exp(apply(i)))
       i += 1

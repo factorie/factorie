@@ -7,6 +7,10 @@ Finish ChainModel [Passos, Belanger]
 Employ DoubleSeqIterator to replace foreachActiveElement if it is faster?  No, I don't think so. [McCallum]
 Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
 Remove VarAndValueGenericDomain
+Remove old Domain and Model serialization
+In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
+In BP, when running on chains, verify that we don't need to walk to create a tree.
+
 
 Rename DiscreteTensorVar to TensorDiscreteVar for clarity; similarly for Categorical. [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
@@ -29,6 +33,7 @@ Tutorial examples [McCallum]
 Basic models [All]
 Implement TopicsOverTime (needs Beta distribution) [Bakalov]
 Make an HMM example and show that BP inference and EM training work on it [Belanger]
+Fixed HACKING.txt Eclipse set up
 
 
 DONE:

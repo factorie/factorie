@@ -19,7 +19,7 @@ import cc.factorie.la._
 
 /** Collins' structured-perceptron.
     @author Andrew McCallum */
-// TODO Make a Piece version of this.
+// TODO Make a Piece version of this and get rid of this one. -akm
 abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model, val optimizer:GradientOptimizer) {
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   var rate = 1.0

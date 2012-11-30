@@ -17,13 +17,13 @@ import cc.factorie.la._
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
-// For variables that hold a single discrete value
+// For variables that hold a single discrete value, which is represented as a one-hot Tensor1.
 
 /** A value in a DiscreteDomain. */
 trait DiscreteValue extends SingletonBinaryTensorLike1 {
   def domain: DiscreteDomain // TODO Strongly consider removing this so that anyone can create a DiscreteValue to pass into Factor.statistics() without knowing the domain.
   @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
-  @inline final def booleanValue = if (intValue == 1) true else false
+  @inline final def booleanValue = if (intValue == 0) false else true
   @inline final def dim1 = domain.size
   override def toString: String = singleIndex.toString
 }
@@ -71,7 +71,7 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
   protected class DiscreteValue(val singleIndex:Int) extends cc.factorie.DiscreteValue {
     def domain = thisDomain
     override def equals(other:Any): Boolean = 
-      other match { case other:DiscreteValue => this.intValue == other.intValue; case _ => false }
+      other match { case other:DiscreteValue => this.singleIndex == other.singleIndex; case _ => false }
     // TODO Above we shouldn't be also insisting that the Domain objects match?
   }
   
