@@ -131,17 +131,43 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   // Inference
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
     val summary = new ChainSummary {
-      private val (_expectations, _nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
-      lazy private val _marginals = {
+      private val (_expectations, (__nodeMarginals, __edgeMarginals), _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
+      lazy private val _nodeMarginals = {
         val res = new LinkedHashMap[Variable, DiscreteMarginal]
-        res ++= labels.zip(_nodeMarginals).map { case (l, m) => 
+        res ++= labels.zip(__nodeMarginals).map { case (l, m) => 
           l -> new DiscreteMarginal1(l, new DenseProportions1(m))
         }
       }
+      lazy private val _edgeMarginals = {
+        labels.zip(labels.drop(1)).zip(__edgeMarginals).map { case ((l1, l2), m) => 
+          // m is label X label
+          val ds = labelDomain.length
+          val t = new DenseProportions2(ds, ds)
+          var d1 = 0
+          while (d1 < ds) {
+	        var d2 = 0
+            while (d2 < ds) {
+              t(d1, d2) += m(d1 * ds + d2)
+              d2 += 1
+            }
+	        d1 += 1
+          }
+          new DiscreteMarginal2(l1, l2, t)
+        }.toArray
+      }
       def expectations = _expectations
       override def logZ = _logZ
-      def marginals: Iterable[DiscreteMarginal] = _marginals.values
-      def marginal(v: Variable): DiscreteMarginal = _marginals(v)
+      def marginals: Iterable[DiscreteMarginal] = _nodeMarginals.values
+      def marginal(v: Variable): DiscreteMarginal = _nodeMarginals(v)
+      override def marginal(_f: Factor): DiscreteMarginal = {
+        val f = _f.asInstanceOf[DotFamily#Factor]
+        if (f.family == bias || f.family == obs)
+          marginal(f.variables.head)
+        else if (f.family == markov)
+          _edgeMarginals(labels.indexOf(f.variables.head))
+        else
+          throw new Error("ChainModel marginals can only be returned for ChainModel factors")
+      }
     }
     summary
   }
