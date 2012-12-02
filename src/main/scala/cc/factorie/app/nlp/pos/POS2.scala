@@ -72,10 +72,11 @@ class POS2 extends Infer with util.FastLogging {
     
     var iteration = 0
     while (!trainer.isConverged && iteration < numIterations) {
-      for ((exampleBatch, batchNumber) <- examples.grouped(1000).zipWithIndex) {
-        println("[Training] batch number: " + batchNumber)
-	    trainer.processExamples(exampleBatch)
-      }
+//      for ((exampleBatch, batchNumber) <- examples.grouped(1000).zipWithIndex) {
+//        println("[Training] batch number: " + batchNumber)
+//	    trainer.processExamples(exampleBatch)
+//      }
+      trainer.processExamples(examples)
       printAccuracy("Train", trainDocuments)
       printAccuracy("Test ", testDocuments)
       println("---------------------------")
