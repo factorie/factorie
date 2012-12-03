@@ -191,6 +191,19 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         }
       }
       def expectations = null
+      override def marginal(_f: Factor): DiscreteMarginal = {
+        val f = _f.asInstanceOf[DotFamily#Factor]
+        if (f.family == bias || f.family == obs)
+          marginal(f.variables.head)
+        else if (f.family == markov) {
+          val f2 = _f.asInstanceOf[Factor2[Label, Label]]
+          val m = new DiscreteMarginal2(f2)
+          m.proportions.+=(variableTargetMap(f2._1), variableTargetMap(f2._2), 1.0)
+          m
+        }
+        else
+          throw new Error("ChainModel marginals can only be returned for ChainModel factors")
+      }
     }
   }
 
