@@ -85,37 +85,3 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
     def undo = _value = oldValue
   }
 }
-
-
-
-//// TODO Create an implicit conversion from Double to RealSingletonVector
-//// So that we can use them as sufficient statistics in a VectorTemplate
-//trait RealSingletonTensorDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
-//  def dimensionDomain = RealSingletonDiscreteDomain
-//  def size = 1
-//}
-//object RealSingletonDiscreteDomain extends DiscreteDomain(1) 
-//object RealSingletonTensorDomain extends RealSingletonTensorDomain
-//
-///** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
-//    so that it can be among the Statistics of a VectorTemplate. */
-//trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with Var[SingletonTensor1] {
-//  thisVariable =>
-//  def domain = RealSingletonTensorDomain
-//  /** A Vector representation of this Variable's value. */
-//  @inline final def value = new SingletonTensor1(1, 0, doubleValue)
-//  def tensor = value
-//  // TODO Consider rewriting above line to avoid constructing new object
-//  def doubleValue: Double
-//  def intValue: Int = doubleValue.toInt
-//  override def ===(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue == other.doubleValue; case _ => false } 
-//  override def !==(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue != other.doubleValue; case _ => false } 
-//  override def toString = printName + "(" + doubleValue.toString + ")"
-//}
-//
-//class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonTensorVar {
-//  private var _value = initialValue
-//  def doubleValue: Double = _value
-//}
-
-// TODO Consider making an implicit conversion from RealVar to RealSingletonVectorVar 

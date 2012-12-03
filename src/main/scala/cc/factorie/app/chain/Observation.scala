@@ -26,7 +26,7 @@ trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with
 object Observations {
   /** Copy features into each token from its preceding and following tokens, 
    with preceding extent equal to preOffset and following extent equal to -postOffset.
-   In other words, to add features from the three preceeding tokens and the two following tokens,
+   In other words, to add features from the three preceding tokens and the two following tokens,
    pass arguments (-3,2).
    Features from preceding tokens will have suffixes like "@-1", "@-2", etc.
    Features from following tokens will have suffixes like "@+1", "@+2", etc. 
@@ -58,8 +58,43 @@ object Observations {
     for (i <- 0 until size) (vf(observations(i))) ++= extraFeatures(i)
   }
   
+  /** Return null if index i is out of range. */
+  private def safeApply[A](s:Seq[A], i:Int): A = if (i < 0 || i > s.length-1) null.asInstanceOf[A] else s(i)
+  
+  /** Add feature to each Observation. */
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int): Unit = {
+    for (i <- 0 until observations.length) {
+      val o = observations(i)
+      val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
+      if (s1 != null) vf(o) += (s1 + "@" + i1)
+    }
+  }
+
+  /** Add binary conjunction feature to each Observation. */
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int): Unit = {
+    for (i <- 0 until observations.length) {
+      val o = observations(i)
+      val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
+      val o2 = safeApply(observations, i+i2); val s2 = if (o2 ne null) f2(o2) else null
+      if (s1 != null && s2 != null) vf(o) += (s1 + "@" + i1 + "_&_" + s2 + "@" + i2)
+    }
+  }
+  
+  /** Add trinary conjunction feature to each Observation. */
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int, f3:A=>String, i3:Int): Unit = {
+    for (i <- 0 until observations.length) {
+      val o = observations(i)
+      val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
+      val o2 = safeApply(observations, i+i2); val s2 = if (o2 ne null) f2(o2) else null
+      val o3 = safeApply(observations, i+i3); val s3 = if (o3 ne null) f3(o3) else null
+      if (s1 != null && s2 != null && s3 != null) vf(o) += (s1 + "@" + i1 + "_&_" + s2 + "@" + i2 + "_&_" + s3 + "@" + i3)
+    }
+  }
+
+  
   // TODO Note that the methods below do not obey Sentence boundaries:  they will add offset conjunctions across the sentence boundary, 
   // even if "observations" contains only the words in the a Sentence.
+  // Change the implementation to avoid Observation.next, and instead only use observations.apply(Int).
   
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], offsetConjunctions:Seq[Int]*): Unit = 
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)

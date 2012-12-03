@@ -18,7 +18,7 @@ import cc.factorie.la._
 
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
-    Concrete implementations include CategoricalVariable and CategoricalObservation. 
+    Concrete implementations include CategoricalVariable and BooleanVariable. 
     @author Andrew McCallum */
 trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with CategoricalTensorVar[C] with ValueBound[CategoricalValue[C]] {
   def domain: CategoricalDomain[C]
@@ -42,13 +42,10 @@ abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValu
 
 
 
-// ItemizedObservation support
 
 // TODO Replace this with Catalog?
 // But then we couldn't use syntax like:  PersonDomain.size
 // But this doesn't matter any more.
-
-// TODO make this ItemizedVar
 
 /** An Observation put into an index, and whose value is the Observation variable itself.  
     For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 

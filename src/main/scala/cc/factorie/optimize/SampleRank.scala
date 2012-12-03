@@ -106,7 +106,8 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
     }
-    sampler.processProposals(proposals)
+    val bestProposal = proposals.maxByDouble(_.modelScore) // TODO Should this instead be using the "sampler" to pick a Proposal? -akm &apassos
+    bestProposal.diff.redo
   }
 }
 
