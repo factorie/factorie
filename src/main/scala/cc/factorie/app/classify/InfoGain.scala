@@ -41,7 +41,6 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
     val featureTargetProportions = Array.fill(numFeatures)(new DenseProportions1(numLabels))
     val featureCount = new Array[Double](numFeatures)
     val targetProportions = new DenseProportions1(numLabels)
-    var targetCountSum = 0.0
     for (label <- labels) {
       val instance: DiscreteTensorVar = f(label)
       assert(instance.domain == instanceDomain)
@@ -69,7 +68,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
           val noTargetProportions = new DenseMasses1(numLabels)
           noTargetProportions += targetProportions.masses
           noTargetProportions -= featureTargetProportions(featureIndex).masses
-          noTargetProportions.normalize
+          noTargetProportions.normalize()
           noTargetProportions.entropy
           //maths.entropy((0 until numLabels).map(li => (targetProportions.mass(li) - featureTargetProportions(featureIndex).mass(li))/normWithoutFeature))
         } else 0.0

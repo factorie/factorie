@@ -15,10 +15,6 @@
 package cc.factorie.app.classify
 
 import cc.factorie._
-import app.classify
-import app.strings.{SetBasedStopwords, StringSet}
-import scala.collection.mutable.{HashMap, ArrayBuffer}
-import java.io.File
 
 /** Infrastructure for independent classification of feature vectors with String-valued features. 
     @author Andrew McCallum

@@ -48,7 +48,7 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], 
     for (labelIndex <- 0 until numLabels) {
       val pc = (labelCounts(labelIndex):Double)/numInstances
       val pnc = (numInstances-labelCounts(labelIndex):Double)/numInstances
-      labelEntropies(labelIndex) = entropy (pc, pnc);
+      labelEntropies(labelIndex) = entropy (pc, pnc)
     }
     //if (true) for (labelIndex <- 0 until numLabels) println(labelDomain.asInstanceOf[CategoricalDomain[String]].category(labelIndex)+" "+labelEntropies(labelIndex))
 
@@ -56,8 +56,8 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], 
     for (fi <- 0 until numFeatures) {
       val pf = (featureCounts(fi):Double)/numInstances
       val pnf = (numInstances-featureCounts(fi):Double)/numInstances
-      assert (pf >= 0);
-      assert (pnf >= 0);
+      assert (pf >= 0)
+      assert (pnf >= 0)
       //assert (sum == featureCounts[fi]);
       for (li <- 0 until numLabels) {
         if (featureCounts(fi) == 0) {
@@ -82,15 +82,15 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], 
 
   private def entropy (pc:Double, pnc:Double): Double = {
     if (pc != pc && pnc != pnc)
-      return 0.0
+      0.0
     else {
       assert (math.abs((pc+pnc)-1) < 0.0001, "pc="+pc+" pnc="+pnc)
       if (pc == 0 || pnc == 0)
-        return 0.0
+        0.0
       else {
         val ret = (- pc * math.log(pc)/maths.log2 - pnc * math.log(pnc)/maths.log2)
         assert (ret >= 0, "pc="+pc+" pnc="+pnc)
-        return ret
+        ret
       }
     }
   }

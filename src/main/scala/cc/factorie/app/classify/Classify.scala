@@ -16,10 +16,8 @@ package cc.factorie.app.classify
 
 import cc.factorie._
 import app.classify
-import app.classify._
 import app.strings.SetBasedStopwords
 import java.io._
-import java.util.zip.GZIPInputStream
 
 // Feature and Label classes
 
@@ -235,7 +233,6 @@ object Classify {
 
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
-      import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
       BinaryCubbieFileSerializer.deserialize(new ModelBasedClassifierCubbie(classifier), classifierFile)

@@ -14,10 +14,6 @@
 
 package cc.factorie
 import cc.factorie.la._
-import scala.util.Random
-import scala.collection.mutable.{ArrayBuffer,HashMap}
-import java.io._
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 // TODO Just a placeholder for now
 trait CategoricalTensorDomain[C] extends DiscreteTensorDomain { thisDomain =>
@@ -44,7 +40,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   }
   // Consider re-adding this "update" method if necessary, but reconsider its name; should it have a Diff argument?
   //def update(elt:C, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
-  def +=(elt:C, incr:Double): Unit = doWithIndexSafely(elt, incr, false)
+  def +=(elt:C, incr:Double): Unit = doWithIndexSafely(elt, incr, update = false)
   def +=(elt:C): Unit = +=(elt, 1.0)
   @deprecated("Use this.tensor.+= instead.") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
   def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))

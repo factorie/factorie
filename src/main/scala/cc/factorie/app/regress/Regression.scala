@@ -46,34 +46,28 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
 
 object LinearRegressionTrainer {
   // Assumes variables are set to their target values
-  def train[E<:TensorVar, A<:TensorVar](examples: Iterable[A], dependant2Explanatory: A=>E, l2: Double): LinearRegressor[E,A] = {
+  def train[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, l2: Double): LinearRegressor[E, A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)
-    val dependentSize = exampleDependent.value.dimensions.reduce((a,b)=>a*b)
-    val explanatorySize = exampleExplanatory.value.dimensions.reduce((a,b)=>a*b)
+    val dependentSize = exampleDependent.value.dimensions.product
+    val explanatorySize = exampleExplanatory.value.dimensions.product
     val weights = new DenseTensor2(dependentSize, explanatorySize)
     //val optimizer = new cc.factorie.optimize.ConjugateGradient()
     val optimizer = new cc.factorie.optimize.LBFGS()
     val gradient = new DenseTensor2(weights.dim1, weights.dim2)
-    while(!optimizer.isConverged) {
+    while (!optimizer.isConverged) {
       gradient.zero()
       var value = 0.0
-      examples.foreach(e => {
+      for (e <- examples) {
         val features = dependant2Explanatory(e).value.asInstanceOf[Tensor1]
         val prediction = weights * features
-        prediction.activeDomain.foreach(i => prediction(i) -= e.value(i))
-        value -= prediction.dot(prediction)
+        for (i <- prediction.activeDomain) prediction(i) -= e.value(i)
+        value -= prediction dot prediction
         // add the gradients
-        prediction.activeDomain.foreach(i => {
-          features.activeDomain.foreach(j => {
-            gradient(i,j) -= 2*prediction(i)*features(j)
-          })
-        })
-      })
-
-      for (i <- 0 to weights.dim1 - 1; j <- 0 to weights.dim2 - 1)
-        gradient(i,j) += l2 * weights(i,j)
-
+        for (i <- prediction.activeDomain; j <- features.activeDomain)
+            gradient(i, j) -= 2 * prediction(i) * features(j)
+      }
+      gradient += (weights, l2)
       optimizer.step(weights, gradient, value, 0.0)
     }
     new LinearRegressor(dependant2Explanatory, weights)

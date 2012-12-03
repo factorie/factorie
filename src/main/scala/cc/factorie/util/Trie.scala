@@ -20,6 +20,7 @@ package cc.factorie.util
 
 import scala.collection.mutable._;
 
+// TODO: can we get rid of this? -luke
 trait Trie[T] extends (Seq[T] => Boolean) {
   private val root = new HashMap[T, Int]
 
