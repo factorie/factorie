@@ -220,22 +220,27 @@ object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
-class CategoricalDomainCubbie extends Cubbie {
-  val size = IntSlot("size")
-  val frozen = BooleanSlot("frozen")
-  val categories = StringListSlot("end")
-  def this(cd: CategoricalDomain[String]) = { this(); store(cd) }
-  def store(d:CategoricalDomain[String]): this.type = {
-    size := d.size
-    frozen := d.frozen
-    categories := d.categories
-    this
-  }
-  def fetch(d:CategoricalDomain[String]): CategoricalDomain[String] = {
-    for (c <- categories.value) d.index(c)
-    if (frozen.value) d.freeze()
-    d
-  }
+class CategoricalDomainCubbie(val cd: CategoricalDomain[String]) extends Cubbie {
+  // This cubbie automatically writes into the underlying CategoricalDomain instead of
+  // using an intermediate HashMap representation
+  setMap(new Map[String, Any] {
+    override def update(key: String, value: Any): Unit = {
+      if (key == "size") { /* cd.size = value.asInstanceOf[Int] */ }
+      else if (key == "frozen") { if (value.asInstanceOf[Boolean]) cd.freeze() }
+      else if (key == "categories") {
+        val categories = value.asInstanceOf[Iterable[String]]
+        categories.foreach(cd.value(_))
+      } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
+    }
+    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+    def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
+    def get(key: String): Option[Any] =
+      if (key == "size") Some(cd.size)
+      else if (key == "frozen") Some(cd.frozen)
+      else if (key == "categories") Some(cd.categories)
+      else None
+    def iterator: Iterator[(String, Any)] = List("size", "frozen", "categories").map(s => (s, get(s).get)).iterator
+  })
 }
 
 /* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.

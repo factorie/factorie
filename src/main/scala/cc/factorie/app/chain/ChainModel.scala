@@ -69,18 +69,16 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
-    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-labelDomain'")
+    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
     val labelDomainCubbie = new CategoricalDomainCubbie(labelDomain)
     BinaryCubbieFileSerializer.deserialize(labelDomainCubbie, labelDomainFile)
-    labelDomainCubbie.fetch(labelDomain)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix+"-featuresDomain'")
+    assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
     val featuresDomainCubbie = new CategoricalDomainCubbie(featuresDomain.dimensionDomain)
     BinaryCubbieFileSerializer.deserialize(featuresDomainCubbie, featuresDomainFile)
-    featuresDomainCubbie.fetch(featuresDomain.dimensionDomain)
     val modelFile = new File(prefix + "-model")
-    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix+"-model'")
-    assertEquals(markov.weights.length,labelDomain.length * labelDomain.length)
+    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
+    assertEquals(markov.weights.length, labelDomain.length * labelDomain.length)
     BinaryCubbieFileSerializer.deserialize(new ModelCubbie(this), modelFile)
   }
 

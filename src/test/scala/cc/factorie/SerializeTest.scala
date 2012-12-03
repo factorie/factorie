@@ -40,7 +40,6 @@ class SerializeTests extends JUnitSuite {
     val domainFile2 = new File(fileName1.getAbsolutePath)
     val domainCubbie2 = new CategoricalDomainCubbie(domain2)
     BinaryCubbieFileSerializer.deserialize(domainCubbie2, domainFile2)
-    domainCubbie2.fetch(domain2)
 
     val modelFile2 = new File(fileName2.getAbsolutePath)
     val modelCubbie2 = new ModelCubbie(model2)
@@ -98,11 +97,8 @@ class SerializeTests extends JUnitSuite {
     println(TokenDomain.dimensionDomain.toSeq.mkString(","))
     println("Deserialized domain:")
     val newDomain = new CategoricalTensorDomain[String] { }
-    // TODO we shouldn't have to pass the domain in the constructor and _also_ call "fetch" -luke
-    // but if we don't do that then there's nothing in the list slot and we throw an exception
     val cubbie = new CategoricalDomainCubbie(newDomain.dimensionDomain)
     BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
-    cubbie.fetch(newDomain.dimensionDomain)
     println(newDomain.dimensionDomain.toSeq.mkString(","))
 
     assert(TokenDomain.dimensionDomain.toSeq.map(_.category).sameElements(newDomain.dimensionDomain.toSeq.map(_.category)))

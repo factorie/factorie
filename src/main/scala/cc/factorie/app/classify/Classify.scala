@@ -175,10 +175,9 @@ object Classify {
     // Read vocabulary
     if (opts.readVocabulary.wasInvoked) {
       val vocabFile = new File(opts.readVocabulary.value)
-      val cubbie = new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain)
-      BinaryCubbieFileSerializer.deserialize(cubbie, vocabFile) // TODO should we make an overload that doesnt req. a cubbie and reads the cubbie type from file? -luke
-      cubbie.fetch(FeaturesDomain.dimensionDomain)
-//      Serializer.deserialize(FeaturesDomain.dimensionDomain, vocabFile)
+      // TODO should we make an overload that doesnt req. a cubbie and reads the cubbie type from file? -luke
+      // or automatically picks the cubbie based on the input type?
+      BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
       FeaturesDomain.freeze() // TODO should this always be frozen? otherwise weights won't match... -luke
     }
 
@@ -189,7 +188,7 @@ object Classify {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if (file.isFile)) {
-          //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+          //println ("Directory " + directory + " File " + file + " documents.size " + documents.size)
           val labelName = directoryFile.getName
           val instanceName = labelName + "-" + file.getName
           val features =
@@ -219,7 +218,6 @@ object Classify {
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
       BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
-//      Serializer.serialize(FeaturesDomain.dimensionDomain, vocabFile)
     }
 
     // if readclassifier is set, then we ignore instances labels and classify them
@@ -227,8 +225,7 @@ object Classify {
       import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
-      BinaryCubbieFileSerializer.deserialize(new ClassifierCubbie(classifier), classifierFile)
-//      Serializer.deserialize(classifier, classifierFile, gzip = true)
+      BinaryCubbieFileSerializer.deserialize(new ModelBasedClassifierCubbie(classifier), classifierFile)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
@@ -238,7 +235,8 @@ object Classify {
       }
       if (opts.writeClassifications.wasInvoked) {
         val classificationsFile = new File(opts.writeClassifications.value)
-        for (cl <- classifications) Serializer.serialize(cl, classificationsFile)
+        val str = new PrintStream(classificationsFile)
+        for (cl <- classifications) Serialize.writeClassification(cl, str)
       }
       return
     }
@@ -291,9 +289,11 @@ object Classify {
 
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
-      import Serialize._
-      BinaryCubbieFileSerializer.serialize(new ClassifierCubbie(classifier), classifierFile)
-//      Serializer.serialize(classifier, classifierFile, gzip = true)
+      // TODO should classifier cubbie write the vocab + the model in one file? -luke
+      if (!classifier.isInstanceOf[ModelBasedClassifier[Label]])
+        sys.error("Only ModelBasedClassifiers can be serialized.")
+      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label]]
+      BinaryCubbieFileSerializer.serialize(new ModelBasedClassifierCubbie(mbc), classifierFile)
     }
 
     opts.evaluator.value match {

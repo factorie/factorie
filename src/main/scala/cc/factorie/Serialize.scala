@@ -30,12 +30,12 @@ object BinaryCubbieFileSerializer {
   }
 
   def serialize(c: Cubbie, s: DataOutputStream): Unit = {
-    for ((k, v) <- c._map) serialize(Some(k), v, s)
+    for ((k, v) <- c._map.toSeq) serialize(Some(k), v, s)
   }
   def deserialize(c: Cubbie, s: DataInputStream): Unit = {
     for ((k, v) <- c._map.toSeq) {
       val key = readString(s)
-      assert(k == key, "Cubbie keys don't match with serialized data!")
+      assert(k == key, "Cubbie keys don't match with serialized data! (got \"%s\", expected \"%s\")" format (key, k))
       c._map(key) = deserializeInner(v, s.readByte(), s)
     }
   }
@@ -60,7 +60,7 @@ object BinaryCubbieFileSerializer {
       repeat(s.readInt())(tensor(s.readInt()) = s.readDouble())
       tensor
     case MAP =>
-      val m = preexisting.asInstanceOf[mutable.HashMap[String, Any]]
+      val m = preexisting.asInstanceOf[mutable.Map[String, Any]]
       repeat(s.readInt()) {
         val key = readString(s)
         m(key) = deserializeInner(m(key), s.readByte(), s)
@@ -93,7 +93,7 @@ object BinaryCubbieFileSerializer {
     case _: Boolean => BOOLEAN
     case _: String => STRING
     case _: Tensor => TENSOR
-    case _: mutable.HashMap[String, Any] => MAP
+    case _: mutable.Map[String, Any] => MAP
     case _: Traversable[_] => LIST
   }
   private def isPrimitiveTag(tag: Byte): Boolean = tag match {
@@ -115,7 +115,7 @@ object BinaryCubbieFileSerializer {
           s.writeInt(i)
           s.writeDouble(v)
         }
-      case m: mutable.HashMap[String, Any] =>
+      case m: mutable.Map[String, Any] =>
         s.writeInt(m.size)
         for ((k, v) <- m) serialize(Some(k), v, s)
       case t: Traversable[Any] =>
@@ -128,114 +128,8 @@ object BinaryCubbieFileSerializer {
   }
 }
 
-//object StringCubbieFileSerializer {
-//
-//  def serialize(toSerialize: Cubbie, file: File, gzip: Boolean = false): Unit = {
-//    file.createNewFile()
-//    val fileStream = new BufferedOutputStream(new FileOutputStream(file))
-//    val writer = new PrintStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
-//    serialize(toSerialize, writer)
-//    writer.close()
-//  }
-//
-//  def deserialize(deserializeTo: Cubbie, file: File, gzip: Boolean = false): Unit = {
-//    val fileStream = new FileInputStream(file)
-//    val str = new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(new BufferedInputStream(fileStream)) else fileStream))
-//    deserialize(deserializeTo, str)
-//    str.close()
-//  }
-//
-//  def deserialize(c: Cubbie, s: BufferedReader): Unit = {
-//    for ((_, v) <- c._map.toSeq) {
-//      val key = s.readLine()
-//      c._map(key) = deserializeInner(v, s.readLine(), s)
-//    }
-//  }
-//  def serialize(c: Cubbie, p: PrintStream): Unit = {
-//    for ((k, v) <- c._map) serialize(k, v, new PrintWriter(p))
-//  }
-//  private def deserializeInner(preexisting: Any, tag: String, s: BufferedReader, hasEndMarker: Boolean = true): Any = {
-//    tag match {
-//      case "#double" =>
-//        val v = s.readLine().toDouble; if (hasEndMarker) s.readLine(); v
-//      case "#int" =>
-//        val v = s.readLine().toInt; if (hasEndMarker) s.readLine(); v
-//      case "#boolean" =>
-//        val v = s.readLine().toBoolean; if (hasEndMarker) s.readLine(); v
-//      case "#tensor" =>
-//        val tensor = preexisting.asInstanceOf[Tensor]
-//        var line = ""
-//        while ({line = s.readLine(); line != "#end"}) {
-//          val fields = line.split(" +")
-//          tensor(fields(0).toInt) = fields(1).toDouble
-//        }
-//        tensor
-//      case "#string" =>
-//        val b = new StringBuilder
-//        var line = ""
-//        while ({line = s.readLine(); line != "#end"}) b.append(line)
-//        b.mkString
-//      case "#map" =>
-//        val m = preexisting.asInstanceOf[mutable.HashMap[String, Any]]
-//        for ((_, v) <- m.toSeq) {
-//          val key = s.readLine()
-//          m(key) = deserializeInner(v, s.readLine(), s)
-//        }
-//        if (hasEndMarker) s.readLine()
-//        m
-//      case "#list" =>
-//        val innerTag = s.readLine()
-//        val len = s.readLine().toInt
-//        val buff = new mutable.ArrayBuffer[Any]()
-//        val iter = preexisting.asInstanceOf[Traversable[Any]].toIterator
-//        for (_ <- 0 until len) {
-//          val pre = if (iter.hasNext) iter.next() else null
-//          if (!isPrimitiveTag(innerTag)) s.readLine()
-//          buff += deserializeInner(pre, innerTag, s, hasEndMarker = !isPrimitiveTag(innerTag))
-//        }
-//        if (hasEndMarker) s.readLine()
-//        buff
-//    }
-//  }
-//  private def tagForType(value: Any): String = value match {
-//    case _: Int => "#int"
-//    case _: Double => "#double"
-//    case _: Tensor => "#tensor"
-//    case _: Boolean => "#boolean"
-//    case _: String => "#string"
-//    case _: mutable.HashMap[String, Any] => "#map"
-//    case _: Traversable[_] => "#list"
-//  }
-//  private def isPrimitiveTag(value: String): Boolean = value match {
-//    case "#double" | "#boolean" | "#int" => true
-//    case _ => false
-//  }
-//  private def isPrimitive(value: Any): Boolean = isPrimitiveTag(tagForType(value))
-//  private def serialize(key: String, value: Any, writer: PrintWriter): Unit = {
-//    if (key != "") writer.println(key)
-//    if (!(key == "" && isPrimitive(value))) writer.println(tagForType(value))
-//    value match {
-//      case _: String =>
-//        writer.println(value) // TODO: escape these strings so no "#"'s get in there and mess up the format -luke
-//      case _: Int | _: Boolean | _: Double =>
-//        writer.println(value)
-//      case t: Tensor =>
-//        for ((i, v) <- t.activeElements; if (v != 0.0))
-//          writer.println(i + " " + v)
-//      case m: mutable.HashMap[String, Any] =>
-//        for ((k, v) <- m) serialize(k, v, writer)
-//      case t: Traversable[_] =>
-//        writer.println(tagForType(t.head))
-//        writer.println(t.size)
-//        t.foreach(x => serialize("", x, writer))
-//    }
-//    if (!(key == "" && isPrimitive(value))) writer.println("#end")
-//    writer.flush()
-//  }
-//}
-
+// TODO: get rid of this but non-proj dependency parser is still using to serialize classifiers -luke
 object Serializer {
-
   def serialize[T](toSerialize: T, file: File, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
     file.createNewFile()
     val fileStream = new BufferedOutputStream(new FileOutputStream(file))
