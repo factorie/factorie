@@ -12,9 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
-package cc.factorie.util;
+package cc.factorie.util
 
 import scala.util.Random
 import scala.util.Sorting
@@ -24,8 +22,8 @@ trait TraversableExtras[A] {
   val t: Traversable[A]
   implicit val defaultRandom = cc.factorie.random
 
-  def sumDoubles(extractor: A => Double): Double = t.foldLeft(0.0)((sum, x:A) => sum + extractor(x))
-  def sumInts(extractor: A => Int): Int = t.foldLeft(0)((sum, x:A) => sum + extractor(x))
+  def sumDoubles(extractor: A => Double): Double = t.foldLeft(0.0)((sum, x) => sum + extractor(x))
+  def sumInts(extractor: A => Int): Int = t.foldLeft(0)((sum, x) => sum + extractor(x))
 
   def multiplyDoubles(extractor: A => Double): Double = t.foldLeft(1.0)((prod, x) => prod * extractor(x))
   def multiplyInts(extractor: A => Int): Int = t.foldLeft(1)((prod, x) => prod * extractor(x))
@@ -33,10 +31,10 @@ trait TraversableExtras[A] {
   def maxByDouble(extractor: A => Double): A = {
     val iter = t.toSeq.iterator
     if (!iter.hasNext) throw new Error("TraversableExtras.maxByDouble on empty Traversable")
-    var result: A = iter.next
+    var result: A = iter.next()
     var value = extractor(result)
     while (iter.hasNext) {
-      val x = iter.next; val v = extractor(x)
+      val x = iter.next(); val v = extractor(x)
       if (v > value) { result = x; value = v }
     }
     result
@@ -57,10 +55,10 @@ trait TraversableExtras[A] {
   def maxByInt(extractor: A => Int): A = {
     val iter = t.toSeq.iterator
     if (!iter.hasNext) throw new Error("TraversableExtras.maxByInt on empty Traversable")
-    var result: A = iter.next
+    var result: A = iter.next()
     var value = extractor(result)
     while (iter.hasNext) {
-      val x = iter.next; val v = extractor(x)
+      val x = iter.next(); val v = extractor(x)
       if (v > value) { result = x; value = v }
     }
     result
@@ -69,10 +67,10 @@ trait TraversableExtras[A] {
   def minByDouble(extractor: A => Double): A = {
     val iter = t.toSeq.iterator
     if (!iter.hasNext) throw new Error("TraversableExtras.minByDouble on empty Traversable")
-    var result: A = iter.next
+    var result: A = iter.next()
     var value = extractor(result)
     while (iter.hasNext) {
-      val x = iter.next; val v = extractor(x)
+      val x = iter.next(); val v = extractor(x)
       if (v < value) { result = x; value = v }
     }
     result
@@ -80,10 +78,10 @@ trait TraversableExtras[A] {
   def minByInt(extractor: A => Int): A = {
     val iter = t.toSeq.iterator
     if (!iter.hasNext) throw new Error("TraversableExtras.minByInt on empty Traversable")
-    var result: A = iter.next
+    var result: A = iter.next()
     var value = extractor(result)
     while (iter.hasNext) {
-      val x = iter.next; val v = extractor(x)
+      val x = iter.next(); val v = extractor(x)
       if (v < value) { result = x; value = v }
     }
     result
@@ -126,7 +124,7 @@ trait TraversableExtras[A] {
     t.toSeq.sortWith((x1:A, x2:A) => extractor(x1) > extractor(x2))
 
   def shuffle(implicit random: Random = defaultRandom) : Seq[A] = {
-    val s2 = t.map(x => (x, random.nextInt)).toSeq
+    val s2 = t.map(x => (x, random.nextInt())).toSeq
     Sorting.stableSort(s2, (t1: (A, Int), t2: (A, Int)) => t1._2 > t2._2).map(t => t._1)
   }
 
@@ -165,7 +163,7 @@ trait TraversableExtras[A] {
       if (e < 0.0) throw new Error("TraversableExtras sample extractor value " + e + " less than zero.  Sum=" + sum)
       sum += e
       if (sum >= r)
-        return choice;
+        return choice
     }
     throw new Error("TraversableExtras sample error: r=" + r + " sum=" + sum)
   }

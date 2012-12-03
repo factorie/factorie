@@ -50,8 +50,8 @@ trait Tensor extends MutableDoubleSeq {
   def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
-  def normalized: Tensor = { val t = copy; t.normalize; t } // TODO Make this return Proportions, then fix BP
-  def expNormalized: Tensor = { val t = copy; t.expNormalize; t } // TODO Make this return Proportions, then fix BP
+  def normalized: Tensor = { val t = copy; t.normalize(); t } // TODO Make this return Proportions, then fix BP
+  def expNormalized: Tensor = { val t = copy; t.expNormalize(); t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
@@ -63,7 +63,7 @@ object Tensor {
   
   def tabulate(dim1:Int)(f:Int=>Double): DenseTensor1 = {
     val t = new DenseTensor1(dim1)
-    var i = 0;
+    var i = 0
     while (i < dim1) { t(i) = f(i); i += 1 }
     t
   }

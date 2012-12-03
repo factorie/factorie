@@ -13,12 +13,9 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.collection.mutable.{Map,ArrayBuffer, HashMap, ListBuffer}
-import scala.util.Random
-import cc.factorie.la._
+import scala.collection.mutable
 import java.io._
 import java.util.zip.{GZIPOutputStream, GZIPInputStream}
-
 
 // For single categorical values
 
@@ -49,7 +46,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   //def this(values:C*) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
-  private val __indices = new HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
+  private val __indices = new mutable.HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
   def _indices = __indices
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
@@ -76,7 +73,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
   override def apply(i:Int): Value = _elements(i)
   def category(i:Int): C = _elements(i).category.asInstanceOf[C]
-  def categories: Seq[C] = _elements.map(_.category.asInstanceOf[C]) // TODO Can we avoid this cast.
+  def categories: Seq[C] = _elements.map(_.category.asInstanceOf[C])
   /** Return the integer associated with the category, do not increment the count of category, even if gatherCounts is true. */
   def indexOnly(category:C): Int = {
     val v = value(category)
@@ -96,10 +93,10 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   /** Wipe the domain and its indices clean */
   def clear(): Unit = { _frozen = false; _elements.clear(); _indices.clear() }
   // Separate argument types preserves return collection type
-  def indexAll(c: Iterator[C]) = c map index;
-  def indexAll(c: List[C]) = c map index;
-  def indexAll(c: Array[C]) = c map index;
-  def indexAll(c: Set[C]) = c map index;
+  def indexAll(c: Iterator[C]) = c map index
+  def indexAll(c: List[C]) = c map index
+  def indexAll(c: Array[C]) = c map index
+  def indexAll(c: Set[C]) = c map index
 
   override def dimensionName(i:Int): String = category(i).toString
   override def toString = "CategoricalDomain[]("+size+")"
@@ -124,7 +121,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
       writer.println(e.toString)
     }
-    writer.close
+    writer.close()
   }
 
   var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
@@ -172,17 +169,17 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def countsTotal: Int = _sum    
   def incrementCount(i:Int): Unit = _increment(i, 1)
   def incrementCount(category:C): Unit = incrementCount(indexOnly(category))
-  private def someCountsGathered: Boolean = { var i = 0; while (i < _length) { if (_apply(i) > 0) return true; i += 1 }; return false }
+  private def someCountsGathered: Boolean = { var i = 0; while (i < _length) { if (_apply(i) > 0) return true; i += 1 }; false }
   /** Returns the number of unique entries trimmed */
   def trimBelowCount(threshold:Int): Int = {
     assert(!frozen)
     if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
-    val origEntries = _elements.clone
+    val origEntries = _elements.clone()
     clear() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
     gatherCounts = false
     for (i <- 0 until origEntries.size)
       if (_apply(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
-    _clear // We don't need counts any more; allow it to be garbage collected.
+    _clear() // We don't need counts any more; allow it to be garbage collected.
     freeze()
     origEntries.size - size
   }
@@ -223,7 +220,7 @@ object CategoricalDomain {
 class CategoricalDomainCubbie(val cd: CategoricalDomain[String]) extends Cubbie {
   // This cubbie automatically writes into the underlying CategoricalDomain instead of
   // using an intermediate HashMap representation
-  setMap(new Map[String, Any] {
+  setMap(new mutable.Map[String, Any] {
     override def update(key: String, value: Any): Unit = {
       if (key == "size") { /* cd.size = value.asInstanceOf[Int] */ }
       else if (key == "frozen") { if (value.asInstanceOf[Boolean]) cd.freeze() }

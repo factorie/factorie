@@ -1,7 +1,6 @@
 package cc.factorie.app.classify
 import cc.factorie._
-import collection.mutable.HashMap
-import la.WeightsTensor
+import collection.mutable
 
 // Bias weights
 class LogLinearTemplate1[L<:DiscreteVar](val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
@@ -25,7 +24,7 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
   val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
-  val factorCache = HashMap[Variable, Iterable[Factor]]()
+  val factorCache = mutable.HashMap[Variable, Iterable[Factor]]()
   override def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq

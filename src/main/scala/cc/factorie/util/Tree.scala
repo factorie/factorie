@@ -21,6 +21,7 @@ package cc.factorie.util
  *
  **/
 // TODO Who wrote this?
+// TODO can we remove this file? -luke
 
 import scala.collection.mutable.{ArrayBuffer, HashSet, Set}
 

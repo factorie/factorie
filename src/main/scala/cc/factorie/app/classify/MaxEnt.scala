@@ -17,7 +17,6 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.optimize._
 import la.{Tensor1, Tensor}
-import scala.collection.mutable.{HashMap, ArrayBuffer}
 
 class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
   var iterations = 10

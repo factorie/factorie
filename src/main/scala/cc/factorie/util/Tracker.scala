@@ -25,10 +25,10 @@ trait Tracker {
 }
 
 class TimingCollector extends Tracker {
-  private val starts = new ArrayBuffer[Long];
-  private val durations = new LinkedHashMap[String, Long];
-  private val counts = new LinkedHashMap[String, Int];
-  private val texts = new ArrayBuffer[String];
+  private val starts = new ArrayBuffer[Long]
+  private val durations = new LinkedHashMap[String, Long]
+  private val counts = new LinkedHashMap[String, Int]
+  private val texts = new ArrayBuffer[String]
                                       
   def marked(text: String, start: Boolean) = {
     if (start) {
@@ -53,9 +53,9 @@ class TimingCollector extends Tracker {
 
 trait Trackable {
   def mark(text: String, start: Boolean) = {for (t <- Trackers) t.marked(text, start)}
-  def |**(text: String) = mark(text, true);
-  def **|(text: String) = mark(text, false);
-  def **| = mark("End of Event", false);
+  def |**(text: String) = mark(text, start = true)
+  def **|(text: String) = mark(text, start = false)
+  def **| = mark("End of Event", start = false)
 }
 
 object Trackers extends ArrayBuffer[Tracker]

@@ -1,9 +1,7 @@
 package cc.factorie.app.classify
 
-import cc.factorie.app.classify._
-import java.io.{PrintWriter, BufferedReader, PrintStream}
+import java.io.{PrintWriter, PrintStream}
 import cc.factorie._
-import la._
 import cc.factorie.util.Cubbie
 import collection.mutable.ArrayBuffer
 
@@ -39,14 +37,14 @@ class LabelListCubbie(
   }
   def fetch(): LabelList[Label, Features] = {
     val ll = new LabelList[Label, Features](_.features)
-    labels.value.zip(features.value).foreach({
-      case (l, f) =>
-        val features =
-          if (isBinary) new BinaryFeatures(l, "", featuresDomain, labelDomain)
-          else new NonBinaryFeatures(l, "", featuresDomain, labelDomain)
-        f.indices.value.zip(f.values.value).foreach({ case (i, v) => features.tensor(i) = v })
-        ll += new Label(l, features, labelDomain)
-    })
+    for ((l, f) <- labels.value.zip(features.value)) {
+      val features =
+        if (isBinary) new BinaryFeatures(l, "", featuresDomain, labelDomain)
+        else new NonBinaryFeatures(l, "", featuresDomain, labelDomain)
+      for ((i, v) <- f.indices.value.zip(f.values.value))
+        features.tensor(i) = v
+      ll += new Label(l, features, labelDomain)
+    }
     ll
   }
 }
