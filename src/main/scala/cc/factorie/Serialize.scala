@@ -54,23 +54,27 @@ object BinaryCubbieFileSerializer {
     case BOOLEAN => s.readShort() != 0
     case STRING => readString(s)
     case TENSOR =>
+      if (preexisting == null) sys.error("Require pre-existing tensor value in cubbie for general \"TENSOR\" slot.")
       val tensor = preexisting.asInstanceOf[Tensor]
 //      def dump[T](x: T, title: String): T = { println(title + ": " + x); x }
 //      repeat(dump(s.readInt(), "tensor length"))(tensor(dump(s.readInt(), "idx")) = dump(s.readDouble(), "value"))
       repeat(s.readInt())(tensor(s.readInt()) = s.readDouble())
       tensor
     case MAP =>
-      val m = preexisting.asInstanceOf[mutable.Map[String, Any]]
+      val m = if (preexisting == null) new mutable.HashMap[String, Any] else preexisting.asInstanceOf[mutable.Map[String, Any]]
       repeat(s.readInt()) {
         val key = readString(s)
-        m(key) = deserializeInner(m(key), s.readByte(), s)
+        m(key) = deserializeInner(if (m.contains(key)) m(key) else null, s.readByte(), s)
       }
       m
     case LIST =>
       val innerTag = s.readByte()
       val len = s.readInt()
-      val buff = new mutable.ArrayBuffer[Any]()
-      val iter = preexisting.asInstanceOf[Traversable[Any]].toIterator
+      val buff =
+        (if (innerTag == INT) new mutable.ArrayBuffer[Int]
+        else if (innerTag == DOUBLE) new mutable.ArrayBuffer[Double]
+        else new mutable.ArrayBuffer[Any]).asInstanceOf[mutable.ArrayBuffer[Any]]
+      val iter = (if (preexisting == null) Seq[Any]() else preexisting.asInstanceOf[Traversable[Any]]).toIterator
       repeat(len) {
         val pre = if (iter.hasNext) iter.next() else null
         if (!isPrimitiveTag(innerTag)) s.readByte() // read and ignore the type tag

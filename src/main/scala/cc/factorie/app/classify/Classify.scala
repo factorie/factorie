@@ -23,7 +23,7 @@ import java.util.zip.GZIPInputStream
 
 // Feature and Label classes
 
-class Label(labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
+class Label(val labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
   override def toString = "instance=%s label=%s" format(features.instanceName, categoryValue)
 }
 trait Features extends DiscreteTensorVar {
@@ -166,10 +166,23 @@ object Classify {
           features += words.mkString(",")
     }
 
-    def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
+    def readInstancesFromFileSVMLight(fileName: String): LabelList[Label, Features] = {
       val textFile = new File(fileName)
       val text = fileToString(textFile)
-      Serialize.readInstancesSVMLight(text)
+      Serialize.readInstancesSVMLight(text, FeaturesDomain, LabelDomain)
+    }
+
+    def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
+      val cubbie = new LabelListCubbie(FeaturesDomain, LabelDomain, opts.readBinaryFeatures.value)
+      val file = new File(fileName)
+      BinaryCubbieFileSerializer.deserialize(cubbie, file)
+      cubbie.fetch()
+    }
+
+    def writeInstances(ll: LabelList[Label, Features], file: File): Unit = {
+      val cubbie = new LabelListCubbie(FeaturesDomain, LabelDomain, opts.readBinaryFeatures.value)
+      cubbie.store(ll)
+      BinaryCubbieFileSerializer.serialize(cubbie, file)
     }
 
     // Read vocabulary
@@ -203,9 +216,9 @@ object Classify {
       }
       println("Read %d documents in %d directories." format (numDocs, numDirs))
     } else if (opts.readTextLines.wasInvoked) {
-      labels ++= readInstancesFromFile(opts.readTextLines.value)
+      sys.error("Reading text line instances is unimplemented")
     } else if (opts.readSVMLight.wasInvoked) {
-      labels ++= readInstancesFromFile(opts.readSVMLight.value)
+      labels ++= readInstancesFromFileSVMLight(opts.readSVMLight.value)
     } else if (opts.readInstances.wasInvoked) {
       labels ++= readInstancesFromFile(opts.readInstances.value)
     }
@@ -231,7 +244,7 @@ object Classify {
       if (opts.writeInstances.wasInvoked) {
         val instancesFile = new File(opts.writeInstances.value)
         instancesFile.createNewFile()
-        Serialize.writeInstancesSVMLight(labels, new PrintStream(instancesFile))
+        writeInstances(labels, instancesFile)
       }
       if (opts.writeClassifications.wasInvoked) {
         val classificationsFile = new File(opts.writeClassifications.value)
@@ -265,7 +278,9 @@ object Classify {
     if (opts.writeInstances.wasInvoked) {
       val instancesFile = new File(opts.writeInstances.value)
       instancesFile.createNewFile()
-      Serialize.writeInstancesSVMLight(trainingLabels ++ testingLabels ++ validationLabels, new PrintStream(instancesFile))
+      val bigll = new LabelList[Label, Features](_.features)
+      bigll ++= (trainingLabels ++ testingLabels ++ validationLabels)
+      writeInstances(bigll, instancesFile)
     }
 
     // to get true eval, add reference to scala-tools and use scala.tools.nsc.interpreter.IMain?? -luke

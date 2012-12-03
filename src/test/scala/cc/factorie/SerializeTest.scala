@@ -9,7 +9,7 @@ import collection.mutable.ArrayBuffer
 
 class SerializeTests extends JUnitSuite {
 
-  @Test def testModelSerializationWithDomains {
+  @Test def testModelSerializationWithDomains(): Unit = {
     object domain1 extends CategoricalDomain[String]
     val words = "The quick brown fox jumped over the lazy dog".split(" ")
     words.foreach(domain1.index(_))
@@ -44,6 +44,34 @@ class SerializeTests extends JUnitSuite {
     val modelFile2 = new File(fileName2.getAbsolutePath)
     val modelCubbie2 = new ModelCubbie(model2)
     BinaryCubbieFileSerializer.deserialize(modelCubbie2, modelFile2)
+  }
+
+  @Test def testInstanceSerialize(): Unit = {
+    import app.classify._
+    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
+    val ll = new LabelList[app.classify.Label, Features](_.features)
+    val labelDomain = new CategoricalDomain[String] { }
+    val featuresDomain = new CategoricalTensorDomain[String] { }
+    for (i <- 1 to 100) {
+      val labelName = (i % 2).toString
+      val features = new BinaryFeatures(labelName, i.toString, featuresDomain, labelDomain)
+      (1 to 100).shuffle.take(50).map(_.toString).foreach(features +=)
+      ll += new app.classify.Label(labelName, features, labelDomain)
+    }
+    val llFile = new File(fileName)
+    val llCubbie = new LabelListCubbie(featuresDomain, labelDomain, true)
+    llCubbie.store(ll)
+    BinaryCubbieFileSerializer.serialize(llCubbie, llFile)
+
+    val newllCubbie = new LabelListCubbie(featuresDomain, labelDomain, true)
+    BinaryCubbieFileSerializer.deserialize(newllCubbie, llFile)
+    val newll = newllCubbie.fetch()
+
+    assert(newll.zip(ll).forall({
+      case (newl, oldl) =>
+        newl.labelName == oldl.labelName &&
+        newl.features.tensor.activeElements.sameElements(oldl.features.tensor.activeElements)
+    }))
   }
 
   @Test def test(): Unit = {
