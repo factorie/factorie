@@ -170,20 +170,15 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     summary
   }
   
-  def featureExpectationsAndLogZ(labels:IndexedSeq[Label]): (WeightsTensor, Double) = {
-    val (expectations, nodeMarginals, _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
-    (expectations, _logZ)
-  }
-  
-  // should this be more robust to labels.isEmpty? -brian
   def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
     new ChainSummary {
       private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
+      lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
       lazy private val _marginals = {
         val res = new LinkedHashMap[Variable, DiscreteMarginal]
         res ++= labels.zip(targetInts).map { case (l, t) => 
-          l -> new DiscreteMarginal1(l, new SingletonProportions1(labels.head.domain.size, t))
+          l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))
         }
       }
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
