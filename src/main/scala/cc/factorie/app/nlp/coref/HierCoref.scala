@@ -12,6 +12,7 @@ class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(
 class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d);def --()(implicit d:DiffList):Unit=this.set(intValue-1)(d)} //convenient for determining whether an entity needs its attributes recomputed
 class MentionCountVariable(val entity:Entity,initialValue:Int=0) extends IntegerVariable(initialValue)
 
+
 abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
   var groundTruth:Option[String] = None
@@ -308,6 +309,42 @@ abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N
 }
 */
 
+/*
+      // Pairwise affinity factor between Mentions in the same partition
+      model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
+        //def statisticsDomains = Tuple1(AffinityVectorDomain)
+        lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
+        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield
+          if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
+          else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
+        def unroll2 (er:EntityRef) = Nil // symmetric
+        def unroll3 (mention:Mention) = throw new Error
+        def unroll4 (mention:Mention) = throw new Error
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
+      }
+
+  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
+    import AffinityDomain._
+    def domain = AffinityVectorDomain
+    if (s1 equals s2) this += streq else this += nstreq
+    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
+    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
+    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
+    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
+    if (s1.length == s2.length) this += lengtheq
+    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
+    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
+    // Also consider caching mechanisms
+  }
+  object AffinityDomain extends EnumDomain {
+    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
+  }
+  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
+    override lazy val dimensionDomain = AffinityDomain
+  }
+
+ */
+
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B]{
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
@@ -319,16 +356,81 @@ class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weigh
       (result+shift)*weight * scala.math.min(parentBow.l1Norm,childBow.l1Norm)
     }
 }
+/*
 abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplateWithStatistics3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
-abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplate3[EntityRef,A,A] {
+*/
+
+/*
+  /** A feature vector variable measuring affinity between two mentions */
+  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
+    import AffinityDomain._
+    def domain = AffinityVectorDomain
+    if (s1 equals s2) this += streq else this += nstreq
+    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
+    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
+    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
+    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
+    if (s1.length == s2.length) this += lengtheq
+    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
+    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
+    // Also consider caching mechanisms
+  }
+  object AffinityDomain extends EnumDomain {
+    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
+  }
+  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
+    override lazy val dimensionDomain = AffinityDomain
+  }
+  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
+  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenFeaturesDomain
+  }
+  val model = new CombinedModel(
+
+  this += new ChildParentTemplate[BagOfCoAuthors] with DotStatistics1[AuthorFeatureVector#Value]{
+    val name="cpt-bag-coauth-"
+    override def statisticsDomains = List(CorefDimensionDomain)
+    //override def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.entityRoot.attr[BagOfCoAuthors]) else Nil
+    override def unroll2(childBow:BagOfCoAuthors) = Nil
+    override def unroll3(parentBow:BagOfCoAuthors) = Nil
+    //def statistics (values:Values) = Stat(new AffinityVector(values._2, values._3).value)
+    def statistics(values:Values) = {
+      val features = new AuthorFeatureVector
+      val childBow = values._2
+      val parentBow = values._3
+      //val dot = childBow.deductedDot(parentBow,childBow)
+      //if(dot == 0.0)
+      //  features.update(name+"intersect=empty",childBow.l2Norm*parentBow.l2Norm - 0.25)
+      if(childBow.size>0 && parentBow.size>0){
+        val cossim=childBow.cosineSimilarity(parentBow,childBow)
+        val binNames = FeatureUtils.bin(cossim,name+"cosine")
+        for(binName <- binNames){
+          features.update(binName,1.0)
+          //if(parentBow.l1Norm==2)features.update(binName+"ments=2",1.0)
+          //if(parentBow.l1Norm>=2)features.update(binName+"ments>=2",1.0)
+          //if(parentBow.l1Norm>=4)features.update(binName+"ments>=4",1.0)
+          //if(parentBow.l1Norm>=8)features.update(binName+"ments>=8",1.0)
+        }
+        //if(dot>0)features.update(name+"dot>0",1.0) else features.update(name+"dot=0",1.0)
+      }
+      //features.update(name+"cosine-no-shift",cossim)
+      //features.update(name+"cossine-shifted",cossim-0.5)
+      Stat(features.value)
+    }
+  }
+ */
+
+abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with TupleFamilyWithStatistics3[EntityRef,A,A]
+abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
+
 class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
   println("StructuralPriorsTemplate("+entityExistenceCost+","+subEntityExistenceCost+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
@@ -369,13 +471,13 @@ class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val w
     -result*weight
   }
 }
-class EntitySizePrior(val weight:Double=0.1, val exponent:Double=1.2) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,MentionCountVariable]{
+class EntitySizePrior(val weight:Double=0.1, val exponent:Double=1.2, val saturation:Double=128) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,MentionCountVariable]{
   println("EntitySizePrior: "+weight+" exponent: "+exponent)
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[MentionCountVariable])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[MentionCountVariable])
   def unroll3(mentionCount:MentionCountVariable) = Factor(mentionCount.entity.attr[EntityExists],mentionCount.entity.attr[IsEntity],mentionCount)//throw new Exception("An entitie's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, mentionCount:MentionCountVariable#Value): Double =
-    if(exists.booleanValue && isEntity.booleanValue)scala.math.pow(mentionCount.intValue,1.2) * weight else 0.0
+    if(exists.booleanValue && isEntity.booleanValue)scala.math.min(saturation,scala.math.pow(mentionCount.intValue,1.2)) * weight else 0.0
 }
 class BagOfWordsCubbie extends Cubbie{
   def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
@@ -628,4 +730,344 @@ class TensorBagOfWordsCubbie extends Cubbie{
     for((k,v) <- _map)result += k -> v.toString.toDouble
     result
   }
+}
+
+/**Handles loading/storing issues generic to entity collections with canopies, ids, priorities, and hierarchical structure. Agnostic to DB technology (sql, mongo, etc)*/
+trait DBEntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable] extends Cubbie {
+  val canopies = new StringListSlot("canopies")
+  val inferencePriority = new DoubleSlot("ipriority")
+  val parentRef = RefSlot("parentRef", () => newEntityCubbie)
+  val isMention = BooleanSlot("isMention")
+  val groundTruth = new StringSlot("gt")
+  val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
+  val mentionCount = new IntSlot("mc")
+  def newEntityCubbie:DBEntityCubbie[T]
+  def fetch(e:T) ={
+    e.priority = inferencePriority.value
+    e.attr[IsMention].set(isMention.value)(null)
+    e.isObserved=isMention.value
+    e.attr[IsEntity].set(e.isRoot)(null)
+    e.attr[EntityExists].set(e.isConnected)(null)
+    e.attr[MentionCountVariable].set(mentionCount.value)(null)
+    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
+    if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
+    //note that entity parents are set externally not inside the cubbie
+  }
+  def store(e:T) ={
+    //println("Storing priority: "+e.priority + " for "+e.canopyAttributes.head.canopyName)
+    this.id=e.id
+    canopies := e.canopyAttributes.map(_.canopyName).toSeq
+    inferencePriority := e.priority
+    isMention := e.attr[IsMention].booleanValue
+    if(e.parentEntity!=null)parentRef := e.parentEntity.id
+    if(e.groundTruth != None)groundTruth := e.groundTruth.get
+    mentionCount := e.attr[MentionCountVariable].value
+  }
+}
+trait EntityCollection[E<:HierEntity]{
+  def += (e:E):Unit
+  def ++= (es:Iterable[E]):Unit
+  def drop:Unit
+  def store(entitiesToStore:Iterable[E]):Unit
+  def nextBatch(n:Int=10):Seq[E]
+  def loadAll:Seq[E]
+  def loadByIds(ids:Seq[Any]):Seq[E]
+  def loadLabeledAndCanopies:Seq[E]
+  def loadLabeled:Seq[E]
+}
+trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:DBEntityCubbie[E]] extends EntityCollection[E]{
+  protected var _id2cubbie:HashMap[Any,C] = null
+  protected var _id2entity:HashMap[Any,E] = null
+  protected def newEntityCubbie:C
+  protected def newEntity:E
+  protected def fetchFromCubbie(c:C,e:E):Unit
+  protected def register(entityCubbie:C) = _id2cubbie += entityCubbie.id->entityCubbie
+  protected def wasLoadedFromDB(entity:E) = _id2cubbie.contains(entity.id)
+  protected def entity2cubbie(e:E):C =  _id2cubbie(e.id)
+  protected def putEntityInCubbie(e:E) = {val ec=newEntityCubbie;ec.store(e);ec}
+  protected def entityCubbieColl:MutableCubbieCollection[C]
+  protected def changePriority(e:E):Unit ={
+    val oldPriority = e.priority
+    e.priority = e.priority-1.0
+    //println("  prio change for "+e.canopyAttributes.head.canopyName+": "+oldPriority +"-->"+e.priority)
+    /*
+    //e.priority = scala.math.exp(e.priority - random.nextDouble)
+    if(random.nextDouble>0.25)e.priority = scala.math.min(e.priority,random.nextDouble)
+    else e.priority = random.nextDouble
+    */
+  }
+  def += (e:E):Unit = insert(e)
+  def ++= (es:Iterable[E]):Unit = insert(es)
+  def insert (c:C) = entityCubbieColl += c
+  def insert (e:E) = entityCubbieColl += putEntityInCubbie(e)
+  //def insert(cs:Iterable[C]) = entityCubbieColl ++= cs
+  def insert(es:Iterable[E]) = entityCubbieColl ++= es.map(putEntityInCubbie(_))
+  def drop:Unit
+  def finishLoadAndReturnEntities(entityCubbies:Iterable[C]) = {
+    val entities = new ArrayBuffer[E]
+    for(cubbie <- entityCubbies){
+      val entity:E = newEntity
+      fetchFromCubbie(cubbie,entity)
+      register(cubbie)
+      entities += entity
+    }
+    entities
+  }
+  def reset:Unit ={
+    _id2cubbie = new HashMap[Any,C]
+    _id2entity = new HashMap[Any,E]
+  }
+  def store(entitiesToStore:Iterable[E]):Unit ={
+    val deleted = new ArrayBuffer[E]
+    val updated = new ArrayBuffer[E]
+    val created = new ArrayBuffer[E]
+    var timer = System.currentTimeMillis
+    print("Updating priorities...")
+    for(e <- entitiesToStore)changePriority(e)
+    println("Done")
+    print("Identifying changed identities...")
+    for(e<-entitiesToStore){
+      if(e.isConnected){
+        if(wasLoadedFromDB(e))updated += e
+        else created += e
+      }
+      if(!e.isConnected && wasLoadedFromDB(e))deleted += e
+      //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
+    }
+    println("Done")
+    print("About to delete "+deleted.size+" entities...")
+    removeEntities(deleted)
+    println("Done")
+    print("About to update "+updated.size+" entities...")
+    val updateTimer = System.currentTimeMillis
+    var updateTimerElapsed = System.currentTimeMillis
+    var count = 0
+    for(e <- updated){
+      entityCubbieColl.updateDelta(_id2cubbie.getOrElse(e.id,null).asInstanceOf[C],putEntityInCubbie(e))
+      count += 1
+      val windowElapsed = (System.currentTimeMillis- updateTimerElapsed)/1000L
+      if(windowElapsed > 30){
+        val elapsed = (System.currentTimeMillis() - updateTimer)/1000L
+        updateTimerElapsed = System.currentTimeMillis
+        println("processed "+count + " in "+elapsed + " seconds.")
+      }
+    }
+    println("Done")
+    print("About to insert "+created.size+" entities...")
+    for(e <- created)entityCubbieColl += putEntityInCubbie(e)
+    println("Done")
+    println("Saving took "+((System.currentTimeMillis() - timer)/1000L)+" seconds.")
+    deletedHook(deleted)
+    updatedHook(updated)
+    createdHook(created)
+    println("deleted: "+deleted.size)
+    println("updated: "+updated.size)
+    println("created: "+created.size)
+  }
+  protected def deletedHook(deleted:Seq[E]):Unit ={}
+  protected def updatedHook(updated:Seq[E]):Unit ={}
+  protected def createdHook(created:Seq[E]):Unit ={}
+  /**This is database specific for example because mongo has a specialized _id field*/
+  protected def removeEntities(entitiesToRemove:Seq[E]):Unit
+  def assembleEntities(toAssemble:TraversableOnce[C],id2entity:Any=>E):Unit ={
+    println("Assembling entities")
+    var count = 0
+    var startTime = System.currentTimeMillis
+    var intervalTime = System.currentTimeMillis
+    for(c<-toAssemble){
+      count += 1
+      if(count % 10000 == 0)print(".")
+      if(count % (25*10000) == 0){
+        val elapsed = (System.currentTimeMillis - startTime)/1000L
+        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
+        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+        intervalTime = System.currentTimeMillis
+      }
+      val child = id2entity(c.id)
+      val parent = if(c.parentRef.isDefined)id2entity(c.parentRef.value) else null.asInstanceOf[E]
+      child.setParentEntity(parent)(null)
+    }
+  }
+  def loadByIds(ids:Seq[Any]):Seq[E] ={
+    reset
+    println("Loading a list of "+ids.size+ " ids.")
+    val cubbies = entityCubbieColl.findByIds(ids) //entityColl.find(ids)
+    val entities = (for(entityCubbie <- cubbies)yield{
+      val e = newEntity
+      entityCubbie.fetch(e)
+      e
+    }).toSeq
+    for(entityCubbie <- cubbies)_id2cubbie += entityCubbie.id -> entityCubbie
+    assembleEntities(cubbies, (id:Any)=>{_id2entity(id)})
+    entities
+  }
+}
+abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:DBEntityCubbie[E]](val name:String, mongoDB:DB) extends DBEntityCollection[E,C]{
+  import MongoCubbieImplicits._
+  import MongoCubbieConverter._
+  protected val entityColl = mongoDB.getCollection(name)
+  val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths))) with LazyCubbieConverter[C]
+  protected def removeEntities(deleted:Seq[E]):Unit = for(e <- deleted)entityCubbieColl.remove(_.idIs(entity2cubbie(e).id))
+  //TODO: generalize MongoSlot so that we can move this into the EnttiyCollection class
+  def drop:Unit = entityColl.drop
+  def loadLabeled:Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    result ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("initial entities: "+initialEntities.size)
+    println("initial cubbies : "+result.size)
+    println("_id2cubbie: "+ _id2cubbie.size)
+    println("_id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+  def loadLabeledAndCanopies:Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    val labeled = new ArrayBuffer[C]
+    val canopyHash = new HashSet[String]
+    labeled ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
+    //add canopies
+    for(entity <- labeled){
+      for(name <- entity.canopies.value){
+        if(!canopyHash.contains(name)){
+          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+          canopyHash += name
+        }
+      }
+    }
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("initial entities: "+initialEntities.size)
+    println("initial cubbies : "+result.size)
+    println("_id2cubbie: "+ _id2cubbie.size)
+    println("_id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+  def loadProcessed(numToTake:Int=Integer.MAX_VALUE):Seq[E] ={
+    reset
+    println("Loading processed")
+    val canopyHash = new HashSet[String]
+    var result = new ArrayBuffer[C]
+    val qresult = entityCubbieColl.query(_.parentRef.exists(false).isMention(false),_.canopies.select)
+    var count = 0
+    val qtime = System.currentTimeMillis
+    println("About to load entities for canopies.")
+    while(count<numToTake && qresult.hasNext){
+      val ec = qresult.next
+      for(name <- ec.canopies.value){
+        if(!canopyHash.contains(name)){
+          val elapsedTime = System.currentTimeMillis
+          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+          canopyHash += name
+          count += 1
+          //println("  query took "+((System.currentTimeMillis-elapsedTime)/1000L) + " sec.")
+        }
+      }
+    }
+    println("Loading entities for canopies took "+ ((System.currentTimeMillis - qtime)/1000L) + " seconds.")
+    println("Found "+count + " top level entities.")
+    print("Instantiating factorie variables...")
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    println("Done.")
+    print("Creating cubbie index...")
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    println("Done.")
+    print("Creating entity index...")
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("Done.")
+    println("Found "+result.size+" entities in "+canopyHash.size + " canopies.")
+    println("  initial entities: "+initialEntities.size)
+    println("  initial cubbies : "+result.size)
+    println("  _id2cubbie: "+ _id2cubbie.size)
+    println("  _id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+
+  def nextBatch(n:Int=10):Seq[E] ={
+    reset
+    val canopyHash = new HashSet[String]
+    var result = new ArrayBuffer[C]
+    var topPriority = new ArrayBuffer[C]
+    val sorted = entityCubbieColl.query(null,_.canopies.select.inferencePriority.select).sort(_.inferencePriority(-1))
+    println("Printing top canopies")
+    for(i <- 0 until n)if(sorted.hasNext){
+      topPriority += sorted.next
+      if(i<10)println("  "+topPriority(i).inferencePriority.value+": "+topPriority(i).canopies.value.toSeq)
+    }
+    sorted.close
+    var count = 0
+    val qtime = System.currentTimeMillis
+    println("About to load entities for canopies.")
+    for(entity <- topPriority){
+      for(name <- entity.canopies.value){
+        if(!canopyHash.contains(name)){
+          val elapsedTime = System.currentTimeMillis
+          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+          canopyHash += name
+          count += 1
+          //println("  query took "+((System.currentTimeMillis-elapsedTime)/1000L) + " sec.")
+        }
+      }
+    }
+    println("Loading entities for canopies took "+ ((System.currentTimeMillis - qtime)/1000L) + " seconds.")
+    print("Instantiating factorie variables...")
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    println("Done.")
+    print("Creating cubbie index...")
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    println("Done.")
+    print("Creating entity index...")
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("Done.")
+    println("Loaded "+n+" entities to determine canopies. Found "+result.size+" entities in "+canopyHash.size + " canopies.")
+    println("  initial entities: "+initialEntities.size)
+    println("  initial cubbies : "+result.size)
+    println("  _id2cubbie: "+ _id2cubbie.size)
+    println("  _id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+  def loadAll:Seq[E] ={
+    reset
+    println("Loading entire collection")
+    var count = 0
+    print("  getting iterator...")
+    val cubbies = allEntityCubbies.toSeq
+    println("  done")
+    var startTime = System.currentTimeMillis
+    var intervalTime = System.currentTimeMillis
+    val initialEntities = (for(entityCubbie<-cubbies) yield {
+      count += 1
+      if(count < 10000){
+        if(count % 10 == 0)print(".")
+        if(count % 500 ==0)println(count + " " + (System.currentTimeMillis - startTime)/1000L)
+      }
+      if(count % 10000 == 0)print(".")
+      if(count % (25*10000) == 0){
+        val elapsed = (System.currentTimeMillis - startTime)/1000L
+        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
+        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+        intervalTime = System.currentTimeMillis
+      }
+      val e = newEntity
+      entityCubbie.fetch(e)
+      e}).toSeq
+    for(entityCubbie <- cubbies)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("  initial entities: "+initialEntities.size)
+    println("  initial cubbies : "+cubbies.size)
+    println("  _id2cubbie: "+ _id2cubbie.size)
+    println("  _id2entity: "+ _id2entity.size)
+    assembleEntities(cubbies, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+  def allEntityCubbies:Seq[C] =entityCubbieColl.iterator.toSeq
+  def freshCopy(cubbies:Seq[C]):Seq[E] =(for(entityCubbie<-cubbies) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
 }

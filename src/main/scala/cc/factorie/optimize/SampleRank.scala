@@ -81,7 +81,8 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel2) = proposals.max2ByDouble(_.modelScore)
     val bestObjective1 = proposals.maxByDouble(_.objectiveScore)
-    val marg = bestModel1.modelScore - bestModel2.modelScore
+    //val marg = learningMargin - (bestModel1.modelScore - bestModel2.modelScore)
+    val marg = bestModel1.modelScore - bestModel2.modelScore //TODO: this should really be the above line, but then AROW/CW will have trouble, so keeping it like this for now
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       bestObjective1.diff.redo

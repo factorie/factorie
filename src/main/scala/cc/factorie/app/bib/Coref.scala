@@ -9,10 +9,14 @@ import com.mongodb.{DB, Mongo}
 import collection.mutable.{HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
+import la.DenseTensor
+import optimize.{WeightsAveraging, AROW, MIRA, SampleRankTrainer}
 import org.w3c.dom.{Node, NodeList, Document}
 
-trait REXAEntity{
+
+trait BibEntity{
   var dataSource:String=""
+  var paperMentionId:String=null
 }
 class InfoBag(val entity:Entity) extends BagOfWordsVariable(Nil, null) with EntityAttr
 class ChildCountsForBag(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVariable(initialWords,initialMap)
@@ -93,7 +97,7 @@ class TensorBagOfVenues(val entity:Entity) extends BagOfWordsTensorVariable with
 class TensorBagOfCoAuthors(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
 class TensorBagOfKeywords(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
 
-class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention) with HasCanopyAttributes[PaperEntity] with Prioritizable with REXAEntity{
+class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention) with HasCanopyAttributes[PaperEntity] with Prioritizable with BibEntity{
   var _id = java.util.UUID.randomUUID.toString+""
   override def id = _id
   canopyAttributes += new PaperTitleCanopy(this)
@@ -128,7 +132,7 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
   def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
-class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with REXAEntity{
+class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity{
   //println("   creating author: f:"+f+" m: "+m+" l: "+l)
   var _id = java.util.UUID.randomUUID.toString+""
   override def id = _id
@@ -152,7 +156,6 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   def title = attr[Title]
   def string = f+" "+m+" "+l
   var paper:PaperEntity = null
-  var paperMentionId:String=null
   val bagOfFirstNames = new BagOfFirstNames(this)
   val bagOfMiddleNames = new BagOfMiddleNames(this)
   attr += bagOfFirstNames
@@ -188,15 +191,17 @@ object Coref{
       val createDB = new CmdOption("create","true","FILE","Creates a new DB by destroying the old one.")
       val ldaModel = new CmdOption("ldaModel","lda-model.txt","FILE","Location of lda model")
       val saveDB = new CmdOption("save",true,"FILE","Creates a new DB by destroying the old one.")
-      val inferenceType = new CmdOption("inference-type","default","FILE","Indicates the type of entity to perform coreference on, options are: paper, author, venue.")
+      val inferenceType = new CmdOption("inference-type","default","FILE","Indicates the type of entity to perform coreference on, options are: paper, author, venue, trained-authors.")
+      val trainingSamples = new CmdOption("training-samples",100000,"FILE","Number of samples to train")
       //val checkDBIntegrity = new CmdOption("check-integrity",false,"BOOL","If true then check the integrity of all entities in the DB")
       //inference options
-      val numEpochs = new CmdOption("epochs","1","FILE","Number of inference round-trips to DB.")
-      val batchSize = new CmdOption("batchSize","10000","FILE","Number of entities used to retrieve canopies from.")
-      val stepMultiplierA = new CmdOption("a","0.0","FILE","Runs for n^2 steps (n=number of mentions to do inference on.)")
-      val stepMultiplierB = new CmdOption("b","0.0","FILE","Runs for n steps (n=number of mentions to do inference on.)")
-      val stepMultiplierC = new CmdOption("c","1000000.0","FILE","Runs for c steps (c=constant)")
+      val numEpochs = new CmdOption("epochs",1,"FILE","Number of inference round-trips to DB.")
+      val batchSize = new CmdOption("batchSize",10000,"FILE","Number of entities used to retrieve canopies from.")
+      val stepMultiplierA = new CmdOption("a",0.0,"FILE","Runs for n^2 steps (n=number of mentions to do inference on.)")
+      val stepMultiplierB = new CmdOption("b",0.0,"FILE","Runs for n steps (n=number of mentions to do inference on.)")
+      val stepMultiplierC = new CmdOption("c",1000000.0,"FILE","Runs for c steps (c=constant)")
       val evaluateOnly = new CmdOption("evaluate","false","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
+      val printProcessed = new CmdOption("print-entities","false","FILE","Prints all non-singleton entities then exits")
       val saveOptions = new CmdOption("optionsFile","options.log","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
     }
     opts.parse(args)
@@ -204,8 +209,15 @@ object Coref{
     if(opts.saveOptions.wasInvoked)opts.writeOptions(new File(opts.saveOptions.value))
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
     if(opts.evaluateOnly.value.toBoolean){
-      val tmpDB = new EpistemologicalDB(new AuthorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value)
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
       tmpDB.loadAndEvaluateAuthors
+      System.exit(0)
+    }
+    if(opts.printProcessed.value.toBoolean){
+      println("Print processed invoked.")
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
+      val entities = tmpDB.authorColl.loadProcessed(100).asInstanceOf[Seq[AuthorEntity]]
+      EntityUtils.prettyPrintAuthors(entities)
       System.exit(0)
     }
     //Watch order here: first drop the collection, then create the epidb, then insert mentions. Required to make sure indexes remain intact.
@@ -219,7 +231,7 @@ object Coref{
       //mongoDB.getCollection("cooc").drop
     }
     println("server: "+opts.server.value+" port: "+opts.port.value.toInt+" database: "+opts.database.value)
-    val authorCorefModel = new AuthorCorefModel
+    val authorCorefModel = new AuthorCorefModel(false)
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
     if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
@@ -279,7 +291,9 @@ object Coref{
       epiDB.add(papers)
     }
     if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,true)
-    else if(opts.inferenceType.value=="authors")epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble)
+    else if(opts.inferenceType.value=="authors"){
+      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble)
+    }
     else if(opts.inferenceType.value=="default"){
       epiDB.inferenceSweep(
         opts.numEpochs.value.toInt,
@@ -288,8 +302,51 @@ object Coref{
         opts.saveDB.value
       )
     }
+    else if(opts.inferenceType.value=="trained-authors"){
+      val initGroundTruth=false
+      if(opts.trainingSamples.value>0){
+        if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfTopics]("topics",opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
+        if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfCoAuthors]("coauthors",opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value)
+        if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfVenues]("venues",opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
+        if(opts.bagKeywordsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfKeywords]("keywords",opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
+      }
+      println("Num templates: "+authorCorefModel.families.size)
+      //paralellizing learning will require either having a thread-safe growable domain or just having separate domains for each thread.
+      val labeled = random.shuffle(epiDB.authorColl.loadLabeled).filter(_.groundTruth != None)
+      val canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
+      for(author <- labeled)canopies.getOrElseUpdate(author.canopyAttributes.head.canopyName,new ArrayBuffer[AuthorEntity]) += author
+      val trainingSet = new ArrayBuffer[AuthorEntity]
+      val testingSet = new ArrayBuffer[AuthorEntity]
+      for((canopyName,canopy) <- canopies){
+        if(trainingSet.size<testingSet.size){
+          if(initGroundTruth)trainingSet ++= EntityUtils.collapseOnTruth(canopy)
+          else trainingSet ++= canopy
+        } else testingSet ++= canopy
+      }
+      println("Split data into "+trainingSet.size + " training authors and "+testingSet.size+" testing authors.")
+      println("Training set accuracy (initial state)")
+      Evaluator.eval(trainingSet)
+      val trainingModel = new TrainingModel
+      val sampler = new AuthorSampler(authorCorefModel){temperature=0.001;override def objective=trainingModel}
+      sampler.setEntities(trainingSet)
+      val averager = new WeightsAveraging(new MIRA)
+      val trainer = new SampleRankTrainer(sampler, averager)
+      //val trainer = new SampleRankTrainer(sampler, new AROW(authorCorefModel))
+      //val trainer = new SampleRankTrainer(sampler, new MIRA)
+      Console.println ("Beginning inference and learning")
+      trainer.processContext(null, opts.trainingSamples.value) // 3000
+      averager.setWeightsToAverage(authorCorefModel.weightsTensor)
+      //val pSampler = new ParallelAuthorSampler(authorCorefModel){temperature = 0.001}
+      sampler.setEntities(testingSet)
+      println("Beginning testing")
+      sampler.timeAndProcess(opts.stepMultiplierC.value.toInt)
+    }
     else throw new Exception("Error inference-type: "+opts.inferenceType.value + " not recognized. Options are: {papers,authors,default}")
   }
+}
+
+abstract class MongoDBBibEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable with BibEntity,C<:BibEntityCubbie[E]](name:String, mongoDB:DB) extends MongoDBEntityCollection[E,C](name,mongoDB){
+  override val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths),Seq(a.pid))) with LazyCubbieConverter[C]
 }
 
 class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
@@ -302,8 +359,9 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorColl.drop
     paperColl.drop
   }
-  protected def infer[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie[E]](entityCollection:EntityCollection[E,C],predictor:HierCorefSampler[E],k:Int,inferenceSteps:Int=>Int,save:Boolean=true) ={
-    val entities = random.shuffle(entityCollection.loadAll) //entityCollection.nextBatch(k)
+  protected def infer[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable with BibEntity,C<:BibEntityCubbie[E]](entityCollection:DBEntityCollection[E,C],predictor:HierCorefSampler[E],k:Int,inferenceSteps:Int=>Int,save:Boolean=true) ={
+    println("About to load an inference batch centered around "+k + " entities.")
+    val entities = entityCollection.nextBatch(k)
     //val entities = random.shuffle(entityCollection.loadLabeledAndCanopies) //entityCollection.nextBatch(k)
     EntityUtils.checkIntegrity(entities)
     Evaluator.eval(entities)
@@ -311,9 +369,11 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     val numSteps = inferenceSteps(entities.size)
     predictor.setEntities(entities)
     predictor.timeAndProcess(numSteps)
+    EntityUtils.printClusteringStats(predictor.getEntities.asInstanceOf[Seq[AuthorEntity]])
     //EntityUtils.printAuthorsForAnalysis(predictor.getEntities.asInstanceOf[Seq[AuthorEntity]])
-    println("====Printing authors====")
-    EntityUtils.prettyPrintAuthors(predictor.getEntities.asInstanceOf[Seq[AuthorEntity]])
+    //println("====Printing authors====")
+    //EntityUtils.prettyPrintAuthors(predictor.getEntities.asInstanceOf[Seq[AuthorEntity]])
+
     //predictor.getEntities.asInstanceOf[Seq[AuthorEntity]].foreach((e:AuthorEntity) => {EntityUtils.prettyPrintAuthor(e);println})
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
@@ -329,8 +389,9 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     //val numSteps = inferenceSteps(entities.size)
     authorPredictor.setEntities(entities)
     authorPredictor.timeAndProcess(numSteps)
+    Evaluator.eval(entities)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
+    //if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
   }
   def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false):Unit ={
     println("Processing all papers.")
@@ -350,8 +411,8 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     println("Promoting mentions for paper entities...")
     val processedPapers = paperPredictor.getEntities ++ paperPredictor.getDeletedEntities.map(_.asInstanceOf[PaperEntity])
     for(paper <- processedPapers)paperPredictor.chooseCanonicalMention(paper)(null)
-    println("Updating database...")
-    paperColl.store(processedPapers)
+    //println("Updating database...")
+    //if(save)paperColl.store(processedPapers)
   }
 
   def loadAndEvaluateAuthors:Unit ={
@@ -496,7 +557,7 @@ class PaperCorefModel extends CombinedModel {
   //this += new StructuralPriorsTemplate(8.0,0.25)
 }
 
-class AuthorCorefModel extends CombinedModel{
+class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends CombinedModel{
   /*
     this += new ChildParentTemplateWithStatistics[FullName] {
     def score(s:Statistics): Double = {
@@ -523,7 +584,8 @@ class AuthorCorefModel extends CombinedModel{
     def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && !FeatureUtils.isInitial(c) && !FeatureUtils.isInitial(p) && c != p)
   }
   */
-  this += new TupleTemplateWithStatistics1[BagOfFirstNames]{
+  val saturation = 128
+  if(includeDefaultTemplates)this += new TupleTemplateWithStatistics1[BagOfFirstNames]{
     def score(bag:BagOfFirstNames#Value):Double ={
       var result = 0.0
       //val bag = s._1
@@ -544,8 +606,8 @@ class AuthorCorefModel extends CombinedModel{
         }
         i += 1
       }
-      result -= firstLetterMismatches*firstLetterMismatches*4
-      result -= nameMismatches*nameMismatches*4
+      result -= scala.math.min(saturation,firstLetterMismatches*firstLetterMismatches*4)
+      result -= scala.math.min(saturation,nameMismatches*nameMismatches*4)
       /*
       val bag = s._1
       var fullNameCount = 0.0
@@ -558,7 +620,7 @@ class AuthorCorefModel extends CombinedModel{
       result*8.0*8.0
     }
   }
-  this += new TupleTemplateWithStatistics1[BagOfMiddleNames]{
+  if(includeDefaultTemplates)this += new TupleTemplateWithStatistics1[BagOfMiddleNames]{
     def score(bag:BagOfMiddleNames#Value):Double ={
       var result = 0.0
       //val bag = s._1
@@ -579,14 +641,15 @@ class AuthorCorefModel extends CombinedModel{
         }
         i += 1
       }
-      result -= firstLetterMismatches*firstLetterMismatches*4
-      result -= nameMismatches*nameMismatches*4
+      result -= scala.math.min(saturation,firstLetterMismatches*firstLetterMismatches*4)
+      result -= scala.math.min(saturation,nameMismatches*nameMismatches*4)
       result*8.0*8.0
     }
   }
 }
 
 class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
+  var settingsSamplerCount=0
   def newEntity = new AuthorEntity
   def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
     if(author.childEntities.size==0){
@@ -619,17 +682,43 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   def proposeMergeIfValid(entity1:AuthorEntity,entity2:AuthorEntity,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
-    if (entity1.entityRoot.id != entity2.entityRoot.id)  //sampled nodes refer to different entities
+    if (entity1.entityRoot.id != entity2.entityRoot.id){ //sampled nodes refer to different entities
       if(!isMention(entity1))
         changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?
+      else if(!isMention(entity2))
+        changes += {(d:DiffList) => mergeLeft(entity2,entity1)(d)}
+    }
+  }
+
+  override def proposals(c:Null):Seq[Proposal] ={
+    val result = super.proposals(c)
+    settingsSamplerCount += 1
+    if(totalTime==0L){totalTime = System.currentTimeMillis}
+    if(printInfo){
+      if(settingsSamplerCount % 1000==0)
+        print(".")
+      if(settingsSamplerCount % 1000==0){
+        var sampsPerSec = -1
+        val elapsed = ((System.currentTimeMillis - totalTime)/1000L).toInt
+        if(elapsed != 0)sampsPerSec = settingsSamplerCount/elapsed
+        println(settingsSamplerCount+" samps per sec: "+sampsPerSec+" elapsed: "+elapsed)
+        Evaluator.eval(getEntities)
+        //println("Proposals")
+        //for(p <- result)
+        //  println("   obj:"+p.objectiveScore+"  mod:"+p.modelScore)
+      }
+    }
+    result
   }
 
   override def settings(c:Null) : SettingIterator = new SettingIterator {
+
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
     val (entityS1,entityS2) = nextEntityPair
     val entity1 = entityS1.getAncestor(random.nextInt(entityS1.depth+1)).asInstanceOf[AuthorEntity]
     val entity2 = entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
     if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
+//      println("DIFFERENT ENTITIES")
       /*
       if(!isMention(entity1)){
         changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?
@@ -644,20 +733,40 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
         //if(!e2.entityRoot eq e2)proposeMergeIfValid(e1,e2.entityRoot.asInstanceOf[AuthorEntity],changes)
         e1 = e1.parentEntity.asInstanceOf[AuthorEntity]
       }
+//      println("   #proposed: "+changes.size)
       //proposeMergeIfValid(entity1,entity2,changes)
       //changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
       if(entity1.parentEntity==null && entity2.parentEntity==null)
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+      if(changes.size==0){
+        val r2 = entity2.entityRoot.asInstanceOf[AuthorEntity]
+        if(!isMention(r2)){
+          proposeMergeIfValid(r2,entity1,changes)
+        } else{
+          val r1 = entity1.entityRoot.asInstanceOf[AuthorEntity]
+          if(!isMention(r1)){
+          proposeMergeIfValid(r1,entity2,changes)
+          }else changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
+
+        }
+        //println("no proposal: "+entity1.isMention+" "+entity2.isMention)
+        //EntityUtils.prettyPrintAuthor(entity1.asInstanceOf())
+      }
+//      println("   #proposed: "+changes.size)
     } else { //sampled nodes refer to same entity
+//      println("SAME ENTITY")
       changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
       changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
       if(entity1.parentEntity != null && !entity1.isObserved)
         changes += {(d:DiffList) => {collapse(entity1)(d)}}
+//      println("   #proposed: "+changes.size)
     }
     if(entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
     if(entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[AuthorEntity])(d)}
 
     changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
+//    println("CHANGES SIZE: "+changes.size)
+//    System.out.flush()
     var i = 0
     def hasNext = i < changes.length
     def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
@@ -832,6 +941,7 @@ class ParallelAuthorSampler(model:Model,val numThreads:Int=25) extends AuthorSam
 }
 trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends BibSampler[E]{
   protected var samplers:Array[BibSampler[E]] = null
+  def nonAssignedEntities = singletonCanopies
   val sampsPerMicroBatch=10
   def numThreads:Int
   def model:Model
@@ -853,7 +963,7 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
       }
       if(printInfo){
         if(i % 1000 ==0)print(".")
-        if(i % 20000 ==0)printSamplingInfo
+        if(i % 20000 ==0)printSamplingInfo()
       }
       i+=1
     }
@@ -879,9 +989,12 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     }
     println("Bin sizes for parallel sampler")
     for(bin <- bins)println("  "+bin.size)
+    var totalSize = 0
+    for(bin <- bins)totalSize+=bin.size
+    println("  total distributed entities: "+totalSize)
   }
   abstract override def getEntities:Seq[E] = {
-    samplers.flatMap(_.getEntities)
+    samplers.flatMap(_.getEntities) ++ nonAssignedEntities
   }
   
 }
@@ -921,6 +1034,7 @@ trait ParallelEntityPairStreamer[E<:HierEntity with HasCanopyAttributes[E] with 
 abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](model:Model) extends HierCorefSampler[E](model) with SamplingStatistics{
   protected var canopyStats:CanopyStatistics[E] = new ApproxMaxCanopySampling//( (Unit) => {this.getEntities})
   protected var canopies = new HashMap[String,ArrayBuffer[E]]
+  protected var singletonCanopies = new ArrayBuffer[E]
   protected var _amountOfDirt = 0.0
   protected var _numSampleAttempts = 0.0 //TODO, could this overflow?
   override def timeAndProcess(n:Int):Unit = {
@@ -938,10 +1052,13 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     }
   }
   override def setEntities(ents:Iterable[E]):Unit ={
+    resetSamplingStatistics
     _amountOfDirt = 0.0
     _numSampleAttempts = 0.0
+    singletonCanopies = new ArrayBuffer[E]
     canopies = new HashMap[String,ArrayBuffer[E]]
     super.setEntities(ents)
+    singletonCanopies ++= canopies.filter(_._2.size==1).map(_._2.head)
     canopies = canopies.filter(_._2.size>1)
     canopyStats.reset(canopies)
     //println("Number of canopies: "+canopies.size)
@@ -1044,6 +1161,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       numDiffVarsInWindow += proposal.diff.size
       numNonTrivialDiffs += 1
     }
+    /*
     for(diff<-proposal.diff){
       diff.variable match{
         case bag:BagOfWordsVariable => bag.accept
@@ -1051,6 +1169,8 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
         case _ => {}
       }
     }
+    */
+    
     if(proposal.diff.size>0 && proposal.modelScore>0){
       //println("Accepting jump")
       //println("  diff size: "+proposal.diff.size)
@@ -1065,19 +1185,19 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       if(proposalCount % printDotInterval==0)
         print(".")
       if(proposalCount % printUpdateInterval==0)
-      printSamplingInfo
+      printSamplingInfo()
     }
   }
-  def printSamplingInfo:Unit ={
-    var pctAccepted = numAccepted.toDouble/proposalCount.toDouble*100
+  def printSamplingInfo(count:Int = proposalCount):Unit ={
+    var pctAccepted = numAccepted.toDouble/count.toDouble*100
     var timeDiffSec = ((System.currentTimeMillis-totalTime)/1000L).toInt
     var sampsPerSec:Int = -1
     var acceptedPerSec:Int = -1
     if(timeDiffSec!=0){
-      sampsPerSec = proposalCount.toInt/timeDiffSec
+      sampsPerSec = count.toInt/timeDiffSec
       acceptedPerSec = numAccepted/timeDiffSec
     }
-    println(" No. samples: "+proposalCount+", %accepted: "+pctAccepted+", time: "+(System.currentTimeMillis-intervalTime)/1000L+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ sampsPerSec+" Accepted per sec: "+acceptedPerSec+". Avg diff size: "+(numDiffVarsInWindow)/(numNonTrivialDiffs+1))
+    println(" No. samples: "+count+", %accepted: "+pctAccepted+", time: "+(System.currentTimeMillis-intervalTime)/1000L+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ sampsPerSec+" Accepted per sec: "+acceptedPerSec+". Avg diff size: "+(numDiffVarsInWindow)/(numNonTrivialDiffs+1))
     intervalTime = System.currentTimeMillis
     numDiffVarsInWindow=0
     allDiffVarsInWindow=0
@@ -1115,8 +1235,8 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
 
 /**Back-end implementations for prioritized and canopy based DB access and inference*/
 trait BibDatabase{
-  def authorColl:EntityCollection[AuthorEntity,AuthorCubbie]
-  def paperColl:EntityCollection[PaperEntity,PaperCubbie]
+  def authorColl:DBEntityCollection[AuthorEntity,AuthorCubbie]
+  def paperColl:DBEntityCollection[PaperEntity,PaperCubbie]
 }
 abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends BibDatabase{
   import MongoCubbieConverter._
@@ -1124,12 +1244,12 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   println("MongoBibDatabase: "+mongoServer+":"+mongoPort+"/"+mongoDBName)
   protected val mongoConn = new Mongo(mongoServer,mongoPort)
   protected val mongoDB = mongoConn.getDB(mongoDBName)
-  val authorColl = new MongoEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
+  val authorColl = new MongoDBBibEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie
     def newEntity:AuthorEntity = new AuthorEntity
     def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
   }
-  val paperColl = new MongoEntityCollection[PaperEntity,PaperCubbie]("papers",mongoDB){
+  val paperColl = new MongoDBBibEntityCollection[PaperEntity,PaperCubbie]("papers",mongoDB){
     def newEntityCubbie:PaperCubbie = new PaperCubbie
     def newEntity:PaperEntity = new PaperEntity
     def fetchFromCubbie(paperCubbie:PaperCubbie,paper:PaperEntity):Unit = paperCubbie.fetch(paper)
@@ -1250,209 +1370,83 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   }
   def filterFieldNameForMongo(s:String) = FeatureUtils.filterFieldNameForMongo(s)//s.replaceAll("[$\\.]","")
 }
-/**Handles loading/storing issues generic to entity collections with canopies, ids, priorities, and hierarchical structure. Agnostic to DB technology (sql, mongo, etc)*/
-trait EntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:EntityCubbie[E]]{
-  protected var _id2cubbie:HashMap[Any,C] = null
-  protected var _id2entity:HashMap[Any,E] = null
-  protected def newEntityCubbie:C
-  protected def newEntity:E
-  protected def fetchFromCubbie(c:C,e:E):Unit
-  protected def register(entityCubbie:C) = _id2cubbie += entityCubbie.id->entityCubbie
-  protected def wasLoadedFromDB(entity:E) = _id2cubbie.contains(entity.id)
-  protected def entity2cubbie(e:E):C =  _id2cubbie(e.id)
-  protected def putEntityInCubbie(e:E) = {val ec=newEntityCubbie;ec.store(e);ec}
-  protected def entityCubbieColl:MutableCubbieCollection[C]
-  protected def changePriority(e:E):Unit ={
-    //e.priority = scala.math.exp(e.priority - random.nextDouble)
-    if(random.nextDouble>0.25)e.priority = scala.math.min(e.priority,random.nextDouble)
-    else e.priority = random.nextDouble
-  }
-  def insert (c:C) = entityCubbieColl += c
-  def insert (e:E) = entityCubbieColl += putEntityInCubbie(e)
-  //def insert(cs:Iterable[C]) = entityCubbieColl ++= cs
-  def insert(es:Iterable[E]) = entityCubbieColl ++= es.map(putEntityInCubbie(_))
-  def drop:Unit
-  def finishLoadAndReturnEntities(entityCubbies:Iterable[C]) = {
-    val entities = new ArrayBuffer[E]
-    for(cubbie <- entityCubbies){
-      val entity:E = newEntity
-      fetchFromCubbie(cubbie,entity)
-      register(cubbie)
-      entities += entity
-    }
-    entities
-  }
-  def reset:Unit ={
-    _id2cubbie = new HashMap[Any,C]
-    _id2entity = new HashMap[Any,E]
-  }
-  def store(entitiesToStore:Iterable[E]):Unit ={
-    val deleted = new ArrayBuffer[E]
-    val updated = new ArrayBuffer[E]
-    val created = new ArrayBuffer[E]
-    for(e <- entitiesToStore)changePriority(e)
-    for(e<-entitiesToStore){
-      if(e.isConnected){
-        if(wasLoadedFromDB(e))updated += e
-        else created += e
-      }
-      if(!e.isConnected && wasLoadedFromDB(e))deleted += e
-      //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
-    }
-    removeEntities(deleted)
-    for(e <- updated)entityCubbieColl.updateDelta(_id2cubbie.getOrElse(e.id,null).asInstanceOf[C],putEntityInCubbie(e))
-    for(e <- created)entityCubbieColl += putEntityInCubbie(e)
-    deletedHook(deleted)
-    updatedHook(updated)
-    createdHook(created)
-    println("deleted: "+deleted.size)
-    println("updated: "+updated.size)
-    println("created: "+created.size)
-  }
-  protected def deletedHook(deleted:Seq[E]):Unit ={}
-  protected def updatedHook(updated:Seq[E]):Unit ={}
-  protected def createdHook(created:Seq[E]):Unit ={}
-  /**This is database specific for example because mongo has a specialized _id field*/
-  protected def removeEntities(entitiesToRemove:Seq[E]):Unit
-  def assembleEntities(toAssemble:TraversableOnce[C],id2entity:Any=>E):Unit ={
-    println("Assembling entities")
-    var count = 0
-    var startTime = System.currentTimeMillis
-    var intervalTime = System.currentTimeMillis
-    for(c<-toAssemble){
-      count += 1
-      if(count % 10000 == 0)print(".")
-      if(count % 25*10000 == 0){
-        val elapsed = (System.currentTimeMillis - startTime)/1000L
-        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
-        intervalTime = System.currentTimeMillis
-      }
-      val child = id2entity(c.id)
-      val parent = if(c.parentRef.isDefined)id2entity(c.parentRef.value) else null.asInstanceOf[E]
-      child.setParentEntity(parent)(null)
-    }
-  }
-  def nextBatch(n:Int=10):Seq[E]
-  def loadAll:Seq[E]
-  def loadLabeledAndCanopies:Seq[E]
-  def loadLabeled:Seq[E]
+
+
+abstract class WeightedChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with DotFamily3[EntityRef,A,A]{
+  lazy val weights = new la.GrowableDenseTensor1(ChildParentFeatureDomain.dimensionDomain.maxSize)
+  //def statistics (eref:EntityRef#Value, child:A#Value, parent:A#Value) = new ChildParentFeatureVector[A](child, parent).value
 }
-abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie[E]](val name:String, mongoDB:DB) extends EntityCollection[E,C]{
-  import MongoCubbieImplicits._
-  import MongoCubbieConverter._
-  protected val entityColl = mongoDB.getCollection(name)
-  val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths),Seq(a.pid))) with LazyCubbieConverter[C]
-  protected def removeEntities(deleted:Seq[E]):Unit = for(e <- deleted)entityCubbieColl.remove(_.idIs(entity2cubbie(e).id))
-  //TODO: generalize MongoSlot so that we can move this into the EnttiyCollection class
-  def drop:Unit = entityColl.drop
-  def loadLabeled:Seq[E] ={
-    reset
-    val result = new ArrayBuffer[C]
-    result ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
-    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
-    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
-    for(entity <- initialEntities)_id2entity += entity.id -> entity
-    println("initial entities: "+initialEntities.size)
-    println("initial cubbies : "+result.size)
-    println("_id2cubbie: "+ _id2cubbie.size)
-    println("_id2entity: "+ _id2entity.size)
-    assembleEntities(result, (id:Any)=>{_id2entity(id)})
-    initialEntities
-  }
-  def loadLabeledAndCanopies:Seq[E] ={
-    reset
-    val result = new ArrayBuffer[C]
-    val labeled = new ArrayBuffer[C]
-    val canopyHash = new HashSet[String]
-    labeled ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
-    //add canopies
-    for(entity <- labeled){
-      for(name <- entity.canopies.value){
-        if(!canopyHash.contains(name)){
-          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
-          canopyHash += name
-        }
-      }
-    }
-    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
-    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
-    for(entity <- initialEntities)_id2entity += entity.id -> entity
-    println("initial entities: "+initialEntities.size)
-    println("initial cubbies : "+result.size)
-    println("_id2cubbie: "+ _id2cubbie.size)
-    println("_id2entity: "+ _id2entity.size)
-    assembleEntities(result, (id:Any)=>{_id2entity(id)})
-    initialEntities
-  }
-  def nextBatch(n:Int=10):Seq[E] ={
-    reset
-    val canopyHash = new HashSet[String]
-    var result = new ArrayBuffer[C]
-    var topPriority = new ArrayBuffer[C]
-    val sorted = entityCubbieColl.query(null,_.canopies.select.inferencePriority.select).sort(_.inferencePriority(-1))
-    println("Printing top canopies")
-    for(i <- 0 until n)if(sorted.hasNext){
-      topPriority += sorted.next
-      if(i<10)println("  "+topPriority(i).inferencePriority.value+": "+topPriority(i).canopies.value.toSeq)
-    }
-    sorted.close
-    for(entity <- topPriority){
-      for(name <- entity.canopies.value){
-        if(!canopyHash.contains(name)){
-          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
-          canopyHash += name
-        }
-      }
-    }
-    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
-    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
-    for(entity <- initialEntities)_id2entity += entity.id -> entity
-    println("Loaded "+n+" entities to determine canopies. Found "+result.size+" canopies.")
-    println("  initial entities: "+initialEntities.size)
-    println("  initial cubbies : "+result.size)
-    println("  _id2cubbie: "+ _id2cubbie.size)
-    println("  _id2entity: "+ _id2entity.size)
-    assembleEntities(result, (id:Any)=>{_id2entity(id)})
-    initialEntities
-  }
-  def loadAll:Seq[E] ={
-    reset
-    println("Loading entire collection")
-    var count = 0
-    print("  getting iterator...")
-    val cubbies = allEntityCubbies.toSeq
-    println("  done")
-    var startTime = System.currentTimeMillis
-    var intervalTime = System.currentTimeMillis
-    val initialEntities = (for(entityCubbie<-cubbies) yield {
-      count += 1
-      if(count < 10000){
-        if(count % 10 == 0)print(".")
-        if(count % 500 ==0)println(count + " " + (System.currentTimeMillis - startTime)/1000L)
-      }
-      if(count % 10000 == 0)print(".")
-      if(count % 25*10000 == 0){
-        val elapsed = (System.currentTimeMillis - startTime)/1000L
-        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
-        intervalTime = System.currentTimeMillis
-      }
-      val e = newEntity
-      entityCubbie.fetch(e)
-      e}).toSeq
-    for(entityCubbie <- cubbies)_id2cubbie += entityCubbie.id -> entityCubbie
-    for(entity <- initialEntities)_id2entity += entity.id -> entity
-    println("  initial entities: "+initialEntities.size)
-    println("  initial cubbies : "+cubbies.size)
-    println("  _id2cubbie: "+ _id2cubbie.size)
-    println("  _id2entity: "+ _id2entity.size)
-    assembleEntities(cubbies, (id:Any)=>{_id2entity(id)})
-    initialEntities
-  }
-  def allEntityCubbies:Seq[C] =entityCubbieColl.iterator.toSeq
-  def freshCopy(cubbies:Seq[C]):Seq[E] =(for(entityCubbie<-cubbies) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B]) extends WeightedChildParentTemplate[B]{
+  def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }
+object ChildParentFeatureDomain extends CategoricalTensorDomain[String]{dimensionDomain.maxSize=10000}
+class ChildParentFeatureVector[A<:EntityAttr](child:A#Value,parent:A#Value) extends FeatureVectorVariable[String]{
+  def domain = ChildParentFeatureDomain
+}
+class ChildParentBagsFeatureVector[B<:BagOfWordsVariable with EntityAttr](name:String,childBow:B#Value,parentBow:B#Value)(implicit m:Manifest[B]) extends FeatureVectorVariable[String]{
+  def domain = ChildParentFeatureDomain
+  if(childBow.size>0 && parentBow.size>0){
+    val cossim=childBow.cosineSimilarity(parentBow,childBow)
+    if(cossim==0.0)this.+=(name+"sim0",1.0)
+    if(cossim<0.01)this.+=(name+"sim<0.01",1.0)
+    if(cossim<0.5)this.+=(name+"sim<0.01",0.5-cossim)
+    if(cossim>=0.5)this.+=(name+"sim>0.5",cossim)
+    /*
+    val binNames = FeatureUtils.bin(cossim,name+"cosine")
+    for(binName <- binNames){
+      this += binName
+//      this.+=(binName,1.0)
+      //if(parentBow.l1Norm==2)features.update(binName+"ments=2",1.0)
+      //if(parentBow.l1Norm>=2)features.update(binName+"ments>=2",1.0)
+      //if(parentBow.l1Norm>=4)features.update(binName+"ments>=4",1.0)
+      //if(parentBow.l1Norm>=8)features.update(binName+"ments>=8",1.0)
+    }
+    */
+    //if(dot>0)features.update(name+"dot>0",1.0) else features.update(name+"dot=0",1.0)
+//   this.+=(name+"cosine-no-shift",cossim)
+    //features.+=(name+"cossine-shifted",cossim-0.5)
+  }
+}
+
+//  this += new ChildParentTemplate[BagOfCoAuthors] with DotStatistics1[AuthorFeatureVector#Value]{
+//class ParentChildCosineFeatureTemplate[B<:BagOfWordsVariable] extends ChildParentTemplate[B] with
+
+/*
+        new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
+      //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
+      lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
+      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+      def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+    },
+
+    val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingObjective)))
+    val learner = new SGDTrainer(model, new optimize.AROW(model))
+
+      abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
+    override def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
+      val mention1 = m1
+      val mention2 = m2
+      val coref: Boolean = l.booleanValue
+      (null, null)
+    }
+  }
+  abstract class PairwiseTransitivityTemplate extends Template3[PairwiseLabel,PairwiseLabel,PairwiseLabel] with Statistics[BooleanValue] {
+    //def unroll1(p:PairwiseBoolean) = for (m1 <- p.edge.src.edges; m2 <- p.edge.dst.edges; if (m1)
+  }
+
+
+
+  object CorefAffinityDimensionDomain extends EnumDomain {
+    val Bias, ExactMatch, SuffixMatch, EntityContainsMention, EditDistance2, EditDistance4, NormalizedEditDistance9, NormalizedEditDistance5, Singleton = Value
+  }
+  object CorefAffinityDomain extends CategoricalTensorDomain[String] {
+    override lazy val dimensionDomain = CorefAffinityDimensionDomain
+  }
+  class CorefAffinity extends BinaryFeatureVectorVariable[String] {
+    def domain = CorefAffinityDomain
+  }
+     */
+
 
 /*
 object CorefDimensionDomain extends EnumDomain {
