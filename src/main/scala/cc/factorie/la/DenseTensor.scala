@@ -60,6 +60,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
       var s = 0.0; t2.foreachElement((i,v) => s += __values(i)); s
     }
     case t:UniformTensor => sum * t.uniformValue
+    case t2:SparseIndexedTensor => {var s = 0.0;t2.foreachElement((i,v) => s += __values(i)*v);s}
     // TODO Any other special cases here?
     case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0

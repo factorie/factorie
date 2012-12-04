@@ -17,48 +17,40 @@ import cc.factorie.util.Cubbie
 import collection.mutable.HashMap
 import cc.factorie.app.nlp.coref._
 
-
-trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable] extends Cubbie {
-  val canopies = new StringListSlot("canopies")
-  val inferencePriority = new DoubleSlot("ipriority")
-  val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
-  val parentRef = RefSlot("parentRef", () => newEntityCubbie)
-  val isMention = BooleanSlot("isMention")
-  val groundTruth = new StringSlot("gt")
-  val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
-  val mentionCount = new IntSlot("mc")
-  def newEntityCubbie:EntityCubbie[T]
-  def fetch(e:T) ={
-    e.priority = inferencePriority.value
-    e.attr[IsMention].set(isMention.value)(null)
-    e.isObserved=isMention.value
-    e.attr[IsEntity].set(e.isRoot)(null)
-    e.attr[EntityExists].set(e.isConnected)(null)
-    e.attr[MentionCountVariable].set(mentionCount.value)(null)
-    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
-    if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
-    //note that entity parents are set externally not inside the cubbie
-  }
-  def store(e:T) ={
-    this.id=e.id      
-    canopies := e.canopyAttributes.map(_.canopyName).toSeq
-    inferencePriority := e.priority
-    isMention := e.attr[IsMention].booleanValue
-    if(e.parentEntity!=null)parentRef := e.parentEntity.id
-    if(e.groundTruth != None)groundTruth := e.groundTruth.get
-    mentionCount := e.attr[MentionCountVariable].value
-  }
-}
-
 class FieldsCubbie extends Cubbie
 /*
 class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
   def newEntityCubbie:EntityCubbie = new PersonCubbie
 }
 */
-class AuthorCubbie extends EntityCubbie[AuthorEntity] {
+trait BibCubbie extends Cubbie{
+  //  var dataSource:String=""
+  //var paperMentionId:String=null
+  //val dataSource = StringSlot("ds")
+  //val pid = StringSlot("pid")
+  val pid = RefSlot("pid", () => new PaperCubbie)
+  def storeBibAttributes(e:BibEntity):Unit ={
+    //dataSource := e.dataSource
+    //pid := e.pid
+  }
+  def fetchBibAttributes(e:BibEntity):Unit ={
+    //if(dataSource.isDefined)e.dataSource = dataSource.value
+    //if(pid.isDefined)e.paperMentionId = pid.value.toString
+  }
+}
+trait BibEntityCubbie[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable with BibEntity] extends DBEntityCubbie[E] with BibCubbie{
+  //val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
+  override def fetch(e:E) ={
+    super.fetch(e)
+    storeBibAttributes(e)
+  }
+  override def store(e:E) ={
+    super.store(e)
+    fetchBibAttributes(e)
+  }
+}
+class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
   protected var _author:AuthorEntity=null
-
  val index = IntSlot("idx")
   val title = StringSlot("title")
   val firstName = StringSlot("fn")
@@ -140,7 +132,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     //if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
   def author:AuthorEntity=_author
-  override def newEntityCubbie:EntityCubbie[AuthorEntity] = new AuthorCubbie
+  override def newEntityCubbie:BibEntityCubbie[AuthorEntity] = new AuthorCubbie
 }
 // superclass of PaperCubbie and CommentCubbie
 class EssayCubbie extends Cubbie {
@@ -152,7 +144,7 @@ class EssayCubbie extends Cubbie {
   //should authors go up here?
 }
 // Articles, Patents, Proposals,...
-class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
+class PaperCubbie extends EssayCubbie with BibEntityCubbie[PaperEntity] {
   protected var _paper:PaperEntity=null
   val authors = new CubbieSlot("authors", () => new BagOfWordsCubbie)
   val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
@@ -174,7 +166,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
   val url = StringSlot("url") // But we want to be able to display multiple URLs in the web interface
   //val pid = RefSlot("pid", () => new PaperCubbie) // paper id; the paper mention chosen as the canonical child
   def paper:PaperEntity=_paper
-  def newEntityCubbie:EntityCubbie[PaperEntity] = new PaperCubbie
+  def newEntityCubbie:BibEntityCubbie[PaperEntity] = new PaperCubbie
   override def fetch(e:PaperEntity) ={
     super.fetch(e)
     e.attr[Title].set(title.value)(null)

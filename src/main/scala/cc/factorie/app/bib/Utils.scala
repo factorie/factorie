@@ -575,7 +575,19 @@ object EntityUtils{
     println(sorted)
     println("\nPrinted " + count + " entities and "+singletons.size+ " singletons.")
   }
-
+  def printClusteringStats[T<:HierEntity](entities:Seq[T]):Unit = {
+    var count = 0
+    var numSingletons = 0
+    var sizeDist = new HashMap[Int,Int]
+    for(e <- entities.filter((e:T) => {e.isRoot && e.isConnected})){
+      var size = e.numLeaves
+      sizeDist(size) = sizeDist.getOrElse(size,0) + 1
+      count += 1
+    }
+    println("\nEntity size distribution")
+    val sorted = sizeDist.toList.sortBy(_._2).reverse
+    println(sorted)
+  }
   def prettyPrintAuthor(e:AuthorEntity):Unit ={
     val authorString = entityStringPretty(e,
       (e:Entity)=>{
