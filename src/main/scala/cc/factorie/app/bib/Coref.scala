@@ -11,7 +11,7 @@ import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
 
-trait REXAEntity{
+trait REXAEntity extends HumanEditMention {
   var dataSource:String=""
 }
 class InfoBag(val entity:Entity) extends BagOfWordsVariable(Nil, null) with EntityAttr
@@ -269,7 +269,7 @@ object Coref{
       epiDB.insertMentionsFromDBLP(opts.dblpLocation.value)
       println("done.")
     }
-    
+
     if(opts.aclAnthologyFile.value.toLowerCase != "none"){
       val papers = AclAnthologyReader.loadAnnFile(new File(opts.aclAnthologyFile.value))
       epiDB.add(papers)
@@ -386,7 +386,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
       //authorTrainer.process(trainingSteps(ts.size)/trainingEpochs)
       Evaluator.eval(authorTrainer.getEntities)
     }
-    
+
 
     println("\nTESTING...")
     authorPredictor.setEntities(testingSet)
@@ -883,7 +883,7 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
   abstract override def getEntities:Seq[E] = {
     samplers.flatMap(_.getEntities)
   }
-  
+
 }
 trait SamplingStatistics{
   var printDotInterval=1000
@@ -1206,7 +1206,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     println("Done.")
   }
   def createAuthorsFromPaper(p:PaperEntity):Unit ={
-    
+
   }
   def insertLabeledRexaMentions(rexaFile:File):Unit ={
     val paperEntities = RexaLabeledLoader.load(rexaFile)
@@ -1716,7 +1716,7 @@ class ParameterizedAuthorCorefModel extends TemplateModel{
       val isMention:Boolean = v._3.booleanValue
       if(exists && isEntity) features.update(name+"entity",1.0)
       //if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
-      Stat(features.value)      
+      Stat(features.value)
     }
   }
   this += new StructuralPriorsTemplate(0.0,-0.25)
