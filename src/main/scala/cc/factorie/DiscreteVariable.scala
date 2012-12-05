@@ -15,7 +15,6 @@
 package cc.factorie
 import cc.factorie.la._
 import scala.util.Random
-import scala.collection.mutable.ArrayBuffer
 
 /** A single discrete variable */
 trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] {

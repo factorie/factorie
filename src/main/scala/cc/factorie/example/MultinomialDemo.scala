@@ -28,7 +28,7 @@ object MultinomialDemo {
   implicit val model = GenerativeModel() // ItemizedGenerativeModel
 
   def main(args:Array[String]) : Unit = {
-    val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .2)))
+    val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .15, .05)))
     println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
     Maximize(Seq(die), model)

@@ -14,10 +14,6 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.reflect.Manifest
-
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" are classes and mutable.
 // "*Var" are trait counterparts, not yet committing to (im)mutability.
@@ -86,7 +82,7 @@ trait Variable extends ValueBound[Any] {
   
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */
-  def ~[V<:Variable](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+  def ~[V<:Variable](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     model += partialFactor(this.asInstanceOf[V])
     this
   }
@@ -132,7 +128,7 @@ trait MutableVar[A] extends Var[A] {
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V<:MutableVar[A]](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+  def :~[V<:MutableVar[A]](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     this ~ (partialFactor)
     this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
     this

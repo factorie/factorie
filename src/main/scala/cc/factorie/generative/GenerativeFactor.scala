@@ -95,14 +95,11 @@ abstract class GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Vari
   def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
 }
 
-
 trait GenerativeFamily1[Child<:Variable] {
   type C = Child
   abstract class Factor(override val _1:Child) extends GenerativeFactorWithStatistics1[C](_1) 
   def newFactor(c:C): Factor
-  def apply() = new Function1[C,Factor] {
-    def apply(c:C) = newFactor(c)
-  }
+  def apply(): C => Factor = newFactor(_)
 }
 
 trait GenerativeFamily2[Child<:Variable,Parent1<:Variable] {
@@ -110,9 +107,7 @@ trait GenerativeFamily2[Child<:Variable,Parent1<:Variable] {
   type P1 = Parent1
   abstract class Factor(override val _1:Child, override val _2:Parent1) extends GenerativeFactorWithStatistics2[C,P1](_1, _2) 
   def newFactor(c:C, p1:P1): Factor
-  def apply(p1:P1) = new Function1[C,Factor] {
-    def apply(c:C) = newFactor(c, p1)
-  }
+  def apply(p1: P1): C => Factor = newFactor(_, p1)
 }
 
 trait GenerativeFamily3[Child<:Variable,Parent1<:Variable,Parent2<:Variable] {
@@ -121,9 +116,7 @@ trait GenerativeFamily3[Child<:Variable,Parent1<:Variable,Parent2<:Variable] {
   type P2 = Parent2
   abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2) extends GenerativeFactorWithStatistics3[C,P1,P2](_1, _2, _3) 
   def newFactor(c:C, p1:P1, p2:P2): Factor
-  def apply(p1:P1,p2:P2) = new Function1[C,Factor] {
-    def apply(c:C) = newFactor(c, p1, p2)
-  }
+  def apply(p1: P1, p2: P2): C => Factor = newFactor(_, p1, p2)
 }
 
 trait GenerativeFamily4[Child<:Variable,Parent1<:Variable,Parent2<:Variable,Parent3<:Variable] {
@@ -133,8 +126,6 @@ trait GenerativeFamily4[Child<:Variable,Parent1<:Variable,Parent2<:Variable,Pare
   type P3 = Parent3
   abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2, override val _4:Parent3) extends GenerativeFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) 
   def newFactor(c:C, p1:P1, p2:P2, p3:P3): Factor
-  def apply(p1:P1,p2:P2,p3:P3) = new Function1[C,Factor] {
-    def apply(c:C) = newFactor(c, p1, p2, p3)
-  }
+  def apply(p1: P1, p2: P2, p3: P3): C => Factor = newFactor(_, p1, p2, p3)
 }
 
