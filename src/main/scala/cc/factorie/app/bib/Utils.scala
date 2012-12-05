@@ -397,6 +397,9 @@ object EntityUtils{
     for(bag <- e2.attr.all[BagOfWordsVariable])parent.attr(bag.getClass).add(bag.value)(d)
     parent.attr[MentionCountVariable].set(parent.attr[MentionCountVariable].value + e1.attr[MentionCountVariable].value)(d)
     parent.attr[MentionCountVariable].set(parent.attr[MentionCountVariable].value + e2.attr[MentionCountVariable].value)(d)
+    val evar = parent.attr[EditSetVariable]
+    e1.attr[EditSetVariable].value.foreach(evar.add(_)(d))
+    e2.attr[EditSetVariable].value.foreach(evar.add(_)(d))
     //
 //    for(bag <- e1.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
 //    for(bag <- e2.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
@@ -410,6 +413,8 @@ object EntityUtils{
     //}
     var e = entity.parentEntity
     while(e!=null){
+      val evar = e.attr[EditSetVariable]
+      entity.attr[EditSetVariable].value.foreach(evar.add(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value + entity.attr[MentionCountVariable].value)(d)
       for(bag <- entity.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).add(bag.value)(d)
@@ -426,6 +431,8 @@ object EntityUtils{
     //}
     var e = formerParent
     while(e!=null){
+      val evar = e.attr[EditSetVariable]
+      parting.attr[EditSetVariable].value.foreach(evar.remove(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value - parting.attr[MentionCountVariable].value)(d)
       for(bag <- parting.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).remove(bag.value)(d)
@@ -981,7 +988,7 @@ class MongoSummaryCollection[S<:SummaryCubbie] extends SummaryCollection[S]{
 object GeneralUtils{
   def updateIDF(papers:Iterable[PaperEntity],tokenExtractor:PaperEntity=>Seq[String],val idfTYPE:String):Unit ={
     for(paper <- papers){
-      
+
     }
   }
 }*/

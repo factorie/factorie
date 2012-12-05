@@ -10,7 +10,7 @@ target
 .cache
 *.DS_Store
 
-# doc LaTeX 
+# doc LaTeX
 doc/usersguide/*.aux
 doc/usersguide/*.log
 doc/usersguide/*.out
@@ -33,6 +33,7 @@ doc/usersguide/*.toc
 lib_managed/
 src_managed/
 target/
+project/plugins.sbt
 project/boot/
 project/build/target/
 project/plugins/target/
@@ -46,6 +47,7 @@ project/plugins/src_managed/
 
 # ensime (emacs scala mode)
 .ensime
+.ensime_lucene/
 
 # website specific ignores
 _cache
