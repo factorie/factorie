@@ -81,8 +81,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel2) = proposals.max2ByDouble(_.modelScore)
     val bestObjective1 = proposals.maxByDouble(_.objectiveScore)
-    //val marg = learningMargin - (bestModel1.modelScore - bestModel2.modelScore)
-    val marg = bestModel1.modelScore - bestModel2.modelScore //TODO: this should really be the above line, but then AROW/CW will have trouble, so keeping it like this for now
+    val marg = bestModel1.modelScore - bestModel2.modelScore
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       bestObjective1.diff.redo
@@ -107,8 +106,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
     }
-    val bestProposal = proposals.maxByDouble(_.modelScore) // TODO Should this instead be using the "sampler" to pick a Proposal? -akm &apassos
-    bestProposal.diff.redo
+    sampler.processProposals(proposals)
   }
 }
 
