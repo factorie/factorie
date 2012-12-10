@@ -404,7 +404,10 @@ object EntityUtils{
 //    for(bag <- e1.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
 //    for(bag <- e2.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
   }
-
+  def linkChildToParent(child:Entity,parent:Entity)(implicit d:DiffList):Unit ={
+    child.setParentEntity(parent)(d)
+    propagateBagUp(child)(d)
+  }
   def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
     //var e = entity.parentEntity
     //while(e!=null){
