@@ -694,6 +694,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     val result = super.proposals(c)
     settingsSamplerCount += 1
     if(totalTime==0L){totalTime = System.currentTimeMillis}
+    /*
     if(printInfo){
       if(settingsSamplerCount % 1000==0)
         print(".")
@@ -708,6 +709,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
         //  println("   obj:"+p.objectiveScore+"  mod:"+p.modelScore)
       }
     }
+    */
     result
   }
 
@@ -774,11 +776,13 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
   }
   override def proposalHook(proposal:Proposal) = {
     super.proposalHook(proposal)
+    /*
     if(printInfo){
       if(proposalCount % printUpdateInterval==0){
         Evaluator.eval(getEntities)
       }
     }
+    */
   }
 }
 class PaperSampler(model:Model) extends BibSampler[PaperEntity](model){

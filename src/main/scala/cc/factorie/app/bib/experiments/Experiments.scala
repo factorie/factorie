@@ -70,6 +70,7 @@ trait HumanEditOptions extends ExperimentOptions{
   val heExperimentType = new CmdOption("he-experiment-type","merge-correct","FILE","Experiment to run for human edits. Options are merge-correct, merge-incorrect, merge-all, split-correct, split-incorrect")
   val heShouldLinkReward = new CmdOption("he-should-link-reward",8.0,"DOUBLE","Should link reward for human edit template.")
   val heShouldNotLinkPenalty = new CmdOption("he-should-not-link-penalty",8.0,"DOUBLE","Should not link penalty for human edit template.")
+  val heNumSynthesisSamples = new CmdOption("he-num-synthesis-samples",200000,"DOUBLE","Should link reward for human edit template.")
 }
 
 object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions{
