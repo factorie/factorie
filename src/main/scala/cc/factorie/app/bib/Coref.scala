@@ -131,12 +131,13 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
   def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
-class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity{
+class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity with HumanEditMention{
   //println("   creating author: f:"+f+" m: "+m+" l: "+l)
   var _id = java.util.UUID.randomUUID.toString+""
   override def id = _id
   priority = random.nextDouble
   canopyAttributes += new AuthorFLNameCanopy(this)
+  def entity:HierEntity = this
   def addMoreCanopies:Unit = (fullName.firstName+" "+fullName.middleName+" "+fullName.lastName).replaceAll(" +"," ").trim.split(" ").toSet.foreach((s:String) => canopyAttributes += new SimpleStringCanopy(this,s))
   attr += new FullName(this,f,m,l)
   attr += new BagOfTopics(this)

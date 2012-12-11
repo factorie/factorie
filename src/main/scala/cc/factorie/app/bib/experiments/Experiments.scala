@@ -65,7 +65,14 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
   }
 }
 
-object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions{
+
+trait HumanEditOptions extends ExperimentOptions{
+  val heExperimentType = new CmdOption("he-experiment-type","merge-correct","FILE","Experiment to run for human edits. Options are merge-correct, merge-incorrect, merge-all, split-correct, split-incorrect")
+  val heShouldLinkReward = new CmdOption("he-should-link-reward",8.0,"DOUBLE","Should link reward for human edit template.")
+  val heShouldNotLinkPenalty = new CmdOption("he-should-not-link-penalty",8.0,"DOUBLE","Should not link penalty for human edit template.")
+}
+
+object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions{
   val advanceSeed = new CmdOption("advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
   val outputFile = new CmdOption("outputFile","experiment.log","FILE","Output file for experimental results.")
   val outputDir = new CmdOption("outputDir","/Users/mwick/data/rexa2/experiments/","FILE","Root output directory containing intermediate results and final results")
@@ -78,8 +85,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
   val fold = new CmdOption("fold",0,"","Specifies which fold to use as the inital DB.")
   val evidenceBatchSize = new CmdOption("evidence-batch-size",10,"","Size of each streaming batch of evidence")
   val inferenceStepsPerBatch = new CmdOption("inference-steps-per-batch",100000,"","Number of inference steps per batch of incoming evidence")
-  val inferenceInitialSteps = new CmdOption("inference-steps-initial",1000000,"","Nubmer of steps of inference to run on the initial DB")
+  val inferenceInitialSteps = new CmdOption("inference-steps-initial",0,"","Nubmer of steps of inference to run on the initial DB")
   val evidenceStreamType = new CmdOption("evidence-stream-type","random","","Types of evidence streams, current options are: random, and byyear.")
+
 
   def main(argsIn:Array[String]):Unit ={
     var args:Array[String]=new Array[String](0)
@@ -154,6 +162,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       papers = filteredPapers
     }
     */
+
     println("About to add "+papers.size+" papers.")
     epiDB.add(papers)
     println("Finished adding papers.")
@@ -165,8 +174,29 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     println("Authors.size" +authors.size)
     EntityUtils.checkIntegrity(authors)
     Evaluator.eval(authors)
-
     println("Evidence stream: "+evidenceStreamType.value)
+    if(!evidenceStreamType.wasInvoked)throw new Exception("Remember to specify the type of evidence you want to stream.")
+    if(evidenceStreamType.value=="human-edits"){
+      //do human edit experiment
+      authorCorefModel += new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+      opts.heExperimentType.value match{
+        case "merge-correct" =>{
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(1000000)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          val edits = GenerateExperiments.allMergeEdits[AuthorEntity](initialDB,_ => new AuthorEntity, (entities:Seq[AuthorEntity])=>{Evaluator.pairF1(entities).head}).filter(_.isCorrect)
+          evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
+          for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
+        }
+        case "merge-incorrect" => {
+
+        }
+        case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
+      }
+      println("Finished generating  human edit experiment")
+    }
     if(this.evidenceStreamType.value=="random"){
       val (initialDB2,evidence) = split(authors,numFolds.value,fold.value)
       initialDB=initialDB2
