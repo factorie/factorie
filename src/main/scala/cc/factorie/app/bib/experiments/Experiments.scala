@@ -86,7 +86,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
   val evidenceBatchSize = new CmdOption("evidence-batch-size",10,"","Size of each streaming batch of evidence")
   val inferenceStepsPerBatch = new CmdOption("inference-steps-per-batch",100000,"","Number of inference steps per batch of incoming evidence")
   val inferenceInitialSteps = new CmdOption("inference-steps-initial",0,"","Nubmer of steps of inference to run on the initial DB")
-  val evidenceStreamType = new CmdOption("evidence-stream-type","random","","Types of evidence streams, current options are: random, and byyear.")
+  val evidenceStreamType = new CmdOption("evidence-stream-type","random","","Types of evidence streams, current options are: random, byyear, human edits.")
 
 
   def main(argsIn:Array[String]):Unit ={
@@ -166,7 +166,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     println("About to add "+papers.size+" papers.")
     epiDB.add(papers)
     println("Finished adding papers.")
-    val authors:Seq[AuthorEntity] = random.shuffle(epiDB.authorColl.loadLabeledAndCanopies)
+    var authors:Seq[AuthorEntity] = random.shuffle(epiDB.authorColl.loadLabeledAndCanopies)
     var initialDB:Seq[AuthorEntity] = null
     var evidenceBatches:Seq[Seq[AuthorEntity]] = null
     var evidenceBatchNamesOpt:Option[Seq[String]] = None
@@ -181,6 +181,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       authorCorefModel += new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
       opts.heExperimentType.value match{
         case "merge-correct" =>{
+          authors = authors.filter(_.groundTruth != None)
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
           val samplerForCreatingInitialDB = new AuthorSampler(authorCorefModel){temperature = 0.001}
           samplerForCreatingInitialDB.setEntities(authors)
