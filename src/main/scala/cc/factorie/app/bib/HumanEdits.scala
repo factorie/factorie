@@ -60,67 +60,60 @@ class HumanEditTemplate(val shouldLinkReward:Double=8.0,val shouldNotLinkPenalty
   }
 }
 
-
-
 object GenerateExperiments{
-  def main(args:Array[String]) = {
-
-
-  }
-
-
   trait ExperimentalEdit[T<:HierEntity with HumanEditMention]{
     def score:Double
     def isCorrect:Boolean = score>0
     def mentions:Seq[T]
   }
-  class ExpMergeEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{val mentions:Seq[T]=Seq(mention1,mention2)}
-  class ExpSplitEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{val mentions:Seq[T]=Seq(mention1,mention2)}
-
-  /*
-  def runExperiment[T<:HierEntity with HumanEditMention](entities:Seq[T],streamOfEdits:Seq[ExperimentalEdit[T]], output:BufferedWriter):Unit ={
-    outputResults(corefer.getEntities,corefer.numSamples,corefer.numAccepted,editCount)
+  class ExpMergeEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{
+    val mentions:Seq[T]=Seq(mention1,mention2)
+    mention1.linkedMention=Some(mention2)
+    mention1.editType=HumanEditMention.ET_SHOULD_LINK
+    mention2.linkedMention=Some(mention1)
+    mention2.editType=HumanEditMention.ET_SHOULD_LINK
   }
-  def outputResults[T<:HierEntity with HumanEditMention](writer:BufferedWriter,entities:Seq[T],editScore:Double,numSamples:Int,numAccepted:Int,editCount:Int,mentionCount:Int):Unit ={
-
+  class ExpSplitEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{
+    val mentions:Seq[T]=Seq(mention1,mention2)
+    mention1.linkedMention=Some(mention2)
+    mention1.editType=HumanEditMention.ET_SHOULD_NOT_LINK
+    mention2.linkedMention=Some(mention1)
+    mention2.editType=HumanEditMention.ET_SHOULD_NOT_LINK
   }
-  */
-//      val line = ((System.currentTimeMillis - time)/1000L + " "+numSamples+" "+numAccepted+" "+scores.mkString(" ")+" "+batchCount+" "+mentionCount+" "+gtEntityCount+" "+currentBatchName+" "+curScore+" "+maxScore)
-
-  def allMergeEdits[T<:HierEntity with HumanEditMention ](allEntities:Seq[T],newEntity:Unit=>T,scoreFunction:Seq[T]=>Double):Seq[ExpMergeEdit[T]] ={
-    def createEditMentionFrom(original:T):T = {
-      val cp = newEntity()
-      cp.flagAsMention
-      original.attr.all[AnyRef].foreach(cp.attr += _)
-      cp
-    }
+  def allMergeEdits[T<:HierEntity with HumanEditMention ](allEntities:Seq[T],newEntity:Unit=>T,scoreFunction:Seq[HierEntity]=>Double,createEditMentionFrom:T=>T,minESize:Int):Seq[ExpMergeEdit[T]] ={
     val result = new ArrayBuffer[ExpMergeEdit[T]]
-    val entities = allEntities.filter(_.isEntity.booleanValue)
-    val entitiesToScore = new ArrayBuffer[T]
-    val originalScore = scoreFunction(entitiesToScore)
-    entitiesToScore ++= entities
+    val entities = allEntities.filter((e:T) =>{e.isEntity.booleanValue && e.numLeaves>=minESize})
+    println("About to create edits from "+ entities.size + " entities.")
     var i = 0;var j = 0
     while(i<entities.size){
       j = i+1
       val ei = entities(i)
+      val eiMentions = ei.descendantsOfClass[HierEntity]
       while(j<entities.size){
         val ej = entities(j)
+        val ejMentions = ej.descendantsOfClass[HierEntity]
+        val originalScore = scoreFunction(eiMentions ++ ejMentions)
         val tmpRoot = newEntity()
         val d = new DiffList
         //see what happens if we were to merge these two entities together
         EntityUtils.linkChildToParent(ei,tmpRoot)(d)
         EntityUtils.linkChildToParent(ej,tmpRoot)(d)
-        entitiesToScore += tmpRoot
-        val editScore = scoreFunction(entitiesToScore)
+        val editScore = scoreFunction(eiMentions ++ ejMentions ++ Seq(tmpRoot.asInstanceOf[HierEntity]))
         //undo the merge
         d.undo
-        entitiesToScore.remove(entitiesToScore.size-1)
+        assert(ei.parentEntity == null)
+        assert(ej.parentEntity == null)
         //package the finding
         result += new ExpMergeEdit(createEditMentionFrom(ei),createEditMentionFrom(ej),editScore-originalScore)
         j+=1
       }
       i+=1
+      print(".")
+      if(i % 25 == 0)println
     }
+    val numGood = result.filter(_.isCorrect).size
+    val numBad = result.size - numGood
+    println("Generated "+ result.size + " edits ("+ numGood + " correct edits. " + numBad + " incorrectEdits).")
     result
   }
 }

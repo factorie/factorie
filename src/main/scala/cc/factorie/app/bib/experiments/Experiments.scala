@@ -37,9 +37,14 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       evidenceBatch.foreach(this.addEntity(_))
       if(evidenceBatchNames != None)currentBatchName = evidenceBatchNames.get(batchCount-1)
       println("\n---Adding new evidence batch---")
-      println("Batch name: "+currentBatchName)
-      println("Mentions added: ")
-      for(mention <- evidenceBatch)println(EntityUtils.prettyPrintAuthor(mention))
+      println("  Batch name: "+currentBatchName)
+      println("  Mentions added: "+evidenceBatch.size)
+      println("  Mentions added: ")
+      evidenceBatch.map((e:AuthorEntity)=>EntityUtils.prettyPrintAuthor(e.entityRoot.asInstanceOf[AuthorEntity]))
+      println("  Mentions added: "+evidenceBatch.map(_.id).toSeq)
+      println("  About to sample for "+stepsPerBatch + " steps.")
+      //for(mention <- evidenceBatch)println(EntityUtils.prettyPrintAuthor(mention))
+      checkEntities
 
       mentionCount += evidenceBatch.filter(_.isObserved).size
       gtEntityCount = entities.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
@@ -63,6 +68,13 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       pw.flush()
     }
   }
+  def checkEntities:Unit ={
+    val eids = new HashSet[String]
+    eids ++= entities.map(_.id.toString)
+    if(eids.size!=entities.size){
+      throw new Exception("Error, duplicate entity detected: hashset:"+eids.size+" set: "+entities.size)
+    }
+  }
 }
 
 
@@ -71,6 +83,8 @@ trait HumanEditOptions extends ExperimentOptions{
   val heShouldLinkReward = new CmdOption("he-should-link-reward",8.0,"DOUBLE","Should link reward for human edit template.")
   val heShouldNotLinkPenalty = new CmdOption("he-should-not-link-penalty",8.0,"DOUBLE","Should not link penalty for human edit template.")
   val heNumSynthesisSamples = new CmdOption("he-num-synthesis-samples",1000000,"DOUBLE","Should link reward for human edit template.")
+  val heNumBatches = new CmdOption("he-num-batches",-1,"INT","Number of batches to stream. Default of -1 means n batches.")
+  val heMergeExpEMinSize = new CmdOption("he-merge-exp-entity-min-Size",3,"INT","Number of batches to stream. Default of -1 means n batches.")
 }
 
 object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions{
@@ -88,7 +102,6 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
   val inferenceStepsPerBatch = new CmdOption("inference-steps-per-batch",100000,"","Number of inference steps per batch of incoming evidence")
   val inferenceInitialSteps = new CmdOption("inference-steps-initial",0,"","Nubmer of steps of inference to run on the initial DB")
   val evidenceStreamType = new CmdOption("evidence-stream-type","random","","Types of evidence streams, current options are: random, byyear, human edits.")
-
 
   def main(argsIn:Array[String]):Unit ={
     var args:Array[String]=new Array[String](0)
@@ -188,9 +201,30 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           samplerForCreatingInitialDB.setEntities(authors)
           samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
           initialDB = samplerForCreatingInitialDB.getEntities
-          val edits = GenerateExperiments.allMergeEdits[AuthorEntity](initialDB,_ => new AuthorEntity, (entities:Seq[AuthorEntity])=>{Evaluator.pairF1(entities).head}).filter(_.isCorrect)
+          val edits = GenerateExperiments.allMergeEdits[AuthorEntity](
+            initialDB,
+            _ => new AuthorEntity,
+            (entities:Seq[HierEntity]) => {Evaluator.pairF1(entities).head},
+            (original:AuthorEntity) => {
+              val cp = new AuthorEntity(original.fullName.firstName, original.fullName.middleName, original.fullName.lastName, true)
+              for(bv <- original.attr.all[BagOfWordsVariable]){
+                if(!bv.isInstanceOf[BagOfTruths])
+                  cp.attr(bv.getClass).add(bv.value)(null)
+              }
+              //original.attr.all[BagOfWordsVariable].foreach(cp.attr += _)
+              //cp.attr[BagOfTruths].clear
+              cp
+            },
+            opts.heMergeExpEMinSize.value
+          ).filter(_.isCorrect)
           evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
-          for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
+          if(opts.heNumBatches.value == -1){
+            for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
+          }else if(opts.heNumBatches.value==1){
+            val allEdits = edits.flatMap(_.mentions)
+            evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
+          }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
+
         }
         case "merge-incorrect" => {
 

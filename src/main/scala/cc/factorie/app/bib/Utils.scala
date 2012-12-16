@@ -391,8 +391,6 @@ object EntityUtils{
   }
 
   def createBagsForMergeUp(e1:Entity,e2:Entity,parent:Entity)(implicit d:DiffList):Unit ={
-    //parent.attr[BagOfTopics].add(e1.attr[BagOfTopics].value)(d)
-    //parent.attr[BagOfTopics].add(e2.attr[BagOfTopics].value)(d)
     for(bag <- e1.attr.all[BagOfWordsVariable])parent.attr(bag.getClass).add(bag.value)(d)
     for(bag <- e2.attr.all[BagOfWordsVariable])parent.attr(bag.getClass).add(bag.value)(d)
     parent.attr[MentionCountVariable].set(parent.attr[MentionCountVariable].value + e1.attr[MentionCountVariable].value)(d)
@@ -400,38 +398,24 @@ object EntityUtils{
     val evar = parent.attr[EditSetVariable]
     e1.attr[EditSetVariable].value.foreach(evar.add(_)(d))
     e2.attr[EditSetVariable].value.foreach(evar.add(_)(d))
-    //
-//    for(bag <- e1.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
-//    for(bag <- e2.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
   }
   def linkChildToParent(child:Entity,parent:Entity)(implicit d:DiffList):Unit ={
     child.setParentEntity(parent)(d)
     propagateBagUp(child)(d)
   }
   def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
-    //var e = entity.parentEntity
-    //while(e!=null){
-    //  e.attr[BagOfTopics].add(entity.attr[BagOfTopics].value)(d)
-    //  e=e.parentEntity
-    //}
     var e = entity.parentEntity
     while(e!=null){
       val evar = e.attr[EditSetVariable]
-      entity.attr[EditSetVariable].value.foreach(evar.add(_)(d))
+      for(edit <- entity.attr[EditSetVariable])evar.add(edit)(d)
+      //entity.attr[EditSetVariable].value.foreach(evar.add(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value + entity.attr[MentionCountVariable].value)(d)
       for(bag <- entity.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).add(bag.value)(d)
-//      for(bag <- entity.attr.all[BagOfWordsTensorVariable])
-//        e.attr(bag.getClass).increment(bag.value)(d)
       e=e.parentEntity
     }
   }
   def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
-   // var e = formerParent
-    //while(e!=null){
-    //  e.attr[BagOfTopics].remove(parting.attr[BagOfTopics].value)(d)
-    //  e=e.parentEntity
-    //}
     var e = formerParent
     while(e!=null){
       val evar = e.attr[EditSetVariable]
@@ -439,8 +423,6 @@ object EntityUtils{
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value - parting.attr[MentionCountVariable].value)(d)
       for(bag <- parting.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).remove(bag.value)(d)
-//      for(bag <- parting.attr.all[BagOfWordsTensorVariable])
-//        e.attr(bag.getClass).increment(bag.value * -1.0)(d)
       e=e.parentEntity
     }
   }

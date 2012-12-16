@@ -1,7 +1,7 @@
 package cc.factorie.app.bib
 
-import cc.factorie.app.nlp.coref.{SparseBagOfWords, ChildParentTemplateWithStatistics, HierEntity}
 import collection.mutable.HashMap
+import cc.factorie.app.nlp.coref.{BagOfTruths, SparseBagOfWords, ChildParentTemplateWithStatistics, HierEntity}
 
 object Evaluator{
   def debugBagFeature(childBow:SparseBagOfWords,parentBow:SparseBagOfWords, strength:Double=4.0, shift:Double=0.0):Double= {
