@@ -24,6 +24,7 @@ trait HumanEditMention extends Attr{
   var linkedMention:Option[HierEntity] = None
   var editType:String = "none"
   attr += new UserReliabilityVariable
+  var generatedFrom:Option[Entity] = None
 }
 
 class EditSetVariable(val entity: Entity) extends SetVariable[HierEntity with HumanEditMention] with EntityAttr

@@ -211,6 +211,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
                 if(!bv.isInstanceOf[BagOfTruths])
                   cp.attr(bv.getClass).add(bv.value)(null)
               }
+              cp.generatedFrom = Some(original)
               //original.attr.all[BagOfWordsVariable].foreach(cp.attr += _)
               //cp.attr[BagOfTruths].clear
               cp
@@ -224,7 +225,37 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             val allEdits = edits.flatMap(_.mentions)
             evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
           }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
-
+          if(1+1==2){
+            val pwbl1 = new PrintWriter(new File(outputFile.value+".baseline1"))
+            implicit val d = new DiffList
+            var batchName = 0
+            val toScore = new ArrayBuffer[AuthorEntity]
+            toScore ++= initialDB
+            val mentionCount = toScore.size
+            var entityCount = toScore.filter(_.isEntity.booleanValue).size
+            //println("Scoring deterministic merge edits (not obeying transitivity).")
+            pwbl1.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
+            pwbl1.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
+            for(batch <- evidenceBatches){
+              batchName += 1
+              val visited = new HashSet[AuthorEntity]
+              for(edit <- batch){
+                if(!visited.contains(edit)){
+                  visited += edit
+                  val parent = new AuthorEntity
+                  EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)
+                  EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)
+                  toScore += parent
+                  entityCount -= 1
+                }
+              }
+              //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
+              val scores = Evaluator.pairF1(toScore)
+              pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
+            }
+            d.undo
+            //throw new Exception("1+1==2")
+          }
         }
         case "merge-incorrect" => {
 
