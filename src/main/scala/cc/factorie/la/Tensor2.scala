@@ -448,6 +448,11 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def activeDomain = { val offset = singleIndex1 * dim2; inner.activeDomain1.map(_ + offset) }
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) * singleValue1 else 0.0
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
+  override def foreachActiveElement(f: (Int, Double) => Unit): Unit = {
+    val offset = singleIndex1 * dim1
+    val value = singleValue1
+    inner.foreachActiveElement((i, v) => f(offset + i, v * value))
+  }
   override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v/singleValue1) else throw new Error("Outer index out of bounds: "+i)
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue * singleValue1
@@ -470,6 +475,10 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) else 0.0
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
   override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v) else throw new Error("Outer index out of bounds: "+i)
+  override def foreachActiveElement(f: (Int, Double) => Unit): Unit = {
+    val offset = singleIndex1 * dim1
+    inner.foreachActiveElement((i, v) => f(offset + i, v))
+  }
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
