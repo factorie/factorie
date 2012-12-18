@@ -252,8 +252,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
               //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
               val scores = Evaluator.pairF1(toScore)
               pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
+              pwbl1.flush()
             }
             d.undo
+            pwbl1.close
             //throw new Exception("1+1==2")
           }
         }
