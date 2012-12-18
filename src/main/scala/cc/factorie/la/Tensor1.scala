@@ -306,7 +306,7 @@ class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with SparseIndexedTenso
       def hasNext = i < _npos
       def index = _indices(i-1)
       def value = _values(i-1)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def blankCopy: SparseIndexedTensor1 = new SparseIndexedTensor1(dim1)
@@ -322,7 +322,7 @@ class GrowableSparseIndexedTensor1(val sizeProxy:Iterable[Any]) extends Tensor1 
       def hasNext = i < _npos
       def index = _indices(i-1)
       def value = _values(i-1)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def blankCopy: GrowableSparseIndexedTensor1 = new GrowableSparseIndexedTensor1(sizeProxy)

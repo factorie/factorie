@@ -57,7 +57,7 @@ trait SparseIndexedTensor extends Tensor {
     new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
       var i = 0
       def hasNext = i < __npos
-      def next = { i += 1 ; (__indices(i-1), __values(i-1)) }
+      def next() = { i += 1 ; (__indices(i-1), __values(i-1)) }
     }
   }
   // TODO need to assert that _sorted < __npos always. Add a "checkInvariants" method?? -luke

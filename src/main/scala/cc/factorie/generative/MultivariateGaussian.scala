@@ -30,7 +30,7 @@ object MultivariateGaussian extends GenerativeFamily3[MutableTensorVar[Tensor1],
   }
   def newFactor(a: MutableTensorVar[Tensor1], b: MutableTensorVar[Tensor1], c: MutableTensorVar[Tensor2]) = Factor(a, b, c)
   def nextGaussian(mean: Tensor1, covariance: Tensor2)(implicit r: Random): Tensor1 = {
-    val uncorrelated = new DenseTensor1(Array.fill(mean.length)(maths.nextGaussian(0.0, 1.0)))
+    val uncorrelated = new DenseTensor1(Array.fill(mean.length)(maths.nextGaussian(0.0, 1.0)(r)))
     choleskyT(covariance) * uncorrelated + mean
   }
   def matrix2Tensor(matrix: DoubleMatrix2D): DenseTensor2 = new DenseTensor2(matrix.toArray)
