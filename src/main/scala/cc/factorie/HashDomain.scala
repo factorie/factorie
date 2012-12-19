@@ -28,6 +28,7 @@ class StringHashDomain(size: Int) extends HashDomain[String](size) {
 abstract class BinaryHashFeatureVectorVariable[C] extends DiscreteTensorVariable {
   override def domain: HashDomain[C]
   def ++=(cs: Iterable[C]) = cs.map(c => tensor.update(domain.index(c), 1.0))
+  def +=(c: C) = tensor.update(domain.index(c), 1.0)
   def this(initVals:Iterable[C]) = { this(); initVals.map(c => domain.index(c)).foreach(this.tensor.+=(_, 1.0)) }
   set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
 }
@@ -35,6 +36,7 @@ abstract class BinaryHashFeatureVectorVariable[C] extends DiscreteTensorVariable
 abstract class HashFeatureVectorVariable[C] extends DiscreteTensorVariable {
   override def domain: HashDomain[C]
   def ++=(cs: Iterable[C]) = cs.map(c => tensor.update(domain.index(c), 1.0))
+  def +=(c: C) = tensor.update(domain.index(c), 1.0)
   def this(initVals:Iterable[C]) = { this(); initVals.map(c => domain.index(c)).foreach(this.tensor.+=(_, 1.0)) }
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
 }
