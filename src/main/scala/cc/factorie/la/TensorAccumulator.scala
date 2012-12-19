@@ -58,7 +58,7 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
           }
           idx1 += 1
         }
-      case (myT: DenseTensor2, t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+      case (myT: DenseTensor2, t1: DenseTensor1, t2: SparseIndexedTensor) =>
         val t2Size = t2.size
         val t1Size = t1.size
         val myTValues = myT.asArray

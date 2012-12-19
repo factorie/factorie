@@ -119,7 +119,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           }
           col += 1
         }
-      case t: SparseIndexedTensor1 =>
+      case t: SparseIndexedTensor =>
         val tIndices = t._indices
         val tValues = t._values
         val tActiveDomainSize = t.activeDomainSize
@@ -305,7 +305,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
               }
               idx1 += 1
             }
-          case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+          case (t1: DenseTensor1, t2: SparseIndexedTensor) =>
             val t2Size = t2.size
             val t1Size = t1.size
             val t1Values = t1.asArray
