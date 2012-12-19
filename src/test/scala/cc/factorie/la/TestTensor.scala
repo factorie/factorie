@@ -29,6 +29,7 @@ class TestTensor {
   def creators: Seq[TensorCreator] = Seq(
     new TensorCreator { def create(i: Int) = new DenseTensor1(i) },
     new TensorCreator { def create(i: Int) = new SparseTensor1(i) },
+    new TensorCreator { def create(i: Int) = new GrowableSparseIndexedTensor1(Iterable.fill(i)(0)) },
     new TensorCreator { def create(i: Int) = new SparseIndexedTensor2(i, 1) },
     new TensorCreator { def create(i: Int) = new DenseTensor2(1, i) },
     new TensorCreator { def create(i: Int) = new DenseLayeredTensor2(1, i, new DenseTensor1(_)) },
@@ -39,7 +40,6 @@ class TestTensor {
   // TODO: add all other tensor types above here
   )
 
-  // TODO This test is commented out because it fails right now at SparseTensor1 - need to find the bug -luke
   @Test def testZero() {
     def fill(t: TensorCreator) = {
       val tensor = t.create(100)
