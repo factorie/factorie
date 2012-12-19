@@ -30,7 +30,7 @@ import cc.factorie.util.{Hooks0,Hooks1}
 // To facilitate ease of use, perhaps variable classes could provide something like:
 //   class Label[T] { def defaultSampler = LabelSampler; def sample(model:Model) = defaultSampler.sample(this,model) }
 //   object LabelSampler extends Sampler1[Label]
-    
+
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
 trait Sampler[C] {
@@ -68,7 +68,7 @@ trait Sampler[C] {
   final def processAll(contexts:Iterable[C]): Unit = { 
     contexts.foreach(process(_))
     iterationCount += 1
-    postIterationHooks
+    postIterationHooks()
     if (!postIterationHook) return 
   }
   // TODO Consider renaming this processContexts or sampleFromContext.  See also Trainer.processExamples.
@@ -92,7 +92,7 @@ trait Sampler[C] {
   //def diffHook(difflist:DiffList): Unit = {}
   /** Called after each iteration of sampling the full list of variables.  Return false if you want sampling to stop early. */
   def postIterationHook: Boolean = true
-  def postIterationHooks = new Hooks0
+  val postIterationHooks = new Hooks0
 }
 
 

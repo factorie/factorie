@@ -26,7 +26,7 @@ import scala.collection.mutable.ArrayBuffer
     @see Hooks3
 */
 class Hooks0 extends ArrayBuffer[()=>Unit] {
-  def apply : Unit = this.foreach(_.apply)
+  def apply(): Unit = this.foreach(_.apply())
 }
 
 
