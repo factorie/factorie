@@ -70,7 +70,8 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
 
 class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
   import collection.JavaConversions._
-  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: LocalDoubleAccumulator): Seq[Callable[Object]] = es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va, null); null.asInstanceOf[Object] } } ).toSeq
+  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: LocalDoubleAccumulator): Seq[Callable[Object]] =
+    es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va, null); null.asInstanceOf[Object] } }).toSeq
 
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
@@ -267,11 +268,11 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
               wArr(idx) += factor * learningRate / (delta + math.sqrt(gArr(idx)))
               i += 1
             }
-          case _ => assert(false, "Unimplemented type: " + t.inner.getClass.getName)
+          case _ => sys.error("Unimplemented type: " + t.inner.getClass.getName)
         }
       }
       case _ =>
-        assert(false, "The types are not implemented: " + w.getClass.getName + " and " + t.getClass.getName)
+        sys.error("The types are not implemented: " + w.getClass.getName + " and " + t.getClass.getName)
     }
   }
 
