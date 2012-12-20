@@ -13,9 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.reflect.Manifest
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
+import cc.factorie.util.Hooks0
 
 /** A Metropolis-Hastings sampler.  
     The abstract method 'propose' should be defined to make a random proposal, putting changes in its implicit DiffList, 
@@ -47,7 +45,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   // Hooks
   /** Called just before making the proposed change.  If you override, you must call super.preProposalHook! */
   val preProposalHooks = new Hooks0 // TODO And add these to the rest of the hooks below
-  def preProposalHook : Unit = preProposalHooks.apply
+  def preProposalHook(): Unit = preProposalHooks()
   /** Called just after making the proposed change.  If you override, you must call super.postProposalHook! */
   def postProposalHook(d:DiffList) : Unit = {}
   /** Called just after undoing the proposed change.  If you override, you must call super.postUndoHook! */
@@ -55,7 +53,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   /** Called after accepting the proposed change.  If you override, you must call super.postAcceptanceHook! */
   def postAcceptanceHook(logAcceptanceProb:Double, d:DiffList) : Unit = {}
   /** Called whenever we accept a proposal that results in the best configuration seen so far.  If you override, you must call super.bestConfigHook! */
-  def bestConfigHook: Unit = {}
+  def bestConfigHook(): Unit = {}
   
   /** Specialization of cc.factorie.Proposal that adds a MH forward-backward transition ratio, typically notated as a ratio of Qs. */
   case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, val bfRatio:Double, val temperature:Double) extends cc.factorie.Proposal(diff, modelScore, objectiveScore,acceptanceScore)
@@ -66,7 +64,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     proposalAccepted = false
     val difflist = new DiffList
     proposalAccepted = false
-    preProposalHook
+    preProposalHook()
     // Make the proposed jump
     var bfRatio = 0.0
     var proposalAttemptCount = 0
@@ -113,6 +111,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
 
 
   override def proposalHook(proposal:cc.factorie.Proposal): Unit = {
+    super.proposalHook(proposal)
     val p = proposal.asInstanceOf[Proposal]
     //if (p.bfRatio != Double.NaN) {
     if(!p.bfRatio.isNaN) {
@@ -125,7 +124,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
       currentModelScore += modelRatio
       if (currentModelScore > maxModelScore) {
         maxModelScore = currentModelScore
-        bestConfigHook
+        bestConfigHook()
       }
       postAcceptanceHook(p.modelScore/temperature+p.bfRatio, p.diff)
     } 
@@ -159,7 +158,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     numProposedMoves += 1
     val difflist = new DiffList
     proposalAccepted = false
-    preProposalHook
+    preProposalHook()
     // Make the proposed jump
     var logAcceptanceProb: Double = propose(context)(difflist)
     postProposalHook(difflist)
@@ -168,7 +167,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     System.out.println("log acc: " + logAcceptanceProb)
     postUndoHook(logAcceptanceProb, difflist)
     // TODO Change this to actually sample, but test to make sure that the commented code is correct !!!
-    if (logAcceptanceProb > math.log(random.nextDouble)) {
+    if (logAcceptanceProb > math.log(random.nextDouble())) {
       // Proposal accepted!  (Re)make the change.
       difflist.redo
       // Update diagnostics
@@ -180,11 +179,11 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
       currentModelScore += modelRatio
       if (currentModelScore > maxModelScore) {
         maxModelScore = currentModelScore
-        bestConfigHook
+        bestConfigHook()
       }
       postAcceptanceHook(logAcceptanceProb, difflist)
     } else {
-      difflist.clear
+      difflist.clear()
     }
     difflist
   }
