@@ -1,13 +1,75 @@
 package cc.factorie
 
-import la.{DenseTensor1, UniformTensor1}
+import app.chain.ChainModel
+import app.nlp.ner.ChainNerLabel
+import la.{Tensor, DenseTensor1, UniformTensor1}
 import org.scalatest.junit.JUnitSuite
-import cc.factorie.app.bib.parser.Dom.Name
 import org.junit.Test
 import java.io._
-import collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp
 
-class SerializeTests extends JUnitSuite {
+class SerializeTest extends JUnitSuite {
+
+  class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalTensorDomain[String])
+    extends BinaryFeatureVectorVariable[String] {
+    override def skipNonCategories = true
+  }
+
+  class OntoNerLabel(t: nlp.Token, ta: String, override val domain: CategoricalDomain[String]) extends ChainNerLabel(t, ta) {
+    type ContainedVariableType = this.type
+  }
+
+  @Test def testChainModelSerialization(): Unit = {
+
+    val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
+
+    println("creating toy model with random weights")
+
+    object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
+
+    object OntoNerLabelDomain extends CategoricalDomain[String]
+    OntoNerLabelDomain ++= Seq("Hello","GoodBye")
+
+    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
+    model.bias.weights.:=(Array.fill[Double](model.bias.weights.length)(random.nextDouble()))
+    model.obs.weights.:=(Array.fill[Double](model.obs.weights.length)(random.nextDouble()))
+    model.markov.weights.:=(Array.fill[Double](model.markov.weights.length)(random.nextDouble()))
+    println("serializing chain model")
+    model.serialize(modelFile)
+
+    val deserialized = deserializeChainModel(modelFile)
+
+    assertSameWeights(model, deserialized)
+
+    println("successfully deserialized")
+  }
+
+  def getWeights(model: Model): Seq[Tensor] = model.families.map({case f: DotFamily => f.weights})
+
+  def assertSameWeights(model1: Model, model2: Model): Unit = {
+    val weights1 = getWeights(model1)
+    val weights2 = getWeights(model2)
+    assert(weights1.size == weights2.size,
+      "Number of families didn't match: model1 had %d, model2 had %d" format (weights1.size, weights2.size))
+    assert(weights1.zip(weights2).forall({case (a, b) => a.activeElements.toSeq.sameElements(b.activeElements.toSeq)}))
+  }
+
+  def makeModel(featuresDomain: CategoricalTensorDomain[String],
+    labelDomain: CategoricalDomain[String]): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
+    object model extends ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token](
+      labelDomain, featuresDomain, l => l.token.attr[MyChainNerFeatures], l => l.token, t => t.attr[OntoNerLabel])
+    model.useObsMarkov = false
+    model
+  }
+
+  def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
+    object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+    object OntoNerLabelDomain extends CategoricalDomain[String]
+    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
+    model.deSerialize(fileName)
+    model
+  }
 
   @Test def testModelSerializationWithDomains(): Unit = {
     object domain1 extends CategoricalDomain[String]
@@ -44,6 +106,8 @@ class SerializeTests extends JUnitSuite {
     val modelFile2 = new File(fileName2.getAbsolutePath)
     val modelCubbie2 = new ModelCubbie(model2)
     BinaryCubbieFileSerializer.deserialize(modelCubbie2, modelFile2)
+
+    assertSameWeights(model, model2)
   }
 
   @Test def testInstanceSerialize(): Unit = {
@@ -112,14 +176,11 @@ class SerializeTests extends JUnitSuite {
     BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(TokenDomain.dimensionDomain), domainFile)
 
     println("Original model family weights: ")
-    model.families.foreach({case f: DotFamily => println(f.weights)})
+    getWeights(model).foreach(println)
     println("Deserialized model family weights: ")
-    deserializedModel.families.foreach({case f: DotFamily => println(f.weights)})
+    getWeights(deserializedModel).foreach(println)
 
-    assert(
-      deserializedModel.families.map({case f: DotFamily => f.weights})
-        .zip(model.families.map({case f: DotFamily => f.weights}))
-        .forall({case (a, b) => a.activeElements.toSeq.sameElements(b.activeElements.toSeq)}))
+    assertSameWeights(model, deserializedModel)
 
     println("Original domain:")
     println(TokenDomain.dimensionDomain.toSeq.mkString(","))
