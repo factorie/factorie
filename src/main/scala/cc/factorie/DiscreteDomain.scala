@@ -37,6 +37,7 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
   /** If true, do not allow this domain to change. */
   protected var _frozen = false
   override def freeze(): Unit = _frozen = true
+  def unfreeze(): Unit = _frozen = false
   /** Can new category values be added to this Domain? */
   def frozen = _frozen
   def allocSize = size // TODO Remove this?

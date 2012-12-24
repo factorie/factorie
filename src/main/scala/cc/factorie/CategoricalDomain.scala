@@ -222,11 +222,14 @@ class CategoricalDomainCubbie(val cd: CategoricalDomain[String]) extends Cubbie 
   // using an intermediate HashMap representation
   setMap(new mutable.Map[String, Any] {
     override def update(key: String, value: Any): Unit = {
+      val isFrozen = cd.frozen
       if (key == "size") { /* cd.size = value.asInstanceOf[Int] */ }
       else if (key == "frozen") { if (value.asInstanceOf[Boolean]) cd.freeze() }
       else if (key == "categories") {
+        cd.unfreeze()
         val categories = value.asInstanceOf[Iterable[String]]
         categories.foreach(cd.value(_))
+        if (isFrozen) cd.freeze
       } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
     }
     def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
