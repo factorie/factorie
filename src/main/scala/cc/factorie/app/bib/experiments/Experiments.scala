@@ -45,13 +45,58 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       println("  About to sample for "+stepsPerBatch + " steps.")
       //for(mention <- evidenceBatch)println(EntityUtils.prettyPrintAuthor(mention))
       checkEntities
-
       mentionCount += evidenceBatch.filter(_.isObserved).size
       gtEntityCount = entities.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
       process(stepsPerBatch)
+      println("\n---DEBUG---")
+      println("Evidence ended up:")
+      evidenceBatch.foreach((e:AuthorEntity)=>EntityUtils.prettyPrintAuthor(e.entityRoot.asInstanceOf[AuthorEntity]))
+      //model.familiesOfClass[HumanEditTemplate].head.debugFlag=true
+      for(e<-evidenceBatch){
+        for(gf <- e.generatedFrom)
+          println("Purity of edit source: "+EntityUtils.purity(gf))
+        println("Checking affinity to generated-from entity")
+        debugEditAffinityToGenerator(e)
+        println("Checking should-link constraint")
+        debugEditAffinityToLinked(e)
+        println("Checking if edit worked as intended")
+        debugEdit(e)
+      }
+      //model.familiesOfClass[HumanEditTemplate].head.debugFlag=false
       //snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
     }
   }
+  def debugEditAffinityToLinked(e:AuthorEntity):Unit ={
+    if(!(e.entityRoot eq e.linkedMention.get.entityRoot)){
+      val d = new DiffList
+      this.mergeUp(e.entityRoot.asInstanceOf[AuthorEntity],e.linkedMention.get.entityRoot.asInstanceOf[AuthorEntity])(d)
+      val score = d.scoreAndUndo(model)
+      println("  Failed test 2. Affinity diff-score to link: "+score)
+      if(score<=0.0)println("    test2 failure: model") else println("    test2 failure: inference")
+    } else println("  Passed test 2: should link edits already in same entity.")
+  }
+  def debugEditAffinityToGenerator(e:AuthorEntity):Unit ={
+    if(!(e.entityRoot eq e.generatedFrom.get.entityRoot)){
+      val d = new DiffList
+      if(!e.generatedFrom.get.entityRoot.isLeaf)this.mergeLeft(e.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],e)(d)
+      else this.mergeUp(e.generatedFrom.get.asInstanceOf[AuthorEntity],e.entityRoot.asInstanceOf[AuthorEntity])(d)
+      val score = d.scoreAndUndo(model)
+      println("  Failed test 1. Affinity diff-score to generator: "+score)
+      if(score<=0.0)println("    test1 failure: model") else println("    test1 failure: inference")
+    } else println("  Passed test 1: edit in generated entity.")
+  }
+  def debugEdit(e:AuthorEntity):Unit ={
+    if(!(e.entityRoot eq e.linkedMention.get.entityRoot) && !(e.entityRoot eq e.generatedFrom.get.entityRoot)){
+      val d = new DiffList
+      if(!e.generatedFrom.get.entityRoot.isLeaf)this.mergeLeft(e.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],e)(d)
+      else this.mergeUp(e.generatedFrom.get.asInstanceOf[AuthorEntity],e.entityRoot.asInstanceOf[AuthorEntity])(d)
+      this.mergeUp(e.entityRoot.asInstanceOf[AuthorEntity],e.linkedMention.get.entityRoot.asInstanceOf[AuthorEntity])(d)
+      val score = d.scoreAndUndo(model)
+      println("  Failed test 3. Edit did not accomplish merge: "+score)
+      if(score<=0.0)println("    test3 failure: model") else println("    test3 failure: inference")
+    } else println("  Passed test 3.")
+  }
+
   override def proposalHook(proposal:Proposal) ={
     super.proposalHook(proposal)
     curScore += proposal.modelScore
@@ -84,7 +129,10 @@ trait HumanEditOptions extends ExperimentOptions{
   val heShouldNotLinkPenalty = new CmdOption("he-should-not-link-penalty",8.0,"DOUBLE","Should not link penalty for human edit template.")
   val heNumSynthesisSamples = new CmdOption("he-num-synthesis-samples",1000000,"DOUBLE","Should link reward for human edit template.")
   val heNumBatches = new CmdOption("he-num-batches",-1,"INT","Number of batches to stream. Default of -1 means n batches.")
-  val heMergeExpEMinSize = new CmdOption("he-merge-exp-entity-min-Size",3,"INT","Number of batches to stream. Default of -1 means n batches.")
+  val heMergeExpEMinSize = new CmdOption("he-merge-exp-entity-min-size",3,"INT","Number of batches to stream. Default of -1 means n batches.")
+  val heAdvanceSeed = new CmdOption("he-advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
+  val heUseParallel = new CmdOption("he-use-parallel",false,"BOOL","If true, will use a parallel sampler to perform the initialization.")
+  val heSaveInitialDB = new CmdOption("he-save-initial-db",false,"BOOL","If true, save the initial database.")
 }
 
 object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions{
@@ -126,7 +174,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       mongoConn.close
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
-    val authorCorefModel = new AuthorCorefModel
+    val authorCorefModel = new AuthorCorefModel(false)
     def opts = this
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
@@ -142,6 +190,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     if(opts.bagKeywordsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsEntropy.value)
     if(opts.bagKeywordsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsPrior.value)
     if(opts.entityExistencePenalty.value!=0.0 && opts.subEntityExistencePenalty.value!=0.0)authorCorefModel += new StructuralPriorsTemplate(opts.entityExistencePenalty.value, opts.subEntityExistencePenalty.value)
+    //
+    if(opts.bagFirstWeight.value != 0.0)authorCorefModel += new EntityNameTemplate[BagOfFirstNames](opts.bagFirstInitialWeight.value,opts.bagFirstNameWeight.value,opts.bagFirstWeight.value,opts.bagFirstSaturation.value)
+    if(opts.bagMiddleWeight.value != 0.0)authorCorefModel += new EntityNameTemplate[BagOfMiddleNames](opts.bagMiddleInitialWeight.value,opts.bagMiddleNameWeight.value,opts.bagMiddleWeight.value,opts.bagMiddleSaturation.value)
+
     val epiDB = new EpistemologicalDB(authorCorefModel,server.value,port.value.toInt,database.value)
     println("About to add data.")
     var papers = new ArrayBuffer[PaperEntity]
@@ -191,16 +243,37 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     println("Evidence stream: "+evidenceStreamType.value)
     if(!evidenceStreamType.wasInvoked)throw new Exception("Remember to specify the type of evidence you want to stream.")
     if(evidenceStreamType.value=="human-edits"){
+      for(i<-0 until heAdvanceSeed.value)random.nextInt
       //do human edit experiment
-      authorCorefModel += new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+      val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+      authorCorefModel += humanEditTemplate
       opts.heExperimentType.value match{
         case "merge-correct" =>{
-          authors = authors.filter(_.groundTruth != None)
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          /*
+          val canOfPeas = new HashMap[String,ArrayBuffer[AuthorEntity]]
+          for(e<-authors){
+            for(cname <- e.canopyAttributes.map(_.canopyName)){
+              canOfPeas.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canOfPeas(cname)=a;a}) += e
+            }
+          }
+          var upperBound = new ArrayBuffer[AuthorEntity]
+          for((k,v) <- canOfPeas)upperBound ++= EntityUtils.collapseOnTruth(v)
+          Evaluator.eval(upperBound)
+          System.exit(0)
+          */
+          //authors = authors.sortBy(_._id)
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
-          val samplerForCreatingInitialDB = new AuthorSampler(authorCorefModel){temperature = 0.001}
+          //heUseParallel
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
           samplerForCreatingInitialDB.setEntities(authors)
           samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
           initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits merge-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
           val edits = GenerateExperiments.allMergeEdits[AuthorEntity](
             initialDB,
             _ => new AuthorEntity,
@@ -212,12 +285,16 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
                   cp.attr(bv.getClass).add(bv.value)(null)
               }
               cp.generatedFrom = Some(original)
+              cp.editSet += cp
               //original.attr.all[BagOfWordsVariable].foreach(cp.attr += _)
               //cp.attr[BagOfTruths].clear
               cp
             },
             opts.heMergeExpEMinSize.value
           ).filter(_.isCorrect)
+          //println("\n\n==============================")
+          //println("========PRINTING EDITS========")
+          //edits.foreach(_.print)
           evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
           if(opts.heNumBatches.value == -1){
             for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
@@ -225,9 +302,11 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             val allEdits = edits.flatMap(_.mentions)
             evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
           }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
+          evidenceBatches = random.shuffle(evidenceBatches)
           if(1+1==2){
             val pwbl1 = new PrintWriter(new File(outputFile.value+".baseline1"))
-            implicit val d = new DiffList
+            val pwbl2 = new PrintWriter(new File(outputFile.value+".baseline2"))
+            val d = new DiffList
             var batchName = 0
             val toScore = new ArrayBuffer[AuthorEntity]
             toScore ++= initialDB
@@ -243,8 +322,8 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
                 if(!visited.contains(edit)){
                   visited += edit
                   val parent = new AuthorEntity
-                  EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)
-                  EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)
+                  EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d)
+                  EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d)
                   toScore += parent
                   entityCount -= 1
                 }
@@ -254,9 +333,42 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
               pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
               pwbl1.flush()
             }
-            d.undo
-            pwbl1.close
-            //throw new Exception("1+1==2")
+            d.undo;d.clear;pwbl1.close
+
+            toScore.clear;toScore ++= initialDB
+            val d2 = new DiffList
+            pwbl2.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
+            pwbl2.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
+            for(batch <- evidenceBatches){
+              batchName += 1
+              val visited = new HashSet[AuthorEntity]
+              for(edit <- batch){
+                if(!visited.contains(edit)){
+                  visited += edit
+                  val parent = new AuthorEntity
+                  val epar1 = edit.generatedFrom.get.parentEntity
+                  val epar2 = edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.parentEntity
+                  if(epar1==null && epar2==null){
+                    EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d2)
+                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d2)
+                    toScore += parent
+                  } else if(epar1 != null && epar2 == null){
+                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,epar1)(d2)
+                  } else if(epar2 != null && epar1 == null){
+                    EntityUtils.linkChildToParent(edit.generatedFrom.get,epar2)(d2)
+                  } else if(!edit.generatedFrom.get.entityRoot.eq(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot)){
+                    EntityUtils.linkChildToParent(edit.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
+                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
+                  }
+                  entityCount -= 1
+                }
+              }
+              //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
+              val scores = Evaluator.pairF1(toScore)
+              pwbl2.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
+              pwbl2.flush()
+            }
+            d2.undo;d2.clear;pwbl2.close
           }
         }
         case "merge-incorrect" => {
@@ -419,10 +531,15 @@ trait AuthorModelOptions extends ExperimentOptions{
   val entitySizeExponent = new CmdOption("model-author-size-prior-exponent", 1.2, "N", "Exponent k for rewarding entity size: w*|e|^k")
   val entitySizeWeight = new CmdOption("model-author-size-prior-weight", 0.05, "N", "Weight w for rewarding entity size: w*|e|^k.")
   //author names
-//  val bagFirstInitialWeight = new CmdOption("model-author-bag-first-initial-weight", 4.0, "N", "Penalty for first initial mismatches.")
-//  val bagFirstNameWeight = new CmdOption("model-author-bag-first-name-weight", 4.0, "N", "Penalty for first name mismatches")
-//  val bagMiddleInitialWeight = new CmdOption("model-author-bag-middle-initial-weight", 4.0, "N", "Penalty for first initial mismatches.")
-//  val bagMiddleNameWeight = new CmdOption("model-author-bag-middle-name-weight", 4.0, "N", "Penalty for first name mismatches")
+  val bagFirstInitialWeight = new CmdOption("model-author-bag-first-initial-weight", 3.0, "N", "Penalty for first initial mismatches.")
+  val bagFirstNameWeight = new CmdOption("model-author-bag-first-name-weight", 3.0, "N", "Penalty for first name mismatches")
+  val bagFirstSaturation = new CmdOption("model-author-bag-first-saturation", 16.0, "N", "Penalty for first initial mismatches.")
+  val bagFirstWeight = new CmdOption("model-author-bag-first-weight", 1.0, "N", "Penalty for first initial mismatches.")
+  val bagMiddleInitialWeight = new CmdOption("model-author-bag-middle-initial-weight", 3.0, "N", "Penalty for first initial mismatches.")
+  val bagMiddleNameWeight = new CmdOption("model-author-bag-middle-name-weight", 3.0, "N", "Penalty for first name mismatches")
+  val bagMiddleSaturation = new CmdOption("model-author-bag-middle-saturation", 26.0, "N", "Penalty for first initial mismatches.")
+  val bagMiddleWeight = new CmdOption("model-author-bag-middle-weight", 1.0, "N", "Penalty for first initial mismatches.")
+
   //structural priors
   val entityExistencePenalty = new CmdOption("model-author-entity-penalty", 2.0, "N", "Penalty for a top-level author entity existing")
   val subEntityExistencePenalty = new CmdOption("model-author-subentity-penalty", 0.25, "N", "Penalty for an author subentity existing")

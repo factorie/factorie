@@ -257,12 +257,17 @@ object BibReader{
     }
     result
   }
-  def loadBibTeXFile(file:File,loadAuthors:Boolean=true):Seq[PaperEntity] ={
+  def loadBibTeXFile(file:File,loadAuthors:Boolean=true,useKeysAsIds:Boolean=false, splitOnAt:Boolean=false):Seq[PaperEntity] ={
     val result = new ArrayBuffer[PaperEntity]
     val fileText = scala.io.Source.fromFile(file).toArray.mkString
-    loadBibTeXFileText(fileText,file,result,loadAuthors)
+    if(!splitOnAt)loadBibTeXFileText(fileText,file,result,loadAuthors,useKeysAsIds)
+    else {
+      val split = fileText.split("@")
+      for(s <- split.par)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
+    }
+    result
   }
-  def loadBibTeXFileText(fileText:String,file:File,result:ArrayBuffer[PaperEntity], loadAuthors:Boolean=true):Seq[PaperEntity]={
+  def loadBibTeXFileText(fileText:String,file:File,result:ArrayBuffer[PaperEntity], loadAuthors:Boolean=true,useKeysAsIds:Boolean=false):Seq[PaperEntity]={
     var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
     try{
       val docOrError = Dom.stringToDom(fileText, false)
@@ -299,6 +304,7 @@ object BibReader{
       //result += paperEntity
       val entryType = entry.ty
       //val authors = new ArrayBuffer[AuthorEntity]
+      if(useKeysAsIds)paperEntity._id = entry.citationKey
       if(loadAuthors){
         for(author <- entry.authors.getOrElse(Nil)){
           val first = author.first
