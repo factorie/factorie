@@ -453,12 +453,17 @@ class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr
   def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var entropy = 0.0
+    var n = 0.0
     if(exists.booleanValue && isEntity.booleanValue){
       val l1Norm = bag.l1Norm
-      for((k,v) <- bag.iterator)entropy -= (v/l1Norm)*math.log(v/l1Norm)
+      for((k,v) <- bag.iterator){
+        entropy -= (v/l1Norm)*math.log(v/l1Norm)
+        n+=1.0
+      }
     }
-    -entropy*weight
+    -entropy/scala.math.log(n)*weight
   }
+  //def sigmoid(v:Double):Double = 1/(1+scala.math.exp(-v))
 }
 class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
   println("BagOfWordsPriorWithStatistics("+weight+")")
