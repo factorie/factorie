@@ -10,6 +10,36 @@ import cc.factorie._
 import app.nlp.coref._
 import io.Source
 
+class DebugDiffList extends DiffList{
+  override def scoreAndUndo(model:Model): Double = {
+    for(family <- model.families){
+      family match{
+        case f:DebugableTemplate => f.debugOn
+        case _ => {}
+      }
+    }
+    if (this.length == 0) return 0.0  // short-cut the simple case
+    println("=====DEBUGGING MODEL SCORE=====")
+    println("----NEXT WORLD----")
+    var s = model.currentScore(this)
+    println("  next: "+ s)
+    //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
+    this.undo
+    // We need to re-calculate the Factors list because the structure may have changed
+    println("----CURRENT WORLD----")
+    val s2 = model.currentScore(this)
+    println("  current: "+s2)
+    s -= s2
+    println("TOTAL SCORE: "+s)
+    for(family <- model.families){
+      family match{
+        case f:DebugableTemplate => f.debugOff
+        case _ => {}
+      }
+    }
+    //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
+    s
+  }}
 class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000) extends AuthorSampler(model){
   protected var pwOption:Option[PrintWriter]=None
   val labeledData = initialDB.filter(_.groundTruth != None)
@@ -68,7 +98,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
   }
   def debugEditAffinityToLinked(e:AuthorEntity):Unit ={
     if(!(e.entityRoot eq e.linkedMention.get.entityRoot)){
-      val d = new DiffList
+      val d = new DebugDiffList
       this.mergeUp(e.entityRoot.asInstanceOf[AuthorEntity],e.linkedMention.get.entityRoot.asInstanceOf[AuthorEntity])(d)
       val score = d.scoreAndUndo(model)
       println("  Failed test 2. Affinity diff-score to link: "+score)
@@ -77,7 +107,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
   }
   def debugEditAffinityToGenerator(e:AuthorEntity):Unit ={
     if(!(e.entityRoot eq e.generatedFrom.get.entityRoot)){
-      val d = new DiffList
+      val d = new DebugDiffList
       if(!e.generatedFrom.get.entityRoot.isLeaf)this.mergeLeft(e.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],e)(d)
       else this.mergeUp(e.generatedFrom.get.asInstanceOf[AuthorEntity],e.entityRoot.asInstanceOf[AuthorEntity])(d)
       val score = d.scoreAndUndo(model)
@@ -87,7 +117,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
   }
   def debugEdit(e:AuthorEntity):Unit ={
     if(!(e.entityRoot eq e.linkedMention.get.entityRoot) && !(e.entityRoot eq e.generatedFrom.get.entityRoot)){
-      val d = new DiffList
+      val d = new DebugDiffList
       if(!e.generatedFrom.get.entityRoot.isLeaf)this.mergeLeft(e.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],e)(d)
       else this.mergeUp(e.generatedFrom.get.asInstanceOf[AuthorEntity],e.entityRoot.asInstanceOf[AuthorEntity])(d)
       this.mergeUp(e.entityRoot.asInstanceOf[AuthorEntity],e.linkedMention.get.entityRoot.asInstanceOf[AuthorEntity])(d)

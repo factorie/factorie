@@ -579,7 +579,8 @@ class PaperCorefModel extends CombinedModel {
 
 
 
-class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
+class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
+  val name = "EntityNameTemplate(flWeight="+firstLetterWeight+", fnWeight="+fullNameWeight+", weight="+weight+" sat="+saturation+")"
   println("EntityNameTemplate("+weight+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
@@ -604,7 +605,9 @@ class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterW
     }
     result -= scala.math.min(saturation,firstLetterMismatches*firstLetterWeight)
     result -= scala.math.min(saturation,nameMismatches*fullNameWeight)
-    result*weight
+    result = result*weight
+    if(_debug)println("  "+debug(result))
+    result
   }
 }
 
