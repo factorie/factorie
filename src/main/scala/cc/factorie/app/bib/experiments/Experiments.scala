@@ -229,7 +229,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     var papers = new ArrayBuffer[PaperEntity]
     if(bibDirectory.value.toLowerCase != "none"){
       println("Adding mentions from BibTeX directory: "+bibDirectory.value.toLowerCase)
-      papers ++= BibReader.loadBibTexDirMultiThreaded(new File(bibDirectory.value))
+      papers ++= BibReader.loadBibTexDirMultiThreaded(new File(bibDirectory.value),true,false)
       println("  total papers: "+papers.size)
     }
     if(rexaData.value.toLowerCase != "none"){

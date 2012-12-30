@@ -216,16 +216,16 @@ object BibReader{
   var skipped=0
   var numParsed=0
   var readErrors = new HashMap[String,Int]
-  def loadBibTexDirMultiThreaded(bibDir:File, loadAuthors:Boolean=true):Seq[PaperEntity] ={
+  def loadBibTexDirMultiThreaded(bibDir:File, loadAuthors:Boolean,useKeysAsIds:Boolean):Seq[PaperEntity] ={
     var count = 0
     //var result = new ArrayBuffer[PaperEntity]
-    if(!bibDir.isDirectory)return loadBibTeXFile(bibDir,loadAuthors)
+    if(!bibDir.isDirectory)return loadBibTeXFile(bibDir,loadAuthors,useKeysAsIds)
     val files = bibDir.listFiles.filter(_.isFile)
     val result = new Array[Seq[PaperEntity]](files.length)
     println("Mult-threaded load, about to load "+files.length + " .bib files")
     val startTime = System.currentTimeMillis
     for(file <- files.par){
-      val bibs = loadBibTeXFile(file, loadAuthors)
+      val bibs = loadBibTeXFile(file, loadAuthors,useKeysAsIds)
       synchronized{
         result(count)=bibs
         count += 1
@@ -244,30 +244,32 @@ object BibReader{
     result.filter(_ != null).flatMap(_.toSeq).toSeq
     //result
   }
-  def loadBibTexDir(bibDir:File,loadAuthors:Boolean=true):Seq[PaperEntity] = {
+  def loadBibTexDir(bibDir:File,loadAuthors:Boolean=true,useKeysAsIds:Boolean):Seq[PaperEntity] = {
     var count = 0
     var result = new ArrayBuffer[PaperEntity]
     val files = bibDir.listFiles.filter(_.isFile)
     val startTime = System.currentTimeMillis
     for(file <- files){
-      result ++= loadBibTeXFile(file,loadAuthors)
+      result ++= loadBibTeXFile(file,loadAuthors,useKeysAsIds)
       count += 1
       if(count % 10 == 0)print(".")
       if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Time: "+((System.currentTimeMillis-startTime)/1000L))
     }
     result
   }
-  def loadBibTeXFile(file:File,loadAuthors:Boolean=true,useKeysAsIds:Boolean=false, splitOnAt:Boolean=false):Seq[PaperEntity] ={
+  def loadBibTeXFile(file:File,loadAuthors:Boolean,useKeysAsIds:Boolean):Seq[PaperEntity] ={
+    println("Readers.loadBibTeXFile: use keys as ids: "+useKeysAsIds)
     val result = new ArrayBuffer[PaperEntity]
     val fileText = scala.io.Source.fromFile(file).toArray.mkString
-    if(!splitOnAt)loadBibTeXFileText(fileText,file,result,loadAuthors,useKeysAsIds)
-    else {
-      val split = fileText.split("@")
-      for(s <- split.par)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
-    }
+    //if(!splitOnAt)
+    loadBibTeXFileText(fileText,file,result,loadAuthors,useKeysAsIds)
+    //else {
+    //  val split = fileText.split("@")
+    //  for(s <- split.par)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
+    //}
     result
   }
-  def loadBibTeXFileText(fileText:String,file:File,result:ArrayBuffer[PaperEntity], loadAuthors:Boolean=true,useKeysAsIds:Boolean=false):Seq[PaperEntity]={
+  def loadBibTeXFileText(fileText:String,file:File,result:ArrayBuffer[PaperEntity],loadAuthors:Boolean,useKeysAsIds:Boolean):Seq[PaperEntity]={
     var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
     try{
       val docOrError = Dom.stringToDom(fileText, false)
@@ -278,7 +280,7 @@ object BibReader{
           //(error+" doc: "+file.getName)
           val split = fileText.split("@")
           if(split.length>=3){
-            for(s <- split)loadBibTeXFileText("@"+s,file,result,loadAuthors)
+            for(s <- split)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
             skipped += 1
           }
         }
@@ -306,12 +308,15 @@ object BibReader{
       //val authors = new ArrayBuffer[AuthorEntity]
       if(useKeysAsIds)paperEntity._id = entry.citationKey
       if(loadAuthors){
+        var authorCount = 0
         for(author <- entry.authors.getOrElse(Nil)){
           val first = author.first
           val middle = author.von
           var last = author.last
           val authorEntity = new AuthorEntity(first,middle,last,true)
           authorEntity.flagAsMention
+          if(useKeysAsIds)authorEntity._id=paperEntity._id+"-"+authorCount
+          authorCount += 1
           val labelTest = last.split("\\[")
           if(labelTest.length==2){
             if(labelTest(1).matches("[0-9]+\\]")){

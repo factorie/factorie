@@ -207,14 +207,31 @@ object Coref{
       val evaluateOnly = new CmdOption("evaluate","false","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
       val printProcessed = new CmdOption("print-entities","false","FILE","Prints all non-singleton entities then exits")
       val saveOptions = new CmdOption("optionsFile","options.log","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
+      val copyTarget = new CmdOption("copy-target","copy-target","FILE","Copies bibtex to this target directory.")
+      val exportAuthorIds = new CmdOption("export-authors","none","FILE","Exports authors into a file listing (entity_id mention_id) pairs.")
     }
     opts.parse(args)
+    if(opts.copyTarget.wasInvoked){
+      println("About to copy bibtex files")
+      Utils.copySubset(new File(opts.bibDirectory.value),new File(opts.copyTarget.value),new File(opts.bibIdFilterListFile.value))
+      println("Done copying, exiting.")
+      System.exit(0)
+    }
     for(i<-0 until opts.advanceSeed.value)random.nextInt
     if(opts.saveOptions.wasInvoked)opts.writeOptions(new File(opts.saveOptions.value))
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
     if(opts.evaluateOnly.value.toBoolean){
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
       tmpDB.loadAndEvaluateAuthors
+      println("Done evaluating, exiting.")
+      System.exit(0)
+    }
+    if(opts.exportAuthorIds.wasInvoked){
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
+      val es = tmpDB.authorColl.loadAll
+      EntityUtils.prettyPrintAuthors(es)
+      EntityUtils.export(new File(opts.exportAuthorIds.value),es)
+      println("Done exporting, exiting.")
       System.exit(0)
     }
     if(opts.printProcessed.value.toBoolean){
@@ -263,28 +280,11 @@ object Coref{
     println("About to add data.")
     if(opts.bibDirectory.value.toLowerCase != "none"){
       val bibDirFile = new File(opts.bibDirectory.value)
-      var idMapOpt:Option[HashSet[String]] = None
-      if(opts.bibIdFilterListFile.wasInvoked){
-        print("Creating id map...")
-        var idMap = new HashSet[String]
-        for(line <- scala.io.Source.fromFile(opts.bibIdFilterListFile.value).getLines)idMap += line
-        idMapOpt = Some(idMap)
-        println("Done.")
-      }
       if(bibDirFile.isDirectory){
-        if(opts.bibOptimizeForLargeFilesHack.value){
-          var count = 0
-          for(file <- bibDirFile.listFiles){
-            epiDB.insertMentionsFromBibFile(file,opts.bibUseKeysAsIds.value,idMapOpt,true)
-            count += 1;print(".");if(count % 25 == 0)println(count)
-          }
-        }else{
-          for(file <- bibDirFile.listFiles.par){
-            epiDB.insertMentionsFromBibFile(file,opts.bibUseKeysAsIds.value,idMapOpt)
-          }
-        }
-      } else epiDB.insertMentionsFromBibFile(new File(opts.bibDirectory.value),opts.bibUseKeysAsIds.value,idMapOpt)
-      epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
+        for(file <- bibDirFile.listFiles.par)
+          epiDB.insertMentionsFromBibFile(file,opts.bibUseKeysAsIds.value)
+      } else epiDB.insertMentionsFromBibFile(new File(opts.bibDirectory.value),opts.bibUseKeysAsIds.value)
+      //epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
     //epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
     }
     if(opts.rexaData.value.toLowerCase != "none"){
@@ -312,7 +312,7 @@ object Coref{
     }
     if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,true)
     else if(opts.inferenceType.value=="authors"){
-      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble)
+      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,opts.saveDB.value)
     }
     else if(opts.inferenceType.value=="default"){
       epiDB.inferenceSweep(
@@ -398,7 +398,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
   }
-  def processAllAuthors(a:Double,b:Double,c:Double):Unit ={
+  def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean):Unit ={
     println("Processing all authors.")
     val entities = random.shuffle(authorColl.loadAll)
     val numEntities = entities.size.toDouble
@@ -411,7 +411,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorPredictor.timeAndProcess(numSteps)
     Evaluator.eval(entities)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    //if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
+    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
   }
   def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false):Unit ={
     println("Processing all papers.")
@@ -1408,17 +1408,20 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   }
   def insertMentionsFromBibDirMultiThreaded(bibDir:File,useKeysAsIds:Boolean=false):Unit ={
     if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,useKeysAsIds)
-    val papers = BibReader.loadBibTexDirMultiThreaded(bibDir)
+    val papers = BibReader.loadBibTexDirMultiThreaded(bibDir,true,useKeysAsIds)
     add(papers)
   }
-  def insertMentionsFromBibFile(bibFile:File,useKeysAsIds:Boolean,idsToRetain:Option[HashSet[String]] = None,speedHackForLargeFiles:Boolean=false,numEntries:Int = Integer.MAX_VALUE):Unit ={
-    var paperEntities = BibReader.loadBibTeXFile(bibFile,useKeysAsIds,speedHackForLargeFiles)
-    println("Loaded "+paperEntities.size+" filtering by ids ")
-    for(ids <- idsToRetain)paperEntities = paperEntities.filter((p:PaperEntity)=>ids.contains(p.id))
+  def insertMentionsFromBibFile(bibFile:File,useKeysAsIds:Boolean,numEntries:Int = Integer.MAX_VALUE):Unit ={
+    println("insertMentionsFromBibFile: use keys as ids: "+useKeysAsIds)
+    val paperEntities = BibReader.loadBibTeXFile(bibFile,true,useKeysAsIds)
+    println("Loaded "+paperEntities.size + " papers and "+paperEntities.flatMap(_.authors).size+" authors.")
+    //for(ids <- idsToRetain)paperEntities = paperEntities.filter((p:PaperEntity)=>ids.contains(p.id))
     println("Done. About to add to DB")
-    if(!speedHackForLargeFiles)add(paperEntities) else{
-      for(paper <- paperEntities.par)add(Seq(paper))
-    }
+    //if(!speedHackForLargeFiles)
+    add(paperEntities)
+    //else{
+    //  for(paper <- paperEntities.par)add(Seq(paper))
+    //}
     println("Done.")
   }
   def insertMentionsFromDBLP(location:String):Unit ={

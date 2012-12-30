@@ -12,6 +12,48 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
 
+object Utils{
+  def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
+    var idSet = new HashSet[String]
+    for(line <- scala.io.Source.fromFile(idSubsetFile).getLines)idSet += line
+    copySubset(sourceDir,targetDir,idSet)
+  }
+  def copySubset(sourceDir:File,targetDir:File,idSubset:HashSet[String]):Unit ={
+    val newLineMarker = "&mkr&"
+    var totalCount=0
+    for(file <- sourceDir.listFiles){
+      val entries = scala.io.Source.fromFile(file).getLines.mkString(newLineMarker).split("@")
+      val cpf = new File(targetDir.getAbsolutePath+"/"+file.getName)
+      val pw = new PrintWriter(cpf)
+      var fileCount = 0
+      println("Copying file to: "+cpf.getAbsolutePath)
+      for(entry <- entries){
+        //println("ENTRY: "+entry)
+        var sp = entry.split("\\{",2)
+        if(sp.length==2){
+          sp = sp(1).split(",",2)
+          sp = sp(0).split(":",2)
+          if(sp.length==2){
+            val id = sp(1)
+            //println("  id: "+id)
+            if(idSubset.contains(id)){
+              pw.print("@")
+              pw.print(entry.replaceAll(newLineMarker,"\n"))
+              pw.flush
+              totalCount += 1
+              fileCount += 1
+              println("  Copied "+fileCount+" ids, total="+totalCount+".")
+            }
+          }
+        }
+      }
+      pw.flush
+      if(fileCount==0)cpf.delete
+      pw.close
+    }
+  }
+}
+
 object FeatureUtils{
   val MatcherType1 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s+(.+?)\s*""".r
   val MatcherType2 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s*""".r
@@ -239,6 +281,18 @@ object FeatureUtils{
 
 object EntityUtils{
   val shortDecimal = new java.text.DecimalFormat("0.0#")
+  def export[T<:HierEntity](file:File,es:Seq[T]):Unit ={
+    printClusteringStats(es)
+    println("About to export entities to "+file.getAbsolutePath)
+    val pw = new PrintWriter(file)
+    pw.println("mention-id entity-id")
+    for(e<-es.filter(_.isMention.booleanValue)){
+      pw.println(e.id+" "+e.entityRoot.id)
+      pw.flush
+    }
+    pw.flush
+    pw.close
+  }
   def checkIntegrity(entities:Iterable[HierEntity]):Unit ={
     var numZeroChildren=0
     var numOneChild=0
@@ -569,17 +623,18 @@ object EntityUtils{
     var numSingletons = 0
     var singletons = new ArrayBuffer[AuthorEntity]
     var sizeDist = new HashMap[Int,Int]
+    println("\n\n------NON-SINGLETONS-----")
     for(e <- entities.filter((e:AuthorEntity) => {e.isRoot && e.isConnected})){
       if(!e.isObserved)prettyPrintAuthor(e) else singletons += e
       var size = e.numLeaves
       sizeDist(size) = sizeDist.getOrElse(size,0) + 1
       count += 1
     }
-    /*
+
     println("\n\n------SINGLETONS-----")
     println("Printing singletons")
     for(e <- singletons)prettyPrintAuthor(e)
-    */
+    
     println("\nEntity size distribution")
     val sorted = sizeDist.toList.sortBy(_._2).reverse
     println(sorted)
@@ -754,7 +809,7 @@ object LDAUtils{
     }
     if(opts.bibDirectory.value.toLowerCase!="none"){
       StopWatch.start("Load BibTex")
-      val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false)
+      val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false,false)
       val time = StopWatch.stop/1000L
       println("Loading BibTeX took: "+time+" seconds.")
       docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
