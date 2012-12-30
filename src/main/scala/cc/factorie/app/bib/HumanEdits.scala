@@ -30,7 +30,7 @@ trait HumanEditMention extends Attr{
 class EditSetVariable(val entity: Entity) extends SetVariable[HierEntity with HumanEditMention] with EntityAttr
 
 class HumanEditTemplate(val shouldLinkReward:Double=8.0,val shouldNotLinkPenalty:Double=8.0) extends TupleTemplateWithStatistics3[EntityExists, IsEntity, EditSetVariable] {
-
+var debugFlag=false
   def unroll1(eExists: EntityExists) = Factor(eExists,
     eExists.entity.attr[IsEntity], eExists.entity.attr[EditSetVariable])
 
@@ -47,15 +47,25 @@ class HumanEditTemplate(val shouldLinkReward:Double=8.0,val shouldNotLinkPenalty
       var result = 0.0
       //we are dividing by 2 because we are looping over both linked mentions (they are in the same edit set).
       if(entity.editType eq HumanEditMention.ET_SHOULD_LINK){
-        if(entity.entityRoot eq entity.linkedMention.get.entityRoot)result += shouldLinkReward/2.0 //TODO: else penalty but don't divide by 2?
+        if(debugFlag)println("  EditTemplate: should-link mention")
+        if(entity.entityRoot eq entity.linkedMention.get.entityRoot){
+          if(debugFlag)println("    edit template should-link rewarding mention: "+(shouldLinkReward/2.0))
+          result += shouldLinkReward/2.0
+        } //TODO: else penalty but don't divide by 2?
       }else if(entity.editType eq HumanEditMention.ET_SHOULD_NOT_LINK){
         if(entity.entityRoot eq entity.linkedMention.get.entityRoot)result -= shouldNotLinkPenalty/2.0
       }
       result
     }
     var result = 0.0
-    for (edit <- editSetVar) {
-      result += scoreEdit(edit)
+    if(eExists.booleanValue && isEntity.booleanValue){
+      if(editSetVar.size>0){
+        if(debugFlag)println("EditTemplate (debugging). Size="+editSetVar.size)
+        for (edit <- editSetVar) {
+          result += scoreEdit(edit)
+        }
+        if(debugFlag)println("  total points: "+result)
+      }
     }
     result
   }
@@ -73,6 +83,22 @@ object GenerateExperiments{
     mention1.editType=HumanEditMention.ET_SHOULD_LINK
     mention2.linkedMention=Some(mention1)
     mention2.editType=HumanEditMention.ET_SHOULD_LINK
+    def print:Unit ={
+      if(mention1.isInstanceOf[AuthorEntity] && mention2.isInstanceOf[AuthorEntity]){
+        println("\n=======PRINTING EDIT=======")
+        println("SCORE: "+score)
+        println("--EditMention1--")
+        EntityUtils.prettyPrintAuthor(mention1.asInstanceOf[AuthorEntity])
+        println("--EditMention2--")
+        EntityUtils.prettyPrintAuthor(mention2.asInstanceOf[AuthorEntity])
+        println("SCORE: "+score)
+        println("Mention 1 generated from:")
+        EntityUtils.prettyPrintAuthor(mention1.generatedFrom.get.asInstanceOf[AuthorEntity])
+        println("Mention 2 generated from:")
+        EntityUtils.prettyPrintAuthor(mention2.generatedFrom.get.asInstanceOf[AuthorEntity])
+        println("SCORE: "+score)
+      }
+    }
   }
   class ExpSplitEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{
     val mentions:Seq[T]=Seq(mention1,mention2)

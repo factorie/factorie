@@ -182,6 +182,9 @@ object Coref{
       val database = new CmdOption("database","rexa2-cubbies","FILE","Name of mongo database.")
       //db creation options
       val bibDirectory = new CmdOption("bibDir","/Users/mwick/data/thesis/all3/","FILE","Pointer to a directory containing .bib files.")
+      val bibIdFilterListFile = new CmdOption("bib-filter-list-file","none","FILE","A file containing one id per line. Only bibtex files with an id in this list will be retained.")
+      val bibUseKeysAsIds = new CmdOption("bib-use-keys-as-ids",false,"BOOLEAN","If true then use the citation key as the id, otherwise generate a random id.")
+      val bibOptimizeForLargeFilesHack = new CmdOption("bib-optimize-large-hack",false,"BOOLEAN","If true then will split on @ and feed individual entires to the parallel bibtex loader.")
       val dblpLocation = new CmdOption("dblpFile","none","FILE","Pointer to a directory containing .bib files.")
       val rexaData = new CmdOption("rexaData","/Users/mwick/data/rexa/rexaAll/","FILE","Location of the labeled Rexa directory.")
       val rexaXMLDir = new CmdOption("rexaXMLDir","none","FILE","Location of the labeled Rexa xml directory.") ///Users/mwick/data/author-coref/from-aron/Training_data/xml/
@@ -196,6 +199,7 @@ object Coref{
       //val checkDBIntegrity = new CmdOption("check-integrity",false,"BOOL","If true then check the integrity of all entities in the DB")
       //inference options
       val numEpochs = new CmdOption("epochs",1,"FILE","Number of inference round-trips to DB.")
+      val useParallelAuths = new CmdOption("use-pl-auth",true,"BOOL","True means use parallel author sampler, false uses normal author sampler.")
       val batchSize = new CmdOption("batchSize",10000,"FILE","Number of entities used to retrieve canopies from.")
       val stepMultiplierA = new CmdOption("a",0.0,"FILE","Runs for n^2 steps (n=number of mentions to do inference on.)")
       val stepMultiplierB = new CmdOption("b",0.0,"FILE","Runs for n steps (n=number of mentions to do inference on.)")
@@ -203,14 +207,31 @@ object Coref{
       val evaluateOnly = new CmdOption("evaluate","false","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
       val printProcessed = new CmdOption("print-entities","false","FILE","Prints all non-singleton entities then exits")
       val saveOptions = new CmdOption("optionsFile","options.log","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
+      val copyTarget = new CmdOption("copy-target","copy-target","FILE","Copies bibtex to this target directory.")
+      val exportAuthorIds = new CmdOption("export-authors","none","FILE","Exports authors into a file listing (entity_id mention_id) pairs.")
     }
     opts.parse(args)
+    if(opts.copyTarget.wasInvoked){
+      println("About to copy bibtex files")
+      Utils.copySubset(new File(opts.bibDirectory.value),new File(opts.copyTarget.value),new File(opts.bibIdFilterListFile.value))
+      println("Done copying, exiting.")
+      System.exit(0)
+    }
     for(i<-0 until opts.advanceSeed.value)random.nextInt
     if(opts.saveOptions.wasInvoked)opts.writeOptions(new File(opts.saveOptions.value))
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
     if(opts.evaluateOnly.value.toBoolean){
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
       tmpDB.loadAndEvaluateAuthors
+      println("Done evaluating, exiting.")
+      System.exit(0)
+    }
+    if(opts.exportAuthorIds.wasInvoked){
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
+      val es = tmpDB.authorColl.loadAll
+      EntityUtils.prettyPrintAuthors(es)
+      EntityUtils.export(new File(opts.exportAuthorIds.value),es)
+      println("Done exporting, exiting.")
       System.exit(0)
     }
     if(opts.printProcessed.value.toBoolean){
@@ -231,7 +252,7 @@ object Coref{
       //mongoDB.getCollection("cooc").drop
     }
     println("server: "+opts.server.value+" port: "+opts.port.value.toInt+" database: "+opts.database.value)
-    val authorCorefModel = new AuthorCorefModel(false)
+    val authorCorefModel = new AuthorCorefModel(true)
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
     if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
@@ -255,16 +276,15 @@ object Coref{
     if(opts.paperBagAuthorsPrior.value != 0.0)paperCorefModel += new BagOfWordsPriorWithStatistics[BagOfTitles](opts.paperBagAuthorsPrior.value)
     if(opts.paperEntityExistencePenalty.value != 0.0 && opts.paperSubEntityExistencePenalty.value != 0.0)paperCorefModel += new StructuralPriorsTemplate(opts.paperEntityExistencePenalty.value,opts.paperSubEntityExistencePenalty.value)
 
-    val epiDB = new EpistemologicalDB(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value)
+    val epiDB = new EpistemologicalDB(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value,opts.useParallelAuths.value)
     println("About to add data.")
     if(opts.bibDirectory.value.toLowerCase != "none"){
       val bibDirFile = new File(opts.bibDirectory.value)
       if(bibDirFile.isDirectory){
-        for(file <- bibDirFile.listFiles.par){
-          epiDB.insertMentionsFromBibFile(file)
-        }
-      }
-      epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
+        for(file <- bibDirFile.listFiles.par)
+          epiDB.insertMentionsFromBibFile(file,opts.bibUseKeysAsIds.value)
+      } else epiDB.insertMentionsFromBibFile(new File(opts.bibDirectory.value),opts.bibUseKeysAsIds.value)
+      //epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
     //epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
     }
     if(opts.rexaData.value.toLowerCase != "none"){
@@ -292,7 +312,7 @@ object Coref{
     }
     if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,true)
     else if(opts.inferenceType.value=="authors"){
-      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble)
+      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,opts.saveDB.value)
     }
     else if(opts.inferenceType.value=="default"){
       epiDB.inferenceSweep(
@@ -349,10 +369,10 @@ abstract class MongoDBBibEntityCollection[E<:HierEntity with HasCanopyAttributes
   override val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths),Seq(a.pid))) with LazyCubbieConverter[C]
 }
 
-class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
+class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie",usePAuths:Boolean=true) extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
   //val authorPredictor = new AuthorSampler(authorCorefModel){temperature = 0.001}
-  val authorPredictor = new ParallelAuthorSampler(authorCorefModel){temperature = 0.001}
-  val paperPredictor = new PaperSampler(new PaperCorefModel)
+  val authorPredictor = if(usePAuths)new ParallelAuthorSampler(authorCorefModel){temperature = 0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+  val paperPredictor = new PaperSampler(new PaperCorefModel){temperature = 0.001}
   def drop:Unit = {
     //authorColl.remove(_)
     //paperColl.remove(_)
@@ -378,7 +398,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
   }
-  def processAllAuthors(a:Double,b:Double,c:Double):Unit ={
+  def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean):Unit ={
     println("Processing all authors.")
     val entities = random.shuffle(authorColl.loadAll)
     val numEntities = entities.size.toDouble
@@ -391,7 +411,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorPredictor.timeAndProcess(numSteps)
     Evaluator.eval(entities)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    //if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
+    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
   }
   def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false):Unit ={
     println("Processing all papers.")
@@ -556,6 +576,41 @@ class PaperCorefModel extends CombinedModel {
   */
   //this += new StructuralPriorsTemplate(8.0,0.25)
 }
+
+
+
+class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
+  val name = "EntityNameTemplate(flWeight="+firstLetterWeight+", fnWeight="+fullNameWeight+", weight="+weight+" sat="+saturation+")"
+  println("EntityNameTemplate("+weight+")")
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
+  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
+  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
+    var result = 0.0
+    val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
+    var firstLetterMismatches = 0
+    var nameMismatches = 0
+    var i=0;var j=0;
+    while(i<bagSeq.size){
+      val (wordi,weighti) = bagSeq(i)
+      j=i+1
+      while(j<bagSeq.size){
+        val (wordj,weightj) = bagSeq(j)
+        if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
+        else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
+        if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
+        j += 1
+      }
+      i += 1
+    }
+    result -= scala.math.min(saturation,firstLetterMismatches*firstLetterWeight)
+    result -= scala.math.min(saturation,nameMismatches*fullNameWeight)
+    result = result*weight
+    if(_debug)println("  "+debug(result))
+    result
+  }
+}
+
 
 class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends CombinedModel{
   /*
@@ -977,6 +1032,7 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     for(i<-0 until samplers.length)samplers(i) = newSampler
     for(sampler <- samplers){
       sampler.temperature = temperature
+      println("PSampler temperature: "+sampler.temperature)
       sampler.printInfo=false
     }
     val bins = new Array[ArrayBuffer[E]](numThreads)
@@ -1336,28 +1392,37 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     val paperEntities = RexaLabeledLoader.load(rexaFile)
     add(paperEntities)
   }
-  def insertMentionsFromBibDir(bibDir:File):Unit ={
-    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir)//println("Warning: "+bibDir + " is not a directory. Loading file instead.")
+  def insertMentionsFromBibDir(bibDir:File,useKeysAsIds:Boolean=false):Unit ={
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,useKeysAsIds)//println("Warning: "+bibDir + " is not a directory. Loading file instead.")
     println("Inserting mentions from bib directory: "+bibDir)
     var size = bibDir.listFiles.size
     var count = 0
     BibReader.skipped=0
     for(file <- bibDir.listFiles.filter(_.isFile)){
-      insertMentionsFromBibFile(file)
+      insertMentionsFromBibFile(file,useKeysAsIds)
       count += 1
       if(count % 10 == 0)print(".")
       if(count % 200 == 0 || count==size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ".")
     }
     BibReader.skipped=0
   }
-  def insertMentionsFromBibDirMultiThreaded(bibDir:File):Unit ={
-    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir)
-    val papers = BibReader.loadBibTexDirMultiThreaded(bibDir)
+  def insertMentionsFromBibDirMultiThreaded(bibDir:File,useKeysAsIds:Boolean=false):Unit ={
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,useKeysAsIds)
+    val papers = BibReader.loadBibTexDirMultiThreaded(bibDir,true,useKeysAsIds)
     add(papers)
   }
-  def insertMentionsFromBibFile(bibFile:File,numEntries:Int = Integer.MAX_VALUE):Unit ={
-    val paperEntities = BibReader.loadBibTeXFile(bibFile)
+  def insertMentionsFromBibFile(bibFile:File,useKeysAsIds:Boolean,numEntries:Int = Integer.MAX_VALUE):Unit ={
+    println("insertMentionsFromBibFile: use keys as ids: "+useKeysAsIds)
+    val paperEntities = BibReader.loadBibTeXFile(bibFile,true,useKeysAsIds)
+    println("Loaded "+paperEntities.size + " papers and "+paperEntities.flatMap(_.authors).size+" authors.")
+    //for(ids <- idsToRetain)paperEntities = paperEntities.filter((p:PaperEntity)=>ids.contains(p.id))
+    println("Done. About to add to DB")
+    //if(!speedHackForLargeFiles)
     add(paperEntities)
+    //else{
+    //  for(paper <- paperEntities.par)add(Seq(paper))
+    //}
+    println("Done.")
   }
   def insertMentionsFromDBLP(location:String):Unit ={
     val paperEntities = DBLPLoader.loadDBLPData(location)

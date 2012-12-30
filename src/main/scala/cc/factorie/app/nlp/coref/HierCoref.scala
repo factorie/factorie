@@ -345,15 +345,18 @@ abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N
 
  */
 
-class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B]{
+class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
+  val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
     override def unroll3(childBow:B) = Nil //note this is a slight approximation for efficiency
     def score(er:EntityRef#Value, childBow:B#Value, parentBow:B#Value): Double = {
       //val childBow = s._2
       //val parentBow = s._3
-      val result = childBow.cosineSimilarity(parentBow,childBow)
-      (result+shift)*weight * scala.math.min(parentBow.l1Norm,childBow.l1Norm)
+      var result = childBow.cosineSimilarity(parentBow,childBow)
+      result = (result+shift)*weight * scala.math.log(scala.math.min(parentBow.l1Norm,childBow.l1Norm)+2)
+      if(_debug)println("  "+debug(result))
+      result
     }
 }
 /*
@@ -424,14 +427,22 @@ abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manif
   }
  */
 
+trait DebugableTemplate{
+  protected var _debug:Boolean=false
+  def debugOn = _debug = true
+  def debugOff = _debug = false
+  def name:String
+  def debug(score:Double):String = score+" ("+name+")"
+}
+
 abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with TupleFamilyWithStatistics3[EntityRef,A,A]
 abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
-
-class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,IsMention] with DebugableTemplate{
+  val name = "StructuralPriorsTemplate(entityCost="+entityExistenceCost+", subEntityCost="+subEntityExistenceCost+")"
   println("StructuralPriorsTemplate("+entityExistenceCost+","+subEntityExistenceCost+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
@@ -443,22 +454,32 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
     var result = 0.0
     if(exists && isEntity) result -= entityExistenceCost
     if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
+    if(_debug)println("  "+debug(result))
     result
   }
 }
-class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
+class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
+  val name = "EntropyBagOfWordsPriorWithStatistics("+weight+")"
   println("EntropyBagOfWordsPriorWithStatistics("+weight+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
   def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var entropy = 0.0
-    if(exists.booleanValue && isEntity.booleanValue){
+    var n = 0.0
+    if(exists.booleanValue /*&& isEntity.booleanValue*/){
       val l1Norm = bag.l1Norm
-      for((k,v) <- bag.iterator)entropy -= (v/l1Norm)*math.log(v/l1Norm)
+      for((k,v) <- bag.iterator){
+        entropy -= (v/l1Norm)*math.log(v/l1Norm)
+        n+=1.0
+      }
     }
-    -entropy*weight
+    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
+    entropy = -entropy*weight
+    if(_debug)println("  "+debug(entropy))
+    entropy
   }
+  //def sigmoid(v:Double):Double = 1/(1+scala.math.exp(-v))
 }
 class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
   println("BagOfWordsPriorWithStatistics("+weight+")")
@@ -467,7 +488,7 @@ class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val w
   def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var result = 0.0
-    if(exists.booleanValue && isEntity.booleanValue && bag.size>0)result =  bag.size.toDouble/bag.l1Norm
+    if(exists.booleanValue /*&& isEntity.booleanValue*/ && bag.size>0)result =  bag.size.toDouble/bag.l1Norm
     -result*weight
   }
 }

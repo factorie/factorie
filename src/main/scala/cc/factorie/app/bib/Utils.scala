@@ -12,6 +12,48 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
 
+object Utils{
+  def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
+    var idSet = new HashSet[String]
+    for(line <- scala.io.Source.fromFile(idSubsetFile).getLines)idSet += line
+    copySubset(sourceDir,targetDir,idSet)
+  }
+  def copySubset(sourceDir:File,targetDir:File,idSubset:HashSet[String]):Unit ={
+    val newLineMarker = "&mkr&"
+    var totalCount=0
+    for(file <- sourceDir.listFiles){
+      val entries = scala.io.Source.fromFile(file).getLines.mkString(newLineMarker).split("@")
+      val cpf = new File(targetDir.getAbsolutePath+"/"+file.getName)
+      val pw = new PrintWriter(cpf)
+      var fileCount = 0
+      println("Copying file to: "+cpf.getAbsolutePath)
+      for(entry <- entries){
+        //println("ENTRY: "+entry)
+        var sp = entry.split("\\{",2)
+        if(sp.length==2){
+          sp = sp(1).split(",",2)
+          sp = sp(0).split(":",2)
+          if(sp.length==2){
+            val id = sp(1)
+            //println("  id: "+id)
+            if(idSubset.contains(id)){
+              pw.print("@")
+              pw.print(entry.replaceAll(newLineMarker,"\n"))
+              pw.flush
+              totalCount += 1
+              fileCount += 1
+              println("  Copied "+fileCount+" ids, total="+totalCount+".")
+            }
+          }
+        }
+      }
+      pw.flush
+      if(fileCount==0)cpf.delete
+      pw.close
+    }
+  }
+}
+
 object FeatureUtils{
   val MatcherType1 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s+(.+?)\s*""".r
   val MatcherType2 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s*""".r
@@ -239,6 +281,18 @@ object FeatureUtils{
 
 object EntityUtils{
   val shortDecimal = new java.text.DecimalFormat("0.0#")
+  def export[T<:HierEntity](file:File,es:Seq[T]):Unit ={
+    printClusteringStats(es)
+    println("About to export entities to "+file.getAbsolutePath)
+    val pw = new PrintWriter(file)
+    pw.println("mention-id entity-id")
+    for(e<-es.filter(_.isMention.booleanValue)){
+      pw.println(e.id+" "+e.entityRoot.id)
+      pw.flush
+    }
+    pw.flush
+    pw.close
+  }
   def checkIntegrity(entities:Iterable[HierEntity]):Unit ={
     var numZeroChildren=0
     var numOneChild=0
@@ -541,9 +595,27 @@ object EntityUtils{
     }
     max/sum
   }
+  def displayForEdits(edits:EditSetVariable):String ={
+    var result = ""
+    var shouldLinkSatisfied = 0
+    var shouldNotLinkViolated = 0
+    var generatedFromViolations = 0
+    for(edit <- edits){
+      if(edit.editType eq HumanEditMention.ET_SHOULD_LINK){
+        if(edits.contains(edit.linkedMention.get.asInstanceOf[HierEntity with HumanEditMention]))shouldLinkSatisfied += 1
+        if(!(edit.entityRoot eq edit.generatedFrom.get.entityRoot)) generatedFromViolations += 1
+      }else if(edit.editType eq HumanEditMention.ET_SHOULD_NOT_LINK){
+        if(edits.contains(edit.linkedMention.get.asInstanceOf[HierEntity with HumanEditMention]))shouldNotLinkViolated += 1
+      }
+    }
+    shouldLinkSatisfied /= 2
+    shouldNotLinkViolated /= 2
+    result += "gen-vio"+generatedFromViolations+" should-sat:"+shouldLinkSatisfied+" should-not-vio:"+shouldNotLinkViolated
+    result
+  }
   def defaultFeaturesToPrintForAuthors(e:Entity):Seq[String] = {
     val bags = defaultFeaturesToPrint(e)
-    if(e.isObserved) Seq("title: "+e.attr[Title].value) ++ bags else bags
+    if(e.isObserved) Seq("title: "+e.attr[Title].value) ++ Seq(displayForEdits(e.attr[EditSetVariable])) ++ bags else bags
     //if(e.isObserved) Seq("title: "+e.attr[FullName].suffix) ++ bags else bags
   }
   def prettyPrintAuthors(entities:Seq[AuthorEntity]):Unit = {
@@ -551,17 +623,18 @@ object EntityUtils{
     var numSingletons = 0
     var singletons = new ArrayBuffer[AuthorEntity]
     var sizeDist = new HashMap[Int,Int]
+    println("\n\n------NON-SINGLETONS-----")
     for(e <- entities.filter((e:AuthorEntity) => {e.isRoot && e.isConnected})){
       if(!e.isObserved)prettyPrintAuthor(e) else singletons += e
       var size = e.numLeaves
       sizeDist(size) = sizeDist.getOrElse(size,0) + 1
       count += 1
     }
-    /*
+
     println("\n\n------SINGLETONS-----")
     println("Printing singletons")
     for(e <- singletons)prettyPrintAuthor(e)
-    */
+    
     println("\nEntity size distribution")
     val sorted = sizeDist.toList.sortBy(_._2).reverse
     println(sorted)
@@ -596,10 +669,23 @@ object EntityUtils{
     val levelIndent = {var r="";for(i<-0 until depth)r+=perLevelIndent;r}
     result.append("\n"+levelIndent)
     if(e.isRoot){
+      if(e.isInstanceOf[HumanEditMention] && e.asInstanceOf[HumanEditMention].editType != "none")result.append("Edit-")
       result.append("EntityRoot["+flatRepresent(e)+"]")
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"| Features\n"+levelIndent+"|   ")
     }else if(e.isObserved){
-      result.append("-Mention["+flatRepresent(e)+"]")
+      e match{
+        case he:HierEntity with HumanEditMention =>{
+          if(he.editType != "none"){
+            val test1 = if(he.generatedFrom != None && he.entityRoot.eq(he.generatedFrom.get.entityRoot))"o" else if(he.generatedFrom == None)"" else "x"
+            val test2 = if(he.linkedMention != None && he.entityRoot.eq(he.linkedMention.get.entityRoot))"o" else if(he.linkedMention == None)"" else "x"
+            result.append(test1+test2+"-Edit[")
+            result.append(" ety:"+he.editType)
+            for(lm <- he.linkedMention)result.append(" link:"+lm.id)
+            result.append(flatRepresent(e)+"]")
+          } else result.append("-Mention["+flatRepresent(e)+"]")
+        }
+        case _ => result.append("-Mention["+flatRepresent(e)+"]")
+      }
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"|   ")
     }else{
       result.append("*SubEntity["+flatRepresent(e)+"]")
@@ -723,7 +809,7 @@ object LDAUtils{
     }
     if(opts.bibDirectory.value.toLowerCase!="none"){
       StopWatch.start("Load BibTex")
-      val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false)
+      val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false,false)
       val time = StopWatch.stop/1000L
       println("Loading BibTeX took: "+time+" seconds.")
       docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
