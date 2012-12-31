@@ -126,7 +126,6 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       if(score<=0.0)println("    test3 failure: model") else println("    test3 failure: inference")
     } else println("  Passed test 3.")
   }
-
   override def proposalHook(proposal:Proposal) ={
     super.proposalHook(proposal)
     curScore += proposal.modelScore
@@ -151,7 +150,6 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
     }
   }
 }
-
 
 trait HumanEditOptions extends ExperimentOptions{
   val heExperimentType = new CmdOption("he-experiment-type","merge-correct","FILE","Experiment to run for human edits. Options are merge-correct, merge-incorrect, merge-all, split-correct, split-incorrect")
@@ -242,23 +240,6 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       papers ++= DBLPLoader.loadDBLPData(dblpLocation.value)
       println("  total papers: "+papers.size)
     }
-    /*
-    if(this.filterPapersOnLabeledCanopies.value){
-      println("About to filter papers so only those in a labeled author's canopy are inserted into DB.")
-      val labeledAuthors = epiDB.authorColl.loadLabeledAndCanopies
-      val canopySet = new HashSet[String]
-      canopySet ++= labeledAuthors.flatMap(_.canopyAttributes).map(_.canopyName)
-      var i =0
-      val filteredPapers = new ArrayBuffer[PaperEntity]
-      while(i<papers.size){ //while loop much much faster than a map for DBLP size data
-        val p = papers(i)
-        val canopies = p.authors.flatMap(_.canopyAttributes).map(_.canopyName).toSet
-        if(canopySet.intersect(canopies).size>0)filteredPapers += p
-      }
-      papers = filteredPapers
-    }
-    */
-
     println("About to add "+papers.size+" papers.")
     epiDB.add(papers)
     println("Finished adding papers.")
@@ -280,21 +261,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       opts.heExperimentType.value match{
         case "merge-correct" =>{
           authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
-          /*
-          val canOfPeas = new HashMap[String,ArrayBuffer[AuthorEntity]]
-          for(e<-authors){
-            for(cname <- e.canopyAttributes.map(_.canopyName)){
-              canOfPeas.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canOfPeas(cname)=a;a}) += e
-            }
-          }
-          var upperBound = new ArrayBuffer[AuthorEntity]
-          for((k,v) <- canOfPeas)upperBound ++= EntityUtils.collapseOnTruth(v)
-          Evaluator.eval(upperBound)
-          System.exit(0)
-          */
-          //authors = authors.sortBy(_._id)
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
-          //heUseParallel
           val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
           samplerForCreatingInitialDB.setEntities(authors)
           samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
@@ -304,27 +271,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-correct: saved initial db and exiting.")
             System.exit(0)
           }
-          val edits = GenerateExperiments.allMergeEdits[AuthorEntity](
-            initialDB,
-            _ => new AuthorEntity,
-            (entities:Seq[HierEntity]) => {Evaluator.pairF1(entities).head},
-            (original:AuthorEntity) => {
-              val cp = new AuthorEntity(original.fullName.firstName, original.fullName.middleName, original.fullName.lastName, true)
-              for(bv <- original.attr.all[BagOfWordsVariable]){
-                if(!bv.isInstanceOf[BagOfTruths])
-                  cp.attr(bv.getClass).add(bv.value)(null)
-              }
-              cp.generatedFrom = Some(original)
-              cp.editSet += cp
-              //original.attr.all[BagOfWordsVariable].foreach(cp.attr += _)
-              //cp.attr[BagOfTruths].clear
-              cp
-            },
-            opts.heMergeExpEMinSize.value
-          ).filter(_.isCorrect)
-          //println("\n\n==============================")
-          //println("========PRINTING EDITS========")
-          //edits.foreach(_.print)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          /*
           evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
           if(opts.heNumBatches.value == -1){
             for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
@@ -332,74 +281,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             val allEdits = edits.flatMap(_.mentions)
             evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
           }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
+          */
           evidenceBatches = random.shuffle(evidenceBatches)
-          if(1+1==2){
-            val pwbl1 = new PrintWriter(new File(outputFile.value+".baseline1"))
-            val pwbl2 = new PrintWriter(new File(outputFile.value+".baseline2"))
-            val d = new DiffList
-            var batchName = 0
-            val toScore = new ArrayBuffer[AuthorEntity]
-            toScore ++= initialDB
-            val mentionCount = toScore.size
-            var entityCount = toScore.filter(_.isEntity.booleanValue).size
-            //println("Scoring deterministic merge edits (not obeying transitivity).")
-            pwbl1.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
-            pwbl1.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
-            for(batch <- evidenceBatches){
-              batchName += 1
-              val visited = new HashSet[AuthorEntity]
-              for(edit <- batch){
-                if(!visited.contains(edit)){
-                  visited += edit
-                  val parent = new AuthorEntity
-                  EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d)
-                  EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d)
-                  toScore += parent
-                  entityCount -= 1
-                }
-              }
-              //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
-              val scores = Evaluator.pairF1(toScore)
-              pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
-              pwbl1.flush()
-            }
-            d.undo;d.clear;pwbl1.close
-
-            toScore.clear;toScore ++= initialDB
-            val d2 = new DiffList
-            pwbl2.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
-            pwbl2.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
-            for(batch <- evidenceBatches){
-              batchName += 1
-              val visited = new HashSet[AuthorEntity]
-              for(edit <- batch){
-                if(!visited.contains(edit)){
-                  visited += edit
-                  val parent = new AuthorEntity
-                  val epar1 = edit.generatedFrom.get.parentEntity
-                  val epar2 = edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.parentEntity
-                  if(epar1==null && epar2==null){
-                    EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d2)
-                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d2)
-                    toScore += parent
-                  } else if(epar1 != null && epar2 == null){
-                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,epar1)(d2)
-                  } else if(epar2 != null && epar1 == null){
-                    EntityUtils.linkChildToParent(edit.generatedFrom.get,epar2)(d2)
-                  } else if(!edit.generatedFrom.get.entityRoot.eq(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot)){
-                    EntityUtils.linkChildToParent(edit.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
-                    EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
-                  }
-                  entityCount -= 1
-                }
-              }
-              //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
-              val scores = Evaluator.pairF1(toScore)
-              pwbl2.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
-              pwbl2.flush()
-            }
-            d2.undo;d2.clear;pwbl2.close
-          }
+          HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
         }
         case "merge-incorrect" => {
 

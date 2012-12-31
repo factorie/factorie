@@ -2,8 +2,8 @@ package cc.factorie.app.bib
 import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.app.nlp.coref._
-import collection.mutable.ArrayBuffer
-import java.io.BufferedWriter
+import java.io.{PrintWriter, File, BufferedWriter}
+import collection.mutable.{HashSet, ArrayBuffer}
 
 /* Keep track of one of these per user */
 class UserReliabilityVariable extends RealVariable {
@@ -71,7 +71,7 @@ var debugFlag=false
   }
 }
 
-object GenerateExperiments{
+object HumanEditExperiments{
   trait ExperimentalEdit[T<:HierEntity with HumanEditMention]{
     def score:Double
     def isCorrect:Boolean = score>0
@@ -106,6 +106,105 @@ object GenerateExperiments{
     mention1.editType=HumanEditMention.ET_SHOULD_NOT_LINK
     mention2.linkedMention=Some(mention1)
     mention2.editType=HumanEditMention.ET_SHOULD_NOT_LINK
+  }
+  def edits2evidenceBatches(edits:Seq[ExpMergeEdit[AuthorEntity]],numBatches:Int):Seq[Seq[AuthorEntity]] ={
+    val evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
+    if(numBatches == -1){
+      for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
+    }else if(numBatches == 1){
+      val allEdits = edits.flatMap(_.mentions)
+      evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
+    }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
+    evidenceBatches
+  }
+  def getAuthorEdits(initialDB:Seq[AuthorEntity],minimumEntitySize:Int):Seq[ExpMergeEdit[AuthorEntity]] ={
+    val edits = allMergeEdits[AuthorEntity](
+      initialDB,
+      _ => new AuthorEntity,
+      (entities:Seq[HierEntity]) => {Evaluator.pairF1(entities).head},
+      (original:AuthorEntity) => {
+        val cp = new AuthorEntity(original.fullName.firstName, original.fullName.middleName, original.fullName.lastName, true)
+        for(bv <- original.attr.all[BagOfWordsVariable]){
+          if(!bv.isInstanceOf[BagOfTruths])
+            cp.attr(bv.getClass).add(bv.value)(null)
+        }
+        cp.generatedFrom = Some(original)
+        cp.editSet += cp
+        cp
+      },
+      minimumEntitySize
+    )
+    edits
+  }
+  def mergeBaseline1(initialDB:Seq[AuthorEntity],evidenceBatches:Seq[Seq[AuthorEntity]],file:File):Unit ={
+    val pwbl1 = new PrintWriter(file)
+    val d = new DiffList
+    var batchName = 0
+    val toScore = new ArrayBuffer[AuthorEntity]
+    toScore ++= initialDB
+    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    val mentionCount = toScore.size
+    pwbl1.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
+    pwbl1.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
+    for(batch <- evidenceBatches){
+      batchName += 1
+      val visited = new HashSet[AuthorEntity]
+      for(edit <- batch){
+        if(!visited.contains(edit)){
+          visited += edit
+          val parent = new AuthorEntity
+          EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d)
+          EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d)
+          toScore += parent
+          entityCount -= 1
+        }
+      }
+      val scores = Evaluator.pairF1(toScore)
+      pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
+      pwbl1.flush()
+    }
+    d.undo;d.clear;pwbl1.close
+  }
+  def mergeBaseline2(initialDB:Seq[AuthorEntity],evidenceBatches:Seq[Seq[AuthorEntity]],file:File):Unit ={
+    val d2 = new DiffList
+    val pwbl2 = new PrintWriter(file)
+    val toScore = new ArrayBuffer[AuthorEntity]
+    val mentionCount = toScore.size
+    var batchName = 0
+    toScore ++= initialDB
+    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    pwbl2.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
+    pwbl2.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+mentionCount+" -1 "+batchName+" -1 -1")
+    for(batch <- evidenceBatches){
+      batchName += 1
+      val visited = new HashSet[AuthorEntity]
+      for(edit <- batch){
+        if(!visited.contains(edit)){
+          visited += edit
+          val parent = new AuthorEntity
+          val epar1 = edit.generatedFrom.get.parentEntity
+          val epar2 = edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.parentEntity
+          if(epar1==null && epar2==null){
+            EntityUtils.linkChildToParent(edit.generatedFrom.get,parent)(d2)
+            EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,parent)(d2)
+            toScore += parent
+          } else if(epar1 != null && epar2 == null){
+            EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get,epar1)(d2)
+          } else if(epar2 != null && epar1 == null){
+            EntityUtils.linkChildToParent(edit.generatedFrom.get,epar2)(d2)
+          } else if(!edit.generatedFrom.get.entityRoot.eq(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot)){
+            EntityUtils.linkChildToParent(edit.generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
+            EntityUtils.linkChildToParent(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot.asInstanceOf[AuthorEntity],parent)(d2)
+          }
+          entityCount -= 1
+        }
+      }
+      //time samples accepted f1 p r batch-count mentions entities batch-name score maxscore
+      val scores = Evaluator.pairF1(toScore)
+      pwbl2.println("-1 -1 -1 "+scores.mkString(" ")+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
+      pwbl2.flush()
+    }
+    d2.undo;d2.clear;pwbl2.close
   }
   def allMergeEdits[T<:HierEntity with HumanEditMention ](allEntities:Seq[T],newEntity:Unit=>T,scoreFunction:Seq[HierEntity]=>Double,createEditMentionFrom:T=>T,minESize:Int):Seq[ExpMergeEdit[T]] ={
     val result = new ArrayBuffer[ExpMergeEdit[T]]
