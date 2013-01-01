@@ -273,21 +273,47 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           }
           val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
-          /*
-          evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
-          if(opts.heNumBatches.value == -1){
-            for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
-          }else if(opts.heNumBatches.value==1){
-            val allEdits = edits.flatMap(_.mentions)
-            evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += allEdits
-          }else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
-          */
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
           HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
         }
         case "merge-incorrect" => {
-
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits merge-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(! _.isCorrect)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
+        }
+        case "merge-mixed" => {
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits merge-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value)
+          val correctEdits = edits.filter(_.isCorrect)
+          val incorrectEdits = random.shuffle(edits.filter(! _.isCorrect)).take(correctEdits.size)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(correctEdits++incorrectEdits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
         }
         case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
       }
