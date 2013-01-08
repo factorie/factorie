@@ -45,7 +45,7 @@ trait DoubleSeq {
   //def absNorm: Double = { var result = 0.0; var i = 0; while (i < length) { result += math.abs(apply(i)); i += 1}; result }
   def twoNormSquared: Double = { val l = length; var result = 0.0; var i = 0; var v = 0.0; while (i < l) { v = apply(i); result += v * v; i += 1}; result }
   final def twoNorm: Double = math.sqrt(twoNormSquared)
-  final def infinityNorm = max
+  final def infinityNorm = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { val cur = math.abs(apply(i)); if (!(m >= cur)) m = cur; i += 1 }; m }
   def cosineSimilarity(t:DoubleSeq): Double = {
     val numerator:Double = this dot t
     val denominator:Double = this.twoNorm * t.twoNorm
