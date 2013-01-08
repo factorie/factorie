@@ -2,6 +2,7 @@ package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.strings.StringSegmenter
 import cc.factorie.app.nlp.{Sentence, Document, Token}
+import cc.factorie.app.strings.StringSegmentIterator
 
 object DefaultRules {
   val contractionsAndPossessives = """((?i)'(s|d|m|l+|ve|re)\b)|((?i)n't\b)"""
@@ -90,10 +91,16 @@ class PunktTokenizer extends StringSegmenter {
 
   private[this] val regex = ruleset.mkString("|").r
 
-  def apply(s: String): Iterator[String] = {
+  def apply(s: String): StringSegmentIterator = new StringSegmentIterator {
     val doc = new Document("", s)
     process(doc)
-    doc.tokens.map(_.string).iterator
+    var i = 0
+    val len = doc.tokens.length
+    def hasNext = i < len - 1
+    def next: String = { val result = doc.tokens(i).string; i += 1; result }
+    def start = doc.tokens(i).stringStart
+    def end = doc.tokens(i).stringEnd
+    //doc.tokens.map(_.string).iterator
   }
 
   def process(documents: Seq[Document]): Unit = processLogic(documents, sentenceBoundaryInference)
