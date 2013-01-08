@@ -17,27 +17,30 @@ import java.text.BreakIterator
 import java.io.Reader
 import java.io.InputStream
 
-trait StringSegmenter {
-  def apply(s:String): Iterator[String]
-  def apply(file:java.io.File): Iterator[String] = apply(scala.io.Source.fromFile(file, "ISO-8859-1").mkString)
-  def apply(is:InputStream): Iterator[String] = apply(cc.factorie.app.strings.inputStreamToString(is))
-  def apply(reader:Reader): Iterator[String] = apply(cc.factorie.app.strings.readerToString(reader))
-}
-
-class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
-  def apply(s:String): scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
-}
-
-trait IndexedStringIterator extends Iterator[String] {
+trait StringSegmentIterator extends Iterator[String] {
   def start: Int
   def end: Int
 }
 
-// This seems totally broken.  I tried:
-// scala -cp ~/workspace/factorie/target cc.factorie.app.strings.sentenceSegmenter ~/research/data/text/nipstxt/nips11/0620.txt
-// and got garbage
+trait StringSegmenter {
+  def apply(s:String): StringSegmentIterator
+  def apply(file:java.io.File): StringSegmentIterator = apply(scala.io.Source.fromFile(file, "ISO-8859-1").mkString)
+  def apply(is:InputStream): StringSegmentIterator = apply(cc.factorie.app.strings.inputStreamToString(is))
+  def apply(reader:Reader): StringSegmentIterator = apply(cc.factorie.app.strings.readerToString(reader))
+}
+
+class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
+  def apply(s:String): StringSegmentIterator = new StringSegmentIterator {
+    val matchIterator: scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
+    def hasNext = matchIterator.hasNext
+    def next = matchIterator.next
+    def start = matchIterator.start
+    def end = matchIterator.end
+  }
+}
+
 class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
-  def apply(s:String): IndexedStringIterator = new IndexedStringIterator {
+  def apply(s:String): StringSegmentIterator = new StringSegmentIterator {
     bi.setText(s)
     var start: Int = -1
     var end: Int = -1
@@ -55,6 +58,9 @@ class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
   }
 }
 
+// This seems totally broken.  I tried:
+// scala -cp ~/workspace/factorie/target cc.factorie.app.strings.sentenceSegmenter ~/research/data/text/nipstxt/nips11/0620.txt
+// and got garbage
 object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenceInstance(java.util.Locale.US)) {
   def main(args:Array[String]): Unit = {
     for (filename <- args) {

@@ -29,7 +29,8 @@ import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
 abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   var random = cc.factorie.random
   
-  // This method must be implemented in concrete subclasses
+  /** This method must be implemented in concrete subclasses.
+      It should return the log of the ratio of backwards-to-forwards jump probabilities. */
   def propose(context:C)(implicit d:DiffList) : Double
 
   /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training. */

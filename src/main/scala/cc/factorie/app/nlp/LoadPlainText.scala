@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp
 import java.io.File
+import cc.factorie.app.strings.StringSegmenter
 
 object LoadPlainText {
   def fromFile(file:File, segmentSentences:Boolean): Document = {
@@ -21,13 +22,15 @@ object LoadPlainText {
     fromString(file.getCanonicalPath, string, segmentSentences)
   }
 
-  def fromString(name:String, contents:String, segmentSentences:Boolean): Document = {
+  def fromString(name:String, contents:String, segmentSentences:Boolean): Document = 
+    fromString(name, contents, if (segmentSentences) cc.factorie.app.strings.sentenceSegmenter else null, cc.factorie.app.strings.nlpTokenSegmenter)
+  def fromString(name:String, contents:String, sentenceSegmenter:StringSegmenter, tokenSegmenter:StringSegmenter): Document = {
     val document = new Document(name, contents)
-    if (segmentSentences) {
-      val sentenceIterator = cc.factorie.app.strings.sentenceSegmenter(document.string)
+    if (sentenceSegmenter ne null) {
+      val sentenceIterator = sentenceSegmenter.apply(document.string)
       while (sentenceIterator.hasNext) {
         val sentenceString = sentenceIterator.next
-        val tokenIterator = cc.factorie.app.strings.nlpTokenSegmenter(sentenceString)
+        val tokenIterator = tokenSegmenter.apply(sentenceString)
         if (tokenIterator.hasNext) {
           val sentence = new Sentence(document)(null) // Automatically sets the correct sentence start boundary
           while (tokenIterator.hasNext) {
