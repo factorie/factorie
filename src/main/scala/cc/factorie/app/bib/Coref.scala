@@ -738,10 +738,20 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
   }
   def proposeMergeIfValid(entity1:AuthorEntity,entity2:AuthorEntity,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
     if (entity1.entityRoot.id != entity2.entityRoot.id){ //sampled nodes refer to different entities
-      if(!isMention(entity1))
+      if(entity1.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK) ^ entity2.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK))
+        changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+      if(!isMention(entity1)){
         changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?
-      else if(!isMention(entity2))
+        //added block move for human-edit SNL constraints
+        if(entity2.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK) && entity1.parentEntity != null)
+          changes += {(d:DiffList) => {splitRight(entity1.parentEntity.asInstanceOf[AuthorEntity],entity1)(d);mergeLeft(entity1,entity2)(d)}}
+      }
+      else if(!isMention(entity2)){
         changes += {(d:DiffList) => mergeLeft(entity2,entity1)(d)}
+        //added block move for human-edit SNL constraints
+        if(entity1.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK) && entity2.parentEntity != null)
+          changes += {(d:DiffList) => {splitRight(entity2.parentEntity.asInstanceOf[AuthorEntity],entity2)(d);mergeLeft(entity2,entity1)(d)}}
+      }
     }
   }
 
@@ -769,12 +779,16 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
   }
 
   override def settings(c:Null) : SettingIterator = new SettingIterator {
-
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
     val (entityS1,entityS2) = nextEntityPair
     val entity1 = entityS1.getAncestor(random.nextInt(entityS1.depth+1)).asInstanceOf[AuthorEntity]
     val entity2 = entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
     if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
+      if(entityS1.editType eq HumanEditMention.ET_SHOULD_NOT_LINK)
+        changes += {(d:DiffList) => mergeUp(entityS1,entity2)(d)}
+      if(entityS2.editType eq HumanEditMention.ET_SHOULD_NOT_LINK)
+        changes += {(d:DiffList) => mergeUp(entityS2,entity1)(d)}
+      
 //      println("DIFFERENT ENTITIES")
       /*
       if(!isMention(entity1)){
@@ -804,7 +818,6 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
           if(!isMention(r1)){
           proposeMergeIfValid(r1,entity2,changes)
           }else changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
-
         }
         //println("no proposal: "+entity1.isMention+" "+entity2.isMention)
         //EntityUtils.prettyPrintAuthor(entity1.asInstanceOf())
@@ -818,8 +831,8 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
         changes += {(d:DiffList) => {collapse(entity1)(d)}}
 //      println("   #proposed: "+changes.size)
     }
-    if(entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
-    if(entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[AuthorEntity])(d)}
+    if(!entity1.isObserved && entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
+    if(!entity1.entityRoot.isObserved && entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[AuthorEntity])(d)}
 
     changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
 //    println("CHANGES SIZE: "+changes.size)
