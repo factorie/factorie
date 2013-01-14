@@ -434,6 +434,26 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           //HumanEditExperiments.applySplitEdits(evidenceBatches)(initDiffList)
           //println("Diff score after applying split edits: "+initDiffList.score(authorCorefModel))
         }
+        case "mixed" => {
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits merge-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val correctMergeEdits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
+          val correctSplitEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          val edits = correctMergeEdits ++ correctSplitEdits
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          //HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          //HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
+        }
         case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
       }
       println("Finished generating  human edit experiment")
