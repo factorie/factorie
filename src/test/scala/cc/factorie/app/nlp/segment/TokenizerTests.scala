@@ -3,8 +3,154 @@ package cc.factorie.app.nlp.segment
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import cc.factorie.app.nlp.{Sentence, Document}
+import java.util.zip.ZipInputStream
+import java.io.{BufferedReader, StringReader, FileInputStream}
 
 class TokenizerTests extends JUnitSuite {
+  
+  def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
+
+  val modelPath = """c:\dictionary-1.2.0.zip"""
+
+  /*@Test*/ def testClearSegmenter(): Unit = {
+    val seg = new EnglishSegmenter(new EnglishTokenizer(new ZipInputStream(new FileInputStream(modelPath))))
+    val text =
+      """
+      I got bored of the iPhone. This has been a conundrum for for the past few months. I wanted a new phone, but didn't know how to transcend away from the iOS environment. I woke up one morning, and said, "whatever, I don't care anymore," and walked into BestBuy(save the hate, I had a $25 coupon and $35 gift card) and bought the Note 2. I have been wanting this phone since I first hear about it.
+
+      Why I made this decision. I love tech stuff, and the iphone, to me, was getting boring. My early upgrade just came through, so I could test a new phone, and still be within the launch period of the next gen iPhone. Having gone from the iPhone 3G, to Iphone4, to the 4S, you would think I would be drawn to the iPhone5 right? No. It did nothing for me. I don't even know how to explain it.
+
+      These are some things that worried me about switching. I have a Mac, and though I use Windows7 on BC, I still want my phone to sync natively to my Mac. The worry that syncing wouldn't be as smooth as the iPhone had me. I don't think there's another phone in existence that syncs info as well as the iPhone on an Mac. I had gotten used to easily syncing EVERYTHING in one go with Itunes and iPhoto, but I decided to just go with it and use it as an experience.
+
+      Now that I actually own the Note 2, and more specifically an Android phone, I actually have a better understanding of the OS quality provided by Apple.
+      However, with that said, the Android 4.1 is awesome. Better than anything to come before it from Android(obviously, right?). This phone is an absolute MONSTER!
+
+      I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
+      """.stripMargin
+    seg.getSentences(new BufferedReader(new StringReader(text))).map(_.mkString(" ")).foreach(println)
+  }
+
+  /*@Test*/ def testClearTokenizer(): Unit = {
+    val tok = new EnglishTokenizer(new ZipInputStream(new FileInputStream(modelPath)))
+
+    def check(src: String, trg: String): Unit = assertEquals("[" + tok.getTokens(src).mkString(", ") + "]", trg)
+
+    // spaces
+    check(
+      src = "a b  c\n d \t\n\r\fe",
+      trg = "[a, b, c, d, e]")
+
+    // emoticons
+    check(
+      src = ":-))))))) :------------) (____) :( :-) :--)",
+      trg = "[:-))))))), :------------), (____), :(, :-), :, --, )]")
+    
+    // URLs
+    check(
+      src = "|http://www.google.com|www.google.com|mailto:somebody@google.com|some-body@google+.com|",
+      trg = "[|, http://www.google.com, |, www.google.com, |, mailto:somebody@google.com, |, some-body@google+.com, |]")
+    
+    check(
+      src = "google.com index.html a.b.htm ab-cd.shtml",
+      trg = "[google.com, index.html, a.b.htm, ab-cd.shtml]")
+
+    // abbreviations
+    check(
+      src = "prof. ph.d. a. a.b. a.b a.b.c. ab.cd",
+      trg = "[prof., ph.d., a., a.b., a.b, a.b.c., ab, ., cd]")
+
+    // consecutive punctuation
+    check(
+      src = "A..B!!C??D.!?E.!?.!?F..!!??",
+      trg = "[A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]")
+
+    check(
+      src = ",,A---C*D**E~~~~F==",
+      trg = "[,,, A, ---, C*D, **, E, ~~~~, F, ==]")
+
+    // dots in numbers
+    check(
+      src = ".1 a.1 2.3 4,5 6:7 8-9 0/1 '2 3's 3'4 5'b a'6 a'b",
+      trg = "[.1, a.1, 2.3, 4,5, 6:7, 8-9, 0/1, '2, 3's, 3'4, 5'b, a'6, a'b]")
+
+    check(
+      src = ".a a.3 4,a a:a a8-9 0/1a",
+      trg = "[., a, a.3, 4, ,, a, a, :, a, a8-9, 0/1a]")
+    
+    // hyphens
+    check(
+      src = "dis-able cross-validation o-kay art-o-torium s-e-e art-work",
+      trg = "[dis-able, cross-validation, o-kay, art-o-torium, s-e-e, art, -, work]")
+    
+    // apostrophies
+    check(
+      src = "he's we'd I'm you'll they're I've didn't did'nt",
+      trg = "[he, 's, we, 'd, I, 'm, you, 'll, they, 're, I, 've, did, n't, did, 'nt]")
+    
+    check(
+      src = "he'S DON'T gue'ss",
+      trg = "[he, 'S, DO, N'T, gue'ss]")
+    
+    check(
+      src = "aint cannot don'cha d'ye i'mma dunno",
+      trg = "[ai, nt, can, not, do, n', cha, d', ye, i, 'm, ma, du, n, no]")
+    
+    check(
+      src = "$1 E2 L3 USD1 2KPW ||$1 USD1..",
+      trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]")
+    
+    check(
+      src = "1m 2mm 3kg 4oz",
+      trg = "[1, m, 2, mm, 3, kg, 4, oz]")
+    
+    check(
+      src = "1D 2nM 3CM 4LB",
+      trg = "[1, D, 2, nM, 3, CM, 4, LB]")
+    
+    check(
+      src = "(1){2}[3]<4>",
+      trg = "[(, 1, ), {, 2, }, [, 3, ], <, 4, >]")
+    
+    check(
+      src = "`a'b,c:d;e-f/g\"h'",
+      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
+    
+    check(
+      src = "`a'b,c:d;e-f/g\"h'",
+      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
+    
+    check(
+      src = "a@b #c$d%e&f|g",
+      trg = "[a@b, #, c, $, d, %, e, &, f, |, g]")
+    
+    check(
+      src = "e.g., i.e, (e.g.,",
+      trg = "[e.g., ,, i.e, ,, (, e.g., ,]")
+    
+    check(
+      src = " \n \t",
+      trg = "[]")
+
+    check(    
+      src = "\"John & Mary's dog,\" Jane thought (to herself).\n" + "\"What a #$%!\n" + "a- ``I like AT&T''.\"",
+      trg = "[\", John, &, Mary, 's, dog, ,, \", Jane, thought, (, to, herself, ), ., \", What, a, #, $, %, !, a, -, ``, I, like, AT&T, '', ., \"]")
+    
+    check(
+      src = "I said at 4:45pm.",
+      trg = "[I, said, at, 4:45, pm, .]")
+    
+    check(
+      src = "I can't believe they wanna keep 40% of that.\"``Whatcha think?''\"I don't --- think so...,\"",
+      trg = "[I, ca, n't, believe, they, wan, na, keep, 40, %, of, that, ., \", ``, What, cha, think, ?, '', \", I, do, n't, ---, think, so, ..., ,, \"]")
+    
+    check(
+      src = "You `paid' US$170,000?!\nYou should've paid only$16.75.",
+      trg = "[You, `, paid, ', US$, 170,000, ?!, You, should, 've, paid, only, $, 16.75, .]")
+    
+    check(
+      src = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%",
+      trg = "[1, ., Buy, a, new, Chevrolet, (, 37, %, -, owned, in, the, U.S., ., ), ., 15, %]")
+  }
 
   val testText2 =
     """
@@ -22,7 +168,7 @@ class TokenizerTests extends JUnitSuite {
 
     val reg = new PunktSentenceSegmenter.Punkt.PunktLanguageVars()
     val allMatches = reg.wordTokenizerRegex.findAllIn(testText2).toSeq
-    allMatches.foreach(println(_))
+    allMatches.foreach(println)
 
     assert(allMatches == Seq("The", "problem", "with", "MacroTypeTag", "is", "that", "it", "can", "be", "used",
        "outside", "macros.", "A", "fact", "about", "FullTypeTag", "that", "I", "don", "'t", "like", "is", "that", "it", "implies",
