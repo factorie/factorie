@@ -24,25 +24,25 @@ package cc.factorie
 
 /** Sets the TargetType, which is the type of the container of another variable's target value,
     doing so in a way that the type is both concrete and can be overridden in subclasses. */
-trait TargetType[+T<:Variable with AimerType[Variable]] {
+trait TargetType[+T<:Var with AimerType[Var]] {
   type TargetType = T
 }
 /** Sets the AimerType, which is the type of the variable that aims to have this target value,
     doing so in a way that the type is both concrete and can be overridden in subclasses. */
-trait AimerType[+A<:Variable] {
+trait AimerType[+A<:Var] {
   type AimerType = A
 }
 
 /** A trait for all variables that are containers of target values.  
     Having this trait allows ZeroOneLossTemplate to use this type as a neighbor,
     and, for example, avoid trying to unroll for all DiscreteVectorVar. */
-trait TargetVar extends Variable with AimerType[Variable] {
+trait TargetVar extends Var with AimerType[Var] {
   /** Returns the variable that "aims" to have to have its value match this variable's as its target */
   def aimer: AimerType
 }
 
 /** A Variable that has a desired correct "target" value, but not a method to directly obtain that value. */
-trait LabeledVar extends Variable {
+trait LabeledVar extends Var {
   def targetValue: Value
   def valueIsTarget: Boolean = value == targetValue
 }

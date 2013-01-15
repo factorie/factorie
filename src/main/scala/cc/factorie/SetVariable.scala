@@ -15,7 +15,7 @@
 package cc.factorie
 import scala.collection.mutable.HashSet
 
-trait SetVar[A] extends Variable with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
+trait SetVar[A] extends Var with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
   def value: scala.collection.Set[A]
   def iterator: Iterator[A] = value.iterator
   def foreach[U](f:A=>U): Unit = iterator.foreach(f)
@@ -69,7 +69,7 @@ class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariab
   }
 }
 
-class WeakSetVariable[A<:{def present:Boolean}] extends Variable with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
+class WeakSetVariable[A<:{def present:Boolean}] extends Var with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
   private val _members = new cc.factorie.util.WeakHashSet[A];
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)

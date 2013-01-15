@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable], model:GenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var], model:GenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
@@ -58,7 +58,7 @@ class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterabl
 }
 
 trait CollapsedVariationalBayesHandler {
-  def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean
+  def process(v:Var, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean
 }
 
 

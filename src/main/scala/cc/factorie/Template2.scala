@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends ModelWithFactorType with Family2[N1,N2] with ModelAsTemplate
+abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends ModelWithFactorType with Family2[N1,N2] with ModelAsTemplate
 {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
@@ -31,7 +31,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
 
-  def addLimitedDiscreteCurrentValuesIn12(variables:Iterable[Variable]): Unit = {
+  def addLimitedDiscreteCurrentValuesIn12(variables:Iterable[Var]): Unit = {
     if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) && classOf[DiscreteVar].isAssignableFrom(neighborClass2)) 
       for (variable <- variables; factor <- factors(variable)) factor.addLimitedDiscreteCurrentValues12 //limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
   }
@@ -41,7 +41,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 //      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
 //  }
 
-  override def addFactors(v:Variable, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
+  override def addFactors(v:Var, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
     if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
     if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
@@ -55,11 +55,11 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 }
 
 
-abstract class TupleTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TupleFamily2[N1,N2] 
-abstract class TupleTemplateWithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TupleFamilyWithStatistics2[N1,N2]
-abstract class TensorTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TensorFamily2[N1,N2]
+abstract class TupleTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TupleFamily2[N1,N2]
+abstract class TupleTemplateWithStatistics2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TupleFamilyWithStatistics2[N1,N2]
+abstract class TensorTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TensorFamily2[N1,N2]
 abstract class TensorTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with TensorFamilyWithStatistics2[N1,N2]
-abstract class DotTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with DotFamily2[N1,N2]
+abstract class DotTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with DotFamily2[N1,N2]
 abstract class DotTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with DotFamilyWithStatistics2[N1,N2]
 
 /*

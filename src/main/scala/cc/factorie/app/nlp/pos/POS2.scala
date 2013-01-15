@@ -118,7 +118,7 @@ class POS2 extends Infer with util.FastLogging {
     BP.inferChainMax(labels, model)
   }
   
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = variables match {
     case labels:Seq[PosLabel] if (labels.forall(_.isInstanceOf[PosLabel])) => Some(apply(labels))
     case _ => None
   }

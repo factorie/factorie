@@ -81,7 +81,7 @@ class SerializeTest extends JUnitSuite {
         lazy val weights = new DenseTensor1(d.length)
       }
       override def families = Seq(family1)
-      def factors(v: Variable) = Nil
+      def factors(v: Var) = Nil
     }
     val model = new Model1(domain1)
     model.family1.weights(6) = 12
@@ -216,7 +216,7 @@ class SerializeTest extends JUnitSuite {
     def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
       Seq.empty[Factor]
     }
-    def factors(v:Variable) = throw new Error("Not yet implemented.")
+    def factors(v:Var) = throw new Error("Not yet implemented.")
   }
 
   val data = Array(

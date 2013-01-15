@@ -111,7 +111,7 @@ class CaseFactorDiscreteLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](val l
 // The following trait has convenience methods for adding to an accumulator the
 // factors that touch a pair of Good/Bad variables
 object GoodBadExample {
-  def addGoodBad(gradient: WeightsTensorAccumulator, model: Model, good:Variable, bad:Variable) {
+  def addGoodBad(gradient: WeightsTensorAccumulator, model: Model, good:Var, bad:Var) {
     model.factors(good).foreach({
       case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
       case _ => sys.error("Domination loss requires DotFamily")
@@ -128,7 +128,7 @@ object GoodBadExample {
 // The actual loss used in this version is the maximum (margin-augmented) difference between
 // goodCandidates and badCandidates.
 // See DominationLossExampleAllGood for one that outputs a gradient for all goodCandidates
-class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model] {
+class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
@@ -142,7 +142,7 @@ class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Va
   }
 }
 
-class DominationLossExampleAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model] {
+class DominationLossExampleAllGood(goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
     require(gradient != null, "The DominationLossExampleAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))

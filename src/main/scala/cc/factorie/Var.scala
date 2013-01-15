@@ -15,7 +15,7 @@
 package cc.factorie
 
 // Notes on class names for Variables:
-// Except for cc.factorie.Variable, "*Variable" are classes and mutable.
+// "*Variable" are classes and mutable.
 // "*Var" are trait counterparts, not yet committing to (im)mutability.
 // Many but not all "*Var" traits do not yet commit to a value-storage mechanism.
 
@@ -31,7 +31,7 @@ package cc.factorie
     It provides a covariant member type 'Value' in such a way that it can be override in subclasses.
     However, because this type is lower-bounded not assigned, 
     you cannot implement a method with arguments of this type, unless Value is later assigned
-    (for example with Var[A]).
+    (for example with VarWithValue[A]).
     @author Andrew McCallum */
 trait ValueBound[+A] { type Value <: A }
 
@@ -40,23 +40,23 @@ trait ValueBound[+A] { type Value <: A }
     Because this type is assigned and fixed,
     you can implement a method with arguments of this type. 
     @author Andrew McCallum */
-trait Var[A] extends ValueBound[A] with Variable { override type Value = A }
+trait VarWithValue[A] extends ValueBound[A] with Var { override type Value = A }
 
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    <p>
-   You should never make a Variable a Scala 'case class' because then
+   You should never make a Var a Scala 'case class' because then
    it will get hashCode and equals methods dependent on its
    constructor arguments; but the FACTORIE library depends on being
-   able to distinguish individual Variable instances based on their
+   able to distinguish individual Var instances based on their
    machine address (i.e. System.identityHashCode).
    <p>
-   Similarly no Variable should ever inherit from scala.collection.Iterable,
+   Similarly no Var should ever inherit from scala.collection.Iterable,
    even though its value may do so.  This prevents confusion between
-   Model.factors(Variable) and Model.factors(Iterable[Variable]).
+   Model.factors(Var) and Model.factors(Iterable[Var]).
    @author Andrew McCallum */
-trait Variable extends ValueBound[Any] {
+trait Var extends ValueBound[Any] {
  
   /** Abstract method to return the domain of this variable. */
   def domain: Domain[Any]
@@ -65,24 +65,24 @@ trait Variable extends ValueBound[Any] {
   def value: Any
 
   /** Value comparisons (as distinct from variable pointer equality) */
-  def ===(other: Variable) = value == other.value
-  def !==(other: Variable) = value != other.value
+  def ===(other: Var) = value == other.value
+  def !==(other: Var) = value != other.value
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
       @see ContainerVariable */
-  type ContainedVariableType <: Variable
+  type ContainedVariableType <: Var
 
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
       This is typically used in "contained variables" to return "container variables".
       For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
       This mechanism is also used for implementing "var-args", as in Vars[].
       See also PyMC's "Containers"? */
-  def unrollCascade: Iterable[Variable] = Nil
+  def unrollCascade: Iterable[Var] = Nil
   
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */
-  def ~[V<:Variable](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+  def ~[V<:Var](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     model += partialFactor(this.asInstanceOf[V])
     this
   }
@@ -114,13 +114,13 @@ trait Variable extends ValueBound[Any] {
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
 // Semantically a "Value" is not really a "Variable", but we must inherit in order to override
-trait VarWithConstantValue extends Variable {
+trait VarWithConstantValue extends Var {
   override final def isConstant = true
 }
 
 /** A Variable with a value that can be changed.
     @author Andrew McCallum */
-trait MutableVar[A] extends Var[A] {
+trait MutableVar[A] extends VarWithValue[A] {
   def value: A
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
@@ -138,7 +138,7 @@ trait MutableVar[A] extends Var[A] {
 
 
 /** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Variable with Var[This] with VarWithConstantValue {
+trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithValue[This] with VarWithConstantValue {
   this: This =>
   final def value: This = this
 }
@@ -148,7 +148,7 @@ trait SelfVariable[This<:SelfVariable[This]] extends Variable with Var[This] wit
 
 /** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed */
 trait NoVariableCoordination {
-  this: Variable =>
+  this: Var =>
 }
 
 /** A marker for Variables that declare themselves to only to rely on their own Factors when they are changed,
@@ -156,7 +156,7 @@ trait NoVariableCoordination {
     Furthermore the section of Factors must not change depending on the variable's values. */
 // TODO Consider removing this because this constraint is very hard to know locally: one variable cannot know all the factors of another.
 trait NoFactorCoordination {
-  this: Variable =>
+  this: Var =>
 } 
 // TODO.  No, create the inverse trait: FactorCoordinator?
 

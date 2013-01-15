@@ -20,7 +20,7 @@ import cc.factorie.la._
 /** A change record for a variable, holding its old and new values, with capability to undo and redo the change.
     @author Andrew McCallum */
 trait Diff {
-  def variable: Variable
+  def variable: Var
   def redo: Unit
   def undo: Unit
 }
@@ -34,7 +34,7 @@ abstract class AutoDiff(implicit d:DiffList) extends Diff {
   redo
 }
 
-case class NoopDiff(variable:Variable) extends Diff {
+case class NoopDiff(variable:Var) extends Diff {
   def redo: Unit = {}
   def undo: Unit = {}
 }
@@ -58,8 +58,8 @@ class DiffList extends ArrayBuffer[Diff] {
     this.reverse.foreach(d => d.undo)
     done = false
   }
-  def variables: Seq[Variable] = {
-    val result = new collection.mutable.ArrayBuffer[Variable]
+  def variables: Seq[Var] = {
+    val result = new collection.mutable.ArrayBuffer[Var]
     this.foreach(diff => if (diff.variable ne null) result += diff.variable)
     result
   }

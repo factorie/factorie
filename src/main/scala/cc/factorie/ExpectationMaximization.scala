@@ -19,7 +19,7 @@ import cc.factorie._
     maximizing is the collection of variables that will be maximized.   
     meanField contains the variables for which to get expectations.
     You can provide your own Maximizer; other wise an instance of the default MaximizeSuite is provided. */
-class EMInferencer[V<:Variable,M<:MeanField](val maximizing:Iterable[V], val meanField:M, val model:Model, val maximizer: Maximize = Maximize) {
+class EMInferencer[V<:Var,M<:MeanField](val maximizing:Iterable[V], val meanField:M, val model:Model, val maximizer: Maximize = Maximize) {
   def eStep: Unit = meanField.updateQ
   // The "foreach and Seq(v)" below reflect the fact that in EM we maximize the variables independently of each other 
   def mStep: Unit = maximizing.foreach(v => maximizer.infer(Seq(v), model, meanField.summary).get.setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
@@ -27,18 +27,18 @@ class EMInferencer[V<:Variable,M<:MeanField](val maximizing:Iterable[V], val mea
   def process: Unit = process(100) // TODO Make a reasonable convergence criteria
 }
 object EMInferencer {
-  def apply[V<:Variable](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize) = 
+  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize) =
     new EMInferencer(maximizing, new DiscreteMeanField(varying, model), model, maximizer)
 }
 
 object InferByEM extends Infer {
-  def apply(maximize:Iterable[Variable], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize): DiscreteSummary1[DiscreteVariable] = {
+  def apply(maximize:Iterable[Var], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize): DiscreteSummary1[DiscreteVariable] = {
     val meanField = new DiscreteMeanField(varying, model)
     val inferencer = new EMInferencer(maximize, meanField, model, maximizer)
     inferencer.process
     meanField.summary
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
     summary match {
       case ds:DiscreteSummary1[DiscreteVariable] => {
         val meanField = new DiscreteMeanField(model, ds)

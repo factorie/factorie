@@ -32,7 +32,7 @@ trait ElementType[+ET] {
     Note that this trait itself does not actually inherit from Seq[E] 
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
-trait SeqVar[+E] extends Variable with ValueBound[Seq[E]] with ElementType[E] {
+trait SeqVar[+E] extends Var with ValueBound[Seq[E]] with ElementType[E] {
   type Value <: Seq[E]
   def value: Seq[E]
   def iterator: Iterator[E]
@@ -111,7 +111,7 @@ trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar[IndexedSeq[X]] {
 }
 
 class SeqDomain[X] extends Domain[Seq[X]]
-object SeqDomain extends SeqDomain[Variable]
+object SeqDomain extends SeqDomain[Var]
 class SeqVariable[X] extends MutableSeqVar[X] {
   def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
   def domain = SeqDomain.asInstanceOf[SeqDomain[X]]

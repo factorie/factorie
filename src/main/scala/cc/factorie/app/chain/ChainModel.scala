@@ -94,11 +94,11 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     }
     result
   }
-  override def factors(variables:Iterable[Variable]): Iterable[Factor] = variables match {
+  override def factors(variables:Iterable[Var]): Iterable[Factor] = variables match {
     case variables:IndexedSeq[Label] if (variables.forall(v => labelClass.isAssignableFrom(v.getClass))) => factorsWithContext(variables)
     case _ => super.factors(variables)
   }
-  def factors(v:Variable) = v match {
+  def factors(v:Var) = v match {
     case label:Label if (label.getClass eq labelClass) => {
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)
@@ -121,8 +121,8 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   
   trait ChainSummary extends Summary[DiscreteMarginal] {
     // Do we actually want the marginal of arbitrary sets of variables? -brian
-    def marginal(vs:Variable*): DiscreteMarginal = null
-    def marginal(v:Variable): DiscreteMarginal
+    def marginal(vs:Var*): DiscreteMarginal = null
+    def marginal(v:Var): DiscreteMarginal
     def expectations: WeightsTensor
   }
 
@@ -131,7 +131,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     val summary = new ChainSummary {
       private val (_expectations, (__nodeMarginals, __edgeMarginals), _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
       lazy private val _nodeMarginals = {
-        val res = new LinkedHashMap[Variable, DiscreteMarginal]
+        val res = new LinkedHashMap[Var, DiscreteMarginal]
         res ++= labels.zip(__nodeMarginals).map { case (l, m) => 
           l -> new DiscreteMarginal1(l, new DenseProportions1(m))
         }
@@ -156,7 +156,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       def expectations = _expectations
       override def logZ = _logZ
       def marginals: Iterable[DiscreteMarginal] = _nodeMarginals.values
-      def marginal(v: Variable): DiscreteMarginal = _nodeMarginals(v)
+      def marginal(v: Var): DiscreteMarginal = _nodeMarginals(v)
       override def marginal(_f: Factor): DiscreteMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias || f.family == obs)
@@ -176,13 +176,13 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
       lazy private val _marginals = {
-        val res = new LinkedHashMap[Variable, DiscreteMarginal]
+        val res = new LinkedHashMap[Var, DiscreteMarginal]
         res ++= labels.zip(targetInts).map { case (l, t) => 
           l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))
         }
       }
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
-      def marginal(v: Variable): DiscreteMarginal = _marginals(v)
+      def marginal(v: Var): DiscreteMarginal = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {
         var i = 0
         while (i < variables.length) {
@@ -208,7 +208,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
 
   object MarginalInference extends Infer {
-    override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(inferBySumProduct(variables.asInstanceOf[IndexedSeq[Label]]))
+    override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(inferBySumProduct(variables.asInstanceOf[IndexedSeq[Label]]))
   }
   // Training
   val objective = new HammingTemplate[Label]

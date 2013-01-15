@@ -66,7 +66,7 @@ object WordSegmenterDemo2 {
       }
       result
     }
-    def factors(v:Variable) = {
+    def factors(v:Var) = {
       val label = v.asInstanceOf[Label]
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)

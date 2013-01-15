@@ -21,7 +21,7 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
     By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
     this convention differs from other Infer instances, which do not typically change variable values.  */
 trait Maximize extends Infer {
-  def maximize(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null) = infer(vs, model, summary).get.setToMaximize(null)
+  def maximize(vs:Iterable[Var], model:Model, summary:Summary[Marginal] = null) = infer(vs, model, summary).get.setToMaximize(null)
   // TODO Consider adding the following
   //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
 }
@@ -41,7 +41,7 @@ class MaximizeSuite extends Maximize {
   val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
   suite ++= defaultSuite
   //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
-  override def infer(varying:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
+  override def infer(varying:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
     var option: Option[Summary[Marginal]] = None
@@ -51,7 +51,7 @@ class MaximizeSuite extends Maximize {
     }
     option
   }
-  def apply(varying:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Summary[Marginal] = {
+  def apply(varying:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Summary[Marginal] = {
     val option = infer(varying, model, summary)
     if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass.getName; case f:Factor => f.getClass.getName }).mkString(" "))
     option.get.setToMaximize(null)
@@ -66,16 +66,16 @@ object Maximize extends MaximizeSuite // A default instance of this class
 //}
 
 object SamplingMaximizer {
-  def apply[V <: Variable with IterableSettings](model: Model) = new SamplingMaximizer[V](new VariableSettingsSampler[V](model))
+  def apply[V <: Var with IterableSettings](model: Model) = new SamplingMaximizer[V](new VariableSettingsSampler[V](model))
 }
 
 class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
-  def maximize(varying:Iterable[C], iterations:Int): Iterable[Variable] = {
+  def maximize(varying:Iterable[C], iterations:Int): Iterable[Var] = {
     var currentScore = 0.0
     var maxScore = currentScore
     val maxdiff = new DiffList
     val origSamplerTemperature = sampler.temperature
-    val variablesTouched = new HashSet[Variable]
+    val variablesTouched = new HashSet[Var]
     def updateMaxScore(p:Proposal): Unit = {
       currentScore += p.modelScore // TODO Check proper handling of fbRatio
       //println("SamplingMaximizer modelScore="+p.modelScore+" currentScore="+currentScore)
@@ -97,12 +97,12 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
     maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
     variablesTouched
   }
-  def maximize(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): Iterable[Variable] = {
+  def maximize(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): Iterable[Var] = {
     //sampler.proposalsHooks += { (props:Seq[Proposal]) => { props.foreach(p => println(p.modelScore)) }}
     val iterationsPerRound = if (iterations < rounds) 1 else iterations/rounds
     var iterationsRemaining = iterations
     if (iterationsRemaining == 1) sampler.temperature = finalTemperature
-    val variablesTouched = new HashSet[Variable]
+    val variablesTouched = new HashSet[Var]
     sampler.temperature = initialTemperature
     while (iterationsRemaining > 0) {
       val iterationsNow = math.min(iterationsPerRound, iterationsRemaining)

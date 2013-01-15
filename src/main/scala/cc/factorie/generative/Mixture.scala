@@ -42,7 +42,7 @@ trait MixtureFactor extends GenerativeFactor {
 class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
 object MixtureDomain extends MixtureDomain[Any]
 // NOTE Was Mixture[+P...]
-class Mixture[P<:Variable](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with Variable with Var[scala.collection.Seq[P#Value]] 
+class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with Var with VarWithValue[scala.collection.Seq[P#Value]]
 {
   //type Value <: scala.collection.Seq[P#Value]
   this ~ Mixture() // This will make this a child of each of the mixture components.
@@ -84,11 +84,11 @@ class Mixture[P<:Variable](val components:Seq[P])(implicit val model: MutableGen
   }*/
 }
 
-object Mixture extends GenerativeFamily1[Mixture[Variable]] {
-  def apply[P<:Variable](n:Int)(constructor: =>P)(implicit model: MutableGenerativeModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
-  case class Factor(override val _1:Mixture[Variable]) extends super.Factor(_1) {
+object Mixture extends GenerativeFamily1[Mixture[Var]] {
+  def apply[P<:Var](n:Int)(constructor: =>P)(implicit model: MutableGenerativeModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead
+  case class Factor(override val _1:Mixture[Var]) extends super.Factor(_1) {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
-    override def parents: Seq[Variable] = _1.components
+    override def parents: Seq[Var] = _1.components
     def pr(v:C#Value) = 1.0
     def sampledValue: ChildType#Value = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
@@ -98,7 +98,7 @@ object Mixture extends GenerativeFamily1[Mixture[Variable]] {
       true
     }
   }
-  def newFactor(a:Mixture[Variable]) = Factor(a)
+  def newFactor(a:Mixture[Var]) = Factor(a)
 }
 
 

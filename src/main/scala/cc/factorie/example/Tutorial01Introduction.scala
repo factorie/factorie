@@ -73,10 +73,10 @@ The following code declares data, model, inference and learning for a linear-cha
     val observ = new DotFamilyWithStatistics2[Label,Token] { lazy val weights = new DenseTensor2(LabelDomain.size, TokenDomain.size) }
     override def families = Seq(markov, observ)
     // Given some variables, return the collection of factors that neighbor them.
-    override def factors(labels:Iterable[Variable]) = labels match {
+    override def factors(labels:Iterable[Var]) = labels match {
       case labels:LabelSeq => labels.map(label => new observ.Factor(label, label.token)) ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
     }
-    def factors(v:Variable) = throw new Error("This model does not implement unrolling from a single variable.")
+    def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
   val trainer = new BatchTrainer(model, new ConjugateGradient)

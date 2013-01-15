@@ -22,7 +22,7 @@ object DoubleDomain extends DoubleDomain { type Value = Double }
 
 // Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
 /** A Variable with a real (double) value. */
-trait DoubleVar extends ScalarVar with Var[Double] {
+trait DoubleVar extends ScalarVar with VarWithValue[Double] {
   def domain: DoubleDomain = DoubleDomain
   @inline final def value: Double = doubleValue
   def doubleValue: Double

@@ -15,7 +15,7 @@
 package cc.factorie
 
 object StringDomain extends Domain[String]
-trait StringVar extends Variable with Var[String] {
+trait StringVar extends Var with VarWithValue[String] {
   def domain = StringDomain
 }
 

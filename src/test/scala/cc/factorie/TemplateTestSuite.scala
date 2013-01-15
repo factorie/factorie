@@ -38,7 +38,7 @@ class TemplateTestSuite extends JUnitSuite  {
   def testCascadeUnroll {
     object Aggregate extends BooleanVariable {
       val b1 = new BooleanVariable {
-        override def unrollCascade: scala.Iterable[Variable] = Seq(Aggregate)
+        override def unrollCascade: scala.Iterable[Var] = Seq(Aggregate)
       }
     }
     val diff = new DiffList

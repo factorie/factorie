@@ -20,7 +20,7 @@ import cc.factorie.la._
 /** Stores a marginal distribution containing a joint distribution over a set of variables.
     See also Summary, which stores a collection of Marginals. */
 trait Marginal {
-  def variables: Iterable[Variable]
+  def variables: Iterable[Var]
   def setToMaximize(implicit d:DiffList): Unit
 }
 

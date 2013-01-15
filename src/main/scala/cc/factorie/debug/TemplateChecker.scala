@@ -1,6 +1,6 @@
 package cc.factorie.debug
 
-import cc.factorie.{Factor, Template2, Variable}
+import cc.factorie.{Factor, Template2, Var}
 
 /**
  * A tool for debugging models and template
@@ -13,7 +13,7 @@ object TemplateChecker {
    * Checks whether the unroll methods of a Template2 are "consistent"
    * Consistency is defined by ensuring a variable is obtained when calling unroll on its neighbors
    */
-  def checkTemplate[N1 <: Variable, N2 <: Variable](variable: N1, t: Template2[N1, N2]): Boolean = {
+  def checkTemplate[N1 <: Var, N2 <: Var](variable: N1, t: Template2[N1, N2]): Boolean = {
     // find the factors that are affected by a change to this variable
     val factorsFromUnroll1: Iterable[Factor] = t.unroll1(variable)
     // first and second neighbors of these factors

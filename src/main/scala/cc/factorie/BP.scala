@@ -591,7 +591,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals: Iterable[DiscreteMarginal] = _bpFactors.values ++ _bpVariables.values
-  def marginal(vs: Variable*): DiscreteMarginal = vs.size match {
+  def marginal(vs: Var*): DiscreteMarginal = vs.size match {
     case 1 => _bpVariables(vs.head.asInstanceOf[DiscreteVar])
     case 2 => {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
   }
@@ -786,18 +786,18 @@ object BP {
 }
 
 trait InferByBP extends Infer {
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = None
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = None
 }
 
 object InferByBPTreeSum extends InferByBP {
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
@@ -808,7 +808,7 @@ object InferByBPLoopy extends InferByBP {
 }
 
 object InferByBPChainSum extends InferByBP {
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
     case _ => None
   }
@@ -816,7 +816,7 @@ object InferByBPChainSum extends InferByBP {
 }
 
 object MaximizeByBPChain extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
     case _ => None
   }

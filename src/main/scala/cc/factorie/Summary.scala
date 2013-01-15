@@ -18,8 +18,8 @@ import cc.factorie.generative._
 /** The result of inference: a collection of Marginal objects. */
 trait Summary[+M<:Marginal] {
   def marginals: Iterable[M]
-  def marginal(vs:Variable*): M // TODO Think carefully about how order of arguments should not matter.
-  def getMarginal(vs:Variable*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) } 
+  def marginal(vs:Var*): M // TODO Think carefully about how order of arguments should not matter.
+  def getMarginal(vs:Var*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) }
   def marginal(factor:Factor): M = marginal(factor.variables:_*)
   def marginalTensorStatistics(factor:Factor): la.Tensor = throw new Error("Not yet implemented ")
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
@@ -34,12 +34,12 @@ trait IncrementableSummary[+M<:Marginal] extends Summary[M] {
 }
 
 /** A Summary that contains multiple Marginals of type M, each a marginal distribution over a single variable. */
-class Summary1[V<:Variable,M<:Marginal] {
+class Summary1[V<:Var,M<:Marginal] {
   protected val _marginals = new scala.collection.mutable.HashMap[V,M]
   def marginals = _marginals.values
   def variables = _marginals.keys
   def marginal1(v:V) = _marginals(v)
-  def marginal(vs:Variable*): M  = vs match {
+  def marginal(vs:Var*): M  = vs match {
     case Seq(v:V) => _marginals(v)
     case _ => null.asInstanceOf[M]
   }
@@ -54,13 +54,13 @@ class Summary1[V<:Variable,M<:Marginal] {
 class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
   def marginals = Seq(marginal)
   // TODO In the conditional below, order shouldn't matter!
-  def marginal(vs:Variable*): M = if (vs == marginal.variables) marginal else null.asInstanceOf[M]
+  def marginal(vs:Var*): M = if (vs == marginal.variables) marginal else null.asInstanceOf[M]
 }
 
 /** A Summary with all its probability on one variable-value Assignment.  Note that Assignment inherits from Marginal. */
 class AssignmentSummary(val assignment:Assignment) extends Summary[Assignment] {
   def marginals = Seq(assignment)
-  def marginal(vs:Variable*): Assignment = if (vs.toSet == assignment.variables.toSet) assignment else null
+  def marginal(vs:Var*): Assignment = if (vs.toSet == assignment.variables.toSet) assignment else null
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
 }
 
@@ -74,7 +74,7 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarg
   def marginals = _marginals1.values
   def variables = _marginals1.keys
   def marginal1(v1:V) = _marginals1(v1)
-  def marginal(vs:Variable*): DiscreteMarginal1[V] = vs match {
+  def marginal(vs:Var*): DiscreteMarginal1[V] = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
     case _ => null
   }

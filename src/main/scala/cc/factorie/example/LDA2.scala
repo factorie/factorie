@@ -56,7 +56,7 @@ object LDA2 {
       println()
     }
 
-    val collapse = new ArrayBuffer[Variable]
+    val collapse = new ArrayBuffer[Var]
     collapse += phis
     collapse ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapse, model)

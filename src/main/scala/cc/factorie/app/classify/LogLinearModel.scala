@@ -24,13 +24,13 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
   val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
-  val factorCache = mutable.HashMap[Variable, Iterable[Factor]]()
-  override def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
+  val factorCache = mutable.HashMap[Var, Iterable[Factor]]()
+  override def factors(vs:Iterable[Var]): Iterable[Factor] =  {
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
   }
   override def families = Seq(biasTemplate, evidenceTemplate)
-  override def factors(v:Variable): Iterable[Factor] = {
+  override def factors(v:Var): Iterable[Factor] = {
     v match {
       case v:L if lm.erasure.isAssignableFrom(v.getClass) => Seq(biasTemplate.Factor(v), evidenceTemplate.Factor(v, lf(v)))
       case _ => Nil

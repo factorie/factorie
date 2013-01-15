@@ -17,10 +17,10 @@ package cc.factorie
 import scala.collection.mutable.HashMap
 import cc.factorie.la._
 
-trait ValuesIterator3[N1<:Variable,N2<:Variable,N3<:Variable] extends Iterator[AbstractAssignment3[N1,N2,N3]] with AbstractAssignment3[N1,N2,N3] with ValuesIterator
+trait ValuesIterator3[N1<:Var,N2<:Var,N3<:Var] extends Iterator[AbstractAssignment3[N1,N2,N3]] with AbstractAssignment3[N1,N2,N3] with ValuesIterator
 
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
-abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2:N2, val _3:N3) extends Factor {
+abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3) extends Factor {
   factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
@@ -281,7 +281,7 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
 
 /** A 3-neighbor Factor whose statistics have type Tuple2.
     Only "score" method is abstract. */
-abstract class TupleFactorWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
+abstract class TupleFactorWithStatistics3[N1<:Var,N2<:Var,N3<:Var](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value))
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
   final override def statisticsAreValues: Boolean = true
@@ -331,7 +331,7 @@ abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVa
 }
 
 
-trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighborDomains {
+trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
   type NeighborType3 = N3
@@ -374,16 +374,16 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
 //  def addLimitedDiscreteValues(values:Iterable[(Int,Int,Int)]): Unit = limitedDiscreteValues ++= values
 }
 
-trait TupleFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N2,N3] {
+trait TupleFamily3[N1<:Var,N2<:Var,N3<:Var] extends Family3[N1,N2,N3] {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value))
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): ((N1#Value, N2#Value, N3#Value))
 }
 
-trait TupleFamilyWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable] extends TupleFamily3[N1,N2,N3] {
+trait TupleFamilyWithStatistics3[N1<:Var,N2<:Var,N3<:Var] extends TupleFamily3[N1,N2,N3] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
 }
 
-trait TensorFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N2,N3] with TensorFamily {
+trait TensorFamily3[N1<:Var,N2<:Var,N3<:Var] extends Family3[N1,N2,N3] with TensorFamily {
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): Tensor
 }
 
@@ -393,7 +393,7 @@ trait TensorFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] ext
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
-trait DotFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends TensorFamily3[N1,N2,N3] with DotFamily {
+trait DotFamily3[N1<:Var,N2<:Var,N3<:Var] extends TensorFamily3[N1,N2,N3] with DotFamily {
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = statisticsScore(statistics(v1, v2, v3))
 }
 

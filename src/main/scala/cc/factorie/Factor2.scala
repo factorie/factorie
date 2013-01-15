@@ -23,10 +23,10 @@ import cc.factorie.la._
 //import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator2[N1<:Variable,N2<:Variable] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] with ValuesIterator
+trait ValuesIterator2[N1<:Var,N2<:Var] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] with ValuesIterator
 
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType */
-abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends Factor {
+abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
@@ -179,7 +179,7 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
 
 /** A 2-neighbor Factor whose statistics have type Tuple2.
     Only "score" method is abstract. */
-abstract class TupleFactorWithStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+abstract class TupleFactorWithStatistics2[N1<:Var,N2<:Var](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = ((N1#Value, N2#Value))
   final override def statistics(v1:N1#Value, v2:N2#Value) = (v1, v2)
   final override def statisticsAreValues: Boolean = true
@@ -187,7 +187,7 @@ abstract class TupleFactorWithStatistics2[N1<:Variable,N2<:Variable](override va
 
 /** A 2-neighbor Factor whose statistics have type Tensor.
     Only "statistics" and "score" methods are abstract. */
-abstract class TensorFactor2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+abstract class TensorFactor2[N1<:Var,N2<:Var](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value): Tensor
   final def score(v1:N1#Value, v2:N2#Value): Double = statisticsScore(statistics(v1, v2))
@@ -230,7 +230,7 @@ abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override va
 
 // Family containing Factor2 (Families of Factors having two neighbor2)
 
-trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
+trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
     /** Override this if you want to matchNeighborDomains */
@@ -320,16 +320,16 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 //  override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
 }
 
-trait TupleFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] {
+trait TupleFamily2[N1<:Var,N2<:Var] extends Family2[N1,N2] {
   type StatisticsType = ((N1#Value, N2#Value))
   //def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value))
 }
 
-trait TupleFamilyWithStatistics2[N1<:Variable,N2<:Variable] extends TupleFamily2[N1,N2] {
+trait TupleFamilyWithStatistics2[N1<:Var,N2<:Var] extends TupleFamily2[N1,N2] {
   final override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = ((v1, v2))
 }
 
-trait TensorFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with TensorFamily {
+trait TensorFamily2[N1<:Var,N2<:Var] extends Family2[N1,N2] with TensorFamily {
   override def statistics(v1:N1#Value, v2:N2#Value): Tensor
 }
 
@@ -339,7 +339,7 @@ trait TensorFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFam
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
-trait DotFamily2[N1<:Variable,N2<:Variable] extends TensorFamily2[N1,N2] with DotFamily {
+trait DotFamily2[N1<:Var,N2<:Var] extends TensorFamily2[N1,N2] with DotFamily {
   def score(v1:N1#Value, v2:N2#Value): Double = statisticsScore(statistics(v1, v2))
 }
 

@@ -7,8 +7,8 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
     selected according to the variable type and its neighboring factors.
     If the model is not a GenerativeModel, then the variable should inherit from IterableSettings
     which is used to create a list of Proposals with alternative values. */
-class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Variable] {
-  type V = Variable
+class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Var] {
+  type V = Var
   private var _handlers: Iterable[GibbsSamplerHandler] = null 
   def defaultHandlers = GibbsSamplerDefaultHandlers
   def setHandlers(h:Iterable[GibbsSamplerHandler]): Unit = _handlers = h
@@ -41,7 +41,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
     case m:GenerativeModel => throw new Error("Not yet implemented")
     case m:Model => v match {
       case v:DiscreteVariable => proposals(v)
-      case v:Variable with IterableSettings => proposals(v.settings)
+      case v:Var with IterableSettings => proposals(v.settings)
     } 
   }
   def proposals(si:SettingIterator): Seq[Proposal] = {
@@ -77,7 +77,7 @@ object GibbsSamplerDefaultHandlers extends ArrayBuffer[GibbsSamplerHandler] {
 
 
 trait GibbsSamplerHandler {
-  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure
+  def sampler(v:Var, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure
 }
 trait GibbsSamplerClosure {
   def sample(implicit d:DiffList = null): Unit
@@ -88,7 +88,7 @@ object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
   class Closure(val variable:MutableVar[_], val factor:GenerativeFactor) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
-  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
+  def sampler(v:Var, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
       case List(factor:GenerativeFactor) => {
         v match {

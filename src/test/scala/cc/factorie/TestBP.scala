@@ -165,7 +165,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     
     // create template between v1 and v2
     val model = new CombinedModel(newTemplate2(v1, v2, -10, 0))
-    val vars: Set[Variable] = Set(v1, v2)
+    val vars: Set[Var] = Set(v1, v2)
     val varying = Set(v1)
     
     val fg = BPSummary(varying, model)

@@ -23,11 +23,11 @@ import cc.factorie.la._
 //import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator1[N1<:Variable] extends Iterator[AbstractAssignment1[N1]] with AbstractAssignment1[N1] with ValuesIterator
+trait ValuesIterator1[N1<:Var] extends Iterator[AbstractAssignment1[N1]] with AbstractAssignment1[N1] with ValuesIterator
 
 
 /** A Factor with one neighboring variable */
-abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
+abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   type NeighborType1 = N1
 
   def score(v1:N1#Value): Double
@@ -104,7 +104,7 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
 
 /** A 1-neighbor Factor whose statistics have type Tuple2.
     Only "score" method is abstract. */
-abstract class FactorWithStatistics1[N1<:Variable](override val _1:N1) extends Factor1[N1](_1) {
+abstract class FactorWithStatistics1[N1<:Var](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = N1#Value
   final override def statistics(v1:N1#Value) = v1
   final override def statisticsAreValues: Boolean = true
@@ -112,7 +112,7 @@ abstract class FactorWithStatistics1[N1<:Variable](override val _1:N1) extends F
 
 /** A 1-neighbor Factor whose statistics have type Tensor.
     Only "statistics" and "score" methods are abstract. */
-abstract class TensorFactor1[N1<:Variable](override val _1:N1) extends Factor1[N1](_1) {
+abstract class TensorFactor1[N1<:Var](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value): Tensor
   final def score(v1:N1#Value): Double = statisticsScore(statistics(v1))
@@ -156,7 +156,7 @@ abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) exten
 
 // Family containing Factor1 (Families of Factors having one neighbor)
 
-trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
+trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   /** Override this if you want to matchNeighborDomains */
   def neighborDomain1: Domain[N1#Value] = null
@@ -187,16 +187,16 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   def valuesIterator(f:Factor): ValuesIterator1[N1] = throw new Error("Not yet implemented") // TODO Here could be the option to iterate over a subset of values for restricted FSA connectivity
 }
 
-trait TupleFamily1[N1<:Variable] extends Family1[N1] {
+trait TupleFamily1[N1<:Var] extends Family1[N1] {
   type StatisticsType = ((N1#Value))
   //override def statistics(v1:N1#Value): ((N1#Value))
 }
 
-trait TupleFamilyWithStatistics1[N1<:Variable] extends TupleFamily1[N1] {
+trait TupleFamilyWithStatistics1[N1<:Var] extends TupleFamily1[N1] {
   @inline final override def statistics(v1:N1#Value) = ((v1))
 }
 
-trait TensorFamily1[N1<:Variable] extends Family1[N1] with TensorFamily {
+trait TensorFamily1[N1<:Var] extends Family1[N1] with TensorFamily {
   override def statistics(v1:N1#Value): Tensor
 }
 
@@ -206,7 +206,7 @@ trait TensorFamilyWithStatistics1[N1<:TensorVar] extends TensorFamily1[N1] {
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
-trait DotFamily1[N1<:Variable] extends TensorFamily1[N1] with DotFamily {
+trait DotFamily1[N1<:Var] extends TensorFamily1[N1] with DotFamily {
   def score(v1:N1#Value): Double = statisticsScore(statistics(v1))
 }
 

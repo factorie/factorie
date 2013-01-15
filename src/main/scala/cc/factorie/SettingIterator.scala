@@ -40,9 +40,9 @@ trait SettingIterator extends Iterator[DiffList] {
 /** A Variable that has a SettingIterator, created by calling "settings". 
     @author Andrew McCallum */
 trait IterableSettings {
-  this: Variable =>
+  this: Var =>
   trait SettingIterator extends cc.factorie.SettingIterator {
-    def variable: Variable = IterableSettings.this
+    def variable: Var = IterableSettings.this
   }
   def settings: SettingIterator
 }

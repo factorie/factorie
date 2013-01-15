@@ -56,7 +56,7 @@ object GenericDomain extends Domain[Any]
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
 // TODO Consider removing [This] self type argument.
 // TODO Get rid of this?  Yes, I think so. -akm
-trait VarAndValueGenericDomain[+This<:Variable,+VT] extends ValueBound[VT] {
+trait VarAndValueGenericDomain[+This<:Var,+VT] extends ValueBound[VT] {
   this: This =>
   //type ValueType = VT
   def domain = GenericDomain.asInstanceOf[Domain[VT]]

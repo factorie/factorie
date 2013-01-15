@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends ModelWithFactorType with Family3[N1,N2,N3] with ModelAsTemplate {
+abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends ModelWithFactorType with Family3[N1,N2,N3] with ModelAsTemplate {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
   val neighborClass3 = nm3.erasure
@@ -41,7 +41,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
 //          factor._2.asInstanceOf[DiscreteVar].intValue,
 //          factor._3.asInstanceOf[DiscreteVar].intValue))
 //  }
-  override def addFactors(v:Variable, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
+  override def addFactors(v:Var, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
     if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
     if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) result ++= unroll3(v.asInstanceOf[N3])
@@ -59,11 +59,11 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
 
 }
 
-abstract class TupleTemplate3[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with TupleFamily3[N1,N2,N3] 
-abstract class TupleTemplateWithStatistics3[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with TupleFamilyWithStatistics3[N1,N2,N3]
-abstract class TensorTemplate3[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with TensorFamily3[N1,N2,N3]
+abstract class TupleTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TupleFamily3[N1,N2,N3]
+abstract class TupleTemplateWithStatistics3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TupleFamilyWithStatistics3[N1,N2,N3]
+abstract class TensorTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TensorFamily3[N1,N2,N3]
 abstract class TensorTemplateWithStatistics3[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest] extends Template3[N1,N2,N3] with TensorFamilyWithStatistics3[N1,N2,N3]
-abstract class DotTemplate3[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with DotFamily3[N1,N2,N3]
+abstract class DotTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with DotFamily3[N1,N2,N3]
 abstract class DotTemplateWithStatistics3[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest] extends Template3[N1,N2,N3] with DotFamilyWithStatistics3[N1,N2,N3]
 
 

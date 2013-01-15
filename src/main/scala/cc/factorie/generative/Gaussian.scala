@@ -75,7 +75,7 @@ object MaximizeGaussianMean extends Maximize {
   def apply(meanVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
     lazy val assignment = new HashMapAssignment
@@ -139,7 +139,7 @@ object MaximizeGaussianVariance extends Maximize {
   def apply(varianceVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
     lazy val assignment = new HashMapAssignment

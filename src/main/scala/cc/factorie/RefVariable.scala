@@ -19,7 +19,7 @@ object RefDomain extends RefDomain
 // TODO Use the above
 
 /** A Variable whose value is a pointer to a Scala object (which may also be a Variable) */
-trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] 
+trait RefVar[A<:AnyRef] extends Var with VarAndValueGenericDomain[RefVar[A],A]
 
 /** A variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVariable and EdgeVariable. */

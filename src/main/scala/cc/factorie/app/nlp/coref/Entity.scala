@@ -124,7 +124,7 @@ trait Entity extends Attr {
 class ChildEntities(val entity:Entity) extends SetVariable[Entity]
 
 /**An attribute that knows what entity it belongs to*/
-trait EntityAttr extends Variable {
+trait EntityAttr extends Var {
   def entity: Entity
 }
 

@@ -23,7 +23,7 @@ import scala.collection.mutable.ArrayBuffer
    @author Andrew McCallum */
 class Collapse(val model:GenerativeModel) {
   val collapsers = new ArrayBuffer[Collapser] ++= Seq(DenseCountsProportionsCollapser, DenseCountsProportionsMixtureCollapser)
-  def apply(variables:Seq[Variable]): Unit = {
+  def apply(variables:Seq[Var]): Unit = {
     val factors = model.factors(variables)
     // This next line does the collapsing
     val option = collapsers.find(_.collapse(variables, factors, model))
@@ -34,11 +34,11 @@ class Collapse(val model:GenerativeModel) {
 
 trait Collapser {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean
 }
 
 object DenseCountsProportionsCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case p:ProportionsVar => {
@@ -63,7 +63,7 @@ object DenseCountsProportionsCollapser extends Collapser {
 }
 
 object DenseCountsProportionsMixtureCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case m:Mixture[ProportionsVar] => {

@@ -23,10 +23,10 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Iterator[AbstractAssignment4[N1,N2,N3,N4]] with AbstractAssignment4[N1,N2,N3,N4] with ValuesIterator
+trait ValuesIterator4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Iterator[AbstractAssignment4[N1,N2,N3,N4]] with AbstractAssignment4[N1,N2,N3,N4] with ValuesIterator
 
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
-abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val _1:N1, val _2:N2, val _3:N3, val _4:N4) extends Factor {
+abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, val _3:N3, val _4:N4) extends Factor {
   factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
@@ -85,7 +85,7 @@ abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val 
 
 /** A 4-neighbor Factor whose statistics have type Tuple2.
     Only "score" method is abstract. */
-abstract class TupleFactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
+abstract class TupleFactorWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
   final override def statisticsAreValues: Boolean = true
@@ -136,7 +136,7 @@ abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVa
 
 
 
-trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends FamilyWithNeighborDomains {
+trait Family4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
   type NeighborType3 = N3
@@ -163,16 +163,16 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
 }
 
-trait TupleFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] {
+trait TupleFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Family4[N1,N2,N3,N4] {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): ((N1#Value, N2#Value, N3#Value, N4#Value))
 }
 
-trait TupleFamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends TupleFamily4[N1,N2,N3,N4] {
+trait TupleFamilyWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends TupleFamily4[N1,N2,N3,N4] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
 }
 
-trait TensorFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] with TensorFamily {
+trait TensorFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Family4[N1,N2,N3,N4] with TensorFamily {
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Tensor
 }
 
@@ -182,7 +182,7 @@ trait TensorFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
-trait DotFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends TensorFamily4[N1,N2,N3,N4] with DotFamily {
+trait DotFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends TensorFamily4[N1,N2,N3,N4] with DotFamily {
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = statisticsScore(statistics(v1, v2, v3, v4))
 }
 

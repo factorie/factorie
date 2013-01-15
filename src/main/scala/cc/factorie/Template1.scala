@@ -27,7 +27,7 @@ import java.io._
 //  and have it be generic as a collection of arbitrary Models.
 //  (Now possible if Templates are now responsible for their own de-duplication.)
 
-abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1] 
+abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1]
 {
   val neighborClass1 = nm1.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1)
@@ -41,7 +41,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Model
   
   // Factors
   //def factors(v:Variable): Iterable[FactorType] = { val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]; addFactors(v, result); result.asInstanceOf[Iterable[FactorType]] }
-  override def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit = {
+  override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
     val vClass = v.getClass
     if (nm1.erasure.isAssignableFrom(vClass)) unroll1(v.asInstanceOf[N1]) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
     if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
@@ -71,11 +71,11 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Model
 }
 
 
-abstract class TupleTemplate1[N1<:Variable:Manifest] extends Template1[N1] with TupleFamily1[N1] 
-abstract class TupleTemplateWithStatistics1[N1<:Variable:Manifest] extends Template1[N1] with TupleFamilyWithStatistics1[N1]
-abstract class TensorTemplate1[N1<:Variable:Manifest] extends Template1[N1] with TensorFamily1[N1]
+abstract class TupleTemplate1[N1<:Var:Manifest] extends Template1[N1] with TupleFamily1[N1]
+abstract class TupleTemplateWithStatistics1[N1<:Var:Manifest] extends Template1[N1] with TupleFamilyWithStatistics1[N1]
+abstract class TensorTemplate1[N1<:Var:Manifest] extends Template1[N1] with TensorFamily1[N1]
 abstract class TensorTemplateWithStatistics1[N1<:TensorVar:Manifest] extends Template1[N1] with TensorFamilyWithStatistics1[N1]
-abstract class DotTemplate1[N1<:Variable:Manifest] extends Template1[N1] with DotFamily1[N1]
+abstract class DotTemplate1[N1<:Var:Manifest] extends Template1[N1] with DotFamily1[N1]
 abstract class DotTemplateWithStatistics1[N1<:TensorVar:Manifest] extends Template1[N1] with DotFamilyWithStatistics1[N1]
 
 

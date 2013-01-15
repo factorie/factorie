@@ -58,9 +58,9 @@ object Template {
 */
 trait ModelAsTemplate extends Model with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
   // TODO This method is a little messy.  Clean up this situation. -akm
-  def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit
+  def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
-  def factors(v:Variable): Iterable[FactorType] = {
+  def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]
@@ -68,7 +68,7 @@ trait ModelAsTemplate extends Model with FamilyWithNeighborDomains with FamilyWi
 
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
-  def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
+  def unrollCascade(v:Var): Iterable[Var] = v.unrollCascade
   def tryCascade: Boolean = true //hasContainerNeighbors
   def hasContainerNeighbors: Boolean = {
     println("TemplateModel hasContainerNeighbors neighborClasses: "+neighborClasses.mkString(","))

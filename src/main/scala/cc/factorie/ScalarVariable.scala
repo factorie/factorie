@@ -19,7 +19,7 @@ package cc.factorie
     does not yet commit to the Value type of this Variable.
     See also IntegerVar, RealVar and DoubleVar.
     @author Andrew McCallum */
-trait ScalarVar extends Variable {
+trait ScalarVar extends Var {
   def intValue: Int
   def doubleValue: Double
 }

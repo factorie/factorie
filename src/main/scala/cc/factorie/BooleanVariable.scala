@@ -51,7 +51,7 @@ object BooleanValue {
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with Var[BooleanValue] {
+trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[BooleanValue] {
   def value: BooleanValue
   def domain: CategoricalDomain[Boolean] = BooleanDomain
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 

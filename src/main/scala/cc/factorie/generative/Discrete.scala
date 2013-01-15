@@ -60,7 +60,7 @@ object MaximizeGeneratedDiscrete extends Maximize {
       case _ => None
     }
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     val result = new DiscreteSummary1[DiscreteVariable]

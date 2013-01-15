@@ -63,7 +63,7 @@ object TopicsOverTime {
     val dateRange: Double = maxDate - minDate
     documents.foreach(doc => doc.stamps.foreach(_ := (doc.date - minDate) / dateRange)) 
 
-    val collapse = new ArrayBuffer[Variable]
+    val collapse = new ArrayBuffer[Var]
     collapse += phis
     collapse ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapse, model)

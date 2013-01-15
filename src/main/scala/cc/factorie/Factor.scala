@@ -28,12 +28,12 @@ import java.io._
 trait Factor extends Ordered[Factor] {
   type StatisticsType <: Any
   /** Returns the collection of variables neighboring this factor. */
-  def variables: Seq[Variable]
+  def variables: Seq[Var]
   /** The number of variables neighboring this factor. */
   def numVariables: Int
-  def variable(index: Int): Variable
-  def touches(variable:Variable): Boolean = this.variables.contains(variable)
-  def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
+  def variable(index: Int): Var
+  def touches(variable:Var): Boolean = this.variables.contains(variable)
+  def touchesAny(variables:Iterable[Var]): Boolean = variables.exists(touches(_))
   
   // Getting the score
   

@@ -173,12 +173,12 @@ abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) e
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
 // TODO Remove and recommend GibbsSampler instead
-class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
+class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList
     val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
@@ -222,7 +222,7 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, o
 }
 
 /** Besag's Iterated Conditional Modes.  Visit a variable, and set it to its highest scoring value (based on current value of its factors' neighbors). */
-class IteratedConditionalModes[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
+class IteratedConditionalModes[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
