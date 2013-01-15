@@ -454,8 +454,9 @@ object EntityUtils{
     e2.attr[EditSetVariable].value.foreach(evar.add(_)(d))
   }
   def linkChildToParent(child:Entity,parent:Entity)(implicit d:DiffList):Unit ={
+    if(child.parentEntity!=null)propagateRemoveBag(child,child.parentEntity)
     child.setParentEntity(parent)(d)
-    propagateBagUp(child)(d)
+    if(parent!=null)propagateBagUp(child)(d)
   }
   def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
     var e = entity.parentEntity

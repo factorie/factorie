@@ -40,7 +40,7 @@ class DebugDiffList extends DiffList{
     //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
     s
   }}
-class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000) extends AuthorSampler(model){
+class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000,initInstructionsOpt:Option[Seq[Seq[()=>Unit]]]) extends AuthorSampler(model) with HumanEditDebugUtils{
   protected var pwOption:Option[PrintWriter]=None
   val labeledData = initialDB.filter(_.groundTruth != None)
   def snapshotInterval = 10000
@@ -65,6 +65,12 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
     for(evidenceBatch <- evidenceBatches){
       batchCount += 1
       evidenceBatch.foreach(this.addEntity(_))
+      if(initInstructionsOpt!=None){
+        println("Executing initialization instructions")
+        for(initInstruction <- initInstructionsOpt.get.apply(batchCount-1)){
+          initInstruction.apply()
+        }
+      }
       if(evidenceBatchNames != None)currentBatchName = evidenceBatchNames.get(batchCount-1)
       println("\n---Adding new evidence batch---")
       println("  Batch name: "+currentBatchName)
@@ -82,20 +88,48 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       println("Evidence ended up:")
       evidenceBatch.foreach((e:AuthorEntity)=>EntityUtils.prettyPrintAuthor(e.entityRoot.asInstanceOf[AuthorEntity]))
       //model.familiesOfClass[HumanEditTemplate].head.debugFlag=true
+      val debugged = new HashSet[AuthorEntity]
       for(e<-evidenceBatch){
         for(gf <- e.generatedFrom)
           println("Purity of edit source: "+EntityUtils.purity(gf))
+        /*
         println("Checking affinity to generated-from entity")
         debugEditAffinityToGenerator(e)
         println("Checking should-link constraint")
         debugEditAffinityToLinked(e)
         println("Checking if edit worked as intended")
         debugEdit(e)
+        println("Checking SNL constraint")
+        debugEdit(e)
+        */
+        if(!debugged.contains(e)){
+          debugged += e
+          for(l<-e.linkedMention)debugged += l.asInstanceOf[AuthorEntity]
+          debugSNLConstraint(e)
+        }
       }
       //model.familiesOfClass[HumanEditTemplate].head.debugFlag=false
       //snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
     }
+    println("Streamed SNL statistics")
+    printSNLStatistics
+    reset
+    println("Recomputing statistics")
+    val debugged = new HashSet[AuthorEntity]
+    for(evidenceBatch <- evidenceBatches){
+      for(e<-evidenceBatch){
+        if(!debugged.contains(e)){
+          debugged += e
+          for(l<-e.linkedMention)debugged += l.asInstanceOf[AuthorEntity]
+          debugSNLConstraint(e)
+        }
+      }
+    }
+    println("Final SNL statistics")
+    printSNLStatistics
   }
+
+  /*
   def debugEditAffinityToLinked(e:AuthorEntity):Unit ={
     if(!(e.entityRoot eq e.linkedMention.get.entityRoot)){
       val d = new DebugDiffList
@@ -126,6 +160,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       if(score<=0.0)println("    test3 failure: model") else println("    test3 failure: inference")
     } else println("  Passed test 3.")
   }
+  */
   override def proposalHook(proposal:Proposal) ={
     super.proposalHook(proposal)
     curScore += proposal.modelScore
@@ -161,6 +196,7 @@ trait HumanEditOptions extends ExperimentOptions{
   val heAdvanceSeed = new CmdOption("he-advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
   val heUseParallel = new CmdOption("he-use-parallel",false,"BOOL","If true, will use a parallel sampler to perform the initialization.")
   val heSaveInitialDB = new CmdOption("he-save-initial-db",false,"BOOL","If true, save the initial database.")
+  val heInitializeEdits = new CmdOption("he-initialize-edits",false,"BOOL","If true, initialize edits to be in entities they were generated from.")
 }
 
 object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions{
@@ -248,6 +284,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     var evidenceBatches:Seq[Seq[AuthorEntity]] = null
     var evidenceBatchNamesOpt:Option[Seq[String]] = None
     var initialDBNameOpt:Option[String] = None
+    var initInstructionsOpt:Option[Seq[Seq[()=>Unit]]] = None
     println("Authors.size" +authors.size)
     EntityUtils.checkIntegrity(authors)
     Evaluator.eval(authors)
@@ -286,7 +323,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           initialDB = samplerForCreatingInitialDB.getEntities
           if(heSaveInitialDB.value){
             epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
-            println("Human edits merge-correct: saved initial db and exiting.")
+            println("Human edits merge-incorrect: saved initial db and exiting.")
             System.exit(0)
           }
           val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(! _.isCorrect)
@@ -304,16 +341,118 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           initialDB = samplerForCreatingInitialDB.getEntities
           if(heSaveInitialDB.value){
             epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
-            println("Human edits merge-correct: saved initial db and exiting.")
+            println("Human edits merge-mixed: saved initial db and exiting.")
             System.exit(0)
           }
-          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(! _.isCorrect)
           val correctEdits = edits.filter(_.isCorrect)
           val incorrectEdits = random.shuffle(edits.filter(! _.isCorrect)).take(correctEdits.size)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(correctEdits++incorrectEdits,opts.heNumBatches.value)
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
           HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
+        }
+        case "split-correct" => {
+          val initDiffList = new DiffList
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits split-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val edits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          if(opts.heInitializeEdits.value){
+            val initInstructions = new ArrayBuffer[ArrayBuffer[()=>Unit]]
+            for(batch <- evidenceBatches){
+              val ibatch = new ArrayBuffer[()=>Unit]
+              initInstructions + ibatch
+              for(edit <- batch){
+                ibatch += {() => {
+                  println("linking edit to generator: "+edit.id)
+                  println("   is parent null? "+(edit.parentEntity==null))
+                  if(!edit.generatedFrom.get.isObserved)EntityUtils.linkChildToParent(edit,edit.generatedFrom.get)(null)
+                  //EntityUtils.linkChildToParent(edit.linkedMention.get,edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get)(null)
+                }}
+              }
+            }
+            initInstructionsOpt = Some(initInstructions)
+            /*
+            for(edit <- edits.flatMap(_.mentions)){
+              if(edit.parentEntity == null){
+                EntityUtils.linkChildToParent(edit,edit.generatedFrom.get)(initDiffList)
+                EntityUtils.linkChildToParent(edit.linkedMention.get,edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get)(initDiffList)
+              }
+            }
+            */
+          }
+          HumanEditExperiments.splitBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          //HumanEditExperiments.applySplitEdits(evidenceBatches)(initDiffList)
+          //println("Diff score after applying split edits: "+initDiffList.score(authorCorefModel))
+        }
+        case "split-incorrect" => {
+          val initDiffList = new DiffList
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          val edits = HumanEditExperiments.incorrectAuthorSplitEdits(initialDB)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          if(opts.heInitializeEdits.value){
+            val initInstructions = new ArrayBuffer[ArrayBuffer[()=>Unit]]
+            for(batch <- evidenceBatches){
+              val ibatch = new ArrayBuffer[()=>Unit]
+              initInstructions + ibatch
+              for(edit <- batch){
+                ibatch += {() => {
+                  println("linking edit to generator: "+edit.id)
+                  println("   is parent null? "+(edit.parentEntity==null))
+                  if(!edit.generatedFrom.get.isObserved)EntityUtils.linkChildToParent(edit,edit.generatedFrom.get)(null)
+                  //EntityUtils.linkChildToParent(edit.linkedMention.get,edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get)(null)
+                }}
+              }
+            }
+            initInstructionsOpt = Some(initInstructions)
+            /*
+            for(edit <- edits.flatMap(_.mentions)){
+              if(edit.parentEntity == null){
+                EntityUtils.linkChildToParent(edit,edit.generatedFrom.get)(initDiffList)
+                EntityUtils.linkChildToParent(edit.linkedMention.get,edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get)(initDiffList)
+              }
+            }
+            */
+          }
+          HumanEditExperiments.splitBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          //HumanEditExperiments.applySplitEdits(evidenceBatches)(initDiffList)
+          //println("Diff score after applying split edits: "+initDiffList.score(authorCorefModel))
+        }
+        case "mixed" => {
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits merge-correct: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val correctMergeEdits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
+          val correctSplitEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          val edits = correctMergeEdits ++ correctSplitEdits
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          //HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          //HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
         }
         case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
       }
@@ -367,7 +506,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       println("  num evidence batches: "+evidenceBatches.size)
     }
     else println("unrecognized evidence stream: "+evidenceStreamType.value)
-    val sampler = new AuthorSamplerWriter(authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value){temperature = 0.001}
+    val sampler = new AuthorSamplerWriter(authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value,initInstructionsOpt){temperature = 0.001}
     sampler.processExperiment(new PrintWriter(new File(outputFile.value)))
   }
   def split[T](seq:Seq[T],numFolds:Int,fold:Int):(Seq[T],Seq[T]) = {
