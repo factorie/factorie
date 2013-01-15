@@ -79,6 +79,8 @@ case object PerDocument extends SentenceBoundaryInference
 case object JointlyAcrossDocuments extends SentenceBoundaryInference
 case object Non extends SentenceBoundaryInference
 
+object PunktTokenizer extends PunktTokenizer
+
 class PunktTokenizer extends StringSegmenter {
 
   def commonAbbreviations: Set[String] = DefaultRules.commonAbbreviations

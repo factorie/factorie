@@ -71,8 +71,6 @@ object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenc
   }
 }
 
-
-
 object alphaSegmenter extends RegexSegmenter("\\p{Alpha}+".r)
 object wordSegmenter extends RegexSegmenter("\\w+".r)
 object wordClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+".r)
@@ -96,6 +94,6 @@ object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(
 //object csvSegmenter extends RegexSegmenter("(?<=\")([^\"]*)(?=\")|(?<=,|^)([^,]*)(?=,|$)".r)
 //object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)
 
-//object csvSegmenter extends RegexSegmenter("\"([^\"]+?)\",?|([^,]+),?|,".r)                                                                    
-//object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(?=,|$))".r)                                                      
-//object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)                                               
+//object csvSegmenter extends RegexSegmenter("\"([^\"]+?)\",?|([^,]+),?|,".r)
+//object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(?=,|$))".r)
+//object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)

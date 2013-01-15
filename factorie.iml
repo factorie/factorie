@@ -5,6 +5,7 @@
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
         <option name="compilerLibraryName" value="Maven: org.scala-lang:scala-compiler-bundle:2.9.1" />
+        <option name="fsc" value="true" />
         <option name="maximumHeapSize" value="1800" />
         <option name="vmOptions" value="-Xms64m" />
       </configuration>
@@ -26,6 +27,7 @@
     <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.scalatest:scalatest_2.9.1:1.7.2" level="project" />
     <orderEntry type="library" name="Maven: org.mongodb:mongo-java-driver:2.7.3" level="project" />
+    <orderEntry type="library" name="Maven: net.sourceforge.jregex:jregex:1.2_01" level="project" />
     <orderEntry type="library" name="Maven: net.sourceforge.parallelcolt:parallelcolt:0.10.0" level="project" />
     <orderEntry type="library" name="Maven: net.sourceforge.jplasma:jplasma:1.2.0" level="project" />
     <orderEntry type="library" name="Maven: net.sourceforge.jplasma:core-lapack:0.1" level="project" />

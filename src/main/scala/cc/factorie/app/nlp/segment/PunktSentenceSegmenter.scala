@@ -72,7 +72,7 @@ object PunktSentenceSegmenter {
 
       lazy val wordTokenizerRegex = {
         val re = wordTokenizeTemplate.format(nonWordChars, multiCharPunctuationRegex, wordStartRegex)
-        println(re)
+//        println(re)
         re.r
       }
 
@@ -89,7 +89,7 @@ object PunktSentenceSegmenter {
 
       lazy val periodContextRegex = {
         val re = periodContextTemplate.format(nonWordChars, sentenceEndCharsRegex)
-        println(re)
+//        println(re)
         re.r
       }
     }
