@@ -89,7 +89,7 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
   def isConverged = optimizer.isConverged
 }
 
-class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] {
+class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3) extends Trainer[M] {
   import collection.JavaConversions._
   def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M): Seq[Callable[Object]] = es.map(e => {
     new Callable[Object] { 
@@ -105,13 +105,15 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
     }
   }).toSeq
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
+  var iteration = 0
   def processExamples(examples: Iterable[Example[M]]): Unit = {
+    iteration += 1
     if (runnables eq null) runnables = examplesToRunnables[M](examples, model)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
     pool.shutdown()
   }
-  def isConverged = false
+  def isConverged = iteration >= maxIterations
 }
 
 
@@ -282,21 +284,23 @@ class AdagradAccumulatorMaximizer(val model: Model, learningRate: Double = 0.1, 
   }
 }
 
-class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer: AccumulatorMaximizer = null) extends Trainer[M] {
+class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var optimizer: AccumulatorMaximizer = null, val maxIterations: Int = 3) extends Trainer[M] {
   if (optimizer == null) optimizer = new GradientAccumulatorMaximizer(model, lrate)
-
+  var iteration = 0
   def processExamples(examples: Iterable[Example[M]]) {
+    iteration += 1
     examples.foreach(e => e.accumulateExampleInto(model, optimizer, null, null))
   }
 
-  def isConverged = false
+  def isConverged = iteration >= maxIterations
 }
 
-class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MIRA) extends Trainer[M] with util.FastLogging {
+class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
-
+  var iteration = 0
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
+    iteration += 1
     examples.zipWithIndex.foreach({ case (example, i) => {
       if (i % 1000 == 0) logger.info(i + " examples")
       gradientAccumulator.tensor.zero()
@@ -304,7 +308,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new MI
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
     }})
   }
-  def isConverged = false
+  def isConverged = iteration >= maxIterations
 }
 
 class InlineSGDThenBatchTrainer[M<:Model](
