@@ -10,10 +10,10 @@ class TokenizerTests extends JUnitSuite {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
-  val modelPath = """c:\dictionary-1.2.0.zip"""
+  val englishTokenizer = new EnglishTokenizer(EnglishTokenizerConfig.default)
 
-  /*@Test*/ def testClearSegmenter(): Unit = {
-    val seg = new EnglishSegmenter(new EnglishTokenizer(new ZipInputStream(new FileInputStream(modelPath))))
+  @Test def testClearSegmenter(): Unit = {
+    val seg = new EnglishSegmenter(englishTokenizer)
     val text =
       """
       I got bored of the iPhone. This has been a conundrum for for the past few months. I wanted a new phone, but didn't know how to transcend away from the iOS environment. I woke up one morning, and said, "whatever, I don't care anymore," and walked into BestBuy(save the hate, I had a $25 coupon and $35 gift card) and bought the Note 2. I have been wanting this phone since I first hear about it.
@@ -30,8 +30,8 @@ class TokenizerTests extends JUnitSuite {
     seg.getSentences(new BufferedReader(new StringReader(text))).map(_.mkString(" ")).foreach(println)
   }
 
-  /*@Test*/ def testClearTokenizer(): Unit = {
-    val tok = new EnglishTokenizer(new ZipInputStream(new FileInputStream(modelPath)))
+  @Test def testClearTokenizer(): Unit = {
+    val tok = englishTokenizer
 
     def check(src: String, trg: String): Unit = assertEquals("[" + tok.getTokens(src).mkString(", ") + "]", trg)
 

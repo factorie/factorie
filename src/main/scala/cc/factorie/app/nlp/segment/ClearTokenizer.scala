@@ -112,41 +112,12 @@ abstract class AbstractTokenizer {
 class StringBooleanPair(var s: String, var b: Boolean) { }
 
 class IntIntPair(val i1: Int, val i2: Int) { }
-//
-//object EnglishTokenizerConfig {
-//  def apply(zin: ZipInputStream): EnglishTokenizerConfig = {
-//
-//  }
-//}
-//
-//class EnglishTokenizerConfig {
-//  var M_COMPOUNDS: mutable.HashMap[String, Int] = null
-//  var L_COMPOUNDS: mutable.ArrayBuffer[Array[IntIntPair]] = null
-//  var T_EMOTICONS: mutable.Set[String] = null
-//  var T_ABBREVIATIONS: mutable.Set[String] = null
-//  var P_HYPHEN_LIST: Pattern = null
-//  val S_DELIM = " "
-//  val P_DELIM = Pattern.compile(S_DELIM)
-//
-//else if (filename.equals(F_COMPOUNDS))
-//  initDictionariesComounds(zin)
-//else if (filename.equals(F_UNITS))
-//  initDictionariesUnits(zin)
-//}
 
 /**
 * @since 1.1.0
 * @author Jinho D. Choi ({@code jdchoi77@gmail.com})
 */
-class EnglishTokenizer(zin: ZipInputStream) extends AbstractTokenizer {
-
-  protected val F_DIR = "tokenize/"
-  protected val F_EMOTICONS = F_DIR+"emoticons.txt"
-  protected val F_ABBREVIATIONS = F_DIR+"abbreviations.txt"
-  protected val F_HYPHENS = F_DIR+"hyphens.txt"
-  protected val F_COMPOUNDS = F_DIR+"compounds.txt"
-  protected val F_UNITS = F_DIR+"units.txt"
-  protected val F_MICROSOFT = F_DIR+"microsoft.txt"
+class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
 
   protected val S_DELIM = " "
   protected val S_PROTECTED = "PR0T_"
@@ -189,12 +160,7 @@ class EnglishTokenizer(zin: ZipInputStream) extends AbstractTokenizer {
   initReplacers()
   initMapsD0D()
   initPatterns()
-
-  try {
-    initDictionaries(zin)
-  } catch {
-    case e: Exception => e.printStackTrace()
-  }
+  initDictionaries(zin)
 
   def getTokenList(str: String): Seq[StringBooleanPair] = {
     var lTokens = tokenizeWhiteSpaces(str)
@@ -288,88 +254,13 @@ class EnglishTokenizer(zin: ZipInputStream) extends AbstractTokenizer {
     P_RECOVER_AMPERSAND = Pattern.compile(S_AMPERSAND)
   }
 
-  def initDictionaries(zin: ZipInputStream): Unit = {
-    var zEntry: ZipEntry = null
-    var filename: String = null
-
-    while ({zEntry = zin.getNextEntry; zEntry != null}) {
-      filename = zEntry.getName
-//      println(filename)
-      if (filename.equals(F_EMOTICONS))
-        T_EMOTICONS = getSet(zin)
-      else if (filename.equals(F_ABBREVIATIONS))
-        T_ABBREVIATIONS = getSet(zin)
-      else if (filename.equals(F_HYPHENS))
-        P_HYPHEN_LIST = getHyphenPatterns(zin)
-      else if (filename.equals(F_COMPOUNDS))
-        initDictionariesComounds(zin)
-      else if (filename.equals(F_UNITS))
-        initDictionariesUnits(zin)
-    }
-
-    zin.close()
-  }
-
-  def getSet(zin: ZipInputStream): mutable.Set[String] = {
-    val fin = new BufferedReader(new InputStreamReader(zin))
-    val set = new mutable.HashSet[String]()
-    var line: String = null
-    while ({ line = fin.readLine(); line != null })
-      set.add(line.trim())
-//    set.foreach(println)
-    set
-  }
-
-  def getHyphenPatterns(zin: ZipInputStream): Pattern = {
-    val fin = new BufferedReader(new InputStreamReader(zin))
-    val build = new StringBuilder()
-    var line: String = null
-    while ({ line = fin.readLine(); line != null }) {
-      build.append("|")
-      build.append(line.trim())
-    }
-    Pattern.compile(build.substring(1))
-  }
-
-  private def initDictionariesComounds(zin: ZipInputStream): Unit = {
-    val fin = new BufferedReader(new InputStreamReader(zin))
-    M_COMPOUNDS = new mutable.HashMap[String, Int]()
-    L_COMPOUNDS = new mutable.ArrayBuffer[Array[IntIntPair]]()
-
-    var i = 0
-    var p: Array[IntIntPair] = null
-    var tmp: Array[String] = null
-    var line: String = null
-
-    while ({ line = fin.readLine(); i += 1; line != null }) {
-      tmp = P_DELIM.split(line.trim())
-      val len = tmp.length
-      p = new Array[IntIntPair](len)
-
-      M_COMPOUNDS(tmp.mkString) = i
-      L_COMPOUNDS += p
-
-      var bIdx = 0
-      for (j <- 0 until len) {
-        val eIdx = bIdx + tmp(j).length
-        p(j) = new IntIntPair(bIdx, eIdx)
-        bIdx = eIdx
-      }
-    }
-  }
-
-  private def initDictionariesUnits(zin: ZipInputStream): Unit = {
-    val fin = new BufferedReader(new InputStreamReader(zin))
-    val signs = fin.readLine().trim()
-    val currencies = fin.readLine().trim()
-    val units = fin.readLine().trim()
-
-    R_UNIT = new Array[Replacer](4)
-
-    R_UNIT(0) = new jregex.Pattern("^(?i)(\\p{Punct}*"+signs+")(\\d)").replacer(new SubstitutionTwo())
-    R_UNIT(1) = new jregex.Pattern("^(?i)(\\p{Punct}*"+currencies+")(\\d)").replacer(new SubstitutionTwo())
-    R_UNIT(2) = new jregex.Pattern("(?i)(\\d)("+currencies+"\\p{Punct}*)$").replacer(new SubstitutionTwo())
-    R_UNIT(3) = new jregex.Pattern("(?i)(\\d)("+units+"\\p{Punct}*)$").replacer(new SubstitutionTwo())
+  def initDictionaries(cfg: EnglishTokenizerConfig): Unit = {
+    T_EMOTICONS = cfg.T_EMOTICONS
+    T_ABBREVIATIONS = cfg.T_ABBREVIATIONS
+    P_HYPHEN_LIST = Pattern.compile(cfg.P_HYPHEN_LIST)
+    M_COMPOUNDS = cfg.M_COMPOUNDS
+    L_COMPOUNDS = cfg.L_COMPOUNDS
+    R_UNIT = cfg.R_UNIT.map(new jregex.Pattern(_)).map(_.replacer(new SubstitutionTwo()))
   }
 
   protected def tokenizeWhiteSpaces(str: String): mutable.ArrayBuffer[StringBooleanPair] = {
