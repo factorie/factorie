@@ -158,9 +158,9 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
     while (s < numSamples) {
       stats(s)._2 match {
         case sT: SparseTensor1 =>
+          val len = sT.activeDomainSize
           val sIndices = sT._indices
           val sValues = sT._values
-          val len = sT.activeDomainSize
           var i = 0
           while (i < len) {
             featureValues(sIndices(i)) += sValues(i)

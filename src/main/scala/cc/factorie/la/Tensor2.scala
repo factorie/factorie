@@ -120,9 +120,9 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           col += 1
         }
       case t: SparseIndexedTensor =>
+        val tActiveDomainSize = t.activeDomainSize
         val tIndices = t._indices
         val tValues = t._values
-        val tActiveDomainSize = t.activeDomainSize
         var ti = 0
         while (ti < tActiveDomainSize) {
           val col = tIndices(ti)
@@ -309,9 +309,9 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
             val t2Size = t2.size
             val t1Size = t1.size
             val t1Values = t1.asArray
+            val t2ActiveDomainSize = t2.activeDomainSize
             val t2Indices = t2._indices
             val t2Values = t2._values
-            val t2ActiveDomainSize = t2.activeDomainSize
             var idx1 = 0
             while (idx1 < t1Size) {
               val v1 = t1Values(idx1) * v
