@@ -80,6 +80,10 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     
 }
 
+trait DocumentProcessor {
+  // NOTE: this method may mutate and return the same document that was passed in
+  def process(d: Document): Document
+}
 
 class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
   val name = StringSlot("name")

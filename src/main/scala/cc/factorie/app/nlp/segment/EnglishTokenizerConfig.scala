@@ -7,7 +7,7 @@ import java.io.{InputStreamReader, BufferedReader}
 
 trait EnglishTokenizerConfig {
   def M_COMPOUNDS: mutable.HashMap[String, Int]
-  def L_COMPOUNDS: mutable.ArrayBuffer[Array[IntIntPair]]
+  def L_COMPOUNDS: mutable.ArrayBuffer[Array[CompoundSpan]]
   def T_EMOTICONS: mutable.Set[String]
   def T_ABBREVIATIONS: mutable.Set[String]
   def P_HYPHEN_LIST: String
@@ -141,7 +141,7 @@ object EnglishTokenizerConfig {
     var filename: String = null
 
     var mcompounds: mutable.HashMap[String, Int] = null
-    var lcompounds: mutable.ArrayBuffer[Array[IntIntPair]] = null
+    var lcompounds: mutable.ArrayBuffer[Array[CompoundSpan]] = null
     var temoticons: mutable.Set[String] = null
     var tabbreviations: mutable.Set[String] = null
     var phyphenlist: String = null
@@ -198,19 +198,19 @@ object EnglishTokenizerConfig {
     build.substring(1)
   }
 
-  private def initDictionariesCompounds(zin: Iterable[String]): (mutable.HashMap[String, Int], mutable.ArrayBuffer[Array[IntIntPair]]) = {
+  private def initDictionariesCompounds(zin: Iterable[String]): (mutable.HashMap[String, Int], mutable.ArrayBuffer[Array[CompoundSpan]]) = {
     val mcompounds = new mutable.HashMap[String, Int]()
-    val lcompounds = new mutable.ArrayBuffer[Array[IntIntPair]]()
+    val lcompounds = new mutable.ArrayBuffer[Array[CompoundSpan]]()
 
     var i = 0
-    var p: Array[IntIntPair] = null
+    var p: Array[CompoundSpan] = null
     var tmp: Array[String] = null
 
     for (line <- zin) {
       i += 1
       tmp = P_DELIM.split(line.trim())
       val len = tmp.length
-      p = new Array[IntIntPair](len)
+      p = new Array[CompoundSpan](len)
 
       mcompounds(tmp.mkString) = i
       lcompounds += p
@@ -218,7 +218,7 @@ object EnglishTokenizerConfig {
       var bIdx = 0
       for (j <- 0 until len) {
         val eIdx = bIdx + tmp(j).length
-        p(j) = new IntIntPair(bIdx, eIdx)
+        p(j) = new CompoundSpan(bIdx, eIdx)
         bIdx = eIdx
       }
     }
