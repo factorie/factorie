@@ -25,20 +25,21 @@ class TokenizerTests extends JUnitSuite {
 
       I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
       """.stripMargin
-    seg.getSentences(text).map(_.map(_.s).mkString(" ")).foreach(println)
+    val d = new Document("", (1 to 2).map(_ => text).mkString("\n"))
+    seg.process(d)
+    d.sentences.map(_.string).foreach(println)
   }
 
   @Test def testClearTokenizer(): Unit = {
     val tok = ClearTokenizer
 
     def check(src: String, trg: String): Unit = {
-      val tokens = tok.getTokenList(src)
+      val d = new Document("", src)
+      val tokens = tok.process(d).tokens
       for (t <- tokens) {
-               println("tok: %s start: %d end: %d orig: %s synth: %s" format (t.s, t.start, t.end, if (t.end > src.length || t.start < 0) "ERROR" else src.substring(t.start, t.end), t.synth))
-        assertEquals(t.s, src.substring(t.start, t.end))
-//        println("len: %d" format src.length)
+        assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
       }
-      assertEquals("[" + tokens.map(_.s).mkString(", ") + "]", trg)
+      assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
     }
 
     // spaces
