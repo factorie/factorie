@@ -36,24 +36,24 @@ private[parser] object DocumentParser {
 
   object Impl extends SharedParsers {
 
-    def bibTex =
+    lazy val bibTex =
       (freeComment ~! anyEntry ~! freeComment).+ ^^
       (_ flatMap { case x ~ y ~ z => List(x, y, z): List[Entry] })
 
     // FIXME: lines starting with %%% are comments
-    def freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*") ^^ (CommentEntry(_))
+    lazy val freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*") ^^ (CommentEntry(_))
 
-    def anyEntry = AT ~> (commentEntry | stringEntry | preambleEntry | regularEntry)
+    lazy val anyEntry = AT ~> (commentEntry | stringEntry | preambleEntry | regularEntry)
 
-    def commentEntry =
+    lazy val commentEntry =
       COMMENT ~> (WS ~> (('{' ~> "[^}]*" <~ '}') | ('(' ~> "[^)]*" <~ ')')) | "[^@\r\n]*") ^^
       (CommentEntry(_))
 
-    def stringEntry = STRING ~> WS ~> entryBody { tag } ^^ (StringEntry(_, _)).tupled
+    lazy val stringEntry = STRING ~> WS ~> entryBody { tag } ^^ (StringEntry(_, _)).tupled
 
-    def preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
+    lazy val preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
-    def regularEntry =
+    lazy val regularEntry =
       (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS ?) } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
@@ -64,32 +64,32 @@ private[parser] object DocumentParser {
       ("\\(\\s*" ~> p <~ "\\s*\\)")
     }
 
-    def tag = (SYMBOL <~ "\\s*=\\s*") ~ value ^^ {
-      case sym ~ value => (sym, value)
+    lazy val tag = (SYMBOL <~ "\\s*=\\s*") ~ value ^^ {
+      case sym ~ v => (sym, v)
     }
 
-    def value: Parser[Value] = literalOrSymbol ~ ("\\s*#\\s*" ~> value).? ^^ {
+    lazy val value: Parser[Value] = literalOrSymbol ~ ("\\s*#\\s*" ~> value).? ^^ {
       case left ~ Some(right) => Concat(left, right)
       case left ~ _ => left
     }
 
-    def literalOrSymbol = (SYMBOL ^^ (Abbrev(_))) | literal
+    lazy val literalOrSymbol = (SYMBOL ^^ (Abbrev(_))) | literal
 
-    def literal = (numericLiteral | braceDelimitedNoOuterLiteral | quoteDelimitedLiteral)
+    lazy val literal = (numericLiteral | braceDelimitedNoOuterLiteral | quoteDelimitedLiteral)
 
-    def numericLiteral = "\\d+(\\.\\d+)?" ^^ (Literal(_))
-    def quoteDelimitedLiteral =
+    lazy val numericLiteral = "\\d+(\\.\\d+)?" ^^ (Literal(_))
+    lazy val quoteDelimitedLiteral =
       '"' ~> (BRACE_DELIMITED_STRING | """\\.""" | """[^"]""").* <~ '"' ^^ (xs => Literal(xs.mkString))
-    def braceDelimitedNoOuterLiteral = BRACE_DELIMITED_STRING_NO_OUTER ^^ (Literal(_))
+    lazy val braceDelimitedNoOuterLiteral = BRACE_DELIMITED_STRING_NO_OUTER ^^ (Literal(_))
 
-    def AT = c('@')
-    def COMMA_WS = r("\\s*,\\s*")
-    def COMMENT = r("(c|C)(o|O)(m|M)(m|M)(e|E)(n|N)(t|T)")
-    def STRING = r("(s|S)(t|T)(r|R)(i|I)(n|N)(g|G)")
-    def PREAMBLE = r("(p|P)(r|R)(e|E)(a|A)(m|M)(b|B)(l|L)(e|E)")
+    lazy val AT = c('@')
+    lazy val COMMA_WS = r("\\s*,\\s*")
+    lazy val COMMENT = r("(c|C)(o|O)(m|M)(m|M)(e|E)(n|N)(t|T)")
+    lazy val STRING = r("(s|S)(t|T)(r|R)(i|I)(n|N)(g|G)")
+    lazy val PREAMBLE = r("(p|P)(r|R)(e|E)(a|A)(m|M)(b|B)(l|L)(e|E)")
     // anything except can't start with number, quotes, braces/parens, '#', commas, whitespace, or '='
-    def SYMBOL = r("[^0-9\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
+    lazy val SYMBOL = r("[^0-9\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
     // can start with (or even be entirely) a number
-    def SYMBOL_CAN_START_WITH_NUMBER = r("[^\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
+    lazy val SYMBOL_CAN_START_WITH_NUMBER = r("[^\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
   }
 }

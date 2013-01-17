@@ -96,27 +96,27 @@ private[parser] object NameParser {
   // FIXME: should hyphens make it to the later phase? what makes them different from plain old spaces?
   object NameLexer extends SharedParsers {
 
-    def nameLexer =
+    lazy val nameLexer =
       WS ~> ((initial | fragment_comma_hyphen_or_ws) <~ WS).? ~
       ((and_ws | initial | hyphen | fragment_comma_hyphen_or_ws) <~ WS).* ~
       (fragment | initial).? ^^ {
         case pre ~ xs ~ post => flattenTokenLists(pre.toList ++ xs ++ post.toList).filterNot(HYPHEN ==)
       }
 
-    def fragment_comma_hyphen_or_ws =
+    lazy val fragment_comma_hyphen_or_ws =
       fragment ~ ((WS ~> (comma | hyphen) <~ WS) | "\\s+") ^^ {
         case frag ~ (_: String) => frag
         case frag ~ (punctuation: Token) => TOKENLIST(List(frag, punctuation))
       }
 
-    def and_ws = and <~ "\\s+"
-    def and = "and" ^^ (_ => AND)
-    def comma = "," ^^ (_ => COMMA)
-    def hyphen = ("-" | "~") ^^ (_ => HYPHEN)
-    def initial = "[A-Za-z]\\." ^^ (FRAGMENT(_))
+    lazy val and_ws = and <~ "\\s+"
+    lazy val and = "and" ^^ (_ => AND)
+    lazy val comma = "," ^^ (_ => COMMA)
+    lazy val hyphen = ("-" | "~") ^^ (_ => HYPHEN)
+    lazy val initial = "[A-Za-z]\\." ^^ (FRAGMENT(_))
 
     // if its just one fragment with curly braces, its a literal, so leave out the braces
-    def fragment =
+    lazy val fragment =
       (BRACE_DELIMITED_STRING_NO_OUTER ?) ~ ("""\\.""" | "[^\\s,}{\\-~]" | BRACE_DELIMITED_STRING).* ^^ {
         case Some(bds) ~ Nil => bds
         case Some(bds) ~ rest => (("{" + bds + "}") :: rest).mkString
