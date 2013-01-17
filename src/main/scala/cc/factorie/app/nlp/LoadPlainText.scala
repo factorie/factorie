@@ -24,6 +24,7 @@ object LoadPlainText {
 
   def fromString(name:String, contents:String, segmentSentences:Boolean): Document = 
     fromString(name, contents, if (segmentSentences) cc.factorie.app.strings.sentenceSegmenter else null, cc.factorie.app.strings.nlpTokenSegmenter)
+
   def fromString(name:String, contents:String, sentenceSegmenter:StringSegmenter, tokenSegmenter:StringSegmenter): Document = {
     val document = new Document(name, contents)
     if (sentenceSegmenter ne null) {

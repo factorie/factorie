@@ -5,119 +5,110 @@ import java.io.{InputStreamReader, IOException, BufferedReader}
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.util.regex.Pattern
 import jregex.{Replacer, TextBuffer, MatchResult, Substitution}
+import cc.factorie.app.nlp.{DocumentProcessor, Document, Token, TokenString, Sentence}
 
-class ClearTokenizer {
+object ClearTokenizer extends EnglishTokenizer(EnglishTokenizerConfig.default)
 
-}
+object ClearSegmenter extends EnglishSegmenter(ClearTokenizer)
 
-abstract class AbstractSegmenter(tokenizer: AbstractTokenizer) {
-   /**
-    * Returns a list of sentences, which are arrays of string tokens, from the specific reader.
-    * @param fin the reader to retrieve sentences from.
-    * @return a list of sentences, which are arrays of string tokens, from the specific reader.
-    */
-   def getSentences(fin: BufferedReader): mutable.ArrayBuffer[mutable.ArrayBuffer[String]]
+abstract class AbstractSegmenter(tokenizer: AbstractTokenizer) extends DocumentProcessor {
+  def process(d: Document): Document = {
+    val sentences = getSentences(d.string)
+    for (cs <- sentences) new Sentence(d, cs.head.start, cs.last.end)
+    for (ct <- sentences.flatten) {
+      val t = new Token(d, ct.start, ct.end)
+      t.attr += new TokenString(t, ct.s)
+    }
+    d
+  }
+  /**
+   * Returns a list of sentences, which are arrays of string tokens, from the specific reader.
+   * @param fin the reader to retrieve sentences from.
+   * @return a list of sentences, which are arrays of string tokens, from the specific reader.
+   */
+  def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]
 }
 
 /**
  * @since 1.1.0
- * @author Jinho D. Choi ({@code jdchoi77@gmail.com})
+ * @author Jinho D. Choi ({ @code jdchoi77@gmail.com})
  */
 class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegmenter(tokenizer) {
-   /** Patterns of terminal punctuation. */
-   protected val P_TERMINAL_PUNCTUATION = Pattern.compile("^(\\.|\\?|!)+$")
-   protected val L_BRACKETS = Array("\"","(","{","[")
-   protected val R_BRACKETS = Array("\"",")","}","]")
+  /** Patterns of terminal punctuation. */
+  protected val P_TERMINAL_PUNCTUATION = Pattern.compile("^(\\.|\\?|!)+$")
+  protected val L_BRACKETS = Array("\"", "(", "{", "[")
+  protected val R_BRACKETS = Array("\"", ")", "}", "]")
 
-   def getSentences(fin: BufferedReader): mutable.ArrayBuffer[mutable.ArrayBuffer[String]] = {
-     val sentences = new mutable.ArrayBuffer[mutable.ArrayBuffer[String]]()
-     val tokens = tokenizer.getTokens(fin)
-     val brackets = new Array[Int](R_BRACKETS.length)
-     var bIdx, size = tokens.size
-     var isTerminal = false
-     var curr: String = null
 
-     def body(i: Int): Unit = {
+  def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]] = {
+    val sentences = new mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]()
+    val tokens = tokenizer.getTokenList(fin)
+    val brackets = new Array[Int](R_BRACKETS.length)
+    var bIdx, size = tokens.size
+    var isTerminal = false
+    var curr: ClearToken = null
+
+    def body(i: Int): Unit = {
       curr = tokens(i)
-      countBrackets(curr, brackets)
-      if (isTerminal || P_TERMINAL_PUNCTUATION.matcher(curr).find()) {
-        if (i + 1 < size && isFollowedByBracket(tokens(i + 1), brackets)) {
+      countBrackets(curr.s, brackets)
+      if (isTerminal || P_TERMINAL_PUNCTUATION.matcher(curr.s).find()) {
+        if (i + 1 < size && isFollowedByBracket(tokens(i + 1).s, brackets)) {
           isTerminal = true
           return
         }
-        sentences += tokens.slice(bIdx, { bIdx = i + 1; bIdx })
+        sentences += tokens.slice(bIdx, {bIdx = i + 1; bIdx})
         isTerminal = false
       }
-     }
+    }
 
-     (0 until size).foreach(body)
-     sentences
-   }
+    (0 until size).foreach(body)
+    sentences
+  }
 
-   private def countBrackets(str: String, brackets: Array[Int]): Unit =
-     if (str.equals("\""))
-       brackets(0) += (if (brackets(0) == 0) 1 else -1)
-     else {
-       val size = brackets.length
-       for (i <- 1 until size)
-         if (str.equals(L_BRACKETS(i)))
-           brackets(i) += 1
-         else if (str.equals(R_BRACKETS(i)))
-           brackets(i) -= 1
-     }
+  private def countBrackets(str: String, brackets: Array[Int]): Unit =
+    if (str.equals("\""))
+      brackets(0) += (if (brackets(0) == 0) 1 else -1)
+    else {
+      val size = brackets.length
+      for (i <- 1 until size)
+        if (str.equals(L_BRACKETS(i)))
+          brackets(i) += 1
+        else if (str.equals(R_BRACKETS(i)))
+          brackets(i) -= 1
+    }
 
-   private def isFollowedByBracket(str: String, brackets: Array[Int]): Boolean = {
-     val size = R_BRACKETS.length
-     for (i <- 0 until size)
-       if (brackets(i) > 0 && str.equals(R_BRACKETS(i)))
-         return true
-     false
-   }
+  private def isFollowedByBracket(str: String, brackets: Array[Int]): Boolean = {
+    val size = R_BRACKETS.length
+    for (i <- 0 until size)
+      if (brackets(i) > 0 && str.equals(R_BRACKETS(i)))
+        return true
+    false
+  }
 }
 
-abstract class AbstractTokenizer {
-   /**
-    * Returns a list of token in the specific reader.
-    * @param fin the reader to retrieve tokens from.
-    * @return a list of token in the specific reader.
-    */
-   def getTokens(fin: BufferedReader): mutable.ArrayBuffer[String] = {
-     val tokens = new mutable.ArrayBuffer[String]()
-     var line = null: String
-     try {
-       while ({line = fin.readLine(); line != null})
-         tokens ++= getTokens(line.trim())
-     } catch {
-      case e: IOException => e.printStackTrace()
-     }
-     tokens
-   }
+abstract class AbstractTokenizer extends DocumentProcessor {
+  def process(d: Document): Document = {
+    for (ct <- getTokenList(d.string)) {
+      val token = new Token(d, ct.start, ct.end)
+      token.attr += new TokenString(token, ct.s)
+    }
+    d
+  }
 
-   /**
-    * Returns a list of tokens from the specific string.
-    * @param str the string to retrieve tokens from.
-    * @return a list of tokens from the specific string.
-    */
-   def getTokens(str: String): mutable.ArrayBuffer[String] = {
-     val lTokens = getTokenList(str)
-     val tokens = new mutable.ArrayBuffer[String](lTokens.size)
-     for (token <- lTokens)
-       tokens += token.s
-     tokens
-   }
-
-   def getTokenList(str: String): Seq[StringBooleanPair]
+  def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
 }
 
-class StringBooleanPair(var s: String, var b: Boolean) { }
+class ClearToken(var s: String, var b: Boolean, var start: Int, var end: Int, val synth: Boolean = false, val synthGroup: Int = -1) {}
 
-class IntIntPair(val i1: Int, val i2: Int) { }
+class IntIntPair(val i1: Int, val i2: Int) {}
 
 /**
-* @since 1.1.0
-* @author Jinho D. Choi ({@code jdchoi77@gmail.com})
-*/
+ * @since 1.1.0
+ * @author Jinho D. Choi ({ @code jdchoi77@gmail.com})
+ */
 class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
+
+  var curSynthGroup = 0
 
   protected val S_DELIM = " "
   protected val S_PROTECTED = "PR0T_"
@@ -130,7 +121,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
   protected val P_DELIM = Pattern.compile(S_DELIM)
   protected val P_HYPHEN = Pattern.compile("-")
   protected val P_ABBREVIATION = Pattern.compile("^(\\p{Alpha}\\.)+\\p{Alpha}?$")
-  protected val A_D0D = Array(".",",",":","-","/","'")
+  protected val A_D0D = Array(".", ",", ":", "-", "/", "'")
 
   protected var R_URL: Replacer = null
   protected var R_ABBREVIATION: Replacer = null
@@ -162,9 +153,9 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
   initPatterns()
   initDictionaries(zin)
 
-  def getTokenList(str: String): Seq[StringBooleanPair] = {
+  def getTokenList(str: String): mutable.ArrayBuffer[ClearToken] = {
     var lTokens = tokenizeWhiteSpaces(str)
-//    lTokens.foreach(println)
+    //    lTokens.foreach(println)
     protectEmoticons(lTokens)
     lTokens = tokenizePatterns(lTokens, R_URL)
     lTokens = tokenizePatterns(lTokens, R_ABBREVIATION)
@@ -176,6 +167,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
     lTokens = tokenizePatterns(lTokens, R_PUNCTUATION_PRE)
     protectAbbreviations(lTokens)
     protectFilenames(lTokens)
+
 
     lTokens = tokenizeCompounds(lTokens)
     lTokens = tokenizePatterns(lTokens, R_APOSTROPHY)
@@ -211,7 +203,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
 
   def replacerAmpersand: Replacer =
     new jregex.Pattern("(\\p{Upper})(\\&)(\\p{Upper})").replacer(new Substitution {
-      def appendSubstitution(m: MatchResult , dest: TextBuffer ): Unit = {
+      def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
         dest.append(m.group(1))
         dest.append(S_AMPERSAND)
         dest.append(m.group(3))
@@ -220,7 +212,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
 
   def replacerWAWs: Replacer =
     new jregex.Pattern("(\\w)(\\')(\\w)").replacer(new Substitution {
-      def appendSubstitution(m: MatchResult , dest: TextBuffer ): Unit = {
+      def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
         dest.append(m.group(1))
         dest.append(S_APOSTROPHY)
         dest.append(m.group(3))
@@ -247,7 +239,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
     P_RECOVER_D0D = new Array[Pattern](size)
 
     for (i <- 0 until size)
-      P_RECOVER_D0D(i) = Pattern.compile(S_D0D+i+"_")
+      P_RECOVER_D0D(i) = Pattern.compile(S_D0D + i + "_")
 
     P_RECOVER_HYPHEN = Pattern.compile(S_HYPHEN)
     P_RECOVER_APOSTROPHY = Pattern.compile(S_APOSTROPHY)
@@ -263,19 +255,19 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
     R_UNIT = cfg.R_UNIT.map(new jregex.Pattern(_)).map(_.replacer(new SubstitutionTwo()))
   }
 
-  protected def tokenizeWhiteSpaces(str: String): mutable.ArrayBuffer[StringBooleanPair] = {
-    val tokens = new mutable.ArrayBuffer[StringBooleanPair]()
-    for (token <- MPLib.splitWhiteSpaces(str))
-      tokens += new StringBooleanPair(token, false)
+  protected def tokenizeWhiteSpaces(str: String): mutable.ArrayBuffer[ClearToken] = {
+    val tokens = new mutable.ArrayBuffer[ClearToken]()
+    for ((text, start, end) <- MPLib.splitWhiteSpaces(str))
+      tokens += new ClearToken(text, false, start, end)
     tokens
   }
 
-  protected def protectEmoticons(tokens: Seq[StringBooleanPair]): Unit =
+  protected def protectEmoticons(tokens: Seq[ClearToken]): Unit =
     for (token <- tokens)
       if (T_EMOTICONS.contains(token.s))
         token.b = true
 
-  protected def protectAbbreviations(tokens: Seq[StringBooleanPair]): Unit = {
+  protected def protectAbbreviations(tokens: Seq[ClearToken]): Unit = {
     var lower: String = null
     for (token <- tokens) {
       lower = token.s.toLowerCase
@@ -284,7 +276,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
     }
   }
 
-  protected def protectFilenames(tokens: Seq[StringBooleanPair]): Unit = {
+  protected def protectFilenames(tokens: Seq[ClearToken]): Unit = {
     var lower: String = null
     for (token <- tokens) {
       lower = token.s.toLowerCase
@@ -293,45 +285,106 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
     }
   }
 
-  protected def replaceProtects(tokens: Seq[StringBooleanPair], rep: Replacer): Unit =
+  // TODO need to make replacers change start/end indices?
+  protected def replaceProtects(tokens: Seq[ClearToken], rep: Replacer): Unit = {
+    var offset = 0
     for (token <- tokens)
-      if (!token.b)
+      if (!token.b) {
+        var curOffset = token.s.length
         token.s = rep.replace(token.s)
+//        curOffset -= token.s.length
+//        token.start += offset
+//        offset -= curOffset
+//        token.end += offset
+      }
+  }
 
-  protected def replaceHyphens(tokens: Seq[StringBooleanPair]): Unit =
+  protected def replaceHyphens(tokens: Seq[ClearToken]): Unit = {
+    var offset = 0
     for (token <- tokens)
-      if (!token.b && P_HYPHEN_LIST.matcher(token.s.toLowerCase).find())
+      if (!token.b && P_HYPHEN_LIST.matcher(token.s.toLowerCase).find()) {
+        var curOffset = token.s.length
         token.s = P_HYPHEN.matcher(token.s).replaceAll(S_HYPHEN)
+//        curOffset -= token.s.length
+//        token.start += offset
+//        offset -= curOffset
+//        token.end += offset
+      }
+  }
 
-  protected def recoverPatterns(tokens: Seq[StringBooleanPair], p: Pattern, replacement: String): Unit =
-    for (token <- tokens)
+  protected def recoverPatterns(tokens: Seq[ClearToken], p: Pattern, replacement: String): Unit = {
+    var offset = 0
+    var lastToken = null: ClearToken
+    for (token <- tokens) {
+      if ((token.synth && lastToken != null && lastToken.synthGroup != token.synthGroup) || !token.synth) offset = 0
+      else { println("nonsynth: " + token.s) }
+      lastToken = token
+      var curOffset = token.end - token.start
+      println("before-rectok: %s start: %d end: %d (offset: %d synthgroup: %d)" format (token.s, token.start, token.end, offset, token.synthGroup))
+
       token.s = p.matcher(token.s).replaceAll(replacement)
+      curOffset -= token.s.length
+//      println("rectok: %s start: %d end: %d" format (token.s, token.start, token.end))
+      token.start += offset
+      offset -= curOffset
+      token.end += offset
+      println("rectok: %s newstart: %d newend: %d" format (token.s, token.start, token.end))
+    }
+  }
 
-  protected def tokenizeCompounds(oTokens: Seq[StringBooleanPair]): mutable.ArrayBuffer[StringBooleanPair] = {
-    val nTokens = new mutable.ArrayBuffer[StringBooleanPair]()
+  protected def tokenizeCompounds(oTokens: Seq[ClearToken]): mutable.ArrayBuffer[ClearToken] = {
+    val nTokens = new mutable.ArrayBuffer[ClearToken]()
     var idx = 0
     for (oToken <- oTokens)
       if (oToken.b || {idx = M_COMPOUNDS.getOrElse(oToken.s.toLowerCase, 0) - 1; idx < 0})
         nTokens += oToken
-      else for (p <- L_COMPOUNDS(idx))
-        nTokens += new StringBooleanPair(oToken.s.substring(p.i1, p.i2), true)
+      else for (p <- L_COMPOUNDS(idx)) {
+        nTokens += new ClearToken(oToken.s.substring(p.i1, p.i2), true, oToken.start + p.i1, oToken.start + p.i2)
+        println("compound: " + nTokens.last.s)
+      }
     nTokens
   }
 
-  protected def tokenizePatterns(oTokens: mutable.ArrayBuffer[StringBooleanPair], rep: Replacer): mutable.ArrayBuffer[StringBooleanPair] = {
-    val nTokens = new mutable.ArrayBuffer[StringBooleanPair]()
+  protected def tokenizePatterns(oTokens: mutable.ArrayBuffer[ClearToken], rep: Replacer): mutable.ArrayBuffer[ClearToken] = {
+    val nTokens = new mutable.ArrayBuffer[ClearToken]()
     for (oToken <- oTokens)
       if (oToken.b) nTokens += oToken
-      else tokenizePatternsAux(nTokens, rep, oToken.s)
+      else tokenizePatternsAux(nTokens, rep, oToken)
     nTokens
   }
 
-  private def tokenizePatternsAux(tokens: mutable.ArrayBuffer[StringBooleanPair], rep: Replacer, str: String): Unit =
-    for (token <- P_DELIM.split(rep.replace(str).trim()))
-      if (token.startsWith(S_PROTECTED))
-        tokens += new StringBooleanPair(token.substring(N_PROTECTED), true)
-      else if (!token.isEmpty)
-        tokens += new StringBooleanPair(token, false)
+  private def numLeadingSpaces(str: String): Int = {
+    str.takeWhile(" " ==).length
+  }
+
+  private def tokenizePatternsAux(tokens: mutable.ArrayBuffer[ClearToken], rep: Replacer, oldToken: ClearToken): Unit = {
+    curSynthGroup += 1
+    val replaced = rep.replace(oldToken.s)
+    var protOffset = numLeadingSpaces(replaced)
+    val things = MPLib.splitWithIndices(P_DELIM, replaced.trim())
+    println("patternaux group: " + things.map(_._1).mkString(","))
+    for ((token, start, end) <- things) {
+      println("token: %s start: %d end: %d" format (token, start, end))
+      if (token.startsWith(S_PROTECTED)) {
+        val newStart = oldToken.start + start - protOffset
+        val newEnd = oldToken.start + end - N_PROTECTED - protOffset
+        tokens += new ClearToken(token.substring(N_PROTECTED), true, newStart, newEnd, synth = true, synthGroup = curSynthGroup)
+        protOffset += N_PROTECTED
+      } else if (!token.isEmpty) {
+        if (token == oldToken.s) {
+          tokens += oldToken
+        } else {
+        val newStart = oldToken.start + start - protOffset
+        val newEnd = oldToken.start + end - protOffset
+        tokens += new ClearToken(token, false, newStart, newEnd, synth = true, synthGroup = curSynthGroup)
+        }
+      }
+//      if (tokens.last.s.length != tokens.last.end - tokens.last.start)
+//        println("token: %s start: %d end: %d" format (token, start, end))
+
+      protOffset += 1
+    }
+  }
 
   private class SubstitutionOne extends Substitution {
     def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
@@ -343,7 +396,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
   }
 
   private class SubstitutionTwo extends Substitution {
-    def appendSubstitution(m: MatchResult, dest: TextBuffer ): Unit = {
+    def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
       dest.append(m.group(1))
       dest.append(S_DELIM)
       dest.append(m.group(2))
@@ -351,7 +404,7 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
   }
 
   private class SubstitutionD0D extends Substitution {
-    def appendSubstitution(m: MatchResult, dest: TextBuffer ): Unit = {
+    def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
       dest.append(m.group(1))
       dest.append(S_D0D + M_D0D(m.group(2)) + "_")
       dest.append(m.group(3))
@@ -372,34 +425,59 @@ class EnglishTokenizer(zin: EnglishTokenizerConfig) extends AbstractTokenizer {
 /**
  * Morphology library.
  * @since 1.0.0
- * @author Jinho D. Choi ({@code choijd@colorado.edu})
+ * @author Jinho D. Choi ({ @code choijd@colorado.edu})
  */
 object MPLib {
-   val PUNCT_CHAR = Pattern.compile("\\p{Punct}")
-   val PUNCT_ONLY = Pattern.compile("^\\p{Punct}+$")
-   val PUNCT_PERIOD = Pattern.compile("^(\\.|\\?|!)+$")
-   val PUNCT_REPEAT = new jregex.Pattern("\\.{2,}|\\!{2,}|\\?{2,}|\\-{2,}|\\*{2,}|\\={2,}|\\~{2,}|\\,{2,}")  // ".","!","?","-","*","=","~",","
-   val PUNCT_REPEAT_REPLACE = PUNCT_REPEAT.replacer(new Substitution {
-     def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
-       val c = m.group(0)(0)
-       dest.append(c)
-       dest.append(c)
-     }
-   })
+  val PUNCT_CHAR = Pattern.compile("\\p{Punct}")
+  val PUNCT_ONLY = Pattern.compile("^\\p{Punct}+$")
+  val PUNCT_PERIOD = Pattern.compile("^(\\.|\\?|!)+$")
+  val PUNCT_REPEAT = new jregex.Pattern("\\.{2,}|\\!{2,}|\\?{2,}|\\-{2,}|\\*{2,}|\\={2,}|\\~{2,}|\\,{2,}")
+  // ".","!","?","-","*","=","~",","
+  val PUNCT_REPEAT_REPLACE = PUNCT_REPEAT.replacer(new Substitution {
+    def appendSubstitution(m: MatchResult, dest: TextBuffer): Unit = {
+      val c = m.group(0)(0)
+      dest.append(c)
+      dest.append(c)
+    }
+  })
 
-   val DIGIT_SPAN = Pattern.compile("\\d+")
-   val DIGIT_ONLY = Pattern.compile("^\\d+$")
-   val DIGIT_LIKE = Pattern.compile("\\d%|\\$\\d|(^|\\d)\\.\\d|\\d,\\d|\\d:\\d|\\d-\\d|\\d/\\d")
+  val DIGIT_SPAN = Pattern.compile("\\d+")
+  val DIGIT_ONLY = Pattern.compile("^\\d+$")
+  val DIGIT_LIKE = Pattern.compile("\\d%|\\$\\d|(^|\\d)\\.\\d|\\d,\\d|\\d:\\d|\\d-\\d|\\d/\\d")
 
-   val ALPHA_CHAR = Pattern.compile("\\p{Alpha}")
-   val WHITE_SPAN = Pattern.compile("\\s+")
+  val ALPHA_CHAR = Pattern.compile("\\p{Alpha}")
+  val WHITE_SPAN = Pattern.compile("\\s+")
 
-   val URL_SPAN = new jregex.Pattern("((([A-Za-z]{3,9}:(?:\\/\\/)?)(?:[-;:&=\\+\\$,\\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+@)[A-Za-z0-9.-]+)((?:\\/[\\+~%\\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[.\\!\\/\\\\w]*))?|(\\w+\\.)+(com|edu|gov|int|mil|net|org|biz)$)");
-   val FILE_EXTS = Pattern.compile("\\S+\\.(3gp|7z|ace|ai(f){0,2}|amr|asf|asp(x)?|asx|avi|bat|bin|bmp|bup|cab|cbr|cd(a|l|r)|chm|dat|divx|dll|dmg|doc|dss|dvf|dwg|eml|eps|exe|fl(a|v)|gif|gz|hqx|(s)?htm(l)?|ifo|indd|iso|jar|jsp|jp(e)?g|lnk|log|m4(a|b|p|v)|mcd|mdb|mid|mov|mp(2|3|4)|mp(e)?g|ms(i|wmm)|ogg|pdf|php|png|pps|ppt|ps(d|t)?|ptb|pub|qb(b|w)|qxd|ra(m|r)|rm(vb)?|rtf|se(a|s)|sit(x)?|sql|ss|swf|tgz|tif|torrent|ttf|txt|vcd|vob|wav|wm(a|v)|wp(d|s)|xls|xml|xtm|zip)$")
+  val URL_SPAN = new jregex.Pattern("((([A-Za-z]{3,9}:(?:\\/\\/)?)(?:[-;:&=\\+\\$,\\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+@)[A-Za-z0-9.-]+)((?:\\/[\\+~%\\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[.\\!\\/\\\\w]*))?|(\\w+\\.)+(com|edu|gov|int|mil|net|org|biz)$)");
+  val FILE_EXTS = Pattern.compile("\\S+\\.(3gp|7z|ace|ai(f){0,2}|amr|asf|asp(x)?|asx|avi|bat|bin|bmp|bup|cab|cbr|cd(a|l|r)|chm|dat|divx|dll|dmg|doc|dss|dvf|dwg|eml|eps|exe|fl(a|v)|gif|gz|hqx|(s)?htm(l)?|ifo|indd|iso|jar|jsp|jp(e)?g|lnk|log|m4(a|b|p|v)|mcd|mdb|mid|mov|mp(2|3|4)|mp(e)?g|ms(i|wmm)|ogg|pdf|php|png|pps|ppt|ps(d|t)?|ptb|pub|qb(b|w)|qxd|ra(m|r)|rm(vb)?|rtf|se(a|s)|sit(x)?|sql|ss|swf|tgz|tif|torrent|ttf|txt|vcd|vob|wav|wm(a|v)|wp(d|s)|xls|xml|xtm|zip)$")
 
-   def containsURL(str: String): Boolean = URL_SPAN.matcher(str).find()
+  def containsURL(str: String): Boolean = URL_SPAN.matcher(str).find()
 
-   def splitWhiteSpaces(str: String): Array[String] = WHITE_SPAN.split(str)
+  def splitWithIndices(p: Pattern, str: String): mutable.ArrayBuffer[(String, Int, Int)] = {
+    val indices = getMatchIndices(p, str)
+    if (indices.isEmpty) return mutable.ArrayBuffer((str, 0, str.length))
+    val result = new mutable.ArrayBuffer[(String, Int, Int)]
+    var start = 0
+    for ((ws, wsStart, wsEnd) <- indices) {
+      val end = wsStart
+      result += ((str.substring(start, end), start, end))
+      start = wsEnd
+    }
+    if (!result.isEmpty && result(0)._3 == 0) result.remove(0)
+    if (!indices.isEmpty && indices.last._3 != str.length)
+      result += ((str.substring(indices.last._3, str.length), indices.last._3, str.length))
+    result
+  }
+
+  def splitWhiteSpaces(str: String): mutable.ArrayBuffer[(String, Int, Int)] = splitWithIndices(WHITE_SPAN, str)
+
+  def getMatchIndices(p: Pattern, str: String): mutable.ArrayBuffer[(String, Int, Int)] = {
+    val matcher = p.matcher(str)
+    val result = new mutable.ArrayBuffer[(String, Int, Int)]
+    while (matcher.find())
+      result += ((matcher.group(), matcher.start(), matcher.end()))
+    result
+  }
 
   final protected val BRACKET_LIST =
     mutable.ArrayBuffer(
@@ -411,13 +489,13 @@ object MPLib {
     , ((Pattern.compile("-RCB-"), "}")))
 
   /**
-    * Returns a normalized form of the specific word-form.
-    * @see MPLib#containsURL(String)
-    * @see MPLib#normalizeDigits(String)
-    * @see MPLib#normalizePunctuation(String)
-    * @param f the word-form.
-    * @return a normalized form of the specific word-form.
-    */
+   * Returns a normalized form of the specific word-form.
+   * @see MPLib#containsURL(String)
+   * @see MPLib#normalizeDigits(String)
+   * @see MPLib#normalizePunctuation(String)
+   * @param f the word-form.
+   * @return a normalized form of the specific word-form.
+   */
   def normalizeBasic(f: String): String = {
     var form = f
     if (MPLib.containsURL(form)) return "#url#"
@@ -426,77 +504,77 @@ object MPLib {
     form
   }
 
-   /**
-    * Normalizes all digits to 0.
-    * @param f the word-form to be normalized.
-    * @return the normalized form.
-    */
-   def normalizeDigits(f: String): String = {
-     var form = f
-     form = DIGIT_LIKE.matcher(form).replaceAll("0")
-     DIGIT_SPAN.matcher(form).replaceAll("0")
-   }
+  /**
+   * Normalizes all digits to 0.
+   * @param f the word-form to be normalized.
+   * @return the normalized form.
+   */
+  def normalizeDigits(f: String): String = {
+    var form = f
+    form = DIGIT_LIKE.matcher(form).replaceAll("0")
+    DIGIT_SPAN.matcher(form).replaceAll("0")
+  }
 
-   /**
-    * Collapses redundant punctuation in the specific word-form (e.g., "!!!" -> "!").
-    * @param form the word-form to be normalized.
-    * @return normalized word-form.
-    */
-   def normalizePunctuation(form: String): String = PUNCT_REPEAT_REPLACE.replace(form)
+  /**
+   * Collapses redundant punctuation in the specific word-form (e.g., "!!!" -> "!").
+   * @param form the word-form to be normalized.
+   * @return normalized word-form.
+   */
+  def normalizePunctuation(form: String): String = PUNCT_REPEAT_REPLACE.replace(form)
 
-   /**
-    * Reverts coded brackets to their original forms (e.g., from "-LBR-" to "(").
-    * @param f the word-form.
-    * @return the reverted form of coded brackets.
-    */
-   def revertBracket(f: String): String = {
-     var form = f
-     for (p <- BRACKET_LIST)
-       form = p._1.matcher(form).replaceAll(p._2)
-     form
-   }
+  /**
+   * Reverts coded brackets to their original forms (e.g., from "-LBR-" to "(").
+   * @param f the word-form.
+   * @return the reverted form of coded brackets.
+   */
+  def revertBracket(f: String): String = {
+    var form = f
+    for (p <- BRACKET_LIST)
+      form = p._1.matcher(form).replaceAll(p._2)
+    form
+  }
 
-   /**
-    * Returns {@code true} if the specific word-form contains only punctuation.
-    * @param form the word-form to be compared.
-    * @return {@code true} if the specific word-form contains only punctuation.
-    */
-   def containsAnyPunctuation(form: String): Boolean = PUNCT_CHAR.matcher(form).find()
+  /**
+   * Returns {@code true} if the specific word-form contains only punctuation.
+   * @param form the word-form to be compared.
+   * @return { @code true} if the specific word-form contains only punctuation.
+   */
+  def containsAnyPunctuation(form: String): Boolean = PUNCT_CHAR.matcher(form).find()
 
-   /**
-    * Returns {@code true} if the specific word-form contains only punctuation.
-    * @param form the word-form to be compared.
-    * @return {@code true} if the specific word-form contains only punctuation.
-    */
-   def containsOnlyPunctuation(form: String ): Boolean = PUNCT_ONLY.matcher(form).find()
+  /**
+   * Returns {@code true} if the specific word-form contains only punctuation.
+   * @param form the word-form to be compared.
+   * @return { @code true} if the specific word-form contains only punctuation.
+   */
+  def containsOnlyPunctuation(form: String): Boolean = PUNCT_ONLY.matcher(form).find()
 
-   /**
-    * Returns {@code true} if the specific word-form contains any of the specified punctuation.
-    * @param form the word-form.
-    * @param punctuation the array of punctuation.
-    * @return {@code true} if the specific word-form contains any of the specified punctuation.
-    */
-   def containsAnySpecificPunctuation(form: String, punctuation: Char* ): Boolean = {
-     val size = form.length
-     for (i <- 0 until size)
-       for (p <- punctuation)
-         if (form(i) == p)
-           return true
-     false
-   }
+  /**
+   * Returns {@code true} if the specific word-form contains any of the specified punctuation.
+   * @param form the word-form.
+   * @param punctuation the array of punctuation.
+   * @return { @code true} if the specific word-form contains any of the specified punctuation.
+   */
+  def containsAnySpecificPunctuation(form: String, punctuation: Char*): Boolean = {
+    val size = form.length
+    for (i <- 0 until size)
+      for (p <- punctuation)
+        if (form(i) == p)
+          return true
+    false
+  }
 
-   /**
-    * Returns {@code true} if the specific word-form contains only digits.
-    * @param form the word-form to be compared.
-    * @return {@code true} if the specific word-form contains only digits.
-    */
-   def containsOnlyDigits(form: String): Boolean = DIGIT_ONLY.matcher(form).find()
+  /**
+   * Returns {@code true} if the specific word-form contains only digits.
+   * @param form the word-form to be compared.
+   * @return { @code true} if the specific word-form contains only digits.
+   */
+  def containsOnlyDigits(form: String): Boolean = DIGIT_ONLY.matcher(form).find()
 
-   def isPeriodLike(form: String): Boolean =
+  def isPeriodLike(form: String): Boolean =
     PUNCT_PERIOD.matcher(form).find() || {
       (form.length > 1 && form(0) == '/') &&
       PUNCT_PERIOD.matcher(form.substring(1)).find()
     }
 
-   def isAlpha(form: String): Boolean = ALPHA_CHAR.matcher(form).find()
+  def isAlpha(form: String): Boolean = ALPHA_CHAR.matcher(form).find()
 }
