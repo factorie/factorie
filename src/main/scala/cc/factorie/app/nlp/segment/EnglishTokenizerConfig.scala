@@ -17,12 +17,12 @@ trait EnglishTokenizerConfig {
 object EnglishTokenizerConfig {
 
   private val F_DIR = "tokenize/"
-  private val F_EMOTICONS = F_DIR+"emoticons.txt"
-  private val F_ABBREVIATIONS = F_DIR+"abbreviations.txt"
-  private val F_HYPHENS = F_DIR+"hyphens.txt"
-  private val F_COMPOUNDS = F_DIR+"compounds.txt"
-  private val F_UNITS = F_DIR+"units.txt"
-  private val F_MICROSOFT = F_DIR+"microsoft.txt"
+  private val F_EMOTICONS = F_DIR + "emoticons.txt"
+  private val F_ABBREVIATIONS = F_DIR + "abbreviations.txt"
+  private val F_HYPHENS = F_DIR + "hyphens.txt"
+  private val F_COMPOUNDS = F_DIR + "compounds.txt"
+  private val F_UNITS = F_DIR + "units.txt"
+  private val F_MICROSOFT = F_DIR + "microsoft.txt"
 
   private val S_DELIM = " "
   private val P_DELIM = Pattern.compile(S_DELIM)
@@ -137,64 +137,48 @@ object EnglishTokenizerConfig {
   }
 
   private def initDictionaries(zin: ZipInputStream): EnglishTokenizerConfig = {
-    var zEntry: ZipEntry = null
-    var filename: String = null
-
-    var mcompounds: mutable.HashMap[String, Int] = null
-    var lcompounds: mutable.ArrayBuffer[Array[CompoundSpan]] = null
-    var temoticons: mutable.Set[String] = null
-    var tabbreviations: mutable.Set[String] = null
-    var phyphenlist: String = null
-    var runit: Array[String] = null
-
-    while ({zEntry = zin.getNextEntry; zEntry != null}) {
-      filename = zEntry.getName
-      if (filename.equals(F_EMOTICONS))
-        temoticons = getSet(wrapStream(zin))
-      else if (filename.equals(F_ABBREVIATIONS))
-        tabbreviations = getSet(wrapStream(zin))
-      else if (filename.equals(F_HYPHENS))
-        phyphenlist = getHyphenPatterns(wrapStream(zin))
-      else if (filename.equals(F_COMPOUNDS)) {
-        val (mc, lc) = initDictionariesCompounds(wrapStream(zin))
-        mcompounds = mc
-        lcompounds = lc
-      } else if (filename.equals(F_UNITS))
-        runit = initDictionariesUnits(wrapStream(zin))
+    val cfg = new EnglishTokenizerConfig {
+      var M_COMPOUNDS: mutable.HashMap[String, Int] = null
+      var L_COMPOUNDS: mutable.ArrayBuffer[Array[CompoundSpan]] = null
+      var T_EMOTICONS: mutable.Set[String] = null
+      var T_ABBREVIATIONS: mutable.Set[String] = null
+      var P_HYPHEN_LIST: String = null
+      var R_UNIT: Array[String] = null
     }
+
+    var zEntry: ZipEntry = null
+    while ({zEntry = zin.getNextEntry; zEntry != null})
+      zEntry.getName match {
+        case F_EMOTICONS => cfg.T_EMOTICONS = getSet(wrapStream(zin))
+        case F_ABBREVIATIONS => cfg.T_ABBREVIATIONS = getSet(wrapStream(zin))
+        case F_HYPHENS => cfg.P_HYPHEN_LIST = getHyphenPatterns(wrapStream(zin))
+        case F_COMPOUNDS =>
+          val (mc, lc) = initDictionariesCompounds(wrapStream(zin))
+          cfg.M_COMPOUNDS = mc
+          cfg.L_COMPOUNDS = lc
+        case F_UNITS => cfg.R_UNIT = initDictionariesUnits(wrapStream(zin))
+        case _ => { }
+      }
 
     zin.close()
 
-    new EnglishTokenizerConfig {
-      val M_COMPOUNDS = mcompounds
-      val L_COMPOUNDS = lcompounds
-      val T_EMOTICONS = temoticons
-      val T_ABBREVIATIONS = tabbreviations
-      val P_HYPHEN_LIST = phyphenlist
-      val R_UNIT = runit
-    }
+    cfg
   }
 
-  private def getSet(zin: Iterable[String]): mutable.Set[String] = {
-    val set = new mutable.HashSet[String]()
-    set ++= zin.map(_.trim())
-    set
-  }
+  private def getSet(zin: Iterable[String]): mutable.Set[String] =
+    new mutable.HashSet[String] ++= zin.map(_.trim())
 
   private def wrapStream(zin: ZipInputStream): Iterable[String] = {
     val fin = new BufferedReader(new InputStreamReader(zin))
-    val buf = new mutable.ArrayBuffer[String]()
+    val buf = new mutable.ArrayBuffer[String]
     var line: String = null
     while ({line = fin.readLine(); line != null}) buf += line
     buf
   }
 
   private def getHyphenPatterns(zin: Iterable[String]): String = {
-    val build = new StringBuilder()
-    for (line <- zin) {
-      build.append("|")
-      build.append(line.trim())
-    }
+    val build = new StringBuilder
+    for (line <- zin) build.append("|" + line.trim())
     build.substring(1)
   }
 
@@ -203,18 +187,13 @@ object EnglishTokenizerConfig {
     val lcompounds = new mutable.ArrayBuffer[Array[CompoundSpan]]()
 
     var i = 0
-    var p: Array[CompoundSpan] = null
-    var tmp: Array[String] = null
-
     for (line <- zin) {
       i += 1
-      tmp = P_DELIM.split(line.trim())
+      val tmp = P_DELIM.split(line.trim())
       val len = tmp.length
-      p = new Array[CompoundSpan](len)
-
+      val p = new Array[CompoundSpan](len)
       mcompounds(tmp.mkString) = i
       lcompounds += p
-
       var bIdx = 0
       for (j <- 0 until len) {
         val eIdx = bIdx + tmp(j).length
@@ -228,11 +207,10 @@ object EnglishTokenizerConfig {
 
   private def initDictionariesUnits(zin: Iterable[String]): Array[String] = {
     val Seq(signs, currencies, units) = zin.map(_.trim).toSeq
-    val runit = new Array[String](4)
-    runit(0) = "^(?i)(\\p{Punct}*"+signs+")(\\d)"
-    runit(1) = "^(?i)(\\p{Punct}*"+currencies+")(\\d)"
-    runit(2) = "(?i)(\\d)("+currencies+"\\p{Punct}*)$"
-    runit(3) = "(?i)(\\d)("+units+"\\p{Punct}*)$"
-    runit
+    Array(
+      "^(?i)(\\p{Punct}*" + signs + ")(\\d)"
+    , "^(?i)(\\p{Punct}*" + currencies + ")(\\d)"
+    , "(?i)(\\d)(" + currencies + "\\p{Punct}*)$"
+    , "(?i)(\\d)(" + units + "\\p{Punct}*)$")
   }
 }
