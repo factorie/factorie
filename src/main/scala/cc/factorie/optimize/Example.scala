@@ -157,3 +157,22 @@ class DominationLossExampleAllGood(goodCandidates: Seq[Var], badCandidates: Seq[
   }
 }
 
+class StructuredPerceptronExample[V <: LabeledVar](val labels: Iterable[V], val infer: Infer) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
+    if (labels.size == 0) return
+    val summary = infer.infer(labels, model).get
+    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
+      val mtStat = summary.marginalTensorStatistics(factor)
+      val aStat = factor.assignmentStatistics(TargetAssignment)
+      if (value != null) {
+        value.accumulate(factor.statisticsScore(mtStat))
+        value.accumulate(-factor.statisticsScore(aStat))
+      }
+      if (gradient != null) {
+        gradient.accumulate(factor.family, aStat)
+        // same gradient code as LikelihoodExample since max-product marginalTensorStatistics are just statistics of MAP assignment
+        gradient.accumulate(factor.family, mtStat, -1.0)
+      }
+    }
+  }
+}

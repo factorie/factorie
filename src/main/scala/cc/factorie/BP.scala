@@ -185,7 +185,7 @@ trait BPFactorTreeSumProduct extends BPFactor {
 }
 
 trait BPFactorMaxProduct extends BPFactor {
-  override def calculateMarginalTensor: Tensor1 = { val t = calculateBeliefsTensor; t.maxNormalize(); t.asInstanceOf[Tensor1] }
+  override def calculateMarginalTensor: Tensor = { val t = calculateBeliefsTensor; t.maxNormalize(); t }
   override def calculateLogZ: Double = calculateBeliefsTensor match {
     case t:DenseTensor => { t.max }
     case t:SparseIndexedTensor => { t._values.max }
