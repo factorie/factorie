@@ -27,7 +27,7 @@ trait BPRing {
 }
 
 object BPSumProductRing extends BPRing {
-  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v) with BPVariableSumProduct
   /** Construct and return a new BPFactor for "factor", creating/obtaining new BPVariables as necessary from "summary".
       Any of the factor neighbors present in "varying" will get a BPVariable and BPEdge; others will be considered constant.
       If "varying" is null, then any DiscreteVars are considered varying. */
@@ -58,7 +58,7 @@ object BPSumProductRing extends BPRing {
 }
 
 object BPMaxProductRing extends BPRing {
-  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v) with BPVariableMaxProduct
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
     case factor:Factor1[DiscreteVar] =>  
       new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorMaxProduct
@@ -107,8 +107,10 @@ trait BPVariable {
   def calculateOutgoing(e:BPEdge): Tensor
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
   def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
+  def calculateBelief: Tensor
+  def calculateMarginal: Tensor
 }
-class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
+abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
   private var _edges: List[BPEdge] = Nil
   def addEdge(e:BPEdge): Unit = _edges = e :: _edges
   final def edges: List[BPEdge] = _edges
@@ -121,13 +123,19 @@ class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable,
     }
   }
   def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO Make this more efficient for cases of 1, 2, 3 edges.
-  def calculateMarginal: Tensor1 = { val result = calculateBelief; result.expNormalize(); result.asInstanceOf[Tensor1] }
-  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)  // TODO Think about avoiding re-calc every time
+  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal.asInstanceOf[Tensor1], false)  // TODO Think about avoiding re-calc every time
   override def value1: DiscreteVar#Value = _1.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
 }
-// TODO class BPVariable{2,3,4} would be used for cluster graphs
 
+trait BPVariableMaxProduct { self: BPVariable =>
+  def calculateMarginal: Tensor = { val t = calculateBelief; t.maxNormalize(); t }
+}
+
+trait BPVariableSumProduct { self: BPVariable =>
+  def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
+}
+// TODO class BPVariable{2,3,4} would be used for cluster graphs
 
 trait BPFactor extends DiscreteMarginal {
   def factor: Factor
