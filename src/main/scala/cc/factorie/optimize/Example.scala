@@ -1,16 +1,9 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.optimize._
 import cc.factorie.util._
 import app.classify
 import cc.factorie.la._
-import classify.{ModelBasedClassifier, LogLinearModel}
-import collection.parallel.mutable.ParSeq
-import collection.GenSeq
-import java.io.File
-import io.Source
-
 
 /**
  * Created by IntelliJ IDEA.
@@ -38,16 +31,15 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
-
     if (value != null)
-      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
-    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
-
-    if (gradient != null) {
-      model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
-        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+      value.accumulate(-summary.logZ)
+    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
+      val aStat = factor.assignmentStatistics(TargetAssignment)
+      if (value != null) value.accumulate(factor.statisticsScore(aStat))
+      if (gradient != null) {
+        gradient.accumulate(factor.family, aStat)
         gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
-      })
+      }
     }
   }
 }
@@ -57,17 +49,17 @@ class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer)
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
     if (value != null)
-      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
-    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
-    if (gradient != null) {
-      model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
-        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+      value.accumulate(-summary.logZ)
+    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
+      val aStat = factor.assignmentStatistics(TargetAssignment)
+      if (value != null) value.accumulate(factor.statisticsScore(aStat))
+      if (gradient != null) {
+        gradient.accumulate(factor.family, aStat)
         gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
-      })
+      }
     }
   }
 }
-
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
 class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](val label:V) extends Example[Model] {
@@ -157,22 +149,16 @@ class DominationLossExampleAllGood(goodCandidates: Seq[Var], badCandidates: Seq[
   }
 }
 
-class StructuredPerceptronExample[V <: LabeledVar](val labels: Iterable[V], val infer: Infer) extends Example[Model] {
-  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
-    if (labels.size == 0) return
-    val summary = infer.infer(labels, model).get
-    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
-      val mtStat = summary.marginalTensorStatistics(factor)
-      val aStat = factor.assignmentStatistics(TargetAssignment)
-      if (value != null) {
-        value.accumulate(factor.statisticsScore(mtStat))
-        value.accumulate(-factor.statisticsScore(aStat))
-      }
-      if (gradient != null) {
-        gradient.accumulate(factor.family, aStat)
-        // same gradient code as LikelihoodExample since max-product marginalTensorStatistics are just statistics of MAP assignment
-        gradient.accumulate(factor.family, mtStat, -1.0)
-      }
-    }
-  }
+// StructuredPerceptron is just Likelihood with a Maximize ("value" will be correct as long as the marginals returned by
+// Maximize have the max model score as "logZ")
+class StructuredPerceptronExample[V <: LabeledVar](labels: Iterable[V], infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(labels, infer)
+
+// NOTE: a "loss" is a negated objective - so higher score is worse - otherwise this won't work since there is no way to make a
+// CombinedModel that subtracts one model's score from another
+// USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
+// NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
+class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], loss: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
+  extends StructuredPerceptronExample(labels, infer) {
+  override def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit =
+    super.accumulateExampleInto(new CombinedModel(model, loss), gradient, value, margin)
 }

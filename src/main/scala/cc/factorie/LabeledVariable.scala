@@ -14,6 +14,8 @@
 
 package cc.factorie
 
+import la.{SingletonBinaryLayeredTensorLike2, SingletonBinaryLayeredTensor2, SingletonBinaryTensorLike2, Tensor}
+
 // Variables in "aimer/target" pairs, used for labeled data for training.
 // The "target" is a container for the true, correct value.
 // The "aimer" is the variable that is supposed to have the true value; it is aiming to have the target value, 
@@ -148,11 +150,19 @@ class HammingTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Man
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
   def accuracy(context: Iterable[A]): Double = context.map(currentScore(_)).sum / context.size
-  //def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0
 }
 object HammingObjective extends HammingTemplate[LabeledVarWithTarget]
 
-
+class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+  def unroll1(aimer:A) = Factor(aimer, aimer.target)
+  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
+  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
+  override def valuesScore(t: Tensor) = t match {
+    case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
+    case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
+  }
+}
+object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]
 
 // Evaluation
 

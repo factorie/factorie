@@ -33,7 +33,7 @@ object WordSegmenterDemo2 {
     if ("aeiou".contains(char)) this += "VOWEL"
   }
   class Sentence extends Chain[Sentence,Token]
-  
+
   val model = new ModelWithContext[IndexedSeq[Label]] {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
@@ -82,8 +82,6 @@ object WordSegmenterDemo2 {
   val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
-    implicit val random = new scala.util.Random 
-  
     // Read data and create Variables
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
@@ -104,7 +102,7 @@ object WordSegmenterDemo2 {
     println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
 
     // Make a test/train split
-    val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
+    val (testSet, trainSet) = sentences.shuffle.split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
     val trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
     
@@ -115,10 +113,11 @@ object WordSegmenterDemo2 {
     
     val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
     println("Example Factors: "+exampleFactors.mkString(", "))
-  
+
     val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    val trainer = new BatchTrainer(model)
-    trainer.trainFromExamples(trainSet.map(sentence => new LikelihoodExample(sentence.asSeq.map(_.label), InferByBPChainSum)))
+    val trainer = new SGDTrainer(model, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
+//    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
+    trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label))))
     for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
