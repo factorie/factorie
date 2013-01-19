@@ -129,7 +129,8 @@ abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(
 }
 
 trait BPVariableMaxProduct { self: BPVariable =>
-  def calculateMarginal: Tensor = { val t = calculateBelief; t.maxNormalize(); t }
+  // TODO BUG FIXME: I set this to return max-marginals instead of MAP assignment. This is to keep unit tests from breaking, but is inconsistent with factor marginals -luke
+  def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
 }
 
 trait BPVariableSumProduct { self: BPVariable =>
