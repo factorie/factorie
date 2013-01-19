@@ -304,6 +304,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
     for ((example, i) <- examples.zipWithIndex) {
       if (i % 1000 == 0 && i > 0) logger.info(i + " examples")
       gradientAccumulator.tensor.zero()
+      marginAccumulator.value = 0
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
     }
