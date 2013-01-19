@@ -28,3 +28,44 @@ class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val cont
     model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
   }
 }
+
+class ContrastiveDivergenceHingeExample[C <: Var](
+  val context: C, val sampler: ProposalSampler[C], val learningMargin: Double = 1.0) extends Example[Model] {
+  // NOTE: this assumes that variables are set to the ground truth when this method is called
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
+    require(gradient != null, "The ContrastiveDivergenceHingeExample needs a gradient accumulator")
+    require(margin != null, "The ContrastiveDivergenceHingeExample needs a margin accumulator")
+    val proposal = sampler.pickProposal(sampler.proposals(context))
+    val groundTruthScore = model.currentScore(context)
+    if (groundTruthScore - proposal.modelScore < learningMargin) {
+      proposal.diff.redo
+      model.factorsOfFamilyClass[DotFamily](proposal.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      proposal.diff.undo
+      model.factorsOfFamilyClass[DotFamily](proposal.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      margin.accumulate(groundTruthScore - proposal.modelScore)
+//      println("margin: %f gt: %f prop: %f" format (groundTruthScore - proposal.modelScore, groundTruthScore, proposal.modelScore))
+    }
+  }
+}
+
+class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
+  val context: C, val sampler: ProposalSampler[Var], val learningMargin: Double = 1.0) extends Example[Model] {
+  // NOTE: this assumes that the initial configuration is the ground truth
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
+    require(gradient != null, "The PersistentContrastiveDivergenceHingeExample needs a gradient accumulator")
+    require(margin != null, "The PersistentContrastiveDivergenceHingeExample needs a margin accumulator")
+    val proposalDiff = sampler.processProposals(sampler.proposals(context))
+    val currentConfigScore = model.currentScore(context)
+    val groundTruthDiff = new DiffList
+    context.setToTarget(groundTruthDiff)
+    val groundTruthScore = model.currentScore(context)
+    if (groundTruthScore - currentConfigScore < learningMargin) {
+      model.factorsOfFamilyClass[DotFamily](groundTruthDiff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      groundTruthDiff.undo
+      model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      margin.accumulate(groundTruthScore - currentConfigScore)
+//      println("margin: %f gt: %f cur: %f" format (groundTruthScore - currentConfigScore, groundTruthScore, currentConfigScore))
+    } else
+      groundTruthDiff.undo
+  }
+}
