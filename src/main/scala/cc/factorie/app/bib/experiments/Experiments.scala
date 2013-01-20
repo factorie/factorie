@@ -193,7 +193,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
   }
 }
 
-class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity], evidenceBatches:Seq[Seq[AuthorEntity]], initialDBNameOpt:Option[String]=None, evidenceBatchNames:Option[Seq[String]]=None, initialSteps:Int=0, stepsPerBatch:Int=10000) extends AuthorSamplerWriter(model, initialDB, evidenceBatches, initialDBNameOpt, evidenceBatchNames, initialSteps, stepsPerBatch) {
+class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity], evidenceBatches:Seq[Seq[AuthorEntity]], initialDBNameOpt:Option[String]=None, evidenceBatchNames:Option[Seq[String]]=None, initialSteps:Int=0, stepsPerBatch:Int=10000, initInstructionsOpt:Option[Seq[Seq[()=>Unit]]]) extends AuthorSamplerWriter(model, initialDB, evidenceBatches, initialDBNameOpt, evidenceBatchNames, initialSteps, stepsPerBatch, initInstructionsOpt) {
 
   def positiveEdit(editMention:AuthorEntity): Boolean = {
     val linked = editMention.linkedMention.get.asInstanceOf[AuthorEntity]
@@ -401,7 +401,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
           HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
-	  var sampler = new AuthorSamplerWriterWithReliability (authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value){temperature = 0.001}
+	  var sampler = new AuthorSamplerWriterWithReliability (authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value, None){temperature = 0.001}
 	}
         case "merge-incorrect" => {
 	  //do human edit experiment

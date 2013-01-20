@@ -36,14 +36,13 @@ class ContrastiveDivergenceHingeExample[C <: Var](
     require(gradient != null, "The ContrastiveDivergenceHingeExample needs a gradient accumulator")
     require(margin != null, "The ContrastiveDivergenceHingeExample needs a margin accumulator")
     val proposal = sampler.pickProposal(sampler.proposals(context))
-    val groundTruthScore = model.currentScore(context)
-    if (groundTruthScore - proposal.modelScore < learningMargin) {
+    if (-proposal.modelScore < learningMargin) {
       proposal.diff.redo
       model.factorsOfFamilyClass[DotFamily](proposal.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       proposal.diff.undo
       model.factorsOfFamilyClass[DotFamily](proposal.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      margin.accumulate(groundTruthScore - proposal.modelScore)
-//      println("margin: %f gt: %f prop: %f" format (groundTruthScore - proposal.modelScore, groundTruthScore, proposal.modelScore))
+      margin.accumulate(-proposal.modelScore)
+      println("margin: %f" format (-proposal.modelScore))
     }
   }
 }
@@ -58,13 +57,13 @@ class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
     val currentConfigScore = model.currentScore(context)
     val groundTruthDiff = new DiffList
     context.setToTarget(groundTruthDiff)
-    val groundTruthScore = model.currentScore(context)
-    if (groundTruthScore - currentConfigScore < learningMargin) {
+    val truthScore = model.currentScore(context)
+    if (truthScore - currentConfigScore < learningMargin) {
       model.factorsOfFamilyClass[DotFamily](groundTruthDiff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       groundTruthDiff.undo
       model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      margin.accumulate(groundTruthScore - currentConfigScore)
-//      println("margin: %f gt: %f cur: %f" format (groundTruthScore - currentConfigScore, groundTruthScore, currentConfigScore))
+      margin.accumulate(truthScore - currentConfigScore)
+      println("margin: %f" format (truthScore - currentConfigScore))
     } else
       groundTruthDiff.undo
   }
