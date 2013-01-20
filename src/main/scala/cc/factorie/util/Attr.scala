@@ -77,7 +77,7 @@ trait Attr {
     def all[C<:AnyRef]()(implicit m: Manifest[C]): Seq[C] = {
       val key = m.erasure
       val result = new scala.collection.mutable.ArrayBuffer[C]
-      var i = 0 
+      var i = 0
       while (i < _attr.length) {
         if ((_attr(i) ne null) && key.isAssignableFrom(_attr(i).getClass)) result += _attr(i).asInstanceOf[C]
         i += 1
@@ -90,7 +90,7 @@ trait Attr {
     def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = {
       val key = m.erasure
       val result = new scala.collection.mutable.ArrayBuffer[C]
-      var i = 0 
+      var i = 0
       while (i < _attr.length) {
         if ((_attr(i) ne null) && key.isAssignableFrom(_attr(i).getClass)) removeIndex(i)
         else i += 1
@@ -99,7 +99,7 @@ trait Attr {
     /** Return a sequence of all attributes */
     def values: Seq[AnyRef] = {
       val result = new scala.collection.mutable.ArrayBuffer[AnyRef]
-      var i = 0 
+      var i = 0
       while (i < _attr.length) {
         if ((_attr(i) ne null)) result += _attr(i)
         i += 1
@@ -140,8 +140,8 @@ trait Attr {
       }
     }
 
-    
+
   }
-  
+
 }
 

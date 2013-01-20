@@ -10,6 +10,7 @@ import collection.mutable.{HashMap,HashSet, ArrayBuffer}
 class UserReliabilityVariable extends RealVariable {
   var totalImpactfulEdits = 0.0
   var totalEdits = 0.0
+  var truth = 0.0
   def updateValue(d:DiffList) = this.set(totalImpactfulEdits/totalEdits)(d)
 }
 
@@ -72,12 +73,58 @@ var debugFlag=false
   }
 }
 
+class HumanEditTemplateWithReliability(override val shouldLinkReward: Double, override val shouldNotLinkPenalty:Double) extends HumanEditTemplate {
+
+  /* We need a better scoring function that weights the reliability adjustment
+   * based on the number of edits that user has made...maybe something like log(totalEdits)
+   * we should mix the two together so that if you have made lots of edits, we are more
+   * confident about your reliability.
+   *
+   * Perhaps we should keep track of "experience" which is the number of edits you've made
+   * in comparison to the rest of the editors. Then we can scale the score based on this.
+   * To do this though, we need to have access other people's experience...*/
+  override  def score(eExists: EntityExists#Value, isEntity: IsEntity#Value, editSetVar:
+  EditSetVariable#Value): Double = {
+    def scoreEdit(entity: HierEntity with HumanEditMention) = {
+      var result = 0.0
+      //we are dividing by 2 because we are looping over both linked mentions (they are in the same edit set).
+      if(entity.editType eq HumanEditMention.ET_SHOULD_LINK){
+        if(debugFlag)println("  EditTemplate: should-link mention")
+        if(entity.entityRoot eq entity.linkedMention.get.entityRoot){
+          if(debugFlag)println("    edit template should-link rewarding mention: "+(shouldLinkReward/2.0))
+	  // If the person is reliabile <50% of the time, then their opinion counts negatively
+          result += (shouldLinkReward/2.0) * (entity.attr[UserReliabilityVariable].doubleValue - .5)
+        } //TODO: else penalty but don't divide by 2?
+      }else if(entity.editType eq HumanEditMention.ET_SHOULD_NOT_LINK){
+        if(entity.entityRoot eq entity.linkedMention.get.entityRoot)result -=
+	    shouldNotLinkPenalty/2.0 * (entity.attr[UserReliabilityVariable].doubleValue - .5)
+      }
+      result
+    }
+    var result = 0.0
+    if(eExists.booleanValue && isEntity.booleanValue){
+      if(editSetVar.size>0){
+        if(debugFlag)println("EditTemplate (debugging). Size="+editSetVar.size)
+        for (edit <- editSetVar) {
+          result += scoreEdit(edit)
+        }
+        if(debugFlag)println("  total points: "+result)
+      }
+    }
+    result
+  }
+}
+
 object HumanEditExperiments{
   trait ExperimentalEdit[T<:HierEntity with HumanEditMention]{
     def score:Double
     def isCorrect:Boolean = score>0
     def mentions:Seq[T]
+
+    var owner:Int = -1    // integer representing the id of the owner who created this edit
+    def setOwner(id: Int): Unit = this.owner = id
   }
+
   class ExpMergeEdit[T<:HierEntity with HumanEditMention](val mention1:T,val mention2:T,val score:Double) extends ExperimentalEdit[T]{
     val mentions:Seq[T]=Seq(mention1,mention2)
     mention1.linkedMention=Some(mention2)
@@ -108,7 +155,9 @@ object HumanEditExperiments{
     mention2.linkedMention=Some(mention1)
     mention2.editType=HumanEditMention.ET_SHOULD_NOT_LINK
   }
+
   def edits2evidenceBatches(edits:Seq[ExperimentalEdit[AuthorEntity]],numBatches:Int):Seq[Seq[AuthorEntity]] ={
+
     val evidenceBatches = new ArrayBuffer[Seq[AuthorEntity]]
     if(numBatches == -1){
       for(edit <- edits)evidenceBatches.asInstanceOf[ArrayBuffer[Seq[AuthorEntity]]] += edit.mentions
