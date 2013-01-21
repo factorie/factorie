@@ -65,6 +65,11 @@ trait Model {
       case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
       case _ => false
     }).asInstanceOf[Iterable[F#Factor]]
+  def filterNotByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[Factor] =
+    factors.filterNot({
+      case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
+      case _ => false
+    })
   def factorsOfFamilyClass[F<:Family](variable:Var, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variable), fclass)
   def factorsOfFamilyClass[F<:Family](variables:Iterable[Var], fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variables), fclass)
   def factorsOfFamilyClass[F<:Family](variable:Var)(implicit fm:Manifest[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variable, fm.erasure.asInstanceOf[Class[F]])

@@ -33,7 +33,8 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
+    val factors = model.factors(labels)
+    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
       val aStat = factor.assignmentStatistics(TargetAssignment)
       if (value != null) value.accumulate(factor.statisticsScore(aStat))
       if (gradient != null) {
@@ -41,6 +42,9 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
         gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
       }
     }
+    if (value != null) // add in the score from non-DotFamilies
+      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
+        value.accumulate(factor.assignmentScore(TargetAssignment))
   }
 }
 
@@ -50,7 +54,8 @@ class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer)
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    for (factor <- model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily])) {
+    val factors = model.factors(labels)
+    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
       val aStat = factor.assignmentStatistics(TargetAssignment)
       if (value != null) value.accumulate(factor.statisticsScore(aStat))
       if (gradient != null) {
@@ -58,6 +63,9 @@ class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer)
         gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
       }
     }
+    if (value != null) // add in the score from non-DotFamilies
+      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
+        value.accumulate(factor.assignmentScore(TargetAssignment))
   }
 }
 
@@ -158,7 +166,15 @@ class StructuredPerceptronExample[V <: LabeledVar](labels: Iterable[V], infer: M
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
 class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], loss: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
-  extends StructuredPerceptronExample(labels, infer) {
-  override def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit =
-    super.accumulateExampleInto(new CombinedModel(model, loss), gradient, value, margin)
+  extends LikelihoodExample(labels, infer) {
+  override def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
+    if (margin != null || value != null) {
+      val valueAcc = new LocalDoubleAccumulator(0.0)
+      super.accumulateExampleInto(new CombinedModel(model, loss), gradient, valueAcc, margin)
+      // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
+      // TODO FIXME: we have to add 1 here since MIRA expects a required margin of 1. We should take expected margin out of MIRA. -luke
+      if (margin != null) margin.accumulate(valueAcc.value + 1)
+      if (value != null) value.accumulate(valueAcc.value)
+    }
+  }
 }
