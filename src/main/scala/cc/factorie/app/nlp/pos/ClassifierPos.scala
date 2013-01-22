@@ -207,17 +207,17 @@ class ClassifierPos extends DocumentProcessor {
     PosDomain.freeze()
     val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)
-    val examples = sentences.flatMap(s => {
-      val sd = new SentenceData(s)
-      (0 until s.length).map(i => new LocalClassifierExample(sd, i, optimize.ObjectiveFunctions.hingeMultiClassObjective))
-    })
     model = new LogLinearModel[CategoricalVariable[String], HashFeatureVectorVariable[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
       override val evidenceTemplate = new LogLinearTemplate2[CategoricalVariable[String], HashFeatureVectorVariable[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
         override lazy val weights = new la.DenseTensor2(PosDomain.size, ClassifierPosFeatureDomain.dimensionSize)
       }
     }
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=1), maxIterations = 3, logEveryN = 10000)
+    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.1, delta=0.01), maxIterations = 1, logEveryN = sentences.map(_.tokens.length).sum/10)
     while(!trainer.isConverged) {
+      val examples = sentences.shuffle.flatMap(s => {
+        val sd = new SentenceData(s)
+        (0 until s.length).map(i => new LocalClassifierExample(sd, i, optimize.ObjectiveFunctions.hingeMultiClassObjective))
+      })
       trainer.processExamples(examples)
       var total = 0.0
       var correct = 0.0
