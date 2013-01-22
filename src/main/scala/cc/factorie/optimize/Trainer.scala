@@ -295,14 +295,14 @@ class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var op
   def isConverged = iteration >= maxIterations
 }
 
-class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3) extends Trainer[M] with util.FastLogging {
+class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, val logEveryN: Int = 10000) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
   var iteration = 0
   val marginAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     iteration += 1
     examples.zipWithIndex.foreach({ case (example, i) => {
-      if (i % 1000 == 0) logger.info(i + " examples")
+      if (i % logEveryN == 0) logger.info(i + " examples")
       gradientAccumulator.tensor.zero()
       example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)

@@ -38,7 +38,8 @@ trait Tensor2 extends Tensor {
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
   def *(t: Tensor1): Tensor1 = {
-    assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
+    // TODO(alex): this was commented out because growable tensors' dimensions don't match, figure out how to uncomment
+    //assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
     activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
     newT
@@ -168,7 +169,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
 }
 
 class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; private var _dim2 = d2 } with DenseTensorLike2 {
-  println("GrowableDenseTensor2 new "+_dim1+","+_dim2)
+  // println("GrowableDenseTensor2 new "+_dim1+","+_dim2)
   def dim1: Int = _dim1
   def dim2: Int = _dim2
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
@@ -176,18 +177,21 @@ class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; pri
     case t:Tensor2 => ensureDimensions(t.dim1, t.dim2)
     case _ => super.ensureDimensionsMatch(t)
   }
-  def ensureDimensions(d1:Int, d2:Int): Unit = if (d1 > _dim1 || d2 > _dim2) {
-    val newSize = d1 * d2 // math.max(_valuesSize * 2, d1 * d2)
-    val oldValues = _values
-    _resetValues(newSize) // allocates a new __values array of size newSize
-    if (_dim1 + _dim2 > 0) for (i <- 0 until _dim1) {
-      Array.copy(oldValues, i*_dim2, _values, i*d2, _dim2) // copy old values into place
-      if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2+_dim2, d2-_dim2, defaultValue) // fill in new space with default value
+  def ensureDimensions(d1:Int, d2:Int): Unit = {
+    if (d1 > _dim1 || d2 > _dim2) {
+      // grow in both dimensions, only in the specified amount
+      val newSize = d1 * d2 // math.max(_dim1 * _dim2 * 4, d1 * d2)
+      val oldValues = _values
+      _resetValues(newSize) // allocates a new __values array of size newSize
+      if (_dim1 + _dim2 > 0) for (i <- 0 until _dim1) {
+        Array.copy(oldValues, i*_dim2, _values, i*d2, _dim2) // copy old values into place
+        if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2+_dim2, d2-_dim2, defaultValue) // fill in new space with default value
+      }
+      if (d1 > _dim1) java.util.Arrays.fill(_values, _dim1*d2, (d1-_dim1)*d2, defaultValue)
+      // println("GrowableDenseTensor2 grew from "+_dim1+","+_dim2+" to "+d1+","+d2)
+      _dim1 = d1
+      _dim2 = d2
     }
-    if (d1 > _dim1) java.util.Arrays.fill(_values, _dim1*d2, (d1-_dim1)*d2, defaultValue)
-    println("GrowableDenseTensor2 grew from "+_dim1+","+_dim2+" to "+d1+","+d2)
-    _dim1 = d1
-    _dim2 = d2
   }
   // Currently these are the only methods that support capacity expansion
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
