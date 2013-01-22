@@ -63,7 +63,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
     timeAndProcess(initialSteps)
     snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
     println("About to process evidence stream.")
-    var evidenceSoFar: List[AuthorEntity] = List()
+    var evidenceSoFar = new ArrayBuffer[AuthorEntity]
     for(evidenceBatch <- evidenceBatches){
       batchCount += 1
       evidenceBatch.foreach(this.addEntity(_))
@@ -90,7 +90,8 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
       println("Evidence ended up:")
       evidenceBatch.foreach((e:AuthorEntity)=>EntityUtils.prettyPrintAuthor(e.entityRoot.asInstanceOf[AuthorEntity]))
       //model.familiesOfClass[HumanEditTemplate].head.debugFlag=true
-      evidenceSoFar ++: evidenceBatch
+      evidenceSoFar ++= evidenceBatch
+      postInferenceHook(evidenceSoFar)
       val debugged = new HashSet[AuthorEntity]
       for(e<-evidenceBatch){
         for(gf <- e.generatedFrom)
@@ -194,23 +195,68 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evid
 }
 
 class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity], evidenceBatches:Seq[Seq[AuthorEntity]], initialDBNameOpt:Option[String]=None, evidenceBatchNames:Option[Seq[String]]=None, initialSteps:Int=0, stepsPerBatch:Int=10000, initInstructionsOpt:Option[Seq[Seq[()=>Unit]]]) extends AuthorSamplerWriter(model, initialDB, evidenceBatches, initialDBNameOpt, evidenceBatchNames, initialSteps, stepsPerBatch, initInstructionsOpt) {
-
-  def positiveEdit(editMention:AuthorEntity): Boolean = {
+  var averageReliability = new UserReliabilityVariable
+  var users:Seq[UserReliabilityVariable]=null
+  override def reset = {averageReliability = new UserReliabilityVariable;super.reset}
+  def setUsers(us:Seq[UserReliabilityVariable]):Unit ={
+    this.users = us
+    for(user<-users){
+      averageReliability.totalImpactfulEdits += user.totalImpactfulEdits
+      averageReliability.totalEdits += user.totalEdits
+    }
+    averageReliability.updateValue(null)
+  }
+  def positiveEdit(editMention:AuthorEntity):Boolean = {
+    if(editMention.editType==HumanEditMention.ET_SHOULD_LINK)positiveSLEdit(editMention)
+    else positiveSNLEdit(editMention)
+  }
+  def positiveSLEdit(editMention:AuthorEntity): Boolean = {
     val linked = editMention.linkedMention.get.asInstanceOf[AuthorEntity]
     val sourceOfEdit = editMention.generatedFrom.get.asInstanceOf[AuthorEntity]
     val sourceOfLinked = linked.generatedFrom.get.asInstanceOf[AuthorEntity]
     if(sourceOfEdit.entityRoot eq sourceOfLinked.entityRoot) true  //the merge edit had the effect of merging the original entities into the same cluster
     else false //the merge edit did not have the desired effect of merging htem into the same cluster
   }
-
+  def positiveSNLEdit(editMention:AuthorEntity): Boolean = {
+    val linked = editMention.linkedMention.get.asInstanceOf[AuthorEntity]
+    val sourceOfEdit = editMention.generatedFrom.get.asInstanceOf[AuthorEntity]
+    val sourceOfLinked = linked.generatedFrom.get.asInstanceOf[AuthorEntity]
+    if(!sourceOfEdit.entityRoot.eq(sourceOfLinked.entityRoot)) true  //the merge edit had the effect of merging the original entities into the same cluster
+    else false //the merge edit did not have the desired effect of merging htem into the same cluster
+  }
   override def postInferenceHook(evidence: Seq[AuthorEntity]): Unit = {
+    val checked = new HashSet[AuthorEntity]
+    averageReliability.totalImpactfulEdits=0.0
+    averageReliability.totalEdits=0.0
+    for(user <- users){
+      user.totalImpactfulEdits=1.0
+      user.totalEdits = 2.0
+      user.updateValue(null)
+      averageReliability.totalImpactfulEdits+=1.0
+      averageReliability.totalEdits+=2.0
+    }
+    averageReliability.updateValue(null)
     for (edit <- evidence) {
-      if (positiveEdit(edit)) {
-	edit.attr[UserReliabilityVariable].totalImpactfulEdits += 1
-	edit.attr[UserReliabilityVariable].totalEdits += 1
+      if(!checked.contains(edit)){
+        checked += edit
+        checked += edit.linkedMention.get.asInstanceOf[AuthorEntity]
+        val urv = edit.attr[UserReliabilityVariable]
+        if (positiveEdit(edit)) {
+          urv.totalImpactfulEdits += 1
+          averageReliability.totalImpactfulEdits += 1
+        }
+        averageReliability.totalEdits += 1
+        averageReliability.updateValue(null)
+        urv.totalEdits += 1
+        urv.set(urv.percentImpactful/averageReliability.percentImpactful)(null)
       }
+      //urv.updateValue(null)
     }
 
+    println("Average REL: pct-correct:"+(averageReliability.percentImpactful)+" num-correct: "+averageReliability.totalImpactfulEdits+" total: "+averageReliability.totalEdits)
+    for(user <- users){
+      println("REL: truth: "+user.truth+" adjusted: "+user.doubleValue+" pct-correct: "+(user.percentImpactful)+" num-correct: "+user.totalImpactfulEdits+" total: "+user.totalEdits)
+    }
     /* PRINT STATEMENTS FOR DEBUGGING */
     for (edit <- evidence) println("Edit Owner Reliability: " + edit.attr[UserReliabilityVariable].totalImpactfulEdits / edit.attr[UserReliabilityVariable].totalEdits)
 
@@ -223,9 +269,11 @@ trait HumanEditOptions extends ExperimentOptions{
   val heExperimentType = new CmdOption("he-experiment-type","merge-correct","FILE","Experiment to run for human edits. Options are merge-correct, merge-incorrect, merge-all, split-correct, split-incorrect")
   val heShouldLinkReward = new CmdOption("he-should-link-reward",8.0,"DOUBLE","Should link reward for human edit template.")
   val heShouldNotLinkPenalty = new CmdOption("he-should-not-link-penalty",8.0,"DOUBLE","Should not link penalty for human edit template.")
+  val heSpecializedTemperature = new CmdOption("he-specialized-temperature",1.0,"BOOL","A value other than 1 will cause the program to use a specialized model that places a temperature only on factors involving an attribute from a human submitted edit.")
   val heNumSynthesisSamples = new CmdOption("he-num-synthesis-samples",1000000,"DOUBLE","Should link reward for human edit template.")
   val heNumBatches = new CmdOption("he-num-batches",-1,"INT","Number of batches to stream. Default of -1 means n batches.")
   val heMergeExpEMinSize = new CmdOption("he-merge-exp-entity-min-size",3,"INT","Number of batches to stream. Default of -1 means n batches.")
+  val heMergeExpEMinPurity = new CmdOption("he-merge-exp-entity-min-purity",0.0,"DOUBLE","Number of batches to stream. Default of -1 means n batches.")
   val heAdvanceSeed = new CmdOption("he-advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
   val heUseParallel = new CmdOption("he-use-parallel",false,"BOOL","If true, will use a parallel sampler to perform the initialization.")
   val heSaveInitialDB = new CmdOption("he-save-initial-db",false,"BOOL","If true, save the initial database.")
@@ -271,8 +319,8 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       mongoConn.close
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
-    val authorCorefModel = new AuthorCorefModel(false)
     def opts = this
+    val authorCorefModel:AuthorCorefModel = if(opts.heSpecializedTemperature.wasInvoked)new HEAuthorCorefModel(opts.heSpecializedTemperature.value) else new AuthorCorefModel(false)
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
     if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
@@ -330,9 +378,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       authorCorefModel += humanEditTemplate
       opts.heExperimentType.value match{
         case "merge-correct" =>{
-	  //do human edit experiment
-	  val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
-	  authorCorefModel += humanEditTemplate
+          //do human edit experiment
+          val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
           authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
           val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
@@ -344,18 +392,77 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-correct: saved initial db and exiting.")
             System.exit(0)
           }
-          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value,opts.heMergeExpEMinPurity.value).filter(_.isCorrect)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
           HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
         }
-	case "merge-with-reliability" => {
-	  //do human edit experiment
-	  val humanEditTemplate = new HumanEditTemplateWithReliability(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
-	  authorCorefModel += humanEditTemplate
-
-	  authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+        case "split-with-reliability" => {
+          //do human edit experiment
+          val humanEditTemplate = new HumanEditTemplateWithReliability(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits split-with-reliability: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val correctEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          val incorrectEdits = random.shuffle(HumanEditExperiments.incorrectAuthorSplitEdits(initialDB)).take(correctEdits.size)
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(correctEdits++incorrectEdits,opts.heNumBatches.value)
+          val editsUsed = correctEdits ++ incorrectEdits
+          /* create user reliabilities */
+          val numUsers = 2                   // arbitrary and should probably be passed in as a command line argument
+          val users    = Array.fill(numUsers)(new UserReliabilityVariable)
+          for(user <- users){
+            user.totalImpactfulEdits = 1
+            user.totalEdits = 2
+            user.updateValue(null)
+          }
+          /* Assign each edit to a user and then calculate reliabilities */
+          for (edit <- editsUsed) {
+            var userIdx = 2
+            //if(random.nextDouble<=0.33)userIdx=2
+            if(edit.isCorrect)userIdx = 0
+            else if(!edit.isCorrect)userIdx= 1
+            println("USR ID: "+userIdx)
+            //if(edit.isCorrect){
+            //  val gf = edit.mentions.map(_.asInstanceOf[AuthorEntity].generatedFrom.get)
+            //  if(gf.filter(EntityUtils.purity(_)>=0.85).size==2)userIdx=0
+            //}
+            edit.setOwner(userIdx)
+            edit.mention1.attr += users(userIdx)
+            edit.mention2.attr += users(userIdx)
+          }
+          /* Assign each edit to a user and then calculate reliabilities */
+          println("Num Edits: " + editsUsed.length)
+          for (idx  <- 0 until numUsers) {
+            println("idx: "+idx+" num with idx: "+editsUsed.filter(_.owner == idx).size)
+            users(idx).truth = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / editsUsed.filter(_.owner == idx).length.toDouble
+          }
+          for (user <- users) println("Users with reliability: " + user.truth)
+          println("Num Correct: " + correctEdits.length.toString)
+          println("Num Incorrect: " + incorrectEdits.length.toString)
+          /* maybe make a new version of edits2evidenceBatches that doesn't cast and instead returns ExperimentalEdits */
+          evidenceBatches = random.shuffle(evidenceBatches)
+          HumanEditExperiments.splitBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+          val sampler = new AuthorSamplerWriterWithReliability (authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value, None){temperature = 0.001}
+          sampler.setUsers(users.toSeq)
+          sampler.processExperiment(new PrintWriter(new File(outputFile.value)))
+          System.out.println("Finished reliability experiment... exiting.")
+          System.exit(0)
+        }
+        case "merge-with-reliability" => {
+          //do human edit experiment
+          val humanEditTemplate = new HumanEditTemplateWithReliability(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
           val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
           samplerForCreatingInitialDB.setEntities(authors)
@@ -366,47 +473,68 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-with-reliability: saved initial db and exiting.")
             System.exit(0)
           }
-
-          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value,opts.heMergeExpEMinPurity.value)
           val correctEdits = edits.filter(_.isCorrect)
-          var incorrectEdits = random.shuffle(edits.filter(! _.isCorrect)).take(correctEdits.size)
+          val incorrectEdits = random.shuffle(edits.filter(! _.isCorrect)).take(correctEdits.size)
+          //val correctEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          //var incorrectEdits = HumanEditExperiments.incorrectAuthorSplitEdits(initialDB)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(correctEdits++incorrectEdits,opts.heNumBatches.value)
+          val editsUsed = correctEdits ++ incorrectEdits
+          /* create user reliabilities */
+          val numUsers = 2                   // arbitrary and should probably be passed in as a command line argument
+          val users    = Array.fill(numUsers)(new UserReliabilityVariable)
+          for(user <- users){
+            user.totalImpactfulEdits = 1
+            user.totalEdits = 2
+            user.updateValue(null)
+          }
+          /* Assign each edit to a user and then calculate reliabilities */
+          for (edit <- editsUsed) {
+            var userIdx = 2
+            if(random.nextDouble<=0.33)userIdx=2
+            else if(edit.isCorrect)userIdx = 0
+            else if(!edit.isCorrect)userIdx=1
+            //if(edit.isCorrect){
+            //  val gf = edit.mentions.map(_.asInstanceOf[AuthorEntity].generatedFrom.get)
+            //  if(gf.filter(EntityUtils.purity(_)>=0.85).size==2)userIdx=0
+            //}
+            edit.setOwner(userIdx)
+            edit.mention1.attr += users(userIdx)
+            edit.mention2.attr += users(userIdx)
+          }
+          /* Assign each edit to a user and then calculate reliabilities */
+/*
+          for (edit <- editsUsed) {
+            val userIdx = random.nextInt(numUsers)
+            edit.setOwner(userIdx)
+            edit.mention1.attr += users(userIdx)
+            edit.mention2.attr += users(userIdx)
+          }
+          */
+          /* DEBUG */
+          println("Num Edits: " + editsUsed.length)
+          for (idx  <- 0 until numUsers) users(idx).truth = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / edits.filter(_.owner == idx).length.toDouble
+          /* PRINT STATEMENTS FOR DEBUGGING */
+          for (user <- users) println("Users with reliability: " + user.truth)
 
-	  val editsUsed = correctEdits ++ incorrectEdits
+          /* DEBUG */
+          println("Num Correct: " + correctEdits.length.toString)
+          println("Num Incorrect: " + incorrectEdits.length.toString)
 
-	  /* create user reliabilities */
-	  val numUsers = 10                   // arbitrary and should probably be passed in as a command line argument
-	  val users    = Array.fill(numUsers)(new UserReliabilityVariable)
-
-	  /* Assign each edit to a user and then calculate relabilities */
-	  for (edit <- editsUsed) {
-	    val userIdx = random.nextInt(numUsers)
-	    edit.setOwner(userIdx)
-	    edit.mention1.attr += users(userIdx)
-	    edit.mention2.attr += users(userIdx)
-	  }
-
-	  /* DEBUG */
-	  println("Num Edits: " + editsUsed.length)
-	  for (idx  <- 0 until numUsers) users(idx).truth = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / edits.filter(_.owner == idx).length.toDouble
-
-	  /* PRINT STATEMENTS FOR DEBUGGING */
-	  for (user <- users) println("Users with reliability: " + user.truth)
-
-	  /* DEBUG */
-	  println("Num Correct: " + correctEdits.length.toString)
-	  println("Num Incorrect: " + incorrectEdits.length.toString)
-
-	  /* maybe make a new version of edits2evidenceBatches that doesn't cast and instead returns ExperimentalEdits */
+          /* maybe make a new version of edits2evidenceBatches that doesn't cast and instead returns ExperimentalEdits */
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
           HumanEditExperiments.mergeBaseline2(initialDB,evidenceBatches,new File(outputFile.value+".baseline2"))
-	  var sampler = new AuthorSamplerWriterWithReliability (authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value, None){temperature = 0.001}
-	}
+          var sampler = new AuthorSamplerWriterWithReliability (authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value, None){temperature = 0.001}
+          sampler.setUsers(users.toSeq)
+          sampler.processExperiment(new PrintWriter(new File(outputFile.value)))
+          System.out.println("Finished reliability experiment... exiting.")
+          System.exit(0)
+        }
         case "merge-incorrect" => {
-	  //do human edit experiment
-	  val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
-	  authorCorefModel += humanEditTemplate
+          //do human edit experiment
+          val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
 
           authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
@@ -419,7 +547,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-incorrect: saved initial db and exiting.")
             System.exit(0)
           }
-          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(! _.isCorrect)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value,opts.heMergeExpEMinPurity.value).filter(! _.isCorrect)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)
           evidenceBatches = random.shuffle(evidenceBatches)
           HumanEditExperiments.mergeBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
@@ -427,10 +555,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
         }
         case "merge-mixed" => {
           //do human edit experiment
-	  val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
-	  authorCorefModel += humanEditTemplate
+          val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
 
-	  authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
           val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
           samplerForCreatingInitialDB.setEntities(authors)
@@ -441,7 +569,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-mixed: saved initial db and exiting.")
             System.exit(0)
           }
-          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(! _.isCorrect)
+          val edits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value,opts.heMergeExpEMinPurity.value).filter(! _.isCorrect)
           val correctEdits = edits.filter(_.isCorrect)
           val incorrectEdits = random.shuffle(edits.filter(! _.isCorrect)).take(correctEdits.size)
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(correctEdits++incorrectEdits,opts.heNumBatches.value)
@@ -531,6 +659,30 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           //HumanEditExperiments.applySplitEdits(evidenceBatches)(initDiffList)
           //println("Diff score after applying split edits: "+initDiffList.score(authorCorefModel))
         }
+         case "split-mixed" => {
+          //do human edit experiment
+          val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
+          authorCorefModel += humanEditTemplate
+          authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
+          //create evidence stream by running inference, then considering all possible merges that would increase F1 score
+          val samplerForCreatingInitialDB = if(heUseParallel.value) new ParallelAuthorSampler(authorCorefModel, 5){temperature=0.001} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+          samplerForCreatingInitialDB.setEntities(authors)
+          samplerForCreatingInitialDB.timeAndProcess(opts.heNumSynthesisSamples.value)
+          initialDB = samplerForCreatingInitialDB.getEntities
+          if(heSaveInitialDB.value){
+            epiDB.authorColl.store(samplerForCreatingInitialDB.getEntities ++ samplerForCreatingInitialDB.getDeletedEntities)
+            println("Human edits split-with-reliability: saved initial db and exiting.")
+            System.exit(0)
+          }
+          val correctEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
+          val incorrectEdits = random.shuffle(HumanEditExperiments.incorrectAuthorSplitEdits(initialDB)).take(correctEdits.size)
+          val editsUsed = correctEdits ++ incorrectEdits
+          evidenceBatches = HumanEditExperiments.edits2evidenceBatches(editsUsed,opts.heNumBatches.value)
+          println("Num Correct: " + correctEdits.length.toString)
+          println("Num Incorrect: " + incorrectEdits.length.toString)
+          evidenceBatches = random.shuffle(evidenceBatches)
+          HumanEditExperiments.splitBaseline1(initialDB,evidenceBatches,new File(outputFile.value+".baseline1"))
+        }
         case "mixed" => {
           authors = authors.filter((a:AuthorEntity) => {a.groundTruth != None || a.bagOfTruths.size>0})
           //create evidence stream by running inference, then considering all possible merges that would increase F1 score
@@ -543,7 +695,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             println("Human edits merge-correct: saved initial db and exiting.")
             System.exit(0)
           }
-          val correctMergeEdits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value).filter(_.isCorrect)
+          val correctMergeEdits = HumanEditExperiments.getAuthorEdits(initialDB,opts.heMergeExpEMinSize.value,opts.heMergeExpEMinPurity.value).filter(_.isCorrect)
           val correctSplitEdits = HumanEditExperiments.correctAuthorSplitEdits(initialDB)
           val edits = correctMergeEdits ++ correctSplitEdits
           evidenceBatches = HumanEditExperiments.edits2evidenceBatches(edits,opts.heNumBatches.value)

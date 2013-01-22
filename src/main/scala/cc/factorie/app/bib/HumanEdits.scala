@@ -6,17 +6,43 @@ import experiments.DebugDiffList
 import java.io.{PrintWriter, File, BufferedWriter}
 import collection.mutable.{HashMap,HashSet, ArrayBuffer}
 
+
+class HEAuthorCorefModel(val heTemperature:Double=0.5) extends AuthorCorefModel(false){
+  def scoreFactor(factor:Factor):Double = {
+    val score = factor.currentScore
+    var involvesEdit = false
+    var reliability = 0.0
+    for(variable <- factor.currentAssignment.variables)variable match {
+      case v:EntityAttr => {
+        if(v.entity.isInstanceOf[AuthorEntity]){
+          val e = v.entity.asInstanceOf[AuthorEntity]
+          if(!e.editType.eq("none")){
+            reliability = e.attr[UserReliabilityVariable].doubleValue
+            involvesEdit=true
+          }
+        }
+      }
+    }
+    if(involvesEdit)score*reliability/heTemperature else score
+  }
+  override def currentScore(variable:Var): Double = { var sum = 0.0; for (f <- factors(variable)) sum += scoreFactor(f); sum }
+  override def currentScore(vars:Iterable[Var]): Double = { var sum = 0.0; for (f <- factors(vars)) sum += scoreFactor(f); sum }
+  override def currentScore(d:Diff): Double = { var sum = 0.0; for (f <- factors(d)) sum += scoreFactor(f); sum }
+  override def currentScore(dl:DiffList): Double = { var sum = 0.0; for (f <- factors(dl)) sum += scoreFactor(f); sum }
+}
 /* Keep track of one of these per user */
 class UserReliabilityVariable extends RealVariable {
   var totalImpactfulEdits = 0.0
   var totalEdits = 0.0
   var truth = 0.0
   def updateValue(d:DiffList) = this.set(totalImpactfulEdits/totalEdits)(d)
+  def percentImpactful = totalImpactfulEdits/totalEdits
 }
 
 object HumanEditMention{
   val ET_SHOULD_LINK = "should-link"
   val ET_SHOULD_NOT_LINK = "should-not-link"
+  val ET_NONE="none"
 }
 trait HumanEditMention extends Attr{
   def entity:HierEntity
@@ -24,7 +50,7 @@ trait HumanEditMention extends Attr{
   attr += new EditSetVariable(entity)
   //var linkSet
   var linkedMention:Option[HierEntity] = None
-  var editType:String = "none"
+  var editType:String = HumanEditMention.ET_NONE
   attr += new UserReliabilityVariable
   var generatedFrom:Option[Entity] = None
 }
@@ -74,7 +100,6 @@ var debugFlag=false
 }
 
 class HumanEditTemplateWithReliability(override val shouldLinkReward: Double, override val shouldNotLinkPenalty:Double) extends HumanEditTemplate {
-
   /* We need a better scoring function that weights the reliability adjustment
    * based on the number of edits that user has made...maybe something like log(totalEdits)
    * we should mix the two together so that if you have made lots of edits, we are more
@@ -92,12 +117,12 @@ class HumanEditTemplateWithReliability(override val shouldLinkReward: Double, ov
         if(debugFlag)println("  EditTemplate: should-link mention")
         if(entity.entityRoot eq entity.linkedMention.get.entityRoot){
           if(debugFlag)println("    edit template should-link rewarding mention: "+(shouldLinkReward/2.0))
-	  // If the person is reliabile <50% of the time, then their opinion counts negatively
-          result += (shouldLinkReward/2.0) * (entity.attr[UserReliabilityVariable].doubleValue - .5)
+          // If the person is reliabile <50% of the time, then their opinion counts negatively
+          result += (shouldLinkReward/2.0) * (entity.attr[UserReliabilityVariable].doubleValue)
         } //TODO: else penalty but don't divide by 2?
       }else if(entity.editType eq HumanEditMention.ET_SHOULD_NOT_LINK){
         if(entity.entityRoot eq entity.linkedMention.get.entityRoot)result -=
-	    shouldNotLinkPenalty/2.0 * (entity.attr[UserReliabilityVariable].doubleValue - .5)
+          shouldNotLinkPenalty/2.0 * (entity.attr[UserReliabilityVariable].doubleValue)
       }
       result
     }
@@ -175,7 +200,7 @@ object HumanEditExperiments{
     } else throw new Exception("Num, evidence batches not implemented for arbitrary values (only -1,1)")
     evidenceBatches
   }
-  def getAuthorEdits(initialDB:Seq[AuthorEntity],minimumEntitySize:Int):Seq[ExpMergeEdit[AuthorEntity]] ={
+  def getAuthorEdits(initialDB:Seq[AuthorEntity],minimumEntitySize:Int,minPurity:Double=0.0):Seq[ExpMergeEdit[AuthorEntity]] ={
     val edits = allMergeEdits[AuthorEntity](
       initialDB,
       _ => new AuthorEntity,
@@ -190,7 +215,8 @@ object HumanEditExperiments{
         cp.editSet += cp
         cp
       },
-      minimumEntitySize
+      minimumEntitySize,
+      minPurity
     )
     edits
   }
@@ -467,7 +493,7 @@ object HumanEditExperiments{
         val score = scoreFunction(scoringMentions)
         if(score<initScore){
           candidates += entity
-          scores += score
+          scores += (score - initScore)
         }
         d.undo
         entity = entity.parentEntity.asInstanceOf[T]
@@ -506,9 +532,9 @@ object HumanEditExperiments{
     result.toSeq
   }
 
-  def allMergeEdits[T<:HierEntity with HumanEditMention](allEntities:Seq[T],newEntity:Unit=>T,scoreFunction:Seq[HierEntity]=>Double,createEditMentionFrom:T=>T,minESize:Int):Seq[ExpMergeEdit[T]] ={
+  def allMergeEdits[T<:HierEntity with HumanEditMention](allEntities:Seq[T],newEntity:Unit=>T,scoreFunction:Seq[HierEntity]=>Double,createEditMentionFrom:T=>T,minESize:Int,minPurity:Double=0.0):Seq[ExpMergeEdit[T]] ={
     val result = new ArrayBuffer[ExpMergeEdit[T]]
-    val entities = allEntities.filter((e:T) =>{e.isEntity.booleanValue && e.numLeaves>=minESize})
+    val entities = allEntities.filter((e:T) =>{e.isEntity.booleanValue && e.numLeaves>=minESize && EntityUtils.purity(e)>=minPurity})
     println("About to create edits from "+ entities.size + " entities.")
     var i = 0;var j = 0
     while(i<entities.size){
