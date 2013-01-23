@@ -53,7 +53,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 // The default trainer
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
-class GeneralClassifierTrainer[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](val trainerConstructor: LogLinearModel[_,_] => Trainer[LogLinearModel[_,_]], val loss: ObjectiveFunctions.MultiClassObjectiveFunction) extends ClassifierTrainer {
+class GeneralClassifierTrainer(val trainerConstructor: Model => Trainer[_], val loss: ObjectiveFunctions.MultiClassObjectiveFunction) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val examples = il.map(l => new GLMExample(
@@ -61,7 +61,7 @@ class GeneralClassifierTrainer[L <: LabeledMutableDiscreteVar[_], F <: DiscreteT
       l.intValue,
       ObjectiveFunctions.logMultiClassObjective,
       weight = il.instanceWeight(l)))
-    val trainer = trainerConstructor(cmodel)
+    val trainer = trainerConstructor(cmodel).asInstanceOf[Trainer[LogLinearModel[L,F]]]
     while (!trainer.isConverged)
       trainer.processExamples(examples)
     new ModelBasedClassifier[L](cmodel, il.head.domain)
