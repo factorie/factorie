@@ -7,7 +7,7 @@ import la.{DenseTensor1, Tensor1}
 
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/
-abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledMutableDiscreteVar[_], S2 <: DiscreteTensorVar]
+abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: DiscreteTensorVar]
   (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
@@ -26,6 +26,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledMutableDiscreteVar[_
     wcs.foldLeft(0.0)((acc, el) => el._1.score(s1, s2) * el._2 + acc)
   }
 
+  // TODO have to cast here because if we put existentials in the type bounds it breaks in scala 2.10 -luke
   def train(labels: ArrayBuffer[S1]): Unit = {
     val K = labelDomain.size
     val numInstances = labels.length
@@ -35,9 +36,9 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledMutableDiscreteVar[_
     var i = 0
     while (!converged) {
       val classifierTemplate = trainWeakClassifier(labels, instanceWeights)
-      val currentClassifier = new ModelBasedClassifier[S1](classifierTemplate, labels.head.domain)
-      val classifications = currentClassifier.classifications(labels).toArray
-      val isFail = mapIndex(numInstances)(i => classifications(i).bestLabelIndex != labels(i).intValue)
+      val currentClassifier = new ModelBasedClassifier[MutableDiscreteVar[_]](classifierTemplate, labels.head.domain)
+      val classifications = currentClassifier.classifications(labels.map(_.asInstanceOf[MutableDiscreteVar[_]])).toArray
+      val isFail = mapIndex(numInstances)(i => classifications(i).bestLabelIndex != labels(i).asInstanceOf[DiscreteVar].intValue)
       val amountOfFail = (0 until numInstances).filter(isFail).foldLeft(0.0)((acc, el) => acc + instanceWeights(el))
       // FIXME: why doesn't this work multiclass? The log(K - 1) term should do this (see "Multi-class AdaBoost" by Zhu et al.) -luke
       val classifierWeight = math.log((1 - amountOfFail) / amountOfFail) + math.log(K - 1)
@@ -52,7 +53,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledMutableDiscreteVar[_
   }
 }
 
-class AdaBoostDecisionStumpTemplate[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](
+class AdaBoostDecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
   labelToFeatures: L => F,
   labelDomain: DiscreteDomain,
   featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
