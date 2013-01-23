@@ -38,8 +38,7 @@ trait Tensor2 extends Tensor {
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
   def *(t: Tensor1): Tensor1 = {
-    // TODO(alex): this was commented out because growable tensors' dimensions don't match, figure out how to uncomment
-    //assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
+    assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
     activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
     newT

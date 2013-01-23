@@ -90,9 +90,9 @@ class ClassifierPos extends DocumentProcessor {
     val wm2 = getLemmaFeature(sent, pos, -2)
     val wm3 = getLemmaFeature(sent, pos, -3)
 
-    val pm3 = "POS-3="+sent.get(sent.labels, pos-3)
-    val pm2 = "POS-2="+sent.get(sent.labels, pos-2)
-    val pm1 = "POS-1="+sent.get(sent.labels, pos-1)
+    val pm3 = "POS-3="+sent.sent.tokens(math.max(0,pos-3)).attr[PosLabel].categoryValue
+    val pm2 = "POS-2="+sent.sent.tokens(math.max(0,pos-2)).attr[PosLabel].categoryValue
+    val pm1 = "POS-1="+sent.sent.tokens(math.max(0,pos-3)).attr[PosLabel].categoryValue
     val a0 = "A="+getAffinity(sent, pos)
     val ap1 = "A+1="+getAffinity(sent, pos+1)
     val ap2 = "A+2="+getAffinity(sent, pos+2)
@@ -153,7 +153,6 @@ class ClassifierPos extends DocumentProcessor {
   class SentenceData(val sent: Sentence) {
     val length = sent.length
     val words = sent.tokens.map(_.string)
-    val labels = sent.tokens.map(_.attr[PosLabel].categoryValue)
     val lemmas = words.map(strings.simplifyDigits(_).toLowerCase)
     def get(s: Seq[String], i: Int) = if ((0 <= i) && (i < s.length)) s(i) else ""
   }
@@ -212,7 +211,7 @@ class ClassifierPos extends DocumentProcessor {
         override lazy val weights = new la.DenseTensor2(PosDomain.size, ClassifierPosFeatureDomain.dimensionSize)
       }
     }
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.1, delta=0.01), maxIterations = 1, logEveryN = sentences.map(_.tokens.length).sum/10)
+    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.1, delta=0.01), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
@@ -231,7 +230,7 @@ class ClassifierPos extends DocumentProcessor {
           if (s.tokens(i).attr[PosLabel].valueIsTarget) correct += 1.0
         }
       })
-      println("Accuracy: " + (correct/total) + " total time: " + totalTime)
+      println("Accuracy: " + (correct/total) + " total time: " + totalTime + " sentences: " + testSentences.length + " chars: " + testSentences.map(_.length).sum)
     }
     ClassifierPosFeatureDomain.freeze()
     serialize(modelFile)
