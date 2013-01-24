@@ -57,29 +57,28 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   def targetStatistics(labels: Seq[Label]): mutable.Map[DotFamily, Tensor] = {
-    val biasWeights = Tensor.newDense(bias.weights)
-    val obsWeights = Tensor.newSparse(obs.weights)
-    val markovWeights = Tensor.newSparse(markov.weights)
-    val obsmarkovWeights = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
+    val biasStats = Tensor.newDense(bias.weights)
+    val obsStats = Tensor.newSparse(obs.weights)
+    val markovStats = Tensor.newSparse(markov.weights)
+    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
 
     for (i <- 0 until labels.length) {
       val l = labels(i)
-      biasWeights += (l.targetIntValue, 1)
-      obsWeights += Tensor.outer(l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
+      biasStats += (l.targetIntValue, 1)
+      obsStats += Tensor.outer(new SingletonBinaryTensor1(l.domain.size, l.targetIntValue), labelToFeatures(l).tensor.asInstanceOf[Tensor1])
       if (i > 0) {
         val prev = labels(i - 1)
-//        markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
-        markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
-        if (useObsMarkov) obsmarkovWeights += Tensor.outer(
-          prev.tensor.asInstanceOf[Tensor1], l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
+        markovStats += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
+        if (useObsMarkov) obsmarkovStats += Tensor.outer(
+          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
       }
     }
 
     val result = new mutable.HashMap[DotFamily, Tensor]
-    result(bias) = biasWeights
-    result(obs) = obsWeights
-    result(markov) = markovWeights
-    if (useObsMarkov) result(obsmarkov) = obsmarkovWeights
+    result(bias) = biasStats
+    result(obs) = obsStats
+    result(markov) = markovStats
+    if (useObsMarkov) result(obsmarkov) = obsmarkovStats
     result
   }
 
@@ -233,43 +232,21 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
 object ChainModel {
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
+    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
+      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = model.inferBySumProduct(labels)
-
-      if (value != null) {
-        var incr = 0.0
-        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
-        value.accumulate(incr - summary.logZ)
-      }
-
       if (gradient != null) {
-        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
-          gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
-        })
+        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
+        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
       }
-
-      for (family <- summary.expectations.families)
-	    gradient.accumulate(family, summary.expectations(family), -1.0)
+      if (value != null) {
+        val targetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
+        value.accumulate(targetValue - summary.logZ)
+      }
     }
   }
-//  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
-//    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
-//    private var cachedTargetValue: Double = Double.NaN
-//    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
-//      if (labels.size == 0) return
-//      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
-//      val summary = model.inferBySumProduct(labels)
-//      if (gradient != null) {
-//        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
-//        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
-//      }
-//      if (value != null) {
-//        if (cachedTargetValue.isNaN) cachedTargetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
-//        value.accumulate(cachedTargetValue - summary.logZ)
-//      }
-//    }
-//  }
   
   def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](labels:IndexedSeq[L]) = new ChainExample(labels)
 }

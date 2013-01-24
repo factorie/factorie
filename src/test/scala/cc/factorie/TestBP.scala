@@ -166,16 +166,21 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   @Test def testChainModelBP {
     object cdomain extends CategoricalDimensionTensorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
+    features += "asd"
     val ldomain = new CategoricalDomain[String]()
     val d = new app.nlp.Document("noname")
     val t0 = new Token(d, 0, 1)
     val t1 = new Token(d, 0, 1)
+    val t2 = new Token(d, 0, 1)
     class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
     val l0 = new Label("1")
     val l1 = new Label("0")
-    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, l => if (l eq l0) t0 else t1, t => if (t equals t0) l0 else l1)
-    val ex = new LikelihoodExample(Seq(l0, l1), InferByBPChainSum)
-    val ex1 = new ChainModel.ChainExample(Seq(l0, l1).toIndexedSeq)
+    val l2 = new Label("2")
+    val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2)
+    val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2)
+    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
+    val ex = new LikelihoodExample(Seq(l0, l1, l2), InferByBPChainSum)
+    val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2).toIndexedSeq)
     val optimizer = new StepwiseGradientAscent()
     for (i <- 0 until 10) {
       val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
