@@ -34,13 +34,6 @@ import util.ClassPathUtils
 trait Domain[+VT] extends ValueBound[VT] {
   // TODO Resolve issue below.
   //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" insetad?
-  // Remove "save" and "load".  Serialization should be external to this class.
-  /** Serialize this domain to disk in the given directory. */
-  def save(dirname:String, gzip: Boolean = false): Unit = {}
-  /** Deserialize this domain from disk in the given directory. */
-  def load(dirname:String, gzip: Boolean = false): Unit = {}
-  /** The name of the file (in directory specified in "save" and "load") to which this Domain is saved. */
-  def filename:String = this.getClass.getName
 }
 
 // TODO Or should this extend Iterable[VT] directly?  Yes, I think so.  DiscreteDomain does. -akm

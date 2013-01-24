@@ -95,7 +95,7 @@ class SpanNerModel extends CombinedModel(
     // Label of span that preceeds or follows this one
     //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
   ) {
-  def this(file:File) = { this(); this.load(file.getPath)}
+  def this(file:File) = { this(); BinaryFileSerializer.deserialize(this, file) }
 }
 
 // The training objective
@@ -453,7 +453,7 @@ object SpanNER extends SpanNER {
     object opts extends DefaultCmdOptions {
       val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")
       val testFile  = new CmdOption("test",  "", "FILE", "CoNLL formatted dev file.")
-      val modelDir =  new CmdOption("model", "spanner.factorie", "DIR", "Directory for saving or loading model.")
+      val modelDir =  new CmdOption("model", "spanner.factorie", "FILE", "File for saving or loading model.")
       val runXmlDir = new CmdOption("run", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val lexiconDir =new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
       val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER.this.verbose = true }
@@ -470,11 +470,11 @@ object SpanNER extends SpanNER {
     
     if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      model.load(opts.modelDir.value)
+      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
       run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
-      if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
+      if (opts.modelDir.wasInvoked) BinaryFileSerializer.serialize(model, opts.modelDir.value)
     }   
   }
 }

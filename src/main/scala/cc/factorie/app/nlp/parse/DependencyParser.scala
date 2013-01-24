@@ -25,6 +25,7 @@ import app.classify.{Classification, Classifier, LabelList}
 //import bp.ParallelTrainer
 import cc.factorie.app.nlp._
 import collection.mutable.ArrayBuffer
+import java.io.File
 
 object Actions {
   def applyLeftArc(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit = {
@@ -145,12 +146,12 @@ object ShiftReduceDependencyParser {
   var useLabels = true
 
   def load(modelFile: String = "dep-parsing.fac") = {
-    ActionModel.load(modelFile)
+    BinaryFileSerializer.deserialize(ActionModel, modelFile)
     ActionModel.skipNonCategories = true
   }
 
   var modelFile = "dep-parsing.fac"
-  def save(extra: String = "") = ActionModel.save(modelFile + extra)
+  def save(extra: String = "") = BinaryFileSerializer.serialize(ActionModel, modelFile + extra)
 
   def main(args: Array[String]) {
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -158,9 +159,9 @@ object ShiftReduceDependencyParser {
       val devFile =   new CmdOption("dev", "", "FILE", "CoNLL-2008 dev file")
       val testFile =  new CmdOption("test", "", "FILE", "CoNLL-2008 test file.")
       val unlabeled = new CmdOption("unlabeled", "", "BOOLEAN", "Whether to ignore labels.")
-      val modelDir =  new CmdOption("model", "", "DIR", "Directory in which to save the trained model.")
+      val modelDir =  new CmdOption("model", "", "FILE", "File in which to save the trained model.")
       val outputDir = new CmdOption("output", "", "DIR", "Directory in which to save the parsed output (to be scored by eval.pl).")
-      val warmStartModel = new CmdOption("warmStartModel", "", "DIR", "dep-parsing.fac to warm-start more training with.")
+      val warmStartModel = new CmdOption("warmStartModel", "", "FILE", "dep-parsing.fac to warm-start more training with.")
     }
     opts.parse(args)
 

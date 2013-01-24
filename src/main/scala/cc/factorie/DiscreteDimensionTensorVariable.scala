@@ -34,14 +34,15 @@ trait DiscreteDimensionTensorDomain extends TensorDomain {
   def dimensionSize: Int = dimensionDomain.size
   //def size: Int = dimensionDomain.size // TODO Should we keep this convenience, or is it too confusing?  Is isn't really the number of possible values in the Domain.
   def dimensionName(i:Int): String = i.toString
-  def freeze(): Unit = dimensionDomain.freeze
-  override def save(dirname: String, gzip: Boolean = false) {
-    // TODO: Note that if multiple domains have same dimension domains, it will be written multiple times
-    dimensionDomain.save(dirname, gzip)
-  }
-  override def load(dirname: String, gzip: Boolean = false) {
-    // TODO: Note that the dimensionDomain might get read multiple times
-    if(!dimensionDomain.frozen) dimensionDomain.load(dirname, gzip)
+  def freeze(): Unit = dimensionDomain.freeze()
+}
+
+class DiscreteDimensionTensorDomainCubbie extends Cubbie {
+  val size = IntSlot("size")
+  def store(d: DiscreteDimensionTensorDomain): Unit = size := d.dimensionDomain.size
+  def fetch(): DiscreteDimensionTensorDomain = new DiscreteDimensionTensorDomain {
+    def dimensionDomain = new DiscreteDomain(size.value)
+    type Value = Tensor
   }
 }
 
@@ -55,7 +56,7 @@ abstract class DiscreteDimensionTensorVariable extends MutableTensorVar[Tensor] 
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
   //thisVariable =>
   //_set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
-  def freeze: Unit = throw new Error("Is this still really necessary? -akm")
+  def freeze(): Unit = throw new Error("Is this still really necessary? -akm")
 }
 
 

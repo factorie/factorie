@@ -243,11 +243,6 @@ class CombinedModel(theSubModels:Model*) extends Model {
   override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
-
-  protected def filename: String = throw new Error("Not yet implemented")
-  def save(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
-  def load(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
-  def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
 }
 
 class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {

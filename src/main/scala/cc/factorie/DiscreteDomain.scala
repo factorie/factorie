@@ -28,7 +28,6 @@ trait DiscreteValue extends SingletonBinaryTensorLike1 {
   override def toString: String = singleIndex.toString
 }
 
-
 // Because DiscreteDomain is an IndexedSeq it can be passed as a sizeProxy
 class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteDimensionTensorDomain with Domain[DiscreteValue] {
   thisDomain =>
@@ -75,38 +74,10 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
       other match { case other:DiscreteValue => this.singleIndex == other.singleIndex; case _ => false }
     // TODO Above we shouldn't be also insisting that the Domain objects match?
   }
-  
-  // Serialization
-  // TODO Remove this, once exterior serialization is set.
-  override def save(dirname:String, gzip: Boolean = false): Unit = {
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
-    val writer = new PrintWriter(new BufferedOutputStream({
-      if (gzip)
-        new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
-      else
-        new FileOutputStream(f)
-    }))
+}
 
-    writer.println(size)
-    writer.close
-  }
-
-  override def load(dirname:String, gzip: Boolean = false): Unit = {
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
-    val reader = new BufferedReader(new InputStreamReader({
-      if (gzip)
-        new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))
-      else
-        new FileInputStream(f)
-    }))
-    loadFromReader(reader)
-  }
-
-  def loadFromReader(reader: BufferedReader): Unit = {
-    val line = reader.readLine
-    val readSize = Integer.parseInt(line)
-    require(size == readSize)
-    reader.close()
-  }
-  
+class DiscreteDomainCubbie extends Cubbie {
+  val size = IntSlot("size")
+  def store(d: DiscreteDomain): Unit = size := d.size
+  def fetch(): DiscreteDomain = new DiscreteDomain(size.value)
 }

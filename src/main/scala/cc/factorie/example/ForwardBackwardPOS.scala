@@ -88,7 +88,7 @@ object ForwardBackwardPOS {
       if (devDocuments.nonEmpty)
         test(devDocuments, label = "dev")
       if (modelFile != "")
-        BinaryCubbieFileSerializer.serialize(new ModelCubbie(PosModel), new File(modelFile + label + extraId), gzip = true)
+        BinaryFileSerializer.serialize(PosModel, modelFile + label + extraId, gzip = true)
     }
 
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
@@ -114,7 +114,7 @@ object ForwardBackwardPOS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(modelFile), gzip = true); modelLoaded = true }
+  def load(modelFile: String) = { BinaryFileSerializer.deserialize(PosModel, modelFile, gzip = true); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {

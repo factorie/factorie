@@ -107,59 +107,9 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     def domain = thisDomain
   }
 
-  override def save(dirname:String, gzip: Boolean = false): Unit = {
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
-    if (f.exists) return // Already exists, don't write it again.  // TODO Careful about trying to re-write to the same location, though.
-    val writer = new PrintWriter(new BufferedOutputStream({
-      if (gzip)
-        new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
-      else
-        new FileOutputStream(f)
-    }))
-    if (frozen) writer.println("#frozen = true") else writer.println("#frozen = false")
-    for (e <- iterator) {
-      if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
-      writer.println(e.toString)
-    }
-    writer.close()
-  }
-
   var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
   // TODO Use this instead: -akm
   //def stringToCategory(s:String): C = s.asInstanceOf[C]
-  var _frozenByLoader = false
-  override def load(dirname:String, gzip: Boolean = false): Unit = {
-    if (_frozenByLoader) return // Already initialized by loader, don't read again
-    else if (size > 0) throw new Error("Attempted to load a non-empty domain. Did you mean to load the model before creating variables?")
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
-    val reader = new BufferedReader(new InputStreamReader({
-      if (gzip)
-        new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))
-      else
-        new FileInputStream(f)
-    }))
-    this.loadFromReader(reader)
-    reader.close()
-  }
-
-  override def loadFromReader(reader: BufferedReader): Unit = {
-    var line = reader.readLine
-    var willFreeze = false
-    if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
-    if (string2T eq null) {
-     while ({line = reader.readLine; line != null})
-       this.index(line.asInstanceOf[C]) // this cast shouldn't be necessary
-   }
-   else {
-     while ({line = reader.readLine; line != null})
-       this.index(string2T(line))
-   }
-
-    
-//    while ({line = reader.readLine; line != null})
-//      this.index(stringToCategory(line))
-    if (willFreeze) { freeze(); _frozenByLoader = true }
-  }
 
   // Code for managing occurrence counts
   var gatherCounts = false
@@ -217,7 +167,7 @@ object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
-class CategoricalDomainCubbie(val cd: CategoricalDomain[String]) extends Cubbie {
+class CategoricalDomainCubbie[T](val cd: CategoricalDomain[T]) extends Cubbie {
   // This cubbie automatically writes into the underlying CategoricalDomain instead of
   // using an intermediate HashMap representation
   setMap(new mutable.Map[String, Any] {
@@ -228,8 +178,8 @@ class CategoricalDomainCubbie(val cd: CategoricalDomain[String]) extends Cubbie 
       else if (key == "categories") {
         cd.unfreeze()
         val categories = value.asInstanceOf[Iterable[String]]
-        categories.foreach(cd.value(_))
-        if (isFrozen) cd.freeze
+        categories.map(c => if (cd.string2T != null) cd.string2T(c) else c.asInstanceOf[T]).foreach(cd.value(_))
+        if (isFrozen) cd.freeze()
       } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
     }
     def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }

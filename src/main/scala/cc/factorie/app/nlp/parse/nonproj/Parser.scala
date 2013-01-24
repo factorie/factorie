@@ -38,12 +38,12 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
   
   private def saveModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    Serializer.serialize( backingClassifier.model, file, gzip = _gzip)
+    BinaryFileSerializer.serialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def loadModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    Serializer.deserialize( backingClassifier.model, file, gzip = _gzip)
+    BinaryFileSerializer.deserialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def saveLabelDomain(folder: File): Unit = {
@@ -64,12 +64,12 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
   
   private def saveFeatureDomain(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
-    Serializer.serialize(NonProjParserFeaturesDomain.dimensionDomain, file, gzip = _gzip)
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
   }
   
   private def loadFeatureDomain(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
-    Serializer.deserialize(NonProjParserFeaturesDomain.dimensionDomain, file, gzip = _gzip)
+    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
     NonProjParserFeaturesDomain.freeze()
   }
   

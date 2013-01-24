@@ -521,8 +521,6 @@ class ChainNer2 {
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(20)
  
 		if(bP) {
-			
-			var count = 0;
 
 			val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
@@ -906,7 +904,7 @@ object ChainNer2 extends ChainNer2 {
       val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
       val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
       val sigmaSq  =     new CmdOption("sigmaSq",  "10", "REAL", "Value for regularization constant for BP.")
-      val modelDir =      new CmdOption("model", "chainner.factorie", "DIR", "Directory for saving or loading model.")
+      val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
       val lexiconDir =    new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...")
@@ -953,9 +951,9 @@ object ChainNer2 extends ChainNer2 {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      model.load(opts.modelDir.value)
+      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
       for (filename <- opts.runPlainFiles.value) {
-        val document = LoadPlainText.fromFile(new java.io.File(filename), false)
+        val document = LoadPlainText.fromFile(new java.io.File(filename), segmentSentences = false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
         //println(document.map(_.string).mkString(" "))
         process(document)
@@ -964,20 +962,20 @@ object ChainNer2 extends ChainNer2 {
         printEntities(document.tokens)
         printSGML(document.tokens)
       }
-    } else if(opts.justTest.wasInvoked) { 
-		model.load(opts.modelDir.value)
-        model2.load(opts.modelDir.value + "2")
-		test(opts.testFile.value)
-	} else if (opts.runXmlDir.wasInvoked) {
+    } else if(opts.justTest.wasInvoked) {
+      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserialize(model2, opts.modelDir.value + "2")
+		  test(opts.testFile.value)
+	  } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      model.load(opts.modelDir.value)
+      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked) {
-		model.save(opts.modelDir.value)
-		model2.save(opts.modelDir.value + "2")
-	  }
+        BinaryFileSerializer.serialize(model, opts.modelDir.value)
+        BinaryFileSerializer.serialize(model2, opts.modelDir.value + "2")
+	    }
     }
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")
   }

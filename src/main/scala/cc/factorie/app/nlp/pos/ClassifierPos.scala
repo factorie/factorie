@@ -184,19 +184,18 @@ class ClassifierPos extends DocumentProcessor {
     val modelFile = new File(prefix + "-model")
     if (modelFile.getParentFile ne null)
       modelFile.getParentFile.mkdirs()
-    BinaryCubbieFileSerializer.serialize(new ModelCubbie(model), modelFile)
+    BinaryFileSerializer.serialize(model, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(PosDomain), labelDomainFile)
+    BinaryFileSerializer.serialize(PosDomain, labelDomainFile)
   }
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    val labelDomainCubbie = new CategoricalDomainCubbie(PosDomain)
-    BinaryCubbieFileSerializer.deserialize(labelDomainCubbie, labelDomainFile)
+    BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(model), modelFile)
+    BinaryFileSerializer.deserialize(model, modelFile)
   }
 
   def train(trainingFile: String, testFile: String, modelFile: String) {

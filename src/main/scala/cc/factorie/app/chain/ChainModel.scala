@@ -60,26 +60,24 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     val modelFile = new File(prefix + "-model")
     if (modelFile.getParentFile ne null)
       modelFile.getParentFile.mkdirs()
-    BinaryCubbieFileSerializer.serialize(new ModelCubbie(this), modelFile)
+    BinaryFileSerializer.serialize(this, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(labelDomain), labelDomainFile)
+    BinaryFileSerializer.serialize(labelDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(featuresDomain.dimensionDomain), featuresDomainFile)
+    BinaryFileSerializer.serialize(featuresDomain.dimensionDomain, featuresDomainFile)
   }
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    val labelDomainCubbie = new CategoricalDomainCubbie(labelDomain)
-    BinaryCubbieFileSerializer.deserialize(labelDomainCubbie, labelDomainFile)
+    BinaryFileSerializer.deserialize(labelDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
-    val featuresDomainCubbie = new CategoricalDomainCubbie(featuresDomain.dimensionDomain)
-    BinaryCubbieFileSerializer.deserialize(featuresDomainCubbie, featuresDomainFile)
+    BinaryFileSerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     assertEquals(markov.weights.length, labelDomain.length * labelDomain.length)
-    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(this), modelFile)
+    BinaryFileSerializer.deserialize(this, modelFile)
   }
 
   def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {

@@ -19,9 +19,7 @@ import cc.factorie.la._
 trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
-  lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] {
-    override def filename = thisDomain.filename
-  }
+  lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] { }
 }
 
 trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
