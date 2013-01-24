@@ -52,7 +52,15 @@ class SerializeTest extends JUnitSuite {
     val weights2 = getWeights(model2)
     assert(weights1.size == weights2.size,
       "Number of families didn't match: model1 had %d, model2 had %d" format (weights1.size, weights2.size))
-    assert(weights1.zip(weights2).forall({case (a, b) => a.activeElements.toSeq.sameElements(b.activeElements.toSeq)}))
+    for ((w1, w2) <- weights1.zip(weights2)) {
+      println("# active elements in w1: " + w1.activeDomainSize)
+      println("# active elements in w2: " + w2.activeDomainSize)
+      assert(w1.activeDomainSize == w2.activeDomainSize)
+      for (((a1, a2), (b1, b2)) <- w1.activeElements.toSeq.zip(w2.activeElements.toSeq)) {
+        assert(a1 == b1, "Index %d from w1 not equal to %d from w2" format (a1, b1))
+        assert(a2 == b2, "Value %f at index %d from w1 not equal to value %f at index %d from w2" format (a2, a1, b2, b1))
+      }
+    }
   }
 
   def makeModel(featuresDomain: CategoricalDimensionTensorDomain[String],

@@ -19,19 +19,19 @@ object BinaryFileSerializer {
   def serialize[A](toSerialize: A, fileName: String)(implicit maker: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(maker(toSerialize), new File(fileName), gzip = false)
   def deserialize[A](deserializeTo: A, fileName: String)(implicit maker: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(maker(deserializeTo), new File(fileName), gzip = false)
+    BinaryCubbieFileSerializer.deserialize(maker(deserializeTo), new File(fileName), gzip = false)
   def serialize[A](toSerialize: A, file: File)(implicit maker: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(maker(toSerialize), file, gzip = false)
   def deserialize[A](deserializeTo: A, file: File)(implicit maker: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(maker(deserializeTo), file, gzip = false)
+    BinaryCubbieFileSerializer.deserialize(maker(deserializeTo), file, gzip = false)
   def serialize[A](toSerialize: A, fileName: String, gzip: Boolean)(implicit maker: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(maker(toSerialize), new File(fileName), gzip)
   def deserialize[A](deserializeTo: A, fileName: String, gzip: Boolean)(implicit maker: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(maker(deserializeTo), new File(fileName), gzip)
+    BinaryCubbieFileSerializer.deserialize(maker(deserializeTo), new File(fileName), gzip)
   def serialize[A](toSerialize: A, file: File, gzip: Boolean)(implicit maker: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(maker(toSerialize), file, gzip)
   def deserialize[A](deserializeTo: A, file: File, gzip: Boolean)(implicit maker: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(maker(deserializeTo), file, gzip)
+    BinaryCubbieFileSerializer.deserialize(maker(deserializeTo), file, gzip)
   def serialize[A](toSerialize: A, s: DataOutputStream)(implicit maker: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(maker(toSerialize), s)
   def deserialize[A](toSerialize: A, s: DataInputStream)(implicit maker: CubbieMaker[A]) =
