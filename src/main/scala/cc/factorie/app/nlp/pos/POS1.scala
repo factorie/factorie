@@ -17,9 +17,10 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
+import java.io.File
 
 class POS1 {
-  def this(savedModelDir:String) = { this(); PosModel.load(savedModelDir)}
+  def this(savedModelFile:String) = { this(); BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(savedModelFile)) }
   
   object PosFeaturesDomain extends CategoricalTensorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -104,7 +105,7 @@ object POS1 extends POS1 {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile =    new CmdOption("train", "eng.train", "FILE", "CoNLL 2003 format file from which to get training data.")
       val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.")
-      val modelDir =     new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
+      val modelFile =     new CmdOption("model", "pos.fac", "DIR", "File in which to save the trained model.")
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
     }
     opts.parse(args)
@@ -161,13 +162,12 @@ object POS1 extends POS1 {
       // Evaluate
       printEvaluation("FINAL")
     
-      if (opts.modelDir.wasInvoked)
-        PosModel.save(opts.modelDir.value)
+      if (opts.modelFile.wasInvoked)
+        BinaryCubbieFileSerializer.serialize(new ModelCubbie(PosModel), new File(opts.modelFile.value))
     }
-    
-    
+
     def run(): Unit = {
-      PosModel.load(opts.modelDir.value)
+      BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(opts.modelFile.value))
       for (filename <- opts.runFiles.value) {
         val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
         segment.Tokenizer.process(document)

@@ -16,6 +16,7 @@ package cc.factorie.app.nlp.pos
 
 import cc.factorie._
 import app.nlp._
+import java.io.File
 import app.chain.Observations.addNeighboringFeatureConjunctions
 //import optimize.LimitedMemoryBFGS
 //import bp._
@@ -107,7 +108,7 @@ object POS {
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
-    PosModel.save(modelFile)
+    BinaryCubbieFileSerializer.serialize(new ModelCubbie(PosModel), new File(modelFile))
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")
@@ -127,7 +128,7 @@ object POS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { PosModel.load(modelFile); modelLoaded = true; }
+  def load(modelFile: String) = { BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(modelFile)); modelLoaded = true; }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {

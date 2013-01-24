@@ -259,20 +259,6 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {
   //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   override def families: Seq[Family] = templates
-
-  protected def filename: String = throw new Error("Not yet implemented")
-  def save(dirname:String, gzip: Boolean = false): Unit = {
-    import java.io.File
-    //println("Saving model "+getClass.getName+" to "+dirname)
-    val f = new File(dirname)
-    // Recursively delete all files in directory "f"
-    def delete(f:File): Boolean = { if (f.isDirectory) f.listFiles.forall(f2 => delete(f2)) else f.delete }
-    if (f.exists) if (!delete(f)) throw new Error("Error deleting directory "+dirname)
-    f.mkdir
-    templates.foreach(_.save(dirname, gzip))
-  }
-  def load(dirname:String, gzip: Boolean = false): Unit = templates.foreach(_.load(dirname, gzip))
-  def loadFromJar(dirname: String): Unit = templates.foreach(_.loadFromJar(dirname))
 }
 
 

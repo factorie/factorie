@@ -597,6 +597,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
+  override def usedFactors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
   def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals: Iterable[DiscreteMarginal] = _bpFactors.values ++ _bpVariables.values

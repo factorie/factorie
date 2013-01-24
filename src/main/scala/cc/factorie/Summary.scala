@@ -25,6 +25,7 @@ trait Summary[+M<:Marginal] {
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
   // def variables: Iterable[Variable] // TODO Should we also have a method like this?
   def logZ: Double = throw new Error("Summary subclass does not provide logZ: "+getClass.getName)
+  def usedFactors: Option[Iterable[Factor]] = None
 }
 
 /** A Summary that can be used to gather weighted samples into its Marginals. */

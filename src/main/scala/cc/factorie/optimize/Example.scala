@@ -33,7 +33,7 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    val factors = model.factors(labels)
+    val factors = summary.usedFactors.getOrElse(model.factors(labels))
     for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
       val aStat = factor.assignmentStatistics(TargetAssignment)
       if (value != null) value.accumulate(factor.statisticsScore(aStat))
@@ -54,7 +54,7 @@ class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer)
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    val factors = model.factors(labels)
+    val factors = summary.usedFactors.getOrElse(model.factors(labels))
     for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
       val aStat = factor.assignmentStatistics(TargetAssignment)
       if (value != null) value.accumulate(factor.statisticsScore(aStat))
@@ -66,6 +66,27 @@ class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer)
     if (value != null) // add in the score from non-DotFamilies
       for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
         value.accumulate(factor.assignmentScore(TargetAssignment))
+  }
+}
+
+// This is just like DiscreteLikelihoodExample but it loops over all variables passed in
+class PseudolikelihoodExample[V <: LabeledDiscreteVar](val labels: Iterable[V]) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
+    for (label <- labels) {
+      val factors = model.factorsOfFamilyClass[DotFamily](label) // should this be just DotFamily factors?
+      val proportions = label.proportions(factors)
+      if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+      if (gradient ne null) {
+        val assignment = new DiscreteAssignment1(label, 0)
+        var i = 0
+        while (i < proportions.length) {
+          assignment.intValue1 = i
+          val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+          factors.foreach(f => gradient.accumulate(f.family, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
+          i += 1
+        }
+      }
+    }
   }
 }
 

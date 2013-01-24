@@ -1,6 +1,8 @@
 package cc.factorie.example
 
 import cc.factorie._
+import java.io.File
+
 //import bp.specialized.Viterbi
 //import bp.{ParallelTrainer, ForwardBackwardExample}
 import app.nlp._
@@ -86,7 +88,7 @@ object ForwardBackwardPOS {
       if (devDocuments.nonEmpty)
         test(devDocuments, label = "dev")
       if (modelFile != "")
-        PosModel.save(modelFile + label + extraId, gzip = true)
+        BinaryCubbieFileSerializer.serialize(new ModelCubbie(PosModel), new File(modelFile + label + extraId), gzip = true)
     }
 
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
@@ -112,7 +114,7 @@ object ForwardBackwardPOS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { PosModel.load(modelFile, gzip = true); modelLoaded = true }
+  def load(modelFile: String) = { BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(modelFile), gzip = true); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {

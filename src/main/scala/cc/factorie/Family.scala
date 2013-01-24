@@ -14,11 +14,7 @@
 
 package cc.factorie
 
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la._
-import cc.factorie.util.IntSeq
-import java.io._
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 trait Family {
   type FamilyType <: Family // like a self-type
@@ -34,7 +30,7 @@ trait Family {
   final def %(n:String): this.type = setFactorName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
   trait Factor extends cc.factorie.Factor {
     type StatisticsType = Family.this.StatisticsType
-    def family: FamilyType = Family.this.asInstanceOf[FamilyType];
+    def family: FamilyType = Family.this.asInstanceOf[FamilyType]
     def _1: NeighborType1 // TODO Consider getting rid of this.
     override def factorName = family.factorName
     override def equalityPrerequisite: AnyRef = Family.this
@@ -43,11 +39,6 @@ trait Family {
   }
   def valuesScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
   def statisticsScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
-  /** The filename into which to save this Family. */
-  protected def filename: String = factorName
-  def save(dirname:String, gzip: Boolean = false): Unit = {}
-  def load(dirname:String, gzip: Boolean = false): Unit = {}
-  def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
 }
 
 trait FamilyWithNeighborDomains extends Family {
@@ -76,56 +67,6 @@ trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
   def weights: Tensor
   @inline final override def statisticsScore(t:Tensor): Double = weights dot t
-
-  override def save(dirname:String, gzip: Boolean = false): Unit = {
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
-    if (f.exists) return // Already exists, don't write it again
-    // for (d <- statisticsDomainsSeq) d.save(dirname) // TODO!!! These must now be saved by the user!
-    val writer = new PrintWriter(new BufferedOutputStream({ if (gzip) new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f))) else new FileOutputStream(f) }))
-    saveToWriter(writer)
-  }
-
-  def saveToWriter(writer:PrintWriter): Unit = {
-    // TODO Do we also need to save the weights.default?
-    for (weight <- weights.activeElements; if (weight._2 != 0.0)) {
-      writer.print(weight._1)
-      writer.print(" ")
-      writer.println(weight._2)
-    }
-    writer.close
-  }
-
-  override def load(dirname: String, gzip: Boolean = false): Unit = {
-    // for (d <- statisticsDomainsSeq) d.load(dirname) // TODO!!! These must now be saved by the user!
-    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
-    val reader = new BufferedReader(new InputStreamReader({ if (gzip) new GZIPInputStream(new BufferedInputStream(new FileInputStream(f))) else new FileInputStream(f) }))
-    loadFromReader(reader)
-    reader.close()
-  }
-
-  def loadFromReader(reader: BufferedReader): Unit = {
-    // TODO: consider verifying the weights match the saved model --brian
-    if (weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
-    var line = ""
-    while ({ line = reader.readLine; line != null }) {
-      val fields = line.split(" +")
-      assert(fields.length == 2)
-      val index = Integer.parseInt(fields(0))
-      val value = java.lang.Double.parseDouble(fields(1))
-      weights(index) = value
-    }
-    reader.close()
-  }
-
-  // does not support gzipped models
-  override def loadFromJar(dirname: String): Unit = {
-    val cl = this.getClass.getClassLoader
-    def readerFromResourcePath(path: String) =
-      new BufferedReader(new InputStreamReader(cl.getResourceAsStream(path)))
-    // for (d <- statisticsDomainsSeq.map(_.dimensionDomain)) d.loadFromReader(readerFromResourcePath(dirname + "/" + d.filename)) // TODO!!! These must now be loaded by the user!
-    loadFromReader(readerFromResourcePath(dirname + "/" + filename))
-  }
-
 }
 
 import cc.factorie.util._
