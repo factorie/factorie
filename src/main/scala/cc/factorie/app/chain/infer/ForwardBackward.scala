@@ -36,7 +36,7 @@ object ForwardBackward {
     marginal
   }
 
-  def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Double]] = {
+  def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double, localScores: Array[Array[Double]]): Array[Array[Double]] = {
     val ds = alpha(0).size
 
     val marginal = Array.fill(alpha.size-1)(Array.ofDim[Double](ds * ds))
@@ -47,7 +47,7 @@ object ForwardBackward {
       while (i < ds) {
         var j = 0
         while (j < ds) {
-          marginal(vi)(i * ds + j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
+          marginal(vi)(i * ds + j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j) + localScores(vi+1)(j)
           j += 1
         }
         i += 1
@@ -61,7 +61,7 @@ object ForwardBackward {
     marginal
   }
   
-  def dim2edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Array[Double]]] = {
+  def dim2edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double, localScores: Array[Array[Double]]): Array[Array[Array[Double]]] = {
     val ds = alpha(0).size
 
     val marginal = Array.fill(alpha.size-1)(Array.ofDim[Double](ds, ds))
@@ -72,7 +72,7 @@ object ForwardBackward {
       while (i < ds) {
         var j = 0
         while (j < ds) {
-          marginal(vi)(i)(j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
+          marginal(vi)(i)(j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j) + localScores(vi+1)(j)
           j += 1
         }
         i += 1
@@ -178,10 +178,10 @@ object ForwardBackward {
             LabelToFeatures: LV => OV
           ): (WeightsTensor, (Array[Array[Double]], Array[Array[Double]]), Double) = {
 
-    val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
+    val (alpha, beta, localScores) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
 
     val nodeMargs = nodeMarginals(alpha, beta)
-    val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate))
+    val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate), localScores)
 
     // sum edge marginals
     // TODO Instead of new SparseTensor1 consider something like Tensor.newSparse(transTemplate.weights)
@@ -219,10 +219,10 @@ object ForwardBackward {
             LabelToFeatures: LV => OV
           ): (Array[Array[Double]], Array[Array[Array[Double]]], Double) = {
 
-    val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
+    val (alpha, beta, localScores) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
 
     val nodeMargs = nodeMarginals(alpha, beta)
-    val edgeMargs = dim2edgeMarginals(alpha, beta, getTransScores(transTemplate))
+    val edgeMargs = dim2edgeMarginals(alpha, beta, getTransScores(transTemplate), localScores)
 
     val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
 
@@ -236,7 +236,7 @@ object ForwardBackward {
             transTemplate: DotFamilyWithStatistics2[LV, LV],
             biasTemplate: DotFamilyWithStatistics1[LV],
             labelToFeatures: LV => OV
-          ): (Array[Array[Double]], Array[Array[Double]]) = {
+          ): (Array[Array[Double]], Array[Array[Double]], Array[Array[Double]]) = {
 
     if (vs.isEmpty) throw new Error("Can't run forwardBackward without variables.")
     if (vs.size < 2) throw new Error("Can't run forwardBackward on one variable.")
@@ -294,7 +294,7 @@ object ForwardBackward {
       vi -= 1
     }
 
-    (alpha, beta)
+    (alpha, beta, localScores)
   }
 
 }
