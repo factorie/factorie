@@ -68,6 +68,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       obsWeights += Tensor.outer(l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
       if (i > 0) {
         val prev = labels(i - 1)
+//        markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
         markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
         if (useObsMarkov) obsmarkovWeights += Tensor.outer(
           prev.tensor.asInstanceOf[Tensor1], l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
@@ -232,22 +233,43 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
 object ChainModel {
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
-    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
-    private var cachedTargetValue: Double = Double.NaN
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
-      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = model.inferBySumProduct(labels)
-      if (gradient != null) {
-        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
-        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
-      }
+
       if (value != null) {
-        if (cachedTargetValue.isNaN) cachedTargetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
-        value.accumulate(cachedTargetValue - summary.logZ)
+        var incr = 0.0
+        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
+        value.accumulate(incr - summary.logZ)
       }
+
+      if (gradient != null) {
+        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
+          gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+        })
+      }
+
+      for (family <- summary.expectations.families)
+	    gradient.accumulate(family, summary.expectations(family), -1.0)
     }
   }
+//  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
+//    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
+//    private var cachedTargetValue: Double = Double.NaN
+//    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+//      if (labels.size == 0) return
+//      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
+//      val summary = model.inferBySumProduct(labels)
+//      if (gradient != null) {
+//        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
+//        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
+//      }
+//      if (value != null) {
+//        if (cachedTargetValue.isNaN) cachedTargetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
+//        value.accumulate(cachedTargetValue - summary.logZ)
+//      }
+//    }
+//  }
   
   def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](labels:IndexedSeq[L]) = new ChainExample(labels)
 }

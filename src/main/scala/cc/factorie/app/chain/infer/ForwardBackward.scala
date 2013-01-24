@@ -160,16 +160,6 @@ object ForwardBackward {
     result
   }
 
-  private def vectorFromArray(a: Array[Double]): Tensor = {
-    val v = new DenseTensor1(a.size)
-    var i = 0
-    while (i < a.size) {
-      v.update(i, a(i))
-      i += 1
-    }
-    v
-  }
-
   def featureExpectationsMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
@@ -185,8 +175,9 @@ object ForwardBackward {
 
     // sum edge marginals
     // TODO Instead of new SparseTensor1 consider something like Tensor.newSparse(transTemplate.weights)
-    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseTensor1(vs(0).domain.size*vs(0).domain.size)
+    val edgeExp = if (vs.length > 1) new DenseTensor1(elementwiseSum(edgeMargs)) else new SparseTensor1(vs(0).domain.size*vs(0).domain.size)
 
+//    println("edge exp:" + edgeExp)
     // get the node feature expectations
     // TODO: this should really be sparse, but AdaGrad only matches dense
     val nodeExp = new SparseTensor1(localTemplate.weights.length) // statisticsVectorLength
