@@ -190,6 +190,7 @@ object ForwardBackward {
     // get the node feature expectations
     // TODO: this should really be sparse, but AdaGrad only matches dense
     val nodeExp = new SparseTensor1(localTemplate.weights.length) // statisticsVectorLength
+    val biasExp = new SparseTensor1(biasTemplate.weights.length)
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       var i = 0
       while (i < nodeMargs(vi).length) {
@@ -197,11 +198,12 @@ object ForwardBackward {
         val m = nodeMargs(vi)(i)
         val stats = localTemplate.Factor(v, LabelToFeatures(v)).currentStatistics
         nodeExp += (stats, m) // this is: nodeExp += stats * m
+        biasExp(i) += m
         i += 1
       }
     }
 
-    val expMap: Map[DotFamily, Tensor] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
+    val expMap: Map[DotFamily, Tensor] = HashMap(biasTemplate -> biasExp, localTemplate -> nodeExp, transTemplate -> edgeExp)
     val expWt = new WeightsTensor
     for ((family, tensor) <- expMap)
       expWt.update(family, tensor)

@@ -65,11 +65,12 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     for (i <- 0 until labels.length) {
       val l = labels(i)
       biasWeights += (l.targetIntValue, 1)
-      obsWeights += Tensor.outer(l.tensor, labelToFeatures(l).tensor)
+      obsWeights += Tensor.outer(l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
       if (i > 0) {
         val prev = labels(i - 1)
         markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
-        if (useObsMarkov) obsmarkovWeights += Tensor.outer(prev.tensor, l.tensor, labelToFeatures(l).tensor)
+        if (useObsMarkov) obsmarkovWeights += Tensor.outer(
+          prev.tensor.asInstanceOf[Tensor1], l.tensor.asInstanceOf[Tensor1], labelToFeatures(l).tensor.asInstanceOf[Tensor1])
       }
     }
 
@@ -162,12 +163,12 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           val t = new DenseProportions2(ds, ds)
           var d1 = 0
           while (d1 < ds) {
-	        var d2 = 0
+	          var d2 = 0
             while (d2 < ds) {
               t(d1, d2) += m(d1 * ds + d2)
               d2 += 1
             }
-	        d1 += 1
+	          d1 += 1
           }
           new DiscreteMarginal2(l1, l2, t)
         }.toArray

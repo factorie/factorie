@@ -189,6 +189,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
       assertEquals(marginAccumulator0.value, marginAccumulator1.value, 0.001)
       assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
       gradientAccumulator0.tensor.families.foreach(f => {
+        println("checking family: " + f.getClass.getName)
         gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
           assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
         })
