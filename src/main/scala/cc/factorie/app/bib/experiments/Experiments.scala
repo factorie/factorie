@@ -597,7 +597,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             val initInstructions = new ArrayBuffer[ArrayBuffer[()=>Unit]]
             for(batch <- evidenceBatches){
               val ibatch = new ArrayBuffer[()=>Unit]
-              initInstructions + ibatch
+              initInstructions += ibatch
               for(edit <- batch){
                 ibatch += {() => {
                   println("linking edit to generator: "+edit.id)
@@ -635,7 +635,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             val initInstructions = new ArrayBuffer[ArrayBuffer[()=>Unit]]
             for(batch <- evidenceBatches){
               val ibatch = new ArrayBuffer[()=>Unit]
-              initInstructions + ibatch
+              initInstructions += ibatch
               for(edit <- batch){
                 ibatch += {() => {
                   println("linking edit to generator: "+edit.id)
