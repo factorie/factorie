@@ -1,10 +1,15 @@
 package cc.factorie
 
+import app.chain.ChainModel
+import app.nlp.Token
+import la.{WeightsTensor, LocalWeightsTensorAccumulator}
+import optimize._
 import scala.collection.mutable.Stack
 import org.junit.Assert._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
+import util.LocalDoubleAccumulator
 
 /**
  * Test for the factorie-1.0 BP framework (that uses Tensors)
@@ -155,6 +160,41 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
 
     val fg3 = BP.inferTreeSum(Seq(v1, v2).toSet, model)
     assertEquals(logZ, fg3.logZ, 0.001)
+
+  }
+
+  @Test def testChainModelBP {
+    object cdomain extends CategoricalDimensionTensorDomain[String]()
+    val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
+    val ldomain = new CategoricalDomain[String]()
+    val d = new app.nlp.Document("noname")
+    val t0 = new Token(d, 0, 1)
+    val t1 = new Token(d, 0, 1)
+    class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
+    val l0 = new Label("1")
+    val l1 = new Label("0")
+    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, l => if (l eq l0) t0 else t1, t => if (t equals t0) l0 else l1)
+    val ex = new LikelihoodExample(Seq(l0, l1), InferByBPChainSum)
+    val ex1 = new ChainModel.ChainExample(Seq(l0, l1).toIndexedSeq)
+    val optimizer = new StepwiseGradientAscent()
+    for (i <- 0 until 10) {
+      val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+      val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+      val marginAccumulator0 = new LocalDoubleAccumulator
+      val marginAccumulator1 = new LocalDoubleAccumulator
+      val valueAccumulator0 = new LocalDoubleAccumulator
+      val valueAccumulator1 = new LocalDoubleAccumulator
+      ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0, marginAccumulator0)
+      ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1, marginAccumulator1)
+      assertEquals(marginAccumulator0.value, marginAccumulator1.value, 0.001)
+      assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
+      gradientAccumulator0.tensor.families.foreach(f => {
+        gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
+          assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
+        })
+      })
+      optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN, marginAccumulator0.value)
+    }
   }
 
   @Test def v2f1VaryingOne {
