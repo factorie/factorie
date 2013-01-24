@@ -23,7 +23,7 @@ import cc.factorie.app.chain.ChainModel
 
 class POS2 extends Infer with util.FastLogging {
   
-  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
   class PosModel extends ChainModel(

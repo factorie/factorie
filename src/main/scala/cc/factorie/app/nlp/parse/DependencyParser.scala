@@ -112,7 +112,7 @@ object ParseFeatureExtractors {
 }
 
 // define the model
-object ParserFeaturesDomain extends CategoricalTensorDomain[(String, Int)] {
+object ParserFeaturesDomain extends CategoricalDimensionTensorDomain[(String, Int)] {
   // for deserialization
   dimensionDomain.string2T = {
     (s: String) => {

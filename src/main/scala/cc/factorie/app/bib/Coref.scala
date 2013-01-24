@@ -1460,7 +1460,7 @@ abstract class WeightedChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]
 class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B]) extends WeightedChildParentTemplate[B]{
   def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }
-object ChildParentFeatureDomain extends CategoricalTensorDomain[String]{dimensionDomain.maxSize=10000}
+object ChildParentFeatureDomain extends CategoricalDimensionTensorDomain[String]{dimensionDomain.maxSize=10000}
 class ChildParentFeatureVector[A<:EntityAttr](child:A#Value,parent:A#Value) extends FeatureVectorVariable[String]{
   def domain = ChildParentFeatureDomain
 }

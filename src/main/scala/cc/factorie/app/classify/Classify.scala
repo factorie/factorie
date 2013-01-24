@@ -24,17 +24,17 @@ import java.io._
 class Label(val labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
   override def toString = "instance=%s label=%s" format(features.instanceName, categoryValue)
 }
-trait Features extends DiscreteTensorVar {
-  this: CategoricalTensorVariable[String] =>
+trait Features extends DiscreteDimensionTensorVar {
+  this: CategoricalDimensionTensorVariable[String] =>
   def labelName: String
   def instanceName: String
-  def domain: CategoricalTensorDomain[String]
+  def domain: CategoricalDimensionTensorDomain[String]
   def labelDomain: CategoricalDomain[String]
   var label = new Label(labelName, this, labelDomain)
 }
-class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalDimensionTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends BinaryFeatureVectorVariable[String] with Features {}
-class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalDimensionTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features {}
 
 // A TUI for training, running and diagnosing classifiers
@@ -115,7 +115,7 @@ object Classify {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
@@ -152,7 +152,7 @@ object Classify {
     val testingLabels = new LabelList[Label, Features](_.features)
 
     // Helper functions
-    def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
+    def textIntoFeatures(text: String, features: CategoricalDimensionTensorVariable[String]): Unit = {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
       val text2 = if (opts.readTextSkipHeader.value) Some(text.indexOf("\n\n"))
           .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))

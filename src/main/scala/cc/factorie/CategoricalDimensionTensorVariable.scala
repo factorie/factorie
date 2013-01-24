@@ -16,7 +16,7 @@ package cc.factorie
 import cc.factorie.la._
 
 // TODO Just a placeholder for now
-trait CategoricalTensorDomain[C] extends DiscreteTensorDomain { thisDomain =>
+trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
   lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] {
@@ -24,8 +24,8 @@ trait CategoricalTensorDomain[C] extends DiscreteTensorDomain { thisDomain =>
   }
 }
 
-trait CategoricalTensorVar[C] extends DiscreteTensorVar {
-  def domain: CategoricalTensorDomain[C]
+trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
+  def domain: CategoricalDimensionTensorDomain[C]
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
@@ -47,17 +47,17 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   @deprecated("This method may be removed.") def zero(): Unit = tensor.zero()
   def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
-abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalTensorVar[C] {
+abstract class CategoricalDimensionTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalDimensionTensorVar[C] {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }
 
-abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
+abstract class BinaryFeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
   override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
 }
 
-abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
+abstract class FeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
   override def toString: String = {

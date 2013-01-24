@@ -171,7 +171,7 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
     override def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = Family1.this.scoreAndStatistics(v1)
     override def valuesIterator: ValuesIterator1[N1] = Family1.this.valuesIterator(this) 
     override def valuesStatistics(tensor:Tensor): Tensor = Family1.this.valuesStatistics(tensor)
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family1.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor1[DiscreteTensorVar]])
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family1.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor1[DiscreteDimensionTensorVar]])
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value): Double
@@ -181,7 +181,7 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   // For implementing sparsity in belief propagation
 
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
-  protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 } 
+  protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteDimensionTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
 
   def valuesIterator(f:Factor): ValuesIterator1[N1] = throw new Error("Not yet implemented") // TODO Here could be the option to iterate over a subset of values for restricted FSA connectivity

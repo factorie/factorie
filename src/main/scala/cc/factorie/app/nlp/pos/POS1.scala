@@ -22,7 +22,7 @@ import java.io.File
 class POS1 {
   def this(savedModelFile:String) = { this(); BinaryCubbieFileSerializer.deserialize(new ModelCubbie(PosModel), new File(savedModelFile)) }
   
-  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = PosFeaturesDomain
     //override def skipNonCategories = true

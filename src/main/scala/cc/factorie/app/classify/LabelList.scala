@@ -18,7 +18,7 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 /** An "instance list" for iid classification, except it actually holds labels, 
     each of which is associated with a feature vector through the provided function labelToFeatures. */
-class LabelList[L<:DiscreteVar,F<:DiscreteTensorVar](val labelToFeatures:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) extends ArrayBuffer[L] {
+class LabelList[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](val labelToFeatures:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) extends ArrayBuffer[L] {
   def this(labels:Iterable[L], l2f:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = { this(l2f); this ++= labels }
   val labelManifest = lm
   val featureManifest = fm

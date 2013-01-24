@@ -23,7 +23,7 @@ import app.chain.Observations.addNeighboringFeatureConjunctions
 //import bp.specialized.Viterbi
 import util._
 
-object PosFeaturesDomain extends CategoricalTensorDomain[String]
+object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
 object PosModel extends TemplateModel {

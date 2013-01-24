@@ -97,7 +97,7 @@ object ForwardBackward {
     assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
   }
 
-  private def getLocalScores[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  private def getLocalScores[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
          vs: Seq[LV],
          localTemplate: DotFamilyWithStatistics2[LV, OV],
          biasTemplate: DotFamilyWithStatistics1[LV],
@@ -138,7 +138,7 @@ object ForwardBackward {
     arrays
   }
 
-  private def getTransScores[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  private def getTransScores[LV <: TensorVar](
          transTemplate: DotFamilyWithStatistics2[LV, LV]
        ): (Int,Int) => Double = {
     val ds = transTemplate.weights.dim2 // optimization // TODO: this is from Feb 2012, is it still faster? -brian
@@ -170,7 +170,7 @@ object ForwardBackward {
     v
   }
 
-  def featureExpectationsMarginalsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def featureExpectationsMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -211,7 +211,7 @@ object ForwardBackward {
     (expWt, (nodeMargs, edgeMargs), logZ)
   }
   
-  def nodeEdgeMarginalsAndLogZ[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def nodeEdgeMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -230,7 +230,7 @@ object ForwardBackward {
   }
 
 
-  def search[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def search[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],

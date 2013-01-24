@@ -133,7 +133,7 @@ class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveF
 //}
 
 object GlmTest {
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalDimensionTensorDomain[String]
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)

@@ -20,8 +20,8 @@ import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
 /**A template for factors who scores are the log-probability of
     label S1 given feature vector S2, according to a decision tree.
     @author Luke Vilnis*/
-abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)
+abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: TensorVar]
+  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends Template2[V1, V2] {
 
@@ -251,7 +251,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
 
 // Provides default implementation of State and splitting criteria that ignores it, for strategies that do not require
 // state to be stored to efficiently calculate the splitting feature
-trait NoTrainingState[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait NoTrainingState[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   type State = Unit
   def getPerNodeState(stats: Seq[StatisticsType]): State = ()
@@ -260,7 +260,7 @@ trait NoTrainingState[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
   def evaluateSplittingCriteria(withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double
 }
 
-trait InfoGainSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar]
+trait InfoGainSplitting[S1 <: DiscreteVar, S2 <: TensorVar]
   extends NoTrainingState[S1, S2] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   def evaluateSplittingCriteria(withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double = {
@@ -273,7 +273,7 @@ trait InfoGainSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar]
   }
 }
 
-trait GainRatioSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait GainRatioSplitting[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   type State = Double
   def getPerNodeState(stats: Seq[StatisticsType]): State =
@@ -288,30 +288,30 @@ trait GainRatioSplitting[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
   }
 }
 
-trait SampleSizeStopping[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait SampleSizeStopping[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   def minSampleSize: Int
   def shouldStop(stats: Seq[StatisticsType], depth: Int) = stats.size < minSampleSize
 }
 
-trait UniformLabelStopping[S1 <: DiscreteVar, S2 <: DiscreteTensorVar]
+trait UniformLabelStopping[S1 <: DiscreteVar, S2 <: TensorVar]
   extends SampleSizeStopping[S1, S2] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   val minSampleSize = 1
 }
 
-trait MaxDepthStopping[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait MaxDepthStopping[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   def maxDepth: Int
   def shouldStop(stats: Seq[StatisticsType], depth: Int) = depth > maxDepth
 }
 
-trait NoPruning[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait NoPruning[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
   def prune(tree: DTree, pruningSet: Seq[StatisticsType]) = tree
 }
 
-trait ErrorBasedPruning[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
+trait ErrorBasedPruning[S1 <: DiscreteVar, S2 <: TensorVar] {
   this: DecisionTreeTemplateWithStatistics2[S1, S2] =>
 
   def prune(tree: DTree, pruningSet: Seq[StatisticsType]): DTree = tree match {
@@ -328,8 +328,8 @@ trait ErrorBasedPruning[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
     stats.map(s => if (labelIndex(s) == label(s, node)) 1.0 else 0.0).sum / stats.length
 }
 
-class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
+class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with GainRatioSplitting[V1, V2]
@@ -338,8 +338,8 @@ class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
   val minSampleSize = 4
 }
 
-class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
+class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]
@@ -348,8 +348,8 @@ class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
   val minSampleSize = 4
 }
 
-class DecisionStumpTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
+class DecisionStumpTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]

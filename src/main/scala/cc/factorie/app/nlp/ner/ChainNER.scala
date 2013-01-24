@@ -18,7 +18,7 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 
-object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+object ChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNerFeaturesDomain
   override def skipNonCategories = true

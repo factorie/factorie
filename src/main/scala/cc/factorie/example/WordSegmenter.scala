@@ -25,7 +25,7 @@ object WordSegmenterDemo {
   // The variable types:
   //object LabelDomain extends CategoricalDomain[Boolean]
   class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)  // { def domain = LabelDomain }
-  object TokenDomain extends CategoricalTensorDomain[String]
+  object TokenDomain extends CategoricalDimensionTensorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)
@@ -157,13 +157,15 @@ object WordSegmenterDemo {
     //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //val learner = new optimize.SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
+//    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
+    val learner = new optimize.SGDTrainer(model, maxIterations = 15, optimizer = new optimize.AdaGrad(rate = 0.1))
     //learner.learningRate = 1.0
     println("Pre-training:")
     println("Train accuracy = "+ objective.accuracy(trainVariables))
     println("Test  accuracy = "+ objective.accuracy(testVariables))
-    for (i <- 0 until 7) {
-      learner.processContexts(trainVariables, 2)
+    for (i <- 0 until 25) {
+      learner.processExamples(trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_)))
+//      learner.processExamples(trainVariables.map(tv => new optimize.DiscreteLikelihoodExample(tv)))
       //learner.processAll(trainVariables, 2)
       //learner.learningRate *= 0.8
       predictor.processAll(testVariables)

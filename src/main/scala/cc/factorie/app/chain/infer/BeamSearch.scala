@@ -16,7 +16,7 @@ trait BeamSearch {
   // the contract here is: null out array elements you don't like
   def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
-  def searchAndSetToMax[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def searchAndSetToMax[OV <: DiscreteDimensionTensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -32,7 +32,7 @@ trait BeamSearch {
     }
   }
 
-  def search[OV <: DiscreteTensorVar, LV <: LabeledMutableDiscreteVarWithTarget[_]](
+  def search[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -174,7 +174,7 @@ trait FixedBeamWidth {
 
   var width: Int
 
-  def threshold(domainScores: Array[(Int, Double)]): Unit = {
+  override def threshold(domainScores: Array[(Int, Double)]): Unit = {
     val sorted = domainScores.zipWithIndex.toArray.sortBy(_._1._2)
     val max = domainScores.size - width
     var i = 0
@@ -191,12 +191,12 @@ trait CDFBeamWidth {
 
   var ratio: Double
 
-  def threshold(domainScores: Array[(Int, Double)]): Unit = {
+  override def threshold(domainScores: Array[(Int, Double)]): Unit = {
     val total = domainScores.toArray.map(_._2).sum
     val sorted = domainScores.zipWithIndex.toArray.sortBy(_._1._2)
 
     // find the width
-    var target = ratio * total
+    val target = ratio * total
     var accumulator = 0.0
     var width = 0
     while (accumulator < target) {

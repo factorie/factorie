@@ -32,7 +32,7 @@ object Observations {
    Features from following tokens will have suffixes like "@+1", "@+2", etc. 
    The functionality of this method is completely covered as a special case of addNeighboringFeatureConjunctions,
    but for the simple case, this one is easier to call. */
-  def addNeighboringFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], preOffset:Int, postOffset:Int): Unit = {
+  def addNeighboringFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], preOffset:Int, postOffset:Int): Unit = {
     val size = observations.length
     // First gather all the extra features here, then add them to each Token
     val extraFeatures = Array.tabulate(size)(i => new scala.collection.mutable.ArrayBuffer[String])
@@ -62,7 +62,7 @@ object Observations {
   private def safeApply[A](s:Seq[A], i:Int): A = if (i < 0 || i > s.length-1) null.asInstanceOf[A] else s(i)
   
   /** Add feature to each Observation. */
-  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int): Unit = {
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], f1:A=>String, i1:Int): Unit = {
     for (i <- 0 until observations.length) {
       val o = observations(i)
       val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
@@ -71,7 +71,7 @@ object Observations {
   }
 
   /** Add binary conjunction feature to each Observation. */
-  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int): Unit = {
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int): Unit = {
     for (i <- 0 until observations.length) {
       val o = observations(i)
       val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
@@ -81,7 +81,7 @@ object Observations {
   }
   
   /** Add trinary conjunction feature to each Observation. */
-  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int, f3:A=>String, i3:Int): Unit = {
+  def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int, f3:A=>String, i3:Int): Unit = {
     for (i <- 0 until observations.length) {
       val o = observations(i)
       val o1 = safeApply(observations, i+i1); val s1 = if (o1 ne null) f1(o1) else null
@@ -96,10 +96,10 @@ object Observations {
   // even if "observations" contains only the words in the a Sentence.
   // Change the implementation to avoid Observation.next, and instead only use observations.apply(Int).
   
-  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], offsetConjunctions:Seq[Int]*): Unit = 
+  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], offsetConjunctions:Seq[Int]*): Unit =
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
   /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
-  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
+  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalDimensionTensorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
     val size = observations.size
     // First gather all the extra features here,...
     val newFeatures = Array.tabulate(size)(i => new ArrayBuffer[String])
@@ -124,7 +124,7 @@ object Observations {
   }
   // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
   // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-  private def appendConjunctions[A<:Observation[A]](t:A, vf:A=>CategoricalTensorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
+  private def appendConjunctions[A<:Observation[A]](t:A, vf:A=>CategoricalDimensionTensorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
     val result = new ArrayBuffer[List[(String,Int)]];
     val offset: Int = offsets.head
     val t2 = t.next(offset)  // TODO Note: here is where we should be obeying Sentence boundaries.

@@ -10,7 +10,7 @@ import cc.factorie.app.nlp
 
 class SerializeTest extends JUnitSuite {
 
-  class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalTensorDomain[String])
+  class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalDimensionTensorDomain[String])
     extends BinaryFeatureVectorVariable[String] {
     override def skipNonCategories = true
   }
@@ -25,7 +25,7 @@ class SerializeTest extends JUnitSuite {
 
     println("creating toy model with random weights")
 
-    object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+    object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
     MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
     object OntoNerLabelDomain extends CategoricalDomain[String]
@@ -55,7 +55,7 @@ class SerializeTest extends JUnitSuite {
     assert(weights1.zip(weights2).forall({case (a, b) => a.activeElements.toSeq.sameElements(b.activeElements.toSeq)}))
   }
 
-  def makeModel(featuresDomain: CategoricalTensorDomain[String],
+  def makeModel(featuresDomain: CategoricalDimensionTensorDomain[String],
     labelDomain: CategoricalDomain[String]): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
     object model extends ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token](
       labelDomain, featuresDomain, l => l.token.attr[MyChainNerFeatures], l => l.token, t => t.attr[OntoNerLabel])
@@ -64,7 +64,7 @@ class SerializeTest extends JUnitSuite {
   }
 
   def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
-    object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+    object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
     object OntoNerLabelDomain extends CategoricalDomain[String]
     val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
     model.deSerialize(fileName)
@@ -115,7 +115,7 @@ class SerializeTest extends JUnitSuite {
     val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
     val ll = new LabelList[app.classify.Label, Features](_.features)
     val labelDomain = new CategoricalDomain[String] { }
-    val featuresDomain = new CategoricalTensorDomain[String] { }
+    val featuresDomain = new CategoricalDimensionTensorDomain[String] { }
     for (i <- 1 to 100) {
       val labelName = (i % 2).toString
       val features = new BinaryFeatures(labelName, i.toString, featuresDomain, labelDomain)
@@ -185,7 +185,7 @@ class SerializeTest extends JUnitSuite {
     println("Original domain:")
     println(TokenDomain.dimensionDomain.toSeq.mkString(","))
     println("Deserialized domain:")
-    val newDomain = new CategoricalTensorDomain[String] { }
+    val newDomain = new CategoricalDimensionTensorDomain[String] { }
     val cubbie = new CategoricalDomainCubbie(newDomain.dimensionDomain)
     BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
     println(newDomain.dimensionDomain.toSeq.mkString(","))
@@ -194,7 +194,7 @@ class SerializeTest extends JUnitSuite {
   }
 
   class Label(b: Boolean, val token: Token) extends LabeledBooleanVariable(b)
-  object TokenDomain extends CategoricalTensorDomain[String]
+  object TokenDomain extends CategoricalDimensionTensorDomain[String]
   class Token(val char: Char, isWordStart: Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token, Sentence] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)

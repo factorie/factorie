@@ -6,7 +6,7 @@ import cc.factorie.la.Tensor1
 
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
 
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](ll: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](ll: LabelList[L, F]): Classifier[L] = {
     
     val template = new LogLinearTemplate2[L,F](ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
     val model = new CombinedModel(template)

@@ -21,7 +21,7 @@ import la.{Tensor1, Tensor}
 class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val sampler = new GibbsSampler(cmodel, HammingObjective) {
       override def pickProposal(proposals: Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
@@ -33,7 +33,7 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
 }
 
 class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val pieces = il.map(l => new GLMExample(
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
@@ -54,7 +54,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
 class GeneralClassifierTrainer(val trainerConstructor: Model => Trainer[_], val loss: ObjectiveFunctions.MultiClassObjectiveFunction) extends ClassifierTrainer {
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]) = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val examples = il.map(l => new GLMExample(
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],

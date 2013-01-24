@@ -720,7 +720,7 @@ object BagOfWordsTests{
 }
 */
 
-object DefaultBagOfWordsDomain extends CategoricalTensorDomain[String]
+object DefaultBagOfWordsDomain extends CategoricalDimensionTensorDomain[String]
 /*
 object TokenFeaturesDomain extends CategoricalTensorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -728,7 +728,7 @@ object TokenFeaturesDomain extends CategoricalTensorDomain[String]
   }
  def domain = AffinityVectorDomain
  */
-class BagOfWordsTensorVariable(val domain:CategoricalTensorDomain[String]=DefaultBagOfWordsDomain) extends FeatureVectorVariable[String]{
+class BagOfWordsTensorVariable(val domain:CategoricalDimensionTensorDomain[String]=DefaultBagOfWordsDomain) extends FeatureVectorVariable[String]{
   //final def ++=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)increment(k,v)(null)
 }
 object BagOfWordsUtil{

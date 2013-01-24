@@ -18,7 +18,7 @@ import cc.factorie.la._
 
 /** A DiscreteDomain for holding a singleton Tensor holding a single real (Double) value. */
 object RealDiscreteDomain extends DiscreteDomain(1)
-trait RealDomain extends DiscreteTensorDomain with Domain[RealValue] {
+trait RealDomain extends DiscreteDimensionTensorDomain with Domain[RealValue] {
   def dimensionDomain = RealDiscreteDomain
 }
 object RealDomain extends RealDomain
@@ -51,7 +51,7 @@ final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTens
 
 /** A variable with Tensor value which holds a single real (Double) value.
     Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. */
-trait RealVar extends DiscreteTensorVar with ScalarVar with VarWithValue[RealValue] {
+trait RealVar extends DiscreteDimensionTensorVar with ScalarVar with VarWithValue[RealValue] {
   def doubleValue: Double
   def domain = RealDomain
   @inline final def value: RealValue = new RealValue(doubleValue)

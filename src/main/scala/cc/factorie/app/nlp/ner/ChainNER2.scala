@@ -27,7 +27,7 @@ import scala.io._
 import java.io.{FileWriter, BufferedWriter, File}
 import scala.math.round
 
-object ChainNer2FeaturesDomain extends CategoricalTensorDomain[String]
+object ChainNer2FeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNer2FeaturesDomain
   override def skipNonCategories = true
@@ -218,7 +218,7 @@ class ChainNer2 {
       return List()
   }
   
-  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalDimensionTensorVar[String]) : Unit = {
     didagg = true
     vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
     vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
@@ -237,7 +237,7 @@ class ChainNer2 {
     }
   }
   
-  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalDimensionTensorVar[String]) : Unit = {
     var count = 0
     var compareToken : Token = token
     while(count < 200 && compareToken.hasPrev) {
@@ -257,7 +257,7 @@ class ChainNer2 {
   }
   
 
-  def initFeatures(document:Document, vf:Token=>CategoricalTensorVar[String]): Unit = {
+  def initFeatures(document:Document, vf:Token=>CategoricalDimensionTensorVar[String]): Unit = {
     //println("Count" + count)
     count=count+1
     import cc.factorie.app.strings.simplifyDigits

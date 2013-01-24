@@ -22,7 +22,7 @@ object Tutorial40InferenceAndLearning {
     class Label(val token: Token, s: String) extends LabeledCategoricalVariable(s) {
       def domain = LabelDomain
     }
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
     class Features(val token: Token) extends BinaryFeatureVectorVariable[String] {
       def domain = FeaturesDomain
     }
