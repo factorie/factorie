@@ -77,7 +77,23 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
             wArr(idx) = t2
             i += 1
           }
-        case _ => println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " + gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+        case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
+          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+                  gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            hSq(idx) += g*g
+            val h = math.sqrt(hSq(idx)) + delta
+            val t1 = eta / h
+            val t2 = w(idx) + t1 * g
+            w(idx) = t2
+            i += 1
+          }
       }
   }
   def reset(): Unit = {
