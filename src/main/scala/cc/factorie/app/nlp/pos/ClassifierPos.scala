@@ -149,8 +149,7 @@ class ClassifierPos extends DocumentProcessor {
 
   class SentenceData(val sent: Sentence) {
     val length = sent.length
-    val words = sent.tokens.map(_.string)
-    val lemmas = words.map(strings.simplifyDigits(_).toLowerCase)
+    val lemmas = sent.tokens.map(t => strings.simplifyDigits(t.string).toLowerCase)
     def get(s: Seq[String], i: Int) = if ((0 <= i) && (i < s.length)) s(i) else ""
   }
 
@@ -215,11 +214,7 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(2)
     ClassifierPosFeatureDomain.freeze()
-    model = new LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
-      override val evidenceTemplate = new LogLinearTemplate2[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
-        override lazy val weights = new la.DenseTensor2(PosDomain.size, ClassifierPosFeatureDomain.dimensionSize)
-      }
-    }
+    model = new LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
     val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.05, delta=0.1), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
