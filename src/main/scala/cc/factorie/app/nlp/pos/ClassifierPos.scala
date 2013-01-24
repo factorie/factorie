@@ -19,8 +19,8 @@ import org.junit.Assert._
  * To change this template use File | Settings | File Templates.
  */
 class ClassifierPos extends DocumentProcessor {
-  val ClassifierPosFeatureDomain = new HashDomain[String](1e6.toInt)
-  var model: LogLinearModel[CategoricalVariable[String], HashFeatureVectorVariable[String]] = null
+  object ClassifierPosFeatureDomain extends CategoricalTensorDomain[String]()
+  var model: LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]] = null
   val weights = new la.GrowableDenseTensor1(ClassifierPosFeatureDomain.dimensionSize)
 
   object WordData {
@@ -60,7 +60,7 @@ class ClassifierPos extends DocumentProcessor {
 
 
   def addFeature(v: SparseIndexedTensor1, f: String) {
-    val i = ClassifierPosFeatureDomain.index(f)
+    val i = ClassifierPosFeatureDomain.dimensionDomain.index(f)
     if (i != -1) v += (i, 1.0)
   }
   def addLemma(v: SparseIndexedTensor1, f: String, prefix: String) {
@@ -76,10 +76,7 @@ class ClassifierPos extends DocumentProcessor {
   def getLemmaFeature(sent: SentenceData, pos: Int, dif: Int) = {
     val prefix = "W"+(dif)+"="
     val lemma = sent.get(sent.lemmas, pos+dif)
-    if (WordData.ambiguityClasses.contains(lemma))
-      prefix+lemma
-    else
-      prefix
+    prefix+lemma
   }
   def addFeatures(sent: SentenceData, pos: Int, f: SparseIndexedTensor1) {
     val wp3 = getLemmaFeature(sent, pos, +3)
@@ -157,15 +154,17 @@ class ClassifierPos extends DocumentProcessor {
     def get(s: Seq[String], i: Int) = if ((0 <= i) && (i < s.length)) s(i) else ""
   }
 
-
+  var setToPrediction = false
   class LocalClassifierExample(val sentData: SentenceData, pos: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
     override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator) {
       val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sentData, pos, featureVector)
       new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value, margin)
-      val weightsMatrix = model.evidenceTemplate.weights
-      val prediction = weightsMatrix * featureVector
-      sentData.sent.tokens(pos).attr[PosLabel].set((0 until PosDomain.size).maxBy(i => prediction(i)))(null)
+      if (setToPrediction) {
+        val weightsMatrix = model.evidenceTemplate.weights
+        val prediction = weightsMatrix * featureVector
+        sentData.sent.tokens(pos).attr[PosLabel].set((0 until PosDomain.size).maxBy(i => prediction(i)))(null)
+      }
     }
   }
 
@@ -206,18 +205,29 @@ class ClassifierPos extends DocumentProcessor {
     PosDomain.freeze()
     val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)
-    model = new LogLinearModel[CategoricalVariable[String], HashFeatureVectorVariable[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
-      override val evidenceTemplate = new LogLinearTemplate2[CategoricalVariable[String], HashFeatureVectorVariable[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
+    ClassifierPosFeatureDomain.dimensionDomain.gatherCounts = true
+    sentences.shuffle.flatMap(s => {
+      val sd = new SentenceData(s)
+      (0 until s.length).map(i => {
+        val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
+        addFeatures(new SentenceData(s), i, featureVector)
+      })
+    })
+    ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(2)
+    ClassifierPosFeatureDomain.freeze()
+    model = new LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
+      override val evidenceTemplate = new LogLinearTemplate2[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain) {
         override lazy val weights = new la.DenseTensor2(PosDomain.size, ClassifierPosFeatureDomain.dimensionSize)
       }
     }
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.1, delta=0.01), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
+    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.05, delta=0.1), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
         (0 until s.length).map(i => new LocalClassifierExample(sd, i, optimize.ObjectiveFunctions.hingeMultiClassObjective))
       })
       trainer.processExamples(examples)
+      //setToPrediction = true
       var total = 0.0
       var correct = 0.0
       var totalTime = 0L
