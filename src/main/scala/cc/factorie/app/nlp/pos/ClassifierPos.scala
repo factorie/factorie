@@ -19,8 +19,8 @@ import org.junit.Assert._
  * To change this template use File | Settings | File Templates.
  */
 class ClassifierPos extends DocumentProcessor {
-  object ClassifierPosFeatureDomain extends CategoricalTensorDomain[String]()
-  var model: LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]] = null
+  object ClassifierPosFeatureDomain extends CategoricalDimensionTensorDomain[String]()
+  var model: LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]] = null
   val weights = new la.GrowableDenseTensor1(ClassifierPosFeatureDomain.dimensionSize)
 
   object WordData {
@@ -213,7 +213,7 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(2)
     ClassifierPosFeatureDomain.freeze()
-    model = new LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
+    model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
     val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.05, delta=0.1), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
