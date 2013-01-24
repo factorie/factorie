@@ -18,9 +18,9 @@ import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.app.chain.infer._
-import scala.collection.mutable.{ListBuffer,ArrayBuffer, Map}
+import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.File
-import cc.factorie.la.DenseTensor1
+import scala.collection.mutable
 import org.junit.Assert._
 import scala.collection.mutable.LinkedHashMap
 import cc.factorie.util.DoubleAccumulator
@@ -55,6 +55,31 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
   var useObsMarkov = false
   override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
+
+  def targetStatistics(labels: Seq[Label]): mutable.Map[DotFamily, Tensor] = {
+    val biasWeights = Tensor.newDense(bias.weights)
+    val obsWeights = Tensor.newSparse(obs.weights)
+    val markovWeights = Tensor.newSparse(markov.weights)
+    val obsmarkovWeights = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
+
+    for (i <- 0 until labels.length) {
+      val l = labels(i)
+      biasWeights += (l.targetIntValue, 1)
+      obsWeights += Tensor.outer(l.tensor, labelToFeatures(l).tensor)
+      if (i > 0) {
+        val prev = labels(i - 1)
+        markovWeights += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
+        if (useObsMarkov) obsmarkovWeights += Tensor.outer(prev.tensor, l.tensor, labelToFeatures(l).tensor)
+      }
+    }
+
+    val result = new mutable.HashMap[DotFamily, Tensor]
+    result(bias) = biasWeights
+    result(obs) = obsWeights
+    result(markov) = markovWeights
+    if (useObsMarkov) result(obsmarkov) = obsmarkovWeights
+    result
+  }
 
   def serialize(prefix: String) {
     val modelFile = new File(prefix + "-model")
@@ -128,12 +153,8 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   def inferBySumProduct(labels:IndexedSeq[Label]): ChainSummary = {
     val summary = new ChainSummary {
       private val (_expectations, (__nodeMarginals, __edgeMarginals), _logZ) = ForwardBackward.featureExpectationsMarginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
-      lazy private val _nodeMarginals = {
-        val res = new LinkedHashMap[Var, DiscreteMarginal]
-        res ++= labels.zip(__nodeMarginals).map { case (l, m) => 
-          l -> new DiscreteMarginal1(l, new DenseProportions1(m))
-        }
-      }
+      lazy private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
+        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m))})
       lazy private val _edgeMarginals = {
         labels.zip(labels.drop(1)).zip(__edgeMarginals).map { case ((l1, l2), m) => 
           // m is label X label
@@ -173,12 +194,8 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
-      lazy private val _marginals = {
-        val res = new LinkedHashMap[Var, DiscreteMarginal]
-        res ++= labels.zip(targetInts).map { case (l, t) => 
-          l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))
-        }
-      }
+      lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
+        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
       def marginal(v: Var): DiscreteMarginal = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {
@@ -214,24 +231,20 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
 
 object ChainModel {
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels:IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
+    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
+    private var cachedTargetValue: Double = Double.NaN
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
       if (labels.size == 0) return
+      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = model.inferBySumProduct(labels)
-
-      if (value != null) { 
-        var incr = 0.0;
-        model.factors(labels).foreach(f => incr += f.assignmentScore(TargetAssignment))
-        value.accumulate(incr - summary.logZ) 
-      } 
-      
       if (gradient != null) {
-        model.factors(labels).asInstanceOf[Iterable[DotFamily#Factor]].foreach(factor => {
-          gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
-        })
+        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
+        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
       }
-
-      for (family <- summary.expectations.families)
-	    gradient.accumulate(family, summary.expectations(family), -1.0)
+      if (value != null) {
+        if (cachedTargetValue.isNaN) cachedTargetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
+        value.accumulate(cachedTargetValue - summary.logZ)
+      }
     }
   }
   
