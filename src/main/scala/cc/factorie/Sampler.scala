@@ -65,11 +65,13 @@ trait Sampler[C] {
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
       Needs to be defined in subclasses. */
   def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be... Oh, I see, GenericSampler needs to call this, but perhaps it should be removed.
-  final def processAll(contexts:Iterable[C]): Unit = { 
-    contexts.foreach(process(_))
+  final def processAll(contexts:Iterable[C], returnDiffs: Boolean = false): DiffList = {
+    val diffs = if (returnDiffs) new DiffList else null
+    if (returnDiffs) contexts.foreach(diffs ++= process(_))
+    else contexts.foreach(process(_))
     iterationCount += 1
     postIterationHooks()
-    if (!postIterationHook) return 
+    diffs
   }
   // TODO Consider renaming this processContexts or sampleFromContext.  See also Trainer.processExamples.
   final def processAll(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 until numIterations) processAll(contexts)
