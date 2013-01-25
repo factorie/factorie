@@ -1,6 +1,48 @@
 Changelog
 ===
 
+New in version 1.0.0-M3:
+---
+
+* Documentation
+	- improved existing tutorials
+	- new tutorial on Inference and Learning
+	- better TUI
+	- better comments and error messages
+	- Parser Demo
+	- site can be generated at the users' end
+
+* Models and Templates
+	- support for feature hashing
+	- Massive renaming of Variables and Domains
+
+* NLP
+	- Classifier based POS tagger
+	- added port of ClearNLP tokenizer/segmenter
+	- Faster Bibtex parser
+	- REST API for Parsers
+
+* Inference
+	- support efficient inference for ChainModels
+	- Sampler can return a DiffList of all the changes
+	- bugfixes in MHSampler
+	- BP logZ implemented to enable likelihood learning
+
+* Optimization and Training
+	- Removed redundant SampleRank
+	- Added Pegasos. Pseudo-likelihood, Contrastive Divergence, StructSVM, AdaGrad
+	- new ClassifierTrainer to support all types of losses, trainers and optimizers
+	- better multi-threaded support
+	- bugfixes and efficiency improvements
+
+* Tensors
+	- speed enhacements and bugfixes
+	- more operations implemented
+	- new tests for Tensors
+
+* Serialization
+	- all new serialization based on Cubbies
+
 New in version 1.0.0-M2:
 ---
 

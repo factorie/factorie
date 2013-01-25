@@ -8,8 +8,50 @@ group: suffix
 Changelog
 ===
 
-## New in version 1.0.0-M2:
+New in version 1.0.0-M3:
+---
 
+* Documentation
+	- improved existing tutorials
+	- new tutorial on Inference and Learning
+	- better TUI
+	- better comments and error messages
+	- Parser Demo
+	- site can be generated at the users' end
+
+* Models and Templates
+	- support for feature hashing
+	- Massive renaming of Variables and Domains
+
+* NLP
+	- Classifier based POS tagger
+	- added port of ClearNLP tokenizer/segmenter
+	- Faster Bibtex parser
+	- REST API for Parsers
+
+* Inference
+	- support efficient inference for ChainModels
+	- Sampler can return a DiffList of all the changes
+	- bugfixes in MHSampler
+	- BP logZ implemented to enable likelihood learning
+
+* Optimization and Training
+	- Removed redundant SampleRank
+	- Added Pegasos. Pseudo-likelihood, Contrastive Divergence, StructSVM, AdaGrad
+	- new ClassifierTrainer to support all types of losses, trainers and optimizers
+	- better multi-threaded support
+	- bugfixes and efficiency improvements
+
+* Tensors
+	- speed enhacements and bugfixes
+	- more operations implemented
+	- new tests for Tensors
+
+* Serialization
+	- all new serialization based on Cubbies
+
+New in version 1.0.0-M2:
+---
 
 * Documentation
 	- markdown based website, the source for which is checked into the repository
@@ -22,6 +64,8 @@ Changelog
 	- trait Model independent of context, ModelWithContext[C] can unroll given any context
 
 * NLP
+	- Abstracted dependency parser prediction for easily dropping in alternative classifiers.
+	- Bootstrapping for improved dependency parser training.
 
 * Inference
 	- BPSummary is more efficient, includes an abstract version
@@ -31,6 +75,9 @@ Changelog
 	- MaxlikelihoodExample is efficient in computing constraints
 	- SampleRankExample replaces old trainer, almost as efficient
 
+* Classifiers
+    - Added DecisionTree, AdaBoost, SVM classifiers in app.classify
+
 * Tensors
 	- Filled in more of the missing cases in Tensors
 	- Fixed indexing bugs in a few Tensor types
@@ -39,12 +86,11 @@ Changelog
 * Serialization
 	- gzip support
 
-* Misc
-
-## New in version 1.0.0-M1:
-
+New in version 1.0.0-M1:
+---
 
 * Models and Templates
+
 	- All templates are now Models
 	- Models are now parameterized by the type of things they can score
 	- It is possible to write code that does not deduplicate factors
@@ -75,8 +121,8 @@ Changelog
 	- Added Tutorials to walkthrough model construction
 	- Cleaned examples so that they work (added a test that makes sure they do)
 
-## New in version 0.10.2:
-
+New in version 0.10.2:
+---
 
 * NLP
 	- Customized forward-backward and viterbi for chain models
@@ -110,8 +156,8 @@ Changelog
 * Better support for limitedValues and sparse domains on factors
 * Code cleanup, including deletion of inner/outer factors
 
-## New in version 0.10.1:
-
+New in version 0.10.1:
+---
 	
 * Many renames, new features and refactors; the list below is partially complete.
 
@@ -142,8 +188,8 @@ etc.
 
 * Redesigned cc.factorie.generative package
 
-## New in version 0.10.0:
-
+New in version 0.10.0:
+---
 
 * Variable 'value' methods:
 
@@ -272,8 +318,8 @@ modeling package, but they are not yet finished or usable. The code
 is being checked in now in order to facilitate others' work on the
 undirected models.
 
-## New in Version 0.9.0:
-
+New in Version 0.9.0:
+---
 
 Rudimentary optimize package includes ConjugateGradient and
 LimitedMemoryBFGS.
@@ -298,5 +344,5 @@ now in its own separate package: cc.factorie.generative.
 Many variables have been renamed to better match standard names in
 statistics, including EnumVariable => CategoricalVariable.
 
-## New in Version 0.8.1:
-
+New in Version 0.8.1:
+---
