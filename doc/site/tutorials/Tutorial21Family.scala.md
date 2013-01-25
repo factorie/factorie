@@ -1,12 +1,13 @@
 ---
-title: "Tutorial 2.1: Families"
+title: "Tutorial 2.1: Family"
 layout: default
 group: tutorial
 ---
 
+<a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
+
 Family Tutorial
 ===============
-
 
 ```scala
 

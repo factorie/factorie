@@ -1,8 +1,10 @@
 ---
-title: "Tutorial 2.0: Factors"
+title: "Tutorial 2: Factor"
 layout: default
 group: tutorial
 ---
+
+<a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
 
 Factor Tutorial
 ==============
@@ -10,12 +12,11 @@ Factor Tutorial
 Factors are a container for an ordered set of neighboring variables, 
 and can return "scores" and "statistics" based on values for those neighbors.
 
-
 ```scala
-
 
 package cc.factorie.example
 
+import org.junit.Assert._
 import cc.factorie._
 import cc.factorie.la._
 
@@ -30,6 +31,7 @@ object TutorialFactors {
 
 ```
 
+
 There are classes Factor1, Factor2, Factor3, Factor4 for Factors with 1-4 neighboring variables.
 
 (If you want a Factor that has more than 4 neighbors, 
@@ -37,9 +39,7 @@ and many of your neighbors are of the same Variable class,
 there is a "var-args" construction available, which will be explained below.
 You could also create your own subclass of the trait "Factor".)
 
-
 ```scala
-
     
     // Here is a factor with one neighbor.
     val f1 = new Factor1(v1) {
@@ -49,6 +49,7 @@ You could also create your own subclass of the trait "Factor".)
 
 ```
 
+
 The only method that is abstract in Factor1-Factor4 classes is the "score" method.
 Its arguments are the values of the neighboring variables, in order.
 It must return a Double.
@@ -57,29 +58,32 @@ More positive scores indicate higher likelihood.
 In terms of probabilities these scores can be interpreted as "unnormalized log-probabilities".
 If you do have a normalized probability for a factor, the score should be math.log(probability). 
 
-
 ```scala
-
     
     // Naturally, then we can get the factor's score for particular values of the neighboring variable(s).
     println("First factor score for value 0 is "+f1.score(0))
+    assertEquals(-1.0, f1.score(0), 0.01)
     
     // We can also ask for the score resulting from the neighbors current values.
     println("First factor score for current neighbor value is "+f1.currentScore)
+    assertEquals(0.0, f1.currentScore, 0.1)
     
     // Here is a Factor with two neighbors.
     // The second neighbor is a DoubleVariable and has value type Double.
     val f2 = new Factor2(v1, v2) {
       def score(i:Int, j:Double) = i * j
     }
-    println("Second factor score is "+f1.currentScore)
+    println("Second factor score is "+f2.currentScore)
+    assertEquals(2.0, f2.currentScore, 0.01)
 
     // Given a factor I can get its list of neighbors, or individual neighbors
     println("Second factor neighbors are "+f2.variables)
     println("Second factor first neighbor is "+f2.variable(0))
+    assert(f2.variable(0) == v1)
     
     // We can also ask if a Factor has a variable among its neighbors
     if (f2.touches(v3)) println("Second factor has v3 as a neighbor.")
+    assert(!f2.touches(v3))
     
     // Factors can be given a customized named used in their toString method
     val f2b = new Factor2(v1, v2) {
@@ -87,20 +91,24 @@ If you do have a normalized probability for a factor, the score should be math.l
       override def factorName = "Factor2B"
     }
     println("Factor with custom name "+f2b)
+    assertEquals("Factor2B", f2b.factorName)
     
     // We can get an Assignment object that captures the current values of the neighbors.
     val a2: Assignment2[IntegerVariable,DoubleVariable] = f2.currentAssignment
     v2 := 4.4 // Here we give v2 a new value.
     println("Second neighbor of second factor had value "+a2(v2))
+    assertEquals(2.0, a2(v2), 0.01)
     
     // We can ask for a factor's score using the values in an Assignment
     // rather than the neighbors current values
-    println("Second factor's score from old assignment is "+f2.scoreAssignment(a2))
+    println("Second factor's score from old assignment is "+f2.assignmentScore(a2))
+    assertEquals(2.0, f2.assignmentScore(a2), 0.01)
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
     as(v1) = 44
-    println("Second factor's score from a new assignment is "+f2.scoreAssignment(as))
+    println("Second factor's score from a new assignment is "+f2.assignmentScore(as))
+    assertEquals(44*4.4, f2.assignmentScore(as), 0.01)
     
     // All factors also have "statistics"
     // This is some arbitrary object that holds information sufficient to obtain a score.
@@ -115,7 +123,8 @@ If you do have a normalized probability for a factor, the score should be math.l
     // (This lack of typing is because we want the method to be flexibly override-able in subclasses.)
     if (s2.asInstanceOf[Tuple2[Int,Double]]._2 == 4.4)
       println("The second factor's second value is 4.4")
-    
+    assertEquals(8.8, s2.asInstanceOf[Tuple2[Int,Double]]._2, 0.01)
+
     // Some subclasses of Factor override the method to return more specific types.
     // If the Tuple statistics are sufficient for your needs, 
     // and you want the "statistics" method's return type to be the correct Tuple
@@ -124,6 +133,7 @@ If you do have a normalized probability for a factor, the score should be math.l
       def score(i:Int, j:Double, k:Int) = if (i == k) j else 0.0
     }
     println("The current value of the third neighbor is "+f3.currentStatistics._3)
+    assertEquals(3.0, f3.currentStatistics._3, 0.01)
     
     // The various Factor subclasses containing "WithStatistics" in the class name
     // all contain a new final definition of the "statistics" method.
@@ -166,15 +176,15 @@ If you do have a normalized probability for a factor, the score should be math.l
 
 ```
 
+
 It is up to you to make the dimensions of the weights Tensor match the dimensions of the statistics Tensor
 There are no compile-time checks for this.
 
-
 ```scala
-
     
 
 ```
+
 
 Since Factors with Tensor statistics are common, there are Factor classes that pre-define this,
 avoiding the need to assign StatisticsType.
@@ -183,41 +193,37 @@ The method "score" is pre-defined to gather these Tensor statistics and call "sc
 (This enforces that the Tensor statistics are sufficient to calculate the score.)
 In TensorFactor2 only "statistics" and "scoreStatistics" are abstract.
 
-
 ```scala
-
     val f6 = new TensorFactor2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
       override def statistics(fv1:BooleanValue, fv2:BooleanValue): Tensor = fv1 outer fv2
-      def scoreStatistics(tensor:Tensor): Double = weights dot tensor
+      def statisticsScore(tensor:Tensor): Double = weights dot tensor
     }
     
 
 ```
+
 
 Because it is also common that the statistics are the outer product of the neighbors Tensor values,
 there are also TensorFactor* subclasses that pre-define "statistics" in this way.
 Only the "scoreStatistics(Tensor)" method is abstract.
 
-
 ```scala
-
     val f7 = new TensorFactorWithStatistics2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
-      def scoreStatistics(tensor:Tensor): Double = weights dot tensor
+      def statisticsScore(tensor:Tensor): Double = weights dot tensor
     }
     
 
 ```
+
 
 Because it is furthermore common that the score be 
 a dot product of the Tensor statistics and a "weight" parameter Tensor,
 there are Factor subclasses that pre-define scoreStatistics to perform this dot-product.
 Only the "weights" method is abstract.
 
-
 ```scala
-
     val f8 = new DotFactorWithStatistics2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
     }
@@ -225,14 +231,13 @@ Only the "weights" method is abstract.
 
 ```
 
+
 If you want the score to be such a dot-product, but you want the statistics Tensor
 to be something other than the outer product of the neighbor values, 
 you can use the DotFactor{1,2,3,4} classes.
 Here only the "statistics" and "weights" methods are abstract.
 
-
 ```scala
-
     val f9 = new DotFactor4(label1, label2, label3, flag1) {
       val weights = new DenseTensor2(Array(Array(2.0, 1.0, 0.0), Array(1.0, 2.0, 1.0), Array(0.0, 1.0, 2.0)))
       override def statistics(lv1:Label#Value, lv2:Label#Value, lv3:Label#Value, fv2:BooleanValue): Tensor = 
@@ -249,21 +254,22 @@ Here only the "statistics" and "weights" methods are abstract.
 
 ```
 
+
 Factor equality is based on the Factor class and the identity of its neighboring variables.
 That is, if I create two factors, having the same class and same neighbors,
 the two factors will be equal.  
 (This helps us de-duplicate Factors coming from Templates.
  We will describe Templates in a later tutorial.)
 
-
 ```scala
-
     val mf1 = new MyFactor(v1, v3)
     val mf2 = new MyFactor(v1, v3)
     if (mf1 == mf2) println("Two factors are equal.")
+    assert(mf1 == mf2)
 
 
 ```
+
 
 Let's create a Factor representing a simple log-linear classifier for classifying blog posts.
 into the classes "politics", "sports", "arts"
@@ -274,12 +280,10 @@ We can use the Label variable from above.
 Here let's define a Variable Article for representing the feature vector.
 WordDomain is the object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
 
-
 ```scala
-
-
+    object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
     // TODO Consider interface improvements to CategoricalTensorDomain initialization.
-    object ArticleDomain extends CategoricalTensorDomain[String] { override def dimensionDomain = WordDomain }
+    object ArticleDomain extends CategoricalDimensionTensorDomain[String] { override def dimensionDomain = WordDomain }
     class Article(ws:Iterable[String]) extends BinaryFeatureVectorVariable[String](ws) {
       def domain = ArticleDomain
     }
@@ -317,6 +321,7 @@ WordDomain is the object WordDomain extends CategoricalDomain(List("beat", "beau
 
 ```
 
+
 Of course there is much more rich and efficient support for classification
 (including pre-built large-vocabulary document classification) available in FACTORIE.
 The above is a simple demonstration.
@@ -326,9 +331,7 @@ yet weights is inefficiently created and filled separate for each MyClassifier i
 FACTORIE has special support for representing commonalities between Factors
 that belong to the same "Family".
 
-
 ```scala
-
     
   }
   
