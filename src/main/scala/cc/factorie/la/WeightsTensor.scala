@@ -24,6 +24,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
     override def default(f:DotFamily) = { val t = newTensor(f); this(f) = t; t }
   }
   override def zero() = _map.valuesIterator.foreach(_.zero())
+  def familyWeights: Iterable[(DotFamily, Tensor)] = _map
   def families = _map.keys
   def tensors = _map.values
   def dim1: Int = _map.values.map(_.length).sum // TODO This should really never be called, I think.  Should we print a warning? -akm

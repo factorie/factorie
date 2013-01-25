@@ -164,42 +164,46 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   }
 
   @Test def testChainModelBP {
-    object cdomain extends CategoricalDimensionTensorDomain[String]()
-    val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
-    features += "asd"
-    val ldomain = new CategoricalDomain[String]()
-    val d = new app.nlp.Document("noname")
-    val t0 = new Token(d, 0, 1)
-    val t1 = new Token(d, 0, 1)
-    val t2 = new Token(d, 0, 1)
-    class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
-    val l0 = new Label("1")
-    val l1 = new Label("0")
-    val l2 = new Label("2")
-    val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2)
-    val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2)
-    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
-    val ex = new LikelihoodExample(Seq(l0, l1, l2), InferByBPChainSum)
-    val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2).toIndexedSeq)
-    val optimizer = new StepwiseGradientAscent()
-    for (i <- 0 until 10) {
-      val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
-      val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
-      val marginAccumulator0 = new LocalDoubleAccumulator
-      val marginAccumulator1 = new LocalDoubleAccumulator
-      val valueAccumulator0 = new LocalDoubleAccumulator
-      val valueAccumulator1 = new LocalDoubleAccumulator
-      ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0, marginAccumulator0)
-      ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1, marginAccumulator1)
-      assertEquals(marginAccumulator0.value, marginAccumulator1.value, 0.001)
-      assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
-      gradientAccumulator0.tensor.families.foreach(f => {
-        println("checking family: " + f.getClass.getName)
-        gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
-          assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
+    for ((bpInfer, chainInfer) <- Seq((InferByBPChainSum, ChainModel.MarginalInference), (MaximizeByBPChain, ChainModel.MAPInference))) {
+      object cdomain extends CategoricalDimensionTensorDomain[String]()
+      val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
+      features += "asd"
+      val ldomain = new CategoricalDomain[String]()
+      val d = new app.nlp.Document("noname")
+      val t0 = new Token(d, 0, 1)
+      val t1 = new Token(d, 0, 1)
+      val t2 = new Token(d, 0, 1)
+      class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
+      val l0 = new Label("1")
+      val l1 = new Label("0")
+      val l2 = new Label("2")
+      val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2)
+      val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2)
+      val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
+      val ex = new LikelihoodExample(Seq(l0, l1, l2), bpInfer)
+      val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2).toIndexedSeq, chainInfer)
+      val optimizer = new StepwiseGradientAscent()
+      for (i <- 0 until 10) {
+        val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+        val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+        val marginAccumulator0 = new LocalDoubleAccumulator
+        val marginAccumulator1 = new LocalDoubleAccumulator
+        val valueAccumulator0 = new LocalDoubleAccumulator
+        val valueAccumulator1 = new LocalDoubleAccumulator
+        ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0, marginAccumulator0)
+        ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1, marginAccumulator1)
+        assertEquals(marginAccumulator0.value, marginAccumulator1.value, 0.001)
+        assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
+        gradientAccumulator0.tensor.families.foreach(f => {
+          println("checking family: " + f.getClass.getName)
+          println("good grad: " + gradientAccumulator0.tensor)
+          println("bad grad: " + gradientAccumulator1.tensor)
+          gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
+            assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
+          })
         })
-      })
-      optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN, marginAccumulator0.value)
+        optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN, marginAccumulator0.value)
+      }
     }
   }
 

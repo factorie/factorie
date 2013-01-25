@@ -58,7 +58,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   // TODO this does not calculate statistics for obsmarkov template -luke
-  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): mutable.Map[DotFamily, Tensor] = {
+  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): WeightsTensor = {
     val biasStats = Tensor.newDense(bias.weights)
     val obsStats = Tensor.newSparse(obs.weights)
 //    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
@@ -84,7 +84,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       if (labels.length > 1) new DenseTensor1(ArrayOps.elementwiseSum(edgeMargs))
       else new SparseTensor1(labels(0).domain.size * labels(0).domain.size)
 
-    val result = new mutable.HashMap[DotFamily, Tensor]
+    val result = new WeightsTensor
     result(bias) = biasStats
     result(obs) = obsStats
     result(markov) = markovStats
@@ -92,7 +92,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     result
   }
 
-  def targetStatistics(labels: Seq[Label]): mutable.Map[DotFamily, Tensor] = {
+  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): WeightsTensor = {
     val biasStats = Tensor.newDense(bias.weights)
     val obsStats = Tensor.newSparse(obs.weights)
     val markovStats = Tensor.newSparse(markov.weights)
@@ -101,23 +101,26 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     for (i <- 0 until labels.length) {
       val l = labels(i)
       val features = labelToFeatures(l).tensor
-      biasStats += (l.targetIntValue, 1)
-      obsStats += Tensor.outer(new SingletonBinaryTensor1(l.domain.size, l.targetIntValue), features)
+      biasStats += (assignments(i), 1)
+      obsStats += Tensor.outer(new SingletonBinaryTensor1(l.domain.size, assignments(i)), features)
       if (i > 0) {
         val prev = labels(i - 1)
-        markovStats += (prev.targetIntValue * labelDomain.size + l.targetIntValue, 1)
+        markovStats += (assignments(i - 1) * labelDomain.size + assignments(i), 1)
         if (useObsMarkov) obsmarkovStats += Tensor.outer(
           prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
       }
     }
 
-    val result = new mutable.HashMap[DotFamily, Tensor]
+    val result = new WeightsTensor
     result(bias) = biasStats
     result(obs) = obsStats
     result(markov) = markovStats
     if (useObsMarkov) result(obsmarkov) = obsmarkovStats
     result
   }
+
+  def targetStatistics(labels: Seq[Label]): WeightsTensor =
+    assignmentStatistics(labels, labels.map(_.targetIntValue))
 
   def serialize(prefix: String) {
     val modelFile = new File(prefix + "-model")
@@ -178,21 +181,13 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       result
     }
   }
-  
-  
-  trait ChainSummary extends Summary[DiscreteMarginal] {
-    // Do we actually want the marginal of arbitrary sets of variables? -brian
-    def marginal(vs:Var*): DiscreteMarginal = null
-    def marginal(v:Var): DiscreteMarginal
-    def expectations: WeightsTensor // TODO this should be 1-hot tensors for Viterbi -luke
-  }
 
   // Inference
   // TODO FIXME this does not work for useObsMarkov=true right now -luke
   def inferBySumProduct(labels: IndexedSeq[Label]): ChainSummary = {
     val summary = new ChainSummary {
       private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
-      private val _expectations = { val wt = new WeightsTensor; for ((f, t) <- marginalStatistics(labels, __nodeMarginals, __edgeMarginals)) wt(f) = t; wt }
+      private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
       lazy private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
         labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m))})
       lazy private val _edgeMarginals =
@@ -229,7 +224,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
   }
 
   // TODO learning doesn't work for this yet... -luke
-  def inferByMaxProduct(labels:IndexedSeq[Label]): ChainSummary = {
+  def inferByMaxProduct(labels: IndexedSeq[Label]): ChainSummary = {
     new ChainSummary {
       private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
@@ -245,7 +240,8 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
           i += 1
         }
       }
-      def expectations = null
+      val expectations = assignmentStatistics(labels, targetInts)
+      override val logZ = expectations.familyWeights.map({case (fam, stats) => fam.weights dot stats}).sum
       override def marginal(_f: Factor): DiscreteMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias || f.family == obs)
@@ -261,28 +257,43 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       }
     }
   }
+}
 
-  object MarginalInference extends Infer {
-    override def infer(variables: Iterable[Var], model: Model, summary: Summary[Marginal] = null): Option[Summary[Marginal]] =
-      Some(inferBySumProduct(variables.asInstanceOf[IndexedSeq[Label]]))
-  }
-  // Training
-  val objective = new HammingTemplate[Label]
+trait ChainSummary extends Summary[DiscreteMarginal] {
+  // Do we actually want the marginal of arbitrary sets of variables? -brian
+  def marginal(vs:Var*): DiscreteMarginal = null
+  def marginal(v:Var): DiscreteMarginal
+  def expectations: WeightsTensor // TODO this should be 1-hot tensors for Viterbi -luke
 }
 
 object ChainModel {
-  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L]) extends Example[ChainModel[L,_,_]] {
-    private var cachedTargetStats: mutable.Map[DotFamily, Tensor] = null
+  trait ChainInfer {
+    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary
+  }
+  object MarginalInference extends ChainInfer {
+    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
+      model.inferBySumProduct(variables.asInstanceOf[IndexedSeq[L]])
+  }
+  object MAPInference extends ChainInfer {
+    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
+      model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
+  }
+
+  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
+    private var cachedTargetStats: WeightsTensor = null
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
-      val summary = model.inferBySumProduct(labels)
+      val summary = infer.infer(labels, model)
       if (gradient != null) {
-        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
+        for ((family, stats) <- cachedTargetStats.familyWeights) gradient.accumulate(family, stats)
         for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
       }
+//      println("chain map stats: " + summary.expectations)
+//      println("chain truth stats" + cachedTargetStats)
       if (value != null) {
-        val targetValue = cachedTargetStats.map({case (fam, stats) => fam.weights dot stats}).sum
+        val targetValue = cachedTargetStats.familyWeights.map({case (fam, stats) => fam.weights dot stats}).sum
+//        println("targetScore: " + targetValue + " logZ: " + summary.logZ)
         value.accumulate(targetValue - summary.logZ)
       }
     }
