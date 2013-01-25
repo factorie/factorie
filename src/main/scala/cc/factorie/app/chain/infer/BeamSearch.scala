@@ -3,6 +3,7 @@ package cc.factorie.app.chain.infer
 import cc.factorie._
 import cc.factorie.la._
 import collection.mutable.ListBuffer
+import maths.ArrayOps
 
 /**
  * Author: martin
@@ -41,22 +42,27 @@ trait BeamSearch {
            ): Seq[Int] = {
 
     // get localScores
+    val lsize = vs.head.domain.size
     val localScores: Array[Array[Double]] = {
-      val arrays = Array.fill[Array[Double]](vs.size)(Array.ofDim[Double](vs.head.domain.size))
-      for ((v,vi) <- vs.zipWithIndex) {
-        val localFactor = localTemplate.Factor(v, labelToFeatures(v))
-        for ((_,di) <- v.settings.zipWithIndex)
-          arrays(vi)(di) = localFactor.currentScore
+      val scores = new Array[Array[Double]](vs.size)
+      var vi = 0
+      while (vi < vs.length) {
+        val v = vs(vi)
+        scores(vi) = new Array[Double](lsize)
+        var di = 0
+        while (di < v.settings.length) {
+          scores(vi)(di) = localTemplate.weights dot Tensor.outer(v.tensor.asInstanceOf[Tensor], labelToFeatures(v).tensor)
+          di += 1
+        }
+        vi += 1
       }
-      arrays
+      scores
     }
 
     if (vs.size == 0) return Seq.empty[Int]
-    else if (vs.size == 1) return Seq(localScores.head.zipWithIndex.maxBy(_._1)._2)
+    else if (vs.size == 1) return Seq(ArrayOps.maxIndex(localScores.head))
 
-    val ds = vs.head.domain.size
-
-    def transScores(i: Int, j: Int): Double = transTemplate.weights(i,j) // (i * ds + j)
+    @inline def transScores(i: Int, j: Int): Double = transTemplate.weights(i,j) // (i * ds + j)
     
     val biasScores: Tensor = {
       if (biasTemplate ne null)

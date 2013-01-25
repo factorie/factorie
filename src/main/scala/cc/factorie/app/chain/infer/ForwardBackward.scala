@@ -5,7 +5,7 @@ import cc.factorie.maths.sumLogProbs
 import cc.factorie.util.ArrayDoubleSeq
 import cc.factorie.la._
 import scala.math.exp
-import collection.mutable.{HashMap, Map}
+import collection.mutable
 
 /**
  * Author: martin
@@ -144,8 +144,8 @@ object ForwardBackward {
     val ds = transTemplate.weights.dim2 // optimization // TODO: this is from Feb 2012, is it still faster? -brian
     (i: Int, j: Int) => transTemplate.weights(i * ds + j)
   }
-  
-  private def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {
+
+  def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {
     val result = Array.fill(as(0).size)(0.0)
     var i = 0
     while (i < as.size) {
@@ -160,50 +160,24 @@ object ForwardBackward {
     result
   }
 
-  def featureExpectationsMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def marginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
             biasTemplate: DotFamilyWithStatistics1[LV],
             LabelToFeatures: LV => OV
-          ): (WeightsTensor, (Array[Array[Double]], Array[Array[Double]]), Double) = {
+          ): (Array[Array[Double]], Array[Array[Double]], Double) = {
 
     val (alpha, beta, localScores) = search(vs, localTemplate, transTemplate, biasTemplate, LabelToFeatures)
 
     val nodeMargs = nodeMarginals(alpha, beta)
     val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate), localScores)
 
-    // sum edge marginals
-    // TODO Instead of new SparseTensor1 consider something like Tensor.newSparse(transTemplate.weights)
-    val edgeExp = if (vs.length > 1) new DenseTensor1(elementwiseSum(edgeMargs)) else new SparseTensor1(vs(0).domain.size*vs(0).domain.size)
-
-//    println("edge exp:" + edgeExp)
-    // get the node feature expectations
-    // TODO: this should really be sparse, but AdaGrad only matches dense
-    val nodeExp = new SparseTensor1(localTemplate.weights.length) // statisticsVectorLength
-    val biasExp = new SparseTensor1(biasTemplate.weights.length)
-    for ((v, vi) <- vs.zipWithIndex) { // for variables
-      var i = 0
-      while (i < nodeMargs(vi).length) {
-        v.set(i)(null)
-        val m = nodeMargs(vi)(i)
-        val stats = localTemplate.Factor(v, LabelToFeatures(v)).currentStatistics
-        nodeExp += (stats, m) // this is: nodeExp += stats * m
-        biasExp(i) += m
-        i += 1
-      }
-    }
-
-    val expMap: Map[DotFamily, Tensor] = HashMap(biasTemplate -> biasExp, localTemplate -> nodeExp, transTemplate -> edgeExp)
-    val expWt = new WeightsTensor
-    for ((family, tensor) <- expMap)
-      expWt.update(family, tensor)
-
     val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
 
-    (expWt, (nodeMargs, edgeMargs), logZ)
+    (nodeMargs, edgeMargs, logZ)
   }
-  
+
   def nodeEdgeMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],

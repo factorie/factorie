@@ -101,6 +101,20 @@ trait ArrayOps {
   def substitute(s:A, oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < s.length) { if (s(i) == oldValue) s(i) = newValue; i += 1 } }
   def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
   def set(s:A, t:A): Unit = { require(s.length == t.length); System.arraycopy(t, 0, s, 0, s.length) }
+  def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {
+    val result = Array.fill(as(0).size)(0.0)
+    var i = 0
+    while (i < as.size) {
+      val a = as(i)
+      var j = 0
+      while (j < a.size) {
+        result(j) += a(j)
+        j += 1
+      }
+      i += 1
+    }
+    result
+  }
   /** Exponentiate the elements of the array, and then normalize them to sum to one. */
   def expNormalize(a:Array[Double]): Double = {
     var max = Double.MinValue
