@@ -44,20 +44,15 @@ trait BeamSearch {
     // get localScores
     val lsize = vs.head.domain.size
     val localScores: Array[Array[Double]] = {
-      val scores = new Array[Array[Double]](vs.size)
-      var vi = 0
-      while (vi < vs.length) {
-        val v = vs(vi)
-        scores(vi) = new Array[Double](lsize)
-        var di = 0
-        while (di < v.settings.length) {
-          scores(vi)(di) = localTemplate.weights dot Tensor.outer(v.tensor.asInstanceOf[Tensor], labelToFeatures(v).tensor)
-          di += 1
-        }
-        vi += 1
+      val arrays = Array.fill[Array[Double]](vs.size)(Array.ofDim[Double](vs.head.domain.size))
+      for ((v,vi) <- vs.zipWithIndex) {
+        val localFactor = localTemplate.Factor(v, labelToFeatures(v))
+        for ((_,di) <- v.settings.zipWithIndex)
+          arrays(vi)(di) = localFactor.currentScore
       }
-      scores
+      arrays
     }
+
 
     if (vs.size == 0) return Seq.empty[Int]
     else if (vs.size == 1) return Seq(ArrayOps.maxIndex(localScores.head))
@@ -75,12 +70,12 @@ trait BeamSearch {
     val backPtrs: Array[Array[(Int, Double)]] = Array.fill(vs.size)(null)
 
     //do the first variable first
-    var vi = 0
-    val firstCol = Array((0 until localScores(vi).size).zip(localScores(vi)): _*)
+    val firstCol = Array((0 until localScores(0).size).zip(localScores(0)): _*)
+    biasScores.foreachElement((i, v) => firstCol(i) = (i, firstCol(i)._2 + v))
     threshold(firstCol) // todo: consider not doing this
     backPtrs(0) = firstCol
-    vi += 1
 
+    var vi = 1
     var currentColumn: Array[(Int, Double)] = Array.empty[(Int, Double)]
     while (vi < vs.size) {
 

@@ -278,7 +278,6 @@ object ChainModel {
     def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
       model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
   }
-
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
     private var cachedTargetStats: WeightsTensor = null
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator): Unit = {
@@ -287,13 +286,10 @@ object ChainModel {
       val summary = infer.infer(labels, model)
       if (gradient != null) {
         for ((family, stats) <- cachedTargetStats.familyWeights) gradient.accumulate(family, stats)
-        for (family <- summary.expectations.families) gradient.accumulate(family, summary.expectations(family), -1.0)
+        for ((family, stats) <- summary.expectations.familyWeights) gradient.accumulate(family, stats, -1.0)
       }
-//      println("chain map stats: " + summary.expectations)
-//      println("chain truth stats" + cachedTargetStats)
       if (value != null) {
         val targetValue = cachedTargetStats.familyWeights.map({case (fam, stats) => fam.weights dot stats}).sum
-//        println("targetScore: " + targetValue + " logZ: " + summary.logZ)
         value.accumulate(targetValue - summary.logZ)
       }
     }
