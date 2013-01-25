@@ -1,0 +1,56 @@
+syntax: glob
+*.class
+*~
+CVS
+unpack
+*.diff
+.cvsignore
+target
+.manager
+.cache
+*.DS_Store
+*.orig
+
+# doc LaTeX
+doc/usersguide/*.aux
+doc/usersguide/*.log
+doc/usersguide/*.out
+doc/usersguide/*.pdf
+doc/usersguide/*.toc
+
+
+# Eclipse config files
+.project
+.classpath
+.settings
+.distfiles
+.scala_dependencies
+
+# Intellij config file
+*.ipr
+*.iws
+
+## sbt build directories
+lib_managed/
+src_managed/
+target/
+project/plugins.sbt
+project/boot/
+project/build/target/
+project/plugins/target/
+project/plugins/lib_managed/
+project/plugins/src_managed/
+.lib
+
+# Intellij IDEA files
+.idea/*
+*.iml
+
+# ensime (emacs scala mode)
+.ensime
+.ensime_lucene/
+
+# website specific ignores
+_cache
+static-site
+_site
