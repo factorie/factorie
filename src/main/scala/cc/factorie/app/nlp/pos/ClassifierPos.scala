@@ -186,8 +186,7 @@ class ClassifierPos extends DocumentProcessor {
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     BinaryFileSerializer.serialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
-    // BinaryFileSerializer.serialize(WordData.ambiguityClasses, ambClassFile)
-    // todo: serialize the ambiguity classes
+    BinaryFileSerializer.serialize(WordData.ambiguityClasses, ambClassFile)
   }
 
   def deSerialize(prefix: String) {
@@ -199,8 +198,8 @@ class ClassifierPos extends DocumentProcessor {
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     BinaryFileSerializer.deserialize(model, modelFile)
-    // BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
-    // todo: deserialize the ambiguity classes
+    val ambClassFile = new File(prefix + "-ambiguityClasses")
+    BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
   }
 
   def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean) {
