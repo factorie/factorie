@@ -160,7 +160,7 @@ class ClassifierPos extends DocumentProcessor {
       if (setToPrediction) {
         val weightsMatrix = model.evidenceTemplate.weights
         val prediction = weightsMatrix * featureVector
-        sentData.sent.tokens(pos).attr[PosLabel].set(prediction.maxIndex)
+        sentData.sent.tokens(pos).attr[PosLabel].set(prediction.maxIndex)(null)
       }
     }
   }
@@ -183,16 +183,24 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.serialize(model, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
     BinaryFileSerializer.serialize(PosDomain, labelDomainFile)
-    // TODO: also need to serialize the features domain and the WordData features
+    val featuresDomainFile = new File(prefix + "-featuresDomain")
+    BinaryFileSerializer.serialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
+    val ambClassFile = new File(prefix + "-ambiguityClasses")
+    // BinaryFileSerializer.serialize(WordData.ambiguityClasses, ambClassFile)
+    // todo: serialize the ambiguity classes
   }
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
     BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)
+    val featuresDomainFile = new File(prefix + "-featuresDomain")
+    BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     BinaryFileSerializer.deserialize(model, modelFile)
+    // BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
+    // todo: deserialize the ambiguity classes
   }
 
   def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean) {
