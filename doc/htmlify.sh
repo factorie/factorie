@@ -14,3 +14,5 @@ echo -e "\`\`\`\n" >> $MD_FILE
 
 pandoc $MD_FILE -o $HTML_FILE -s --highlight-style=pygments
 
+echo "`./get_header.py $MD_FILE`" |cat - $MD_FILE > /tmp/out && mv /tmp/out $MD_FILE
+
