@@ -4,7 +4,7 @@ import cc.factorie._
 import cc.factorie.app._
 import cc.factorie.app.nlp._
 import classify.{LogLinearTemplate2, LogLinearModel}
-import la.{SparseIndexedTensor1, SparseTensor1, WeightsTensorAccumulator, DenseTensor1}
+import la._
 import optimize.{StepwiseGradientAscent, AdaGrad, HogwildTrainer}
 import util.DoubleAccumulator
 import collection.mutable.HashMap
@@ -57,11 +57,11 @@ class ClassifierPos extends DocumentProcessor {
   }
 
 
-  def addFeature(v: SparseIndexedTensor1, f: String) {
+  def addFeature(v: SparseBinaryTensor1, f: String) {
     val i = ClassifierPosFeatureDomain.dimensionDomain.index(f)
     if (i != -1) v += (i, 1.0)
   }
-  def addLemma(v: SparseIndexedTensor1, f: String, prefix: String) {
+  def addLemma(v: SparseBinaryTensor1, f: String, prefix: String) {
     if (WordData.ambiguityClasses.contains(f)) addFeature(v, prefix+f)
   }
   def getAffinity(sent: SentenceData, pos: Int) = {
@@ -76,7 +76,7 @@ class ClassifierPos extends DocumentProcessor {
     val lemma = sent.get(sent.lemmas, pos+dif)
     prefix+lemma
   }
-  def addFeatures(sent: SentenceData, pos: Int, f: SparseIndexedTensor1) {
+  def addFeatures(sent: SentenceData, pos: Int, f: SparseBinaryTensor1) {
     val wp3 = getLemmaFeature(sent, pos, +3)
     val wp2 = getLemmaFeature(sent, pos, +2)
     val wp1 = getLemmaFeature(sent, pos, +1)
@@ -154,7 +154,7 @@ class ClassifierPos extends DocumentProcessor {
   var setToPrediction = false
   class LocalClassifierExample(val sentData: SentenceData, pos: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
     override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator) {
-      val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
+      val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sentData, pos, featureVector)
       new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value, margin)
       if (setToPrediction) {
@@ -169,9 +169,10 @@ class ClassifierPos extends DocumentProcessor {
     val sent = new SentenceData(s)
     val weightsMatrix = model.evidenceTemplate.weights
     for (i <- 0 until s.length) {
-      val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
+      val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sent, i, featureVector)
       val prediction = weightsMatrix * featureVector
+      // note: the block of code that follows duplicates the line above, except
       s.tokens(i).attr[PosLabel].set(prediction.maxIndex)
     }
   }
@@ -213,7 +214,7 @@ class ClassifierPos extends DocumentProcessor {
     sentences.shuffle.flatMap(s => {
       val sd = new SentenceData(s)
       (0 until s.length).map(i => {
-        val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
+        val featureVector = new SparseBinaryTensor1(Int.MaxValue)
         addFeatures(new SentenceData(s), i, featureVector)
       })
     })
