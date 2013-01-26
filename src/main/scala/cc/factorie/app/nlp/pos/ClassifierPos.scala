@@ -210,7 +210,7 @@ class ClassifierPos extends DocumentProcessor {
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
     model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=alpha, delta=gamma), maxIterations = 10)
+    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=alpha, delta=gamma), maxIterations = 10, logEveryN=Int.MaxValue)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
