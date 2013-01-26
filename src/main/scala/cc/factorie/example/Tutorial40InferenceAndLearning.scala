@@ -4,14 +4,6 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import optimize.SampleRankTrainer
 
-/**
- * Created by IntelliJ IDEA.
- * User: apassos
- * Date: 11/29/12
- * Time: 9:41 AM
- * To change this template use File | Settings | File Templates.
- */
-
 object Tutorial40InferenceAndLearning {
   def main(args:Array[String]): Unit = {
     /*& Here we set up a simple linear chain CRF, such as the one used for part-of-speech tagging,

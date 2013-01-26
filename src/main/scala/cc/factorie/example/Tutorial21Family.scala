@@ -1,7 +1,7 @@
 /*&
- *& Family Tutorial
- *& ===============
- *&*/
+ * Family Tutorial
+ * ===============
+ **/
 
 package cc.factorie.example
 
