@@ -51,8 +51,6 @@ class ClassifierPos extends DocumentProcessor {
           val bestPos = (0 until 45).maxBy(i => pos(i))
           if (pos(bestPos) > ambiguityClassThreshold*counts)
             ambiguityClasses(w) = bestPos.toString
-          else
-            ambiguityClasses(w) = ""
         }
       })
     }
@@ -185,6 +183,7 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.serialize(model, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
     BinaryFileSerializer.serialize(PosDomain, labelDomainFile)
+    // TODO: also need to serialize the features domain and the WordData features
   }
 
   def deSerialize(prefix: String) {
