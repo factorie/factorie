@@ -15,6 +15,8 @@ group: tutorial
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
+
+
 """ % (title)
 
 title_map = {
