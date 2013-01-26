@@ -4,6 +4,8 @@ layout: default
 group: tutorial
 ---
 
+<a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
+
 Model Tutorial
 ==============
 
@@ -12,9 +14,7 @@ Its primary function is, given a collection of variables, to return the Factors 
 
 The trait ``Model`` leaves abstract how this mapping from Variables to Factors is maintained.
 
-
 ```scala
-
 
 package cc.factorie.example
 
@@ -28,11 +28,9 @@ object TutorialModel {
 
 ```
 
-Let's start by creating some Variables and Factor classes.
-
+ Let's start by creating some Variables and Factor classes. 
 
 ```scala
-
     val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable
     val inputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable(i % 2 == 0)
     val markovWeights = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0))) 

@@ -17,48 +17,17 @@ import java.io.File
 import cc.factorie.app.strings.StringSegmenter
 
 object LoadPlainText {
-  def fromFile(file:File, segmentSentences:Boolean): Document = {
+  def fromFile(file: File, segmentSentences: Boolean = false): Document = {
     val string = scala.io.Source.fromFile(file).mkString
     fromString(file.getCanonicalPath, string, segmentSentences)
   }
 
-  def fromString(name:String, contents:String, segmentSentences:Boolean): Document = 
-    fromString(name, contents, if (segmentSentences) cc.factorie.app.strings.sentenceSegmenter else null, cc.factorie.app.strings.nlpTokenSegmenter)
+  def fromString(name: String, contents: String, segmentSentences: Boolean = false): Document =
+    fromString(name, contents, if (segmentSentences) cc.factorie.app.nlp.segment.ClearSegmenter else cc.factorie.app.nlp.segment.ClearTokenizer)
 
-  def fromString(name:String, contents:String, sentenceSegmenter:StringSegmenter, tokenSegmenter:StringSegmenter): Document = {
-    val document = new Document(name, contents)
-    if (sentenceSegmenter ne null) {
-      val sentenceIterator = sentenceSegmenter.apply(document.string)
-      while (sentenceIterator.hasNext) {
-        val sentenceString = sentenceIterator.next
-        val tokenIterator = tokenSegmenter.apply(sentenceString)
-        if (tokenIterator.hasNext) {
-          val sentence = new Sentence(document)(null) // Automatically sets the correct sentence start boundary
-          while (tokenIterator.hasNext) {
-            tokenIterator.next
-            val start = sentenceIterator.start + tokenIterator.start
-            val end = tokenIterator.end
-            val length = end - start
-            if (length > 0)
-              new Token(sentence, start, end) // This will automatically extend the sentence end boundary
-          }
-        }
-      }
-    } else {
-      val tokenIterator = cc.factorie.app.strings.nlpTokenSegmenter(document.string)
-      println("LoadPlainText: <START>"+document.string+"<END>")
-      while (tokenIterator.hasNext) {
-        tokenIterator.next
-        val start = tokenIterator.start
-        val end = tokenIterator.end
-        val length = end - start
-        if (length > 0)
-          new Token(document, start, end)
-      }
-    }
-    document
-  }
-  
+  def fromString(name: String, contents: String, processor: DocumentProcessor): Document =
+    processor.process(new Document(name, contents))
+
   def fromDirectory(dir:File, segmentSentences:Boolean): Seq[Document] = {
     for (file <- files(dir)) yield fromFile(file, segmentSentences)
   }
