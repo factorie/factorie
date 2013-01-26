@@ -24,7 +24,7 @@ limitations under the License.
   <inceptionYear>2009</inceptionYear>
 
   <properties>
-    <scala.version>2.9.1</scala.version>
+    <scala.version>2.9.2</scala.version>
     <scalatest.version>1.7.2</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
@@ -66,7 +66,7 @@ limitations under the License.
     <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
+      <url>https://oss.sonatype.org/content/groups/scala-tools</url>
     </pluginRepository>
   </pluginRepositories>
 
