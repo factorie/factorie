@@ -162,7 +162,7 @@ class ClassifierPos extends DocumentProcessor {
       if (setToPrediction) {
         val weightsMatrix = model.evidenceTemplate.weights
         val prediction = weightsMatrix * featureVector
-        sentData.sent.tokens(pos).attr[PosLabel].set((0 until PosDomain.size).maxBy(i => prediction(i)))(null)
+        sentData.sent.tokens(pos).attr[PosLabel].set(prediction.maxIndex)
       }
     }
   }
@@ -174,7 +174,7 @@ class ClassifierPos extends DocumentProcessor {
       val featureVector = new SparseIndexedTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sent, i, featureVector)
       val prediction = weightsMatrix * featureVector
-      s.tokens(i).attr[PosLabel].set((0 until PosDomain.size).maxBy(i => prediction(i)))
+      s.tokens(i).attr[PosLabel].set(prediction.maxIndex)
     }
   }
 
@@ -235,9 +235,8 @@ class ClassifierPos extends DocumentProcessor {
         }
       })
       println("Accuracy: " + (correct/total) + " total time: " + totalTime + " sentences: " + testSentences.length + " chars: " + testSentences.map(_.length).sum)
+      serialize(modelFile+"-iter-"+trainer.iteration)
     }
-    ClassifierPosFeatureDomain.freeze()
-    serialize(modelFile)
   }
 
   // NOTE: this method may mutate and return the same document that was passed in
