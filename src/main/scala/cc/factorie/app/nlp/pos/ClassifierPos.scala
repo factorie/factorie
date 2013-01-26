@@ -61,9 +61,6 @@ class ClassifierPos extends DocumentProcessor {
     val i = ClassifierPosFeatureDomain.dimensionDomain.index(f)
     if (i != -1) v._appendUnsafe(i)
   }
-  def addLemma(v: SparseBinaryTensor1, f: String, prefix: String) {
-    if (WordData.ambiguityClasses.contains(f)) addFeature(v, prefix+f)
-  }
   def getAffinity(sent: SentenceData, pos: Int) = {
     val f = sent.get(sent.lemmas, pos)
     if (WordData.ambiguityClasses.contains(f))
