@@ -196,7 +196,7 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.deserialize(model, modelFile)
   }
 
-  def train(trainingFile: String, testFile: String, modelFile: String) {
+  def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean) {
     val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PosLabel(t,s))
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     WordData.preProcess(trainDocs)
@@ -211,17 +211,17 @@ class ClassifierPos extends DocumentProcessor {
         addFeatures(new SentenceData(s), i, featureVector)
       })
     })
-    ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(2)
+    ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
     model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=0.05, delta=0.1), maxIterations = 6, logEveryN = sentences.map(_.tokens.length).sum/10)
+    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=alpha, delta=gamma), maxIterations = 10)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
-        (0 until s.length).map(i => new LocalClassifierExample(sd, i, optimize.ObjectiveFunctions.hingeMultiClassObjective))
+        (0 until s.length).map(i => new LocalClassifierExample(sd, i, optimize.ObjectiveFunctions.logMultiClassObjective))
       })
       trainer.processExamples(examples)
-      //setToPrediction = true
+      setToPrediction = doBootstrap
       var total = 0.0
       var correct = 0.0
       var totalTime = 0L
@@ -247,10 +247,20 @@ class ClassifierPos extends DocumentProcessor {
 
 object ClassifierPos {
   def main(args: Array[String]) {
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val modelFile = new CmdOption("model", "", "FILE", "model file prefix")
+      val testFile = new CmdOption("test", "", "FILE", "test file")
+      val trainFile = new CmdOption("train", "", "FILE", "train file")
+      val lrate = new CmdOption("lrate", "1.0", "FLOAT", "learning rate")
+      val decay = new CmdOption("decay", "1.0", "FLOAT", "learning rate decay")
+      val cutoff = new CmdOption("cutoff", "1", "INT", "discard features less frequent than this")
+      val updateExamples = new  CmdOption("updateExamples", "false", "BOOL", "whether to update examples in later iterations")
+    }
+    opts.parse(args)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val Pos = new ClassifierPos
-    Pos.train(args(0), args(1), args(2))
+    Pos.train(opts.trainFile.value, opts.testFile.value, opts.modelFile.value, opts.lrate.value.toFloat, opts.decay.value.toFloat, opts.cutoff.value.toInt, opts.updateExamples.value.toBoolean)
   }
 
   def load(name: String): ClassifierPos = {
