@@ -59,7 +59,7 @@ class ClassifierPos extends DocumentProcessor {
 
   def addFeature(v: SparseBinaryTensor1, f: String) {
     val i = ClassifierPosFeatureDomain.dimensionDomain.index(f)
-    if (i != -1) v += (i, 1.0)
+    if (i != -1) v._appendUnsafe(i)
   }
   def addLemma(v: SparseBinaryTensor1, f: String, prefix: String) {
     if (WordData.ambiguityClasses.contains(f)) addFeature(v, prefix+f)
@@ -92,6 +92,7 @@ class ClassifierPos extends DocumentProcessor {
     val ap1 = "A+1="+getAffinity(sent, pos+1)
     val ap2 = "A+2="+getAffinity(sent, pos+2)
     val ap3 = "A+3="+getAffinity(sent, pos+3)
+    f._hintSize(40)
 
     addFeature(f, wp3)
     addFeature(f, wp2)
@@ -100,44 +101,35 @@ class ClassifierPos extends DocumentProcessor {
     addFeature(f, wm1)
     addFeature(f, wm2)
     addFeature(f, wm3)
-
     addFeature(f, pm3)
     addFeature(f, pm2)
     addFeature(f, pm1)
-
     addFeature(f, a0)
     addFeature(f, ap1)
     addFeature(f, ap2)
     addFeature(f, ap2)
-
     addFeature(f, wm2+wm1)
     addFeature(f, wm1+wf)
     addFeature(f, wf+wp1)
     addFeature(f, wp1+wp2)
     addFeature(f, wm1+wp1)
-
     addFeature(f, pm2+pm1)
     addFeature(f, ap1+ap2)
     addFeature(f, pm1+ap1)
     addFeature(f, pm1+a0)
     addFeature(f, a0+ap1)
-
     addFeature(f, wm2+wm1+wf)
     addFeature(f, wm1+wf+wp1)
     addFeature(f, wf+wp1+wp2)
     addFeature(f, wm2+wm1+wp1)
     addFeature(f, wm1+wp1+wp2)
-
     addFeature(f, pm2+pm1+a0)
     addFeature(f, pm1+a0+ap1)
     addFeature(f, pm2+pm1+ap1)
     addFeature(f, pm1+ap1+ap2)
     addFeature(f, a0+ap1+ap2)
-
     addFeature(f, "PREFX3="+wf.take(3))
     addFeature(f, "SUFX4="+wf.takeRight(4))
-
-
     addFeature(f, "Shape="+strings.stringShape(wf, 2)) // TODO(apassos): add the remaining jinho features not contained in shape
     addFeature(f, "HasPeriod="+wf.contains("."))
     addFeature(f, "HasDigit="+wf.contains("0"))

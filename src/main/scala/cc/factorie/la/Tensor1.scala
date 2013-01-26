@@ -202,6 +202,8 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
+  def _appendUnsafe(i: Int) = _append(i)
+  def _hintSize(i: Int) = _ensureCapacity(i)
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
