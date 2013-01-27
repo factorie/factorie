@@ -104,7 +104,7 @@ class ClassifierPos extends DocumentProcessor {
     addFeature(f, a0)
     addFeature(f, ap1)
     addFeature(f, ap2)
-    addFeature(f, ap2)
+    addFeature(f, ap3)
     addFeature(f, wm2+wm1)
     addFeature(f, wm1+wf)
     addFeature(f, wf+wp1)
@@ -234,7 +234,6 @@ class ClassifierPos extends DocumentProcessor {
       println("Accuracy: " + (correct/total) + " total time: " + totalTime + " sentences: " + testSentences.length + " chars: " + testSentences.map(_.length).sum)
       serialize(modelFile+"-iter-"+trainer.iteration)
       val other = ClassifierPos.load(modelFile+"-iter-"+trainer.iteration)
-      other.WordData.ambiguityClasses.foreach(f => assert(WordData.ambiguityClasses(f._1) == f._2))
     }
   }
 
