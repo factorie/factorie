@@ -10,17 +10,24 @@ import java.nio.ByteBuffer
 final class CubbieMaker[-A](make: A => Cubbie) { def apply(a: A) = make(a) }
 
 class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
+  var akeys : Seq[String] = null
+  var avalues: Seq[T] = null
   setMap(new mutable.Map[String, Any] {
     override def update(key: String, value: Any): Unit = {
-      value match {
-        case v: T => m(key) = v
-        case _ => throw new InvalidClassException(value.getClass.getName + " is not of the proper type.")
+      if (key == "keys") {
+        akeys = value.asInstanceOf[Traversable[String]].toSeq
+      } else if (key == "values") {
+        assert(akeys != null)
+        avalues = value.asInstanceOf[Traversable[T]].toSeq
+        for (i <- 0 until akeys.size) {
+          m(akeys(i)) = avalues(i)
+        }
       }
     }
     def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
     def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
-    def get(key: String): Option[Any] = if (m.contains(key)) Some(m(key)) else None
-    def iterator: Iterator[(String, Any)] = m.iterator
+    def get(key: String): Option[Any] = if (key == "keys") Some(m.keys.toTraversable) else if (key == "values") Some(m.values.toTraversable) else None
+    def iterator: Iterator[(String, Any)] = Seq(("keys", get("keys").get), ("values", get("values").get)).iterator
   })
 }
 

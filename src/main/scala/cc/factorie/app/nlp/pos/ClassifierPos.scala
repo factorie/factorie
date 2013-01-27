@@ -20,8 +20,7 @@ import org.junit.Assert._
  */
 class ClassifierPos extends DocumentProcessor {
   object ClassifierPosFeatureDomain extends CategoricalDimensionTensorDomain[String]()
-  var model: LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]] = null
-  val weights = new la.GrowableDenseTensor1(ClassifierPosFeatureDomain.dimensionSize)
+  val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
 
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
@@ -84,7 +83,7 @@ class ClassifierPos extends DocumentProcessor {
 
     val pm3 = "POS-3="+sent.sent.tokens(math.max(0,pos-3)).attr[PosLabel].categoryValue
     val pm2 = "POS-2="+sent.sent.tokens(math.max(0,pos-2)).attr[PosLabel].categoryValue
-    val pm1 = "POS-1="+sent.sent.tokens(math.max(0,pos-3)).attr[PosLabel].categoryValue
+    val pm1 = "POS-1="+sent.sent.tokens(math.max(0,pos-1)).attr[PosLabel].categoryValue
     val a0 = "A="+getAffinity(sent, pos)
     val ap1 = "A+1="+getAffinity(sent, pos+1)
     val ap2 = "A+2="+getAffinity(sent, pos+2)
@@ -161,7 +160,6 @@ class ClassifierPos extends DocumentProcessor {
       val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sent, i, featureVector)
       val prediction = weightsMatrix * featureVector
-      // note: the block of code that follows duplicates the line above, except
       s.tokens(i).attr[PosLabel].set(prediction.maxIndex)
     }
   }
@@ -187,7 +185,6 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
     BinaryFileSerializer.deserialize(model, modelFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
     BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
@@ -198,7 +195,7 @@ class ClassifierPos extends DocumentProcessor {
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     WordData.preProcess(trainDocs)
     PosDomain.freeze()
-    val sentences = trainDocs.flatMap(_.sentences)
+    val sentences = trainDocs.flatMap(_.sentences).take(1000)
     val testSentences = testDocs.flatMap(_.sentences)
     ClassifierPosFeatureDomain.dimensionDomain.gatherCounts = true
     sentences.shuffle.flatMap(s => {
@@ -210,7 +207,6 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
-    model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
     val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=alpha, delta=gamma), maxIterations = 10, logEveryN=Int.MaxValue)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
@@ -231,7 +227,7 @@ class ClassifierPos extends DocumentProcessor {
           if (s.tokens(i).attr[PosLabel].valueIsTarget) correct += 1.0
         }
       })
-      println("Accuracy: " + (correct/total) + " total time: " + totalTime + " sentences: " + testSentences.length + " chars: " + testSentences.map(_.length).sum)
+      println("Accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
       serialize(modelFile+"-iter-"+trainer.iteration)
     }
   }
