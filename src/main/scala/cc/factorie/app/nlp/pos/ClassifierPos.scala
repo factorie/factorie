@@ -187,6 +187,7 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
+    model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
     BinaryFileSerializer.deserialize(model, modelFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
     BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
@@ -263,5 +264,25 @@ object ClassifierPos {
     val c = new ClassifierPos
     c.deSerialize(name)
     c
+  }
+}
+
+object TestClassifierPos {
+  def main(args: Array[String]) {
+    val modelFile = args(0)
+    val testFile = args(1)
+    val pos = ClassifierPos.load(modelFile)
+    val data = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
+    val t0 = System.currentTimeMillis()
+    data.foreach(d => pos.process(d))
+    val time = System.currentTimeMillis() - t0
+    var total = 0.0
+    var correct = 0.0
+    data.flatMap(_.tokens).foreach(t => {
+      total += 1
+      if (t.posLabel.valueIsTarget)
+        correct += 1
+    })
+    println("Test accuracy: " + (correct/total) +" time " + time + " tokens " + total + " tokens/second " + 1000*total.toFloat/time)
   }
 }
