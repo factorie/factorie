@@ -190,7 +190,7 @@ class ClassifierPos extends DocumentProcessor {
     BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
   }
 
-  def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean) {
+  def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean, saveModel: Boolean) {
     val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PosLabel(t,s))
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     WordData.preProcess(trainDocs)
@@ -228,7 +228,7 @@ class ClassifierPos extends DocumentProcessor {
         }
       })
       println("Accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
-      serialize(modelFile+"-iter-"+trainer.iteration)
+      if (saveModel) serialize(modelFile+"-iter-"+trainer.iteration)
     }
   }
 
@@ -248,12 +248,21 @@ object ClassifierPos {
       val cutoff = new CmdOption("cutoff", "2", "INT", "discard features less frequent than this")
       val updateExamples = new  CmdOption("updateExamples", "true", "BOOL", "whether to update examples in later iterations")
       val useHingeLoss = new CmdOption("useHingeLoss", "false", "BOOL", "whether to use hinge loss (or log loss)")
+      val saveModel = new CmdOption("saveModel", "true", "BOOL", "whether to save the model")
     }
     opts.parse(args)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val Pos = new ClassifierPos
-    Pos.train(opts.trainFile.value, opts.testFile.value, opts.modelFile.value, opts.lrate.value.toFloat, opts.decay.value.toFloat, opts.cutoff.value.toInt, opts.updateExamples.value.toBoolean, opts.useHingeLoss.value.toBoolean)
+    Pos.train(opts.trainFile.value,
+      opts.testFile.value,
+      opts.modelFile.value,
+      opts.lrate.value.toFloat,
+      opts.decay.value.toFloat,
+      opts.cutoff.value.toInt,
+      opts.updateExamples.value.toBoolean,
+      opts.useHingeLoss.value.toBoolean,
+      opts.saveModel.value.toBoolean)
   }
 
   def load(name: String): ClassifierPos = {
