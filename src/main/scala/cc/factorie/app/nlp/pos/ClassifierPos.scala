@@ -195,7 +195,7 @@ class ClassifierPos extends DocumentProcessor {
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     WordData.preProcess(trainDocs)
     PosDomain.freeze()
-    val sentences = trainDocs.flatMap(_.sentences).take(1000)
+    val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)
     ClassifierPosFeatureDomain.dimensionDomain.gatherCounts = true
     sentences.shuffle.flatMap(s => {
