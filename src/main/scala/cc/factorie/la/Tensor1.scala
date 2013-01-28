@@ -204,6 +204,7 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def containsNaN: Boolean = false
   def _appendUnsafe(i: Int) = _append(i)
   def _hintSize(i: Int) = _ensureCapacity(i)
+  // TODO FIXME this method will never be called since DoubleSeq provides a +=(d: Double) method already -luke
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
@@ -215,8 +216,9 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   def asIntArray: Array[Int] = _asArray
   override def update(i:Int, v:Double): Unit = {
     if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
-    if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
+    if (v == 1.0) this += i else if (v == 0.0) tryRemove(i) else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
   }
+  private def tryRemove(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) }
   /** In SparseBinary, this is equivalent to update(i,v) */
   override def +=(i:Int, v:Double): Unit = update(i, v)
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm

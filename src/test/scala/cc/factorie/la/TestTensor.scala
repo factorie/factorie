@@ -22,6 +22,17 @@ class TestTensor {
     assert(ts.head.toSeq == ts.last.toSeq)
   }
 
+  @Test def testBinary(): Unit = {
+    val foo = new SparseBinaryTensor1(100)
+    foo += (50, 1.0)
+    foo += (60, 0.0)
+    foo(70) = 0.0
+    foo(71) = 1.0
+    val bar = new SparseBinaryTensor2(10, 10)
+    bar(5, 5) = 0.0
+    bar (6, 6) = 1.0
+  }
+
   trait TensorCreator {
     def create(i: Int): Tensor
   }

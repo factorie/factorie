@@ -49,13 +49,14 @@ trait SeqVar[+E] extends Var with ValueBound[Seq[E]] with ElementType[E] {
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
 trait IndexedSeqVar[+E] extends SeqVar[E] with ValueBound[IndexedSeq[E]] with ElementType[E] {
+  self =>
   type Value <: IndexedSeq[E]
   def value: IndexedSeq[E]
   // Some of the methods of Seq, for convenience
   def iterator: Iterator[E] = new Iterator[E] {
     var i = 0
-    def hasNext: Boolean = i < length
-    def next: E = { i += 1; apply(i-1) }
+    def hasNext: Boolean = i < self.length
+    def next(): E = { i += 1; apply(i-1) }
   }
   def foreach[U](f:(E)=>U): Unit = {
     var i = 0; val len = length

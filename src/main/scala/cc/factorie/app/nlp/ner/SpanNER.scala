@@ -59,7 +59,7 @@ class SpanNerModel extends CombinedModel(
         val firstToken = v1.head
         var vector = firstToken.attr[SpanNerFeatures].value.blankCopy
         for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].tensor.activeDomain.asSeq) 
-          vector += featureIndex // TODO This is shifing array pieces all over; slow.  Fix it.
+          vector += (featureIndex, 1.0) // TODO This is shifing array pieces all over; slow.  Fix it.
         vector outer v2 
       }
     },
