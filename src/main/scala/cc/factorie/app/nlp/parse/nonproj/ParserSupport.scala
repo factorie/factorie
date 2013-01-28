@@ -24,6 +24,10 @@ object ParserSupport {
       val NO    = 2
       
       val ROOT_ID = 0
+  
+      val TRAINING   = 0
+      val PREDICTING = 1
+      val BOOSTING   = 2
       
     }
     

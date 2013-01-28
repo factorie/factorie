@@ -35,10 +35,6 @@ class ParserAlgorithm(var mode: Int = 0) {
   var instances = new ArrayBuffer[ParseDecisionVariable] { override val initialSize = 100 }
   
   var debug = false
-  
-  val TRAINING   = 0
-  val PREDICTING = 1
-  val BOOSTING   = 2
 
   def training   = mode == TRAINING
   def predicting = mode == PREDICTING
