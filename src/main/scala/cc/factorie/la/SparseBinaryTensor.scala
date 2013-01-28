@@ -45,8 +45,9 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSortedNoDuplicates(_)) }
   override def update(i:Int, v:Double): Unit = {
     if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
-    if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
+    if (v == 1.0) this += i else if (v == 0.0) tryRemove(i) else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
   }
+  private def tryRemove(i: Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) }
   /** In SparseBinary, this is equivalent to update(i,v) */
   override def +=(i:Int, v:Double): Unit = update(i, v)
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
