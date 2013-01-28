@@ -204,6 +204,7 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def containsNaN: Boolean = false
   def _appendUnsafe(i: Int) = _append(i)
   def _hintSize(i: Int) = _ensureCapacity(i)
+  // TODO FIXME this method will never be called since DoubleSeq provides a +=(d: Double) method already -luke
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
