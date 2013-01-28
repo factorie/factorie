@@ -8,7 +8,7 @@ import collection.mutable.HashSet
 object ParserSupport {
     object ParserUtils {
 
-      lazy val testFeatureSpec = io.Source.fromURL(ClassLoader.getSystemResource("parser-features.json")).getLines().mkString("\n")
+      lazy val testFeatureSpec = io.Source.fromURL(this.getClass.getResource("/parser-features.json")).getLines().mkString("\n")
       
       lazy val featureGenerators: Seq[DependencyFeatureGenerator] = LoadParserFeatureSpec.fromJSON(testFeatureSpec)
     }
@@ -24,6 +24,10 @@ object ParserSupport {
       val NO    = 2
       
       val ROOT_ID = 0
+  
+      val TRAINING   = 0
+      val PREDICTING = 1
+      val BOOSTING   = 2
       
     }
     

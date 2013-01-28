@@ -14,8 +14,9 @@ abstract class Parser {
   
   def load(file: File, gzip: Boolean = true): ParserClassifier
   
-  //def process(c: ParserClassifier, doc: Document): Document
+  def process(c: ParserClassifier, doc: Document): Document
   
+  def process(c: ParserClassifier, s: Sentence): Sentence 
 }
   
 trait ParserImpl {
@@ -59,24 +60,24 @@ trait ParserImpl {
     val parsers = new ThreadLocal[ParserAlgorithm] { override def initialValue = { val _p = new ParserAlgorithm(mode = p.mode); _p.predict = p.predict; _p }}
     
     val (gold, pred) = ss.par.zipWithIndex.map({ case (s, i) => 
-	  if (i % 1000 == 0)
-	    println("Parsed: " + i)
-	    
-	  val parser = parsers.get
-	  parser.clear()
-	  
-	  val gold = parser.getSimpleDepArcs(s)
-	  parser.clear()
-
+    	  if (i % 1000 == 0)
+    	    println("Parsed: " + i)
+    	    
+    	  val parser = parsers.get
+    	  parser.clear()
+    	  
+    	  val gold = parser.getSimpleDepArcs(s)
+    	  parser.clear()
+    
       val dts = parser.parse(s)
-	  p.clear()
-	  var pred = (dts.drop(1).map { dt => 
-	    if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
-	    else -1 -> null.asInstanceOf[String]
-	  } toSeq)
-	  
-	  (gold, pred)
-      
+    	  p.clear()
+    	  var pred = (dts.drop(1).map { dt => 
+    	    if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
+    	    else -1 -> null.asInstanceOf[String]
+    	  } toSeq)
+    	  
+    	  (gold, pred)
+          
     }).foldLeft(new ListBuffer[Seq[(Int, String)]], new ListBuffer[Seq[(Int, String)]])({ case (prev, curr) => 
       prev._1 append curr._1
       prev._2 append curr._2
