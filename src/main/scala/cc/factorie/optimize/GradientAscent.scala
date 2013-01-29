@@ -102,6 +102,87 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
   def isConverged: Boolean = false
 }
 
+// This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
+class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var delta: Double = 0.1) extends GradientOptimizer {
+  var HSq: Tensor = null
+  var sumGs: Tensor = null
+  var t = 0
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    val eta = rate
+//    val l2 = 0.1
+//    gradient += (weights, -l2)
+    t += 1
+    if (HSq == null) { HSq = weights.blankCopy }
+    if (sumGs == null) { sumGs = weights.blankCopy }
+    for (template <- gradient.asInstanceOf[WeightsTensor].families)
+      (weights.asInstanceOf[WeightsTensor](template),
+        gradient.asInstanceOf[WeightsTensor](template),
+        HSq.asInstanceOf[WeightsTensor](template),
+        sumGs.asInstanceOf[WeightsTensor](template)) match {
+        case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor, sGs: DenseTensor) =>
+//          println(hSq)
+          val wArr = w.asArray
+          val gArr = g.asArray
+          val hArr = hSq.asArray
+          val sgArr = sGs.asArray
+          var i = 0
+          val len = wArr.length
+          while (i < len) {
+            hArr(i) += gArr(i) * gArr(i)
+            sgArr(i) += gArr(i)
+            val h = math.sqrt(hArr(i)) + delta
+            val t1 = eta / h
+            val t2 = t1 * math.signum(sgArr(i)) * math.max(0.0, math.abs(sgArr(i)) - l1*t)
+            wArr(i) = t2
+            i += 1
+          }
+        case (w: DenseTensor, g: SparseIndexedTensor, hSq: DenseTensor, sGs: DenseTensor) =>
+          val wArr = w.asArray
+          val hArr = hSq.asArray
+          val sgArr = sGs.asArray
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            hArr(idx) += g*g
+            sgArr(idx) += g
+            val h = math.sqrt(hArr(idx)) + delta
+            val t1 = eta / h
+            val t2 = math.signum(sgArr(idx)) * math.max(0.0, math.abs(sgArr(idx)) - l1*t)
+            wArr(idx) = t2
+            i += 1
+          }
+        case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
+          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+            gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            hSq(idx) += g*g
+            sGs(idx) += g
+            val h = math.sqrt(hSq(idx)) + delta
+            val t1 = eta / h
+            val t2 = math.signum(sGs(idx)) * math.max(0.0, math.abs(sGs(idx)) - l1*t)
+            w(idx) = t2
+            i += 1
+            }
+      }
+  }
+  def reset(): Unit = {
+    HSq = null
+    sumGs = null
+  }
+  def isConverged: Boolean = false
+}
+
+
 // This implements the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
 class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
   private var step = 1
