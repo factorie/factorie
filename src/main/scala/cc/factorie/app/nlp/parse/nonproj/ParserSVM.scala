@@ -56,7 +56,7 @@ class ParserSVM extends Parser with ParserImpl {
       // TODO: why is this necessary? Shouldn't I be able to do set(s: String)?
       parse.label(dt.thisIdx - 1).set(ParseTreeLabelDomain.index(dt.head.label))(null)
     }
-    s.attr.+=(p)
+    s.attr += parse
     s
   }
 
