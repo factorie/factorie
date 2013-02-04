@@ -312,6 +312,16 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
   def isConverged = iteration >= maxIterations
 }
 
+class SGDThenBatchTrainer[M<:Model](val model: M, sgdTrainer: Trainer[M], batchTrainer: Trainer[M], numSgdPasses: Int) {
+  def processExamples(examples: Iterable[Example[M]]) {
+    if (!sgdTrainer.isConverged)
+      sgdTrainer.processExamples(examples)
+    else
+      batchTrainer.processExamples(examples)
+  }
+  def isConverged = sgdTrainer.isConverged && batchTrainer.isConverged
+}
+
 class InlineSGDThenBatchTrainer[M<:Model](
   val model: M, val lrate: Double = 0.01, val numSgdPasses: Int = 5, var sgdOptimizer: AccumulatorMaximizer = null,
   val batchOptimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] {
