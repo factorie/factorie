@@ -207,7 +207,7 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
-    val trainer = new optimize.SGDTrainer(model, new optimize.AdaGradDualAveraging(l1=0.0000, rate=alpha, delta=gamma), maxIterations = 10, logEveryN=100000)
+    val trainer = new optimize.SGDTrainer(model, new optimize.LazyL2ProjectedGD(l2=1.0), maxIterations = 10, logEveryN=100000)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)

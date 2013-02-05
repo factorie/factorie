@@ -30,6 +30,74 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
+  var lastUpdate: Tensor = null
+  var t = 0
+  @inline final def learningRate(t: Double): Double = {
+    rate / math.sqrt(t)
+  }
+
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    t += 1
+    val eta = rate
+    if (lastUpdate == null) { lastUpdate = weights.blankCopy }
+    for (template <- gradient.asInstanceOf[WeightsTensor].families)
+      (weights.asInstanceOf[WeightsTensor](template),
+       gradient.asInstanceOf[WeightsTensor](template),
+       lastUpdate.asInstanceOf[WeightsTensor](template)) match {
+        case (w: DenseTensor, g: DenseTensor, lastUpdate: DenseTensor) =>
+          val wArr = w.asArray
+          val gArr = g.asArray
+          val lastArr = lastUpdate.asArray
+          var i = 0
+          val len = wArr.length
+          while (i < len) {
+            lastArr(i) += 1
+            wArr(i) *= (1 - l2*learningRate(lastArr(i)))
+            val t2 = wArr(i) + learningRate(lastArr(i)) * gArr(i)
+            wArr(i) = t2
+            i += 1
+          }
+        case (w: DenseTensor, g: SparseIndexedTensor,  lastUpdate: DenseTensor) =>
+          val wArr = w.asArray
+          val lastArr = lastUpdate.asArray
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            lastArr(idx) += 1
+            wArr(idx) *= (1 - l2*learningRate(lastArr(idx)))
+            val t2 = wArr(idx) + learningRate(lastArr(idx)) * g
+            wArr(idx) = t2
+            i += 1
+          }
+        case (w: Tensor, g: SparseIndexedTensor,  lastUpdate: Tensor) =>
+          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+                  gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + lastUpdate.asInstanceOf[WeightsTensor](template).getClass.getName)
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            lastUpdate(idx) += 1
+            w(idx) *= (1 - l2*learningRate(lastUpdate(idx)))
+            val t2 = w(idx) + learningRate(lastUpdate(idx)) * g
+            w(idx) = t2
+            i += 1
+          }
+      }
+  }
+  def reset(): Unit = {
+    lastUpdate = null
+  }
+  def isConverged: Boolean = false
+}
+
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
 class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
