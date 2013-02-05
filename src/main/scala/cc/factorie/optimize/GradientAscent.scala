@@ -107,10 +107,17 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
   var HSq: Tensor = null
   var sumGs: Tensor = null
   var t = 0
+
+  @inline final def truncate(x0: Double, l1: Double): Double = {
+    if (x0 > l1)
+      x0-l1
+    else if (x0 < -l1)
+      x0+l1
+    else 0.0
+  }
+
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     val eta = rate
-//    val l2 = 0.1
-//    gradient += (weights, -l2)
     t += 1
     if (HSq == null) { HSq = weights.blankCopy }
     if (sumGs == null) { sumGs = weights.blankCopy }
@@ -120,7 +127,6 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
         HSq.asInstanceOf[WeightsTensor](template),
         sumGs.asInstanceOf[WeightsTensor](template)) match {
         case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor, sGs: DenseTensor) =>
-//          println(hSq)
           val wArr = w.asArray
           val gArr = g.asArray
           val hArr = hSq.asArray
@@ -132,7 +138,7 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
             sgArr(i) += gArr(i)
             val h = math.sqrt(hArr(i)) + delta
             val t1 = eta / h
-            val t2 = t1 * math.signum(sgArr(i)) * math.max(0.0, math.abs(sgArr(i)) - l1*t)
+            val t2 = t1 * truncate(sgArr(i), t*l1)
             wArr(i) = t2
             i += 1
           }
@@ -151,7 +157,7 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
             sgArr(idx) += g
             val h = math.sqrt(hArr(idx)) + delta
             val t1 = eta / h
-            val t2 = math.signum(sgArr(idx)) * math.max(0.0, math.abs(sgArr(idx)) - l1*t)
+            val t2 = t1 * truncate(sgArr(idx), t*l1)
             wArr(idx) = t2
             i += 1
           }
@@ -169,7 +175,7 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
             sGs(idx) += g
             val h = math.sqrt(hSq(idx)) + delta
             val t1 = eta / h
-            val t2 = math.signum(sGs(idx)) * math.max(0.0, math.abs(sGs(idx)) - l1*t)
+            val t2 = t1 * truncate(sGs(idx), t*l1)
             w(idx) = t2
             i += 1
             }
