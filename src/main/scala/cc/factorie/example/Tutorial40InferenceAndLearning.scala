@@ -40,7 +40,7 @@ object Tutorial40InferenceAndLearning {
     assertStringEquals(document.sentences.length, "1")
 
     // Let's assign all tokens the same label for the sake of simplicity
-    document.tokens.foreach(t => t.attr += new Label(t, "6.931471805599453"))
+    document.tokens.foreach(t => t.attr += new Label(t, "NNP"))
     // Let's also have another possible Label value to make things interesting
     LabelDomain.index("A")
     // Let's also initialize features for all tokens
