@@ -194,6 +194,11 @@ limitations under the License.
               <mainClass>cc.factorie.app.bib.experiments.EpiDBExperimentOptions</mainClass>
               <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
             </launcher>
+            <launcher>
+              <id>glm-demo</id>
+              <mainClass>cc.factorie.optimize.GlmTest</mainClass>
+              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+            </launcher>
           </launchers>
         </configuration>
       </plugin>
