@@ -100,10 +100,10 @@ class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: A
 // define the feature extractors
 object ParseFeatureExtractors {
   import cc.factorie.app.strings.simplifyDigits
-  val nullLemma = new Lemma("null")
+  val nullLemma = new TokenLemma(null, "null")
   // assumes all locations > 0
   def formFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
-  def lemmaFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[Lemma](nullLemma).lemma }, i))
+  def lemmaFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).lemma }, i))
   def tagFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).posLabel.value.toString }, i))
   def depRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
   def lChildDepRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
