@@ -32,7 +32,7 @@ object ParserSupport {
     }
     
     object DepToken {
-      def apply(token: Token) = new DepToken(token, form = token.string, lemma = token.attr[Lemma].lemma, pos = token.posLabel.categoryValue)
+      def apply(token: Token) = new DepToken(token, form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue)
       // eclipse didn't like "lazy" here
       def root = new DepToken(new Token(new Document("Root Dummy Document", ""), "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p")
       def nullToken = new DepToken(new Token(new Document("Null Dummy Document", ""), "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p")

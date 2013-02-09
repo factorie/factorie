@@ -27,7 +27,8 @@ import java.io.PrintWriter
  * @author Brian Martin
  */
 
-case class Lemma(lemma: String)
+//case class Lemma(lemma: String)
+// replaced by cc.factorie.app.nlp.TokenLemma
 
 object LoadConll2008 {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
@@ -67,7 +68,7 @@ object LoadConll2008 {
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
         if (loadLemma)
-          token.attr += new Lemma(lemma)
+          token.attr += new TokenLemma(token, lemma)
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }

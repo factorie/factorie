@@ -65,19 +65,42 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     case s:TokenSpan => super.-=(s)
   }
   
+  /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {
     val buf = new StringBuffer
     for (token <- tokens) {
       if (token.isSentenceStart) buf.append("<sentence>")
       token.startsSpans.foreach(span => buf.append("<"+span.name+">"))
-      print(token.string)
+      buf.append(token.string)
       token.endsSpans.foreach(span => buf.append("</"+span.name+">"))
       if (token.isSentenceEnd) buf.append("</sentence>")
       buf.append(" ")
     }
     buf.toString
   }
-    
+  
+  /** Return a String containing the token strings in the document, with one-word-per-line 
+      and various tab-separated attributes appended on each line. */
+  def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.posLabel.categoryValue)): String = {
+    val buf = new StringBuffer
+    for (token <- tokens) {
+      if (token.isSentenceStart) buf.append("\n")
+      buf.append(token.string); buf.append("\t")
+      buf.append(token.lemmaString); buf.append("\t")
+      buf.append(token.stringStart); buf.append("\t")
+      buf.append(token.stringEnd)
+      for (af <- attributes) {
+        buf.append("\t")
+        af(token) match {
+          case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue)
+          case null => buf.append("(null)")
+          case v:Any => buf.append(v.toString)
+        }
+      }
+      buf.append("\n")
+    }
+    buf.toString
+  }
 }
 
 trait DocumentProcessor {
