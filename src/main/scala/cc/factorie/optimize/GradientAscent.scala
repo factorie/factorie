@@ -119,13 +119,15 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           var i = 0
           val len = wArr.length
           while (i < len) {
-            hArr(i) += gArr(i) * gArr(i)
-            val h = math.sqrt(hArr(i)) + delta
-            val t1 = eta / h
-            val t2 = wArr(i) + t1 * gArr(i)
+            if (gArr(i) != 0) {
+              hArr(i) += gArr(i) * gArr(i)
+              val h = math.sqrt(hArr(i)) + delta
+              val t1 = eta / h
+              val t2 = wArr(i) + t1 * gArr(i)
 //            val t3 = l1 * eta / h
 //            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
-            wArr(i) = t2
+              wArr(i) = t2
+            }
             i += 1
           }
         case (w: DenseTensor, g: SparseIndexedTensor,  hSq: DenseTensor) =>
@@ -137,12 +139,14 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hArr(idx) += g*g
-            val h = math.sqrt(hArr(idx)) + delta
-            val t1 = eta / h
-            val t2 = wArr(idx) + t1 * g
-            wArr(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hArr(idx) += g*g
+              val h = math.sqrt(hArr(idx)) + delta
+              val t1 = eta / h
+              val t2 = wArr(idx) + t1 * g
+              wArr(idx) = t2
+            }
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
@@ -154,12 +158,14 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hSq(idx) += g*g
-            val h = math.sqrt(hSq(idx)) + delta
-            val t1 = eta / h
-            val t2 = w(idx) + t1 * g
-            w(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hSq(idx) += g*g
+              val h = math.sqrt(hSq(idx)) + delta
+              val t1 = eta / h
+              val t2 = w(idx) + t1 * g
+              w(idx) = t2
+            }
             i += 1
           }
       }
@@ -202,12 +208,14 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           var i = 0
           val len = wArr.length
           while (i < len) {
-            hArr(i) += gArr(i) * gArr(i)
-            sgArr(i) += gArr(i)
-            val h = math.sqrt(hArr(i)) + delta
-            val t1 = eta / h
-            val t2 = t1 * truncate(sgArr(i), t*l1)
-            wArr(i) = t2
+            if (gArr(i) != 0) {
+              hArr(i) += gArr(i) * gArr(i)
+              sgArr(i) += gArr(i)
+              val h = math.sqrt(hArr(i)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sgArr(i), t*l1)
+              wArr(i) = t2
+            }
             i += 1
           }
         case (w: DenseTensor, g: SparseIndexedTensor, hSq: DenseTensor, sGs: DenseTensor) =>
@@ -220,13 +228,15 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hArr(idx) += g*g
-            sgArr(idx) += g
-            val h = math.sqrt(hArr(idx)) + delta
-            val t1 = eta / h
-            val t2 = t1 * truncate(sgArr(idx), t*l1)
-            wArr(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hArr(idx) += g*g
+              sgArr(idx) += g
+              val h = math.sqrt(hArr(idx)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sgArr(idx), t*l1)
+              wArr(idx) = t2
+            }
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
@@ -238,15 +248,17 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hSq(idx) += g*g
-            sGs(idx) += g
-            val h = math.sqrt(hSq(idx)) + delta
-            val t1 = eta / h
-            val t2 = t1 * truncate(sGs(idx), t*l1)
-            w(idx) = t2
-            i += 1
+            if (g != 0) {
+              val idx = indices(i)
+              hSq(idx) += g*g
+              sGs(idx) += g
+              val h = math.sqrt(hSq(idx)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sGs(idx), t*l1)
+              w(idx) = t2
             }
+            i += 1
+          }
       }
   }
   def reset(): Unit = {
