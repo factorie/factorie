@@ -30,6 +30,16 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+
+class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    val step = -value/(C + gradient.twoNorm)
+    weights.+=(gradient, step)
+  }
+  def isConverged = false
+  def reset() {}
+}
+
 class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
   var lastUpdate: Tensor = null
   var t = 0

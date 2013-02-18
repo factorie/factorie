@@ -93,6 +93,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       bestModel1.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(bestObjective1.modelScore - bestModel1.modelScore)
+      value.accumulate(bestObjective1.modelScore - bestModel1.modelScore - 1)
     }
     else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
@@ -105,6 +106,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       bestModel2.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
+      value.accumulate(marg-1)
     }
     sampler.processProposals(proposals)
   }
@@ -123,10 +125,11 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
     //println("SampleRankTrainer.process(Example)")
     val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
     val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
-    example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
+    val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
+    example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
     if (gradientAccumulator.tensor.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
-      optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
+      optimizer.step(modelWeights, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
   }
   def processExamples(examples: Iterable[Example[Model]]): Unit = examples.foreach(p => process(p))
   def processExamples(examples: Iterable[Example[Model]], iterations:Int): Unit = for (i <- 0 until iterations) processExamples(examples)
