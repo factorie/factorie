@@ -80,6 +80,8 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
     if (runnables eq null) {
       runnables = examplesToRunnables[M](examples, model, gradientAccumulator, valueAccumulator)
     }
+    gradientAccumulator.l.tensor.zero()
+    valueAccumulator.value = 0
     if (isConverged) return
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
