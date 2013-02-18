@@ -33,7 +33,7 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
 
 class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
-    val step = -value/(C + gradient.twoNorm)
+    val step = -value/(C + gradient.twoNormSquared)
     weights.+=(gradient, step)
   }
   def isConverged = false
