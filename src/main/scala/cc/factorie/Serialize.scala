@@ -35,6 +35,8 @@ class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
 object CubbieMaker {
   implicit val modelCubbieMaker = new CubbieMaker[Model](new ModelCubbie(_))
   implicit val categoricalDomainCubbieMaker = new CubbieMaker[CategoricalDomain[String]](new CategoricalDomainCubbie(_))
+  implicit val categoricalDimensionTensorDomainCubbieMaker = new CubbieMaker[CategoricalDimensionTensorDomain[String]](new CategoricalDimensionTensorDomainCubbie(_))
+  implicit val categoricalSeqDomainCubbieMaker = new CubbieMaker[CategoricalSeqDomain[String]](new CategoricalSeqDomainCubbie(_))
   implicit val stringMapCubbieMaker = new CubbieMaker[mutable.Map[String,String]](new StringMapCubbie(_))
 }
 

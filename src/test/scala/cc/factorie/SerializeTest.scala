@@ -181,7 +181,7 @@ class SerializeTest extends JUnitSuite {
 
     val domainFile = new File(fileName2)
 
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(TokenDomain.dimensionDomain), domainFile)
+    BinaryCubbieFileSerializer.serialize(new CategoricalDimensionTensorDomainCubbie(TokenDomain), domainFile)
 
     println("Original model family weights: ")
     getWeights(model).foreach(println)
@@ -194,7 +194,7 @@ class SerializeTest extends JUnitSuite {
     println(TokenDomain.dimensionDomain.toSeq.mkString(","))
     println("Deserialized domain:")
     val newDomain = new CategoricalDimensionTensorDomain[String] { }
-    val cubbie = new CategoricalDomainCubbie(newDomain.dimensionDomain)
+    val cubbie = new CategoricalDimensionTensorDomainCubbie(newDomain)
     BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
     println(newDomain.dimensionDomain.toSeq.mkString(","))
 

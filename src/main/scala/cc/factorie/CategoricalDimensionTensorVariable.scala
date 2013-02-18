@@ -14,12 +14,31 @@
 
 package cc.factorie
 import cc.factorie.la._
+import collection.mutable
 
 // TODO Just a placeholder for now
 trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
   lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] { }
+}
+
+class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTensorDomain[T]) extends Cubbie {
+  val dimensionDomainCubbie = new CategoricalDomainCubbie[T](cdtd.dimensionDomain)
+  setMap(new mutable.Map[String, Any] {
+    override def update(key: String, value: Any): Unit = {
+      if (key == "dimensionDomain") {
+        val map = value.asInstanceOf[mutable.Map[String, Any]]
+        for((k,v) <- map) dimensionDomainCubbie._map(k) = v
+      } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
+    }
+    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+    def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
+    def get(key: String): Option[Any] =
+      if (key == "dimensionDomain") Some(dimensionDomainCubbie._map)
+      else None
+    def iterator: Iterator[(String, Any)] = List("dimensionDomain").map(s => (s, get(s).get)).iterator
+  })
 }
 
 trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
