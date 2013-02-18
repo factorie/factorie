@@ -93,7 +93,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       bestModel1.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(bestObjective1.modelScore - bestModel1.modelScore)
-      value.accumulate(bestObjective1.modelScore - bestModel1.modelScore - 1)
+      if (value ne null) value.accumulate(bestObjective1.modelScore - bestModel1.modelScore - 1)
     }
     else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
@@ -106,7 +106,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       bestModel2.diff.undo
       model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       margin.accumulate(marg)
-      value.accumulate(marg-1)
+      if (value ne null) value.accumulate(marg-1)
     }
     sampler.processProposals(proposals)
   }
