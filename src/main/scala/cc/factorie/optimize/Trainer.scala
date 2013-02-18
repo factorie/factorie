@@ -62,9 +62,13 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
+    val startTime = System.currentTimeMillis
     examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, null))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensor
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
+    val ellapsedTime = System.currentTimeMillis - startTime
+    val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
+    logger.info("GradientNorm: %-10g  value %-10g %s".format(grad.oneNorm, value, timeString))
     optimizer.step(model.weightsTensor, grad, value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
@@ -84,10 +88,14 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
     }
     gradientAccumulator.l.tensor.zero()
     valueAccumulator.l.value = 0
+    val startTime = System.currentTimeMillis
     if (isConverged) return
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
     pool.shutdown()
+    val ellapsedTime = System.currentTimeMillis - startTime
+    val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
+    logger.info("GradientNorm: %-10g  value %-10g %s".format(gradientAccumulator.tensor.oneNorm, valueAccumulator.l.value, timeString))
     optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.l.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
