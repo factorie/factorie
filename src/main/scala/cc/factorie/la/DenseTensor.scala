@@ -80,6 +80,11 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
             i += 1
           }
         }
+        case inner:SparseIndexedTensor => {
+          for ((i,v) <- inner.activeElements) {
+            this(t.singleIndex(i0, i)) += v * f
+          }
+        }
         case _ => assert(false, t.inner.getClass.getName + " doesn't match")
       }
     }

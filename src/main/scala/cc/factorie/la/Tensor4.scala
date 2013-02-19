@@ -156,12 +156,13 @@ trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain4 = new RangeIntSeq(0, dim4) // It probably could be more sparse than this
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
-  private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim3))
+  private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim4))
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim3 + k).apply(l)
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
+  override def update(i: Int, v: Double): Unit = update(index1(i), index2(i), index3(i), index4(i), v)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim3 + k).update(l, v)
-  protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim3 + k); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim3 + k); if (in eq null) { in = newTensor1(dim4); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i), index3(i)).+=(index4(i), incr)
 }
 class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val newTensor1:Int=>Tensor1) extends Dense3LayeredTensorLike4 {
