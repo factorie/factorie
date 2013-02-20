@@ -154,6 +154,7 @@ class ClassifierPos extends DocumentProcessor {
   }
 
   def predict(s: Sentence)(implicit d: DiffList = null) {
+    s.tokens.foreach(t => if (t.attr[PosLabel] eq null) t.attr += new PosLabel(t, "NNP"))
     val sent = new SentenceData(s)
     val weightsMatrix = model.evidenceTemplate.weights
     for (i <- 0 until s.length) {
