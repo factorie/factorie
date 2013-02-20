@@ -157,9 +157,10 @@ trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def activeDomain4 = new RangeIntSeq(0, dim4) // It probably could be more sparse than this
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
   private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim4))
+  override def zero() = _inners.foreach(_.zero())
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim3 + k).apply(l)
   def isDense = false
-  def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
+  def apply(i:Int): Double = apply(index1(i), index2(i), index3(i), index4(i))
   override def update(i: Int, v: Double): Unit = update(index1(i), index2(i), index3(i), index4(i), v)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim3 + k).update(l, v)
   protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim3 + k); if (in eq null) { in = newTensor1(dim4); _inners(i) = in }; in }
@@ -179,7 +180,8 @@ trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain4 = inner.activeDomain1
-  def activeDomain = { val offset = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4; inner.activeDomain1.map(_ * offset) }
+  def activeDomain = { val offset = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4; inner.activeDomain1.map(_ + offset) }
+  override def activeDomainSize = inner.activeDomainSize
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.apply(l) else 0.0
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.update(l, v) else throw new Error("Outer indices out of bounds: "+List(i,j,k))
@@ -187,6 +189,7 @@ trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
     case t:SingletonBinaryTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) else 0.0
     case t:SingletonTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) * t.singleValue else 0.0
     case t:Singleton3LayeredTensorLike4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner.dot(t.inner) else 0.0
+    case t:Dense3LayeredTensor4 => super.dot(t)
   }
 }
 class Singleton3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val inner:Tensor1) extends Singleton3LayeredTensorLike4
