@@ -171,9 +171,9 @@ class ClassifierPos extends DocumentProcessor {
       modelFile.getParentFile.mkdirs()
     BinaryFileSerializer.serialize(model, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
-    BinaryFileSerializer.serialize(PosDomain, labelDomainFile)
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(PosDomain), labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryFileSerializer.serialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
+    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(ClassifierPosFeatureDomain.dimensionDomain), featuresDomainFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
     BinaryFileSerializer.serialize(WordData.ambiguityClasses, ambClassFile)
   }
