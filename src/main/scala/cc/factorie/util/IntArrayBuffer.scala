@@ -25,7 +25,7 @@ trait ProtectedIntArrayBuffer {
   protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)
-  protected def _foreach[U](f:Int=>U): Unit = { var i = 0; while (i < _size) f(_arr(i)); i += 1 }
+  protected def _foreach[U](f:Int=>U): Unit = { var i = 0; while (i < _size) { f(_arr(i)); i += 1 } }
   @inline final protected def _update(index:Int, value:Int): Unit = _arr(index) = value
   @inline final protected def _increment(index:Int, incr:Int): Unit = { _ensureCapacity(index+1); _arr(index) += incr; if (_size < index+1) _size = index+1 }
   @inline final protected def _append(elem: Int): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
@@ -107,7 +107,7 @@ trait ProtectedIntArrayBuffer {
     if (diff == 1) return if (_arr(start) >= x) start else end
     val middle = start + (diff / 2)
     val midval = _arr(middle)
-    if (midval == x) return middle
+    if (midval == x) middle
     else if (x < midval) _positionLte(x, start, middle)
     else _positionLte(x, middle+1, end)
   }
@@ -119,7 +119,7 @@ trait ProtectedIntArrayBuffer {
     if (diff == 1) return _arr(start) == x
     val middle = start + (diff / 2)
     val midval = _arr(middle)
-    if (midval == x) return true
+    if (midval == x) true
     else if (x < midval) _containsSorted(x, start, middle)
     else _containsSorted(x, middle+1, end)
   }
