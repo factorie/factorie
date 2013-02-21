@@ -181,9 +181,9 @@ class ClassifierPos extends DocumentProcessor {
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)
+    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(PosDomain), labelDomainFile)  // TODO(apassos): figure out why this implicit conversion was generating the wrong cubbie
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
+    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(ClassifierPosFeatureDomain.dimensionDomain), featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     BinaryFileSerializer.deserialize(model, modelFile)

@@ -118,6 +118,13 @@ class SerializeTest extends JUnitSuite {
     assertSameWeights(model, model2)
   }
 
+  @Test def testClassifierPosSerialization() {
+    val model = new app.nlp.pos.ClassifierPos
+    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
+    model.serialize(fileName)
+    val otherModel = app.nlp.pos.ClassifierPos.load(fileName)
+  }
+
   @Test def testInstanceSerialize(): Unit = {
     import app.classify._
     val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
