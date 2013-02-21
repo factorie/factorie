@@ -7,7 +7,7 @@ import collection.mutable
 import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
 
-final class CubbieMaker[-A](make: A => Cubbie) { def apply(a: A) = make(a) }
+final class CubbieMaker[-A](make: A => Cubbie, val name: String) { def apply(a: A) = make(a) }
 
 class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
   var akeys : Seq[String] = null
@@ -31,11 +31,10 @@ class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
   })
 }
 
-
 object CubbieMaker {
-  implicit val modelCubbieMaker = new CubbieMaker[Model](new ModelCubbie(_))
-  implicit val categoricalDomainCubbieMaker = new CubbieMaker[CategoricalDomain[String]](new CategoricalDomainCubbie(_))
-  implicit val stringMapCubbieMaker = new CubbieMaker[mutable.Map[String,String]](new StringMapCubbie(_))
+  implicit val modelCubbieMaker = new CubbieMaker[Model](new ModelCubbie(_), "Model")
+  implicit val categoricalDomainCubbieMaker = new CubbieMaker[CategoricalDomain[String]](new CategoricalDomainCubbie(_), "CategoricalDomain[String]")
+  implicit val stringMapCubbieMaker = new CubbieMaker[mutable.Map[String, String]](new StringMapCubbie(_), "mutable.Map[String, String]")
 }
 
 object BinaryFileSerializer {
