@@ -99,6 +99,7 @@ trait SparseIndexedTensor extends Tensor {
   override def dot(v:DoubleSeq): Double = {
     makeReadable
     v match {
+      // TODO add fast implementations for Dense here! -luke
       case v:SingletonBinaryTensor1 => apply(v.singleIndex)
       case v:SingletonTensor1 => apply(v.singleIndex) * v.singleValue
       case v:SparseIndexedTensor => {
@@ -267,13 +268,17 @@ trait SparseIndexedTensor extends Tensor {
   }
 
   override def exponentiate() {
-    var i = 0;
+    var i = 0
     while (i < __npos) {
       __values(i) = math.exp(__values(i))
       i += 1
     }
   }
-
+  override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
+    var acc = seed; var i = 0
+    while (i < __npos) { acc = f(__indices(i), __values(i), acc); i += 1 }
+    acc
+  }
   override def maxNormalize() {
     var maxi = 0
     var max = Double.MinValue

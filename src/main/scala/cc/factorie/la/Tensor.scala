@@ -34,6 +34,13 @@ trait Tensor extends MutableDoubleSeq {
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
   //def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  // this method lets us aggregate without boxing -luke
+  // (idx, value, acc)
+  def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
+    val iter = activeElements; var acc = seed
+    while (iter.hasNext) { val (i, v) = iter.next(); acc = f(i, v, acc) }
+    acc
+  }
   // TODO!! Change this to use TensorElementIterator instead
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses

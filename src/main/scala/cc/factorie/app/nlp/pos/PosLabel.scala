@@ -16,5 +16,6 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
 
+// TODO can we not make the default implementation of NLP stuff use global variables, this is bug city -luke
 object PosDomain extends CategoricalDomain[String]
 class PosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PosDomain } 
