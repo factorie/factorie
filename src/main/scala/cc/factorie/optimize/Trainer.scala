@@ -2,9 +2,11 @@ package cc.factorie.optimize
 
 import cc.factorie.app.classify.LogLinearModel
 import cc.factorie.la._
-import cc.factorie.util.{Accumulator, LocalDoubleAccumulator, FastLogging, ThreadLocal}
+import util._
 import cc.factorie._
 import java.util.concurrent.Callable
+import util._
+import util.FastLogging
 
 /**
  * Created by IntelliJ IDEA.
@@ -60,9 +62,13 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
+    val startTime = System.currentTimeMillis
     examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, null))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensor
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
+    val ellapsedTime = System.currentTimeMillis - startTime
+    val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
+    logger.info("GradientNorm: %-10g  value %-10g %s".format(grad.oneNorm, value, timeString))
     optimizer.step(model.weightsTensor, grad, value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
@@ -70,21 +76,27 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
 
 class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
   import collection.JavaConversions._
-  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: LocalDoubleAccumulator): Seq[Callable[Object]] =
+  def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: DoubleAccumulator): Seq[Callable[Object]] =
     es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va, null); null.asInstanceOf[Object] } }).toSeq
 
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
-  val valueAccumulator = new LocalDoubleAccumulator
+  val valueAccumulator = new SynchronizedDoubleAccumulator
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (runnables eq null) {
       runnables = examplesToRunnables[M](examples, model, gradientAccumulator, valueAccumulator)
     }
+    gradientAccumulator.l.tensor.zero()
+    valueAccumulator.l.value = 0
+    val startTime = System.currentTimeMillis
     if (isConverged) return
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
     pool.shutdown()
-    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, Double.NaN)
+    val ellapsedTime = System.currentTimeMillis - startTime
+    val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
+    logger.info("GradientNorm: %-10g  value %-10g %s".format(gradientAccumulator.tensor.oneNorm, valueAccumulator.l.value, timeString))
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.l.value, Double.NaN)
   }
   def isConverged = optimizer.isConverged
 }
@@ -310,6 +322,16 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
     }})
   }
   def isConverged = iteration >= maxIterations
+}
+
+class SGDThenBatchTrainer[M<:Model](val model: M, sgdTrainer: Trainer[M], batchTrainer: Trainer[M]) {
+  def processExamples(examples: Iterable[Example[M]]) {
+    if (!sgdTrainer.isConverged)
+      sgdTrainer.processExamples(examples)
+    else
+      batchTrainer.processExamples(examples)
+  }
+  def isConverged = sgdTrainer.isConverged && batchTrainer.isConverged
 }
 
 class InlineSGDThenBatchTrainer[M<:Model](

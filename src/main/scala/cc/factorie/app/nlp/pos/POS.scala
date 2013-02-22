@@ -24,7 +24,7 @@ import app.chain.Observations.addNeighboringFeatureConjunctions
 import util._
 
 object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
-class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
+class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
 object PosModel extends TemplateModel {
   // Bias term on each individual label

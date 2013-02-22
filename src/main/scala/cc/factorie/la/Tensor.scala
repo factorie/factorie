@@ -183,7 +183,17 @@ object Tensor {
       case t2:Tensor1 => new SingletonLayeredTensor2(t1.dim1, t2.dim1, t1.singleIndex, t1.singleValue, t2)
     }
     case t1:SparseBinaryTensorLike1 => t2 match {
-      case t2:SingletonBinaryTensorLike1 => { val t = new SparseBinaryTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; val t2si = t2.singleIndex; var i = 0; while (i < a1.length) { t(t2si, a1(i)) = 1.0; i += 1 }; t }
+      case t2:SingletonBinaryTensorLike1 => {
+        val t = new SparseBinaryTensor2(t1.dim1, t2.dim1)
+        val a1 = t1.asIntArray
+        val t2si = t2.singleIndex
+        var i = 0
+        while (i < a1.length) {
+          t(a1(i), t2si) = 1.0
+          i += 1
+        }
+        t
+      }
       case t2:SingletonTensor1 => throw new Error("SparseTensor2 not yet implemented.") //{ val t = new SparseTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; var i = 0; while (i < a1.length) { t(t2.singleIndex, a1(i)) = 1.0; i += 1 }; t }
     }
     case t1:DenseTensor1 => t2 match {

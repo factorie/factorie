@@ -17,10 +17,30 @@ package cc.factorie
 import scala.collection.mutable.ArrayBuffer
 import scala.math
 import java.util.Arrays
+import collection.mutable
 
 class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
   lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
+
+class CategoricalSeqDomainCubbie[T](val csd: CategoricalSeqDomain[T]) extends Cubbie {
+  val elementDomainCubbie = new CategoricalDomainCubbie[T](csd.elementDomain)
+  setMap(new mutable.Map[String, Any] {
+    override def update(key: String, value: Any): Unit = {
+      if (key == "elementDomain") {
+        val map = value.asInstanceOf[mutable.Map[String, Any]]
+        for((k,v) <- map) elementDomainCubbie._map(k) = v
+      } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
+    }
+    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+    def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
+    def get(key: String): Option[Any] =
+      if (key == "elementDomain") Some(elementDomainCubbie._map)
+      else None
+    def iterator: Iterator[(String, Any)] = List("elementDomain").map(s => (s, get(s).get)).iterator
+  })
+}
+
 abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[CategoricalValue[C]] with IndexedSeqVar[CategoricalValue[C]] /*VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]]*/ {
   def this(initialValue:Seq[C]) = {
     this()

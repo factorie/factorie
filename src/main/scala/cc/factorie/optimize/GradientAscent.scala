@@ -30,6 +30,93 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+
+class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    val step = -value/(C + gradient.twoNormSquared)
+    weights.+=(gradient, step)
+  }
+  def isConverged = false
+  def reset() {}
+}
+
+class BoxMIRA(var C: Double = 1.0) extends GradientOptimizer {
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    val step = math.min(C, -value/(gradient.twoNormSquared))
+    weights.+=(gradient, step)
+  }
+  def isConverged = false
+  def reset() {}
+}
+
+class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
+  var lastUpdate: Tensor = null
+  var t = 0
+  @inline final def learningRate(t: Double): Double = {
+    rate / math.sqrt(t)
+  }
+
+  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+    t += 1
+    val eta = rate
+    if (lastUpdate == null) { lastUpdate = weights.blankCopy }
+    for (template <- gradient.asInstanceOf[WeightsTensor].families)
+      (weights.asInstanceOf[WeightsTensor](template),
+       gradient.asInstanceOf[WeightsTensor](template),
+       lastUpdate.asInstanceOf[WeightsTensor](template)) match {
+        case (w: DenseTensor, g: DenseTensor, lastUpdate: DenseTensor) =>
+          val wArr = w.asArray
+          val gArr = g.asArray
+          val lastArr = lastUpdate.asArray
+          var i = 0
+          val len = wArr.length
+          while (i < len) {
+            lastArr(i) += 1
+            wArr(i) *= (1 - l2*learningRate(lastArr(i)))
+            val t2 = wArr(i) + learningRate(lastArr(i)) * gArr(i)
+            wArr(i) = t2
+            i += 1
+          }
+        case (w: DenseTensor, g: SparseIndexedTensor,  lastUpdate: DenseTensor) =>
+          val wArr = w.asArray
+          val lastArr = lastUpdate.asArray
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            lastArr(idx) += 1
+            wArr(idx) *= (1 - l2*learningRate(lastArr(idx)))
+            val t2 = wArr(idx) + learningRate(lastArr(idx)) * g
+            wArr(idx) = t2
+            i += 1
+          }
+        case (w: Tensor, g: SparseIndexedTensor,  lastUpdate: Tensor) =>
+          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+                  gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + lastUpdate.asInstanceOf[WeightsTensor](template).getClass.getName)
+          var i = 0
+          val len = g.activeDomainSize
+          val indices = g._indices
+          val values = g._values
+          while (i < len) {
+            val g = values(i)
+            val idx = indices(i)
+            lastUpdate(idx) += 1
+            w(idx) *= (1 - l2*learningRate(lastUpdate(idx)))
+            val t2 = w(idx) + learningRate(lastUpdate(idx)) * g
+            w(idx) = t2
+            i += 1
+          }
+      }
+  }
+  def reset(): Unit = {
+    lastUpdate = null
+  }
+  def isConverged: Boolean = false
+}
+
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
 class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
@@ -51,13 +138,15 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           var i = 0
           val len = wArr.length
           while (i < len) {
-            hArr(i) += gArr(i) * gArr(i)
-            val h = math.sqrt(hArr(i)) + delta
-            val t1 = eta / h
-            val t2 = wArr(i) + t1 * gArr(i)
+            if (gArr(i) != 0) {
+              hArr(i) += gArr(i) * gArr(i)
+              val h = math.sqrt(hArr(i)) + delta
+              val t1 = eta / h
+              val t2 = wArr(i) + t1 * gArr(i)
 //            val t3 = l1 * eta / h
 //            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
-            wArr(i) = t2
+              wArr(i) = t2
+            }
             i += 1
           }
         case (w: DenseTensor, g: SparseIndexedTensor,  hSq: DenseTensor) =>
@@ -69,12 +158,14 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hArr(idx) += g*g
-            val h = math.sqrt(hArr(idx)) + delta
-            val t1 = eta / h
-            val t2 = wArr(idx) + t1 * g
-            wArr(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hArr(idx) += g*g
+              val h = math.sqrt(hArr(idx)) + delta
+              val t1 = eta / h
+              val t2 = wArr(idx) + t1 * g
+              wArr(idx) = t2
+            }
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
@@ -86,12 +177,14 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hSq(idx) += g*g
-            val h = math.sqrt(hSq(idx)) + delta
-            val t1 = eta / h
-            val t2 = w(idx) + t1 * g
-            w(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hSq(idx) += g*g
+              val h = math.sqrt(hSq(idx)) + delta
+              val t1 = eta / h
+              val t2 = w(idx) + t1 * g
+              w(idx) = t2
+            }
             i += 1
           }
       }
@@ -107,10 +200,17 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
   var HSq: Tensor = null
   var sumGs: Tensor = null
   var t = 0
+
+  @inline final def truncate(x0: Double, l1: Double): Double = {
+    if (x0 > l1)
+      x0-l1
+    else if (x0 < -l1)
+      x0+l1
+    else 0.0
+  }
+
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     val eta = rate
-//    val l2 = 0.1
-//    gradient += (weights, -l2)
     t += 1
     if (HSq == null) { HSq = weights.blankCopy }
     if (sumGs == null) { sumGs = weights.blankCopy }
@@ -120,7 +220,6 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
         HSq.asInstanceOf[WeightsTensor](template),
         sumGs.asInstanceOf[WeightsTensor](template)) match {
         case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor, sGs: DenseTensor) =>
-//          println(hSq)
           val wArr = w.asArray
           val gArr = g.asArray
           val hArr = hSq.asArray
@@ -128,12 +227,14 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           var i = 0
           val len = wArr.length
           while (i < len) {
-            hArr(i) += gArr(i) * gArr(i)
-            sgArr(i) += gArr(i)
-            val h = math.sqrt(hArr(i)) + delta
-            val t1 = eta / h
-            val t2 = t1 * math.signum(sgArr(i)) * math.max(0.0, math.abs(sgArr(i)) - l1*t)
-            wArr(i) = t2
+            if (gArr(i) != 0) {
+              hArr(i) += gArr(i) * gArr(i)
+              sgArr(i) += gArr(i)
+              val h = math.sqrt(hArr(i)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sgArr(i), t*l1)
+              wArr(i) = t2
+            }
             i += 1
           }
         case (w: DenseTensor, g: SparseIndexedTensor, hSq: DenseTensor, sGs: DenseTensor) =>
@@ -146,13 +247,15 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hArr(idx) += g*g
-            sgArr(idx) += g
-            val h = math.sqrt(hArr(idx)) + delta
-            val t1 = eta / h
-            val t2 = math.signum(sgArr(idx)) * math.max(0.0, math.abs(sgArr(idx)) - l1*t)
-            wArr(idx) = t2
+            if (g != 0) {
+              val idx = indices(i)
+              hArr(idx) += g*g
+              sgArr(idx) += g
+              val h = math.sqrt(hArr(idx)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sgArr(idx), t*l1)
+              wArr(idx) = t2
+            }
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
@@ -164,15 +267,17 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
           val values = g._values
           while (i < len) {
             val g = values(i)
-            val idx = indices(i)
-            hSq(idx) += g*g
-            sGs(idx) += g
-            val h = math.sqrt(hSq(idx)) + delta
-            val t1 = eta / h
-            val t2 = math.signum(sGs(idx)) * math.max(0.0, math.abs(sGs(idx)) - l1*t)
-            w(idx) = t2
-            i += 1
+            if (g != 0) {
+              val idx = indices(i)
+              hSq(idx) += g*g
+              sGs(idx) += g
+              val h = math.sqrt(hSq(idx)) + delta
+              val t1 = eta / h
+              val t2 = t1 * truncate(sGs(idx), t*l1)
+              w(idx) = t2
             }
+            i += 1
+          }
       }
   }
   def reset(): Unit = {

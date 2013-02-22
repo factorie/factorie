@@ -50,7 +50,7 @@ object LoadOntonotes5 {
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
         if (loadLemma)
-          token.attr += new Lemma(lemma)
+          token.attr += new TokenLemma(token, lemma)
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }

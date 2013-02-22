@@ -53,8 +53,10 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
   def docSubstring = document.string.substring(stringStart, stringEnd)
-  /** Return the string contents of this Token, either from its attr[TokenString] variable or ,if unset, directly as a substring of the Document */
+  /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
   def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
+  /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
+  def lemmaString = { val tl = attr[TokenLemma]; if (tl ne null) tl.value else string }
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
@@ -63,7 +65,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
-  def lemma = attr[Lemma]
+  def lemma = attr[cc.factorie.app.nlp.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
   def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(sentencePosition)
@@ -124,7 +126,16 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
 
 }
 
+/** Used as an attribute of Token when the token.string should return something 
+    different than the document.string.substring at the Token's start and end positions. 
+    For example, de-hyphenation may change "probab\n-ly" to "probably". */
 class TokenString(val token:Token, s:String) extends StringVariable(s) 
+
+/** Used as an attribute of Token to hold the lemma of the Token.string.
+    For example for string value "ran" might have lemma "run". */
+class TokenLemma(val token:Token, s:String) extends StringVariable(s) {
+  def lemma: String = value // for backward compatibility with Brian's old "Lemma" class
+}
 
 
 // Cubbie storage

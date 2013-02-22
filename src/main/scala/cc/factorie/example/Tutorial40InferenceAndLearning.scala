@@ -22,6 +22,15 @@ object Tutorial40InferenceAndLearning {
     /*& The ChainModel class implements a default model for linear chains.
      * It by default implements all the factor templates one expects from a linear chain model,
      * with the exception that the (label, label, features) template is optional.
+     *
+     * As we saw in the Model tutorial, a model in factorie is an object that
+     * can take some variables and return some factors, which know how to score
+     * assignments of those variables. So models store weights, and things like that.
+     *
+     * To construct a chain model you need to give it a few things. First, the domains
+     * of the labels and the token features. Then, functions that can take a label to
+     * its feature vector, a label to its token, and a token to its label. These functions
+     * are used by the ChainModel class to generate factors.
      **/
     object model extends ChainModel[Label,  Features, Token](
       LabelDomain,
@@ -40,9 +49,9 @@ object Tutorial40InferenceAndLearning {
     assertStringEquals(document.sentences.length, "1")
 
     // Let's assign all tokens the same label for the sake of simplicity
-    document.tokens.foreach(t => t.attr += new Label(t, "6.931471805599453"))
+    document.tokens.foreach(t => t.attr += new Label(t, "A"))
     // Let's also have another possible Label value to make things interesting
-    LabelDomain.index("A")
+    LabelDomain.index("B")
     // Let's also initialize features for all tokens
     document.tokens.foreach(t => {
       val features = t.attr += new Features(t)
@@ -164,7 +173,7 @@ object Tutorial40InferenceAndLearning {
 
     /*&
      * Finally, there are many other useful examples in factorie. The GLMExample implements generalized
-     * linear models for many regression and classification loss functions, for example, and the
+     * linear models for many classification loss functions, for example, and the
      * DominationLossExample knows how to do learning to rank.
      **/
   }

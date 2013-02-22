@@ -3,6 +3,7 @@ package cc.factorie.app.regress
 import cc.factorie._
 import cc.factorie.la._
 import org.junit.Test
+import org.junit.Assert._
 
 /**
  * Created by IntelliJ IDEA.
@@ -31,8 +32,13 @@ class RegressionTests {
     val y2 = new MyTensorVariable(1, 1, 3)
 
     val regressor = LinearRegressionTrainer.train[TensorVariable[Tensor1], MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0)
-    assert(math.abs(regressor.regress(y0).dependantValue(0) - 4) < 0.01)
-    assert(math.abs(regressor.regress(y1).dependantValue(0) - 5) < 0.01)
-    assert(math.abs(regressor.regress(y2).dependantValue(0) - 3) < 0.01)
+    assertEquals(4, regressor.regress(y0).dependantValue(0), 0.01)
+    assertEquals(5, regressor.regress(y1).dependantValue(0), 0.01)
+    assertEquals(3, regressor.regress(y2).dependantValue(0), 0.01)
+
+    val regressor2 = LinearRegressionTrainer.train[TensorVariable[Tensor1], MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0, app.regress.LinearRegressionObjectiveFunctions.epsilonInsensitiveObjectiveSq(0.001))
+    assertEquals(4, regressor2.regress(y0).dependantValue(0), 0.01)
+    assertEquals(5, regressor2.regress(y1).dependantValue(0), 0.01)
+    assertEquals(3, regressor2.regress(y2).dependantValue(0), 0.01)
   }
 }

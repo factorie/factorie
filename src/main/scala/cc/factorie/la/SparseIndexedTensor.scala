@@ -239,6 +239,20 @@ trait SparseIndexedTensor extends Tensor {
             }
             i += 1
           }
+        case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+          var i = 0
+          val arr = t1.asArray
+          while (i < arr.length) {
+            val len = t2.activeDomainSize
+            val indices = t2._indices
+            val values = t2._values
+            var j = 0
+            while (j < len) {
+              this += (t.singleIndex(i, indices(j)), f*t1(i)*values(j))
+              j += 1
+            }
+            i += 1
+          }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
     case t:SingletonBinaryTensor => this += (t.singleIndex, f)

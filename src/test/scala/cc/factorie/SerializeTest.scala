@@ -7,6 +7,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
 import cc.factorie.app.nlp
+import nlp.pos.PosDomain
 
 class SerializeTest extends JUnitSuite {
 
@@ -118,6 +119,18 @@ class SerializeTest extends JUnitSuite {
     assertSameWeights(model, model2)
   }
 
+  // NOTE: this is a hack to get around broken Manifest <:< for singleton types
+  // this is fixed in 2.10 so once we upgrade we can remove this hack (that assumes all params are covariant!)
+  def checkCompat(m1: Manifest[_], m2: Manifest[_]): Boolean =
+    m2.erasure.isAssignableFrom(m1.erasure) && (m1.typeArguments.zip(m2.typeArguments).forall({case (l,r) => checkCompat(l, r)}))
+
+  @Test def testClassifierPosSerialization() {
+    val model = new app.nlp.pos.ClassifierPos
+    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
+    model.serialize(fileName)
+    val otherModel = app.nlp.pos.ClassifierPos.load(fileName)
+  }
+
   @Test def testInstanceSerialize(): Unit = {
     import app.classify._
     val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
@@ -181,7 +194,7 @@ class SerializeTest extends JUnitSuite {
 
     val domainFile = new File(fileName2)
 
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(TokenDomain.dimensionDomain), domainFile)
+    BinaryCubbieFileSerializer.serialize(new CategoricalDimensionTensorDomainCubbie(TokenDomain), domainFile)
 
     println("Original model family weights: ")
     getWeights(model).foreach(println)
@@ -194,7 +207,7 @@ class SerializeTest extends JUnitSuite {
     println(TokenDomain.dimensionDomain.toSeq.mkString(","))
     println("Deserialized domain:")
     val newDomain = new CategoricalDimensionTensorDomain[String] { }
-    val cubbie = new CategoricalDomainCubbie(newDomain.dimensionDomain)
+    val cubbie = new CategoricalDimensionTensorDomainCubbie(newDomain)
     BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
     println(newDomain.dimensionDomain.toSeq.mkString(","))
 

@@ -3,8 +3,9 @@ package cc.factorie.app.regress
 import cc.factorie._
 import app.classify.LabelList
 import cc.factorie.la._
-import cc.factorie.optimize.LBFGS
+import optimize._
 import java.io.File
+import util.DoubleAccumulator
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 
 
@@ -44,33 +45,74 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
+class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends Model {
+  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
+  def factors(variable: Var) = Nil
+  val family = new DotFamily {
+    lazy val weights = new DenseTensor2(nLabel, nFeatures)
+  }
+  override def families = Seq(family)
+  def weights = family.weights.asInstanceOf[DenseTensor2]
+}
+
+object LinearRegressionObjectiveFunctions {
+  type ObjectiveFunctionType = (Tensor1, Tensor1) => (Double, Tensor1)
+  val squaredObjective : ObjectiveFunctionType = (prediction, label) => {
+    for (i <- prediction.activeDomain) {
+      prediction(i) -= label(i)
+    }
+    val value = - (prediction dot prediction)
+    prediction *= -2
+    (value,prediction)
+  }
+  def epsilonInsensitiveObjectiveSq(epsilon: Double): ObjectiveFunctionType = (prediction, label) => {
+    var objective = 0.0
+    for (i <- prediction.activeDomain) {
+      prediction(i) -= label(i)
+      val o = math.max(0, math.abs(prediction(i)) - epsilon)
+      objective -= o*o
+      prediction(i) = -2*prediction(i)
+    }
+    (objective, prediction)
+  }
+}
+
+
+class LinearRegressionExample(features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example[LinearRegressionModel] {
+  // gradient or value or margin can be null if they don't need to be computed.
+  def accumulateExampleInto(model: LinearRegressionModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator) {
+    val weights = model.weights
+    val prediction = weights * features.value.asInstanceOf[Tensor1]
+    val (objValue,objGradient) = objective(prediction, label.value.asInstanceOf[Tensor1])
+    if (value != null) value.accumulate(objValue)
+    // add the gradients
+    if (gradient != null) {
+      gradient.accumulate(model.family, new cc.factorie.la.Outer1Tensor2(objGradient, features.value.asInstanceOf[Tensor1]))
+    }
+  }
+}
+
 object LinearRegressionTrainer {
   // Assumes variables are set to their target values
-  def train[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, l2: Double): LinearRegressor[E, A] = {
+  def train[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, l2: Double, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
+    val optimizer = new cc.factorie.optimize.LBFGS() with cc.factorie.optimize.L2Regularization
+    optimizer.variance = 1.0/l2
+    val trainerMaker : LinearRegressionModel => Trainer[LinearRegressionModel] = m => new BatchTrainer(m, optimizer)
+    trainCustom(examples, dependant2Explanatory, trainerMaker, objective)
+  }
+
+  def trainCustom[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, trainerMaker: LinearRegressionModel => Trainer[LinearRegressionModel], objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)
     val dependentSize = exampleDependent.value.dimensions.product
     val explanatorySize = exampleExplanatory.value.dimensions.product
-    val weights = new DenseTensor2(dependentSize, explanatorySize)
-    //val optimizer = new cc.factorie.optimize.ConjugateGradient()
-    val optimizer = new cc.factorie.optimize.LBFGS()
-    val gradient = new DenseTensor2(weights.dim1, weights.dim2)
-    while (!optimizer.isConverged) {
-      gradient.zero()
-      var value = 0.0
-      for (e <- examples) {
-        val features = dependant2Explanatory(e).value.asInstanceOf[Tensor1]
-        val prediction = weights * features
-        for (i <- prediction.activeDomain) prediction(i) -= e.value(i)
-        value -= prediction dot prediction
-        // add the gradients
-        for (i <- prediction.activeDomain; j <- features.activeDomain)
-            gradient(i, j) -= 2 * prediction(i) * features(j)
-      }
-      gradient += (weights, l2)
-      optimizer.step(weights, gradient, value, 0.0)
+    val model = new LinearRegressionModel(explanatorySize, dependentSize)
+    val trainer = trainerMaker(model)
+    val trainingExamples = examples.map(e => new LinearRegressionExample(dependant2Explanatory(e), e, objective))
+    while (!trainer.isConverged) {
+      trainer.processExamples(trainingExamples)
     }
-    new LinearRegressor(dependant2Explanatory, weights)
+    new LinearRegressor(dependant2Explanatory, model.weights)
   }
 }
 

@@ -154,6 +154,7 @@ class ClassifierPos extends DocumentProcessor {
   }
 
   def predict(s: Sentence)(implicit d: DiffList = null) {
+    s.tokens.foreach(t => if (t.attr[PosLabel] eq null) t.attr += new PosLabel(t, "NNP"))
     val sent = new SentenceData(s)
     val weightsMatrix = model.evidenceTemplate.weights
     for (i <- 0 until s.length) {
@@ -180,7 +181,7 @@ class ClassifierPos extends DocumentProcessor {
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)
+    BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)  // TODO(apassos): figure out why this implicit conversion was generating the wrong cubbie
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
@@ -207,7 +208,7 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
-    val trainer = new optimize.SGDTrainer(model, new AdaGrad(rate=alpha, delta=gamma), maxIterations = 10, logEveryN=Int.MaxValue)
+    val trainer = new optimize.SGDTrainer(model, new optimize.LazyL2ProjectedGD(l2=1.0), maxIterations = 10, logEveryN=100000)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
@@ -248,7 +249,7 @@ object ClassifierPos {
       val cutoff = new CmdOption("cutoff", "2", "INT", "discard features less frequent than this")
       val updateExamples = new  CmdOption("updateExamples", "true", "BOOL", "whether to update examples in later iterations")
       val useHingeLoss = new CmdOption("useHingeLoss", "false", "BOOL", "whether to use hinge loss (or log loss)")
-      val saveModel = new CmdOption("saveModel", "true", "BOOL", "whether to save the model")
+      val saveModel = new CmdOption("saveModel", "false", "BOOL", "whether to save the model")
     }
     opts.parse(args)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
