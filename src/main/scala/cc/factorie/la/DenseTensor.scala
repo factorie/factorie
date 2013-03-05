@@ -85,6 +85,10 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
             this(t.singleIndex(i0, i)) += v * f
           }
         }
+        case inner: SingletonTensor => {
+          val i = inner.singleIndex
+          this(t.singleIndex(i0, i)) += inner.singleValue * f
+        }
         case _ => assert(false, t.inner.getClass.getName + " doesn't match")
       }
     }
