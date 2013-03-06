@@ -222,7 +222,6 @@ object Tensor {
     case t1:Tensor1 => t2 match {
       //case t2:Tensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- t1.activeDomain.asSeq; j <- t2.activeDomain.asSeq) t(i,j) = t1(i) * t2(j); t }
       case t2:Tensor1 => {
-        println("gotcha!");
         val t = new DenseTensor2(t1.dim1, t2.dim1); val ad1 = t1.activeDomain; val ad2 = t2.activeDomain; var ii = 0; var ji = 0
         while (ii < ad1.length) {
           ji = 0
