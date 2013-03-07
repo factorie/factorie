@@ -55,6 +55,7 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
   @inline final def learningRate(t: Double): Double = {
     rate / math.sqrt(t)
   }
+  var printed = false
 
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     t += 1
@@ -94,8 +95,11 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor,  lastUpdate: Tensor) =>
-          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-                  gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + lastUpdate.asInstanceOf[WeightsTensor](template).getClass.getName)
+          if (!printed) {
+            printed = true
+            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + lastUpdate.asInstanceOf[WeightsTensor](template).getClass.getName)
+          }
           var i = 0
           val len = g.activeDomainSize
           val indices = g._indices
@@ -121,6 +125,7 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
 class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
   var HSq: Tensor = null
+  var printed = false
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     val eta = rate
 //    val l2 = 0.1
@@ -169,8 +174,11 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
-          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-                  gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          if (!printed) {
+            printed = true
+            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          }
           var i = 0
           val len = g.activeDomainSize
           val indices = g._indices
@@ -208,6 +216,8 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
       x0+l1
     else 0.0
   }
+
+  var printed = false
 
   def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
     val eta = rate
@@ -259,8 +269,11 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
             i += 1
           }
         case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
-          println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-            gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          if (!printed) {
+            printed = true
+            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+          }
           var i = 0
           val len = g.activeDomainSize
           val indices = g._indices

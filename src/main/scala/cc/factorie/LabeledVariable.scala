@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-import la.{SingletonBinaryLayeredTensorLike2, SingletonBinaryLayeredTensor2, SingletonBinaryTensorLike2, Tensor}
+import la._
 
 // Variables in "aimer/target" pairs, used for labeled data for training.
 // The "target" is a container for the true, correct value.
@@ -160,6 +160,11 @@ class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm
   override def valuesScore(t: Tensor) = t match {
     case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
     case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
+    case v: Outer1Tensor2 =>
+      (v.tensor1, v.tensor2) match {
+        case (v1: SingletonBinaryTensorLike1, v2: Tensor1) =>
+          if (v1.singleIndex == v2.maxIndex) 0.0 else 1.0
+      }
   }
 }
 object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]

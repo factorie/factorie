@@ -253,6 +253,15 @@ trait SparseIndexedTensor extends Tensor {
             }
             i += 1
           }
+        case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) => {
+          val i0 = t1.singleIndex
+          val arr = t2.asIntArray
+          var i = 0
+          while (i < arr.length) {
+            this += (t.singleIndex(i0, arr(i)), f)
+            i += 1
+          }
+        }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
     case t:SingletonBinaryTensor => this += (t.singleIndex, f)
