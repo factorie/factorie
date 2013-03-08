@@ -128,6 +128,30 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
   def isConverged = iteration >= maxIterations
 }
 
+class LockingStochasticTrainer[M<:Model](model: M,
+                                         optimizer: GradientOptimizer,
+                                         nThreads: Int = Runtime.getRuntime.availableProcessors(),
+                                         maxIterations: Int = 3)(implicit val locker: ExampleLocker)
+        extends HogwildTrainer[M](model, optimizer, nThreads, maxIterations) {
+  override def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M): Seq[Callable[Object]] = es.map(e => {
+    new Callable[Object] {
+      def call() = {
+        val gradient = model.newBlankSparseWeightsTensor
+        val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
+        val valueAccumulator = new LocalDoubleAccumulator()
+        val ee = locker.getLockingExample(e, model)
+        ee.lockExample()
+        e.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null)
+        // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+        gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+        optimizer.step(model.weightsTensor, gradient, valueAccumulator.value, 0)
+        ee.unlockExample()
+        null.asInstanceOf[Object]
+      }
+    }
+  }).toSeq
+}
+
 
 trait AccumulatorMaximizer extends WeightsTensorAccumulator {
   acc: AccumulatorMaximizer =>
