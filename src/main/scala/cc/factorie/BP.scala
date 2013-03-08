@@ -817,6 +817,15 @@ object InferByBPLoopy extends InferByBP {
   }
 }
 
+object InferByBPLoopyTreewise extends InferByBP {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+    case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
+  }
+  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
+    BP.inferLoopyTreewise(varying, model)
+  }
+}
+
 object MaximizeByBPLoopy extends Maximize with InferByBP {
   override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
