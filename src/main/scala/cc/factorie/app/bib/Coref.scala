@@ -1826,10 +1826,19 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
     def loadForExport:Seq[AuthorEntity] ={
       reset//(d:DiffList) => mergeUp(entityS1,entity2)(d)
+      val result = new ArrayBuffer[AuthorCubbie]
       var qtime = System.currentTimeMillis
-      val coreffedMentions = loadInBatches(()=>entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true)))
+      var startTime=qtime
+      var count=0
+      var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true))
+      while(it.hasNext){result += it.next;count+=1;if(count%10000==0)print(".");if(count%50000==0)println("Loaded "+result.size+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      count=0;startTime=System.currentTimeMillis
+      it = entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true))
+      while(it.hasNext){result += it.next;count+=1;if(count%10000==0)print(".");if(count%50000==0)println("Loaded "+result.size+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      //val coreffedMentions = loadInBatches(()=>entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true)))
       println("Loaded "+coreffedMentions.size+" nonsingleton mentions.")
-      val result = coreffedMentions ++ loadInBatches(()=>entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true)))
+      //val result = coreffedMentions ++ loadInBatches(()=>entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true)))
+      //val result = coreffedMentions ++ entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true)).toSeq
       println("Loading "+result.size+" took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
       qtime = System.currentTimeMillis
       val initialEntities:Seq[AuthorEntity] = (for(entityCubbie<-result.par) yield {val e = newEntity;entityCubbie.fetch(e);e}).seq
