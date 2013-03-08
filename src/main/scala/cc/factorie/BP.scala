@@ -683,7 +683,7 @@ object BP {
     }
   }
 
-  def interLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) {
+  def inferLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
     val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
