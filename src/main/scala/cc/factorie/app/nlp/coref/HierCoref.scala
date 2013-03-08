@@ -90,14 +90,14 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
 
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
     val initialSize = samplePool.size
-    var tries = 10
+    var tries = 5
     var e:T = null.asInstanceOf[T]
     while({tries-=1;tries} >= 0 && (e==null || !e.isConnected) && samplePool.size>0){
       e = samplePool(random.nextInt(samplePool.size))
       if(tries==1)performMaintenance(samplePool)
     }
     //if(e!=null && !e.isConnected)throw new Exception("NOT CONNECTED")
-    if(!e.isConnected)e==null.asInstanceOf[T]
+    if(e!= null && !e.isConnected)e==null.asInstanceOf[T]
     e
   }
   def setEntities(ents:Iterable[T]) = {entities = new ArrayBuffer[T];for(e<-ents)addEntity(e);deletedEntities = new ArrayBuffer[T]}
@@ -764,12 +764,11 @@ trait DBEntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizabl
   val mentionCount = new IntSlot("mc")
   def newEntityCubbie:DBEntityCubbie[T]
   def fetch(e:T) ={
-    e.priority = inferencePriority.value
-    e.attr[IsMention].set(isMention.value)(null)
-    e.isObserved=isMention.value
+    if(inferencePriority.isDefined)e.priority = inferencePriority.value
+    if(isMention.isDefined){e.attr[IsMention].set(isMention.value)(null);e.isObserved=isMention.value}
     e.attr[IsEntity].set(e.isRoot)(null)
     e.attr[EntityExists].set(e.isConnected)(null)
-    e.attr[MentionCountVariable].set(mentionCount.value)(null)
+    if(mentionCount.isDefined)e.attr[MentionCountVariable].set(mentionCount.value)(null)
     if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
     if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     //note that entity parents are set externally not inside the cubbie
@@ -792,9 +791,11 @@ trait EntityCollection[E<:HierEntity]{
   def store(entitiesToStore:Iterable[E]):Unit
   def nextBatch(n:Int=10):Seq[E]
   def loadAll:Seq[E]
+  def loadByCanopies(canopies:Seq[String]):Seq[E]
   def loadByIds(ids:Seq[Any]):Seq[E]
   def loadLabeledAndCanopies:Seq[E]
   def loadLabeled:Seq[E]
+  def printProgress=true
 }
 trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:DBEntityCubbie[E]] extends EntityCollection[E]{
   protected var _id2cubbie:HashMap[Any,C] = null
@@ -809,7 +810,9 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   protected def entityCubbieColl:MutableCubbieCollection[C]
   protected def changePriority(e:E):Unit ={
     val oldPriority = e.priority
-    e.priority = e.priority-1.0
+    //e.priority = e.priority-1.0
+
+
     //println("  prio change for "+e.canopyAttributes.head.canopyName+": "+oldPriority +"-->"+e.priority)
     /*
     //e.priority = scala.math.exp(e.priority - random.nextDouble)
@@ -855,6 +858,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       if(!e.isConnected && wasLoadedFromDB(e))deleted += e
       //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
     }
+    //for(e <- updated.iterator ++ created.iterator)if(!(e.isEntity.booleanValue && e.isMention.booleanValue))e.rootIdOpt = Some(e.entityRoot.id.toString)
     println("Done")
     print("About to delete "+deleted.size+" entities...")
     removeEntities(deleted)
@@ -919,7 +923,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       e
     }).toSeq
     for(entityCubbie <- cubbies)_id2cubbie += entityCubbie.id -> entityCubbie
-    assembleEntities(cubbies, (id:Any)=>{_id2entity(id)})
+    assembleEntities(cubbies, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
     entities
   }
 }
@@ -942,7 +946,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     println("initial cubbies : "+result.size)
     println("_id2cubbie: "+ _id2cubbie.size)
     println("_id2entity: "+ _id2entity.size)
-    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
     initialEntities
   }
   def loadLabeledAndCanopies:Seq[E] ={
@@ -1011,6 +1015,25 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     initialEntities
   }
 
+  def loadByCanopies(canopies:Seq[String]):Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    var qtime = System.currentTimeMillis
+    println("About to load entities from "+canopies.size+" canopies.")
+    //          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+    for(name <- canopies){
+      //println("  loading canopy: "+name)
+      result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+    }
+    println("Loading "+result.size+" cubbies from "+canopies.size + " canopies took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+    qtime = System.currentTimeMillis
+    val initialEntities:Seq[E] = (for(entityCubbie<-result.par) yield {val e = newEntity;entityCubbie.fetch(e);e}).seq
+    println("Converting cubbies to entities took  "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
+    initialEntities
+  }
   def nextBatch(n:Int=10):Seq[E] ={
     reset
     val canopyHash = new HashSet[String]
