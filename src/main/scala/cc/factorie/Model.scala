@@ -119,7 +119,7 @@ trait Model {
 
   // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
   //def weights: Tensor = weightsTensor
-  def weightsTensor: Tensor = {
+  lazy val weightsTensor: WeightsTensor = {
     val t = new WeightsTensor(f => f match {
       case f:DotFamily if (families.contains(f)) => f.weights.blankCopy // So that Model.weightsTensor.blankCopy will work
       case _ => throw new Error("Trying to add Tensor for DotFamily that was not part of initialization") 
