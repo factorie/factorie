@@ -23,21 +23,22 @@ import scala.collection.mutable.ArrayBuffer
 // If nothing, then incorporate it directly into LBFGS. -akm
 
 /**Maximize using Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
-class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with FastLogging {
+class LBFGS(var numIterations: Double = 1000,
+            var maxIterations: Int = 1000,
+            var tolerance: Double = 0.0001,
+            var gradientTolerance : Double= 0.001,
+            val eps : Double = 1.0e-5,
+            val rankOfApproximation : Int =  4,
+            val initialStepSize : Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
 
   case class StepTooSmallException(msg:String) extends Exception(msg)
 
-  var maxIterations = 1000
-  var tolerance = 0.0001
-  var gradientTolerance = 0.001
   var lineMaximizer: BackTrackLineOptimizer = null
 
-  val eps = 1.0e-5
   // The number of corrections used in BFGS update
   // ideally 3 <= m <= 7. Larger m means more cpu time, memory.
-  val m = 4
 
   // State of search
   // g = gradient
@@ -55,7 +56,6 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
   var alpha: Array[Double] = null
   var step = 1.0
   var iterations: Int = 0
-  val initialStepSize = 1.0
   var oldValue: Double  = Double.NegativeInfinity
 
   // override to evaluate on dev set, save the intermediate model, etc.
@@ -93,7 +93,7 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
       s = new ArrayBuffer[Tensor]
       y = new ArrayBuffer[Tensor]
       rho = new ArrayBuffer[Double]
-      alpha = new Array[Double](m)
+      alpha = new Array[Double](rankOfApproximation)
 
       params = weights
       oldParams = params.copy
@@ -230,9 +230,9 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
 
   }
   def pushTensor(l: ArrayBuffer[Tensor], toadd: Tensor): Unit = {
-    assert(l.size <= m)
+    assert(l.size <= rankOfApproximation)
 
-    if (l.size == m) {
+    if (l.size == rankOfApproximation) {
       l.remove(0)
       l += toadd.copy
       //todo: change back to this circular thing below
@@ -246,8 +246,8 @@ class LBFGS(val numIterations: Double = 1000) extends GradientOptimizer with Fas
   }
 
   def pushDbl(l: ArrayBuffer[Double], toadd: Double): Unit = {
-    assert(l.size <= m)
-    if (l.size == m) l.remove(0)
+    assert(l.size <= rankOfApproximation)
+    if (l.size == rankOfApproximation) l.remove(0)
     l += toadd
   }
 }
