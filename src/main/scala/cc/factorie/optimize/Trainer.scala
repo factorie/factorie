@@ -101,17 +101,32 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
   def isConverged = optimizer.isConverged
 }
 
-class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3) extends Trainer[M] {
+class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, val logEveryN : Int = 1000) extends Trainer[M] with FastLogging {
   import collection.JavaConversions._
+  var examplesProcessed = 0
+  var accumulatedValue = 0.0
+  var accumulatedTime = 0L
   def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M): Seq[Callable[Object]] = es.map(e => {
     new Callable[Object] { 
-      def call() = { 
+      def call() = {
+        val t0 = System.currentTimeMillis()
         val gradient = model.newBlankSparseWeightsTensor
         val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
-        e.accumulateExampleInto(model, gradientAccumulator, null, null)
+        val value = new LocalDoubleAccumulator()
+        e.accumulateExampleInto(model, gradientAccumulator, value, null)
         // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
         gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
-        optimizer.synchronized { optimizer.step(model.weightsTensor, gradient, 0, 0) }
+        optimizer.synchronized {
+          optimizer.step(model.weightsTensor, gradient, value.value, 0)
+          accumulatedTime += System.currentTimeMillis() - t0
+          examplesProcessed += 1
+          accumulatedValue += value.value
+          if (examplesProcessed % logEveryN == 0) {
+            logger.info(examplesProcessed + " examples at " + (1000*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
+            accumulatedTime = 0
+            accumulatedValue = 0
+          }
+        }
         null.asInstanceOf[Object]
       }
     }
@@ -344,6 +359,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
       if ((i % logEveryN == 0) && (i != 0)) {
         logger.info(i + " examples in "+ (1000*logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
         valuesSeenSoFar = 0.0
+        timePerIteration = 0
       }
       val t0 = System.currentTimeMillis()
       gradientAccumulator.tensor.zero()
