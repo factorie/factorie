@@ -339,17 +339,20 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     iteration += 1
     var valuesSeenSoFar = 0.0
+    var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
       if ((i % logEveryN == 0) && (i != 0)) {
-        logger.info(i + " examples. Average objective: " + (valuesSeenSoFar/logEveryN))
+        logger.info(i + " examples in "+ (logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
         valuesSeenSoFar = 0.0
       }
+      val t0 = System.currentTimeMillis()
       gradientAccumulator.tensor.zero()
       marginAccumulator.value = 0
       valueAccumulator.value = 0
       example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
       valuesSeenSoFar += valueAccumulator.value
       optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
+      timePerIteration += System.currentTimeMillis() - t0
     }})
   }
   def isConverged = iteration >= maxIterations
