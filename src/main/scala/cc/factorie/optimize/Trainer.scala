@@ -342,7 +342,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
     var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
       if ((i % logEveryN == 0) && (i != 0)) {
-        logger.info(i + " examples in "+ (logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
+        logger.info(i + " examples in "+ (1000*logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
         valuesSeenSoFar = 0.0
       }
       val t0 = System.currentTimeMillis()
