@@ -134,7 +134,7 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   var iteration = 0
   def processExamples(examples: Iterable[Example[M]]): Unit = {
-    if (logEveryN == -1) logEveryN = examples.size / 10
+    if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
     if (runnables eq null) runnables = examplesToRunnables[M](examples, model)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
@@ -353,7 +353,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
   val marginAccumulator = new LocalDoubleAccumulator
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
-    if (logEveryN == -1) logEveryN = examples.size / 10
+    if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
