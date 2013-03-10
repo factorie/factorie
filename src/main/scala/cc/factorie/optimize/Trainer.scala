@@ -335,14 +335,21 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
   var iteration = 0
   val marginAccumulator = new LocalDoubleAccumulator
+  val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     iteration += 1
+    var valuesSeenSoFar = 0.0
     examples.zipWithIndex.foreach({ case (example, i) => {
-      if (i % logEveryN == 0) logger.info(i + " examples")
+      if ((i % logEveryN == 0) && (i != 0)) {
+        logger.info(i + " examples. Average objective: " + (valuesSeenSoFar/logEveryN))
+        valuesSeenSoFar = 0.0
+      }
       gradientAccumulator.tensor.zero()
       marginAccumulator.value = 0
-      example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
+      valueAccumulator.value = 0
+      example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
+      valuesSeenSoFar += valueAccumulator.value
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
     }})
   }
   def isConverged = iteration >= maxIterations
