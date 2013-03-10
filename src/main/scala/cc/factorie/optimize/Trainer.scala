@@ -101,7 +101,7 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
   def isConverged = optimizer.isConverged
 }
 
-class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, val logEveryN : Int = 1000) extends Trainer[M] with FastLogging {
+class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, var logEveryN : Int = -1) extends Trainer[M] with FastLogging {
   import collection.JavaConversions._
   var examplesProcessed = 0
   var accumulatedValue = 0.0
@@ -134,6 +134,7 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   var iteration = 0
   def processExamples(examples: Iterable[Example[M]]): Unit = {
+    if (logEveryN == -1) logEveryN = examples.size / 10
     iteration += 1
     if (runnables eq null) runnables = examplesToRunnables[M](examples, model)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
@@ -346,12 +347,13 @@ class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var op
   def isConverged = iteration >= maxIterations
 }
 
-class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, val logEveryN: Int = 10000) extends Trainer[M] with util.FastLogging {
+class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
   var iteration = 0
   val marginAccumulator = new LocalDoubleAccumulator
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
+    if (logEveryN == -1) logEveryN = examples.size / 10
     iteration += 1
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
