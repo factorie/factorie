@@ -72,7 +72,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
     //snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
     println("Inferring initial database.")
     timeAndProcess(initialSteps)
-    snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
+    snapshot(totalTime,proposalCount.toInt,numAccepted.toInt,Evaluator.pairF1LabeledOnly(labeledData))
     println("About to process evidence stream with "+evidenceBatches.size + " evidence batches.")
     for(evidenceBatch <- evidenceBatches){
       batchCount += 1
@@ -201,7 +201,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
     if(curScore>maxScore)maxScore=curScore
     if(proposalCount % snapshotInterval == 0){
       val scores = Evaluator.pairF1LabeledOnly(labeledData)
-      snapshot(totalTime,proposalCount,numAccepted,scores)
+      snapshot(totalTime,proposalCount.toInt,numAccepted.toInt,scores)
     }
   }
   def snapshot(time:Long,numSamples:Int,numAccepted:Int,scores:Iterable[Double]):Unit ={

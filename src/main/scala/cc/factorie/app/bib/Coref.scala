@@ -7,12 +7,13 @@ import app.nlp.coref._
 import db.mongo._
 import com.mongodb.{DB, Mongo}
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}
-import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import la.DenseTensor
 import optimize.{WeightsAveraging, AROW, MIRA, SampleRankTrainer}
 import org.w3c.dom.{Node, NodeList, Document}
 import scala.concurrent.ops._
+import java.io._
+import java.text.DecimalFormat
 
 trait BibEntity{
   var dataSource:String=""
@@ -234,9 +235,7 @@ object Coref{
     }
     if(opts.exportAuthorIds.wasInvoked){
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
-      val es = tmpDB.authorColl.loadForExport
-      //EntityUtils.prettyPrintAuthors(es)
-      EntityUtils.export(new File(opts.exportAuthorIds.value),es)
+      tmpDB.authorColl.export(new File(opts.exportAuthorIds.value))
       println("Done exporting, exiting.")
       System.exit(0)
     }
@@ -376,7 +375,7 @@ object Coref{
       val trainer = new SampleRankTrainer(sampler, averager)
       //val trainer = new SampleRankTrainer(sampler, new AROW(authorCorefModel))
       //val trainer = new SampleRankTrainer(sampler, new MIRA)
-      Console.println ("Beginning inference and learning")
+      println ("Beginning inference and learning")
       trainer.processContext(null, opts.trainingSamples.value) // 3000
       averager.setWeightsToAverage(authorCorefModel.weightsTensor)
       //val pSampler = new ParallelAuthorSampler(authorCorefModel){temperature = 0.001}
@@ -1003,7 +1002,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
     //println("Reset canopies")
     //println("  canopyNames: "+this.canopyNames.size)
     //canopyNames.toSeq.foreach((s:String) => println("  " + s))
-    println("  canopies: "+canopies.size)
+//    println("  canopies: "+canopies.size)
     //var count = 0
     //println("  top canopies:")
     //for((k,v) <- canopies.toSeq.sortBy(_._2.size).reverse.take(10))
@@ -1011,7 +1010,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
     //  count += v.size
     //}
     //println("  count: "+count)
-    println("  candidates: "+candidates.size)
+//    println("  candidates: "+candidates.size)
   }
   protected def sampleCanopy:String ={
     val e = mentions(random.nextInt(mentions.size))
@@ -1206,17 +1205,20 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable]{
 
 
 trait WorkerStatistics{
+  def shortDecimal:DecimalFormat //= new java.text.DecimalFormat("0.0#")
   var startTime = 0L
   def actualTotalTime = System.currentTimeMillis - startTime
   def timeBusy = timeFindingWork + timeDoingWork + timeSavingWork
   var timeFindingWork = 0L
   var timeDoingWork = 0L
   var timeSavingWork = 0L
+  var itemsProcessed = 0L
   def resetStats:Unit ={
     startTime = 0L
     timeFindingWork = 0L
     timeDoingWork = 0L
     timeSavingWork = 0L
+    itemsProcessed=0L
   }
   def seconds(ms:Long) = (ms/1000L).toInt
   def printStats:Unit={
@@ -1224,10 +1226,10 @@ trait WorkerStatistics{
     val secondsWorking = seconds(timeDoingWork)
     val secondsSaving = seconds(timeSavingWork)
     val total = seconds(timeBusy)
-    val pctFinding = timeFindingWork.toDouble/timeBusy.toDouble
-    val pctWorking = timeDoingWork.toDouble/timeBusy.toDouble
-    val pctSavingWork = timeSavingWork.toDouble/timeBusy.toDouble
-    println("Time spent finding work: "+secondsFinding + " sec. Doing Work: "+secondsWorking+" sec. Saving work: "+secondsSaving+" total: "+total+" sec. Including rest: "+seconds(actualTotalTime)+" sec.")
+    val pctFinding = shortDecimal.format(timeFindingWork.toDouble/timeBusy.toDouble*100.0)
+    val pctWorking = shortDecimal.format(timeDoingWork.toDouble/timeBusy.toDouble*100.0)
+    val pctSavingWork = shortDecimal.format(timeSavingWork.toDouble/timeBusy.toDouble*100.0)
+    println("Time spent finding work: "+secondsFinding+"sec. ("+pctFinding+"%), Doing Work: "+secondsWorking+"sec. ("+pctWorking+"%), Saving work: "+secondsSaving+" sec ("+pctSavingWork+") total: "+total+" sec. Including rest: "+seconds(actualTotalTime)+" sec.")
   }
 }
 
@@ -1242,34 +1244,40 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
     initialize
     startTime = System.currentTimeMillis
     var timer=System.currentTimeMillis;val work = findWork;timeFindingWork += (System.currentTimeMillis() - timer)
-    timer=System.currentTimeMillis;val completedWork = doWork(work);timeDoingWork += (System.currentTimeMillis() - timer)
-    timer=System.currentTimeMillis;saveWork(completedWork);timeSavingWork += (System.currentTimeMillis() - timer)
+    if(work.size>=2){
+      timer=System.currentTimeMillis;val completedWork = doWork(work);timeDoingWork += (System.currentTimeMillis() - timer)
+      timer=System.currentTimeMillis;saveWork(completedWork);timeSavingWork += (System.currentTimeMillis() - timer)
+    }
     _isFinished=true
   }
 }
 class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val workCollection:EntityCollection[E], val sampler:BibSampler[E], val canopies:Seq[String]) extends Worker[E]{
   sampler.printInfo=false
-  def numberOfSteps(numEntities:Int):Int = numEntities*100
+  def numberOfSteps(numEntities:Int):Int = if(numEntities <= 100)numEntities*numEntities else 100*numEntities
   def initialize:Unit = {}
-  def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);r}
+  def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);itemsProcessed=r.size;r}
   def doWork(entities:Seq[E]):Seq[E] = {sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.size));(sampler.getEntities ++ sampler.getDeletedEntities)}
   def saveWork(entities:Seq[E]):Unit = workCollection.store(entities)
 }
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
-  def isWorking:Boolean = (workers.size>0)
+  def triggerSafeQuit:Boolean= _triggerSafeQuit
+  protected var _triggerSafeQuite:Boolean=false
+  def isWorking:Boolean = (workers.size>0 && activeWorkers.size==0)
   protected var numWorkers=0
   var totalFinished = 0
   def initialize:Unit
   def workers:Queue[Worker[E]]
-  def maxWorkers:Int=25
+  def maxWorkers:Int = _maxWorkers
+  protected var _maxWorkers=30
   var activeWorkers = new ArrayBuffer[Worker[E]]
   def manageWorkers:Unit ={
     val active = new ArrayBuffer[Worker[E]]
     for(worker <- activeWorkers)if(worker.isFinished)finalizeWorker(worker)else active += worker
     activeWorkers = active
     //println("Managing "+numWorkers+" active workers.")
-    while(numWorkers<25){
-      println("Spawning worker. Active workers="+numWorkers+" Total workers:"+totalFinished)
+    while(numWorkers<maxWorkers && !triggerSafeQuite){
+      val wpm = (totalFinished.toDouble/actualTotalTime.toDouble*1000.0*60.0).toInt
+      println("Spawning worker. Active workers="+numWorkers+" Total workers:"+totalFinished+". Wpm: "+wpm)
       spawnWorker
     }
   }
@@ -1277,6 +1285,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     timeFindingWork += worker.timeFindingWork
     timeDoingWork += worker.timeDoingWork
     timeSavingWork += worker.timeSavingWork
+    itemsProcessed += worker.itemsProcessed
     totalFinished += 1
     numWorkers -= 1
   }
@@ -1306,12 +1315,12 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     println("Done managing workers.")
   }
 }
-abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val canopyListFile:File) extends Foreman[E] with SamplingStatistics{
+abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val canopyListFile:File,parameterFile:File = new File("foreman.params")) extends Foreman[E] with SamplingStatistics{
   def newEntityCollectionView:EntityCollection[E]
   def newSampler:BibSampler[E]
   val workers = new Queue[Worker[E]]
   def initialize:Unit = {
-    scala.io.Source.fromFile(canopyListFile).getLines().toSeq.grouped(10).foreach((canopySet:Seq[String])=>workers.enqueue(new DefaultSamplerWorker(newEntityCollectionView,newSampler,canopySet)))
+    random.shuffle(scala.io.Source.fromFile(canopyListFile).getLines().toSeq).grouped(1).foreach((canopySet:Seq[String])=>workers.enqueue(new DefaultSamplerWorker(newEntityCollectionView,newSampler,canopySet)))
     println("Number of queued workers: "+workers.size)
   }
   override def finalizeWorker(worker:Worker[E])={
@@ -1324,19 +1333,47 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
       case _ =>{}
     }
   }
+  protected def spawnParameterReader ={
+    spawn{
+      while(true){
+        var reader:BufferedReader = null
+        try{
+          reader = new BufferedReader(new InputStreamReader(new FileInputStream(parameterFile)))
+          var line = reader.readLine
+          while(line!=null){
+            if(line=="KILL"){
+              _triggerSafeQuit=true
+            }else{
+              val split = line.split(" ")
+              val propName = split(0)
+              val propValue = split(1)
+              if(propName == "MAX_WORKERS"){if(propValue.toInt != _maxWorkers){_maxWorkers = propValue.toInt;println("Read new parameter for MAX_WORKERS: " + maxWorkers)+"."}}
+            }
+          }
+        }catch{case e:Exception => {println("Warnig: exception caught while reading foreman parameter file: "+parameterFile.getName)}}
+        finally{if(reader != null)reader.close}
+      }
+      Thread.sleep(15000)
+    }
+  }
   override protected def spawnPrintThreads:Unit = {
     super.spawnPrintThreads
     spawn{while(true){printSamplingStats;Thread.sleep(60000)}}
+    spawnParameterReader
   }
   def printSamplingStats:Unit ={
     val timeDiffMil = actualTotalTime
     var sampsPerSec:Int = -1
     var acceptedPerSec:Int = -1
+    var wpm = -1
+    var eps = -1
     if(timeDiffMil!=0){
       sampsPerSec = (proposalCount.toDouble/timeDiffMil.toDouble*1000.0).toInt
       acceptedPerSec = (numAccepted.toDouble/timeDiffMil.toDouble*1000.0).toInt
+      wpm = (totalFinished.toDouble/timeDiffMil.toDouble*1000.0*60.0).toInt
+      eps = (itemsProcessed.toDouble/timeDiffMil.toDouble*1000.0).toInt
     }
-    println("Foreman worker evaluation: "+sampsPerSec+" pps. "+acceptedPerSec+" aps. Elapsed: "+(timeDiffMil/1000L)+" s. (sps = proposals per second, aps = accepted proposals per second.)")
+    println("Foreman worker evaluation: "+sampsPerSec+" pps, "+acceptedPerSec+" aps, " + wpm + " wpm, "+eps+" eps. Elapsed: "+(timeDiffMil/1000L)+" s. Total proposals: "+proposalCount+". Total items: "+itemsProcessed)
   }
 }
 class DefaultAuthorForeman(val model:AuthorCorefModel, val mongoServer:String, val mongoPort:Int, val mongoDBName:String, canopyListFile:File) extends DefaultForeman[AuthorEntity](canopyListFile){
@@ -1348,6 +1385,7 @@ class DefaultAuthorForeman(val model:AuthorCorefModel, val mongoServer:String, v
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie
     def newEntity:AuthorEntity = new AuthorEntity
     def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
+    printProgress=false
   }
 }
 
@@ -1439,11 +1477,11 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     //println("n: "+n+" num threads: "+numThreads+" n/nt: "+(n/numThreads))
     println("Num threads: "+numThreads)
     val acceptanceRateCalculationWindow = 25000
-    var recalcCount=0
+    var recalcCount=0L
     var i = 0
     var finished=false
     while(!finished){
-      if(proposalCount > 0 && ((proposalCount - recalcCount) >= acceptanceRateCalculationWindow)){
+      if(proposalCount > 0 && ((proposalCount - recalcCount).toInt >= acceptanceRateCalculationWindow)){
         samplers.foreach((s:BibSampler[E]) => {s.calculateInstantaneousAcceptanceRate})
         recalcCount=proposalCount
       }
@@ -1525,13 +1563,13 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
 
 trait SamplingStatistics{
   val shortDecimal = new java.text.DecimalFormat("0.0#")
-  var printDotInterval=1000
-  var printUpdateInterval=20000
-  var proposalCount = 0
+  var printDotInterval=1000L
+  var printUpdateInterval=20000L
+  var proposalCount = 0L
   protected var totalTime:Long=0L
   protected var intervalTime:Long=0L
   var printInfo=true
-  var numAccepted = 0
+  var numAccepted = 0L
   var numAcceptedInTimeWindow=0
   var numDiffVars = 0L
   var numDiffVarsInWindow=0
@@ -1540,13 +1578,13 @@ trait SamplingStatistics{
   def resetSamplingStatistics:Unit ={
     totalTime=System.currentTimeMillis
     intervalTime=totalTime
-    numAccepted=0
+    numAccepted=0L
     numAcceptedInTimeWindow=0
     numDiffVars=0L
     numDiffVarsInWindow=0
     allDiffVarsInWindow=0
     numNonTrivialDiffs=0
-    proposalCount=0
+    proposalCount=0L
   }
 }
 
@@ -1710,11 +1748,11 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     }
 //    canopyStats.sampled
 
-    proposalCount += 1
+    proposalCount += 1L
     if(printInfo){
-      if(proposalCount % printDotInterval==0)
+      if(proposalCount % printDotInterval==0L)
         print(".")
-      if(proposalCount % printUpdateInterval==0)
+      if(proposalCount % printUpdateInterval==0L)
       printSamplingInfo()
     }
   }
@@ -1727,14 +1765,14 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     numAcceptedLastTime=numAccepted
     timeStepOfLastCall = proposalCount
   }
-  private var numAcceptedLastTime=0
-  private var timeStepOfLastCall=0
+  private var numAcceptedLastTime=0L
+  private var timeStepOfLastCall=0L
   protected var _instantPctAccepted=1.0
-  protected var _forPSIAcceptanceCount=0
-  protected var _forPSIATimeCount=0
-  def printSamplingInfo(count:Int = proposalCount):Unit ={
+  protected var _forPSIAcceptanceCount=0L
+  protected var _forPSIATimeCount=0L
+  def printSamplingInfo(count:Long = proposalCount):Unit ={
     val numSamplesElapsed = (proposalCount - _forPSIATimeCount)
-    numAcceptedInTimeWindow = numAccepted - _forPSIAcceptanceCount
+    numAcceptedInTimeWindow = (numAccepted - _forPSIAcceptanceCount).toInt
     val instantPctAccepted = numAcceptedInTimeWindow.toDouble/(numSamplesElapsed).toDouble*100.0
     _forPSIAcceptanceCount=numAccepted
     _forPSIATimeCount=proposalCount
@@ -1824,29 +1862,40 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie
     def newEntity:AuthorEntity = new AuthorEntity
     def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
-    def loadForExport:Seq[AuthorEntity] ={
+    def export(file:File):Unit ={
       reset//(d:DiffList) => mergeUp(entityS1,entity2)(d)
-      val result = new ArrayBuffer[AuthorCubbie]
+      val mentions = new Queue[AuthorCubbie]
+      val entities = new ArrayBuffer[AuthorEntity]
       var qtime = System.currentTimeMillis
       var startTime=qtime
       var count=0
-      var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true))
-      while(it.hasNext){result += it.next;count+=1;if(count%10000==0)print(".");if(count%50000==0)println("Loaded "+result.size+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
-      count=0;startTime=System.currentTimeMillis
-      it = entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true))
-      while(it.hasNext){result += it.next;count+=1;if(count%10000==0)print(".");if(count%50000==0)println("Loaded "+result.size+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
-      //val coreffedMentions = loadInBatches(()=>entityCubbieColl.query(_.isMention(true).parentRef.exists(false),_.parentRef.select.isMention(true)))
-      println("Loaded "+coreffedMentions.size+" nonsingleton mentions.")
-      //val result = coreffedMentions ++ loadInBatches(()=>entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true)))
-      //val result = coreffedMentions ++ entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true)).toSeq
-      println("Loading "+result.size+" took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
-      qtime = System.currentTimeMillis
-      val initialEntities:Seq[AuthorEntity] = (for(entityCubbie<-result.par) yield {val e = newEntity;entityCubbie.fetch(e);e}).seq
-      println("Converting cubbies to entities took  "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
-      for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
-      for(entity <- initialEntities)_id2entity += entity.id -> entity
-      assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[AuthorEntity]})})
-      initialEntities
+
+      var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention(true))
+      //note that we do not add the mention cubbies to the id maps because they are not needed for the reconstruction
+      while(it.hasNext){val c = it.next;mentions += c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      it = entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true))
+      while(it.hasNext){val c = it.next;_id2cubbie += c.id -> c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      count=0
+      println("About to export entities to "+file.getAbsolutePath)
+      val pw = new PrintWriter(file)
+      pw.println("mention-id entity-id")
+      while(mentions.size>0){
+        var m = mentions.dequeue
+        var eid:String=m.id.toString
+        var n = m
+        while(n!=null){
+          eid=n.id.toString
+          if(n.parentRef.isDefined)n = _id2cubbie.getOrElse(n.parentRef.value,null)
+          else n = null
+        }
+        pw.println(m.id.toString+" "+eid)
+        pw.flush
+        count += 1
+        if(count%10000==0)print(".")
+        if(count%500000==0)println("Wrote "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")
+      }
+      pw.flush
+      pw.close
     }
     protected def loadInBatches(itf:()=>MongoCubbieCollection[AuthorCubbie]#CursorIterator):Seq[AuthorCubbie] ={
       var skipTo:Int=0

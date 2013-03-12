@@ -795,7 +795,7 @@ trait EntityCollection[E<:HierEntity]{
   def loadByIds(ids:Seq[Any]):Seq[E]
   def loadLabeledAndCanopies:Seq[E]
   def loadLabeled:Seq[E]
-  def printProgress=true
+  var printProgress=true
 }
 trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:DBEntityCubbie[E]] extends EntityCollection[E]{
   protected var _id2cubbie:HashMap[Any,C] = null
@@ -846,10 +846,10 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
     val updated = new ArrayBuffer[E]
     val created = new ArrayBuffer[E]
     var timer = System.currentTimeMillis
-    print("Updating priorities...")
+    if(printProgress)print("Updating priorities...")
     for(e <- entitiesToStore)changePriority(e)
-    println("Done")
-    print("Identifying changed identities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("Identifying changed identities...")
     for(e<-entitiesToStore){
       if(e.isConnected){
         if(wasLoadedFromDB(e))updated += e
@@ -859,11 +859,11 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
     }
     //for(e <- updated.iterator ++ created.iterator)if(!(e.isEntity.booleanValue && e.isMention.booleanValue))e.rootIdOpt = Some(e.entityRoot.id.toString)
-    println("Done")
-    print("About to delete "+deleted.size+" entities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("About to delete "+deleted.size+" entities...")
     removeEntities(deleted)
-    println("Done")
-    print("About to update "+updated.size+" entities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("About to update "+updated.size+" entities...")
     val updateTimer = System.currentTimeMillis
     var updateTimerElapsed = System.currentTimeMillis
     var count = 0
@@ -871,23 +871,23 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       entityCubbieColl.updateDelta(_id2cubbie.getOrElse(e.id,null).asInstanceOf[C],putEntityInCubbie(e))
       count += 1
       val windowElapsed = (System.currentTimeMillis- updateTimerElapsed)/1000L
-      if(windowElapsed > 30){
+      if(printProgress && windowElapsed > 30){
         val elapsed = (System.currentTimeMillis() - updateTimer)/1000L
         updateTimerElapsed = System.currentTimeMillis
         println("processed "+count + " in "+elapsed + " seconds.")
       }
     }
-    println("Done")
-    print("About to insert "+created.size+" entities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("About to insert "+created.size+" entities...")
     for(e <- created)entityCubbieColl += putEntityInCubbie(e)
-    println("Done")
-    println("Saving took "+((System.currentTimeMillis() - timer)/1000L)+" seconds.")
+    if(printProgress)println("Done")
+    if(printProgress)println("Saving took "+((System.currentTimeMillis() - timer)/1000L)+" seconds.")
     deletedHook(deleted)
     updatedHook(updated)
     createdHook(created)
-    println("deleted: "+deleted.size)
-    println("updated: "+updated.size)
-    println("created: "+created.size)
+    if(printProgress)println("deleted: "+deleted.size)
+    if(printProgress)println("updated: "+updated.size)
+    if(printProgress)println("created: "+created.size)
   }
   protected def deletedHook(deleted:Seq[E]):Unit ={}
   protected def updatedHook(updated:Seq[E]):Unit ={}
@@ -895,18 +895,20 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   /**This is database specific for example because mongo has a specialized _id field*/
   protected def removeEntities(entitiesToRemove:Seq[E]):Unit
   def assembleEntities(toAssemble:TraversableOnce[C],id2entity:Any=>E):Unit ={
-    println("Assembling entities")
+    if(printProgress)println("Assembling entities")
     var count = 0
     var startTime = System.currentTimeMillis
     var intervalTime = System.currentTimeMillis
     for(c<-toAssemble){
       count += 1
-      if(count % 10000 == 0)print(".")
-      if(count % (25*10000) == 0){
-        val elapsed = (System.currentTimeMillis - startTime)/1000L
-        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
-        intervalTime = System.currentTimeMillis
+      if(printProgress){
+        if(count % 10000 == 0)print(".")
+        if(count % (25*10000) == 0){
+          val elapsed = (System.currentTimeMillis - startTime)/1000L
+          val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
+          println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+          intervalTime = System.currentTimeMillis
+        }
       }
       val child = id2entity(c.id)
       val parent = if(c.parentRef.isDefined)id2entity(c.parentRef.value) else null.asInstanceOf[E]
@@ -915,7 +917,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   }
   def loadByIds(ids:Seq[Any]):Seq[E] ={
     reset
-    println("Loading a list of "+ids.size+ " ids.")
+    if(printProgress)println("Loading a list of "+ids.size+ " ids.")
     val cubbies = entityCubbieColl.findByIds(ids) //entityColl.find(ids)
     val entities = (for(entityCubbie <- cubbies)yield{
       val e = newEntity
@@ -1019,16 +1021,14 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     reset
     val result = new ArrayBuffer[C]
     var qtime = System.currentTimeMillis
-    println("About to load entities from "+canopies.size+" canopies.")
-    //          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+//    println("About to load entities from "+canopies.size+" canopies.")
     for(name <- canopies){
-      //println("  loading canopy: "+name)
       result ++= entityCubbieColl.query(_.canopies(Seq(name)))
     }
-    println("Loading "+result.size+" cubbies from "+canopies.size + " canopies took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+//    println("Loading "+result.size+" cubbies from "+canopies.size + " canopies took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
     qtime = System.currentTimeMillis
     val initialEntities:Seq[E] = (for(entityCubbie<-result.par) yield {val e = newEntity;entityCubbie.fetch(e);e}).seq
-    println("Converting cubbies to entities took  "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+//    println("Converting cubbies to entities took  "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
     for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
     for(entity <- initialEntities)_id2entity += entity.id -> entity
     assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
