@@ -122,7 +122,7 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
           examplesProcessed += 1
           accumulatedValue += value.value
           if (examplesProcessed % logEveryN == 0) {
-            logger.info(examplesProcessed + " examples at " + (1000*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
+            logger.info(examplesProcessed + " examples at " + (1000.0*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
             accumulatedTime = 0
             accumulatedValue = 0
           }
@@ -359,7 +359,7 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
     var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
       if ((i % logEveryN == 0) && (i != 0)) {
-        logger.info(i + " examples in "+ (1000*logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
+        logger.info(i + " examples in "+ (1000.0*logEveryN/timePerIteration)+" examples/sec. Average objective: " + (valuesSeenSoFar/logEveryN))
         valuesSeenSoFar = 0.0
         timePerIteration = 0
       }
