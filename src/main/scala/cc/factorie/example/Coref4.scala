@@ -1,6 +1,7 @@
 package cc.factorie.example
 
 import cc.factorie._
+import app.bib.EntityUtils
 import cc.factorie.app.nlp.coref._
 import cc.factorie.db.mongo._
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCubbieConverter, MongoCubbieImplicits}
@@ -79,22 +80,15 @@ object Coref4{
       result
     }
   }
-  /**Inference: a kinetic MCMC sampler*/
+  /**Inference: a multi-try MH MCMC sampler. Override 'def settings' in HierCorefSampler for further flexibility.*/
   class MyEntitySampler(model:Model) extends HierCorefSampler[MyEntity](model){
     def newEntity = new MyEntity
-    override def mergeUp(e1:MyEntity,e2:MyEntity)(implicit d:DiffList):MyEntity = {
-      val oldParent1 = e1.parentEntity
-      val oldParent2 = e2.parentEntity
-      val result = newEntity
-      e1.setParentEntity(result)(d)
-      e2.setParentEntity(result)(d)
-      result.attr[Name].set(e1.attr[Name].value)
-      result.attr[Bow].add(e1.attr[Bow].value)(d)
-      result.attr[Bow].add(e2.attr[Bow].value)(d)
-      structurePreservationForEntityThatLostChild(oldParent1)(d)
-      structurePreservationForEntityThatLostChild(oldParent2)(d)
-      result
+    /**This method initializes the attributes of new entity roots that are hypothesized during inference*/
+    protected def initializeAttributesOfNewRoot(e1:MyEntity,e2:MyEntity,parent:MyEntity)(implicit d:DiffList):Unit ={
+      parent.attr[Name].set(e1.attr[Name].value)
+      HierEntityUtils.createBagsForMergeUp(e1,e2,parent)(d) //automatically propagates "Bow" and any other bag of words added to the entities' .attr
     }
+    /**This method proposes new attributes for entities by sampling from their child's attributes*/
     def sampleAttributes(entity:MyEntity)(implicit d:DiffList) = {
       val representative = entity.childEntities.members.sampleUniformly(random)
       entity.attr[Name].set(representative.attr[Name].value)
@@ -102,7 +96,6 @@ object Coref4{
       if(entity.parentEntity != null)entity.parentEntity.attr[Dirty].++()(d)
     }
   }
-
   def main(args:Array[String]) = {
     val database = new EntityDatabase()
     val model = new SimpleHierModel
@@ -113,7 +106,6 @@ object Coref4{
     sampler.process(1000)
     printEntities(sampler.getEntities)
   }
-
   val data = List(
     ("Andrew McCallum", List("nips", "icml", "acl")),
     ("Andrew MacCallum", List("acl", "emnlp")),

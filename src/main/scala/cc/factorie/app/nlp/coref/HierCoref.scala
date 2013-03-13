@@ -114,6 +114,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   }
   //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/
+  /*
   def settings(c:Null) : SettingIterator = new SettingIterator {
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
     val (entity1,entity2) = nextEntityPair
@@ -142,6 +143,55 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
     def reset = i = 0
   }
+  */
+  override def settings(c:Null) : SettingIterator = new SettingIterator {
+    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
+    val (sampledEntity1,sampledEntity2) = nextEntityPair //entityS1,entityS2
+    val entity1 = sampledEntity1.getAncestor(random.nextInt(sampledEntity1.depth+1)).asInstanceOf[T]
+    val entity2 = sampledEntity2.getAncestor(random.nextInt(sampledEntity2.depth+1)).asInstanceOf[T]
+    if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
+      //Consider merge proposals each with a different attachment point for entity2 in entity1's tree.
+      var e1 = sampledEntity1
+      while(e1 != null){
+        proposeMergeIfValid(e1,entity2,changes)
+        e1 = e1.parentEntity.asInstanceOf[T]
+      }
+      //If the entities are roots, generate a proposal that merges them by creating a new parent entity-node for the two roots.
+      if(entity1.parentEntity==null && entity2.parentEntity==null)
+        changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+      //If up to this point, the sampler has not been able to propose merges, then attempt to propose
+      if(changes.size==0){
+        val root1 = entity1.entityRoot.asInstanceOf[T]
+        val root2 = entity2.entityRoot.asInstanceOf[T]
+        if(!isMention(root2)){
+          proposeMergeIfValid(root2,entity1,changes)
+        } else{
+          if(!isMention(root1)){
+          proposeMergeIfValid(root1,entity2,changes)
+          }else changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[T],entity2.entityRoot.asInstanceOf[T])(d)}
+        }
+      }
+    } else { //sampled nodes refer to same entity
+      changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
+      changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
+      if(entity1.parentEntity != null && !entity1.isObserved)
+        changes += {(d:DiffList) => {collapse(entity1)(d)}}
+    }
+    if(!entity1.isObserved && entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
+    if(!entity1.entityRoot.isObserved && entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[T])(d)}
+    changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
+    var i = 0
+    def hasNext = i < changes.length
+    def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
+    def reset = i = 0
+  }
+  def proposeMergeIfValid(entity1:T,entity2:T,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
+    //only do the merge if the entities are in different trees, and further require that a mention never has children (always a leaf).
+    if (entity1.entityRoot.id != entity2.entityRoot.id){ //sampled nodes refer to different entities
+      if(!isMention(entity1))changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)}
+      else if(!isMention(entity2))changes += {(d:DiffList) => mergeLeft(entity2,entity1)(d)}
+    }
+  }
   /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
   def collapse(entity:T)(implicit d:DiffList):Unit ={
     if(entity.parentEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
@@ -164,16 +214,19 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     //println("ROOT3:"+cc.factorie.example.Coref3.entityString(root))
 
   }
-  /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
+  /**Peels off the entity "right", second argument not necessary except for error checking/debuggin.*/
   def splitRight(left:T,right:T)(implicit d:DiffList):Unit ={
     val oldParent = right.parentEntity
     right.setParentEntity(null)(d)
+    propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   /**Jump function that proposes merge: entity1<----entity2*/
-  def mergeLeft(entity1:T,entity2:T)(implicit d:DiffList):Unit ={
-    val oldParent = entity2.parentEntity
-    entity2.setParentEntity(entity1)(d)
+  def mergeLeft(left:T,right:T)(implicit d:DiffList):Unit ={
+    val oldParent = right.parentEntity
+    right.setParentEntity(left)(d)
+    propagateBagUp(right)(d)
+    propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   /**Jump function that proposes merge: entity1--->NEW-PARENT-ENTITY<---entity2 */
@@ -183,10 +236,16 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     val result = newEntity
     e1.setParentEntity(result)(d)
     e2.setParentEntity(result)(d)
+    initializeAttributesOfNewRoot(e1,e2,result)(d) //this is implemented in the sub classes
+    propagateRemoveBag(e1,oldParent1)(d)
+    propagateRemoveBag(e2,oldParent2)(d)
     structurePreservationForEntityThatLostChild(oldParent1)(d)
     structurePreservationForEntityThatLostChild(oldParent2)(d)
     result
   }
+  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit = HierEntityUtils.propagateBagUp(entity)(d)
+  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit = HierEntityUtils.propagateRemoveBag(parting,formerParent)(d)
+  protected def initializeAttributesOfNewRoot(e1:T,e2:T,parent:T)(implicit d:DiffList):Unit
   /**Ensure that chains are not created in our tree. No dangling children-entities either.*/
   protected def structurePreservationForEntityThatLostChild(e:Entity)(implicit d:DiffList):Unit ={
     if(e!=null && e.childEntitiesSize<=1){

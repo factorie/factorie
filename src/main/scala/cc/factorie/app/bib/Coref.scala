@@ -131,8 +131,8 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
       super.+=(a)
     }
   }
-  def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
-  def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
+  //def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
+  //def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
 class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity with HumanEditMention{
   //println("   creating author: f:"+f+" m: "+m+" l: "+l)
@@ -774,7 +774,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     if(author.attr[Dirty].value>0)author.attr[Dirty].--()(d)
     if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
   }
-  protected def createAttributesForMergeUp(e1:AuthorEntity,e2:AuthorEntity,parent:AuthorEntity)(implicit d:DiffList):Unit ={
+  override protected def initializeAttributesOfNewRoot(e1:AuthorEntity,e2:AuthorEntity,parent:AuthorEntity)(implicit d:DiffList):Unit ={
     if(e1.attr[FullName].middleName.length>0)
       parent.attr[FullName].setFullName(e1.attr[FullName])
     else
@@ -790,7 +790,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
-  def proposeMergeIfValid(entity1:AuthorEntity,entity2:AuthorEntity,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
+  override def proposeMergeIfValid(entity1:AuthorEntity,entity2:AuthorEntity,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
     if (entity1.entityRoot.id != entity2.entityRoot.id){ //sampled nodes refer to different entities
       //if(entity1.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK) ^ entity2.editType.eq(HumanEditMention.ET_SHOULD_NOT_LINK))
       //  changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
@@ -924,7 +924,7 @@ class PaperSampler(model:Model) extends BibSampler[PaperEntity](model){
     author.attr[Dirty].reset
     if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
   }
-  protected def createAttributesForMergeUp(e1:PaperEntity,e2:PaperEntity,parent:PaperEntity)(implicit d:DiffList):Unit ={
+  protected def initializeAttributesOfNewRoot(e1:PaperEntity,e2:PaperEntity,parent:PaperEntity)(implicit d:DiffList):Unit ={
     parent.attr[Title].set(e1.title.value)
     parent.attr[BagOfAuthors].add(e1.attr[BagOfAuthors].value)(d)
     parent.attr[BagOfAuthors].add(e2.attr[BagOfAuthors].value)(d)
@@ -1233,7 +1233,9 @@ trait WorkerStatistics{
   }
 }
 
+
 trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
+  val shortDecimal = new java.text.DecimalFormat("0.0#")
   protected var _isFinished=false
   def isFinished:Boolean = _isFinished
   def initialize:Unit
@@ -1261,7 +1263,7 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
 }
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
   def triggerSafeQuit:Boolean= _triggerSafeQuit
-  protected var _triggerSafeQuite:Boolean=false
+  protected var _triggerSafeQuit:Boolean=false
   def isWorking:Boolean = (workers.size>0 && activeWorkers.size==0)
   protected var numWorkers=0
   var totalFinished = 0
@@ -1275,7 +1277,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     for(worker <- activeWorkers)if(worker.isFinished)finalizeWorker(worker)else active += worker
     activeWorkers = active
     //println("Managing "+numWorkers+" active workers.")
-    while(numWorkers<maxWorkers && !triggerSafeQuite){
+    while(numWorkers<maxWorkers && !triggerSafeQuit){
       val wpm = (totalFinished.toDouble/actualTotalTime.toDouble*1000.0*60.0).toInt
       println("Spawning worker. Active workers="+numWorkers+" Total workers:"+totalFinished+". Wpm: "+wpm)
       spawnWorker
@@ -1707,7 +1709,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     val result = newEntity
     e1.setParentEntity(result)(d)
     e2.setParentEntity(result)(d)
-    createAttributesForMergeUp(e1,e2,result)
+    initializeAttributesOfNewRoot(e1,e2,result)(d)
     propagateRemoveBag(e1,oldParent1)(d)
     propagateRemoveBag(e2,oldParent2)(d)
     structurePreservationForEntityThatLostChild(oldParent1)(d)
@@ -1842,9 +1844,9 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     for(p <- proposals)allDiffVarsInWindow += p.diff.size
     super.pickProposal(proposals)
   }
-  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateBagUp(entity)(d)
-  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateRemoveBag(parting,formerParent)(d)
-  protected def createAttributesForMergeUp(e1:E,e2:E,parent:E)(implicit d:DiffList):Unit
+  override protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateBagUp(entity)(d)
+  override protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateRemoveBag(parting,formerParent)(d)
+  //protected def createAttributesForMergeUp(e1:E,e2:E,parent:E)(implicit d:DiffList):Unit
 }
 
 /**Back-end implementations for prioritized and canopy based DB access and inference*/

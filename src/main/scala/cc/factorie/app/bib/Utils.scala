@@ -703,23 +703,10 @@ object EntityUtils{
     val levelIndent = {var r="";for(i<-0 until depth)r+=perLevelIndent;r}
     result.append("\n"+levelIndent)
     if(e.isRoot){
-      if(e.isInstanceOf[HumanEditMention] && e.asInstanceOf[HumanEditMention].editType != "none")result.append("Edit-")
       result.append("EntityRoot["+flatRepresent(e)+"]")
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"| Features\n"+levelIndent+"|   ")
     }else if(e.isObserved){
-      e match{
-        case he:HierEntity with HumanEditMention =>{
-          if(he.editType != "none"){
-            val test1 = if(he.generatedFrom != None && he.entityRoot.eq(he.generatedFrom.get.entityRoot))"o" else if(he.generatedFrom == None)"" else "x"
-            val test2 = if(he.linkedMention != None && he.entityRoot.eq(he.linkedMention.get.entityRoot))"o" else if(he.linkedMention == None)"" else "x"
-            result.append(test1+test2+"-Edit[")
-            result.append(" ety:"+he.editType)
-            for(lm <- he.linkedMention)result.append(" link:"+lm.id)
-            result.append(flatRepresent(e)+"]")
-          } else result.append("-Mention["+flatRepresent(e)+"]")
-        }
-        case _ => result.append("-Mention["+flatRepresent(e)+"]")
-      }
+      result.append("-Mention["+flatRepresent(e)+"]")
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"|   ")
     }else{
       result.append("*SubEntity["+flatRepresent(e)+"]")
@@ -732,7 +719,6 @@ object EntityUtils{
     result.toString
   }
 }
-
 
 object LDAUtils{
   object WordSeqDomain extends CategoricalSeqDomain[String]
