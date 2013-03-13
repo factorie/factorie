@@ -1,8 +1,7 @@
 package cc.factorie.app.bib
 import cc.factorie.app.nlp.coref._
 import com.mongodb.DBCollection
-import cc.factorie.db.mongo.MutableCubbieCollection
-import collection.mutable.{HashSet, HashMap, ArrayBuffer}
+import collection.mutable.{HashSet, LinkedHashSet,HashMap, ArrayBuffer}
 import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
 import cc.factorie.app.topics.lda.{Document, LDA,SparseLDAInferencer}
@@ -11,6 +10,7 @@ import cc.factorie.generative.GenerativeModel._
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
+import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 
 object Utils{
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
@@ -311,6 +311,39 @@ object EntityUtils{
     println("  *number of inferred entities with no children: "+numZeroChildren)
     println("  *number of inferred entities with one child: "+numOneChild)
   }
+
+  def writeCanopies(col:MongoCubbieCollection[AuthorCubbie], outDirPath:String, numFiles:Int):Unit ={
+    val canopies = new LinkedHashSet[String]
+    println("About to iterate over mongo collection")
+    var count = 0
+    for(cubbie <- col.iterator){
+      for(name <- cubbie.canopies.value)canopies += name
+      count += 1
+      if(count % 10000 == 0)print(".")
+      if(count % 50000 ==0)println(count)
+    }
+    val pwa = new PrintWriter(new File(outDirPath+"canopy_all"))
+    for(canopy <- canopies)pwa.println(canopy)
+    pwa.flush
+    pwa.close
+
+    println("Done compiling list of canopies. Found "+canopies.size+" canopies.")
+    val groups=canopies.toSeq.grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt)
+    println("Found "+groups.size+" groups.")
+    println("Finished grouping canopies, about to write files.")
+    var wroteSomething = false
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      if(group.size>0)wroteSomething=true
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+  }
+
   def makeSingletons[E<:HierEntity](entities:Seq[E]):Seq[E] ={
     for(e <- entities)
       e.setParentEntity(null)(null)

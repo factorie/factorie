@@ -24,16 +24,19 @@ class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
 }
 */
 trait BibCubbie extends Cubbie{
+  val rootId = new StringSlot("rootid")
   //  var dataSource:String=""
   //var paperMentionId:String=null
   //val dataSource = StringSlot("ds")
   //val pid = StringSlot("pid")
   val pid = RefSlot("pid", () => new PaperCubbie)
   def storeBibAttributes(e:BibEntity):Unit ={
+    for(rid <- e.rootIdOpt)rootId := rid
     //dataSource := e.dataSource
     //pid := e.pid
   }
   def fetchBibAttributes(e:BibEntity):Unit ={
+    if(rootId.isDefined)e.rootIdOpt = Some(rootId.value)
     //if(dataSource.isDefined)e.dataSource = dataSource.value
     //if(pid.isDefined)e.paperMentionId = pid.value.toString
   }
@@ -77,18 +80,18 @@ class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
 //  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
     super.fetch(e)
-    e.attr[FullName].setFirst(firstName.value)(null)
-    e.attr[FullName].setMiddle(middleName.value)(null)
-    e.attr[FullName].setLast(lastName.value)(null)
-    e.attr[FullName].setSuffix(suffix.value)(null)
+    if(firstName.isDefined)e.attr[FullName].setFirst(firstName.value)(null)
+    if(middleName.isDefined)e.attr[FullName].setMiddle(middleName.value)(null)
+    if(lastName.isDefined)e.attr[FullName].setLast(lastName.value)(null)
+    if(suffix.isDefined)e.attr[FullName].setSuffix(suffix.value)(null)
     //e.attr[FullName].setNickName(nickName.value)(null)
-    e.attr[BagOfTopics] ++= topics.value.fetch
-    e.attr[BagOfVenues] ++= venues.value.fetch
-    e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
-    e.attr[BagOfKeywords] ++= keywords.value.fetch
-    e.attr[BagOfEmails] ++= emails.value.fetch
-    e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
-    e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
+    if(topics.isDefined) e.attr[BagOfTopics] ++= topics.value.fetch
+    if(venues.isDefined) e.attr[BagOfVenues] ++= venues.value.fetch
+    if(coauthors.isDefined) e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
+    if(keywords.isDefined) e.attr[BagOfKeywords] ++= keywords.value.fetch
+    if(emails.isDefined) e.attr[BagOfEmails] ++= emails.value.fetch
+    if(firstNameBag.isDefined) e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
+    if(middleNameBag.isDefined) e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
     if(year.isDefined)e.attr[Year] := year.value
     if(title.isDefined)e.attr[Title].set(title.value)(null)
     //
