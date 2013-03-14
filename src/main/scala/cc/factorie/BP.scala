@@ -639,11 +639,13 @@ object BPUtil {
     val visited: HashSet[BPEdge] = new HashSet
     val result = new ArrayBuffer[(BPEdge, Boolean)]
     val toProcess = new Queue[(BPEdge, Boolean)]
+    val visitedVariables = HashSet[DiscreteVar]()
     root.edges foreach (e => toProcess += Pair(e, true))
     while (!toProcess.isEmpty) {
       val (edge, v2f) = toProcess.dequeue()
       if (!checkLoops || !visited(edge)) {
         visited += edge
+        visitedVariables += edge.variable
         result += Pair(edge, v2f)
         val edges =
           if (v2f) edge.bpFactor.edges.filter(_ != edge)
@@ -655,6 +657,7 @@ object BPUtil {
         edges.foreach(ne => toProcess += Pair(ne, !v2f))
       }
     }
+    require(varying.forall(visitedVariables.contains(_)), "Treewise BP assumes the graph is connected")
     result
   }
 
