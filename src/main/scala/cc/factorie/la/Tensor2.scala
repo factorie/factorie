@@ -70,7 +70,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
         case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
         case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
         case (t1: SingletonBinaryTensor, t2: SparseBinaryTensorLike1) =>
-          val iArr = t2._indices
+          val iArr = t2.asIntArray
           var i = 0
           var dot = 0.0
           while (i < iArr.length) {
