@@ -66,7 +66,7 @@ trait TensorFamily extends Family {
 trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
   def weights: Tensor
-  @inline final override def statisticsScore(t:Tensor): Double = weights dot t
+  @inline final override def statisticsScore(t:Tensor): Double = t dot weights
 }
 
 import cc.factorie.util._
