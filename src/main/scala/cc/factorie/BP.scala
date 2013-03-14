@@ -657,7 +657,35 @@ object BPUtil {
     }
     result
   }
-  
+
+  def loopyBfs(varying: Set[DiscreteVar], summary: BPSummary): Seq[(BPEdge, Boolean)] = {
+    val visited: HashSet[BPEdge] = new HashSet
+    val result = new ArrayBuffer[(BPEdge, Boolean)]
+    val toProcess = new Queue[(BPEdge, Boolean)]
+    val visitedVariables = HashSet[DiscreteVar]()
+    while (!varying.forall(visitedVariables.contains(_))) {
+      val root = summary.bpVariable(varying.collectFirst({case v if !visitedVariables.contains(v) => v}).head)
+      root.edges foreach (e => toProcess += Pair(e, true))
+      while (!toProcess.isEmpty) {
+        val (edge, v2f) = toProcess.dequeue()
+        if (!visited(edge)) {
+          visited += edge
+          result += Pair(edge, v2f)
+          visitedVariables += edge.bpVariable.variable
+          val edges =
+            if (v2f) edge.bpFactor.edges.filter(_ != edge)
+            else {
+              if (varying.contains(edge.bpVariable.variable))
+                edge.bpVariable.edges.filter(_ != edge)
+              else Seq.empty[BPEdge]
+            }
+          edges.foreach(ne => toProcess += Pair(ne, !v2f))
+        }
+      }
+    }
+    result
+  }
+
   def sendAccordingToOrdering(edgeSeq: Seq[(BPEdge, Boolean)]) {
     for ((e, v2f) <- edgeSeq) {
       if (v2f) {
@@ -683,10 +711,9 @@ object BP {
     }
   }
 
-  def inferLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) = {
+  def inferLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, numIterations: Int = 2) = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
-    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
-    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
+    val bfsSeq = BPUtil.loopyBfs(varying.toSet, summary)
     for (i <- 0 to numIterations) {
       BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
       BPUtil.sendAccordingToOrdering(bfsSeq)
