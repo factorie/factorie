@@ -53,6 +53,7 @@ trait Tensor2 extends Tensor {
 }
 
 trait DenseTensorLike2 extends Tensor2 with DenseTensor {
+  var haveWarned = false
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
   //override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
@@ -64,6 +65,38 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     //case t:DenseTensorLike2 => Tensor.dot(this, t)
     case t:SingletonBinaryLayeredTensorLike2 => t dot this
     case t:SingletonLayeredTensorLike2 => t dot this
+    case t:Outer1Tensor2 => {
+      (t.tensor1,t.tensor2) match {
+        case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
+        case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
+        case (t1: SingletonBinaryTensor, t2: SparseBinaryTensorLike1) =>
+          val iArr = t2._indices
+          var i = 0
+          var dot = 0.0
+          while (i < iArr.length) {
+            dot += this(t.singleIndex(t1.singleIndex,iArr(i)))
+            i += 1
+          }
+          dot
+        case (t1: SingletonBinaryTensor, t2: SparseIndexedTensor) =>
+          var dot = 0.0
+          val len = t2.activeDomainSize
+          val indices = t2._indices
+          val values = t2._values
+          var i = 0
+          while (i < len) {
+            dot += this(t.singleIndex(t1.singleIndex, indices(i)))*values(i)
+            i += 1
+          }
+          dot
+        case _ =>
+          if (!haveWarned) {
+            haveWarned = true
+            println("DenseTensorLike2 dot unsupported types: " + t.tensor1.getClass.getName + " "  + t.tensor2.getClass.getName)
+          }
+          super.dot(t)
+      }
+    }
     case t:DoubleSeq => super.dot(t)
   }
   /*
