@@ -108,6 +108,19 @@ trait BPVariable {
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
   def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
   def calculateBelief: Tensor
+  def betheObjective: Double = {
+    var bethe = 0.0
+    calculateMarginal match {
+      case t: DenseTensor =>
+        var i = 0
+        val arr = t.asArray
+        while (i < arr.length) {
+          bethe += arr(i)*math.log(arr(i))
+          i += 1
+        }
+    }
+    bethe * (edges.length-1)
+  }
   def calculateMarginal: Tensor
 }
 abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
@@ -154,8 +167,26 @@ trait BPFactor extends DiscreteMarginal {
   def calculateMarginalTensor: Tensor
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
-  def betheObjective: Double = throw new Error("Not implemented by " + this.getClass.getName)
-  /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
+  def betheObjective = calculateMarginalTensor match {
+      case t:DenseTensor => {
+        var z = 0.0
+        val l = t.length
+        var i = 0
+        while (i < l) {
+          if (t(i) > 0)
+            z += t(i) * (-math.log(t(i)) + scores(i))
+          i += 1
+        }
+        z
+      }
+      case t:SparseIndexedTensor => {
+        var z = Double.NegativeInfinity
+        t.foreachActiveElement((i,v) => {
+          z = v * (math.log(z) + scores(i))
+        })
+        z
+      }
+    }
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
   /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
   def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
@@ -196,30 +227,6 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Disc
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
   override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor.asInstanceOf[Tensor1], false)
   def calculateOutgoing1: Tensor1 = scores
-  override def betheObjective = {
-    val numNeighbors = this.edge1.bpVariable.edges.length-1
-    val logz = calculateMarginalTensor match {
-      case t:DenseTensor => {
-        var z = 0.0
-        val l = t.length
-        var i = 0
-        while (i < l) {
-          if (t(i) > 0)
-            z += t(i) * (-math.log(t(i)) + scores(i))
-          i += 1
-        }
-        z
-      }
-      case t:SparseIndexedTensor => {
-        var z = Double.NegativeInfinity
-        t.foreachActiveElement((i,v) => {
-          z = v * (-math.log(z) + scores(i))
-        })
-        z
-      }
-    }
-    numNeighbors * logz
-  }
 }
 
 
@@ -320,26 +327,6 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
 }
 
 trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
-  override def betheObjective = calculateMarginalTensor match {
-      case t:DenseTensor => {
-        var z = 0.0
-        val l = t.length
-        var i = 0
-        while (i < l) {
-          if (t(i) > 0)
-            z += t(i) * (math.log(t(i)) + scores(i))
-          i += 1
-        }
-        z
-      }
-      case t:SparseIndexedTensor => {
-        var z = Double.NegativeInfinity
-        t.foreachActiveElement((i,v) => {
-          z = v * (math.log(z) + scores(i))
-        })
-        z
-      }
-    }
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
@@ -628,7 +615,7 @@ trait AbstractBPSummary extends Summary[DiscreteMarginal] {
     which add the appropriate BPFactors, BPVariables and BPEdges. */
 class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
-  private val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
+  protected val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   override def usedFactors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
@@ -662,7 +649,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
 }
 
 class LoopyBPSummary(val rng: BPRing) extends BPSummary(rng) {
-  override def logZ = _bpFactors.values.map(_.betheObjective).sum
+  override def logZ = _bpFactors.values.map(_.betheObjective).sum + _bpVariables.values.map(_.betheObjective).sum
   override def expNormalize(t: Tensor) { t.expNormalize() }
 }
 
