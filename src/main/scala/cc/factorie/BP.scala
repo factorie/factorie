@@ -205,7 +205,7 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Disc
         var i = 0
         while (i < l) {
           if (t(i) > 0)
-            z += numNeighbors * t(i) * (-math.log(t(i)) + scores(i))
+            z += t(i) * (-math.log(t(i)) + scores(i))
           i += 1
         }
         z
