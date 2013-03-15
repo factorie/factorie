@@ -154,26 +154,7 @@ trait BPFactor extends DiscreteMarginal {
   def calculateMarginalTensor: Tensor
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
-  def betheObjective: Double = calculateMarginalTensor match {
-    case t:DenseTensor => {
-      var z = 0.0
-      val l = t.length
-      var i = 0
-      while (i < l) {
-        if (t(i) > 0)
-          z += t(i) * (math.log(t(i)) + scores(i))
-        i += 1
-      }
-      z
-    }
-    case t:SparseIndexedTensor => {
-      var z = Double.NegativeInfinity
-      t.foreachActiveElement((i,v) => {
-        z = v * (math.log(z) + scores(i))
-      })
-      z
-    }
-  }
+  def betheObjective: Double = throw new Error("Not implemented by " + this.getClass.getName)
   /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
   /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
@@ -215,6 +196,30 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Disc
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
   override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor.asInstanceOf[Tensor1], false)
   def calculateOutgoing1: Tensor1 = scores
+  override def betheObjective = {
+    val numNeighbors = this.edge1.bpVariable.edges.length-1
+    val logz = calculateMarginalTensor match {
+      case t:DenseTensor => {
+        var z = 0.0
+        val l = t.length
+        var i = 0
+        while (i < l) {
+          if (t(i) > 0)
+            z += numNeighbors * t(i) * (-math.log(t(i)) + scores(i))
+          i += 1
+        }
+        z
+      }
+      case t:SparseIndexedTensor => {
+        var z = Double.NegativeInfinity
+        t.foreachActiveElement((i,v) => {
+          z = v * (-math.log(z) + scores(i))
+        })
+        z
+      }
+    }
+    numNeighbors * logz
+  }
 }
 
 
@@ -315,6 +320,26 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
 }
 
 trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
+  override def betheObjective = calculateMarginalTensor match {
+      case t:DenseTensor => {
+        var z = 0.0
+        val l = t.length
+        var i = 0
+        while (i < l) {
+          if (t(i) > 0)
+            z += t(i) * (math.log(t(i)) + scores(i))
+          i += 1
+        }
+        z
+      }
+      case t:SparseIndexedTensor => {
+        var z = Double.NegativeInfinity
+        t.foreachActiveElement((i,v) => {
+          z = v * (math.log(z) + scores(i))
+        })
+        z
+      }
+    }
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
@@ -577,6 +602,15 @@ object LoopyBPSummary {
     }
 }
 
+object LoopyBPSummaryMaxProduct {
+  def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
+      val summary = new LoopyBPSummaryMaxProduct(ring)
+      val varyingSet = varying.toSet
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      summary
+    }
+}
+
 // Just in case we want to create different BPSummary implementations
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
@@ -632,6 +666,10 @@ class LoopyBPSummary(val rng: BPRing) extends BPSummary(rng) {
   override def expNormalize(t: Tensor) { t.expNormalize() }
 }
 
+class LoopyBPSummaryMaxProduct(val rng: BPRing) extends BPSummary(rng) {
+  override def logZ = _bpFactors.values.map(f => f.calculateMarginalTensor.dot(f.scores)).sum
+  override def expNormalize(t: Tensor) { t.expNormalize() }
+}
 
 object BPUtil {
   
@@ -861,7 +899,7 @@ object MaximizeByBPLoopy extends Maximize with InferByBP {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-    val summary = LoopyBPSummary(varying, BPMaxProductRing, model)
+    val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)
     BP.inferLoopy(summary)
     summary
   }
