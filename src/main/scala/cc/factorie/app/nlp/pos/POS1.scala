@@ -20,7 +20,7 @@ import cc.factorie.app.nlp._
 import java.io.File
 
 class POS1 {
-  def this(savedModelFile:String) = { this(); BinaryFileSerializer.deserialize(PosModel, savedModelFile) }
+  def this(savedModelFile:String) = { this(); BinaryFileSerializer.deserializeModel(PosModel, PosDomain, PosFeaturesDomain, savedModelFile) }
   
   object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -163,11 +163,11 @@ object POS1 extends POS1 {
       printEvaluation("FINAL")
     
       if (opts.modelFile.wasInvoked)
-        BinaryFileSerializer.serialize(PosModel, opts.modelFile.value)
+        BinaryFileSerializer.serializeModel(PosModel, PosDomain, PosFeaturesDomain, opts.modelFile.value)
     }
 
     def run(): Unit = {
-      BinaryFileSerializer.deserialize(PosModel, opts.modelFile.value)
+      BinaryFileSerializer.deserializeModel(PosModel, PosDomain, PosFeaturesDomain, opts.modelFile.value)
       for (filename <- opts.runFiles.value) {
         val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
         segment.Tokenizer.process(document)

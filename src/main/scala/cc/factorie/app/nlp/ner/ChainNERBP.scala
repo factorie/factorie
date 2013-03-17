@@ -202,7 +202,7 @@ object ChainNerBP extends ChainNerBP {
     object opts extends DefaultCmdOptions {
       val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
       val testFile  =     new CmdOption("test",  "eng.testa", "FILE", "CoNLL formatted test file.")
-      val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
+      val modelFile =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
       val lexiconDir =    new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
@@ -219,7 +219,7 @@ object ChainNerBP extends ChainNerBP {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelFile.value)
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename), false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -232,11 +232,12 @@ object ChainNerBP extends ChainNerBP {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelFile.value)
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
-      if (opts.modelDir.wasInvoked) BinaryFileSerializer.serialize(model, opts.modelDir.value)
+      if (opts.modelFile.wasInvoked)
+        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelFile.value)
     }
     
 

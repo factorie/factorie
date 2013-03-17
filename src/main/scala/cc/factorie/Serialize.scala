@@ -54,8 +54,8 @@ object CubbieMaker {
     new StringMapCubbie(_), x => x.isInstanceOf[mutable.HashMap[String, String]])
   implicit val csdm = new CubbieMaker[CategoricalSeqDomain[String]](
     new CategoricalSeqDomainCubbie(_), x => x.isInstanceOf[CategoricalSeqDomain[String]])
-  implicit val cdtdm = new CubbieMaker[CategoricalDimensionTensorDomain[String]](
-    new CategoricalDimensionTensorDomainCubbie(_), x => x.isInstanceOf[CategoricalDimensionTensorDomain[String]])
+  implicit val cdtdm = new CubbieMaker[CategoricalDimensionTensorDomain[_]](
+    new CategoricalDimensionTensorDomainCubbie(_), x => x.isInstanceOf[CategoricalDimensionTensorDomain[_]])
 
   def cubbieForType[T](toSerialize: T)(implicit m: Manifest[T], evidenceThatWeHaveCubbieMaker: CubbieMaker[T]): Cubbie =
     makers.foldLeft(None: Option[Cubbie])((resOpt, maker) => if (resOpt.isDefined) resOpt else maker.tryMake(toSerialize)).get
@@ -63,6 +63,18 @@ object CubbieMaker {
 
 object BinaryFileSerializer {
   import CubbieMaker._
+  def serializeModel[A, B, C](model: A, labelDomain: B, featuresDomain: C, fileName: String, gzip: Boolean = false)
+    (implicit m1: Manifest[A], ev1: CubbieMaker[A], m2: Manifest[B], ev2: CubbieMaker[B], m3: Manifest[C], ev3: CubbieMaker[C]): Unit = {
+    BinaryCubbieFileSerializer.serialize(cubbieForType(model), new File(fileName + "-model"), gzip)
+    BinaryCubbieFileSerializer.serialize(cubbieForType(labelDomain), new File(fileName + "-labelDomain"), gzip)
+    BinaryCubbieFileSerializer.serialize(cubbieForType(featuresDomain), new File(fileName + "-featuresDomain"), gzip)
+  }
+  def deserializeModel[A, B, C](model: A, labelDomain: B, featuresDomain: C, fileName: String, gzip: Boolean = false)
+    (implicit m1: Manifest[A], ev1: CubbieMaker[A], m2: Manifest[B], ev2: CubbieMaker[B], m3: Manifest[C], ev3: CubbieMaker[C]): Unit = {
+    BinaryCubbieFileSerializer.deserialize(cubbieForType(labelDomain), new File(fileName + "-labelDomain"), gzip)
+    BinaryCubbieFileSerializer.deserialize(cubbieForType(featuresDomain), new File(fileName + "-featuresDomain"), gzip)
+    BinaryCubbieFileSerializer.deserialize(cubbieForType(model), new File(fileName + "-model"), gzip)
+  }
   def serialize[A](toSerialize: A, fileName: String)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), new File(fileName), gzip = false)
   def deserialize[A](deserializeTo: A, fileName: String)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
@@ -83,6 +95,17 @@ object BinaryFileSerializer {
     BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), s)
   def deserialize[A](toSerialize: A, s: DataInputStream)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
     BinaryCubbieFileSerializer.deserialize(cubbieForType(toSerialize), s)
+  def writeFile(fileName: String, gzip: Boolean = false): DataOutputStream = {
+    val file = new File(fileName)
+    file.createNewFile()
+    val fileStream = new BufferedOutputStream(new FileOutputStream(file))
+    new DataOutputStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
+  }
+  def readFile(fileName: String, gzip: Boolean = false): DataInputStream = {
+    val file = new File(fileName)
+    val fileStream = new BufferedInputStream(new FileInputStream(file))
+    new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
+  }
 }
 
 object BinaryCubbieFileSerializer {

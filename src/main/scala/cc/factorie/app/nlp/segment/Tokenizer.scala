@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{Token, Document}
+import cc.factorie.app.nlp.{DocumentProcessor, Token, Document}
 import cc.factorie.app.strings.RegexSegmenter
 
 // TODO: this still needs testing on more text, contractions, and probably simplification --brian
@@ -25,17 +25,18 @@ class Tokenizer extends RegexSegmenter(Seq(
   "[\\w\\-0-9]+(?='([tT]|[lL]+|[sS]|[mM]|re|RE|ve|VE))", // any combo of word-chars, numbers, and hyphens
   "[\\w0-9]+(-[\\w0-9]+)*", // words with sequences of single dashes in them
   "[\\w0-9']+" // any combo of word-chars, numbers, and hyphens
-).mkString("|").r) {
+).mkString("|").r) with DocumentProcessor {
 	
 
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
 
-  def process(document: Document): Unit = {
+  def process(document: Document): Document = {
     val tokenIterator = this.apply(document.string)
     while (tokenIterator.hasNext) {
       tokenIterator.next()
       new Token(document, tokenIterator.start, tokenIterator.end)
     }
+    document
   }
 }
 

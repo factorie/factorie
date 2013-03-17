@@ -294,18 +294,18 @@ class ChainNer2 {
       //if(didagg) println(token.attr[ChainNerFeatures])
     }
     for (sentence <- document.sentences)
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
       //cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], "^[^@]*$", List(0), List(0,0), List(0,-1), List(0,1), List(1), List(2), List(-1), List(-2))
 
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
-      // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
-      // document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
-      // Add features for character n-grams between sizes 2 and 5
-      document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
-      // Add features from window of 4 words before and after
-      // document.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindowNum(4).map(t2 => "PREVWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
-      // document.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindowNum(4).map(t2 => "NEXTWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
-      document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-      document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
+    // document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
+    // Add features for character n-grams between sizes 2 and 5
+    document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+    // Add features from window of 4 words before and after
+    // document.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindowNum(4).map(t2 => "PREVWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
+    // document.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindowNum(4).map(t2 => "NEXTWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
+    document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
 
     for(token <- document.tokens) {
       if(aggregate) aggregateContext(token, vf)
@@ -904,7 +904,7 @@ object ChainNer2 extends ChainNer2 {
       val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
       val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
       val sigmaSq  =     new CmdOption("sigmaSq",  "10", "REAL", "Value for regularization constant for BP.")
-      val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
+      val modelFile =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
       val lexiconDir =    new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...")
@@ -951,7 +951,8 @@ object ChainNer2 extends ChainNer2 {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
+      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename), segmentSentences = false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -963,18 +964,19 @@ object ChainNer2 extends ChainNer2 {
         printSGML(document.tokens)
       }
     } else if(opts.justTest.wasInvoked) {
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
-      BinaryFileSerializer.deserialize(model2, opts.modelDir.value + "2")
-		  test(opts.testFile.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
+      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
+      test(opts.testFile.value)
 	  } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
+      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
-      if (opts.modelDir.wasInvoked) {
-        BinaryFileSerializer.serialize(model, opts.modelDir.value)
-        BinaryFileSerializer.serialize(model2, opts.modelDir.value + "2")
+      if (opts.modelFile.wasInvoked) {
+        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
+        BinaryFileSerializer.serialize(model2, opts.modelFile.value + "-model2")
 	    }
     }
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")
