@@ -41,8 +41,9 @@ class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegment
     val sentences = new mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]()
     val tokens = tokenizer.getTokenList(fin)
     val brackets = new Array[Int](R_BRACKETS.length)
-    var bIdx, size = tokens.size
+    val size = tokens.size
     var isTerminal = false
+    var bIdx = 0
 
     for (i <- 0 until size) {
       val curr = tokens(i)
