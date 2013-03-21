@@ -72,7 +72,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
     for(t <- wt.families)if(t.weights.activeDomainSize>0)return false
     true
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     _stepCount += 1L
     gradient match{
       case gradientWT:WeightsTensor => {
@@ -101,7 +101,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
               }
             }
             //2. perform the update
-            inner.step(weights, gradient, value, margin)
+            inner.step(weights, gradient, value)
             //3. reconstruct the "inner" update by adding the new values
             for(template <- gradientWT.families){
               (updateReconstruction(template), weightsWT(template)) match{
@@ -240,7 +240,7 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
       case _ => throw new Exception("WeightsAveraging only implemented for WeightsTensor.")
     }
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     _stepCount += 1L
     gradient match{
       case gradientWT:WeightsTensor => {
@@ -271,7 +271,7 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
               }
             }
             //2. perform the update
-            inner.step(weights, gradient, value, margin)
+            inner.step(weights, gradient, value)
             //3. reconstruct the "inner" update by adding the new values
             for(template <- gradientWT.families){
               (updateReconstruction(template), weightsWT(template)) match{

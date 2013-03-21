@@ -45,12 +45,12 @@ class LBFGS(var numIterations: Double = 1000,
   // s = list of m previous "parameters" values
   // y = list of m previous "g" values
   // rho = intermediate calculation
-  var g: Tensor = null;
-  var oldg: Tensor = null;
-  var direction: Tensor = null;
-  var params: Tensor = null;
+  var g: Tensor = null
+  var oldg: Tensor = null
+  var direction: Tensor = null
+  var params: Tensor = null
   var oldParams: Tensor = null
-  var s: ArrayBuffer[Tensor] = null;
+  var s: ArrayBuffer[Tensor] = null
   var y: ArrayBuffer[Tensor] = null
   var rho: ArrayBuffer[Double] = null
   var alpha: Array[Double] = null
@@ -80,7 +80,7 @@ class LBFGS(var numIterations: Double = 1000,
 
 
 
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     if (_isConverged) return
     //todo: is the right behavior to set _isConverged = true if exceeded numIters?
     if (iterations > numIterations) { logger.warn("LBFGS: Failed to converge: too many iterations"); _isConverged = true; return }
@@ -105,7 +105,7 @@ class LBFGS(var numIterations: Double = 1000,
 
 
       if (direction.twoNorm == 0) {
-        logger.info("LBFGS: Initial initial gradient is zero; saying converged");
+        logger.info("LBFGS: Initial initial gradient is zero; saying converged")
         g = null
         _isConverged = true
         //return true;
@@ -114,7 +114,7 @@ class LBFGS(var numIterations: Double = 1000,
 
       // take a step in the direction
       lineMaximizer = new BackTrackLineOptimizer(gradient, direction, initialStepSize)
-      lineMaximizer.step(weights, gradient, value, initialStepSize)
+      lineMaximizer.step(weights, gradient, value)
 
       //todo: change this to just check if lineOptimizer has converged
       //      if (step == 0.0) {
@@ -130,13 +130,13 @@ class LBFGS(var numIterations: Double = 1000,
       //      }
       oldValue = value
     }else if(!lineMaximizer.isConverged){
-      lineMaximizer.step(weights, gradient, value, initialStepSize)
+      lineMaximizer.step(weights, gradient, value)
     }
     //else{
     if (lineMaximizer.isConverged) {
       //first, check for convergence:
       iterations += 1
-      logger.debug("LBFGS: At iteration " + iterations + ", value = " + value);
+      logger.debug("LBFGS: At iteration " + iterations + ", value = " + value)
       //params and g are just aliases for the names of the variables passed in
       g = gradient
       params = weights
@@ -222,7 +222,7 @@ class LBFGS(var numIterations: Double = 1000,
       postIteration(iterations)
 
       lineMaximizer = new BackTrackLineOptimizer(gradient, direction, initialStepSize)
-      lineMaximizer.step(weights, gradient, value, initialStepSize)
+      lineMaximizer.step(weights, gradient, value)
 
 
     }

@@ -189,13 +189,10 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
       for (i <- 0 until 10) {
         val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
         val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
-        val marginAccumulator0 = new LocalDoubleAccumulator
-        val marginAccumulator1 = new LocalDoubleAccumulator
         val valueAccumulator0 = new LocalDoubleAccumulator
         val valueAccumulator1 = new LocalDoubleAccumulator
-        ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0, marginAccumulator0)
-        ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1, marginAccumulator1)
-        assertEquals(marginAccumulator0.value, marginAccumulator1.value, 0.001)
+        ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0)
+        ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1)
         assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
         gradientAccumulator0.tensor.families.foreach(f => {
           println("checking family: " + f.getClass.getName)
@@ -205,7 +202,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
             assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
           })
         })
-        optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN, marginAccumulator0.value)
+        optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN)
       }
     }
   }

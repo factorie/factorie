@@ -19,7 +19,7 @@ import cc.factorie.la._
 
 /** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
 class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     weights.+=(gradient, rate)
     rate = nextRate(rate)
   }
@@ -32,7 +32,7 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
 
 
 class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     val step = -value/(C + gradient.twoNormSquared)
     weights.+=(gradient, step)
   }
@@ -40,8 +40,9 @@ class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
   def reset() {}
 }
 
-class BoxMIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+// C is the box constraint
+class MIRA(var C: Double = 1.0) extends GradientOptimizer {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     val step = math.min(C, -value/(gradient.twoNormSquared))
     weights.+=(gradient, step)
   }
@@ -57,7 +58,7 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
   }
   var printed = false
 
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     t += 1
     val eta = rate
     if (lastUpdate == null) { lastUpdate = weights.blankCopy }
@@ -123,10 +124,10 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
 
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
-class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) extends GradientOptimizer {
+class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) extends GradientOptimizer {
   var HSq: Tensor = null
   var printed = false
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weights, -l2)
@@ -204,7 +205,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 10.0, delta: Double = 0.1) ex
 }
 
 // This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
-class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var delta: Double = 0.1) extends GradientOptimizer {
+class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
   var HSq: Tensor = null
   var sumGs: Tensor = null
   var t = 0
@@ -219,7 +220,7 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
 
   var printed = false
 
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     val eta = rate
     t += 1
     if (HSq == null) { HSq = weights.blankCopy }
@@ -300,11 +301,10 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 10.0, var de
   def isConverged: Boolean = false
 }
 
-
-// This implements the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
+// This implements a slight variant on the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
 class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
   private var step = 1
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     if (step == 1) {
       // make sure weights start off with ||w|| <= 1 / sqrt(rate)
       val weightsNorm = weights.twoNorm
@@ -326,15 +326,15 @@ class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0
 
 // Note: This implementation is slower than it should be in the online case, but should be fast enough in batch mode
 class L2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  override def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     gradient +=(weights, -l2)
-    super.step(weights, gradient, value, margin)
+    super.step(weights, gradient, value)
   }
 }
 
 class SparseL2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
-    super.step(weights, gradient, value, margin)
+  override def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+    super.step(weights, gradient, value)
     weights *= (1.0 - rate * l2)
   }
 }
@@ -353,7 +353,7 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double): Unit = {
+  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
@@ -375,11 +375,11 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
       lineOptimizer = new BackTrackLineOptimizer(gradient, gradient.copy, stepSize)
       oldValue = value
     }
-    lineOptimizer.step(weights, gradient, value, margin)
+    lineOptimizer.step(weights, gradient, value)
     if (!lineOptimizer.isConverged) return
     lineOptimizer = null // So we create a new one next time
     lineOptimizer = new BackTrackLineOptimizer(gradient, gradient.copy, stepSize)
-    lineOptimizer.step(weights, gradient, value, margin)
+    lineOptimizer.step(weights, gradient, value)
     oldValue = value
   }
 }

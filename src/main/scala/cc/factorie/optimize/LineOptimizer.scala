@@ -52,7 +52,7 @@ class BackTrackLineOptimizer(val gradient:Tensor, val line:Tensor, val initialSt
     tmplam = 0.0;
     alam2 = 0.0
   }
-    def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     logger.debug("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {

@@ -6,7 +6,7 @@ import cc.factorie.maths
 
 // TODO Change this so it doesn't require the "model" constructor argument, and instead gets the weights from the "step" call.
 // Then AROW can be the default optimizer in SGDTrainer.
-class AROW(model:Model, learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model,learningMargin) {
+class AROW(model:Model, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model) {
   //parameters specific to the algorithm
   //
   protected def alpha(modelScore:Double,gradient:WeightsTensor) : Double = math.max(0,1-modelScore) * beta(gradient)
@@ -27,16 +27,16 @@ class AROW(model:Model, learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) 
   override def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = alpha(margin,gradient)
 }
 
-class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extends GradientOptimizer {
+class ConfidenceWeighting(val model:Model) extends GradientOptimizer {
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
-  var initialVariance = 0.1;
+  var initialVariance = 0.1
   var numUpdates : Double = 0
   protected var learningRate : Double = 1 //adjusted automatically by CW
   val zeroEpsilon = 0.0000001 //used to detect when something is approximately zero
   protected var eta = 0.98; //confidence value, between 0.5 and 1
   var gaussDeviate = maths.probit(eta) //function of the confidence, it is more intuitive to express in terms of eta
   def isConverged=false
-  def reset:Unit = {
+  def reset(): Unit = {
     println("Resetting CW")
     gaussDeviate = maths.probit(eta)
     for(template <- sigma.families)sigma(template) := initialVariance
@@ -53,13 +53,13 @@ class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extend
     //println(" done.")
     result
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     //println("Performing step")
     gradient match{
       case gradient:WeightsTensor => {
         weights match{
           case weights:WeightsTensor =>{
-            learningRate = calculateLearningRate(gradient,margin)
+            learningRate = calculateLearningRate(gradient, value)
             weights.+=(gradient,sigma,learningRate) //Update parameters. Note: sparse argument comes first for efficiency.
             adjustConfidence(weights,gradient)
           }
@@ -95,7 +95,7 @@ class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extend
       }
     }
   }
-  def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = {
+  def calculateLearningRate(gradient: WeightsTensor, margin:Double): Double = {
     val marginMean = margin.abs
     val v = 1.0 + 2.0 * gaussDeviate * marginMean
     val marginVar = marginVariance(gradient)
@@ -103,7 +103,7 @@ class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extend
     if (marginMean >= gaussDeviate * marginVar)
       return 0.0
     if (marginVar > zeroEpsilon || marginVar < -zeroEpsilon)
-      lambda = (-v + math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar);
+      lambda = (-v + math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar)
     math.max(0, lambda)
   }
   def marginVariance(gradient:WeightsTensor):Double ={

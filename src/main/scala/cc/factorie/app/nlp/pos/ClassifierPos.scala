@@ -141,10 +141,10 @@ class ClassifierPos extends DocumentProcessor {
 
   var setToPrediction = false
   class LocalClassifierExample(val sentData: SentenceData, pos: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin: DoubleAccumulator) {
+    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
       val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sentData, pos, featureVector)
-      new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value, margin)
+      new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
       if (setToPrediction) {
         val weightsMatrix = model.evidenceTemplate.weights
         val prediction = weightsMatrix * featureVector

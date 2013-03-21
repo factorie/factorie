@@ -39,20 +39,18 @@ trait OnlineTrainer[M<:Model] extends Trainer[M] {
 class BatchTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
-  val marginAccumulator = new LocalDoubleAccumulator(0.0)
   // TODO This is sad:  The optimizer determines which of gradient/value/margin it needs, but we don't know here
   // so we create them all, possibly causing the Example to do more work.
   def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
     gradientAccumulator.tensor.zero()
     valueAccumulator.value = 0.0
-    marginAccumulator.value = 0.0
     val startTime = System.currentTimeMillis
-    examples.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator))
+    examples.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
     logger.info("GradientNorm: %-10g  value %-10g %s".format(gradientAccumulator.tensor.oneNorm, valueAccumulator.value, timeString))
-    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value)
   }
   def isConverged = optimizer.isConverged
 }
@@ -63,13 +61,13 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
     val startTime = System.currentTimeMillis
-    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, null))
+    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensor
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
     val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
     logger.info("GradientNorm: %-10g  value %-10g %s".format(grad.oneNorm, value, timeString))
-    optimizer.step(model.weightsTensor, grad, value, Double.NaN)
+    optimizer.step(model.weightsTensor, grad, value)
   }
   def isConverged = optimizer.isConverged
 }
@@ -77,7 +75,7 @@ class ParallelBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimi
 class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer[M] with FastLogging {
   import collection.JavaConversions._
   def examplesToRunnables[M<: Model](es: Iterable[Example[M]], model: M, grad: WeightsTensorAccumulator, va: DoubleAccumulator): Seq[Callable[Object]] =
-    es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va, null); null.asInstanceOf[Object] } }).toSeq
+    es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va); null.asInstanceOf[Object] } }).toSeq
 
   val gradientAccumulator = new SynchronizedWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new SynchronizedDoubleAccumulator
@@ -96,7 +94,7 @@ class SynchronizedBatchTrainer[M<:Model](val model: M, val optimizer: GradientOp
     val ellapsedTime = System.currentTimeMillis - startTime
     val timeString = if (ellapsedTime > 120000) "%d minutes".format(ellapsedTime/60000) else if (ellapsedTime > 5000) "%d seconds".format(ellapsedTime/1000) else "%d milliseconds".format(ellapsedTime)
     logger.info("GradientNorm: %-10g  value %-10g %s".format(gradientAccumulator.tensor.oneNorm, valueAccumulator.l.value, timeString))
-    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.l.value, Double.NaN)
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.l.value)
   }
   def isConverged = optimizer.isConverged
 }
@@ -113,11 +111,11 @@ class HogwildTrainer[M<:Model](val model: M, val optimizer: GradientOptimizer, v
         val gradient = model.newBlankSparseWeightsTensor
         val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient)
         val value = new LocalDoubleAccumulator()
-        e.accumulateExampleInto(model, gradientAccumulator, value, null)
+        e.accumulateExampleInto(model, gradientAccumulator, value)
         // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
         gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
         optimizer.synchronized {
-          optimizer.step(model.weightsTensor, gradient, value.value, 0)
+          optimizer.step(model.weightsTensor, gradient, value.value)
           accumulatedTime += System.currentTimeMillis() - t0
           examplesProcessed += 1
           accumulatedValue += value.value
@@ -157,10 +155,10 @@ class LockingStochasticTrainer[M<:Model](model: M,
         val valueAccumulator = new LocalDoubleAccumulator()
         val ee = locker.getLockingExample(e, model)
         ee.lockExample()
-        e.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, null)
+        e.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
         // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
         gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
-        optimizer.step(model.weightsTensor, gradient, valueAccumulator.value, 0)
+        optimizer.step(model.weightsTensor, gradient, valueAccumulator.value)
         ee.unlockExample()
         null.asInstanceOf[Object]
       }
@@ -341,7 +339,7 @@ class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var op
   var iteration = 0
   def processExamples(examples: Iterable[Example[M]]) {
     iteration += 1
-    examples.foreach(e => e.accumulateExampleInto(model, optimizer, null, null))
+    examples.foreach(e => e.accumulateExampleInto(model, optimizer, null))
   }
 
   def isConverged = iteration >= maxIterations
@@ -350,7 +348,6 @@ class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var op
 class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
   var iteration = 0
-  val marginAccumulator = new LocalDoubleAccumulator
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example[M]]): Unit = {
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
@@ -365,11 +362,10 @@ class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new Ad
       }
       val t0 = System.currentTimeMillis()
       gradientAccumulator.tensor.zero()
-      marginAccumulator.value = 0
       valueAccumulator.value = 0
-      example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
+      example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
       valuesSeenSoFar += valueAccumulator.value
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
     }})
   }
@@ -394,7 +390,7 @@ class InlineSGDThenBatchTrainer[M<:Model](
   private val batchTrainer = new BatchTrainer[M](model, batchOptimizer)
   def processExamples(examples: Iterable[Example[M]]) {
     if (step <= numSgdPasses)
-      examples.foreach(e => e.accumulateExampleInto(model, sgdOptimizer, null, null))
+      examples.foreach(e => e.accumulateExampleInto(model, sgdOptimizer, null))
     else
       batchTrainer.processExamples(examples)
     step += 1

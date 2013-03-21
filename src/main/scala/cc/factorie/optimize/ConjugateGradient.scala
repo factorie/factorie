@@ -43,7 +43,7 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
   }
 
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
     if (_isConverged) return
     
     // If this is our first time in, then initialize
@@ -56,7 +56,7 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     
     // Take a step in the current search direction, xi
     if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer(gradient, xi.copy, stepSize)
-    lineOptimizer.step(weights, xi, value, margin)
+    lineOptimizer.step(weights, xi, value)
     // If the lineOptimizer has not yet converged, then don't yet do any of the ConjugateGradient-specific things below
     if (lineOptimizer.isConverged){
     lineOptimizer = null // So we create a new one next time around
@@ -64,13 +64,13 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     // This termination provided by "Numeric Recipes in C".
     if (2.0 * math.abs(value - oldValue) <= tolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
       logger.info("ConjugateGradient converged: old value="+oldValue+" new value="+value+" tolerance="+tolerance)
-      _isConverged = true;
+      _isConverged = true
       return
     }
     // This termination provided by McCallum
     if (xi.twoNorm < gradientTolerance) {
       logger.info("ConjugateGradient converged: maximum gradient component: "+xi.twoNorm+" less than "+tolerance)
-      _isConverged = true;
+      _isConverged = true
       return
     }
 
@@ -108,14 +108,14 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     iterations += 1
 
     lineOptimizer = new BackTrackLineOptimizer(gradient, xi.copy, stepSize)
-    lineOptimizer.step(weights, xi, value, margin)
+    lineOptimizer.step(weights, xi, value)
   }
   }
 }
 
 class L2RegularizedConjugateGradient(var l2: Double = 0.1, val initialStep: Double = 1.0) extends ConjugateGradient(initialStep) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double) {
+  override def step(weights: Tensor, gradient: Tensor, value: Double) {
     gradient += (weights, -l2)
-    super.step(weights, gradient, value - l2 * (weights dot weights), margin)
+    super.step(weights, gradient, value - l2 * (weights dot weights))
   }
 }
