@@ -113,15 +113,15 @@ class SampleRankTest extends AssertionsForJUnit {
       }
   }
 
-
-  abstract class AllPairsCD1Proposer(model: CombinedModel) extends ContrastiveDivergence[Null](model)
-  {
-    def propose(context: Null)(implicit delta: DiffList): Double =
-      {
-        for (b <- bools) b.set(random.nextBoolean)(delta)
-        0.0
-      }
-  }
+//
+//  abstract class AllPairsCD1Proposer(model: CombinedModel) extends ContrastiveDivergence[Null](model)
+//  {
+//    def propose(context: Null)(implicit delta: DiffList): Double =
+//      {
+//        for (b <- bools) b.set(random.nextBoolean)(delta)
+//        0.0
+//      }
+//  }
 
   @Before def initialize() =
     {
