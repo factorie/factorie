@@ -108,7 +108,7 @@ object POS {
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
-    BinaryFileSerializer.serialize(PosModel, modelFile)
+    BinaryFileSerializer.serializeModel(PosModel, PosDomain, PosFeaturesDomain, modelFile)
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")
@@ -128,7 +128,7 @@ object POS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { BinaryFileSerializer.deserialize(PosModel, modelFile); modelLoaded = true }
+  def load(modelFile: String) = { BinaryFileSerializer.deserializeModel(PosModel, PosDomain, PosFeaturesDomain, modelFile); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {
@@ -150,13 +150,13 @@ object POS {
       val devFile =   new CmdOption("dev", "", "FILE", "")
       val testFile =  new CmdOption("test", "", "FILE", "")
       val takeOnly =  new CmdOption("takeOnly", "-1", "", "")
-      val modelDir =  new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
+      val modelFile =  new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
       val runFiles =  new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
     }
     opts.parse(args)
     import opts._
 
-    if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelDir.wasInvoked) {
+    if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelFile.wasInvoked) {
       Template.enableCachedStatistics = false // for contention free parallelism
       val labelMaker = (t: Token, l: String) => new PosLabel(t, l)
       def load(file: String) = LoadOWPL.fromFilename(file, labelMaker, takeOnly.value.toInt)
@@ -171,7 +171,7 @@ object POS {
       initPosFeatures(trainDocs ++ devDocs ++ testDocs)
       println("train, test, and dev features calculated")
 
-      train(trainDocs, devDocs, testDocs, modelDir.value)
+      train(trainDocs, devDocs, testDocs, modelFile.value)
     }
     else if (runFiles.wasInvoked) {
       println(this.getClass().getResource("pos-model").toURI)

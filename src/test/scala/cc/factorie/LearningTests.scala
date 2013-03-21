@@ -1,7 +1,8 @@
 package cc.factorie
 
 
-import org.scalatest.junit.AssertionsForJUnit
+import optimize.{BatchTrainer, LikelihoodExample}
+import org.scalatest.junit.{JUnitSuite, AssertionsForJUnit}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import org.junit.Assert._
 import org.junit.Test
@@ -41,6 +42,35 @@ test if model ranking agrees with training signal (randomly created?)
 @Since 0.9
 
  */
+
+class RealVariableTest extends JUnitSuite {
+  @Test def testRealVariableWorks() {
+    class Prob(val scoreVal:Double) extends RealVariable(scoreVal)
+    class Data(val scoreVal: Double, val truth: Boolean) extends LabeledBooleanVariable(truth) {
+      val score=new Prob(scoreVal)
+    }
+    val trainings=new ArrayBuffer[Data]
+    trainings+=new Data(0.1, false)
+    trainings+=new Data(0.4, false)
+    trainings+=new Data(0.6, true)
+    trainings+=new Data(0.8, true)
+    object simpleTemplate extends DotTemplateWithStatistics2[Data, Prob]{
+      lazy val weights = new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize)
+      def unroll1(data: Data) = Factor(data, data.score)
+      def unroll2(prob: Prob) = Nil
+    }
+    val model = new CombinedModel(simpleTemplate)
+    val objective = new HammingTemplate[Data]
+
+    val pieces = new ArrayBuffer[LikelihoodExample[Data]]
+    pieces+=new LikelihoodExample(trainings, InferByBPLoopy)
+    val trainer = new BatchTrainer(model)
+    while (!trainer.optimizer.isConverged) {
+      trainer.processExamples(pieces)
+      println("Accuracy after sampling: " + objective.accuracy(trainings))
+    }
+  }
+}
 
 
 //extends JUnitSuite with TestUtils{

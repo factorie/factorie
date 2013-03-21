@@ -146,12 +146,12 @@ object ShiftReduceDependencyParser {
   var useLabels = true
 
   def load(modelFile: String = "dep-parsing.fac") = {
-    BinaryFileSerializer.deserialize(ActionModel, modelFile)
+    BinaryFileSerializer.deserializeModel(ActionModel, ActionDomain, ParserFeaturesDomain, modelFile)
     ActionModel.skipNonCategories = true
   }
 
   var modelFile = "dep-parsing.fac"
-  def save(extra: String = "") = BinaryFileSerializer.serialize(ActionModel, modelFile + extra)
+  def save(extra: String = "") = BinaryFileSerializer.serializeModel(ActionModel, ActionDomain, ParserFeaturesDomain, modelFile + extra)
 
   def main(args: Array[String]) {
     object opts extends cc.factorie.util.DefaultCmdOptions {

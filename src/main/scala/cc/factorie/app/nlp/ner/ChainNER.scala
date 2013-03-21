@@ -256,7 +256,7 @@ object ChainNer extends ChainNer {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename), false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -269,11 +269,12 @@ object ChainNer extends ChainNer {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserialize(model, opts.modelDir.value)
+      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
-      if (opts.modelDir.wasInvoked) BinaryFileSerializer.serialize(model, opts.modelDir.value)
+      if (opts.modelDir.wasInvoked)
+        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
     }
     
 

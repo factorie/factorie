@@ -26,6 +26,19 @@ trait Example[-M<:Model] {
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
 }
 
+// A locking example wraps an example with knowledge on how to
+// lock the structure it needs at runtime to ensure
+// that there are no race conditions
+trait LockingExample  {
+  def lockExample()
+  def unlockExample()
+}
+
+// An ExampleLocker is an implicit that knows how to create locking examples from examples
+trait ExampleLocker {
+  def getLockingExample[M<:Model](e: Example[M], model: M): LockingExample
+}
+
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
 class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) extends Example[Model] {
   def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {

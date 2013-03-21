@@ -1,6 +1,6 @@
 package cc.factorie.la
 
-import cc.factorie.util.{TruncatedArrayIntSeq, Accumulator}
+import cc.factorie.util.{LocalDoubleAccumulator, TruncatedArrayIntSeq, Accumulator}
 import cc.factorie.DotFamily
 
 trait TensorAccumulator extends Accumulator[Tensor] {
@@ -130,6 +130,13 @@ class SynchronizedWeightsTensorAccumulator(val tensor: WeightsTensor) extends We
   override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = l.synchronized { l.accumulateOuter(family, t1, t2) }
   override def combine(a: Accumulator[Tensor]): Unit = l.synchronized { l.combine(a) }
 }
+
+class SynchronizedDoubleAccumulator() extends cc.factorie.util.DoubleAccumulator {
+  val l = new LocalDoubleAccumulator()
+  def accumulate(t: Double) { l synchronized { l.accumulate(t) } }
+  def combine(ta: Accumulator[Double]) { l.synchronized { l.combine(ta)}}
+}
+
 
 object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
   def accumulator(family:DotFamily): TensorAccumulator = throw new Error("NoopWeightsTensorAccumulator cannot implement accumulator(DotFamily")

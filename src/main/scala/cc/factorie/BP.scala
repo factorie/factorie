@@ -108,6 +108,19 @@ trait BPVariable {
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
   def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
   def calculateBelief: Tensor
+  def betheObjective: Double = {
+    var bethe = 0.0
+    calculateMarginal match {
+      case t: DenseTensor =>
+        var i = 0
+        val arr = t.asArray
+        while (i < arr.length) {
+          bethe += arr(i)*math.log(arr(i))
+          i += 1
+        }
+    }
+    bethe * (edges.length-1)
+  }
   def calculateMarginal: Tensor
 }
 abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
@@ -154,27 +167,26 @@ trait BPFactor extends DiscreteMarginal {
   def calculateMarginalTensor: Tensor
   /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
-  def betheObjective: Double = calculateMarginalTensor match {
-    case t:DenseTensor => {
-      var z = 0.0
-      val l = t.length
-      var i = 0
-      while (i < l) {
-        if (t(i) > 0)
-          z += t(i) * (math.log(t(i)) + scores(i))
-        i += 1
+  def betheObjective = calculateMarginalTensor match {
+      case t:DenseTensor => {
+        var z = 0.0
+        val l = t.length
+        var i = 0
+        while (i < l) {
+          if (t(i) > 0)
+            z += t(i) * (-math.log(t(i)) + scores(i))
+          i += 1
+        }
+        z
       }
-      z
+      case t:SparseIndexedTensor => {
+        var z = Double.NegativeInfinity
+        t.foreachActiveElement((i,v) => {
+          z = v * (math.log(z) + scores(i))
+        })
+        z
+      }
     }
-    case t:SparseIndexedTensor => {
-      var z = Double.NegativeInfinity
-      t.foreachActiveElement((i,v) => {
-        z = v * (math.log(z) + scores(i))
-      })
-      z
-    }
-  }
-  /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
   /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
   def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
@@ -577,6 +589,15 @@ object LoopyBPSummary {
     }
 }
 
+object LoopyBPSummaryMaxProduct {
+  def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
+      val summary = new LoopyBPSummaryMaxProduct(ring)
+      val varyingSet = varying.toSet
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      summary
+    }
+}
+
 // Just in case we want to create different BPSummary implementations
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
@@ -594,7 +615,7 @@ trait AbstractBPSummary extends Summary[DiscreteMarginal] {
     which add the appropriate BPFactors, BPVariables and BPEdges. */
 class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
-  private val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
+  protected val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   override def usedFactors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
@@ -628,10 +649,14 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
 }
 
 class LoopyBPSummary(val rng: BPRing) extends BPSummary(rng) {
-  override def logZ = _bpFactors.values.map(_.betheObjective).sum
+  override def logZ = _bpFactors.values.map(_.betheObjective).sum + _bpVariables.values.map(_.betheObjective).sum
   override def expNormalize(t: Tensor) { t.expNormalize() }
 }
 
+class LoopyBPSummaryMaxProduct(val rng: BPRing) extends BPSummary(rng) {
+  override def logZ = _bpFactors.values.map(f => f.calculateMarginalTensor.dot(f.scores)).sum
+  override def expNormalize(t: Tensor) { t.expNormalize() }
+}
 
 object BPUtil {
   
@@ -639,11 +664,13 @@ object BPUtil {
     val visited: HashSet[BPEdge] = new HashSet
     val result = new ArrayBuffer[(BPEdge, Boolean)]
     val toProcess = new Queue[(BPEdge, Boolean)]
+    val visitedVariables = HashSet[DiscreteVar]()
     root.edges foreach (e => toProcess += Pair(e, true))
     while (!toProcess.isEmpty) {
       val (edge, v2f) = toProcess.dequeue()
       if (!checkLoops || !visited(edge)) {
         visited += edge
+        visitedVariables += edge.variable
         result += Pair(edge, v2f)
         val edges =
           if (v2f) edge.bpFactor.edges.filter(_ != edge)
@@ -655,9 +682,38 @@ object BPUtil {
         edges.foreach(ne => toProcess += Pair(ne, !v2f))
       }
     }
+    require(varying.forall(visitedVariables.contains(_)), "Treewise BP assumes the graph is connected")
     result
   }
-  
+
+  def loopyBfs(varying: Set[DiscreteVar], summary: BPSummary): Seq[(BPEdge, Boolean)] = {
+    val visited: HashSet[BPEdge] = new HashSet
+    val result = new ArrayBuffer[(BPEdge, Boolean)]
+    val toProcess = new Queue[(BPEdge, Boolean)]
+    val visitedVariables = HashSet[DiscreteVar]()
+    while (!varying.forall(visitedVariables.contains(_))) {
+      val root = summary.bpVariable(varying.collectFirst({case v if !visitedVariables.contains(v) => v}).head)
+      root.edges foreach (e => toProcess += Pair(e, true))
+      while (!toProcess.isEmpty) {
+        val (edge, v2f) = toProcess.dequeue()
+        if (!visited(edge)) {
+          visited += edge
+          result += Pair(edge, v2f)
+          visitedVariables += edge.bpVariable.variable
+          val edges =
+            if (v2f) edge.bpFactor.edges.filter(_ != edge)
+            else {
+              if (varying.contains(edge.bpVariable.variable))
+                edge.bpVariable.edges.filter(_ != edge)
+              else Seq.empty[BPEdge]
+            }
+          edges.foreach(ne => toProcess += Pair(ne, !v2f))
+        }
+      }
+    }
+    result
+  }
+
   def sendAccordingToOrdering(edgeSeq: Seq[(BPEdge, Boolean)]) {
     for ((e, v2f) <- edgeSeq) {
       if (v2f) {
@@ -683,10 +739,9 @@ object BP {
     }
   }
 
-  def interLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, root: DiscreteVar = null, numIterations: Int = 2) {
+  def inferLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, numIterations: Int = 2) = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
-    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
-    val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
+    val bfsSeq = BPUtil.loopyBfs(varying.toSet, summary)
     for (i <- 0 to numIterations) {
       BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
       BPUtil.sendAccordingToOrdering(bfsSeq)
@@ -817,12 +872,21 @@ object InferByBPLoopy extends InferByBP {
   }
 }
 
+object InferByBPLoopyTreewise extends InferByBP {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+    case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
+  }
+  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
+    BP.inferLoopyTreewise(varying, model)
+  }
+}
+
 object MaximizeByBPLoopy extends Maximize with InferByBP {
   override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-    val summary = LoopyBPSummary(varying, BPMaxProductRing, model)
+    val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)
     BP.inferLoopy(summary)
     summary
   }

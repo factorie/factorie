@@ -30,6 +30,15 @@ class TokenizerTests extends JUnitSuite {
     d.sentences.map(_.string).foreach(println)
   }
 
+  @Test def testClearSegmenterWithOneSentence() {
+    val seg = ClearSegmenter
+    val text = "The quick brown fox jumps over the lazy dog."
+    val d = new Document("oneSentenceDocument", text)
+    seg.process(d)
+    assert(d.sentences.size == 1)
+    assert(d.tokens.size == 10)
+  }
+
   @Test def testClearTokenizer(): Unit = {
     val tok = ClearTokenizer
 

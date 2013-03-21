@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.{Sentence, Document, Token}
+import cc.factorie.app.nlp.{DocumentProcessor, Sentence, Document, Token}
 import cc.factorie.app.strings.StringSegmentIterator
 
 object DefaultRules {
@@ -81,7 +81,7 @@ case object Non extends SentenceBoundaryInference
 
 object PunktTokenizer extends PunktTokenizer
 
-class PunktTokenizer extends StringSegmenter {
+class PunktTokenizer extends DocumentProcessor {
 
   def commonAbbreviations: Set[String] = DefaultRules.commonAbbreviations
   def commonSentenceStarters: Set[String] = DefaultRules.commonSentenceStarters
@@ -107,7 +107,7 @@ class PunktTokenizer extends StringSegmenter {
 
   def process(documents: Seq[Document]): Unit = processLogic(documents, sentenceBoundaryInference)
 
-  def process(document: Document): Unit = processLogic(Seq(document), sentenceBoundaryInference)
+  def process(document: Document): Document = { processLogic(Seq(document), sentenceBoundaryInference); document }
 
   private[this] def processLogic(documents: Seq[Document], inference: SentenceBoundaryInference): Unit = inference match {
     case PerDocument => documents.foreach(d => processLogic(Seq(d), JointlyAcrossDocuments))

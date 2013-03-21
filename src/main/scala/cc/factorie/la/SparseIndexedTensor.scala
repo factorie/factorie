@@ -99,6 +99,7 @@ trait SparseIndexedTensor extends Tensor {
   override def dot(v:DoubleSeq): Double = {
     makeReadable
     v match {
+      // TODO add fast implementations for Dense here! -luke
       case v:SingletonBinaryTensor1 => apply(v.singleIndex)
       case v:SingletonTensor1 => apply(v.singleIndex) * v.singleValue
       case v:SparseIndexedTensor => {
@@ -238,6 +239,42 @@ trait SparseIndexedTensor extends Tensor {
             }
             i += 1
           }
+        case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+          var i = 0
+          val arr = t1.asArray
+          while (i < arr.length) {
+            val len = t2.activeDomainSize
+            val indices = t2._indices
+            val values = t2._values
+            var j = 0
+            while (j < len) {
+              this += (t.singleIndex(i, indices(j)), f*t1(i)*values(j))
+              j += 1
+            }
+            i += 1
+          }
+        case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) => {
+          val i0 = t1.singleIndex
+          val arr = t2.asIntArray
+          var i = 0
+          while (i < arr.length) {
+            this += (t.singleIndex(i0, arr(i)), f)
+            i += 1
+          }
+        }
+        case (t1: DenseTensor1, t2: DenseTensor1) => {
+          val arr1 = t1.asArray
+          val arr2 = t2.asArray
+          var i = 0
+          while (i < arr1.length) {
+            var j = 0
+            while (j < arr2.length) {
+              this += (t.singleIndex(i, j), arr1(i)*arr2(j)*f)
+              j += 1
+            }
+            i += 1
+          }
+        }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
     case t:SingletonBinaryTensor => this += (t.singleIndex, f)
@@ -267,13 +304,17 @@ trait SparseIndexedTensor extends Tensor {
   }
 
   override def exponentiate() {
-    var i = 0;
+    var i = 0
     while (i < __npos) {
       __values(i) = math.exp(__values(i))
       i += 1
     }
   }
-
+  override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
+    var acc = seed; var i = 0
+    while (i < __npos) { acc = f(__indices(i), __values(i), acc); i += 1 }
+    acc
+  }
   override def maxNormalize() {
     var maxi = 0
     var max = Double.MinValue

@@ -210,6 +210,30 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     }
   }
 
+  @Test def testLoopyLogZ {
+    object cdomain extends CategoricalDimensionTensorDomain[String]()
+    val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
+    features += "asd"
+    val ldomain = new CategoricalDomain[String]()
+    val d = new app.nlp.Document("noname")
+    val t0 = new Token(d, 0, 1)
+    val t1 = new Token(d, 0, 1)
+    val t2 = new Token(d, 0, 1)
+    val t3 = new Token(d, 0, 1)
+    class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
+    val l0 = new Label("1")
+    val l1 = new Label("0")
+    val l2 = new Label("2")
+    val l3 = new Label("3")
+    val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2, l3 -> t3)
+    val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
+    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
+    model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weights.foreachElement((i, v) => f.weights(i) += random.nextDouble()))
+    val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).head.logZ
+    val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).head.logZ
+    assertEquals(trueLogZ, loopyLogZ, 0.01)
+  }
+
   @Test def v2f1VaryingOne {
     println("V2F1: varying one")
     // a sequence of two variables, one factor

@@ -57,5 +57,10 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
     // TODO Any other special cases here?
     case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
+  override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
+    var acc = seed; var i = 0
+    while (i < _length) { acc = f(_apply(i), 1.0, acc); i += 1 }
+    acc
+  }
 }
 

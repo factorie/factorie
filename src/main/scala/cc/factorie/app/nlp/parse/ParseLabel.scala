@@ -180,7 +180,12 @@ class ParseTree(val sentence:Sentence) {
   /** Return the label on the edge from 'childToken' to its parent. */
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
   override def toString(): String = {
-    val tokenStrings = sentence.tokens.map(_.string)
+    val tokenStrings = {
+      if (sentence.tokens.forall(_.posLabel ne null))
+        sentence.tokens.map(t => t.string + "/" + t.posLabel.categoryValue)
+      else
+        sentence.tokens.map(_.string)
+    }
     val labelStrings = _labels.map(_.value.toString())
     val buff = new StringBuffer()
     for (i <- 0 until sentence.length)

@@ -271,6 +271,17 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
       val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
       score(domain0(v.singleIndex1), v.inner.asInstanceOf[N2#Value])
     }
+    case v: Outer1Tensor2 => {
+      (v.tensor1, v.tensor2) match {
+        case (v1: SingletonBinaryTensor1, v2: SingletonBinaryTensor1) =>
+          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
+          val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
+          score(domain0(v1.singleIndex), domain1(v1.singleIndex))
+        case (v1: SingletonBinaryTensor1, v2: N2#Value) =>
+          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
+          score(domain0(v1.singleIndex), v2)
+      }
+    }
   }
 
   // For implementing sparsity in belief propagation
