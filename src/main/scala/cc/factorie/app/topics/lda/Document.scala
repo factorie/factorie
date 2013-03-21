@@ -66,6 +66,30 @@ trait Doc extends SeqBreaks {
     zs.clear(); zs.appendInts(zints)
     ws.length
   }
+  /** Read from the BufferedReader, filling the document with words and Z assignments,
+      but allow map function to alter the Z assignment, and skips word/z pairs for which the map function returns a value less than 0. */ 
+  def readNameWordsMapZs(p:BufferedReader, map:Int=>Int): Int = {
+    name = p.readLine()
+    if (name == null) return -1
+    val words = new ArrayBuffer[String]
+    val zints = new ArrayBuffer[Int]
+    var line: String = p.readLine()
+    while (line != null && line.length > 0) {
+      val topicIndexString = p.readLine()
+      if (topicIndexString(0) == '0' && words.length > 1) breaks += (words.length-1) // Remember phrase break points
+      val topicIndex = topicIndexString.toInt
+      val newZ = map(topicIndex)
+      if (newZ >= 0) {
+        words += line
+        zints += newZ
+      }
+      line = p.readLine()
+    }
+    ws.clear(); ws.appendCategories(words)
+    if (zs eq null) throw new Error("Doc.zs must be set non-null and empty before calling this method.") 
+    zs.clear(); zs.appendInts(zints)
+    ws.length
+  }
 
 }
 

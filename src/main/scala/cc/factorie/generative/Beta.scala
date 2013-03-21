@@ -62,7 +62,7 @@ object MaximizeBetaByMomentMatching {
     require(mean >= 0.0 && mean <= 1.0)
     require(variance >= 0.0 && variance <= 1.0)
     val result = mean * (((mean * (1 - mean)) / variance) - 1)
-    println("MaximizeBetaByMomentMatching.maxAlpha mean="+mean+" variance="+variance+" alpha="+result)
+    //println("MaximizeBetaByMomentMatching.maxAlpha mean="+mean+" variance="+variance+" alpha="+result)
     require(result >= 0.0, "mean="+mean+" variance="+variance)
     result
   }

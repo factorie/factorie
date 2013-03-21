@@ -69,7 +69,7 @@ object TopicsOverTime {
     val sampler = new CollapsedGibbsSampler(collapse, model)
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
-      throw new Error("Not yet a GibbsSampler handler for this case.")
+      //throw new Error("Not yet a GibbsSampler handler for this case.")
       for (doc <- documents; word <- doc) sampler.process(word.z)
       if (i % 5 == 0) {
         println("Iteration " + i)

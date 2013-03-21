@@ -10,6 +10,7 @@ class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(super
 {
   {
     var prevInTopic = false
+    time = superDoc.time
     for (i <- 0 until superDoc.ws.length)
       if (superDoc.zs.intValue(i) == superTopic) {
         ws.appendInt(superDoc.ws.intValue(i))
@@ -20,6 +21,13 @@ class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(super
   }
 }
 
+// Example command-lines:
+// Multi-threaded, but all on one machine:
+// --read-docs mytextdatadir --num-iterations=30 --fit-alpha-interval=10  --diagnostic-phrases --print-topics-phrases --write-docs recursive-lda-docs.txt
+// Serialized per recursive division
+// --read-docs mytextdatadir --num-iterations=30 --num-layers 1 --fit-alpha-interval=10  --diagnostic-phrases --print-topics-phrases --write-docs recursive-lda-docs.txt
+// --read-docs recursive-lda-docs.txt --read-docs-topic-index 5 --num-layers 1 --num-iterations=30 --fit-alpha-interval=10  --diagnostic-phrases --print-topics-phrases --write-docs recursive-lda-docs5.txt
+
 
 class RecursiveLDA(wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, beta1:Double = 0.01)(implicit model:MutableGenerativeModel)
 extends LDA(wordSeqDomain, numTopics, alpha1, beta1)(model)
@@ -28,7 +36,7 @@ extends LDA(wordSeqDomain, numTopics, alpha1, beta1)(model)
 object RecursiveLDA {
   import scala.util.control.Breaks._
   val minDocLength = 5
-
+  
   def main(args:Array[String]): Unit = {
     var verbose = false
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -48,7 +56,8 @@ object RecursiveLDA {
       val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
       val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
       val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
-      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
+      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments")
+      val readDocsTopicIndex = new CmdOption("read-docs-topic-index", 0, "N", "Only include in this model words that were assigned to the given topic index.  (Used for disk-based parallelism.)")
       val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
@@ -70,25 +79,39 @@ object RecursiveLDA {
         breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
           if (lda.documents.size == opts.maxNumDocs.value) break
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
+          doc.time = file.lastModified
           if (doc.length >= minDocLength) lda.addDocument(doc)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
         }}
         //println()
       }
+      // Now that we have the full min-max range of dates, set the doc.stamps values to a 0-1 normalized value
+      val dates = lda.documents.map(_.time)
+      maxDate = dates.max
+      minDate = dates.min
+      dateRange = maxDate - minDate
+      //lda.documents.foreach(doc => doc.stamps.foreach(_ := (doc.date - minDate) / dateRange)) 
     }
     if (opts.readNIPS.wasInvoked) {
       // A temporary hack for McCallum's development/debugging
       val directories = Range(0,13).reverse.map(i => "%02d".format(i)).take(8).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       for (directory <- directories) {
+        val year = directory.takeRight(2).toInt
+        //println("RecursiveLDA directory year "+year)
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading NIPS files from directory " + directory)
         for (file <- new File(directory).listFiles; if (file.isFile)) {
-          val doc = Document.fromFile(WordSeqDomain, file, "UTF-8")
+          val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
+          doc.time = year
           if (doc.length >= 3) lda.addDocument(doc)
           print("."); Console.flush
         }
         println()
       }
+      val dates = lda.documents.map(_.time)
+      maxDate = dates.max
+      minDate = dates.min
+      dateRange = maxDate - minDate
     }
     if (opts.readLines.wasInvoked) {
       val name = if (opts.readLines.value == "-") "stdin" else opts.readLines.value
@@ -116,24 +139,31 @@ object RecursiveLDA {
       }}
       source.close()
     }
-    /* // Need to determine an on-disk representation for RecursiveLDA 
+    // On-disk representation for RecursiveLDA input/output
     if (opts.readDocs.wasInvoked) {
       val file = new File(opts.readDocs.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      reader.mark(512)
+      val alphasName = reader.readLine()
+      if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
+        val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+        reader.readLine() // consume delimiting newline
+        println("Read alphas "+lda.alphas.tensor.mkString(" "))
+      } else reader.reset // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
-        doc.zs = new lda.Zs(Nil)
-        val numWords = doc.readNameWordsZs(reader)
+        doc.zs = lda.newZs
+        val filterTopicIndex = opts.readDocsTopicIndex.value
+        // If readDocsTopicIndex.wasInvoked then only read in words that had been assigned readDocsTopicIndex.value, and reassign them random Zs
+        val numWords = if (opts.readDocsTopicIndex.wasInvoked) doc.readNameWordsMapZs(reader, ti => if (ti == filterTopicIndex) random.nextInt(numTopics) else -1) else doc.readNameWordsZs(reader)
         if (numWords < 0) break
         else if (numWords >= minDocLength) lda.addDocument(doc) // Skip documents that have only one word because inference can't handle them
-        else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
+        else if (!opts.readDocsTopicIndex.wasInvoked) System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
       reader.close()
       lda.maximizePhisAndThetas
-      //println(lda.documents.head.ws.categoryValues.mkString(" "))
-      //println(lda.documents.head.zs.intValues.mkString(" "))
-    }*/
+    }
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
     println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     //lda.documents.filter(_.name.endsWith("0003.txt")).foreach(d => println(d.toString)) // print example documents
@@ -149,10 +179,9 @@ object RecursiveLDA {
     for (doc <- documents1) doc.theta = null
     System.gc()
     
-    var documents2 = new ArrayBuffer[RecursiveDocument]
-        
     // Create next-level LDA models, each with its own GenerativeModel, in chunks of size opts.numThreads
     if (opts.numLayers.value > 1) {
+      var documents2 = new ArrayBuffer[RecursiveDocument]
       for (topicRange <- Range(0, numTopics).grouped(opts.numThreads.value)) {
         val topicRangeStart: Int = topicRange.head
         var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
@@ -166,70 +195,15 @@ object RecursiveLDA {
         }
         println("Starting second-layer parallel inference for "+topicRange)
         lda2.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
-      }
-      documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
-    } else if (false) {
-      var lda2 = Seq.tabulate(numTopics)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
-      for (i <- 0 until numTopics) lda2(i).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
-      for (doc <- documents1) {
-        for (ti <- doc.zs.uniqueIntValues) {
-          val rdoc = new RecursiveDocument(doc, ti)
-          if (rdoc.ws.length > 0) { lda2(ti).addDocument(rdoc); documents2 += rdoc }
+        println("Ended second-layer parallel inference for "+topicRange)
+        for (subLda <- lda2; ti <- 0 until numTopics) {
+          val tp = timeMeanAlphaBetaForTopic(subLda.documents, ti) // time parameters
+          println("%s  mean=%g variance=%g".format(subLda.topicSummary(ti), tp._1, tp._2))
         }
       }
       documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
-      println("Starting second-layer parallel inference.")
-      lda2.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
-      println("Second-layer topics")
-      for (i <- 0 until lda2.length) {
-        println()
-        println(summaries1(i))
-        println("  "+lda2(i).topicsSummary().replace("\n", "\n  "))
-      }
-    }
-    println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
-    if (opts.numLayers.value == 1) System.exit(0)
-    
-    // Build single flat LDA
-    if (false) {
-      val bigNumTopics = numTopics * numTopics
-      val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
-      while (documents2.size > 0) {
-        val doc = documents2.last
-        val doc3 = lda3.nameDocumentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
-        val ws = doc.ws; val zs = doc.zs
-        var i = 0; val len = doc.length
-        while (i < len) {
-          val zi = doc.superTopic * numTopics + zs.intValue(i)
-          val wi = ws.intValue(i)
-          lda3.phis(zi).tensor.+=(wi, 1.0) // This avoids? the need for estimating phis later; note that we are not setting thetas here.
-          doc3.ws.appendInt(wi)
-          doc3.zs.appendInt(zi)
-          if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
-          i += 1
-        }
-        if (!lda3.nameDocumentMap.contains(doc3.name)) lda3.addDocument(doc3)
-        //else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
-        documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
-      }
-      println("Flat LDA")
-      println(lda3.topicsSummary(10))
-      if (opts.printTopics.wasInvoked) {
-        println("\nFlat LDA topic words")
-        println(lda3.topicsSummary(opts.printTopics.value))
-      }
-      if (opts.printPhrases.wasInvoked) { 
-        println("\nFlat LDA topic phrases")
-        println(lda3.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
-      }
-      if (opts.writeDocs.wasInvoked) {
-        println("\nWriting state to "+opts.writeDocs.value)
-        val file = new File(opts.writeDocs.value)
-        val pw = new PrintWriter(file)
-        lda3.documents.foreach(_.writeNameWordsZs(pw))
-        pw.close()
-      }
-    } else { // Be more memory efficient; don't build lda3
+      println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
+      // Re-assemble the documents, and optionally write them out.
       val documents3 = new HashMap[String,Document]
       object ZDomain3 extends DiscreteDomain(numTopics * numTopics)
       object ZSeqDomain3 extends DiscreteSeqDomain { def elementDomain = ZDomain3 }
@@ -249,19 +223,50 @@ object RecursiveLDA {
         }
         documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
       }
-      if (opts.writeDocs.wasInvoked) {
-        println("\nWriting state to "+opts.writeDocs.value)
-        val file = new File(opts.writeDocs.value)
-        val pw = new PrintWriter(file)
-        pw.println("/alphas")
-        pw.println((Seq.fill(numTopics*numTopics)(opts.alpha.value)).mkString(" ")) // Just set all alphas to 1.0 // TODO can we do better?
-        pw.println()
-        documents3.values.foreach(_.writeNameWordsZs(pw))
-        pw.close()
-      }
+      documents1 = documents3.values.toSeq // Put them back into documents1 so that they can be written out below.
     }
-
+    
+    if (opts.writeDocs.wasInvoked) {
+      println("\nWriting state to "+opts.writeDocs.value)
+      val file = new File(opts.writeDocs.value)
+      val pw = new PrintWriter(file)
+      pw.println("/alphas")
+      pw.println((Seq.fill(numTopics*numTopics)(opts.alpha.value)).mkString(" ")) // Just set all alphas to 1.0 // TODO can we do better?
+      pw.println()
+      documents1.foreach(_.writeNameWordsZs(pw))
+      pw.close()
+    }
     
   }
+
+  // Code for time-stamp parameterization
+  // Related to Topics-over-Time [Wang, McCallum, KDD 2006]
   
+  // These globals are set above in main opts.readDirs.wasInvoked
+  var maxDate: Long = 0
+  var minDate: Long = 0
+  var dateRange: Double = 0.0
+
+  /** Convert from Long doc.time to stamp falling in 0...1 range */
+  def time2Stamp(t:Long): Double = {
+    val result = (t - minDate) / dateRange
+    assert(result >= 0.0, "input=%d minDate=%d dateRange=%g result=%g".format(t, minDate, dateRange, result))
+    assert(result <= 1.0, result)
+    result
+  }
+  /** Calculate Beta distribution parameters (alpha, beta) for the topicIndex. */
+  def timeMeanAlphaBetaForTopic(documents:Iterable[Doc], topicIndex:Int): (Double, Double, Double, Double) = {
+    val stamps = new util.DoubleArrayBuffer
+    for (d <- documents; z <- d.zs.intValues; if (z == topicIndex)) {
+      if (d.time < 0) throw new Error(d.name+" has year "+d.time)
+      stamps += time2Stamp(d.time) 
+    }
+    val mean = maths.sampleMean(stamps)
+    val variance = maths.sampleVariance(stamps, mean)
+    //println("RecursiveLDA.timeMeanAlphaBeta min=%d max=%d range=%g".format(minDate, maxDate, dateRange))
+    //println("RecursiveLDA.timeMeanAlphaBeta mean=%g variance=%g".format(mean, variance))
+    (mean, variance, MaximizeBetaByMomentMatching.maxAlpha(mean, variance), MaximizeBetaByMomentMatching.maxBeta(mean, variance))
+  }
+
+
 }

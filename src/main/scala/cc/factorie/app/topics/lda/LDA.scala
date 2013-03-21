@@ -35,6 +35,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     def domain = ZSeqDomain
     //def words: Document = childFactors.first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Document]
   }
+  def newZs: Zs = new Zs // Because new lda.Zs won't work, because lda isn't a stable identifier.
 
   def wordDomain = wordSeqDomain.elementDomain
   /** The prior over per-topic word distribution */
