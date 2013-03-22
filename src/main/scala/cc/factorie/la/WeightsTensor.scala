@@ -16,6 +16,20 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
+
+
+// A map from a XXX to a Tensor; previously called WeightsTensor
+// The optimize.GradientOptimizer package expects these
+// trait WeightsTensors extends Map[WeightsTensor,Tensor] { def += ... }
+
+// DotFamily mixes this in to provide it with a tensor holding its parameters
+// WeightsTensor { def weightsTensor: Tensor ... }
+
+// Model mixes this in to provide it with weights
+// Weights { def weights: WeightsTensors } 
+
+
+
 //* A Tensor to represent the weights in a collection of DotFamilies as the keys in a HashMap from DotFamily to Tensor. */
 class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.newSparse(df.weights)) extends Tensor1 {
   // This functionality moved to TemplateModel
