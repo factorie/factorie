@@ -43,7 +43,7 @@ test if model ranking agrees with training signal (randomly created?)
 
  */
 
-class RealVariableTest extends JUnitSuite {
+class TestRealVariable extends JUnitSuite {
   @Test def testRealVariableWorks() {
     class Prob(val scoreVal:Double) extends RealVariable(scoreVal)
     class Data(val scoreVal: Double, val truth: Boolean) extends LabeledBooleanVariable(truth) {
@@ -74,7 +74,7 @@ class RealVariableTest extends JUnitSuite {
 
 
 //extends JUnitSuite with TestUtils{
-class SampleRankTest extends AssertionsForJUnit {
+class TestSampleRank2 extends AssertionsForJUnit {
   val numVariables = 4
   val numProposals = 1000
 

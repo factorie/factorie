@@ -11,7 +11,7 @@ import collection.mutable.ArrayBuffer
  * @date 5/10/2012
  */
 
-class ParserTests extends JUnitSuite {
+class TestBibtexParser extends JUnitSuite {
 
   def testMichaelsStuff(): Unit = {
 

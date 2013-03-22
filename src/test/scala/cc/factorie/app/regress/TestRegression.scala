@@ -25,7 +25,7 @@ class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList =
   def getFeatures = inner
 }
 
-class RegressionTests {
+class TestRegression {
   @Test def testSimpleRegression {
     val y0 = new MyTensorVariable(1, 2, 4)
     val y1 = new MyTensorVariable(2, 1, 5)

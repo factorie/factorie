@@ -7,7 +7,7 @@ import junit.framework.TestCase
 /**
  * @author sriedel
  */
-class TemplateTestSuite extends JUnitSuite  {
+class TestTemplates extends JUnitSuite  {
 
   //implicit def template2initialized1[S1<:DiscretesValue](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
   //implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)

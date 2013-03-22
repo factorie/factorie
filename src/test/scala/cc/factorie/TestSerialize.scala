@@ -9,7 +9,7 @@ import java.io._
 import cc.factorie.app.nlp
 import nlp.pos.PosDomain
 
-class SerializeTest extends JUnitSuite {
+class TestSerialize extends JUnitSuite {
 
   class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalDimensionTensorDomain[String])
     extends BinaryFeatureVectorVariable[String] {

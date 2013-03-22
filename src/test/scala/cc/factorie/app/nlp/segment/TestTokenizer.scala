@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.{Sentence, Document}
 import java.util.zip.ZipInputStream
 import java.io.{BufferedReader, StringReader, FileInputStream}
 
-class TokenizerTests extends JUnitSuite {
+class TestTokenizer extends JUnitSuite {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
