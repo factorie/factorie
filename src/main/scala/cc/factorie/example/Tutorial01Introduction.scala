@@ -65,7 +65,7 @@ The following code declares data, model, inference and learning for a linear-cha
   class LabelSeq extends scala.collection.mutable.ArrayBuffer[Label]
   // Create random variables from data
   val data = List("See/V Spot/N run/V", "Spot/N is/V a/DET big/J dog/N", "He/N is/V fast/J")
-  val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => { val a = s.split("/"); new Label(a(0), new Token(a(1)))})
+  val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => { val a = s.split("/"); new Label(a(1), new Token(a(0)))})
   // Define a model
   val model = new Model {
     // Two families of factors, where factor scores are dot-products of sufficient statistics and weights (which will be trained below)
@@ -86,5 +86,6 @@ The following code declares data, model, inference and learning for a linear-cha
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
   println(model.markov.weights)
-  
+  // Print the inferred tags
+  labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }

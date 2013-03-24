@@ -108,7 +108,7 @@ object POS {
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
-    BinaryFileSerializer.serializeModel(PosModel, PosDomain, PosFeaturesDomain, modelFile)
+    BinarySerializer.serialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile))
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")
@@ -128,7 +128,7 @@ object POS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { BinaryFileSerializer.deserializeModel(PosModel, PosDomain, PosFeaturesDomain, modelFile); modelLoaded = true }
+  def load(modelFile: String) = { BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile)); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {

@@ -17,6 +17,7 @@ import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
+import java.io.File
 
 object ChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -256,7 +257,7 @@ object ChainNer extends ChainNer {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
+      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename), false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -269,14 +270,13 @@ object ChainNer extends ChainNer {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
+      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked)
-        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, ChainNerFeaturesDomain, opts.modelDir.value)
+        BinarySerializer.serialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
     }
-    
 
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")
 

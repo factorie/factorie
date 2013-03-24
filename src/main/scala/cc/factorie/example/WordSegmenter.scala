@@ -19,6 +19,7 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
+import java.io.File
 
 object WordSegmenterDemo { 
   
@@ -144,7 +145,7 @@ object WordSegmenterDemo {
     // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
     if (args.length > 0) {
       println("Loading model parameters from "+args(0))
-      BinaryFileSerializer.deserialize(model, args(0))
+      BinarySerializer.deserialize(TokenDomain, model, new File(args(0)))
       //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
       //predictor.maximize(testVariables, iterations=6, rounds=2)
       predictor.processAll(testVariables)

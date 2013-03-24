@@ -169,26 +169,26 @@ class ClassifierPos extends DocumentProcessor {
     val modelFile = new File(prefix + "-model")
     if (modelFile.getParentFile ne null)
       modelFile.getParentFile.mkdirs()
-    BinaryFileSerializer.serialize(model, modelFile)
+    BinarySerializer.serialize(model, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
-    BinaryFileSerializer.serialize(PosDomain, labelDomainFile)
+    BinarySerializer.serialize(PosDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryFileSerializer.serialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
+    BinarySerializer.serialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
-    BinaryFileSerializer.serialize(WordData.ambiguityClasses, ambClassFile)
+    BinarySerializer.serialize(WordData.ambiguityClasses, ambClassFile)
   }
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinaryFileSerializer.deserialize(PosDomain, labelDomainFile)
+    BinarySerializer.deserialize(PosDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryFileSerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
+    BinarySerializer.deserialize(ClassifierPosFeatureDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    BinaryFileSerializer.deserialize(model, modelFile)
+    BinarySerializer.deserialize(model, modelFile)
     val ambClassFile = new File(prefix + "-ambiguityClasses")
-    BinaryFileSerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
+    BinarySerializer.deserialize(WordData.ambiguityClasses, ambClassFile)
   }
 
   def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean, saveModel: Boolean) {

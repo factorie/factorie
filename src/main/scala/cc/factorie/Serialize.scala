@@ -7,121 +7,78 @@ import collection.mutable
 import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
 
-class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
-  var akeys : Seq[String] = null
-  var avalues: Seq[T] = null
-  setMap(new mutable.Map[String, Any] {
-    override def update(key: String, value: Any): Unit = {
-      if (key == "keys") {
-        akeys = value.asInstanceOf[Traversable[String]].toSeq
-      } else if (key == "values") {
-        assert(akeys != null)
-        avalues = value.asInstanceOf[Traversable[T]].toSeq
-        for (i <- 0 until akeys.size) {
-          m(akeys(i)) = avalues(i)
-        }
-      }
-    }
-    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
-    def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
-    def get(key: String): Option[Any] = if (key == "keys") Some(m.keys.toTraversable) else if (key == "values") Some(m.values.toTraversable) else None
-    def iterator: Iterator[(String, Any)] = Seq(("keys", get("keys").get), ("values", get("values").get)).iterator
-  })
+// We have these in a trait so we can mix them into the package object and make them available by default
+trait CubbieConversions {
+  implicit def modm(m: Model): Cubbie = new ModelCubbie(m)
+  implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
+  implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
+  implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)
+  implicit def cdtdm(m: CategoricalDimensionTensorDomain[_]): Cubbie = new CategoricalDimensionTensorDomainCubbie(m)
 }
 
-// Thought we needed these funky manifest matches to avoid erasure issues
-// unfortunately we actually need to fall back to type testing because of bugs in 2.9's
-// Manifest.<:< - once we switch to 2.10 we can do the more safe thing
-class CubbieMaker[-C](make: C => Cubbie, typeTester: Any => Boolean)(implicit m1: Manifest[C]) {
-  CubbieMaker.makers += this
-//  def tryMake[T](toConvert: T)(implicit m2: Manifest[T]): Option[Cubbie] =
-//    if (m2 <:< m1) Some(make(toConvert.asInstanceOf[C])) else None
-  def tryMake[T](toConvert: T): Option[Cubbie] =
-    if (typeTester(toConvert)) Some(make(toConvert.asInstanceOf[C])) else None
-}
+// You can import this object to gain access to the default cubbie conversions
+object CubbieConversions extends CubbieConversions
 
-// WARNING: when defining new CubbieMakers, make sure to put more specific ones earlier in the list
-object CubbieMaker {
-  val makers = new mutable.ArrayBuffer[CubbieMaker[_]]
-  // this trick lets us give compile errors if we don't have a CubbieMaker defined, but still use the most specific overriding
-  // CubbieMaker instead of the least specific one (contravariance!!)
-  // just define overriding CubbieMakers here earlier than the less specific versions and they will be found earlier in search through the "makers" list
-  implicit val modm = new CubbieMaker[Model](
-    new ModelCubbie(_), x => x.isInstanceOf[Model])
-  implicit val cdm = new CubbieMaker[CategoricalDomain[String]](
-    new CategoricalDomainCubbie(_), x => x.isInstanceOf[CategoricalDomain[String]])
-  implicit val smm = new CubbieMaker[mutable.HashMap[String, String]](
-    new StringMapCubbie(_), x => x.isInstanceOf[mutable.HashMap[String, String]])
-  implicit val csdm = new CubbieMaker[CategoricalSeqDomain[String]](
-    new CategoricalSeqDomainCubbie(_), x => x.isInstanceOf[CategoricalSeqDomain[String]])
-  implicit val cdtdm = new CubbieMaker[CategoricalDimensionTensorDomain[_]](
-    new CategoricalDimensionTensorDomainCubbie(_), x => x.isInstanceOf[CategoricalDimensionTensorDomain[_]])
+object BinarySerializer {
+  // we have to use implicits/view bounds here and lazily create the cubbies because making the cubbies forces weights in models
+  // so we can't make the cubbies here, we have to make them as we go. ugh. so this solution is not quite as good as we'd hoped -luke
+  private def getLazyCubbieSeq(vals: Seq[Any], funcs: Seq[Nothing => Cubbie]): Seq[Cubbie] = vals.zip(funcs).view.map({case (v, f) => f.asInstanceOf[Any => Cubbie](v)})
 
-  def cubbieForType[T](toSerialize: T)(implicit m: Manifest[T], evidenceThatWeHaveCubbieMaker: CubbieMaker[T]): Cubbie =
-    makers.foldLeft(None: Option[Cubbie])((resOpt, maker) => if (resOpt.isDefined) resOpt else maker.tryMake(toSerialize)).get
-}
+  def serialize[A](c1: A, file: File, gzip: Boolean)(implicit ev1: A => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip)
+  def serialize[A, B](c1: A, c2: B, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip)
+  def serialize[A, B, C](c1: A, c2: B, c3: C, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip)
+  def serialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip)
 
-object BinaryFileSerializer {
-  import CubbieMaker._
-  def serializeModel[A, B, C](model: A, labelDomain: B, featuresDomain: C, fileName: String, gzip: Boolean = false)
-    (implicit m1: Manifest[A], ev1: CubbieMaker[A], m2: Manifest[B], ev2: CubbieMaker[B], m3: Manifest[C], ev3: CubbieMaker[C]): Unit = {
-    BinaryCubbieFileSerializer.serialize(cubbieForType(model), new File(fileName + "-model"), gzip)
-    BinaryCubbieFileSerializer.serialize(cubbieForType(labelDomain), new File(fileName + "-labelDomain"), gzip)
-    BinaryCubbieFileSerializer.serialize(cubbieForType(featuresDomain), new File(fileName + "-featuresDomain"), gzip)
+  def deserialize[A](c1: A, file: File, gzip: Boolean)(implicit ev1: A => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip)
+  def deserialize[A, B](c1: A, c2: B, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip)
+  def deserialize[A, B, C](c1: A, c2: B, c3: C, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip)
+  def deserialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip)
+
+  def serialize[A](c1: A, file: File)(implicit ev1: A => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip = false)
+  def serialize[A, B](c1: A, c2: B, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip = false)
+  def serialize[A, B, C](c1: A, c2: B, c3: C, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip = false)
+  def serialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
+    serialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip = false)
+
+  def deserialize[A](c1: A, file: File)(implicit ev1: A => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip = false)
+  def deserialize[A, B](c1: A, c2: B, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip = false)
+  def deserialize[A, B, C](c1: A, c2: B, c3: C, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip = false)
+  def deserialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
+    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip = false)
+
+  def serialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
+    val stream = writeFile(file, gzip)
+    for (c <- cs) serialize(c, stream)
+    stream.close()
   }
-  def deserializeModel[A, B, C](model: A, labelDomain: B, featuresDomain: C, fileName: String, gzip: Boolean = false)
-    (implicit m1: Manifest[A], ev1: CubbieMaker[A], m2: Manifest[B], ev2: CubbieMaker[B], m3: Manifest[C], ev3: CubbieMaker[C]): Unit = {
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(labelDomain), new File(fileName + "-labelDomain"), gzip)
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(featuresDomain), new File(fileName + "-featuresDomain"), gzip)
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(model), new File(fileName + "-model"), gzip)
+  def deserialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
+    val stream = readFile(file, gzip)
+    for (c <- cs) deserialize(c, stream)
+    stream.close()
   }
-  def serialize[A](toSerialize: A, fileName: String)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), new File(fileName), gzip = false)
-  def deserialize[A](deserializeTo: A, fileName: String)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(deserializeTo), new File(fileName), gzip = false)
-  def serialize[A](toSerialize: A, file: File)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), file, gzip = false)
-  def deserialize[A](deserializeTo: A, file: File)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(deserializeTo), file, gzip = false)
-  def serialize[A](toSerialize: A, fileName: String, gzip: Boolean)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), new File(fileName), gzip)
-  def deserialize[A](deserializeTo: A, fileName: String, gzip: Boolean)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(deserializeTo), new File(fileName), gzip)
-  def serialize[A](toSerialize: A, file: File, gzip: Boolean)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), file, gzip)
-  def deserialize[A](deserializeTo: A, file: File, gzip: Boolean)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(deserializeTo), file, gzip)
-  def serialize[A](toSerialize: A, s: DataOutputStream)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.serialize(cubbieForType(toSerialize), s)
-  def deserialize[A](toSerialize: A, s: DataInputStream)(implicit m: Manifest[A], ev: CubbieMaker[A]) =
-    BinaryCubbieFileSerializer.deserialize(cubbieForType(toSerialize), s)
-  def writeFile(fileName: String, gzip: Boolean = false): DataOutputStream = {
-    val file = new File(fileName)
+
+  def writeFile(file: File, gzip: Boolean = false): DataOutputStream = {
     file.createNewFile()
     val fileStream = new BufferedOutputStream(new FileOutputStream(file))
     new DataOutputStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
   }
-  def readFile(fileName: String, gzip: Boolean = false): DataInputStream = {
-    val file = new File(fileName)
+  def readFile(file: File, gzip: Boolean = false): DataInputStream = {
     val fileStream = new BufferedInputStream(new FileInputStream(file))
     new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
-  }
-}
-
-object BinaryCubbieFileSerializer {
-  def serialize(toSerialize: Cubbie, file: File, gzip: Boolean = false): Unit = {
-    file.createNewFile()
-    val fileStream = new BufferedOutputStream(new FileOutputStream(file))
-    val s = new DataOutputStream(if (gzip) new BufferedOutputStream(new GZIPOutputStream(fileStream)) else fileStream)
-    serialize(toSerialize, s)
-    s.close()
-  }
-
-  def deserialize(deserializeTo: Cubbie, file: File, gzip: Boolean = false): Unit = {
-    val fileStream = new BufferedInputStream(new FileInputStream(file))
-    val s = new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
-    deserialize(deserializeTo, s)
-    s.close()
   }
 
   def serialize(c: Cubbie, s: DataOutputStream): Unit = {
@@ -218,11 +175,33 @@ object BinaryCubbieFileSerializer {
         s.writeInt(m.size)
         for ((k, v) <- m) serialize(Some(k), v, s)
       case t: Traversable[Any] =>
-        val tag = t.headOption.map(tagForType(_)).getOrElse(INT)
+        val tag = t.headOption.map(tagForType).getOrElse(INT)
         s.writeByte(tag)
         s.writeInt(t.size)
         t.foreach(serialize(None, _, s))
     }
     s.flush()
   }
+}
+
+class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
+  var akeys : Seq[String] = null
+  var avalues: Seq[T] = null
+  setMap(new mutable.Map[String, Any] {
+    override def update(key: String, value: Any): Unit = {
+      if (key == "keys") {
+        akeys = value.asInstanceOf[Traversable[String]].toSeq
+      } else if (key == "values") {
+        assert(akeys != null)
+        avalues = value.asInstanceOf[Traversable[T]].toSeq
+        for (i <- 0 until akeys.size) {
+          m(akeys(i)) = avalues(i)
+        }
+      }
+    }
+    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+    def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
+    def get(key: String): Option[Any] = if (key == "keys") Some(m.keys.toTraversable) else if (key == "values") Some(m.values.toTraversable) else None
+    def iterator: Iterator[(String, Any)] = Seq(("keys", get("keys").get), ("values", get("values").get)).iterator
+  })
 }

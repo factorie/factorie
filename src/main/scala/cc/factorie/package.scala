@@ -14,12 +14,9 @@
 
 package cc
 import scala.util.Random
-import cc.factorie.optimize.Example
-import cc.factorie.util._
-import cc.factorie.la._
 
-package object factorie {
-  
+package object factorie extends CubbieConversions {
+
   // Common cases for DotFamily weights
 //  type Tensor = cc.factorie.la.Tensor
 //  type Tensor1 = cc.factorie.la.Tensor1
