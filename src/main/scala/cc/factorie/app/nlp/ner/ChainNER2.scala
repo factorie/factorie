@@ -951,8 +951,8 @@ object ChainNer2 extends ChainNer2 {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
-      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
+      BinarySerializer.deserialize(Conll2003NerDomain, ChainNer2FeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(model2, new File(opts.modelFile.value + "-model2"))
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename), segmentSentences = false)
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -964,19 +964,19 @@ object ChainNer2 extends ChainNer2 {
         printSGML(document.tokens)
       }
     } else if(opts.justTest.wasInvoked) {
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
-      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
+      BinarySerializer.deserialize(Conll2003NerDomain, ChainNer2FeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(model2, new File(opts.modelFile.value + "-model2"))
       test(opts.testFile.value)
 	  } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
-      BinaryFileSerializer.deserialize(model2, opts.modelFile.value + "-model2")
+      BinarySerializer.deserialize(Conll2003NerDomain, ChainNer2FeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(model2, new File(opts.modelFile.value + "-model2"))
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelFile.wasInvoked) {
-        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, ChainNer2FeaturesDomain, opts.modelFile.value)
-        BinaryFileSerializer.serialize(model2, opts.modelFile.value + "-model2")
+        BinarySerializer.serialize(Conll2003NerDomain, ChainNer2FeaturesDomain, model, new File(opts.modelFile.value))
+        BinarySerializer.serialize(model2, new File(opts.modelFile.value + "-model2"))
 	    }
     }
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")

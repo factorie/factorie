@@ -95,7 +95,7 @@ class SpanNerModel extends CombinedModel(
     // Label of span that preceeds or follows this one
     //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
   ) {
-  def this(file:File) = { this(); BinaryFileSerializer.deserializeModel(this, Conll2003NerDomain, SpanNerFeaturesDomain, file.getName) }
+  def this(file:File) = { this(); BinarySerializer.deserialize(Conll2003NerDomain, SpanNerFeaturesDomain, this, file) }
 }
 
 // The training objective
@@ -470,12 +470,12 @@ object SpanNER extends SpanNER {
     
     if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinaryFileSerializer.deserializeModel(model, Conll2003NerDomain, SpanNerFeaturesDomain, opts.modelFile.value)
+      BinarySerializer.deserialize(Conll2003NerDomain, SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
       run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelFile.wasInvoked)
-        BinaryFileSerializer.serializeModel(model, Conll2003NerDomain, SpanNerFeaturesDomain, opts.modelFile.value)
+        BinarySerializer.serialize(Conll2003NerDomain, SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
     }
   }
 }

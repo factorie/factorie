@@ -126,24 +126,24 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     val modelFile = new File(prefix + "-model")
     if (modelFile.getParentFile ne null)
       modelFile.getParentFile.mkdirs()
-    BinaryFileSerializer.serialize(this, modelFile)
+    BinarySerializer.serialize(this, modelFile)
     val labelDomainFile = new File(prefix + "-labelDomain")
-    BinaryFileSerializer.serialize(labelDomain, labelDomainFile)
+    BinarySerializer.serialize(labelDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinaryFileSerializer.serialize(featuresDomain.dimensionDomain, featuresDomainFile)
+    BinarySerializer.serialize(featuresDomain.dimensionDomain, featuresDomainFile)
   }
 
   def deSerialize(prefix: String) {
     val labelDomainFile = new File(prefix + "-labelDomain")
     assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinaryFileSerializer.deserialize(labelDomain, labelDomainFile)
+    BinarySerializer.deserialize(labelDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
-    BinaryFileSerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
+    BinarySerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     assertEquals(markov.weights.length, labelDomain.length * labelDomain.length)
-    BinaryFileSerializer.deserialize(this, modelFile)
+    BinarySerializer.deserialize(this, modelFile)
   }
 
   def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {

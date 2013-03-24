@@ -4,9 +4,9 @@ import ParserSupport._
 import cc.factorie.app.classify.ModelBasedClassifier
 import java.io.File
 import java.io.PrintWriter
-import cc.factorie.BinaryFileSerializer
+import cc.factorie.BinarySerializer
 import scala.io.Source
-import cc.factorie.BinaryCubbieFileSerializer
+import cc.factorie.BinarySerializer
 import cc.factorie.CategoricalDomainCubbie
 
 // An abstraction which allows for easily changing the predictor
@@ -23,12 +23,12 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
   
   private def saveModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    BinaryFileSerializer.serialize(backingClassifier.model, file, gzip = _gzip)
+    BinarySerializer.serialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def loadModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    BinaryFileSerializer.deserialize(backingClassifier.model, file, gzip = _gzip)
+    BinarySerializer.deserialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def saveLabelDomain(folder: File): Unit = {
@@ -49,12 +49,12 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
   
   private def saveFeatureDomain(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
-    BinaryCubbieFileSerializer.serialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
+    BinarySerializer.serialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
   }
   
   private def loadFeatureDomain(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "feat-domain")
-    BinaryCubbieFileSerializer.deserialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
+    BinarySerializer.deserialize(new CategoricalDomainCubbie(NonProjParserFeaturesDomain.dimensionDomain), file, gzip = _gzip)
     NonProjParserFeaturesDomain.freeze()
   }
   

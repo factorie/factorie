@@ -98,25 +98,49 @@ class TestSerialize extends JUnitSuite {
     val fileName1 = java.io.File.createTempFile("foo", "domain")
     val domainFile = new File(fileName1.getAbsolutePath)
     val domainCubbie = new CategoricalDomainCubbie(domain1)
-    BinaryCubbieFileSerializer.serialize(domainCubbie, domainFile)
+    BinarySerializer.serialize(domainCubbie, domainFile)
 
     val fileName2 = java.io.File.createTempFile("foo", "model")
     val modelFile = new File(fileName2.getAbsolutePath)
     val modelCubbie = new ModelCubbie(model)
-    BinaryCubbieFileSerializer.serialize(modelCubbie, modelFile)
+    BinarySerializer.serialize(modelCubbie, modelFile)
 
     object domain2 extends CategoricalDomain[String]
     val model2 = new Model1(domain2)
 
     val domainFile2 = new File(fileName1.getAbsolutePath)
     val domainCubbie2 = new CategoricalDomainCubbie(domain2)
-    BinaryCubbieFileSerializer.deserialize(domainCubbie2, domainFile2)
+    BinarySerializer.deserialize(domainCubbie2, domainFile2)
 
     val modelFile2 = new File(fileName2.getAbsolutePath)
     val modelCubbie2 = new ModelCubbie(model2)
-    BinaryCubbieFileSerializer.deserialize(modelCubbie2, modelFile2)
+    BinarySerializer.deserialize(modelCubbie2, modelFile2)
 
     assertSameWeights(model, model2)
+  }
+
+  @Test def testMultipleSerialization(): Unit = {
+    val file = java.io.File.createTempFile("foo", "multi")
+    object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
+
+    object OntoNerLabelDomain extends CategoricalDomain[String]
+    OntoNerLabelDomain ++= Seq("Hello","GoodBye")
+
+    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
+    model.bias.weights.:=(Array.fill[Double](model.bias.weights.length)(random.nextDouble()))
+    model.obs.weights.:=(Array.fill[Double](model.obs.weights.length)(random.nextDouble()))
+    model.markov.weights.:=(Array.fill[Double](model.markov.weights.length)(random.nextDouble()))
+
+    BinarySerializer.serialize(MyChainNerFeaturesDomain, OntoNerLabelDomain, model, file)
+
+    object featDomain2 extends CategoricalDimensionTensorDomain[String]
+    object labelDomain2 extends CategoricalDomain[String]
+    val model2 = makeModel(featDomain2, labelDomain2)
+
+    BinarySerializer.deserialize(featDomain2, labelDomain2, model2,  file)
+
+    assertSameWeights(model2, model)
   }
 
   // NOTE: this is a hack to get around broken Manifest <:< for singleton types
@@ -146,10 +170,10 @@ class TestSerialize extends JUnitSuite {
     val llFile = new File(fileName)
     val llCubbie = new LabelListCubbie(featuresDomain, labelDomain, true)
     llCubbie.store(ll)
-    BinaryCubbieFileSerializer.serialize(llCubbie, llFile)
+    BinarySerializer.serialize(llCubbie, llFile)
 
     val newllCubbie = new LabelListCubbie(featuresDomain, labelDomain, true)
-    BinaryCubbieFileSerializer.deserialize(newllCubbie, llFile)
+    BinarySerializer.deserialize(newllCubbie, llFile)
     val newll = newllCubbie.fetch()
 
     assert(newll.zip(ll).forall({
@@ -187,14 +211,14 @@ class TestSerialize extends JUnitSuite {
 
     val modelFile = new File(fileName)
 
-    BinaryCubbieFileSerializer.serialize(new ModelCubbie(model), modelFile)
+    BinarySerializer.serialize(new ModelCubbie(model), modelFile)
 
     val deserializedModel = new SegmenterModel
-    BinaryCubbieFileSerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
+    BinarySerializer.deserialize(new ModelCubbie(deserializedModel), modelFile)
 
     val domainFile = new File(fileName2)
 
-    BinaryCubbieFileSerializer.serialize(new CategoricalDimensionTensorDomainCubbie(TokenDomain), domainFile)
+    BinarySerializer.serialize(new CategoricalDimensionTensorDomainCubbie(TokenDomain), domainFile)
 
     println("Original model family weights: ")
     getWeights(model).foreach(println)
@@ -208,7 +232,7 @@ class TestSerialize extends JUnitSuite {
     println("Deserialized domain:")
     val newDomain = new CategoricalDimensionTensorDomain[String] { }
     val cubbie = new CategoricalDimensionTensorDomainCubbie(newDomain)
-    BinaryCubbieFileSerializer.deserialize(cubbie, domainFile)
+    BinarySerializer.deserialize(cubbie, domainFile)
     println(newDomain.dimensionDomain.toSeq.mkString(","))
 
     assert(TokenDomain.dimensionDomain.toSeq.map(_.category).sameElements(newDomain.dimensionDomain.toSeq.map(_.category)))

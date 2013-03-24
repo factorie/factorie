@@ -26,9 +26,11 @@ import java.io._
 // TODO Rename this to TemplateModel1, and rename TemplateModel to ComposedModel,
 //  and have it be generic as a collection of arbitrary Models.
 //  (Now possible if Templates are now responsible for their own de-duplication.)
-
+// A Template is basically a Model that is also a Family -luke
 abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1]
 {
+
+
   val neighborClass1 = nm1.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1)
   val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
