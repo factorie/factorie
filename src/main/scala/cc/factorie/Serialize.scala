@@ -20,45 +20,44 @@ trait CubbieConversions {
 object CubbieConversions extends CubbieConversions
 
 object BinarySerializer {
-  // we have to use implicits/view bounds here and lazily create the cubbies because making the cubbies forces weights in models
-  // so we can't make the cubbies here, we have to make them as we go. ugh. so this solution is not quite as good as we'd hoped -luke
-  private def getLazyCubbieSeq(vals: Seq[Any], funcs: Seq[Nothing => Cubbie]): Seq[Cubbie] = vals.zip(funcs).view.map({case (v, f) => f.asInstanceOf[Any => Cubbie](v)})
+  private def getLazyCubbieSeq(vals: Seq[() => Cubbie]): Seq[Cubbie] = vals.view.map(_())
+  // We lazily create the cubbies because, for example, model cubbies will force their model's weights lazy vals
+  // so we need to control the order of cubbie creation and serialization (domains are deserialized before model cubbies are even created)
+  def serialize(c1: => Cubbie, file: File, gzip: Boolean): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip)
+  def serialize(c1: => Cubbie, c2: => Cubbie, file: File, gzip: Boolean): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2)), file, gzip)
+  def serialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, file: File, gzip: Boolean): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3)), file, gzip)
+  def serialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File, gzip: Boolean): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip)
 
-  def serialize[A](c1: A, file: File, gzip: Boolean)(implicit ev1: A => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip)
-  def serialize[A, B](c1: A, c2: B, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip)
-  def serialize[A, B, C](c1: A, c2: B, c3: C, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip)
-  def serialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip)
+  def deserialize(c1: => Cubbie, file: File, gzip: Boolean): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, file: File, gzip: Boolean): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2)), file, gzip)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, file: File, gzip: Boolean): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3)), file, gzip)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File, gzip: Boolean): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip)
 
-  def deserialize[A](c1: A, file: File, gzip: Boolean)(implicit ev1: A => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip)
-  def deserialize[A, B](c1: A, c2: B, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip)
-  def deserialize[A, B, C](c1: A, c2: B, c3: C, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip)
-  def deserialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File, gzip: Boolean)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip)
+  def serialize(c1: => Cubbie, file: File): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip = false)
+  def serialize(c1: => Cubbie, c2: => Cubbie, file: File): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2)), file, gzip = false)
+  def serialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, file: File): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3)), file, gzip = false)
+  def serialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File): Unit =
+    serialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip = false)
 
-  def serialize[A](c1: A, file: File)(implicit ev1: A => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip = false)
-  def serialize[A, B](c1: A, c2: B, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip = false)
-  def serialize[A, B, C](c1: A, c2: B, c3: C, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip = false)
-  def serialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
-    serialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip = false)
-
-  def deserialize[A](c1: A, file: File)(implicit ev1: A => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1), Seq(ev1)), file, gzip = false)
-  def deserialize[A, B](c1: A, c2: B, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2), Seq(ev1, ev2)), file, gzip = false)
-  def deserialize[A, B, C](c1: A, c2: B, c3: C, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3), Seq(ev1, ev2, ev3)), file, gzip = false)
-  def deserialize[A, B, C, D](c1: A, c2: B, c3: C, c4: D, file: File)(implicit ev1: A => Cubbie, ev2: B => Cubbie, ev3: C => Cubbie, ev4: D => Cubbie): Unit =
-    deserialize(getLazyCubbieSeq(Seq(c1, c2, c3, c4), Seq(ev1, ev2, ev3, ev4)), file, gzip = false)
+  def deserialize(c1: => Cubbie, file: File): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip = false)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, file: File): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2)), file, gzip = false)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, file: File): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3)), file, gzip = false)
+  def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File): Unit =
+    deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip = false)
 
   def serialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
     val stream = writeFile(file, gzip)
