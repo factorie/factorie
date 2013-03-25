@@ -19,6 +19,7 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import java.io.File
 
+/** Part-of-speech tagging with training by SampleRank. */
 class POS1 {
   def this(savedModelFile:String) = { this(); BinaryFileSerializer.deserializeModel(PosModel, PosDomain, PosFeaturesDomain, savedModelFile) }
   

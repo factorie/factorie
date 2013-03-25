@@ -21,6 +21,7 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain.ChainModel
 
+/** Part-of-speech tagging with training by BP in the linear-chains. */
 class POS2 extends Infer with util.FastLogging {
   
   object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
