@@ -103,11 +103,13 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   }
 }
 
+/** Performs some NLP inference on a Document and returns a Document (perhaps the same one) containing the new annotations. */
 trait DocumentProcessor {
   // NOTE: this method may mutate and return the same document that was passed in
   def process(d: Document): Document
 }
 
+/** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. */
 class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
   val name = StringSlot("name")
   val string = StringSlot("string")  

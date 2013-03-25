@@ -278,6 +278,8 @@ object TestClassifierPos {
     val modelFile = args(0)
     val testFile = args(1)
     val pos = ClassifierPos.load(modelFile)
+    // Print all the POS tags.
+    PosDomain.categories.foreach(s => println(s))
     val data = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     val t0 = System.currentTimeMillis()
     data.foreach(d => pos.process(d))
