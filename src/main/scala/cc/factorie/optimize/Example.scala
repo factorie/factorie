@@ -26,6 +26,13 @@ trait Example[-M<:Model] {
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
 }
 
+/** Treats a few examples as a single example. creating minibatches which can be fed to the stochastic trainers */
+class MiniBatchExample[-M<:Model](val baseExamples: Example[M]*) extends Example[M] {
+  def accumulateExampleInto(model: M, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+    baseExamples.foreach(_.accumulateExampleInto(model, gradient, value))
+  }
+}
+
 // A locking example wraps an example with knowledge on how to
 // lock the structure it needs at runtime to ensure
 // that there are no race conditions
