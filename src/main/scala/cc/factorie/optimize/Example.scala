@@ -27,9 +27,15 @@ trait Example[-M<:Model] {
 }
 
 /** Treats a few examples as a single example. creating minibatches which can be fed to the stochastic trainers */
-class MiniBatchExample[-M<:Model](val baseExamples: Example[M]*) extends Example[M] {
+class MiniBatchExample[-M<:Model](val baseExamples: Seq[Example[M]]) extends Example[M] {
   def accumulateExampleInto(model: M, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
     baseExamples.foreach(_.accumulateExampleInto(model, gradient, value))
+  }
+}
+
+object MiniBatchExample {
+  def apply[M <: Model](batchSize: Int, examples: Seq[Example[M]]): Seq[MiniBatchExample[M]] = {
+    examples.grouped(batchSize).map(e => new MiniBatchExample[M](e.toSeq)).toSeq
   }
 }
 
