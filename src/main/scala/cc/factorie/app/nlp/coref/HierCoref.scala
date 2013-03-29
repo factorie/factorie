@@ -97,7 +97,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
       if(tries==1)performMaintenance(samplePool)
     }
     //if(e!=null && !e.isConnected)throw new Exception("NOT CONNECTED")
-    if(!e.isConnected)e==null.asInstanceOf[T]
+    if(e == null || !e.isConnected)e=null.asInstanceOf[T]
     e
   }
   def setEntities(ents:Iterable[T]) = {entities = new ArrayBuffer[T];for(e<-ents)addEntity(e);deletedEntities = new ArrayBuffer[T]}
