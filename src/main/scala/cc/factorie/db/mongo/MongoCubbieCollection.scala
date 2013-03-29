@@ -205,13 +205,19 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     require(oldCubbie.id == newCubbie.id)
     val keys = oldCubbie._map.keySet ++ newCubbie._map.keySet
     val insertDBO = new BasicDBObject()
+    var foundDiff = false
     for (key <- keys; if (key != "_id")) {
-      val mod = modification(oldCubbie._map.get(key), newCubbie._map.get(key))
-      val bag = insertDBO.getOrElseUpdate(mod.op, new BasicDBObject()).asInstanceOf[DBObject]
-      bag.put(key, mod.value)
+      if(oldCubbie._map.get(key) != newCubbie._map.get(key)){
+        foundDiff=true
+        val mod = modification(oldCubbie._map.get(key), newCubbie._map.get(key))
+        val bag = insertDBO.getOrElseUpdate(mod.op, new BasicDBObject()).asInstanceOf[DBObject]
+        bag.put(key, mod.value)
+      }
     }
-    val queryDBO = new BasicDBObject("_id", oldCubbie.id)
-    coll.update(queryDBO, insertDBO)
+    if(foundDiff){
+      val queryDBO = new BasicDBObject("_id", oldCubbie.id)
+      coll.update(queryDBO, insertDBO)
+    }
   }
 
   private def safeDbo(f: C => C) = if (f == null) null else eagerDBO(f(constructor()))

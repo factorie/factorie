@@ -33,7 +33,6 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
   override def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedParentEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
 }
-
 abstract class HierEntityCubbie extends EntityCubbie{
   val isMention = BooleanSlot("isMention")
   override def finishFetchEntity(e:Entity):Unit ={
@@ -51,13 +50,55 @@ trait Prioritizable{
 }
 trait HasCanopyAttributes[T<:Entity]{
   val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
+  def canopyNames:Seq[String] ={
+    val cnames = new ArrayBuffer[String]
+    for(canopyAttribute <- canopyAttributes) {
+      canopyAttribute match {
+        case nondet:NonDetCanopyAttribute[T] => cnames ++= nondet.canopyNames
+        case det:CanopyAttribute[T] => cnames += det.canopyName
+        case _ => {}
+      }
+    }
+    cnames
+  }
 }
 trait CanopyAttribute[T<:Entity]{def entity:Entity;def canopyName:String}
+trait NonDetCanopyAttribute[T<:Entity] extends CanopyAttribute[T] {
+  def canopyName = canopyNames(random.nextInt(canopyNames.size))
+  def canopyNames:Seq[String]
+  def reset:Unit
+}
 class SimpleStringCanopy[T<:Entity](val entity:T,val canopyName:String) extends CanopyAttribute[T]
 /**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
 /*
 trait AutomaticBagPropagation{
   def bagsToPropgate(e:Entity):Seq[BagOfWordsVariable]
+}
+*/
+
+/**Mixing this trait into your HierCorefSampler will cause it to sample entity pairs from the same canopies.*/
+/*
+trait CanopySampling[E<:HierEntity with CanopyAttribute[E]]{
+  var canopies = new HashMap[String,ArrayBuffer[E]]
+  var canopyNames = new Array[String](1)
+  abstract override def addEntity(e:E):Unit ={
+    super.addEntity(e)
+    //for(cname <- e.canopyAttributes.map(_.canopyName)){
+    for(cname <- e.canopyNames){
+      canopies.getOrElse(cname,{val a = new ArrayBuffer[E];canopies(cname)=a;a}) += e
+    }
+  }
+  abstract override def nextEntity(context:E=null.asInstanceOf[E]):E = {
+    var result:E=null.asInstanceOf[E]
+    if(context==null)result=sampleEntity(entities)
+    else {
+      val cname = context.canopyAttributes.sampleUniformly(random).canopyName
+      val canopy = canopies.getOrElse(cname,{val c = new ArrayBuffer[E];c+=context;c})
+      result= if(canopy.size>0)sampleEntity(canopy) else sampleEntity(entities)//{val c = new ArrayBuffer[E];c+=context;c})
+    }
+    if(result==null)result = context
+    result
+  }
 }
 */
 
@@ -87,17 +128,16 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     (e1,e2)
   }
   def sampleAttributes(e:T)(implicit d:DiffList):Unit //= {e.dirty.reset}
-
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
     val initialSize = samplePool.size
-    var tries = 10
+    var tries = 5
     var e:T = null.asInstanceOf[T]
     while({tries-=1;tries} >= 0 && (e==null || !e.isConnected) && samplePool.size>0){
       e = samplePool(random.nextInt(samplePool.size))
       if(tries==1)performMaintenance(samplePool)
     }
     //if(e!=null && !e.isConnected)throw new Exception("NOT CONNECTED")
-    if(e == null || !e.isConnected)e=null.asInstanceOf[T]
+    if(e != null && !e.isConnected)e=null.asInstanceOf[T]
     e
   }
   def setEntities(ents:Iterable[T]) = {entities = new ArrayBuffer[T];for(e<-ents)addEntity(e);deletedEntities = new ArrayBuffer[T]}
@@ -114,6 +154,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   }
   //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/
+  /*
   def settings(c:Null) : SettingIterator = new SettingIterator {
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
     val (entity1,entity2) = nextEntityPair
@@ -142,6 +183,55 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
     def reset = i = 0
   }
+  */
+  override def settings(c:Null) : SettingIterator = new SettingIterator {
+    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
+    val (sampledEntity1,sampledEntity2) = nextEntityPair //entityS1,entityS2
+    val entity1 = sampledEntity1.getAncestor(random.nextInt(sampledEntity1.depth+1)).asInstanceOf[T]
+    val entity2 = sampledEntity2.getAncestor(random.nextInt(sampledEntity2.depth+1)).asInstanceOf[T]
+    if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
+      //Consider merge proposals each with a different attachment point for entity2 in entity1's tree.
+      var e1 = sampledEntity1
+      while(e1 != null){
+        proposeMergeIfValid(e1,entity2,changes)
+        e1 = e1.parentEntity.asInstanceOf[T]
+      }
+      //If the entities are roots, generate a proposal that merges them by creating a new parent entity-node for the two roots.
+      if(entity1.parentEntity==null && entity2.parentEntity==null)
+        changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+      //If up to this point, the sampler has not been able to propose merges, then attempt to propose
+      if(changes.size==0){
+        val root1 = entity1.entityRoot.asInstanceOf[T]
+        val root2 = entity2.entityRoot.asInstanceOf[T]
+        if(!isMention(root2)){
+          proposeMergeIfValid(root2,entity1,changes)
+        } else{
+          if(!isMention(root1)){
+          proposeMergeIfValid(root1,entity2,changes)
+          }else changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[T],entity2.entityRoot.asInstanceOf[T])(d)}
+        }
+      }
+    } else { //sampled nodes refer to same entity
+      changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
+      changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
+      if(entity1.parentEntity != null && !entity1.isObserved)
+        changes += {(d:DiffList) => {collapse(entity1)(d)}}
+    }
+    if(!entity1.isObserved && entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
+    if(!entity1.entityRoot.isObserved && entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[T])(d)}
+    changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
+    var i = 0
+    def hasNext = i < changes.length
+    def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
+    def reset = i = 0
+  }
+  def proposeMergeIfValid(entity1:T,entity2:T,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
+    //only do the merge if the entities are in different trees, and further require that a mention never has children (always a leaf).
+    if (entity1.entityRoot.id != entity2.entityRoot.id){ //sampled nodes refer to different entities
+      if(!isMention(entity1))changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)}
+      else if(!isMention(entity2))changes += {(d:DiffList) => mergeLeft(entity2,entity1)(d)}
+    }
+  }
   /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
   def collapse(entity:T)(implicit d:DiffList):Unit ={
     if(entity.parentEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
@@ -164,16 +254,19 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     //println("ROOT3:"+cc.factorie.example.Coref3.entityString(root))
 
   }
-  /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
+  /**Peels off the entity "right", second argument not necessary except for error checking/debuggin.*/
   def splitRight(left:T,right:T)(implicit d:DiffList):Unit ={
     val oldParent = right.parentEntity
     right.setParentEntity(null)(d)
+    propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   /**Jump function that proposes merge: entity1<----entity2*/
-  def mergeLeft(entity1:T,entity2:T)(implicit d:DiffList):Unit ={
-    val oldParent = entity2.parentEntity
-    entity2.setParentEntity(entity1)(d)
+  def mergeLeft(left:T,right:T)(implicit d:DiffList):Unit ={
+    val oldParent = right.parentEntity
+    right.setParentEntity(left)(d)
+    propagateBagUp(right)(d)
+    propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   /**Jump function that proposes merge: entity1--->NEW-PARENT-ENTITY<---entity2 */
@@ -183,10 +276,16 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     val result = newEntity
     e1.setParentEntity(result)(d)
     e2.setParentEntity(result)(d)
+    initializeAttributesOfNewRoot(e1,e2,result)(d) //this is implemented in the sub classes
+    propagateRemoveBag(e1,oldParent1)(d)
+    propagateRemoveBag(e2,oldParent2)(d)
     structurePreservationForEntityThatLostChild(oldParent1)(d)
     structurePreservationForEntityThatLostChild(oldParent2)(d)
     result
   }
+  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit = HierEntityUtils.propagateBagUp(entity)(d)
+  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit = HierEntityUtils.propagateRemoveBag(parting,formerParent)(d)
+  protected def initializeAttributesOfNewRoot(e1:T,e2:T,parent:T)(implicit d:DiffList):Unit
   /**Ensure that chains are not created in our tree. No dangling children-entities either.*/
   protected def structurePreservationForEntityThatLostChild(e:Entity)(implicit d:DiffList):Unit ={
     if(e!=null && e.childEntitiesSize<=1){
@@ -252,99 +351,6 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   def isMention(e:Entity):Boolean = e.isObserved
 }
 
-
-/*
-abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template1[N1]()(nm1){
-//  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
-//    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
-//    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-//    val ret = new ListBuffer[FactorType]
-//    // Create Factor iff variable class matches and the variable domain matches
-//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-//    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-//    // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
-//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
-//    ret
-//  }
-
-}
-
-abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3){
-<<<<<<< local
-  override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-    val ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
-    ret
-  }
-=======
-//    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-//    val ret = new ListBuffer[FactorType]
-//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-//    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-//    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-//    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-//    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-//    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
-//    ret
-//  }
->>>>>>> other
-}
-<<<<<<< local
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FastTemplate3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
-=======
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends   v[N1,N2,N3] {
-  //def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = (value1, value2, value3)
->>>>>>> other
-}
-abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends TupleTemplateWithStatistics1[N1] {
-  //def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
-}
-*/
-
-/*
-      // Pairwise affinity factor between Mentions in the same partition
-      model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
-        //def statisticsDomains = Tuple1(AffinityVectorDomain)
-        lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
-        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield
-          if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
-          else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
-        def unroll2 (er:EntityRef) = Nil // symmetric
-        def unroll3 (mention:Mention) = throw new Error
-        def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
-      }
-
-  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
-    import AffinityDomain._
-    def domain = AffinityVectorDomain
-    if (s1 equals s2) this += streq else this += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
-    if (s1.length == s2.length) this += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
-    // Also consider caching mechanisms
-  }
-  object AffinityDomain extends EnumDomain {
-    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-  }
-  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
-    override lazy val dimensionDomain = AffinityDomain
-  }
-
- */
-
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
   val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
@@ -359,74 +365,6 @@ class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weigh
       result
     }
 }
-/*
-abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplateWithStatistics3[EntityRef,A,A] {
-  def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
-  def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
-  def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
-}
-*/
-
-/*
-  /** A feature vector variable measuring affinity between two mentions */
-  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
-    import AffinityDomain._
-    def domain = AffinityVectorDomain
-    if (s1 equals s2) this += streq else this += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
-    if (s1.length == s2.length) this += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
-    // Also consider caching mechanisms
-  }
-  object AffinityDomain extends EnumDomain {
-    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-  }
-  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
-    override lazy val dimensionDomain = AffinityDomain
-  }
-  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
-  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-    def domain = TokenFeaturesDomain
-  }
-  val model = new CombinedModel(
-
-  this += new ChildParentTemplate[BagOfCoAuthors] with DotStatistics1[AuthorFeatureVector#Value]{
-    val name="cpt-bag-coauth-"
-    override def statisticsDomains = List(CorefDimensionDomain)
-    //override def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.entityRoot.attr[BagOfCoAuthors]) else Nil
-    override def unroll2(childBow:BagOfCoAuthors) = Nil
-    override def unroll3(parentBow:BagOfCoAuthors) = Nil
-    //def statistics (values:Values) = Stat(new AffinityVector(values._2, values._3).value)
-    def statistics(values:Values) = {
-      val features = new AuthorFeatureVector
-      val childBow = values._2
-      val parentBow = values._3
-      //val dot = childBow.deductedDot(parentBow,childBow)
-      //if(dot == 0.0)
-      //  features.update(name+"intersect=empty",childBow.l2Norm*parentBow.l2Norm - 0.25)
-      if(childBow.size>0 && parentBow.size>0){
-        val cossim=childBow.cosineSimilarity(parentBow,childBow)
-        val binNames = FeatureUtils.bin(cossim,name+"cosine")
-        for(binName <- binNames){
-          features.update(binName,1.0)
-          //if(parentBow.l1Norm==2)features.update(binName+"ments=2",1.0)
-          //if(parentBow.l1Norm>=2)features.update(binName+"ments>=2",1.0)
-          //if(parentBow.l1Norm>=4)features.update(binName+"ments>=4",1.0)
-          //if(parentBow.l1Norm>=8)features.update(binName+"ments>=8",1.0)
-        }
-        //if(dot>0)features.update(name+"dot>0",1.0) else features.update(name+"dot=0",1.0)
-      }
-      //features.update(name+"cosine-no-shift",cossim)
-      //features.update(name+"cossine-shifted",cossim-0.5)
-      Stat(features.value)
-    }
-  }
- */
-
 trait DebugableTemplate{
   protected var _debug:Boolean=false
   def debugOn = _debug = true
@@ -434,7 +372,6 @@ trait DebugableTemplate{
   def name:String
   def debug(score:Double):String = score+" ("+name+")"
 }
-
 abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with TupleFamilyWithStatistics3[EntityRef,A,A]
 abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
@@ -764,12 +701,11 @@ trait DBEntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizabl
   val mentionCount = new IntSlot("mc")
   def newEntityCubbie:DBEntityCubbie[T]
   def fetch(e:T) ={
-    e.priority = inferencePriority.value
-    e.attr[IsMention].set(isMention.value)(null)
-    e.isObserved=isMention.value
+    if(inferencePriority.isDefined)e.priority = inferencePriority.value
+    if(isMention.isDefined){e.attr[IsMention].set(isMention.value)(null);e.isObserved=isMention.value}
     e.attr[IsEntity].set(e.isRoot)(null)
     e.attr[EntityExists].set(e.isConnected)(null)
-    e.attr[MentionCountVariable].set(mentionCount.value)(null)
+    if(mentionCount.isDefined)e.attr[MentionCountVariable].set(mentionCount.value)(null)
     if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
     if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     //note that entity parents are set externally not inside the cubbie
@@ -792,9 +728,11 @@ trait EntityCollection[E<:HierEntity]{
   def store(entitiesToStore:Iterable[E]):Unit
   def nextBatch(n:Int=10):Seq[E]
   def loadAll:Seq[E]
+  def loadByCanopies(canopies:Seq[String]):Seq[E]
   def loadByIds(ids:Seq[Any]):Seq[E]
   def loadLabeledAndCanopies:Seq[E]
   def loadLabeled:Seq[E]
+  var printProgress=true
 }
 trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:DBEntityCubbie[E]] extends EntityCollection[E]{
   protected var _id2cubbie:HashMap[Any,C] = null
@@ -809,7 +747,9 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   protected def entityCubbieColl:MutableCubbieCollection[C]
   protected def changePriority(e:E):Unit ={
     val oldPriority = e.priority
-    e.priority = e.priority-1.0
+    //e.priority = e.priority-1.0
+
+
     //println("  prio change for "+e.canopyAttributes.head.canopyName+": "+oldPriority +"-->"+e.priority)
     /*
     //e.priority = scala.math.exp(e.priority - random.nextDouble)
@@ -843,10 +783,10 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
     val updated = new ArrayBuffer[E]
     val created = new ArrayBuffer[E]
     var timer = System.currentTimeMillis
-    print("Updating priorities...")
+    if(printProgress)print("Updating priorities...")
     for(e <- entitiesToStore)changePriority(e)
-    println("Done")
-    print("Identifying changed identities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("Identifying changed identities...")
     for(e<-entitiesToStore){
       if(e.isConnected){
         if(wasLoadedFromDB(e))updated += e
@@ -855,11 +795,12 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       if(!e.isConnected && wasLoadedFromDB(e))deleted += e
       //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
     }
-    println("Done")
-    print("About to delete "+deleted.size+" entities...")
+    //for(e <- updated.iterator ++ created.iterator)if(!(e.isEntity.booleanValue && e.isMention.booleanValue))e.rootIdOpt = Some(e.entityRoot.id.toString)
+    if(printProgress)println("Done")
+    if(printProgress)print("About to delete "+deleted.size+" entities...")
     removeEntities(deleted)
-    println("Done")
-    print("About to update "+updated.size+" entities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("About to update "+updated.size+" entities...")
     val updateTimer = System.currentTimeMillis
     var updateTimerElapsed = System.currentTimeMillis
     var count = 0
@@ -867,23 +808,23 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       entityCubbieColl.updateDelta(_id2cubbie.getOrElse(e.id,null).asInstanceOf[C],putEntityInCubbie(e))
       count += 1
       val windowElapsed = (System.currentTimeMillis- updateTimerElapsed)/1000L
-      if(windowElapsed > 30){
+      if(printProgress && windowElapsed > 30){
         val elapsed = (System.currentTimeMillis() - updateTimer)/1000L
         updateTimerElapsed = System.currentTimeMillis
         println("processed "+count + " in "+elapsed + " seconds.")
       }
     }
-    println("Done")
-    print("About to insert "+created.size+" entities...")
+    if(printProgress)println("Done")
+    if(printProgress)print("About to insert "+created.size+" entities...")
     for(e <- created)entityCubbieColl += putEntityInCubbie(e)
-    println("Done")
-    println("Saving took "+((System.currentTimeMillis() - timer)/1000L)+" seconds.")
+    if(printProgress)println("Done")
+    if(printProgress)println("Saving took "+((System.currentTimeMillis() - timer)/1000L)+" seconds.")
     deletedHook(deleted)
     updatedHook(updated)
     createdHook(created)
-    println("deleted: "+deleted.size)
-    println("updated: "+updated.size)
-    println("created: "+created.size)
+    if(printProgress)println("deleted: "+deleted.size)
+    if(printProgress)println("updated: "+updated.size)
+    if(printProgress)println("created: "+created.size)
   }
   protected def deletedHook(deleted:Seq[E]):Unit ={}
   protected def updatedHook(updated:Seq[E]):Unit ={}
@@ -891,18 +832,20 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   /**This is database specific for example because mongo has a specialized _id field*/
   protected def removeEntities(entitiesToRemove:Seq[E]):Unit
   def assembleEntities(toAssemble:TraversableOnce[C],id2entity:Any=>E):Unit ={
-    println("Assembling entities")
+    if(printProgress)println("Assembling entities")
     var count = 0
     var startTime = System.currentTimeMillis
     var intervalTime = System.currentTimeMillis
     for(c<-toAssemble){
       count += 1
-      if(count % 10000 == 0)print(".")
-      if(count % (25*10000) == 0){
-        val elapsed = (System.currentTimeMillis - startTime)/1000L
-        val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
-        intervalTime = System.currentTimeMillis
+      if(printProgress){
+        if(count % 10000 == 0)print(".")
+        if(count % (25*10000) == 0){
+          val elapsed = (System.currentTimeMillis - startTime)/1000L
+          val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
+          println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+          intervalTime = System.currentTimeMillis
+        }
       }
       val child = id2entity(c.id)
       val parent = if(c.parentRef.isDefined)id2entity(c.parentRef.value) else null.asInstanceOf[E]
@@ -911,7 +854,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   }
   def loadByIds(ids:Seq[Any]):Seq[E] ={
     reset
-    println("Loading a list of "+ids.size+ " ids.")
+    if(printProgress)println("Loading a list of "+ids.size+ " ids.")
     val cubbies = entityCubbieColl.findByIds(ids) //entityColl.find(ids)
     val entities = (for(entityCubbie <- cubbies)yield{
       val e = newEntity
@@ -919,7 +862,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
       e
     }).toSeq
     for(entityCubbie <- cubbies)_id2cubbie += entityCubbie.id -> entityCubbie
-    assembleEntities(cubbies, (id:Any)=>{_id2entity(id)})
+    assembleEntities(cubbies, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
     entities
   }
 }
@@ -942,7 +885,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     println("initial cubbies : "+result.size)
     println("_id2cubbie: "+ _id2cubbie.size)
     println("_id2entity: "+ _id2entity.size)
-    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
     initialEntities
   }
   def loadLabeledAndCanopies:Seq[E] ={
@@ -1011,6 +954,23 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     initialEntities
   }
 
+  def loadByCanopies(canopies:Seq[String]):Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    var qtime = System.currentTimeMillis
+//    println("About to load entities from "+canopies.size+" canopies.")
+    for(name <- canopies){
+      result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+    }
+//    println("Loading "+result.size+" cubbies from "+canopies.size + " canopies took "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+    qtime = System.currentTimeMillis
+    val initialEntities:Seq[E] = (for(entityCubbie<-result.par) yield {val e = newEntity;entityCubbie.fetch(e);e}).seq
+//    println("Converting cubbies to entities took  "+(System.currentTimeMillis-qtime)/1000L+" seconds.")
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    assembleEntities(result, (id:Any)=>{_id2entity.getOrElse(id,{println("Warning: id "+id+" not found while assembling entities. Assuming no parent.");null.asInstanceOf[E]})})
+    initialEntities
+  }
   def nextBatch(n:Int=10):Seq[E] ={
     reset
     val canopyHash = new HashSet[String]

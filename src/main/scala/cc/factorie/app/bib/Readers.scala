@@ -216,6 +216,100 @@ object BibReader{
   var skipped=0
   var numParsed=0
   var readErrors = new HashMap[String,Int]
+
+  def loadBibmogrifyOutputForTopicModel(bibDir:File):Seq[String] ={
+    var count = 0
+    val files = bibDir.listFiles.filter(_.isFile)
+    val result = new Array[Seq[String]](files.length)
+    println("Multi-threaded bibmogrify load for topics, about to load "+files.length + " .bib files")
+    val startTime = System.currentTimeMillis
+    for(file <- files.par){
+      val bibs = loadBibmogrifyFileForTopicModel(file)
+      synchronized{
+        result(count)=bibs
+        count += 1
+        if(count % 10 == 0)print(".")
+        //if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Time: "+((System.currentTimeMillis-startTime)/1000L))
+        if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Papers parsed:"+result.size+". Time: "+((System.currentTimeMillis-startTime)/1000L))
+      }
+    }
+    var errCount=0
+    println("Read errors:")
+    for((k,v) <- readErrors){
+      println(v+":"+k)
+      errCount += v
+    }
+    println("Total read errors caught: "+errCount)
+    result.filter(_ != null).flatMap(_.toSeq).toSeq
+  }
+  def loadBibmogrifyFileForTopicModel(file:File):Seq[String] ={
+    var reader:BufferedReader = null
+    val result = new ArrayBuffer[String]
+    var doc = new StringBuilder
+    var docCount=0
+    println("Loading bibmog file: "+file.getName)
+    try{
+      reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      var line = reader.readLine
+      while(line!=null){
+        if(line.startsWith("@")){
+          if(docCount==1)println("First doc: "+doc.toString)
+          if(doc!=null)result += doc.toString
+          doc = new StringBuilder
+          docCount += 1
+        } else{
+          val pair = line.split(" = ",2)
+          val fieldName = pair(0).trim
+          var value = pair(1).trim
+          if(value.endsWith("}},"))value = value.substring(1,value.length-3)
+          else value = value.substring(1,value.length-2)
+          value = value.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
+          if(value.length>0){
+            if(fieldName == "title"){doc.append(value);doc.append(" ")}
+            else if(fieldName == "journal"){
+              doc.append(FeatureUtils.venueBag(value).mkString(" "));doc.append(" ")
+            }
+            else if(fieldName == "note"){
+              if(value.indexOf("BasicKeyword(") != -1)
+                doc.append(value.split(", ").filter(_.size>0).map((s:String) => {val sidx=s.indexOf("BasicKeyword(")+"BasicKeyword(".length;val eidx=s.indexOf(",Some");s.substring(sidx,eidx)}).mkString(" "))
+              else doc.append(FeatureUtils.filterFieldNameForMongo(value))
+              doc.append(" ")
+            }
+          }
+        }
+        line = reader.readLine
+      }
+    }catch{case e:Exception => {e.printStackTrace();println("Warning: exception caught while reading bibmog file: "+file.getName)}}
+    finally{if(reader != null)reader.close}
+    result
+  }
+  def loadBibTexDirForTopicModel(bibDir:File,paper2string:PaperEntity=>String):Seq[String] ={
+    var count = 0
+    //var result = new ArrayBuffer[PaperEntity]
+    val files = bibDir.listFiles.filter(_.isFile)
+    val result = new Array[Seq[String]](files.length)
+    println("Multi-threaded load for topics, about to load "+files.length + " .bib files")
+    val startTime = System.currentTimeMillis
+    for(file <- files.par){
+      val bibs = loadBibTeXFile(file, false,false)
+      synchronized{
+        result(count)=bibs.map(paper2string(_))
+        count += 1
+        if(count % 10 == 0)print(".")
+        //if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Time: "+((System.currentTimeMillis-startTime)/1000L))
+        if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Papers parsed:"+result.size+". Time: "+((System.currentTimeMillis-startTime)/1000L))
+      }
+    }
+    var errCount=0
+    println("Read errors:")
+    for((k,v) <- readErrors){
+      println(v+":"+k)
+      errCount += v
+    }
+    println("Total read errors caught: "+errCount)
+    result.filter(_ != null).flatMap(_.toSeq).toSeq
+  }
+
   def loadBibTexDirMultiThreaded(bibDir:File, loadAuthors:Boolean,useKeysAsIds:Boolean):Seq[PaperEntity] ={
     var count = 0
     //var result = new ArrayBuffer[PaperEntity]
@@ -262,10 +356,10 @@ object BibReader{
     val result = new ArrayBuffer[PaperEntity]
     val fileText = scala.io.Source.fromFile(file).toArray.mkString
     //if(!splitOnAt)
-    loadBibTeXFileText(fileText,file,result,loadAuthors,useKeysAsIds)
+      loadBibTeXFileText(fileText,file,result,loadAuthors,useKeysAsIds)
     //else {
     //  val split = fileText.split("@")
-    //  for(s <- split.par)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
+    //  for(s <- split)loadBibTeXFileText("@"+s,file,result,loadAuthors,useKeysAsIds)
     //}
     result
   }
@@ -418,6 +512,11 @@ object RexaLabeledLoader{
         case "lastname_in_focus" => {authorLastNameInFocus = Some(text)}
         case "meta" => {label = Some(node.getAttributes.getNamedItem("cluster_no").getTextContent)}
         case "keywords" => {paperMention.bagOfKeywords ++= FeatureUtils.filterFieldNameForMongo(text.toLowerCase).split(",").map(_.trim)}
+        case "note" => {
+          if(text.indexOf("BasicKeyword(") != -1)
+            paperMention.bagOfKeywords ++= text.split(", ").filter(_.size>0).map((s:String) => {val sidx=s.indexOf("BasicKeyword(")+"BasicKeyword(".length;val eidx=s.indexOf(",Some");s.substring(sidx,eidx)})
+          else paperMention.bagOfKeywords ++= FeatureUtils.filterFieldNameForMongo(text).split(", ").map(_.trim)
+        }
         case "school" => {}
         case "institution" => {}
         case "location" => {}
