@@ -31,10 +31,11 @@ object Coref4{
     new ChildParentTemplateWithStatistics[Name]{
       override def score(er:EntityRef#Value, childName:Name#Value, parentName:Name#Value):Double = { -childName.editDistance(parentName).toDouble }
     },
-    new ChildParentTemplateWithStatistics[Bow]{
-      override def score(er:EntityRef#Value, childBow:Bow#Value, parentBow:Bow#Value):Double = childBow.cosineSimilarity(parentBow)
-    },
-    new StructuralPriorsTemplate(8.0,0.25)
+    new ChildParentCosineDistance[Bow](2.0,-0.25), //first argument is the weight, second argument is the shift
+    new StructuralPriorsTemplate(2.0,0.25) //first argument is the penalty for the existence of an entity, second argument is the penalty for the exitence of a subentity
+    //new ChildParentTemplateWithStatistics[Bow]{
+    //  override def score(er:EntityRef#Value, childBow:Bow#Value, parentBow:Bow#Value):Double = childBow.cosineSimilarity(parentBow)
+    //},
   )
   /**The database: entity cubbies and database for persistence*/
   class MyEntityCubbie(entity:MyEntity=null) extends HierEntityCubbie{
@@ -66,7 +67,9 @@ object Coref4{
     protected val mongoConn = new Mongo(mongoServer,mongoPort)
     protected val mongoDB = mongoConn.getDB(mongoDBName)
     protected val coll = mongoDB.getCollection("people")
-    protected val entities = new MongoCubbieCollection(coll,() => new MyEntityCubbie,(a:MyEntityCubbie) => Seq(Seq(a.entityRef))) with LazyCubbieConverter[MyEntityCubbie]
+    protected val entities = new MongoCubbieCollection(coll, //the underlying MongoDB collection
+      () => new MyEntityCubbie,(a:MyEntityCubbie) => Seq(Seq(a.entityRef)) //specify the database indices, in this case, an index over the "entityRef" field
+    ) with LazyCubbieConverter[MyEntityCubbie]
     def drop:Unit = coll.drop
     def store(data:List[(String,List[String])]):Unit ={
       val result = new ArrayBuffer[MyEntity]
@@ -83,12 +86,12 @@ object Coref4{
   /**Inference: a multi-try MH MCMC sampler. Override 'def settings' in HierCorefSampler for further flexibility.*/
   class MyEntitySampler(model:Model) extends HierCorefSampler[MyEntity](model){
     def newEntity = new MyEntity
-    /**This method initializes the attributes of new entity roots that are hypothesized during inference*/
+    /**This method initializes the attributes of the new entity-roots that are hypothesized during inference.*/
     protected def initializeAttributesOfNewRoot(e1:MyEntity,e2:MyEntity,parent:MyEntity)(implicit d:DiffList):Unit ={
       parent.attr[Name].set(e1.attr[Name].value)
       HierEntityUtils.createBagsForMergeUp(e1,e2,parent)(d) //automatically propagates "Bow" and any other bag of words added to the entities' .attr
     }
-    /**This method proposes new attributes for entities by sampling from their child's attributes*/
+    /**This method proposes new attributes for entities by sampling from their childrens' attributes*/
     def sampleAttributes(entity:MyEntity)(implicit d:DiffList) = {
       val representative = entity.childEntities.members.sampleUniformly(random)
       entity.attr[Name].set(representative.attr[Name].value)

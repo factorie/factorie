@@ -51,7 +51,6 @@ object ChainNER1a {
     }
   )
 
-  
   def main(args:Array[String]): Unit = {
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))

@@ -33,7 +33,6 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
   override def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedParentEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
 }
-
 abstract class HierEntityCubbie extends EntityCubbie{
   val isMention = BooleanSlot("isMention")
   override def finishFetchEntity(e:Entity):Unit ={
@@ -51,13 +50,55 @@ trait Prioritizable{
 }
 trait HasCanopyAttributes[T<:Entity]{
   val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
+  def canopyNames:Seq[String] ={
+    val cnames = new ArrayBuffer[String]
+    for(canopyAttribute <- canopyAttributes) {
+      canopyAttribute match {
+        case nondet:NonDetCanopyAttribute[T] => cnames ++= nondet.canopyNames
+        case det:CanopyAttribute[T] => cnames += det.canopyName
+        case _ => {}
+      }
+    }
+    cnames
+  }
 }
 trait CanopyAttribute[T<:Entity]{def entity:Entity;def canopyName:String}
+trait NonDetCanopyAttribute[T<:Entity] extends CanopyAttribute[T] {
+  def canopyName = canopyNames(random.nextInt(canopyNames.size))
+  def canopyNames:Seq[String]
+  def reset:Unit
+}
 class SimpleStringCanopy[T<:Entity](val entity:T,val canopyName:String) extends CanopyAttribute[T]
 /**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
 /*
 trait AutomaticBagPropagation{
   def bagsToPropgate(e:Entity):Seq[BagOfWordsVariable]
+}
+*/
+
+/**Mixing this trait into your HierCorefSampler will cause it to sample entity pairs from the same canopies.*/
+/*
+trait CanopySampling[E<:HierEntity with CanopyAttribute[E]]{
+  var canopies = new HashMap[String,ArrayBuffer[E]]
+  var canopyNames = new Array[String](1)
+  abstract override def addEntity(e:E):Unit ={
+    super.addEntity(e)
+    //for(cname <- e.canopyAttributes.map(_.canopyName)){
+    for(cname <- e.canopyNames){
+      canopies.getOrElse(cname,{val a = new ArrayBuffer[E];canopies(cname)=a;a}) += e
+    }
+  }
+  abstract override def nextEntity(context:E=null.asInstanceOf[E]):E = {
+    var result:E=null.asInstanceOf[E]
+    if(context==null)result=sampleEntity(entities)
+    else {
+      val cname = context.canopyAttributes.sampleUniformly(random).canopyName
+      val canopy = canopies.getOrElse(cname,{val c = new ArrayBuffer[E];c+=context;c})
+      result= if(canopy.size>0)sampleEntity(canopy) else sampleEntity(entities)//{val c = new ArrayBuffer[E];c+=context;c})
+    }
+    if(result==null)result = context
+    result
+  }
 }
 */
 
@@ -87,7 +128,6 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     (e1,e2)
   }
   def sampleAttributes(e:T)(implicit d:DiffList):Unit //= {e.dirty.reset}
-
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
     val initialSize = samplePool.size
     var tries = 5
@@ -97,7 +137,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
       if(tries==1)performMaintenance(samplePool)
     }
     //if(e!=null && !e.isConnected)throw new Exception("NOT CONNECTED")
-    if(e!= null && !e.isConnected)e==null.asInstanceOf[T]
+    if(e == null || e!= null && !e.isConnected)e=null.asInstanceOf[T]
     e
   }
   def setEntities(ents:Iterable[T]) = {entities = new ArrayBuffer[T];for(e<-ents)addEntity(e);deletedEntities = new ArrayBuffer[T]}
@@ -311,99 +351,6 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   def isMention(e:Entity):Boolean = e.isObserved
 }
 
-
-/*
-abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template1[N1]()(nm1){
-//  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
-//    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
-//    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-//    val ret = new ListBuffer[FactorType]
-//    // Create Factor iff variable class matches and the variable domain matches
-//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-//    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-//    // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
-//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
-//    ret
-//  }
-
-}
-
-abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3){
-<<<<<<< local
-  override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-    val ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
-    ret
-  }
-=======
-//    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-//    val ret = new ListBuffer[FactorType]
-//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-//    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-//    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-//    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-//    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-//    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
-//    ret
-//  }
->>>>>>> other
-}
-<<<<<<< local
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FastTemplate3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
-=======
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends   v[N1,N2,N3] {
-  //def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = (value1, value2, value3)
->>>>>>> other
-}
-abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends TupleTemplateWithStatistics1[N1] {
-  //def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
-}
-*/
-
-/*
-      // Pairwise affinity factor between Mentions in the same partition
-      model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
-        //def statisticsDomains = Tuple1(AffinityVectorDomain)
-        lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
-        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield
-          if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
-          else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
-        def unroll2 (er:EntityRef) = Nil // symmetric
-        def unroll3 (mention:Mention) = throw new Error
-        def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
-      }
-
-  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
-    import AffinityDomain._
-    def domain = AffinityVectorDomain
-    if (s1 equals s2) this += streq else this += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
-    if (s1.length == s2.length) this += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
-    // Also consider caching mechanisms
-  }
-  object AffinityDomain extends EnumDomain {
-    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-  }
-  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
-    override lazy val dimensionDomain = AffinityDomain
-  }
-
- */
-
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
   val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
@@ -418,74 +365,6 @@ class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weigh
       result
     }
 }
-/*
-abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplateWithStatistics3[EntityRef,A,A] {
-  def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
-  def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
-  def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
-}
-*/
-
-/*
-  /** A feature vector variable measuring affinity between two mentions */
-  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
-    import AffinityDomain._
-    def domain = AffinityVectorDomain
-    if (s1 equals s2) this += streq else this += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
-    if (s1.length == s2.length) this += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
-    // Also consider caching mechanisms
-  }
-  object AffinityDomain extends EnumDomain {
-    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-  }
-  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
-    override lazy val dimensionDomain = AffinityDomain
-  }
-  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
-  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-    def domain = TokenFeaturesDomain
-  }
-  val model = new CombinedModel(
-
-  this += new ChildParentTemplate[BagOfCoAuthors] with DotStatistics1[AuthorFeatureVector#Value]{
-    val name="cpt-bag-coauth-"
-    override def statisticsDomains = List(CorefDimensionDomain)
-    //override def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.entityRoot.attr[BagOfCoAuthors]) else Nil
-    override def unroll2(childBow:BagOfCoAuthors) = Nil
-    override def unroll3(parentBow:BagOfCoAuthors) = Nil
-    //def statistics (values:Values) = Stat(new AffinityVector(values._2, values._3).value)
-    def statistics(values:Values) = {
-      val features = new AuthorFeatureVector
-      val childBow = values._2
-      val parentBow = values._3
-      //val dot = childBow.deductedDot(parentBow,childBow)
-      //if(dot == 0.0)
-      //  features.update(name+"intersect=empty",childBow.l2Norm*parentBow.l2Norm - 0.25)
-      if(childBow.size>0 && parentBow.size>0){
-        val cossim=childBow.cosineSimilarity(parentBow,childBow)
-        val binNames = FeatureUtils.bin(cossim,name+"cosine")
-        for(binName <- binNames){
-          features.update(binName,1.0)
-          //if(parentBow.l1Norm==2)features.update(binName+"ments=2",1.0)
-          //if(parentBow.l1Norm>=2)features.update(binName+"ments>=2",1.0)
-          //if(parentBow.l1Norm>=4)features.update(binName+"ments>=4",1.0)
-          //if(parentBow.l1Norm>=8)features.update(binName+"ments>=8",1.0)
-        }
-        //if(dot>0)features.update(name+"dot>0",1.0) else features.update(name+"dot=0",1.0)
-      }
-      //features.update(name+"cosine-no-shift",cossim)
-      //features.update(name+"cossine-shifted",cossim-0.5)
-      Stat(features.value)
-    }
-  }
- */
-
 trait DebugableTemplate{
   protected var _debug:Boolean=false
   def debugOn = _debug = true
@@ -493,7 +372,6 @@ trait DebugableTemplate{
   def name:String
   def debug(score:Double):String = score+" ("+name+")"
 }
-
 abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with TupleFamilyWithStatistics3[EntityRef,A,A]
 abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil

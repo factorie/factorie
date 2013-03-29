@@ -1,7 +1,8 @@
 package cc.factorie.app.bib
+import cc.factorie._
 import cc.factorie.app.nlp.coref._
 import com.mongodb.DBCollection
-import collection.mutable.{HashSet, LinkedHashSet,HashMap, ArrayBuffer}
+import collection.mutable.{HashSet, LinkedHashSet,LinkedHashMap,HashMap, ArrayBuffer}
 import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
 import cc.factorie.app.topics.lda.{Document, LDA,SparseLDAInferencer}
@@ -311,24 +312,64 @@ object EntityUtils{
     println("  *number of inferred entities with no children: "+numZeroChildren)
     println("  *number of inferred entities with one child: "+numOneChild)
   }
-
-  def writeCanopies(col:MongoCubbieCollection[AuthorCubbie], outDirPath:String, numFiles:Int):Unit ={
-    val canopies = new LinkedHashSet[String]
-    println("About to iterate over mongo collection")
-    var count = 0
-    for(cubbie <- col.iterator){
-      for(name <- cubbie.canopies.value)canopies += name
-      count += 1
-      if(count % 10000 == 0)print(".")
-      if(count % 50000 ==0)println(count)
-    }
+  /*
+  def accumulateCanopies(authors:Seq[AuthorEntity], canopies:LinkedHashSet[String]):Unit ={
+    for(a <- authors)for(c <- a.canopyAttributes.map(_.canopyName))canopies += c
+  }
+  def writeCanopies(canopies:LinkedHashSet[String],outputDir:String,numFiles:Int):Unit ={
     val pwa = new PrintWriter(new File(outDirPath+"canopy_all"))
     for(canopy <- canopies)pwa.println(canopy)
     pwa.flush
     pwa.close
-
     println("Done compiling list of canopies. Found "+canopies.size+" canopies.")
-    val groups=canopies.toSeq.grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt)
+    val groups=canopies.toSeq.grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
+    println("Found "+groups.size+" groups.")
+    println("Finished grouping canopies, about to write files.")
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+  }
+  */
+  def writeCanopies(col:MongoCubbieCollection[AuthorCubbie], outDirPath:String, numFiles:Int):Unit ={
+    val allCanopies = new LinkedHashMap[String,Int]
+    println("About to iterate over mongo collection")
+    var count = 0
+    for(cubbie <- col.iterator){
+      for(name <- cubbie.canopies.value)allCanopies(name) = allCanopies.getOrElse(name,0)+1//canopies += name
+      count += 1
+      if(count % 10000 == 0)print(".")
+      if(count % 500000 ==0)println(count)
+    }
+    //val canopies = allCanopies.filter(_._2 > 1).toSeq.sortBy(_._2).reverse.map(_._1).toSeq
+    val canopies = allCanopies.filter(_._2 > 1).map(_._1).toSeq
+    val pwa = new PrintWriter(new File(outDirPath+"canopy_all"))
+    for(canopy <- canopies)pwa.println(canopy)
+    pwa.flush
+    pwa.close
+    println("Done compiling list of canopies. Found "+canopies.size+" canopies.")
+
+    val groups = new Array[ArrayBuffer[String]](numFiles)
+    for(i<-0 until groups.size)groups(i) = new ArrayBuffer[String]
+    var i=0
+    while(i<canopies.size){groups((i % numFiles)) += canopies(i);i+=1}
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch_locality"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+    /*
+    val groups=random.shuffle(canopies.toSeq).grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
+    //val groups=random.shuffle(canopies.toSeq).grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
     println("Found "+groups.size+" groups.")
     println("Finished grouping canopies, about to write files.")
     var wroteSomething = false
@@ -342,6 +383,7 @@ object EntityUtils{
       pw.close
       groupId+=1
     }
+    */
   }
 
   def makeSingletons[E<:HierEntity](entities:Seq[E]):Seq[E] ={
@@ -829,10 +871,14 @@ object LDAUtils{
     }
     if(opts.bibDirectory.value.toLowerCase!="none"){
       StopWatch.start("Load BibTex")
+      /*
       val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false,false)
       val time = StopWatch.stop/1000L
       println("Loading BibTeX took: "+time+" seconds.")
       docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
+      */
+      //docs ++= BibReader.loadBibTexDirForTopicModel(new File(opts.bibDirectory.value),DEFAULT_DOCUMENT_GENERATOR)
+      docs ++= BibReader.loadBibmogrifyOutputForTopicModel(new File(opts.bibDirectory.value))
     }
     println("Number of papers: "+docs.size)
     /*
@@ -902,7 +948,7 @@ object LDAUtils{
   }
 
   def DEFAULT_DOCUMENT_GENERATOR(paper:PaperEntity):String = {
-    (paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")).toLowerCase
+    (paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")+" "+paper.bagOfKeywords.mkString(" ")).toLowerCase
   }
 /*
   def createDocumentsForLDA(papers:Iterable[PaperEntity], outputDir:File, documentGenerator:PaperEntity=>String=DEFAULT_DOCUMENT_GENERATOR(_)):Unit ={
