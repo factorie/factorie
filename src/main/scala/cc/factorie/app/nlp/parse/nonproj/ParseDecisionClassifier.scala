@@ -8,6 +8,16 @@ import cc.factorie.BinarySerializer
 import scala.io.Source
 import cc.factorie.BinarySerializer
 import cc.factorie.CategoricalDomainCubbie
+import cc.factorie.CubbieConversions
+import java.io.DataInputStream
+import java.io.BufferedInputStream
+import java.util.zip.GZIPInputStream
+import java.io.FileInputStream
+import cc.factorie.ModelCubbie
+import java.io.BufferedOutputStream
+import java.io.DataOutputStream
+import java.io.FileOutputStream
+import java.util.zip.GZIPOutputStream
 
 // An abstraction which allows for easily changing the predictor
 trait ParserClassifier {
@@ -19,16 +29,36 @@ trait ParserClassifier {
 // To clean this up, we need better serialization support.
 class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable]) extends ParserClassifier {
   
+  import CubbieConversions._
+  
   private var _gzip = false
+  private var _doubleGzip = false
   
   private def saveModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    BinarySerializer.serialize(backingClassifier.model, file, gzip = _gzip)
+    file.createNewFile()
+    if (_doubleGzip) {
+      val fileStream = new BufferedOutputStream(new FileOutputStream(file))
+      BinarySerializer.serialize(
+        new ModelCubbie(backingClassifier.model), 
+        new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new GZIPOutputStream(fileStream))))
+      )
+    }
+    else
+      BinarySerializer.serialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def loadModel(folder: File): Unit = {
     val file = new File(folder.getAbsolutePath() + "/" + "model")
-    BinarySerializer.deserialize(backingClassifier.model, file, gzip = _gzip)
+    if (_doubleGzip) {
+      val fileStream = new BufferedInputStream(new FileInputStream(file))
+      BinarySerializer.deserialize(
+        new ModelCubbie(backingClassifier.model), 
+        new DataInputStream(new BufferedInputStream(new GZIPInputStream(new GZIPInputStream(fileStream))))
+      )
+    }
+    else
+      BinarySerializer.deserialize(backingClassifier.model, file, gzip = _gzip)
   }
   
   private def saveLabelDomain(folder: File): Unit = {
@@ -65,8 +95,9 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
     saveFeatureDomain(folder)
   }
   
-  def load(folder: File, gzip: Boolean): Unit = { 
+  def load(folder: File, gzip: Boolean, doubleGzip: Boolean = false): Unit = { 
     _gzip = gzip
+    _doubleGzip = doubleGzip
     loadLabelDomain(folder)
     loadFeatureDomain(folder)
     loadModel(folder)
