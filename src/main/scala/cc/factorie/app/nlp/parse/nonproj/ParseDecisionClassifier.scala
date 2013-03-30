@@ -88,8 +88,9 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
     NonProjParserFeaturesDomain.freeze()
   }
   
-  def save(folder: File, gzip: Boolean): Unit = { 
+  def save(folder: File, gzip: Boolean = false, doubleGzip: Boolean = false): Unit = {
     _gzip = gzip
+    _doubleGzip = doubleGzip
     saveModel(folder)
     saveLabelDomain(folder)
     saveFeatureDomain(folder)
