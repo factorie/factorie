@@ -579,7 +579,7 @@ object ChainNer2 extends ChainNer2 {
     bP = opts.yesbp.wasInvoked
     ss = opts.sigmaSq.value.toDouble
 
-    if (opts.lexiconDir.wasInvoked) lexicons = new Lexicons(opts.lexiconDir.value, lexes)
+    if (opts.lexiconDir.wasInvoked) lexicons = Lexicons(opts.lexiconDir.value, lexes)
 
     if( opts.brownClusFile.wasInvoked) {
           println("Reading brown cluster file " + opts.brownClusFile.value)
