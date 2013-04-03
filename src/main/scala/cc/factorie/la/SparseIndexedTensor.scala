@@ -262,9 +262,9 @@ trait SparseIndexedTensor extends Tensor {
             i += 1
           }
         }
-        case (t2: SparseBinaryTensorLike1, t1: SingletonBinaryTensorLike1) => {
-          val i0 = t1.singleIndex
-          val arr = t2.asIntArray
+        case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => {
+          val i0 = t2.singleIndex
+          val arr = t1.asIntArray
           var i = 0
           while (i < arr.length) {
             this += (t.singleIndex(arr(i), i0), f)
