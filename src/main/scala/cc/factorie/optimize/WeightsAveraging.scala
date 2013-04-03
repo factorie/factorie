@@ -285,7 +285,16 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
                     i += 1
                   }
                 }
-                case _ => throw new Exception("Only implemented for WeightsTensors (both model weights and gradient).")//{updateReconstruction(template) += weightsWT(template)}
+                case (vecUpdateReconstruction:DenseTensor,vecWeights:DenseTensor) =>{
+                  val wValues = vecWeights.asArray
+                  val urValues = vecUpdateReconstruction.asArray
+                  var i = 0
+                  while(i < urValues.length) {
+                    urValues(i) += wValues(i)
+                    i += 1
+                  }
+                }
+                case _ => throw new Exception("Unrecognized gradient/weights types: " + updateReconstruction(template).getClass.getName + " and " + weightsWT(template).getClass.getName)//{updateReconstruction(template) += weightsWT(template)}
               }
             }
             //4. accumulate the weights
