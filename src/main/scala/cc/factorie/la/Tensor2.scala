@@ -130,8 +130,21 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
         _values(curIdx) += values(i) * factor._values(curIdx) * scalar
         i += 1
       }
-    case (ds:SparseDoubleSeq, factor) => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i)*scalar)) }
-    case (ds:DoubleSeq, factor) => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
+    case (ds:SparseDoubleSeq, fac) => { ds.foreachActiveElement((i,v) => +=(i,v*fac(i)*scalar)) }
+    case (ds: DenseTensor, fa: DenseTensor) =>
+      val dsA = ds.asArray
+      val faA = fa.asArray
+      var i = 0
+      while (i < dsA.length) {
+        this.+=(i, dsA(i)*fa(i)*scalar)
+        i += 1
+      }
+    case (ds:DoubleSeq, fac) => {
+      if (!haveWarned) {
+        haveWarned = true
+        println("DenseTensorLike2 dot unsupported type: " + ds.getClass.getName + " " + fac.getClass.getName)
+      }
+      val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
   }
 }
 
@@ -317,6 +330,10 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Spar
 //  
 //}
 
+object Outer1Tensor2 {
+  var hasWarned = false
+}
+
 /** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
 class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
   def dim1 = tensor1.dim1
@@ -389,6 +406,10 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
               idx1 += 1
             }
           case (t1, t2) =>
+            if (!Outer1Tensor2.hasWarned) {
+              Outer1Tensor2.hasWarned = true
+              println("Unrecognized types in Outer1Tensor2 =+: " + t1.getClass.getName + " " + t2.getClass.getName)
+            }
             val t2Size = t2.size
             val t1Iter = t1.activeElements
             while (t1Iter.hasNext) {
