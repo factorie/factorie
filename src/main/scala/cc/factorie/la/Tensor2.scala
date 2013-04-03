@@ -78,6 +78,15 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
             i += 1
           }
           dot
+        case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) =>
+          val iArr = t1.asIntArray
+          var i = 0
+          var dot = 0.0
+          while (i < iArr.length) {
+            dot += this(t.singleIndex(iArr(i),t2.singleIndex))
+            i += 1
+          }
+          dot
         case (t1: SingletonBinaryTensor, t2: SparseIndexedTensor) =>
           var dot = 0.0
           val len = t2.activeDomainSize
