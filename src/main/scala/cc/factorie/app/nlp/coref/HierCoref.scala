@@ -351,6 +351,8 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
   def isMention(e:Entity):Boolean = e.isObserved
 }
 
+
+/*Note: this template uses the inference invariant that a child's parent always exists in the current world (hence, no need to check the EntityExists variable).*/
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
   val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
@@ -365,6 +367,34 @@ class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weigh
       result
     }
 }
+/*
+class ChildParentEntropyOrderingTemplate[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
+  val name = "ChildParentEntropyOrderingTemplate(weight="+weight+")"
+  println("ChildParentEntropyOrderingTemplate: weight="+weight)
+  override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
+  override def unroll3(childBow:B) = Nil //note this is a slight approximation for efficiency
+  def score(er:EntityRef#Value, childBow:B#Value, parentBow:B#Value): Double = {
+    //val childBow = s._2
+    //val parentBow = s._3
+    val childEntropy = entropy(childBow)
+    val parentEntropy = entropy(parentBow)
+    if(childEntropy>parentEntropy) -weight else 0.0
+  }
+  protected def entropy(bag:B#Value):Double ={
+    var entropy = 0.0
+    var n = 0.0
+    val l1Norm = bag.l1Norm
+    for((k,v) <- bag.iterator){
+      entropy -= (v/l1Norm)*math.log(v/l1Norm)
+      n+=1.0
+    }
+    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
+    entropy = -entropy*weight
+    if(_debug)println("  "+debug(entropy))
+    entropy
+  }
+}
+*/
 trait DebugableTemplate{
   protected var _debug:Boolean=false
   def debugOn = _debug = true
@@ -372,6 +402,29 @@ trait DebugableTemplate{
   def name:String
   def debug(score:Double):String = score+" ("+name+")"
 }
+
+/*Note, this template can overcount if a block move nests entities in a single transition, e.g.,  {a,b,c} ===> {a-->b-->c} because a will be double penalized.*/
+class DepthPenaltyTemplate(val weight:Double=1.0) extends TupleTemplateWithStatistics1[EntityRef] with DebugableTemplate{
+  val name = "DepthPenaltyTemplate("+weight+")"
+  println("DepthPenaltyTemplate("+weight+")")
+  //def unroll(er:EntityRef):Iterable[Factor] = if(er.dst!=null)Factor(er) else Nil
+  def score(er:EntityRef#Value):Double ={
+    var depth = 0.0
+    var numLeaves = 0.0
+    if(!(er._2 eq null)){
+      er._2 match{
+        case entity:HierEntity => {
+          depth = entity.depth
+          numLeaves = entity.attr[MentionCountVariable].doubleValue
+        }
+        case _ => {}
+      }
+    }
+    val result = if(depth>1) -depth*numLeaves*weight else 0.0
+    result
+  }
+}
+
 abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with TupleFamilyWithStatistics3[EntityRef,A,A]
 abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil

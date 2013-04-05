@@ -120,7 +120,8 @@ object FeatureUtils{
   }
   def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
-  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  //def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
   def deAccent(s:String):String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+","")
   def filterOnToken(s:String,stopWordsRegEx:String):String = s.split(" ").filter(!_.matches(stopWordsRegEx)).mkString(" ")
   def tokenizeVenuesForAuthors(s:String):Seq[String] ={
@@ -294,6 +295,7 @@ object EntityUtils{
     pw.flush
     pw.close
   }
+
   def checkIntegrity(entities:Iterable[HierEntity]):Unit ={
     var numZeroChildren=0
     var numOneChild=0
@@ -688,6 +690,19 @@ object EntityUtils{
     shouldNotLinkViolated /= 2
     result += "gen-vio"+generatedFromViolations+" should-sat:"+shouldLinkSatisfied+" should-not-vio:"+shouldNotLinkViolated
     result
+  }
+  def printableClusteringStats[E<:HierEntity](entities:Seq[E]):String ={
+    val sizeDist = clusteringSizeDistribution(entities)
+    val largest = sizeDist.toList.sortBy(_._1).reverse.head._1
+    val result = new StringBuilder
+    result.append("largest: "+largest+" #singletons: "+sizeDist.getOrElse(1,0)+" num entities: "+sizeDist.size)
+    result.toString
+  }
+  def clusteringSizeDistribution[E<:HierEntity](entities:Seq[E]):Map[Int,Int] ={
+    var sizeDist = new HashMap[Int,Int]
+    for(e <- entities.filter((e:E) => {e.isRoot && e.isConnected}))sizeDist(e.numLeaves) = sizeDist.getOrElse(e.numLeaves,0) + 1
+    val sorted = sizeDist.toList.sortBy(_._2).reverse.toMap
+    sorted
   }
   def defaultFeaturesToPrintForAuthors(e:Entity):Seq[String] = {
     val bags = defaultFeaturesToPrint(e)

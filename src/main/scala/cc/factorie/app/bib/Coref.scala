@@ -213,6 +213,7 @@ object Coref{
       val saveOptions = new CmdOption("optionsFile","options.log","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
       val copyTarget = new CmdOption("copy-target","copy-target","FILE","Copies bibtex to this target directory.")
       val exportAuthorIds = new CmdOption("export-authors","none","FILE","Exports authors into a file listing (entity_id mention_id) pairs.")
+      val exportAuthorIdsPretty = new CmdOption("export-authors-pretty","none","FILE","Exports authors into a file listing (entity_id mention_id) pairs.")
       val canopyFile = new CmdOption("canopy-file","none","FILE","Reads from a file containing a list of canopies, and uses these two query the DB")
       val foremanParamFile = new CmdOption("foreman-param-file","foreman.params","FILE","Parameter file for the author foreman.")
       val canopiesPerRound = new CmdOption("canopies-per-round",500,"FILE","Number of canopies to read from readFromCanopyFile per round of inference.")
@@ -242,6 +243,12 @@ object Coref{
       println("Done exporting, exiting.")
       System.exit(0)
     }
+    if(opts.exportAuthorIdsPretty.wasInvoked){
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
+      tmpDB.authorColl.exportPretty(new File(opts.exportAuthorIdsPretty.value))
+      println("Done exporting (pretty), exiting.")
+      System.exit(0)
+    }
     if(opts.printProcessed.value.toBoolean){
       println("Print processed invoked.")
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
@@ -259,8 +266,9 @@ object Coref{
       mongoConn.close
       //mongoDB.getCollection("cooc").drop
     }
+    //val specifiedNameTemplates:Boolean = (opts.bagFirstInitialWeight.wasInvoked || opts.bagFirstWeight.wasInvoked || opts.bagMiddleInitialWeight.wasInvoked || opts.bagMiddleNameWeight)
     println("server: "+opts.server.value+" port: "+opts.port.value.toInt+" database: "+opts.database.value)
-    val authorCorefModel = new AuthorCorefModel(true)
+    val authorCorefModel = new AuthorCorefModel(false)//!specifiedNameTemplates)
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
     if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
@@ -271,10 +279,18 @@ object Coref{
     if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfVenues](opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
     if(opts.bagVenuesEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](opts.bagVenuesEntropy.value)
     if(opts.bagVenuesPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfVenues](opts.bagVenuesPrior.value)
-    if(opts.bagKeywordsWeight != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
+    if(opts.bagKeywordsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
     if(opts.bagKeywordsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsEntropy.value)
     if(opts.bagKeywordsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsPrior.value)
     if(opts.entityExistencePenalty.value!=0.0 || opts.subEntityExistencePenalty.value!=0.0)authorCorefModel += new StructuralPriorsTemplate(opts.entityExistencePenalty.value, opts.subEntityExistencePenalty.value)
+    if(opts.bagFirstWeight.value != 0.0)authorCorefModel += new EntityNameTemplate[BagOfFirstNames](opts.bagFirstInitialWeight.value,opts.bagFirstNameWeight.value,opts.bagFirstWeight.value,opts.bagFirstSaturation.value,opts.bagFirstNoNamePenalty.value)
+    if(opts.bagMiddleWeight.value != 0.0)authorCorefModel += new EntityNameTemplate[BagOfMiddleNames](opts.bagMiddleInitialWeight.value,opts.bagMiddleNameWeight.value,opts.bagMiddleWeight.value,opts.bagMiddleSaturation.value,opts.bagMiddleNoNamePenalty.value)
+    if(opts.bagFirstNoNamePenalty.value != 0.0)authorCorefModel += new EntityNamePenaltyTemplate[BagOfFirstNames](opts.bagFirstNoNamePenalty.value)
+    if(opts.bagMiddleNoNamePenalty.value != 0.0)authorCorefModel += new EntityNamePenaltyTemplate[BagOfMiddleNames](opts.bagMiddleNoNamePenalty.value)
+    //if(opts.bagTopicsEntropyOrdering.value != 0.0)authorCorefModel += new ChildParentEntropyOrderingTemplate(opts.bagTopicsEntropyOrdering.value)
+    if(opts.depthPenalty.value!=0.0)authorCorefModel += new DepthPenaltyTemplate(opts.depthPenalty.value)
+    //authorCoref += new PenalizeEntityWithNoFirstOrMiddleNameTemplate()//ideally this turns up the entropy penalty on these entities
+
     val paperCorefModel = new PaperCorefModel
     if(opts.paperBagOfAuthorsWeight.value != 0.0)paperCorefModel += new ChildParentCosineDistance[BagOfAuthors](opts.paperBagOfAuthorsWeight.value,opts.paperBagOfAuthorsShift.value)
     if(opts.paperBagAuthorsEntropy.value != 0.0)paperCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfAuthors](opts.paperBagAuthorsEntropy.value)
@@ -282,7 +298,8 @@ object Coref{
     if(opts.paperBagOfTitlesWeight.value != 0.0)paperCorefModel += new ChildParentCosineDistance[BagOfTitles](opts.paperBagOfTitlesWeight.value,opts.paperBagOfTitlesShift.value)
     if(opts.paperBagAuthorsEntropy.value != 0.0)paperCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTitles](opts.paperBagAuthorsEntropy.value)
     if(opts.paperBagAuthorsPrior.value != 0.0)paperCorefModel += new BagOfWordsPriorWithStatistics[BagOfTitles](opts.paperBagAuthorsPrior.value)
-    if(opts.paperEntityExistencePenalty.value != 0.0 && opts.paperSubEntityExistencePenalty.value != 0.0)paperCorefModel += new StructuralPriorsTemplate(opts.paperEntityExistencePenalty.value,opts.paperSubEntityExistencePenalty.value)
+    if(opts.paperEntityExistencePenalty.value != 0.0 || opts.paperSubEntityExistencePenalty.value != 0.0)paperCorefModel += new StructuralPriorsTemplate(opts.paperEntityExistencePenalty.value,opts.paperSubEntityExistencePenalty.value)
+
 
     val epiDB = new EpistemologicalDB(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value,opts.useParallelAuths.value)
     if(opts.createCanopyDir.wasInvoked && !opts.writeCanopiesDuringCreation.value){
@@ -306,7 +323,7 @@ object Coref{
       epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value))
     }
     if(opts.rexaXMLDir.value.toLowerCase != "none"){
-      println("Loading Rexa XML data from: "+opts.rexaXMLDir.value)
+      println("LoadblpLocationding Rexa XML data from: "+opts.rexaXMLDir.value)
       val papers = RexaLabeledLoader.loadFromXMLDir(new File(opts.rexaXMLDir.value))
       epiDB.add(papers)
     }
@@ -332,7 +349,7 @@ object Coref{
       */
       val workForce = new DefaultAuthorForeman(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value, new File(opts.canopyFile.value), new File(opts.foremanParamFile.value))
       workForce.run
-      while(true){Thread.sleep(1000)}
+      while(workForce.isWorking){Thread.sleep(1000)}
       System.exit(0)
     }
     if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,true)
@@ -395,8 +412,8 @@ abstract class MongoDBBibEntityCollection[E<:HierEntity with HasCanopyAttributes
 }
 
 class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie",usePAuths:Boolean=true) extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
-  //val authorPredictor = new AuthorSampler(authorCorefModel){temperature = 0.001}
-  val authorPredictor = if(usePAuths)new ParallelAuthorSampler(authorCorefModel){temperature = 0.001;override def samplesPerEntityCount(n:Int) = n*100} else new AuthorSampler(authorCorefModel){temperature = 0.001}
+  val authorPredictor = new AuthorSampler(authorCorefModel){temperature = 0.001}
+  //val authorPredictor = if(usePAuths)new ParallelAuthorSampler(authorCorefModel){temperature = 0.001;override def samplesPerEntityCount(n:Int) = n*100} else new AuthorSampler(authorCorefModel){temperature = 0.0001}
   val paperPredictor = new PaperSampler(new PaperCorefModel){temperature = 0.001}
   def drop:Unit = {
     //authorColl.remove(_)
@@ -495,6 +512,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
 
   def loadAndEvaluateAuthors:Unit ={
     val labeledAuthors = authorColl.loadLabeled
+    EntityUtils.prettyPrintAuthors(labeledAuthors)
     Evaluator.eval(labeledAuthors)
   }
 
@@ -634,10 +652,24 @@ class PaperCorefModel extends CombinedModel {
   */
   //this += new StructuralPriorsTemplate(8.0,0.25)
 }
-
-
-
-class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
+class EntityNamePenaltyTemplate[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
+  val name = "EntityNamePenaltyTemplate("+weight+")"
+  println("EntityNamePenaltyTemplate("+weight+")")
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])//throw new Exception("Error: node's status as mention can't change.")
+  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
+  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
+    var result = 0.0
+    if(exists.booleanValue){
+      if(isEntity.booleanValue){
+        if(bag.size==0)result -= weight
+      }
+      if(_debug)println("  "+debug(result))
+    }
+    result
+  }
+}
+class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
   val name = "EntityNameTemplate(flWeight="+firstLetterWeight+", fnWeight="+fullNameWeight+", weight="+weight+" sat="+saturation+")"
   println("EntityNameTemplate("+weight+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
@@ -645,26 +677,33 @@ class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterW
   def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var result = 0.0
-    val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
-    var firstLetterMismatches = 0
-    var nameMismatches = 0
-    var i=0;var j=0;
-    while(i<bagSeq.size){
-      val (wordi,weighti) = bagSeq(i)
-      j=i+1
-      while(j<bagSeq.size){
-        val (wordj,weightj) = bagSeq(j)
-        if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
-        else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
-        if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
-        j += 1
+    if(exists.booleanValue){
+      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
+      var firstLetterMismatches = 0
+      var nameMismatches = 0
+      var i=0;var j=0;
+      while(i<bagSeq.size){
+        val (wordi,weighti) = bagSeq(i)
+        j=i+1
+        while(j<bagSeq.size){
+          val (wordj,weightj) = bagSeq(j)
+          if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
+          else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
+          if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
+          j += 1
+        }
+        i += 1
       }
-      i += 1
+      result -= scala.math.min(saturation,firstLetterMismatches*firstLetterWeight)
+      result -= scala.math.min(saturation,nameMismatches*fullNameWeight)
+      result = result*weight
+      //if(isEntity.booleanValue){
+      if(bag.size==0){
+        if(isEntity.booleanValue)result -= penaltyOnNoName
+      }
+      //}
+      if(_debug)println("  "+debug(result))
     }
-    result -= scala.math.min(saturation,firstLetterMismatches*firstLetterWeight)
-    result -= scala.math.min(saturation,nameMismatches*fullNameWeight)
-    result = result*weight
-    if(_debug)println("  "+debug(result))
     result
   }
 }
@@ -1241,6 +1280,7 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
   val shortDecimal = new java.text.DecimalFormat("0.0#")
   protected var _isFinished=false
   protected var _workLoad=0
+  var completedWork:Seq[E]=null
   def amountOfWork = _workLoad
   def isFinished:Boolean = _isFinished
   def initialize:Unit
@@ -1252,7 +1292,7 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
     startTime = System.currentTimeMillis
     var timer=System.currentTimeMillis;val work = findWork;_workLoad=work.size;timeFindingWork += (System.currentTimeMillis() - timer)
     if(work.size>=2){
-      timer=System.currentTimeMillis;val completedWork = doWork(work);timeDoingWork += (System.currentTimeMillis() - timer)
+      timer=System.currentTimeMillis;completedWork = doWork(work);timeDoingWork += (System.currentTimeMillis() - timer)
       timer=System.currentTimeMillis;saveWork(completedWork);timeSavingWork += (System.currentTimeMillis() - timer)
     }
     _isFinished=true
@@ -1260,7 +1300,8 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
 }
 class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val workCollection:EntityCollection[E], val sampler:BibSampler[E], val canopies:Seq[String]) extends Worker[E]{
   sampler.printInfo=false
-  def numberOfSteps(numEntities:Int):Int = if(numEntities<=20)numEntities*20 else if(numEntities <= 100)numEntities*numEntities else if(numEntities<=2000) 100*numEntities else 200*numEntities
+  def numberOfSteps(numEntities:Int):Int = if(numEntities<=20)numEntities*20 else if(numEntities <= 1000)numEntities*numEntities else (numEntities.toDouble*math.log(numEntities.toDouble/1000.0)*1000.0).toInt
+  //def numberOfSteps(numEntities:Int):Int = (if(numEntities<=20)numEntities*20 else if(numEntities <= 100)numEntities*numEntities else if(numEntities<=1000) 100*numEntities else if(numEntities<=5000) 200*numEntities else 300*numEntities)
   def initialize:Unit = {}
   def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);itemsProcessed=r.size;r}
   def doWork(entities:Seq[E]):Seq[E] = {sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.size));(sampler.getEntities ++ sampler.getDeletedEntities)}
@@ -1269,7 +1310,7 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
   def triggerSafeQuit:Boolean= _triggerSafeQuit
   protected var _triggerSafeQuit:Boolean=false
-  def isWorking:Boolean = (workers.size>0 && activeWorkers.size>0)
+  def isWorking:Boolean = (workers.size>0 || activeWorkers.size>0)
   protected var numWorkers=0
   var totalFinished = 0
   def initialize:Unit
@@ -1278,15 +1319,17 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
   protected var _maxWorkers=30
   var activeWorkers = new ArrayBuffer[Worker[E]]
   def manageWorkers:Unit ={
+    //println("About to manage "+activeWorkers.size+" and "+workers.size+" inactive workers.")
     val active = new ArrayBuffer[Worker[E]]
     for(worker <- activeWorkers)if(worker.isFinished)finalizeWorker(worker)else active += worker
     activeWorkers = active
     //println("Managing "+numWorkers+" active workers.")
-    while(numWorkers<maxWorkers && !triggerSafeQuit){
+    while(numWorkers<maxWorkers && workers.size>0 && !triggerSafeQuit){
       val wpm = (totalFinished.toDouble/actualTotalTime.toDouble*1000.0*60.0).toInt
       println("Spawning worker. Active workers="+numWorkers+" Total workers:"+totalFinished+". Wpm: "+wpm)
       spawnWorker
     }
+    //println("Finished managing "+activeWorkers.size+" and "+workers.size+" inactive workers.")
   }
   protected def finalizeWorker(worker:Worker[E]) ={
     timeFindingWork += worker.timeFindingWork
@@ -1315,12 +1358,12 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     println("About to manage "+workers.size+" workers")
     //manageWorkers
     spawn{
-      while(workers.size>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers;Thread.sleep(1000)}
+      while((workers.size+activeWorkers.size)>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers;Thread.sleep(1000)}
     }
     //while(workers.size>0){}
     //var timer = System.currentTimeMillis
     //while((System.currentTimeMillis-timer)/1000L<=30){}
-    println("Done managing workers: "+workers.size+" condition sat? "+(workers.size>0 || (triggerSafeQuit && activeWorkers.size==0)))
+    //println("Done managing workers: "+workers.size+" condition sat? "+(workers.size>0 || (triggerSafeQuit && activeWorkers.size==0)))
   }
 }
 abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val canopyListFile:File,parameterFile:File = new File("foreman.params")) extends Foreman[E] with SamplingStatistics{
@@ -1338,7 +1381,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
       case w:DefaultSamplerWorker[E] =>{
         this.proposalCount += w.sampler.proposalCount
         this.numAccepted += w.sampler.numAccepted
-        println("Worker completed "+w.sampler.proposalCount+" steps on " +w.amountOfWork+" entities in "+(w.actualTotalTime/1000)+" sec. Completed up to "+w.canopies.last+". Num workers: "+numWorkers+".")
+        println("Worker completed "+w.sampler.proposalCount+" steps on " +w.amountOfWork+" entities in "+(w.actualTotalTime/1000)+" sec. Completed up to "+w.canopies.last+" (EntityStats:"+EntityUtils.printableClusteringStats(w.completedWork)+"). Num workers: "+numWorkers+".")
       }
       case _ =>{}
     }
@@ -1362,7 +1405,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
             }
             line=reader.readLine
           }
-        }catch{case e:Exception => {println("Warnig: exception caught while reading foreman parameter file: "+parameterFile.getName)}}
+        }catch{case e:Exception => {println("Warning: exception caught while reading foreman parameter file: "+parameterFile.getName)}}
         finally{if(reader != null)reader.close}
         Thread.sleep(15000)
       }
@@ -1393,7 +1436,7 @@ class DefaultAuthorForeman(val model:AuthorCorefModel, val mongoServer:String, v
   protected val mongoConn = new Mongo(mongoServer,mongoPort)
   mongoConn.getMongoOptions.connectionsPerHost=maxWorkers
   protected val mongoDB = mongoConn.getDB(mongoDBName)
-  def newSampler = new AuthorSampler(model)
+  def newSampler = new AuthorSampler(model){temperature=0.001}
   def newEntityCollectionView:EntityCollection[AuthorEntity] = new MongoDBBibEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie
     def newEntity:AuthorEntity = new AuthorEntity
@@ -1881,23 +1924,26 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
     def export(file:File):Unit ={
       reset//(d:DiffList) => mergeUp(entityS1,entity2)(d)
-      val mentions = new Queue[AuthorCubbie]
-      val entities = new ArrayBuffer[AuthorEntity]
+      ///val mentions = new Queue[AuthorCubbie]
+      //val entities = new ArrayBuffer[AuthorEntity]
       var qtime = System.currentTimeMillis
       var startTime=qtime
       var count=0
 
-      var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention(true))
+      //var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention.select)
+      //var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention(true))
       //note that we do not add the mention cubbies to the id maps because they are not needed for the reconstruction
-      while(it.hasNext){val c = it.next;mentions += c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
-      it = entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true))
+      //while(it.hasNext){val c = it.next;mentions += c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      //it = entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention(true))
+      var it = entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention.select)
       while(it.hasNext){val c = it.next;_id2cubbie += c.id -> c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
       count=0
       println("About to export entities to "+file.getAbsolutePath)
       val pw = new PrintWriter(file)
       pw.println("mention-id entity-id")
-      while(mentions.size>0){
-        var m = mentions.dequeue
+      it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention.select)
+      while(it.hasNext){
+        var m = it.next
         var eid:String=m.id.toString
         var n = m
         while(n!=null){
@@ -1910,6 +1956,59 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
         count += 1
         if(count%10000==0)print(".")
         if(count%500000==0)println("Wrote "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")
+      }
+      pw.flush
+      pw.close
+    }
+    def exportPretty(file:File):Unit ={
+      reset//(d:DiffList) => mergeUp(entityS1,entity2)(d)
+      val mentions = new Queue[AuthorCubbie]
+      val clusters = new LinkedHashMap[AuthorCubbie,ArrayBuffer[AuthorCubbie]]
+      val singletons = new ArrayBuffer[AuthorCubbie]
+      var qtime = System.currentTimeMillis
+      var startTime=qtime
+      var count=0
+      //println("SIZE: "+entityCubbieColl.size)
+      var it = entityCubbieColl.query(_.isMention(true).parentRef.exists(true),_.parentRef.select.isMention.select.title.select)
+      //note that we do not add the mention cubbies to the id maps because they are not needed for the reconstruction
+      while(it.hasNext){val c = it.next;mentions += c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      it = entityCubbieColl.query(_.isMention(false),_.parentRef.select.isMention.select.firstName.select.middleName.select.lastName.select.topics.select)
+      while(it.hasNext){val c = it.next;_id2cubbie += c.id -> c;count+=1;if(count%10000==0)print(".");if(count%500000==0)println("Loaded "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")}
+      count=0
+      println("Found "+mentions.size +" mentions. Found " + _id2cubbie.size+" nodes.")
+      println("About to export entities to "+file.getAbsolutePath)
+      val pw = new PrintWriter(file)
+      //pw.println("mention-id entity-id")
+      while(mentions.size>0){
+        var m = mentions.dequeue
+        var e = m
+        while(e.parentRef.isDefined){
+          e = _id2cubbie.getOrElse(e.parentRef.value,null)
+        }
+        if(e==null || (e eq m))singletons += e
+        else{
+          val cluster = clusters.getOrElseUpdate(e, new ArrayBuffer[AuthorCubbie])
+          cluster += m
+        }
+        count += 1
+        if(count%10000==0)print(".")
+        if(count%500000==0)println("Wrote "+count+" in "+((System.currentTimeMillis-startTime).toInt/1000)+" sec.")
+      }
+      println("Writing clusters to file.")
+      for((entity,mentions) <- clusters){
+        val efname:String = if(entity.firstName.isDefined)entity.firstName.value else ""
+        val emname:String = if(entity.middleName.isDefined)entity.middleName.value else ""
+        val elname:String = if(entity.lastName.isDefined)entity.lastName.value else ""
+        val eid = entity.id
+        val topics = if(entity.topics.isDefined)EntityUtils.topk(entity.topics.value.fetch,3) else ""
+        if(topics.length==0)pw.println("Entity ("+eid+").  Name: "+efname+" "+emname+" "+elname+".")
+        else pw.println("Entity (mentions:"+mentions.size+", id:"+eid+").  Name: "+efname+" "+emname+" "+elname+".  Topics: {"+topics+"}")
+        for(mention <- mentions){
+          val title = if(mention.title.isDefined)mention.title else ""
+          val mid = mention.id
+          pw.println("  -("+mid+") "+title)
+        }
+        pw.flush
       }
       pw.flush
       pw.close
