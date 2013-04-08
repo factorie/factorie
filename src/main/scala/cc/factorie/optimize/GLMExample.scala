@@ -98,7 +98,7 @@ object ObjectiveFunctions {
   }
 }
 
-class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
+class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
   def accumulateExampleInto(model: LogLinearModel[_,_], gradient:WeightsTensorAccumulator, value:DoubleAccumulator) {
@@ -106,7 +106,7 @@ class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveF
     val weightsMatrix = model.evidenceTemplate.weights
     val prediction = weightsMatrix * featureVector
     //    println("Prediction: " + prediction)
-    val (loss, sgrad) = lossAndGradient(prediction, label)
+    val (loss, sgrad) = lossAndGradient(prediction, targetLabel)
     if (value != null) value.accumulate(loss)
     if (weight != 1.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
