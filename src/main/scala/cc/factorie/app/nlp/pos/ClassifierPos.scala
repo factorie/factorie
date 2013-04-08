@@ -144,7 +144,7 @@ class ClassifierPos extends DocumentProcessor {
     override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
       val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sentData, pos, featureVector)
-      new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
+      new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
       if (setToPrediction) {
         val weightsMatrix = model.evidenceTemplate.weights
         val prediction = weightsMatrix * featureVector
@@ -264,6 +264,7 @@ object ClassifierPos {
       opts.updateExamples.value.toBoolean,
       opts.useHingeLoss.value.toBoolean,
       opts.saveModel.value.toBoolean)
+    PosDomain.categories.foreach(s => println(s))    // Print all the POS tags.
   }
 
   def load(name: String): ClassifierPos = {
@@ -278,8 +279,6 @@ object TestClassifierPos {
     val modelFile = args(0)
     val testFile = args(1)
     val pos = ClassifierPos.load(modelFile)
-    // Print all the POS tags.
-    PosDomain.categories.foreach(s => println(s))
     val data = LoadOWPL.fromFilename(testFile, (t,s) => new PosLabel(t,s))
     val t0 = System.currentTimeMillis()
     data.foreach(d => pos.process(d))

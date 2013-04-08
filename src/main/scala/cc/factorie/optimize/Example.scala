@@ -20,7 +20,7 @@ import cc.factorie.la._
 
 // Examples must be thread safe? -alex  Really? Must they be? -akm
 trait Example[-M<:Model] {
-  // gradient or value or margin can be null if they don't need to be computed.
+  // gradient or value can be null if they don't need to be computed.
   def accumulateExampleInto(model:M, gradient:WeightsTensorAccumulator, value:DoubleAccumulator): Unit
   // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
