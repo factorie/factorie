@@ -17,5 +17,59 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 
 // TODO can we not make the default implementation of NLP stuff use global variables, this is bug city -luke
+@deprecated("Use PTBPosDomain instead.")
 object PosDomain extends CategoricalDomain[String]
+@deprecated("Use PTBPosLabel instead.")
 class PosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PosDomain } 
+
+/** Penn Treebank part-of-speech tag domain. */
+object PTBPosDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+      "#",
+      "$",
+      "''",
+      ",",
+      "-LRB-",
+      "-RRB-",
+      ".",
+      ":",
+      "CC",
+      "CD",
+      "DT",
+      "EX",
+      "FW",
+      "IN",
+      "JJ",
+      "JJR",
+      "JJS",
+      "LS",
+      "MD",
+      "NN",
+      "NNP",
+      "NNPS",
+      "NNS",
+      "PDT",
+      "POS",
+      "PRP",
+      "PRP$",
+      "RB",
+      "RBR",
+      "RBS",
+      "RP",
+      "SYM",
+      "TO",
+      "UH",
+      "VB",
+      "VBD",
+      "VBG",
+      "VBN",
+      "VBP",
+      "VBZ",
+      "WDT",
+      "WP",
+      "WP$",
+      "WRB",
+      "``")
+  freeze()
+}
+class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PTBPosDomain }

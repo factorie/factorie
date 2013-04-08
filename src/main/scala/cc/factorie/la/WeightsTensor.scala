@@ -20,14 +20,15 @@ import cc.factorie.util._
 
 // A map from a XXX to a Tensor; previously called WeightsTensor
 // The optimize.GradientOptimizer package expects these
-// trait WeightsTensors extends Map[WeightsTensor,Tensor] { def += ... }
+// trait WeightsTensors extends Map[WeightsFamily,Tensor] { def += ... }
 
 // DotFamily mixes this in to provide it with a tensor holding its parameters
+// WeightsFamily { def weightsTensor: Tensor ... }
 // WeightsTensor { def weightsTensor: Tensor ... }
 
 // Model mixes this in to provide it with weights
 // Weights { def weights: WeightsTensors } 
-
+// or can we just get away with "Model extends WeightsTensors"?  (and then rename "WeightsTensors" to "Weights").
 
 
 //* A Tensor to represent the weights in a collection of DotFamilies as the keys in a HashMap from DotFamily to Tensor. */

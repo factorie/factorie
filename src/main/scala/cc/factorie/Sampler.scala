@@ -105,7 +105,7 @@ trait Sampler[C] {
     @author Andrew McCallum */
 trait ProposalSampler[C] extends Sampler[C] {
   def model: Model
-  var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
+  var temperature = 1.0
   def proposals(context:C): Seq[Proposal]
   def skipEmptyProposals = true
   def process1(context:C): DiffList = processProposals(proposals(context))
@@ -121,7 +121,7 @@ trait ProposalSampler[C] extends Sampler[C] {
     proposalHook(proposal)
     proposal.diff
   }
-  def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
+  def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore / temperature)
   val proposalsHooks = new Hooks1[Seq[Proposal]] // Allows non-overriders to add hooks
   def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
   val proposalHooks = new Hooks1[Proposal]

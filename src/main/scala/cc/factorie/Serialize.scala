@@ -98,6 +98,7 @@ object BinarySerializer {
   private val TENSOR: Byte = 0x05
   private val LIST: Byte = 0x07
   private val MAP: Byte = 0x06
+  private val NULL: Byte = 0x08
 
   private def deserializeInner(preexisting: Any, tag: Byte, s: DataInputStream): Any = tag match {
     case DOUBLE => s.readDouble()
@@ -132,6 +133,9 @@ object BinarySerializer {
         buff += deserializeInner(pre, innerTag, s)
       }
       buff
+    case NULL =>
+      s.readByte()
+      null
   }
   private def readString(s: DataInputStream): String = {
     val bldr = new StringBuilder
@@ -150,13 +154,15 @@ object BinarySerializer {
     case _: Tensor => TENSOR
     case _: mutable.Map[String, Any] => MAP
     case _: Traversable[_] => LIST
+    case null => NULL
   }
   private def isPrimitiveTag(tag: Byte): Boolean = tag match {
-    case DOUBLE | BOOLEAN | INT => true
+    case DOUBLE | BOOLEAN | INT | NULL => true
     case _ => false
   }
   private def isPrimitive(value: Any): Boolean = isPrimitiveTag(tagForType(value))
   private def serialize(key: Option[String], value: Any, s: DataOutputStream): Unit = {
+    //println("Serialize.serialize key="+key+" value="+(if (value != null) value.toString.take(20) else null))
     key.foreach(writeString(_, s))
     if (key.isDefined || !isPrimitive(value)) s.writeByte(tagForType(value))
     value match {
@@ -178,6 +184,8 @@ object BinarySerializer {
         s.writeByte(tag)
         s.writeInt(t.size)
         t.foreach(serialize(None, _, s))
+      case null =>
+        s.writeByte(0x0)
     }
     s.flush()
   }
