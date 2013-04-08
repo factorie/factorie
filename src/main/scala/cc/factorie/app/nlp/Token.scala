@@ -55,8 +55,12 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
   def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
+  def stringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.string else null }
   /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
   def lemmaString = { val tl = attr[TokenLemma]; if (tl ne null) tl.value else string }
+  def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null }
+  /** Assign this Token's lemmaString.  A new TokenLemma object will be added to the Token's attr only if the lemmaString is different than the current this.string. */
+  def setLemmaString(lemmaString:String): Unit = if (string != lemmaString) attr += new TokenLemma(this, lemmaString)
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
