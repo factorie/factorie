@@ -107,6 +107,11 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
 trait DocumentProcessor {
   // NOTE: this method may mutate and return the same document that was passed in
   def process(d: Document): Document
+  // TODO Implement these
+  //def prereqs: Iterable[DocumentProcessor]
+  //def tokenAttrs: Iterable[Class[_]] = Nil
+  //def sentenceAttrs: Iterable[Class[_]] = Nil
+  //def documentAttrs: Iterable[Class[_]] = Nil
 }
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. */
