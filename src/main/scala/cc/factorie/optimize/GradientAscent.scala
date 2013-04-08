@@ -204,12 +204,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) ext
   def isConverged: Boolean = false
 }
 
-// This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
-class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
-  var HSq: Tensor = null
-  var sumGs: Tensor = null
-  var t = 0
-
+object DualAveraging {
   @inline final def truncate(x0: Double, l1: Double): Double = {
     if (x0 > l1)
       x0-l1
@@ -217,7 +212,15 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate:
       x0+l1
     else 0.0
   }
+}
 
+// This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
+class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
+  var HSq: Tensor = null
+  var sumGs: Tensor = null
+  var t = 0
+
+  import DualAveraging.truncate
   var printed = false
 
   def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {

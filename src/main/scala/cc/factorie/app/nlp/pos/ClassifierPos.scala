@@ -5,7 +5,7 @@ import cc.factorie.app._
 import cc.factorie.app.nlp._
 import classify.{LogLinearTemplate2, LogLinearModel}
 import la._
-import optimize.{StepwiseGradientAscent, AdaGrad, HogwildTrainer}
+import optimize.{Example, StepwiseGradientAscent, AdaGrad, HogwildTrainer}
 import util.DoubleAccumulator
 import collection.mutable.HashMap
 import java.io.File
@@ -20,7 +20,13 @@ import org.junit.Assert._
  */
 class ClassifierPos extends DocumentProcessor {
   object ClassifierPosFeatureDomain extends CategoricalDimensionTensorDomain[String]()
-  val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PosDomain, ClassifierPosFeatureDomain)
+  class ClassifierModel extends DotFamilyWithStatistics2[TensorVar, TensorVar] with Model {
+    override lazy val weights = new optimize.DualAveragingTensor2(PosDomain.length, ClassifierPosFeatureDomain.dimensionSize, 0.01, 1.0, 0.00001, 0.0001)
+    def factors(variable: Var) = null
+    override def families = Seq(this)
+  }
+  val model = new ClassifierModel
+
 
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
@@ -139,14 +145,32 @@ class ClassifierPos extends DocumentProcessor {
     def get(s: Seq[String], i: Int) = if ((0 <= i) && (i < s.length)) s(i) else ""
   }
 
+  class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[ClassifierModel] {
+    //def updateState(state: ExampleState): Unit = { }
+    def state = null
+    def accumulateExampleInto(model: ClassifierModel, gradient:WeightsTensorAccumulator, value:DoubleAccumulator) {
+      // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
+      val weightsMatrix = model.weights
+      val prediction = weightsMatrix * featureVector
+      //    println("Prediction: " + prediction)
+      val (loss, sgrad) = lossAndGradient(prediction, label)
+      if (value != null) value.accumulate(loss)
+      if (weight != 1.0) sgrad *= weight
+      //    println("Stochastic gradient: " + sgrad)
+      // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
+      //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
+      if (gradient != null) gradient.accumulateOuter(model, sgrad, featureVector)
+    }
+  }
+
   var setToPrediction = false
-  class LocalClassifierExample(val sentData: SentenceData, pos: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+  class LocalClassifierExample(val sentData: SentenceData, pos: Int, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[ClassifierModel] {
+    override def accumulateExampleInto(model: ClassifierModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
       val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sentData, pos, featureVector)
-      new optimize.GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].intValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
+      new GLMExample(featureVector, sentData.sent(pos).attr[PosLabel].targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
       if (setToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weights
+        val weightsMatrix = model.weights
         val prediction = weightsMatrix * featureVector
         sentData.sent.tokens(pos).attr[PosLabel].set(prediction.maxIndex)(null)
       }
@@ -156,7 +180,7 @@ class ClassifierPos extends DocumentProcessor {
   def predict(s: Sentence)(implicit d: DiffList = null) {
     s.tokens.foreach(t => if (t.attr[PosLabel] eq null) t.attr += new PosLabel(t, "NNP"))
     val sent = new SentenceData(s)
-    val weightsMatrix = model.evidenceTemplate.weights
+    val weightsMatrix = model.weights
     for (i <- 0 until s.length) {
       val featureVector = new SparseBinaryTensor1(ClassifierPosFeatureDomain.dimensionSize)
       addFeatures(sent, i, featureVector)
@@ -208,7 +232,7 @@ class ClassifierPos extends DocumentProcessor {
     })
     ClassifierPosFeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     ClassifierPosFeatureDomain.freeze()
-    val trainer = new optimize.SGDTrainer(model, new optimize.LazyL2ProjectedGD(l2=1.0), maxIterations = 10, logEveryN=100000)
+    val trainer = new optimize.SGDTrainer(model, new optimize.StepwiseGradientAscent(1.0), maxIterations = 10, logEveryN=100000)
     while(!trainer.isConverged) {
       val examples = sentences.shuffle.flatMap(s => {
         val sd = new SentenceData(s)
