@@ -12,6 +12,7 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
+import collection.mutable
 
 object Utils{
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
@@ -387,6 +388,21 @@ object EntityUtils{
     }
     */
   }
+  def bucketByCoAuthorsAndTopics(entities:Iterable[AuthorEntity]):HashMap[String,ArrayBuffer[AuthorEntity]] ={
+    def f(e:AuthorEntity):Seq[String] = (e.bagOfCoAuthors.value.iterator.map(_._1) ++ e.bagOfTopics.value.iterator.map(_._1)).toSeq.map(e.canopyNames.headOption.getOrElse("")+"_"+_) ++ e.canopyNames
+    bucketBy(entities,f(_))
+  }
+  def bucketBy[E<:HierEntity](entities:Iterable[E],f:E=>Seq[String]):HashMap[String,ArrayBuffer[E]] ={
+    var result = new HashMap[String,ArrayBuffer[E]]
+    for(e<-entities){
+      val buckets = f(e)
+      for(bucket <- buckets){
+        result.getOrElseUpdate(bucket,new ArrayBuffer[E]) += e
+      }
+    }
+    result = result.filter(_._2.size>=2)
+    result
+  }
 
   def makeSingletons[E<:HierEntity](entities:Seq[E]):Seq[E] ={
     for(e <- entities)
@@ -402,6 +418,15 @@ object EntityUtils{
   ()=>new AuthorEntity,
   (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)}
   )
+  def collapseOnCanopyAndCoAuthors(entities:Seq[AuthorEntity],numCoAuthors:Int=1) = collapseOn[AuthorEntity](entities,(e:AuthorEntity) => {
+    val fmlCanopy = new AuthorFLNameCanopy(e)
+    val coauths = e.bagOfCoAuthors.value.asHashMap.take(numCoAuthors).map(_._1).toSeq
+    if(coauths.length==0)None else Some(fmlCanopy.canopyName+coauths.mkString(" "))
+  },
+  ()=>new AuthorEntity,
+  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)}
+  )
+
   def collapseOnTruth(entities:Seq[AuthorEntity]) = collapseOn[AuthorEntity](entities,(e:AuthorEntity)=>{e.groundTruth},()=>new AuthorEntity,  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)})
   def collapseOn[E<:HierEntity](entities:Seq[E], collapser:E=>Option[String], newEntity:()=>E, propagater:E=>Unit):Seq[E] ={
     val result = new ArrayBuffer[E]
@@ -416,8 +441,9 @@ object EntityUtils{
         val root = newEntity()
         result += root
         for(e<-trueCluster){
-          e.setParentEntity(root)(null)
-          for(bag <- e.attr.all[BagOfWordsVariable])root.attr(bag.getClass).add(bag.value)(null)
+          this.linkChildToParent(e,root)(null)
+          //e.setParentEntity(root)(null)
+          //for(bag <- e.attr.all[BagOfWordsVariable])root.attr(bag.getClass).add(bag.value)(null)
         }
         propagater(root)
         //root.fullName.setFullName(trueCluster.head.fullName)(null)

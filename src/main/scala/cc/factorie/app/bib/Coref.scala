@@ -657,7 +657,7 @@ class EntityNamePenaltyTemplate[B<:BagOfWordsVariable with EntityAttr](val weigh
   println("EntityNamePenaltyTemplate("+weight+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])//throw new Exception("Error: node's status as mention can't change.")
-  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
+  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entity's status as a mention should never change.")
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var result = 0.0
     if(exists.booleanValue){
@@ -799,9 +799,46 @@ class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends CombinedMod
   }
 }
 
+/*
+trait BucketSampler[E<:HierEntity]{
+  protected var _mentions:ArrayBuffer[E] = null
+  private var _initialEntities:ArrayBuffer[E] = null
+  def getDeletedEntities:Seq[E] = _initialEntities.filter(!_.exists.booleanValue)
+  def getEntities:Seq[E] = _mentions.flatMap(_.entityRoot.asInstanceOf[E].descendantsOfClass[E])
+  def mentions:Seq[E] = _mentions
+  def neighbors(e:E):Seq[E]
+  def setEntities(es:Iterable[E]) ={
+    _initialEntities = new ArrayBuffer[E]
+    _mentions = new ArrayBuffer[E]
+    for(e<-es)if(e.isMention)_mentions += e else initialEntities += e
+  }
+  def nextMention:E
+  def nextMention(e:E):E
+
+
+  override def settings(c:Null) : SettingIterator = new SettingIterator {
+    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
+
+    changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
+    var i = 0
+    def hasNext = i < changes.length
+    def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
+    def reset = i = 0
+  }
+}
+*/
+
 class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
+  //var buckets:HashMap[String,ArrayBuffer[AuthorEntity]] = null
   var settingsSamplerCount=0
   def newEntity = new AuthorEntity
+  /*
+  override def setEntities(ents:Iterable[AuthorEntity]):Unit ={
+    super.setEntities(ents)
+    buckets = EntityUtils.bucketByCoAuthorsAndTopics(ents)
+  }
+  */
+
   def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
     if(author.childEntities.size==0){
       EntityUtils.printAuthors(Seq(author))
@@ -873,66 +910,52 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     */
     result
   }
-
   override def settings(c:Null) : SettingIterator = new SettingIterator {
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
     val (entityS1,entityS2) = nextEntityPair
     val entity1 = entityS1.getAncestor(random.nextInt(entityS1.depth+1)).asInstanceOf[AuthorEntity]
     val entity2 = entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
     if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
+      val r1 = entity1.entityRoot.asInstanceOf[AuthorEntity]
+      val r2 = entity2.entityRoot.asInstanceOf[AuthorEntity]
+      if(!isMention(r1) && !isMention(r2)){
+        val numMentions1 = r1.attr[MentionCountVariable].intValue
+        val numMentions2 = r2.attr[MentionCountVariable].intValue
+        if(numMentions1>=numMentions2)proposeMergeIfValid(r1,r2,changes) else proposeMergeIfValid(r2,r1,changes)
+      }
+
       if(entityS1.editType eq HumanEditMention.ET_SHOULD_NOT_LINK)
         changes += {(d:DiffList) => mergeUp(entityS1,entity2)(d)}
       if(entityS2.editType eq HumanEditMention.ET_SHOULD_NOT_LINK)
         changes += {(d:DiffList) => mergeUp(entityS2,entity1)(d)}
-      
-//      println("DIFFERENT ENTITIES")
-      /*
-      if(!isMention(entity1)){
-        changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?
-        if(entity1.id != entity1.entityRoot.id) //avoid adding the same jump to the list twice
-          changes += {(d:DiffList) => mergeLeft(entity1.entityRoot.asInstanceOf[T],entity2)(d)} //unfortunately casting is necessary unless we want to type entityRef/parentEntity/childEntities
-      }
-      */
       var e1 = entityS1
       var e2 = entity2//entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
       while(e1 != null){
         proposeMergeIfValid(e1,e2,changes)
-        //if(!e2.entityRoot eq e2)proposeMergeIfValid(e1,e2.entityRoot.asInstanceOf[AuthorEntity],changes)
         e1 = e1.parentEntity.asInstanceOf[AuthorEntity]
       }
-//      println("   #proposed: "+changes.size)
-      //proposeMergeIfValid(entity1,entity2,changes)
-      //changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
       if(entity1.parentEntity==null && entity2.parentEntity==null)
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
       if(changes.size==0){
-        val r2 = entity2.entityRoot.asInstanceOf[AuthorEntity]
+//        val r2 = entity2.entityRoot.asInstanceOf[AuthorEntity]
         if(!isMention(r2)){
           proposeMergeIfValid(r2,entity1,changes)
         } else{
-          val r1 = entity1.entityRoot.asInstanceOf[AuthorEntity]
+//          val r1 = entity1.entityRoot.asInstanceOf[AuthorEntity]
           if(!isMention(r1)){
           proposeMergeIfValid(r1,entity2,changes)
           }else changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
         }
-        //println("no proposal: "+entity1.isMention+" "+entity2.isMention)
-        //EntityUtils.prettyPrintAuthor(entity1.asInstanceOf())
       }
-//      println("   #proposed: "+changes.size)
     } else { //sampled nodes refer to same entity
-//      println("SAME ENTITY")
       changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
       changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
       if(entity1.parentEntity != null && !entity1.isObserved)
         changes += {(d:DiffList) => {collapse(entity1)(d)}}
-//      println("   #proposed: "+changes.size)
     }
     if(!entity1.isObserved && entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
     if(!entity1.entityRoot.isObserved && entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[AuthorEntity])(d)}
-
     changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
-//    println("CHANGES SIZE: "+changes.size)
-//    System.out.flush()
     var i = 0
     def hasNext = i < changes.length
     def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
@@ -1304,8 +1327,10 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
   //def numberOfSteps(numEntities:Int):Int = (if(numEntities<=20)numEntities*20 else if(numEntities <= 100)numEntities*numEntities else if(numEntities<=1000) 100*numEntities else if(numEntities<=5000) 200*numEntities else 300*numEntities)
   def initialize:Unit = {}
   def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);itemsProcessed=r.size;r}
-  def doWork(entities:Seq[E]):Seq[E] = {sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.size));(sampler.getEntities ++ sampler.getDeletedEntities)}
+  def doWork(es:Seq[E]):Seq[E] = {val entities = initializeWork(es);sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.size));(sampler.getEntities ++ sampler.getDeletedEntities)}
   def saveWork(entities:Seq[E]):Unit = workCollection.store(entities)
+  //def initializeWork(entities:Seq[E]):Seq[E] = entities
+  def initializeWork(entities:Seq[E]):Seq[E] = if(!entities.exists((e:E) => {!e.isMention.booleanValue}))EntityUtils.collapseOnCanopyAndCoAuthors(entities.asInstanceOf[Seq[AuthorEntity]]).asInstanceOf[Seq[E]] else entities
 }
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
   def triggerSafeQuit:Boolean= _triggerSafeQuit
