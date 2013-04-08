@@ -18,10 +18,12 @@ import util.matching.Regex
 
 package object strings {
 
+  /** Read the entire contents of the InputStream with the given encoding, and return them as a String. */
   def inputStreamToString(is:java.io.InputStream, encoding:String = "UTF-8"): String = {
     readerToString(new java.io.InputStreamReader(is, encoding))
   }
 
+  /** Read the entire contents of the Reader and return them as a String. */
   def readerToString(reader:java.io.Reader): String = {
     val buffer = new Array[Char](0x10000)
     val out = new StringBuilder()
@@ -55,6 +57,7 @@ package object strings {
     sb.toString
   }
   
+  /** Return Strings representing all possible character sub-sequences of length between "min" and "max", with prepended "<" and appended ">" to indicate start and end of the input string. */
   def charNGrams(word:String, min:Int, max:Int): Seq[String] = {
     val w = "<"+word+">"
     val prefixes = for (e <- min+1 to math.min(max+1, word.length)) yield w.substring(0, e)
@@ -64,11 +67,12 @@ package object strings {
   }
   
   // Simplified form of word for feature generation
-  val yearRegexp = "(19|20)\\d\\d".r
+  val recentYearRegexp = "(19|20)\\d\\d".r
   val numRegexp = "\\d+".r
   val wordRegexp = ".*\\d.*".r
+  /** Return input string, with digits replaced, either the whole string with "<YEAR>" or "<NUM>" or just the digits replaced with "#" */
   def simplifyDigits(word:String): String = {
-    if (! yearRegexp.unapplySeq(word).isEmpty) "<YEAR>"
+    if (! recentYearRegexp.unapplySeq(word).isEmpty) "<YEAR>"
     else if (! numRegexp.unapplySeq(word).isEmpty) "<NUM>"
     else if (! wordRegexp.unapplySeq(word).isEmpty) word.replaceAll("\\d","#")
     else word
