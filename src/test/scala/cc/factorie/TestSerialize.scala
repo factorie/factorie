@@ -149,10 +149,10 @@ class TestSerialize extends JUnitSuite {
     m2.erasure.isAssignableFrom(m1.erasure) && (m1.typeArguments.zip(m2.typeArguments).forall({case (l,r) => checkCompat(l, r)}))
 
   @Test def testClassifierPosSerialization() {
-    val model = new app.nlp.pos.ClassifierPos
+    val model = new app.nlp.pos.POS3
     val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
     model.serialize(fileName)
-    val otherModel = app.nlp.pos.ClassifierPos.load(fileName)
+    val otherModel = app.nlp.pos.POS3.load(fileName)
   }
 
   @Test def testInstanceSerialize(): Unit = {
