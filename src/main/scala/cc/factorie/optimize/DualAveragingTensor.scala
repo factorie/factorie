@@ -30,9 +30,12 @@ trait DualAveragingTensor extends Tensor  {
 
   override def update(i: Int, v: Double) { throw new Error("DualAveragingTensors can't be updated") }
   override def apply(i: Int): Double = {
-    val h = (1.0/eta) *(math.sqrt(gradSquares(i)) + delta) + t*l2
-    val t1 = 1.0/h
-    t1 * DualAveraging.truncate(gradients(i), t*l1)
+    if (gradSquares(i) == 0.0) 0.0
+    else {
+      val h = (1.0/eta) *(math.sqrt(gradSquares(i)) + delta) + t*l2
+      val t1 = 1.0/h
+      t1 * DualAveraging.truncate(gradients(i), t*l1)
+    }
   }
 
   override def +=(ds: DoubleSeq, factor: Double) {
