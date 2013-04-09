@@ -238,8 +238,8 @@ object POS3 {
     //PTBPosDomain.categories.foreach(s => println(s))    // Print all the POS tags.
   }
 
-  def load(name: String): ClassifierPos = {
-    val c = new ClassifierPos
+  def load(name: String): POS3 = {
+    val c = new POS3
     c.deSerialize(name)
     c
   }
