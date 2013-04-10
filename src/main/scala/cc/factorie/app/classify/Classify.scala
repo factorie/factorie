@@ -115,7 +115,7 @@ object Classify {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalDimensionTensorDomain[String] { override def }
+    object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
