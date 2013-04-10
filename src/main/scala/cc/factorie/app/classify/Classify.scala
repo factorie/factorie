@@ -33,9 +33,9 @@ trait Features extends DiscreteDimensionTensorVar {
   var label = new Label(labelName, this, labelDomain)
 }
 class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalDimensionTensorDomain[String], val labelDomain: CategoricalDomain[String])
-  extends BinaryFeatureVectorVariable[String] with Features {}
+  extends BinaryFeatureVectorVariable[String] with Features { override val skipNonCategories = true }
 class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalDimensionTensorDomain[String], val labelDomain: CategoricalDomain[String])
-  extends FeatureVectorVariable[String] with Features {}
+  extends FeatureVectorVariable[String] with Features { override val skipNonCategories = true }
 
 // A TUI for training, running and diagnosing classifiers
 object Classify {
@@ -115,7 +115,7 @@ object Classify {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
+    object FeaturesDomain extends CategoricalDimensionTensorDomain[String] { override def }
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
