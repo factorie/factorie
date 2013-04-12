@@ -24,7 +24,7 @@ import cc.factorie._
 trait CmdOption[T] {
   def name: String
   def shortName: Char
-  def helpMsg: String
+  def helpString: String
   def valueClass: Class[_];
   def valueName: String
   def defaultValue: T
@@ -283,7 +283,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "Print this help message.") {
     override def invoke = {
-      DefaultCmdOptions.this.foreach(o => println(o.helpMsg))
+      DefaultCmdOptions.this.foreach(o => println(o.helpString))
       System.exit(0)
     }
   }
