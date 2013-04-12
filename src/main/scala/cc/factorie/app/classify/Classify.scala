@@ -22,7 +22,8 @@ import java.io._
 // Feature and Label classes
 
 class Label(val labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
-  override def toString = "instance=%s label=%s" format(features.instanceName, categoryValue)
+  override def toString = "instance=%s label=%s" format (features.instanceName, categoryValue)
+  override val skipNonCategories = true
 }
 trait Features extends DiscreteDimensionTensorVar {
   this: CategoricalDimensionTensorVariable[String] =>
@@ -188,8 +189,9 @@ object Classify {
       val vocabFile = new File(opts.readVocabulary.value)
       // TODO should we make an overload that doesnt req. a cubbie and reads the cubbie type from file? -luke
       // or automatically picks the cubbie based on the input type?
-      BinarySerializer.deserialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
+      BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, LabelDomain, vocabFile)
       FeaturesDomain.freeze() // TODO should this always be frozen? otherwise weights won't match... -luke
+      LabelDomain.freeze()
     }
 
     // Read instances
@@ -228,7 +230,7 @@ object Classify {
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
-      BinarySerializer.serialize(new CategoricalDomainCubbie(FeaturesDomain.dimensionDomain), vocabFile)
+      BinarySerializer.serialize(FeaturesDomain.dimensionDomain, LabelDomain, vocabFile)
     }
 
     // if readclassifier is set, then we ignore instances labels and classify them
