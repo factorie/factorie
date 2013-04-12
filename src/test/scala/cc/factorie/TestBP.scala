@@ -19,7 +19,7 @@ import util.LocalDoubleAccumulator
 
 
 //@RunWith(classOf[JUnitRunner])
-class TestBP { //}extends FunSuite with BeforeAndAfter {
+class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter {
   
   import BPTestUtils._
 
@@ -33,7 +33,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
-    println(fg.marginal(v).proportions)
+    logger.debug(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
   
@@ -45,7 +45,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
-    //println(fg.marginal(v).proportions)
+    //logger.debug(fg.marginal(v).proportions)
     assertEquals(e(2) / (e(2) + e(1)), fg.marginal(v).proportions(0), eps)
   }
   
@@ -58,7 +58,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
-    //println(fg.marginal(v).proportions)
+    //logger.debug(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
     
@@ -71,7 +71,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
-    //println(fg.marginal(v).proportions)
+    //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0) / (e(0) + e(2)), eps)
   }
   
@@ -82,7 +82,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
-    //println(fg.marginal(v).proportions)
+    //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(3) / (e(3) + e(3)), eps)
   }
 
@@ -93,12 +93,12 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
-    //println(fg.marginal(v).proportions)
+    //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
   }
   
   @Test def v2f1VaryingBoth {
-    println("V2F1: varying both")
+    logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -108,23 +108,23 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val vars: Set[DiscreteVar] = Set(v1, v2)
     
     val f = model.factors(v1).head
-    println("f score unequal: " + f.currentScore)
+    logger.debug("f score unequal: " + f.currentScore)
     v2 := 1
-    println("f score equal: " + f.currentScore)
+    logger.debug("f score equal: " + f.currentScore)
     
     
-    println(newTemplate2(v1, v2, 10.0, 0.0).neighborDomain2)
-    println(model.subModels.head.asInstanceOf[FamilyWithNeighborDomains].neighborDomains)
+    logger.debug(newTemplate2(v1, v2, 10.0, 0.0).neighborDomain2)
+    logger.debug(model.subModels.head.asInstanceOf[FamilyWithNeighborDomains].neighborDomains)
 
     // vary both variables
     val fg = BPSummary(vars, model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 2)
     BP.inferLoopy(fg, 5)
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
+    logger.debug("v1 : " + fg.marginal(v1).proportions)
+    logger.debug("v2 : " + fg.marginal(v2).proportions)
     for (mfactor <- fg.bpFactors) {
-      println(mfactor.proportions)
+      logger.debug(mfactor.proportions)
     }
     assertEquals(0.5, fg.marginal(v1).proportions(0), eps)
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
@@ -139,7 +139,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   }
   
   @Test def v2f2VaryingBoth {
-    println("V2F1: varying both")
+    logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -195,9 +195,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
         ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1)
         assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
         gradientAccumulator0.tensor.families.foreach(f => {
-          println("checking family: " + f.getClass.getName)
-          println("good grad: " + gradientAccumulator0.tensor)
-          println("bad grad: " + gradientAccumulator1.tensor)
+          logger.debug("checking family: " + f.getClass.getName)
+          logger.debug("good grad: " + gradientAccumulator0.tensor)
+          logger.debug("bad grad: " + gradientAccumulator1.tensor)
           gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
             assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
           })
@@ -232,7 +232,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   }
 
   @Test def v2f1VaryingOne {
-    println("V2F1: varying one")
+    logger.debug("V2F1: varying one")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -246,9 +246,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
-    println("v1 : " + fg.marginal(v1).proportions)
+    logger.debug("v1 : " + fg.marginal(v1).proportions)
     for (mfactor <- fg.bpFactors) {
-      println(mfactor.proportions)
+      logger.debug(mfactor.proportions)
     }
     
     val v1Marginal = fg.marginal(v1).proportions
@@ -273,19 +273,19 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     
     var fg = BPSummary(vars, model)
     BP.inferLoopy(fg, 1)
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
+    logger.debug("v1 : " + fg.marginal(v1).proportions)
+    logger.debug("v2 : " + fg.marginal(v2).proportions)
     
     fg.setToMaximize(null)
     
-    println("v1 val : " + v1.value)
-    println("v2 val : " + v2.value)
+    logger.debug("v1 val : " + v1.value)
+    logger.debug("v2 val : " + v2.value)
     assert(v1.intValue == 0)
     assert(v2.intValue == 0)
   }
 
   @Test def loop4 {
-    println("Loop4")
+    logger.debug("Loop4")
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
     val v3 = new BinVar(1)
@@ -323,7 +323,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   }
 
   @Test def chainRandom {
-    println("ChainRandom")
+    logger.debug("ChainRandom")
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[DiscreteVar]
@@ -359,28 +359,28 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
           mapAssignment = bs
         }
       }
-      println("map : " + mapAssignment)
-      println("marginals : " + marginals.map(_ / Z).mkString(", "))
+      logger.debug("map : " + mapAssignment)
+      logger.debug("marginals : " + marginals.map(_ / Z).mkString(", "))
       
       // test sum-product
       val fg = BP.inferChainSum(vars, model)
       for (i <- 0 until numVars) {
-        println("v" + i + " : " + fg.marginal(vars(i)).proportions)
+        logger.debug("v" + i + " : " + fg.marginal(vars(i)).proportions)
         assertEquals(marginals(i) / Z, fg.marginal(vars(i)).proportions(0), eps)
       }
 
       assertEquals(fg.bpFactors.head.calculateLogZ, fg.bpFactors.last.calculateLogZ, 0.1)
 
       // TODO: add back logZ assertion
-      //println("z : " + math.log(Z) + ", " + fg.logZ())
+      //logger.debug("z : " + math.log(Z) + ", " + fg.logZ())
       //assertEquals(math.log(Z), fg.logZ(), eps)
       // max product
       
       val mfg = BP.inferChainMax(vars, model)
-      println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
+      logger.debug("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {
-        println("v" + i + " : " + mfg.marginal(vars(i)).proportions)
-        println("tv" + i + " : " + (mapAssignment / math.pow(2, i)).toInt % 2)
+        logger.debug("v" + i + " : " + mfg.marginal(vars(i)).proportions)
+        logger.debug("tv" + i + " : " + (mapAssignment / math.pow(2, i)).toInt % 2)
         assertEquals(vars(i).value.intValue, (mapAssignment / math.pow(2, i)).toInt % 2)
       }
     }
@@ -402,12 +402,12 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val fg = BP.inferTreeSum(vars, model, root = v3)
     fg.setToMaximize()
     
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
-    println("v3 : " + fg.marginal(v3).proportions)
-    println("v1 val : " + v1.value)
-    println("v2 val : " + v2.value)
-    println("v3 val : " + v3.value)
+    logger.debug("v1 : " + fg.marginal(v1).proportions)
+    logger.debug("v2 : " + fg.marginal(v2).proportions)
+    logger.debug("v3 : " + fg.marginal(v3).proportions)
+    logger.debug("v1 val : " + v1.value)
+    logger.debug("v2 val : " + v2.value)
+    logger.debug("v3 val : " + v3.value)
     
     assertEquals(0.5, fg.marginal(v3).proportions(0), eps)
     assertEquals(v1.intValue, 0)
@@ -461,16 +461,16 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     
     assert(fg.marginal(v7).proportions(0) > 0.95)
     
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
-    println("v3 : " + fg.marginal(v3).proportions)
-    println("v4 : " + fg.marginal(v4).proportions)
-    println("v5 : " + fg.marginal(v5).proportions)
-    println("v6 : " + fg.marginal(v6).proportions)
-    println("v7 : " + fg.marginal(v7).proportions)
-    println("      %2d".format(v4.intValue))
-    println("  %2d      %2d".format(v3.intValue, v5.intValue))
-    println("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
+    logger.debug("v1 : " + fg.marginal(v1).proportions)
+    logger.debug("v2 : " + fg.marginal(v2).proportions)
+    logger.debug("v3 : " + fg.marginal(v3).proportions)
+    logger.debug("v4 : " + fg.marginal(v4).proportions)
+    logger.debug("v5 : " + fg.marginal(v5).proportions)
+    logger.debug("v6 : " + fg.marginal(v6).proportions)
+    logger.debug("v7 : " + fg.marginal(v7).proportions)
+    logger.debug("      %2d".format(v4.intValue))
+    logger.debug("  %2d      %2d".format(v3.intValue, v5.intValue))
+    logger.debug("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
     
     assert(v1.intValue == 0)
     assert(v2.intValue == 1)

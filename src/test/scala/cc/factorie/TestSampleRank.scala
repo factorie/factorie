@@ -1,7 +1,7 @@
 package cc.factorie
 import cc.factorie.la._
 
-object TestSampleRank {
+object TestSampleRank  extends cc.factorie.util.FastLogging{
   object LabelDomain extends CategoricalDomain[String]
   class Label(s:String, val instance:Instance) extends LabeledCategoricalVariable(s) { def domain = LabelDomain }
   object InstanceDomain extends CategoricalDimensionTensorDomain[String]
@@ -9,10 +9,10 @@ object TestSampleRank {
     def domain = InstanceDomain
     val label = new Label(labelString, this)
     // Add features that coorespond to label exactly
-    println("New Instance with Label "+labelString)
-    this += "f1"+labelString; println("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
-    this += "f2"+labelString; println("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
-    this += "f3"+labelString; println("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
+    logger.debug("New Instance with Label "+labelString)
+    this += "f1"+labelString; logger.debug("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
+    this += "f2"+labelString; logger.debug("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
+    this += "f3"+labelString; logger.debug("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
   }
   object model extends DotTemplateWithStatistics2[Label,Instance] {
     lazy val weights = new la.DenseTensor2(LabelDomain.size, InstanceDomain.dimensionSize)
@@ -28,7 +28,7 @@ object TestSampleRank {
       val dim2 = random.nextInt(20)+1
       val dim3 = random.nextInt(20)+1
       val dim4 = random.nextInt(20)+1
-      println(List(dim1, dim2, dim3, dim4))
+      logger.debug(List(dim1, dim2, dim3, dim4))
       var v = 0.0; var rdim1 = 0; var rdim2 = 0; var rdim3 = 0; var rdim4 = 0
 
       val t2 = new DenseTensor2(dim1,dim2)
@@ -61,17 +61,17 @@ object TestSampleRank {
     
     
     val labels = List("n", "y").map(s => new Instance(s)).map(_.label)
-    println("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
-    println("feature tensors:\n"+labels.map(l => l.instance.tensor.toString+"\n"))
+    logger.debug("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
+    logger.debug("feature tensors:\n"+labels.map(l => l.instance.tensor.toString+"\n"))
     val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, HammingObjective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.logLevel = 10
     learner.processContexts(labels)
-    labels.foreach(l => l.set(0)(null)); println("Set to 0")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
-    labels.foreach(l => l.set(1)(null)); println("Set to 1")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
-    MaximizeDiscrete(labels, model); println("Set to max")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
-    println("Train accuracy "+labels.map(l => HammingObjective.currentScore(l)).sum / labels.length)
+    labels.foreach(l => l.set(0)(null)); logger.debug("Set to 0")
+    labels.foreach(l => logger.debug("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
+    labels.foreach(l => l.set(1)(null)); logger.debug("Set to 1")
+    labels.foreach(l => logger.debug("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
+    MaximizeDiscrete(labels, model); logger.debug("Set to max")
+    labels.foreach(l => logger.debug("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
+    logger.debug("Train accuracy "+labels.map(l => HammingObjective.currentScore(l)).sum / labels.length)
   }
 }

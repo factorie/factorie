@@ -74,8 +74,8 @@ object Coref4{
     }
     def load:Seq[MyEntity] = {
       val result = (for(cubbie <- entities)yield{cubbie.fetchMyEntity;cubbie.getEntity}).toSeq
-      println("entities size: "+entities.size)
-      println("result size: "+result.size)
+      //println("entities size: "+entities.size)
+      // println("result size: "+result.size)
       result
     }
   }
@@ -111,7 +111,7 @@ object Coref4{
     database.store(data)
     sampler.setEntities(database.load)
     sampler.process(1000)
-    printEntities(sampler.getEntities)
+    // printEntities(sampler.getEntities)
   }
 
   val data = List(

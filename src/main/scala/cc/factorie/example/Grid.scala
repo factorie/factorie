@@ -88,11 +88,11 @@ object Grid {
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
     val objective = new HammingTemplate[Pixel]
-    println("True accuracy: " + objective.accuracy(pixels))
-    printImage(image)
+    // println("True accuracy: " + objective.accuracy(pixels))
+    /// printImage(image)
     pixels.foreach(_.setUsingObserved)
-    println("Local accuracy: " + objective.accuracy(pixels))
-    printImage(image)
+    // println("Local accuracy: " + objective.accuracy(pixels))
+    // printImage(image)
     pixels.foreach(_.setRandomly())
     //*
     val sampler = new SamplingMaximizer[Pixel](new VariableSettingsSampler(gridModel))
@@ -110,6 +110,6 @@ object Grid {
     lattice.setToMaxMarginal()
     */
     println("Accuracy: %f".format(objective.accuracy(pixels)))
-    printImage(image)
+    // printImage(image)
   }
 }

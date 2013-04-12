@@ -1,6 +1,6 @@
 package cc.factorie
 import org.junit.Test
-import java.io.{File, FileWriter, BufferedWriter}
+import java.io._
 
 /**
  * Created by IntelliJ IDEA.

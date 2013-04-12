@@ -42,15 +42,15 @@ object RegressionExample {
         outputs += new Output(new Input(file), (2 * i - 1) + math.random * 0.001)
       }
     }
-    println("Loaded " + outputs.length + " files")
+    // println("Loaded " + outputs.length + " files")
 
     /** Run regression **/
     val regressor = LinearRegressionTrainer.train[Input, Output](outputs, {f => f.input}, 0.0)
     val predictions: Seq[Double] = regressor.regressions(outputs).map(_.dependantValue(0))
     val truth: Seq[Double] = outputs.map(_.value(0))
     val error = truth.zip(predictions).map{case (t, p) => (t - p) * (t-p) }.sum
-    println("Prediction error: " + error)
-    println("Predictions/Truth:" + predictions.zip(truth))
+    // println("Prediction error: " + error)
+    // println("Predictions/Truth:" + predictions.zip(truth))
   }
 
 }

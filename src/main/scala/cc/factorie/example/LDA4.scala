@@ -24,13 +24,13 @@ object LDA4 {
     
     val directories = args
     for (dirname <- directories) {
-      println("\nReading directory "+dirname)
+      // println("\nReading directory "+dirname)
       // XML processing is slow, so read them in parallel!
       val texts = recursiveFiles(new File(dirname)).filter(_.getName.endsWith("xml"))./*par.*/map(file => {
         val article = XML.withSAXParser(getParser).loadFile(file)
         val text = (article \\ "abstract").text
         val yearTxt = (article \\ "year").text
-        println("yearTxt="+yearTxt)
+        // println("yearTxt="+yearTxt)
         val year = if (yearTxt.length >= 4) yearTxt.substring(0,4) else "2000"
         //val doc = Document(WordSeqDomain, file.getCanonicalPath, text)
         print("."); Console.flush 

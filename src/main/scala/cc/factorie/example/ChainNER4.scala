@@ -80,13 +80,13 @@ object ChainNER4 {
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
     // Add features from next and previous tokens 
-    println("Adding offset features...")
+    // println("Adding offset features...")
     allTokens.foreach(t => {
       if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
 
-    println("Using "+TokenDomain.dimensionSize+" observable features.")
+    // println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Print some significant features
     //println("Most predictive features:")
@@ -107,15 +107,15 @@ object ChainNER4 {
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
     val predictor = new IteratedConditionalModes[Label](model, null) //new GibbsSampler(model, objective) { temperature = 0.2 } //new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
     for (i <- 1 to 3) {
-      println("Iteration "+i) 
+      // println("Iteration "+i)
       learner.processContexts(trainLabels)
       predictor.processAll(testLabels); predictor.processAll(trainLabels)
-      trainLabels.take(20).foreach(printLabel _); println; println
-      printDiagnostic(trainLabels.take(400))
+      // trainLabels.take(20).foreach(printLabel _); println; println
+      // printDiagnostic(trainLabels.take(400))
       //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
       //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
-      println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      println ("Test  accuracy = "+ objective.accuracy(testLabels))
+      // println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      // println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     if (false) {
       // Use BP Viterbi for prediction

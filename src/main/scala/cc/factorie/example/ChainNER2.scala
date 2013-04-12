@@ -96,9 +96,9 @@ object ChainNER2 {
     while (!trainer.optimizer.isConverged) {
       trainer.processExamples(pieces)
       (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
-      println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
+    println ("Train accuracy = "+ objective.accuracy(trainLabels))
+    println ("Test  accuracy = "+ objective.accuracy(testLabels))
 
   }
 

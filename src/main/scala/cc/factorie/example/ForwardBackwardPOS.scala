@@ -155,14 +155,14 @@ object ForwardBackwardPOS {
       val trainDocs = load(trainFile.value)
       val devDocs = load(devFile.value)
       val testDocs = load(testFile.value)
-      println("train sentences: " + trainDocs.flatMap(_.sentences).size)
-      println("dev   sentences: " + devDocs.flatMap(_.sentences).size)
-      println("test  sentences: " + testDocs.flatMap(_.sentences).size)
-      println("docs loaded")
+      //println("train sentences: " + trainDocs.flatMap(_.sentences).size)
+      //println("dev   sentences: " + devDocs.flatMap(_.sentences).size)
+      //println("test  sentences: " + testDocs.flatMap(_.sentences).size)
+      //println("docs loaded")
 
       // calculate features
       initPosFeatures(trainDocs ++ devDocs ++ testDocs)
-      println("train, dev, and test features calculated")
+      //println("train, dev, and test features calculated")
 
       train(trainDocs, devDocs, testDocs,
         iterations = iterations.value.toInt,

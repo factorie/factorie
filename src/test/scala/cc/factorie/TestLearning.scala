@@ -43,7 +43,7 @@ test if model ranking agrees with training signal (randomly created?)
 
  */
 
-class TestRealVariable extends JUnitSuite {
+class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
   @Test def testRealVariableWorks() {
     class Prob(val scoreVal:Double) extends RealVariable(scoreVal)
     class Data(val scoreVal: Double, val truth: Boolean) extends LabeledBooleanVariable(truth) {
@@ -67,14 +67,14 @@ class TestRealVariable extends JUnitSuite {
     val trainer = new BatchTrainer(model)
     while (!trainer.optimizer.isConverged) {
       trainer.processExamples(pieces)
-      println("Accuracy after sampling: " + objective.accuracy(trainings))
+      logger.debug("Accuracy after sampling: " + objective.accuracy(trainings))
     }
   }
 }
 
 
 //extends JUnitSuite with TestUtils{
-class TestSampleRank2 extends AssertionsForJUnit {
+class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogging {
   val numVariables = 4
   val numProposals = 1000
 
@@ -125,7 +125,7 @@ class TestSampleRank2 extends AssertionsForJUnit {
 
   @Before def initialize() =
     {
-      println("TESTING LEARNING FRAMEWORK")
+      logger.debug("TESTING LEARNING FRAMEWORK")
       bools = (for (i <- 0 until numVariables) yield new MyBool).toSeq
       for (i <- 0 until bools.length - 1)
         {
@@ -134,7 +134,7 @@ class TestSampleRank2 extends AssertionsForJUnit {
         }
       bools(0).prev = bools(bools.length - 1)
       bools(bools.length - 1).next = bools(0)
-      println("NUM BOOL VARS: " + bools.size)
+      logger.debug("NUM BOOL VARS: " + bools.size)
 
       model = new CombinedModel(
         new DotTemplateWithStatistics2[MyBool, MyBool]
@@ -193,7 +193,7 @@ class TestSampleRank2 extends AssertionsForJUnit {
               //assert(modelScoreI<modelScoreJ)
             }
         }
-      println("NUMBER OF ERRORS(FP,FN) = (" + fpErrors + "," + fnErrors + ")")
+      logger.debug("NUMBER OF ERRORS(FP,FN) = (" + fpErrors + "," + fnErrors + ")")
       assert(fpErrors + fnErrors == 0)
     }
 
@@ -288,7 +288,7 @@ def checkAllAgainstTruth =
   if(configScore>mapScore)
     errors +=1
 }
-    println("NUM CD ERRORS: " + errors)
+    logger.debug("NUM CD ERRORS: " + errors)
     assert(errors==0)
   }
 

@@ -9,7 +9,7 @@ import java.io._
 import cc.factorie.app.nlp
 import nlp.pos.PosDomain
 
-class TestSerialize extends JUnitSuite {
+class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
   class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalDimensionTensorDomain[String])
     extends BinaryFeatureVectorVariable[String] {
@@ -24,7 +24,7 @@ class TestSerialize extends JUnitSuite {
 
     val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
 
-    println("creating toy model with random weights")
+    logger.debug("creating toy model with random weights")
 
     object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
     MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
@@ -36,14 +36,14 @@ class TestSerialize extends JUnitSuite {
     model.bias.weights.:=(Array.fill[Double](model.bias.weights.length)(random.nextDouble()))
     model.obs.weights.:=(Array.fill[Double](model.obs.weights.length)(random.nextDouble()))
     model.markov.weights.:=(Array.fill[Double](model.markov.weights.length)(random.nextDouble()))
-    println("serializing chain model")
+    logger.debug("serializing chain model")
     model.serialize(modelFile)
 
     val deserialized = deserializeChainModel(modelFile)
 
     assertSameWeights(model, deserialized)
 
-    println("successfully deserialized")
+    logger.debug("successfully deserialized")
   }
 
   def getWeights(model: Model): Seq[Tensor] = model.families.map({case f: DotFamily => f.weights})
@@ -54,8 +54,8 @@ class TestSerialize extends JUnitSuite {
     assert(weights1.size == weights2.size,
       "Number of families didn't match: model1 had %d, model2 had %d" format (weights1.size, weights2.size))
     for ((w1, w2) <- weights1.zip(weights2)) {
-      println("# active elements in w1: " + w1.activeDomainSize)
-      println("# active elements in w2: " + w2.activeDomainSize)
+      logger.debug("# active elements in w1: " + w1.activeDomainSize)
+      logger.debug("# active elements in w2: " + w2.activeDomainSize)
       assert(w1.activeDomainSize == w2.activeDomainSize)
       for (((a1, a2), (b1, b2)) <- w1.activeElements.toSeq.zip(w2.activeElements.toSeq)) {
         assert(a1 == b1, "Index %d from w1 not equal to %d from w2" format (a1, b1))
@@ -203,7 +203,7 @@ class TestSerialize extends JUnitSuite {
       }
       sentence
     }
-    println("TokenDomain.dimensionDomain.size=" + TokenDomain.dimensionDomain.size)
+    logger.debug("TokenDomain.dimensionDomain.size=" + TokenDomain.dimensionDomain.size)
 
     val model = new SegmenterModel
     model.bias.weights += new UniformTensor1(model.bias.weights.dim1, 1.0)
@@ -220,20 +220,20 @@ class TestSerialize extends JUnitSuite {
 
     BinarySerializer.serialize(new CategoricalDimensionTensorDomainCubbie(TokenDomain), domainFile)
 
-    println("Original model family weights: ")
-    getWeights(model).foreach(println)
-    println("Deserialized model family weights: ")
-    getWeights(deserializedModel).foreach(println)
+    logger.debug("Original model family weights: ")
+    getWeights(model).foreach(s => logger.debug(s.toString))
+    logger.debug("Deserialized model family weights: ")
+    getWeights(deserializedModel).foreach(s => logger.debug(s.toString))
 
     assertSameWeights(model, deserializedModel)
 
-    println("Original domain:")
-    println(TokenDomain.dimensionDomain.toSeq.mkString(","))
-    println("Deserialized domain:")
+    logger.debug("Original domain:")
+    logger.debug(TokenDomain.dimensionDomain.toSeq.mkString(","))
+    logger.debug("Deserialized domain:")
     val newDomain = new CategoricalDimensionTensorDomain[String] { }
     val cubbie = new CategoricalDimensionTensorDomainCubbie(newDomain)
     BinarySerializer.deserialize(cubbie, domainFile)
-    println(newDomain.dimensionDomain.toSeq.mkString(","))
+    logger.debug(newDomain.dimensionDomain.toSeq.mkString(","))
 
     assert(TokenDomain.dimensionDomain.toSeq.map(_.category).sameElements(newDomain.dimensionDomain.toSeq.map(_.category)))
   }

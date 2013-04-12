@@ -99,7 +99,7 @@ object WordSegmenterDemo2 {
       }
       sentence
     }
-    println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
+    // println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
 
     // Make a test/train split
     val (testSet, trainSet) = sentences.shuffle.split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
@@ -107,12 +107,12 @@ object WordSegmenterDemo2 {
     val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
     
     testVariables.foreach(_.setRandomly())
-    println ("Read "+(trainVariables.size+testVariables.size)+" characters")
-    println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    println ("Initial test accuracy = "+ objective.accuracy(testVariables))
+    // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
+    // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
+    // println ("Initial test accuracy = "+ objective.accuracy(testVariables))
     
     val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
-    println("Example Factors: "+exampleFactors.mkString(", "))
+    // println("Example Factors: "+exampleFactors.mkString(", "))
 
     val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
     val trainer = new SGDTrainer(model, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
