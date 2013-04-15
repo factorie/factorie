@@ -232,9 +232,8 @@ class SemiSupervisedExample[V<:LabeledVar](val labels:Iterable[V], val inferCons
     if (value != null)
       value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
     val factors = unconstrainedSummary.usedFactors.getOrElse(model.factors(labels))
-    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
-      val aStat = factor.assignmentStatistics(TargetAssignment)
-      if (gradient != null) {
+    if (gradient != null) {
+      for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
         gradient.accumulate(factor.family, constrainedSummary.marginalTensorStatistics(factor), 1.0)
         gradient.accumulate(factor.family, unconstrainedSummary.marginalTensorStatistics(factor), -1.0)
       }
