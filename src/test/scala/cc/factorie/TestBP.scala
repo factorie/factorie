@@ -229,6 +229,16 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).head.logZ
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).head.logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
+
+    val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
+    val BPSummary = InferByBPChainSum(Seq(l0, l1, l2, l3), model)
+    for (v <- meanFieldSummary.variables) {
+      val mfm = meanFieldSummary.marginal(v)
+      val bpm = BPSummary.marginal(v)
+      for (i <- 0 until mfm.proportions.length) {
+        assertEquals(mfm.proportions(i), bpm.proportions(i), 0.1)
+      }
+    }
   }
 
   @Test def v2f1VaryingOne {
