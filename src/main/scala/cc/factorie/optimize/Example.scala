@@ -223,3 +223,21 @@ class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], loss: Model = H
     }
   }
 }
+
+class SemiSupervisedExample[V<:LabeledVar](val labels:Iterable[V], val inferConstrained:Infer, val inferUnconstrained: Infer) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+    if (labels.size == 0) return
+    val constrainedSummary = inferConstrained.infer(labels, model).get
+    val unconstrainedSummary = inferUnconstrained.infer(labels, model).get
+    if (value != null)
+      value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
+    val factors = unconstrainedSummary.usedFactors.getOrElse(model.factors(labels))
+    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
+      val aStat = factor.assignmentStatistics(TargetAssignment)
+      if (gradient != null) {
+        gradient.accumulate(factor.family, constrainedSummary.marginalTensorStatistics(factor), 1.0)
+        gradient.accumulate(factor.family, unconstrainedSummary.marginalTensorStatistics(factor), -1.0)
+      }
+    }
+  }
+}
