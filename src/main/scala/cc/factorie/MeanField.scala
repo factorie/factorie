@@ -32,23 +32,14 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
     val p = marginal.proportions
     val distribution = new cc.factorie.la.DenseTensor1(p.size)
     for (f <- model.factors(d)) {
-      f match {
-        case f: Factor1[V] =>
-        for (s <- p.activeDomain) distribution(s) += f.score(d.domain(s).asInstanceOf[V#Value])
-        case f: Factor2[_,_] =>
-          val isFirstVariable = f._1 eq d
-          val other = if (isFirstVariable) f._2 else f._1
-          if (other.isInstanceOf[V] && summary._marginals1.contains(other.asInstanceOf[V])) {
-            val fa = f.asInstanceOf[Factor2[V,V]]
-            val otherMarginal = summary.marginal(other)
-            for (s <- fa.valuesIterator)
-              if (isFirstVariable)
-                distribution(s.value1.intValue) += otherMarginal.proportions(s.value2.intValue) * fa.score(s.value1, s.value2)
-              else
-                distribution(s.value2.intValue) += otherMarginal.proportions(s.value1.intValue) * fa.score(s.value1, s.value2)
-          } else {
-            for (s <- p.activeDomain) distribution(s) += f.assignmentScore(new Assignment1[V](d, d.domain(s).asInstanceOf[V#Value]))
-          }
+      val vars = (f.variables.toSet - d).intersect(summary.variables.toSet).toSeq
+      val marginals = vars.map(summary.marginal(_))
+      for (values <- f.valuesIterator) {
+        var marg = 1.0
+        for (i <- 0 until vars.length) {
+          marg *= marginals(i).proportions(values(vars(i)).asInstanceOf[V#Value].intValue)
+        }
+        distribution(values(d).intValue) += marg*f.assignmentScore(values)
       }
     }
     distribution.expNormalize()
