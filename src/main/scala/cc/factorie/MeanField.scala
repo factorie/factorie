@@ -34,12 +34,24 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
     for (f <- model.factors(d)) {
       val vars = (f.variables.toSet - d).intersect(summary.variables.toSet).toSeq
       val marginals = vars.map(summary.marginal(_))
-      for (values <- f.valuesIterator) {
-        var marg = 1.0
-        for (i <- 0 until vars.length) {
-          marg *= marginals(i).proportions(values(vars(i)).asInstanceOf[V#Value].intValue)
-        }
-        distribution(values(d).intValue) += marg*f.assignmentScore(values)
+      for (value <- 0 until d.domain.size) {
+        if (vars.length == 0) {
+          distribution(value) += f.assignmentScore(new Assignment1[V](d, d.domain(value).asInstanceOf[V#Value]))
+        } else if (vars.length == 1) {
+          val v0 = vars.head
+          val m0 = summary.marginal(v0)
+          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size) {
+            distribution(value) += m0.proportions(value0) * f.assignmentScore(new Assignment2[V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value]))
+          }
+        } else if (vars.length == 2) {
+          val v0 = vars.head
+          val m0 = summary.marginal(v0)
+          val v1 = vars(1)
+          val m1 = summary.marginal(v1)
+          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size; value1 <- 0 until v1.domain.asInstanceOf[DiscreteDomain].size) {
+            distribution(value) += m0.proportions(value0) * m1.proportions(value1) * f.assignmentScore(new Assignment3[V,V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value], v1.asInstanceOf[V], v1.domain.asInstanceOf[DiscreteDomain](value1).asInstanceOf[V#Value]))
+          }
+        } else throw new Error("Mean field currently doesn't work on factors with 3 or more varying neighbors. " + f.getClass.getName)
       }
     }
     distribution.expNormalize()
@@ -52,7 +64,7 @@ object InferByMeanField {
   def inferencer[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
   def apply[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
-    for (i <- 0 until 50) inf.updateQ // TODO Replace with a proper convergence criterion!!!
+    for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
 }
