@@ -32,7 +32,7 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
     val p = marginal.proportions
     val distribution = new cc.factorie.la.DenseTensor1(p.size)
     for (f <- model.factors(d)) {
-      val vars = (f.variables.toSet - d).intersect(summary.variables.toSet).toSeq
+      val vars = (f.variables.toSet - d).intersect(summary.variableSet).toSeq
       val marginals = vars.map(summary.marginal(_))
       for (value <- 0 until d.domain.size) {
         if (vars.length == 0) {

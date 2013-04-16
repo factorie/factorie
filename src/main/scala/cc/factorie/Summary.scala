@@ -75,6 +75,7 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarg
   val _marginals1 = new scala.collection.mutable.HashMap[V,DiscreteMarginal1[V]]
   def marginals = _marginals1.values
   def variables = _marginals1.keys
+  lazy val variableSet = variables.toSet
   def marginal1(v1:V) = _marginals1(v1)
   def marginal(vs:Var*): DiscreteMarginal1[V] = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
