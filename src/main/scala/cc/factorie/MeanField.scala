@@ -32,8 +32,7 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
     val p = marginal.proportions
     val distribution = new cc.factorie.la.DenseTensor1(p.size)
     for (f <- model.factors(d)) {
-      val vars = (f.variables.toSet - d).intersect(summary.variableSet).toSeq
-      val marginals = vars.map(summary.marginal(_))
+      val vars = (f.variables.toSet - d).intersect(summary.variableSet.asInstanceOf[Set[Var]]).toSeq
       for (value <- 0 until d.domain.size) {
         if (vars.length == 0) {
           distribution(value) += f.assignmentScore(new Assignment1[V](d, d.domain(value).asInstanceOf[V#Value]))
@@ -60,11 +59,12 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
   def updateQ: Unit = summary.variables.foreach(updateQ(_))
 }
 
-object InferByMeanField {
+object InferByMeanField extends Infer {
   def inferencer[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
   def apply[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
     for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
 }
