@@ -209,17 +209,17 @@ object CorefMentionsDemo {
             // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
 
             // model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList)) // TODO Commented out when DenseVectors.toList stopped working, most likely due to FACTORIE using 2.8.0.RC1 and Scalala using 2.8.0.Beta1
-            println ("All entities")
-            entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
+            //println ("All entities")
+            // entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
             //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entityRef.value))
-            println
+            // println
           }
         }
       }
       val learner = new SampleRankTrainer(sampler, new MIRA)
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
-      Console.println ("Beginning inference and learning")
+      // Console.println ("Beginning inference and learning")
       learner.processContext(null, 3000) // 3000
     }
 

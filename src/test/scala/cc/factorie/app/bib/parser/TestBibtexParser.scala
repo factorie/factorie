@@ -11,7 +11,7 @@ import collection.mutable.ArrayBuffer
  * @date 5/10/2012
  */
 
-class TestBibtexParser extends JUnitSuite {
+class TestBibtexParser extends JUnitSuite with cc.factorie.util.FastLogging {
 
   def testMichaelsStuff(): Unit = {
 
@@ -43,11 +43,11 @@ Success on file: "%s" """ format (name)))
     failuresCauseMismatchedQuote.foreach(failures -=)
     failuresCauseBadNames.foreach(failures -=)
 
-    successes.foreach(println(_))
-    failures.foreach(println(_))
+    successes.foreach(logger.debug(_))
+    failures.foreach(logger.debug(_))
 
-    println("Failures cause bad names:")
-    failuresCauseBadNames.foreach(println(_))
+    logger.debug("Failures cause bad names:")
+    failuresCauseBadNames.foreach(logger.debug(_))
 
     if (!failures.isEmpty)
       sys.error(
@@ -68,7 +68,7 @@ Success on file: "%s" """ format (name)))
       val parseResult = assertParse(parser, str)
       assert(parseResult.successful, parseResult)
       val res = Dom.astToDom(AST.Document(parseResult.get))
-      if (print) println(res)
+      if (print) logger.debug(res)
     }
 
     assertParse(DocumentParser.Impl.braceDelimitedNoOuterLiteral, "{Something Great}")
@@ -475,7 +475,7 @@ Success on file: "%s" """ format (name)))
         val start = System.currentTimeMillis
         val result = body
         val time = showTime(System.currentTimeMillis - start)
-        println(time)
+        logger.debug(time)
         (result, time)
       }
 
@@ -494,7 +494,7 @@ Success on file: "%s" """ format (name)))
         }
 
       //    println(result)
-      println(time)
+      logger.debug(time)
       val sizeMult = 10
       val bigtext = List.range(0, sizeMult).map(_ => fileText2).mkString
       val (bigresult, bigtime) =

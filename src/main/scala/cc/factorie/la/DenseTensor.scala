@@ -49,6 +49,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   }
   override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }
   override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, __values, 0, length)
+  var hasLogged = false
   override def dot(t2:DoubleSeq): Double = t2 match {
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)
     case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
@@ -63,6 +64,10 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t2:SparseIndexedTensor => {var s = 0.0;t2.foreachActiveElement((i,v) => s += __values(i)*v);s}
     // TODO Any other special cases here?
     case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
+      if (!hasLogged) {
+        hasLogged = true
+        println("Warning: DenseTensor slow dot for type " + t2.getClass.getName)
+      }
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
       while (i < len) { result += apply(i) * t2(i); i += 1 }; result
     }
@@ -103,7 +108,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
       require(this.isInstanceOf[Tensor2]) // Makes sure rank matches!
       t =+ (__values, f)
     }
-    case t:Tensor => { t.=+(this.asArray, f)}
+    case t:Tensor => t.=+(this.asArray, f)
   }
   
   /** Increment into this DenseTensor at an offset. */

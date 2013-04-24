@@ -224,6 +224,7 @@ trait SparseIndexedTensor extends Tensor {
     case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this += (e._1, e._2 * f) )}
     case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this +=  (e._1, e._2 * f) )}
     case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this += (i, f) ) }
+    case t:SingletonLayeredTensor2 => { t.foreachActiveElement((i, v) => this += (i, f*v) ) }
     case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this += (i, f) ) }
     case t:Outer1Tensor2 => {
       (t.tensor1,t.tensor2) match {
@@ -253,12 +254,38 @@ trait SparseIndexedTensor extends Tensor {
             }
             i += 1
           }
+        case (t1: DenseTensor1, t2: SingletonBinaryTensorLike1) =>
+          val j0 = t2.singleIndex
+          var i = 0
+          val arr = t1.asArray
+          while (i < arr.length) {
+            this += (t.singleIndex(i, j0), f*arr(i))
+            i += 1
+          }
         case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) => {
           val i0 = t1.singleIndex
           val arr = t2.asIntArray
           var i = 0
           while (i < arr.length) {
             this += (t.singleIndex(i0, arr(i)), f)
+            i += 1
+          }
+        }
+        case (t1: SingletonBinaryTensorLike1, t2: DenseTensorLike1) => {
+          val i0 = t1.singleIndex
+          val arr = t2.asArray
+          var i = 0
+          while (i < arr.length) {
+            this += (t.singleIndex(i0, i), f*arr(i))
+            i += 1
+          }
+        }
+        case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => {
+          val i0 = t2.singleIndex
+          val arr = t1.asIntArray
+          var i = 0
+          while (i < arr.length) {
+            this += (t.singleIndex(arr(i), i0), f)
             i += 1
           }
         }

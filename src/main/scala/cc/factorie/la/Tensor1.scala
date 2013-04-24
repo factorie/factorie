@@ -192,7 +192,6 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
     def hasNext = i < _length
     def next = { i += 1 ; (_array(i-1), 1.0) }
   }
-  //def activeDomain = activeDomain1
   def isDense = false
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
@@ -200,10 +199,12 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0
   override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
-  override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
+  override def maxIndex: Int = if (_length == 0) 0 else _apply(_length-1)
   override def containsNaN: Boolean = false
-  def _appendUnsafe(i: Int) = _append(i)
+  def _appendUnsafe(i: Int) = _append(i) // TODO Make a new class UnsortedSparseBinaryTensorLike1, because, note, then the indices don't get sorted, and various index search methods will fail. 
+  @deprecated("Use sizeHint(Int) instead.")
   def _hintSize(i: Int) = _ensureCapacity(i)
+  def sizeHint(size:Int) = _sizeHint(size)
   // TODO FIXME this method will never be called since DoubleSeq provides a +=(d: Double) method already -luke
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
@@ -232,7 +233,6 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
   override def blankCopy: SparseBinaryTensor1 = new SparseBinaryTensor1(dim1)
-
 }
 class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
   def dim1: Int = sizeProxy.size

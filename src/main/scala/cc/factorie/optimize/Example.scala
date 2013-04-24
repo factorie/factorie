@@ -20,7 +20,7 @@ import cc.factorie.la._
 
 // Examples must be thread safe? -alex  Really? Must they be? -akm
 trait Example[-M<:Model] {
-  // gradient or value or margin can be null if they don't need to be computed.
+  // gradient or value can be null if they don't need to be computed.
   def accumulateExampleInto(model:M, gradient:WeightsTensorAccumulator, value:DoubleAccumulator): Unit
   // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
@@ -220,6 +220,23 @@ class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], loss: Model = H
       super.accumulateExampleInto(new CombinedModel(model, loss), gradient, valueAcc)
       // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
       if (value != null) value.accumulate(valueAcc.value)
+    }
+  }
+}
+
+class SemiSupervisedExample[V<:LabeledVar](val labels:Iterable[V], val inferConstrained:Infer, val inferUnconstrained: Infer) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+    if (labels.size == 0) return
+    val constrainedSummary = inferConstrained.infer(labels, model).get
+    val unconstrainedSummary = inferUnconstrained.infer(labels, model).get
+    if (value != null)
+      value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
+    val factors = unconstrainedSummary.usedFactors.getOrElse(model.factors(labels))
+    if (gradient != null) {
+      for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
+        gradient.accumulate(factor.family, constrainedSummary.marginalTensorStatistics(factor), 1.0)
+        gradient.accumulate(factor.family, unconstrainedSummary.marginalTensorStatistics(factor), -1.0)
+      }
     }
   }
 }

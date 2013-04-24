@@ -89,7 +89,6 @@ trait Attr {
         If call results in no removals, will not throw an Error. */
     def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = {
       val key = m.erasure
-      val result = new scala.collection.mutable.ArrayBuffer[C]
       var i = 0
       while (i < _attr.length) {
         if ((_attr(i) ne null) && key.isAssignableFrom(_attr(i).getClass)) removeIndex(i)

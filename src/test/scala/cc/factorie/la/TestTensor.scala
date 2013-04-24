@@ -6,7 +6,7 @@ import scala.util.Random
 import org.junit._
 import org.junit.Assert._
 
-class TestTensor {
+class TestTensor extends cc.factorie.util.FastLogging {
   @Test def runTest {
     val dim = 20
     val ts = Seq(new DenseTensor1(dim), new SparseTensor1(dim))
@@ -14,7 +14,7 @@ class TestTensor {
     for (i <- 0 until 10) {
       val index = math.abs(r.nextInt) % dim
       val value = r.nextDouble
-      println("index="+index+" value="+value)
+      logger.debug("index="+index+" value="+value)
       ts.foreach(_.+=(index, value))
     }
     //println(ts.head.toSeq)
@@ -92,7 +92,7 @@ class TestTensor {
 
     testPairwise(fill) { (t1, t2) =>
 
-      println("testing " + t1.getClass.getName + " and " + t2.getClass.getName)
+      logger.debug("testing " + t1.getClass.getName + " and " + t2.getClass.getName)
       assertEquals(20.0*20 + 2*2 + 5*5, t1 dot t2, 0.001)
       t1 += (t2, 0.1)
       assertEquals(t1(10), 22, 0.01)

@@ -14,21 +14,22 @@
 
 package cc.factorie.app.chain
 import collection.mutable
-import io.Source
+import io.{BufferedSource, Source}
 import cc.factorie.app.nlp.{TokenSpan, Sentence, Document, Token}
 import collection.mutable.ArrayBuffer
 
 /** Methods of retrieving the lexicons that a token in a document (using the window around the token) or a span matches into
   * returns the lexicons names, and the location the token matches into the lexicon (like B-label, I-label, U-label, or L-label)
     @author anzaroot */
-class Lexicons( val dir : String, val lexicons : List[String]) {
+class Lexicons( val sources : List[(String,BufferedSource)]) {
   val lexiconMap = mutable.HashMap[String, List[String]]()
   val lexiconNames = ArrayBuffer[String]()
 
-  for(filename <- lexicons) {
+  for(s <- sources) {
+    val filename = s._1
     lexiconNames += filename
     println("Reading lexicon "+filename)
-    val source = Source.fromFile(dir+"/"+filename)
+    val source = s._2
     source.getLines().foreach{ l =>
       if(removeTrail(l).length > 2)
         setOrUpdate(removeTrail(l),filename)
@@ -95,4 +96,10 @@ class Lexicons( val dir : String, val lexicons : List[String]) {
     fullPhrase.toSeq
   }
 
+}
+
+object Lexicons {
+  def apply(dir : String, lexicons : List[String]) : Lexicons = {
+       new Lexicons(lexicons.map(x => (x,scala.io.Source.fromFile(dir + "/" + x))))
+  }
 }

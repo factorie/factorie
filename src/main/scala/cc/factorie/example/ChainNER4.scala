@@ -42,14 +42,12 @@ object ChainNER4 {
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[Label] {
       override def neighborDomain1 = LabelDomain
-      //override def statisticsDomains = Tuple1(LabelDomain)
       lazy val weights = new la.DenseTensor1(LabelDomain.size)
     },
     // Transition factors between two successive labels
     new DotTemplateWithStatistics2[Label, Label] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = LabelDomain
-      //override def statisticsDomains = ((LabelDomain, LabelDomain))
       lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
@@ -58,7 +56,6 @@ object ChainNER4 {
     new DotTemplateWithStatistics2[Label, Token] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = TokenDomain
-      //override def statisticsDomains = ((LabelDomain, TokenDomain))
       lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = throw new Error("Token values shouldn't change")
@@ -78,18 +75,18 @@ object ChainNER4 {
     val testSentences = load(args(1))
 
     // Get the variables to be inferred
-    val trainLabels = trainSentences.flatMap(_.links.map(_.label)).take(30000)
-    val testLabels = testSentences.flatMap(_.links.map(_.label)).take(2000)
+    val trainLabels = trainSentences.flatMap(_.links.map(_.label)).take(50000) //.take(30000)
+    val testLabels = testSentences.flatMap(_.links.map(_.label))//.take(2000)
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
-/*
+
     // Add features from next and previous tokens 
-    println("Adding offset features...")
+    // println("Adding offset features...")
     allTokens.foreach(t => {
       if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
-*/
-    println("Using "+TokenDomain.dimensionSize+" observable features.")
+
+    // println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Print some significant features
     //println("Most predictive features:")
@@ -104,21 +101,21 @@ object ChainNER4 {
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent(model))
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.MIRA)
 
-    //val learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
-    //val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
-    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA())
+    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective) {temperature=0.1}, new cc.factorie.optimize.AROW(model))
+    //val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective), new cc.factorie.optimize.AdaGrad(rate=1.0))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.ConfidenceWeighting(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
     val predictor = new IteratedConditionalModes[Label](model, null) //new GibbsSampler(model, objective) { temperature = 0.2 } //new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
     for (i <- 1 to 3) {
-      println("Iteration "+i) 
-      //learner.processAll(trainLabels)
+      // println("Iteration "+i)
       learner.processContexts(trainLabels)
-      trainLabels.take(50).foreach(printLabel _); println; println
-      printDiagnostic(trainLabels.take(400))
-      predictor.processAll(testLabels)
-      println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      println ("Test  accuracy = "+ objective.accuracy(testLabels))
+      predictor.processAll(testLabels); predictor.processAll(trainLabels)
+      // trainLabels.take(20).foreach(printLabel _); println; println
+      // printDiagnostic(trainLabels.take(400))
+      //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
+      //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
+      // println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      // println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     if (false) {
       // Use BP Viterbi for prediction
@@ -137,11 +134,11 @@ object ChainNER4 {
       }
     } else {
       // Use VariableSettingsSampler for prediction
-      predictor.temperature *= 0.1
+      //predictor.temperature *= 0.1
       predictor.processAll(testLabels, 2)
     }
     println ("Final Test  accuracy = "+ objective.accuracy(testLabels))
-    println("norm " + model.weightsTensor.twoNorm)
+    //println("norm " + model.weightsTensor.twoNorm)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
     
     //for (sentence <- testSentences) BP.inferChainMax(sentence.asSeq.map(_.label), model); println ("MaxBP Test accuracy = "+ objective.accuracy(testLabels))

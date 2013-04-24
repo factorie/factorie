@@ -111,9 +111,9 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 }
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.MIRA) extends optimize.Trainer[Model] {
+class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[Model] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
-  def this(sampler:ProposalSampler[C]) = this(sampler.model, sampler, new optimize.MIRA)
+  def this(sampler:ProposalSampler[C]) = this(sampler.model, sampler, new optimize.AdaGrad)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
@@ -121,7 +121,7 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    

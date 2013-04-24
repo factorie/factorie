@@ -76,8 +76,8 @@ object DocumentClassifier2 {
     var testVariables = testSet.map(_ label)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
-    println(model)
-    println(model.factors(Seq(trainVariables.head)))
+    //println(model)
+    //println(model.factors(Seq(trainVariables.head)))
 
     // Train and test
     val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new MIRA)
@@ -85,9 +85,9 @@ object DocumentClassifier2 {
     for (i <- 0 until 10) {
       learner.processContexts(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))
-      println ("Test  accuracy = "+ HammingObjective.accuracy(testVariables))
     }
+    println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))
+    println ("Test  accuracy = "+ HammingObjective.accuracy(testVariables))
 
   }
 }

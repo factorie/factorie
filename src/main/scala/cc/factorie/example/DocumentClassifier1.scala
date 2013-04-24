@@ -55,14 +55,14 @@ object DocumentClassifier1 {
     }
     
     val infogains = new classify.InfoGain(docLabels)
-    println(infogains.top(20).mkString(" "))
-    println()
+    //println(infogains.top(20).mkString(" "))
+    //println()
     val plig = new classify.PerLabelInfoGain(docLabels)
-    for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))
-    println()
+    //for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))
+    //println()
     val pllo = new classify.PerLabelLogOdds(docLabels)
-    for (label <- LabelDomain) println(label.category+": "+pllo.top(label, 20))
-    println()
+    //for (label <- LabelDomain) println(label.category+": "+pllo.top(label, 20))
+    //println()
 
     // Make a test/train split
     val (trainVariables, testVariables) = docLabels.shuffle.split(0.5)
@@ -78,9 +78,9 @@ object DocumentClassifier1 {
     for (i <- 0 until 10) {
       learner.processContexts(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ objective.accuracy(trainVariables))
-      println ("Test  accuracy = "+ objective.accuracy(testVariables))
     }
+    println ("Train accuracy = "+ objective.accuracy(trainVariables))
+    println ("Test  accuracy = "+ objective.accuracy(testVariables))
 
   }
 }

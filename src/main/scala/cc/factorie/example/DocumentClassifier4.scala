@@ -60,7 +60,7 @@ object DocumentClassifier4 {
         docLabels += new Document(file).label
       }
     }
-    println("Read "+docLabels.size+" documents, having vocabulary size "+DocumentDomain.dimensionSize)
+    // println("Read "+docLabels.size+" documents, having vocabulary size "+DocumentDomain.dimensionSize)
 
     // Make a test/train split
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
@@ -83,9 +83,9 @@ object DocumentClassifier4 {
     val trainTrial = new classify.Trial[Label](classifier)
     trainTrial ++= trainLabels
 
-    println("Train accuracy = " + trainTrial.accuracy)
-    println("Test  accuracy = " + testTrial.accuracy)
-    println("Number of ms to train/test: " + (System.currentTimeMillis - start))
+    // println("Train accuracy = " + trainTrial.accuracy)
+    // println("Test  accuracy = " + testTrial.accuracy)
+    // println("Number of ms to train/test: " + (System.currentTimeMillis - start))
     
     // Print highest weights
 //    val weights = classifier.asInstanceOf[classify.ModelBasedClassifier[Label]].model.asInstanceOf[classify.LogLinearModel[Label,Document]].evidenceTemplate.weights

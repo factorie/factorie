@@ -123,7 +123,7 @@ object WordSegmenterDemo {
       }
       sentence
     }
-    println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
+    // println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
 
     // Make a test/train split
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
@@ -132,14 +132,14 @@ object WordSegmenterDemo {
     //var sampler = new VariableSettingsSampler[Label](model); val predictor = new SamplingMaximizer(sampler)
     val predictor = new IteratedConditionalModes[Label](model)
     
-    println ("Read "+(trainVariables.size+testVariables.size)+" characters")
-    println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
+    // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
+    // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     (trainVariables ++ testVariables).foreach(_.setRandomly())
     println ("Initial train accuracy = "+ objective.accuracy(testVariables))
     println ("Initial test  accuracy = "+ objective.accuracy(testVariables))
     
     val exampleFactors = model.factors(trainVariables.tail.head)
-    println("Example Factors: "+exampleFactors.mkString(", "))
+    // println("Example Factors: "+exampleFactors.mkString(", "))
     //println("Example Factors score: "+exampleFactors.map(_.score).sum)
   
     // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
@@ -161,9 +161,9 @@ object WordSegmenterDemo {
 //    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
     val learner = new optimize.SGDTrainer(model, maxIterations = 15, optimizer = new optimize.AdaGrad(rate = 0.1))
     //learner.learningRate = 1.0
-    println("Pre-training:")
-    println("Train accuracy = "+ objective.accuracy(trainVariables))
-    println("Test  accuracy = "+ objective.accuracy(testVariables))
+    // println("Pre-training:")
+    // println("Train accuracy = "+ objective.accuracy(trainVariables))
+    // println("Test  accuracy = "+ objective.accuracy(testVariables))
     for (i <- 0 until 25) {
       learner.processExamples(trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_)))
 //      learner.processExamples(trainVariables.map(tv => new optimize.DiscreteLikelihoodExample(tv)))
@@ -172,9 +172,6 @@ object WordSegmenterDemo {
       predictor.processAll(testVariables)
       //sampler.processAll(testVariables, 2)
       //sampler.temperature *= 0.8
-      println("Train accuracy = "+ objective.accuracy(trainVariables))
-      println("Test  accuracy = "+ objective.accuracy(testVariables))
-      println()
       if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
     }
     //println ("Setting weights to average")
@@ -189,7 +186,7 @@ object WordSegmenterDemo {
 
     // Show the parameters
     //model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weights.toList))
-    println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
+    //println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
     
     //model.save("/Users/mccallum/tmp/wordsegmenter.factorie")
   }

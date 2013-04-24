@@ -54,6 +54,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   override def dimensionDomain: CategoricalDomain[C] = this
   @inline final override def length = _elements.length
   def value(category:C): Value = {
+    if (category == null) throw new Error("Null is not a valid category.")
     if (_frozen) _indices.getOrElse(category, null.asInstanceOf[Value])
     else {
       if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
@@ -188,7 +189,7 @@ class CategoricalDomainCubbie[T](val cd: CategoricalDomain[T]) extends Cubbie {
       if (key == "size") Some(cd.size)
       else if (key == "frozen") Some(cd.frozen)
       else if (key == "categories") Some(cd.categories)
-      else None
+      else None //{ println("CategoricalDomainCubbie.get key="+key); None }
     def iterator: Iterator[(String, Any)] = List("size", "frozen", "categories").map(s => (s, get(s).get)).iterator
   })
 }

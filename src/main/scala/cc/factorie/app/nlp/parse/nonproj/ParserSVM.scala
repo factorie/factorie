@@ -27,14 +27,18 @@ object ParserSVM {
 class ParserSVM extends Parser with ParserImpl {
   
   def getEmptyModel(): Model = new TemplateModel(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](lTof, DecisionDomain, NonProjParserFeaturesDomain))
-  
-  def load(folder: File, gzip: Boolean): ParserClassifier = {
+
+  def save(c: ParserClassifier, folder: File, gzip: Boolean) { save(c, folder, gzip, false) }
+
+  def load(file: File, gzip: Boolean) = load(file, gzip, false)
+
+  def load(folder: File, gzip: Boolean, doubleGzip: Boolean): ParserClassifier = {
     val c = new BaseParserClassifier(new ModelBasedClassifier(getEmptyModel(), DecisionDomain))
-    c.load(folder, gzip)
+    c.load(folder, gzip, doubleGzip)
     c
   }
   
-  def save(c: ParserClassifier, folder: File, gzip: Boolean): Unit = c.asInstanceOf[BaseParserClassifier].save(folder, gzip)
+  def save(c: ParserClassifier, folder: File, gzip: Boolean, doubleGzip: Boolean): Unit = c.asInstanceOf[BaseParserClassifier].save(folder, gzip, doubleGzip)
   
   def train[B <: ParseDecisionVariable](vs: Seq[B]): ParserClassifier = {
     val backingClassifier = (new SVMTrainer(parallel = true)).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)).asInstanceOf[ModelBasedClassifier[ParseDecisionVariable]]

@@ -204,12 +204,7 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) ext
   def isConverged: Boolean = false
 }
 
-// This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
-class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
-  var HSq: Tensor = null
-  var sumGs: Tensor = null
-  var t = 0
-
+object DualAveraging {
   @inline final def truncate(x0: Double, l1: Double): Double = {
     if (x0 > l1)
       x0-l1
@@ -217,7 +212,15 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var del
       x0+l1
     else 0.0
   }
+}
 
+// This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
+class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
+  var HSq: Tensor = null
+  var sumGs: Tensor = null
+  var t = 0
+
+  import DualAveraging.truncate
   var printed = false
 
   def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
@@ -241,8 +244,8 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var del
             if (gArr(i) != 0) {
               hArr(i) += gArr(i) * gArr(i)
               sgArr(i) += gArr(i)
-              val h = math.sqrt(hArr(i)) + delta
-              val t1 = eta / h
+              val h = (1.0/eta) *(math.sqrt(hArr(i)) + delta) + t*l2
+              val t1 = 1.0/h
               val t2 = t1 * truncate(sgArr(i), t*l1)
               wArr(i) = t2
             }
@@ -262,8 +265,8 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var del
               val idx = indices(i)
               hArr(idx) += g*g
               sgArr(idx) += g
-              val h = math.sqrt(hArr(idx)) + delta
-              val t1 = eta / h
+              val h = (1.0/eta)*(math.sqrt(hArr(idx)) + delta) + t*l2
+              val t1 = 1.0 / h
               val t2 = t1 * truncate(sgArr(idx), t*l1)
               wArr(idx) = t2
             }
@@ -272,7 +275,7 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var del
         case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
           if (!printed) {
             printed = true
-            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
+            println("AdaradDualAveaging: no implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
               gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
           }
           var i = 0
@@ -285,8 +288,8 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var rate: Double = 1.0, var del
               val idx = indices(i)
               hSq(idx) += g*g
               sGs(idx) += g
-              val h = math.sqrt(hSq(idx)) + delta
-              val t1 = eta / h
+              val h = (1.0/eta)*(math.sqrt(hSq(idx)) + delta) + t*l2
+              val t1 = 1.0 / h
               val t2 = t1 * truncate(sGs(idx), t*l1)
               w(idx) = t2
             }
