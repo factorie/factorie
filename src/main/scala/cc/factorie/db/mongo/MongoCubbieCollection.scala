@@ -28,6 +28,14 @@ trait AbstractCubbieCollection[+C <: Cubbie] extends Iterable[C] {
   def findByIds(ids: Seq[Any]): Iterator[C]
 
   /**
+   * Find all cubbies for which the id is within the given set of ids.
+   * @param id the id of the object to find.
+   * @param values the sequence of values the attribute can be in.
+   * @return all cubbies in this collection which have one of the provided ids.
+   */
+  def findById(id:Any):Iterator[C]
+
+  /**
    * Find all cubbies for which the attribute/slot with the given name has a value
    * within the provided sequence of values.
    * @param name the name of the attribute.
@@ -237,6 +245,10 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
 
   def findByIds(ids: Seq[Any]) = {
     query(new MongoCubbie(_).idsIn(ids))
+  }
+
+  def findById(id: Any) = {
+    query(new MongoCubbie(_).idIs(id))
   }
 
   def findBySlot[T](field: (C) => Cubbie#Slot[T], values: Seq[T]) = {

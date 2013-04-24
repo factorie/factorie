@@ -5,6 +5,8 @@ import collection.mutable.{ArrayBuffer,HashMap}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
+import cc.factorie.app.topics.lda.LDA
+import java.text.SimpleDateFormat
 
 /*
 object CiteSeeRLabeledDataLoader{
@@ -30,6 +32,16 @@ object RexaCitationLoader{
   var numAuthorsSkipped = 0
   var numAuthorsProcessed = 0
   var numPapersSkipped = 0
+
+  def getFileNames(file:File):Seq[String] ={
+    val result = new ArrayBuffer[String]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    var lineCount = 0
+    while(line!=null){result += line;line=reader.readLine}
+    result
+  }
+
   def loadFromList(file:File):Seq[PaperEntity] ={
     numPapers = 0
     numReferences = 0
@@ -64,19 +76,41 @@ object RexaCitationLoader{
       val content = doc.getElementsByTagName("content")
       if(content.getLength==1){
         val contentChildren = content.item(0).getChildNodes
+        var paperOpt:Option[PaperEntity] = None
         for(i<-0 until contentChildren.getLength){
           val contentType = contentChildren.item(i).getNodeName
-          val contentFieldNodes = contentChildren.item(i).getChildNodes
+          //val contentFieldNodes = contentChildren.item(i).getChildNodes
           if(contentType == "headers"){
-            val paper = processPaper(contentChildren.item(i))
-            result += paper
+            val id = contentChildren.item(i).getAttributes.getNamedItem("headerID").getNodeValue
+            paperOpt = processPaper(contentChildren.item(i))
+            for(paper<-paperOpt){
+              //paper.setId(id)
+              result += paper
+            }
             numPapers += 1
           }
+        }
+        for(i<-0 until contentChildren.getLength){
+          val contentType = contentChildren.item(i).getNodeName
           if(contentType == "biblio"){
+            val contentFieldNodes = contentChildren.item(i).getChildNodes
+            //if(paper==null)throw new Exception("Error: the assumption that headers come before bibliography in XML is violated, rethink the design of the loader and try again. File: "+file.getAbsolutePath())
             for(j<-0 until contentFieldNodes.getLength){
               val biblioNode = contentFieldNodes.item(j)
-              result += processPaper(biblioNode,true)
-              numReferences += 1
+              if(biblioNode.getNodeName == "reference"){
+                //println("file: "+file.getAbsolutePath)
+                //println("biblion: "+biblioNode.getNodeName)
+                //if(biblioNode.getAttributes.getNamedItem("refID")==null)println("ERROR NULLL REFID: "+file.getAbsolutePath)
+                val id = biblioNode.getAttributes.getNamedItem("refID").getNodeValue
+                //println("ID: "+id)
+                val paperCitationOpt = processPaper(biblioNode)
+                for(paperCitation<-paperCitationOpt){
+                  //paperCitation.setId(id)
+                  paperCitation.citedBy=paperOpt
+                  result += paperCitation
+                  numReferences += 1
+                }
+              }
             }
           }
         }
@@ -84,7 +118,12 @@ object RexaCitationLoader{
     }
     result
   }
-  protected def processPaper(paperNode:Node, ref:Boolean=false):PaperEntity ={
+  lazy val dateUpperBound = new SimpleDateFormat("yyyy").format(System.currentTimeMillis).toInt+1;////2014//(new com.sun.jmx.snmp.Timestamp(System.currentTimeMillis)).getDate.getYear+1
+  lazy val dateLowerBound = 1900
+  def validDateRange(year:Int):Boolean=(year<=dateUpperBound && year>=dateLowerBound)
+  def setYearIfValid(paper:PaperEntity,year:Int):Unit = if(validDateRange(year))paper.year.set(year)(null)
+
+  protected def processPaper(paperNode:Node):Option[PaperEntity] ={
     val paperAttributeNodes = paperNode.getChildNodes
     val paper = new PaperEntity("",true)
     for(j <- 0 until paperAttributeNodes.getLength){
@@ -92,7 +131,24 @@ object RexaCitationLoader{
       val text = paperAttributeNodes.item(j).getTextContent
       name match{
         case "title" => {paper.title := text.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")}
-        case "date" => {} //more than a year, e.g., September 21, 2006
+        case "date" => {
+          var riskyString:Boolean = text.matches("\\([0-9]+\\), [0-9]+")
+          val yearRegex="[0-9][0-9][0-9][0-9]"
+          if(!riskyString){
+            if(text.matches(yearRegex)){
+              setYearIfValid(paper,text.toInt)
+            }else{
+              for(tok <- text.split("[^0-9']+")){
+                if(tok.matches("'[4-9][0-9]"))setYearIfValid(paper,(("19"+tok.substring(1,tok.length)).toInt))
+                else if(tok.matches("'[0-1][0-9]"))setYearIfValid(paper,(("20"+tok.substring(1,tok.length)).toInt))
+              }
+              for(tok <- text.split("[^0-9-]+"))if(tok.matches(yearRegex))setYearIfValid(paper,tok.toInt)
+            }
+          }
+          //println("Found year: "+text+" extracted: "+paper.year.intValue)
+        } //more than a year, e.g., September 21, 2006
+        case "institution" => paper.affiliations += text
+        case "email" => paper.emails += text
         case "authors" => {
           paperAttributeNodes.item(j).getChildNodes
           val authorNodes = paperAttributeNodes.item(j).getChildNodes
@@ -111,12 +167,11 @@ object RexaCitationLoader{
         }
         case "note" => {}
         case "address" =>{}
-        case "institution" => {}
         case "abstract" => {}
         case _ => {}
       }
     }
-    paper
+    if(paper.title.value!=null && paper.title.value.length>0)Some(paper) else None
   }
   protected def getAuthor(authorNode:Node):Option[AuthorEntity] ={
     val authorFields = authorNode.getChildNodes
@@ -400,7 +455,7 @@ object BibReader{
       //result += paperEntity
       val entryType = entry.ty
       //val authors = new ArrayBuffer[AuthorEntity]
-      if(useKeysAsIds)paperEntity._id = entry.citationKey
+      if(useKeysAsIds)paperEntity.setId(entry.citationKey)
       if(loadAuthors){
         var authorCount = 0
         for(author <- entry.authors.getOrElse(Nil)){
@@ -829,6 +884,27 @@ object DBLPLoader{
         case "volume" => {}
         case _ => {}
       }
+    }
+  }
+}
+object BibFeatures{
+  var totalPapers=0
+  def decorate(papers:Iterable[PaperEntity],ldaOpt:Option[LDA]):Unit ={
+    papers.foreach(_.authors.foreach((a:AuthorEntity)=>EntityUtils.reExtractNames(a.fullName)))
+    for(p <- papers)FeatureUtils.addFeatures(p)
+    for(p <- papers){FeatureUtils.extractEmails(p);FeatureUtils.extractAffiliations(p)}
+    totalPapers += papers.size
+    println("Total papers: "+totalPapers)
+    println("  Emails: num papers: "+FeatureUtils.emailTotalCount)
+    println("  Emails: num papers with exact email/author size matches: "+FeatureUtils.emailExactSizeCount)
+    println("  Affiliations: num papers with affiliations: "+FeatureUtils.affiliationTotalCount)
+    println("  Affiliations: num papers with exact affiliations/author size matches: "+FeatureUtils.affiliationExactSizeCount)
+    for(lda<-ldaOpt)LDAUtils.inferTopicsForPapers(papers,lda)
+    for(p<-papers){
+      //p.promotedMention.set(p.id)(null)
+      //addFeatures(p)
+      for(a<-p.authors)FeatureUtils.addFeatures(a)
+      for(i<-0 until p.authors.size)p.authors(i)._id=p.id+"-"+i
     }
   }
 }

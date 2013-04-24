@@ -19,6 +19,9 @@ trait BibEntity{
   var dataSource:String=""
   var paperMentionId:String=null
   var rootIdOpt:Option[String] = None
+  var isMoveable=true
+  //TODO: modiy the sampler to check if ismoveable is ttrue
+
 }
 class InfoBag(val entity:Entity) extends BagOfWordsVariable(Nil, null) with EntityAttr
 class ChildCountsForBag(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVariable(initialWords,initialMap)
@@ -33,7 +36,7 @@ class AuthorFMLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[Autho
   def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
 }
 class PaperTitleCanopy(val entity:PaperEntity) extends CanopyAttribute[PaperEntity]{
-  def cleanTitle(s:String) = s.toLowerCase.replaceAll("[^a-z0-9 ]","").replaceAll(" +"," ")
+  def cleanTitle(s:String) = FeatureUtils.paperHash(entity) //s.toLowerCase.replaceAll("[^a-z0-9 ]","").replaceAll(" +"," ")
   def canopyName:String = cleanTitle(entity.entityRoot.asInstanceOf[PaperEntity].title.value)
 }
 //Attributes specific to REXA authors
@@ -100,8 +103,16 @@ class TensorBagOfCoAuthors(val entity:Entity) extends BagOfWordsTensorVariable w
 class TensorBagOfKeywords(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
 
 class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention) with HasCanopyAttributes[PaperEntity] with Prioritizable with BibEntity{
-  var _id = java.util.UUID.randomUUID.toString+""
+  var _id = EntityUtils.newId//java.util.UUID.randomUUID.toString+""
+  def setId(newId:String)={
+    _id=newId
+    authors.foreach(_.paperMentionId=newId)
+  }
   override def id = _id
+  var citedBy:Option[PaperEntity] = None
+  var affiliations = new ArrayBuffer[String]
+  var emails = new ArrayBuffer[String]
+
   canopyAttributes += new PaperTitleCanopy(this)
   protected def outer:PaperEntity = this
   attr += new Title(this,s)
@@ -112,7 +123,7 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   attr += new BagOfKeywords(this)
   attr += new BagOfVenues(this)
   attr += new BagOfTitles(this)
-  attr += new PromotedMention(this, "NOT-SET")
+  attr += new PromotedMention(this, null.asInstanceOf[String])
   def title = attr[Title]
   def year = attr[Year]
   def venueName = attr[VenueName]
@@ -135,9 +146,10 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   //def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
 class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity with HumanEditMention{
-  //println("   creating author: f:"+f+" m: "+m+" l: "+l)
-  var _id = java.util.UUID.randomUUID.toString+""
+  //println("   creating author: f:"+f+" m: "+m+" l: "+l)a
+  var _id = EntityUtils.newId //java.util.UUID.randomUUID.toString+""
   override def id = _id
+  var citedBy:Option[PaperEntity] = None
   priority = random.nextDouble
   canopyAttributes += new AuthorFLNameCanopy(this)
   def entity:HierEntity = this
@@ -164,7 +176,6 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   attr += bagOfFirstNames
   attr += bagOfMiddleNames
 }
-
 object Coref{
   lazy val ldaOpt = if(ldaFileOpt==None)None else Some(LDAUtils.loadLDAModelFromAlphaAndPhi(new File(ldaFileOpt.get)))
   var ldaFileOpt:Option[String] = None
@@ -652,6 +663,23 @@ class PaperCorefModel extends CombinedModel {
   */
   //this += new StructuralPriorsTemplate(8.0,0.25)
 }
+/*
+class SelfCitationTemplate(val weight:Double=1.0) extends TupleTemplateWithStatistics2[ChildEntities,EntityRef] with DebugableTemplate{
+  val name = "EntityNamePenaltyTemplate("+weight+")"
+  println("EntityNamePenaltyTemplate("+weight+")")
+  def unroll1(children:ChildEntities) = Nil //should actually iterate over the children and unroll a factor for each, but that's expensive and this is an approximation. Actually, we'll treat this as undirected instead of directed.
+  def unroll2(parent:EntityRef) = Factor(parent.dst.childEntities,parent)//throw new Exception("Error: node's status as mention can't change.")
+  def score(children:ChildEntities#Value, parentRef:EntityRef#Value): Double ={
+    var result = 0.0
+    /*
+    Let e be the entity that encloses parentRef
+    Want: check if e.citedBy's are in children?
+     */
+    //if(setOfPossibleCiters.contains(possibleCitee))
+    result
+  }
+}
+*/
 class EntityNamePenaltyTemplate[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebugableTemplate{
   val name = "EntityNamePenaltyTemplate("+weight+")"
   println("EntityNamePenaltyTemplate("+weight+")")
@@ -2102,7 +2130,6 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
       for((oldPromotedId,newPromotedId) <- promotionChanges)changePromoted(oldPromotedId,newPromotedId)
     }
   }
-
   def add(papers:Iterable[PaperEntity]):Unit ={
     val printOut:Boolean = (papers.size>=1000)
     if(printOut)println("About to add papers to db.")
@@ -2121,6 +2148,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
       p.promotedMention.set(p.id)(null)
       //addFeatures(p)
       for(a<-p.authors)FeatureUtils.addFeatures(a)
+      for(i<-0 until p.authors.size)p.authors(i)._id=p.id+"-"+i
     }
     if(printOut)println(" done.")
     if(printOut)print("Inserting papers into DB...")

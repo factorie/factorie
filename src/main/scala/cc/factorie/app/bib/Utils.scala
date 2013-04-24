@@ -1,7 +1,7 @@
 package cc.factorie.app.bib
 import cc.factorie._
 import cc.factorie.app.nlp.coref._
-import com.mongodb.DBCollection
+import org.bson.types.ObjectId
 import collection.mutable.{HashSet, LinkedHashSet,LinkedHashMap,HashMap, ArrayBuffer}
 import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
@@ -90,18 +90,60 @@ object FeatureUtils{
     }
     (f,m,l)
   }
-
-
-
-
-  def titleHash(title:String):String = deAccent(title).toLowerCase.replaceAll("[^a-z ]","").replaceAll(" +"," ")
-  def paperHash(paper:PaperEntity):String ={
-    var result = new StringBuffer
-    result.append(limit(titleHash(paper.title.value.replaceAll("[aeiou]","")),10))
-    if(paper.authors.size>0)result.append(deAccent(firstInitialLastName(paper.authors.head)).toLowerCase)
+  def compressWord(word:String):String ={
+    var result =
+    if(word.length<=3)word
+    else{
+      //if(word.matches("[A-Z]+"))word
+      //else
+        word.substring(0,1)+word.substring(1,word.length-1).replaceAll("[AEIOUaeiou]","")+word.substring(word.length-1,word.length)
+    }
+    if(result.length==0)result=word
+    result
+  }
+  def removeRepeatedLetters(word:String):String ={
+    if(word.length<=1)return word
+    val result = new StringBuffer()
+    var oldc = word.charAt(0)
+    result.append(oldc)
+    for(i <- 1 until word.length){
+      if(word.charAt(i)!=oldc){
+        result.append(word.charAt(i))
+        oldc=word.charAt(i)
+      }
+    }
     result.toString
   }
-  def limit(s:String,size:Int):String = if(s.length>=size)s else s.substring(0,size)
+  //lazy val titleStops = {val r=new HashSet[String];r ++= List("the","a","with","using","from","by","to","of");r}
+  //val titleStops("using|with|from|the|and|of|to|by")
+  def titleHashOld(title:String):String = deAccent(title).split("[^A-Za-z0-9]").map(compressWord(_)).mkString("").toLowerCase.trim
+  def titleHash(title:String):String = removeRepeatedLetters(deAccent(title).replaceAll("[^A-Za-z0-9 ]+"," ").split("[ ]+").map(compressWord(_)).mkString("").toLowerCase.trim) //.replaceAll("[Ff]","").
+  //def titleHash(title:String):String = deAccent(title).toLowerCase.replaceAll("[^a-z0-9]","").replaceAll("[aeiou]","").replaceAll(" +"," ").trim
+  def paperHash(paper:PaperEntity):String ={
+    //TODO: filter out stop words "using/with" etc from title
+    /*
+    sri-->"", fi-->""
+    Efficient --> ecient
+    Efficient --> efcient
+ "idhar Mahadevan"
+{ "_id" : "51705d17498e162fcea5f7e3-2", "year" : 2003, "title" : "Semisupervised clustering with user feedback." }
+{ "_id" : "51705da7498e162fceaa6770-2", "year" : 2003, "title" : "Semi-supervised Clustering with User Feedback." }
+
+{ "_id" : "517060ff498e162fcec4ec10-1", "year" : 2006, "title" : "Topics over time a non-Markov continuous-time model of topical trends." }
+{ "_id" : "5170610c498e162fcec554a3-0", "year" : 2006, "title" : "Topics over Time A Non-Markov Continuous-Time Model of Topical Trends," }
+{ "_id" : "51706142498e162fcec70476-1", "year" : 2006, "title" : "Topics over time A nonmarkov continuous-time model of topical trends." }
+
+{ "_id" : "517040b130040b91033aff5d-1", "year" : 2001, "title" : "Conditional random fields Probabilistic models for segmenting and labeling sequence data." }
+{ "_id" : "5170413d30040b91033fb896-1", "year" : 2001, "title" : "Conditional Random Fields Probabilistic Models for Segmenting and Labeling Sequence Data." }
+     */
+    var result = new StringBuffer
+    result.append(limit(titleHash(paper.title.value),20))
+    if(paper.authors.size>0)result.append(removeRepeatedLetters(compressWord((deAccent(paper.authors.head.fullName.lastName).toLowerCase))))
+    //if(paper.authors.size>0)result.append(deAccent(firstInitialLastName(paper.authors.head)).toLowerCase)
+    result.toString.replaceAll("[f]","")
+  }
+  def limit(s:String,size:Int):String = if(s.length>=size)s.substring(0,size) else s//{println("size: "+size+" s.size: " + s.size);if(s.length>=size)s else s.substring(0,size)}
+
   //venue projections
   //def isInitial(s:String) = s.matches("[a-z]( [a-z])?")
   def isInitial(s:String) = (s.length==1 && s(0)>='a' && s(0)<='z') || (s.length==3 && s.charAt(1)==' ' && s(0)>='a' && s(0)<='z' && s(2)>='a' && s(2)<='z')
@@ -251,6 +293,7 @@ object FeatureUtils{
     if(author.groundTruth!=None)author.bagOfTruths += author.groundTruth.get
     val paper = author.paper
     if(paper!=null){
+      author.citedBy=paper.citedBy
       if(paper.attr[Year].intValue != -1)author.attr[Year] := paper.attr[Year].intValue
       //author.fullName.setSuffix(paper.title.value)(null)
       author.title.set(paper.title.value)(null)
@@ -280,9 +323,73 @@ object FeatureUtils{
       }
     }
   }
+  var emailExactSizeCount=0
+  var emailTotalCount=0
+  def extractEmails(paper:PaperEntity):Unit ={
+    if(paper.emails.size>0)emailTotalCount += 1
+    if(paper.authors.size == paper.emails.size){
+      for(i<-0 until paper.authors.size){
+        val author = paper.authors(i)
+        val email = paper.emails(i)
+        println(author.fullName.toString+" email: "+email)
+        emailExactSizeCount += 1
+      }
+    }
+  }
+  var affiliationExactSizeCount=0
+  var affiliationTotalCount=0
+  def extractAffiliations(paper:PaperEntity):Unit ={
+    if(paper.affiliations.size>0)affiliationTotalCount += 1
+    if(paper.authors.size == paper.affiliations.size){
+      for(i<-0 until paper.authors.size){
+        val author = paper.authors(i)
+        val affiliation = paper.affiliations(i)
+        println(author.fullName.toString+" affiliation: "+affiliation)
+        affiliationExactSizeCount += 1
+      }
+    }
+  }
+  /*
+        <email>{mhodorog, acraciun}@ieat.ro</email>
+
+
+
+              <authors>
+          <author>
+            <author-first>Andrian</author-first>
+            <author-last>Marcus 1 ,</author-last>
+          </author>
+          <author>
+            <author-first>Andrea</author-first>
+            <author-last>De Lucia</author-last>
+          </author>
+        </authors>
+        <note>2 , Jane Huffman Hayes 3 ,</note>
+        <authors>
+          <author>
+            <author-first>Denys</author-first>
+            <author-last>Poshyvanyk</author-last>
+            <note>1</note>
+          </author>
+        </authors>
+
+        <note>1</note>
+        <institution>Department of Computer Science Wayne State University</institution>
+        <address>Detroit, MI 48202 313 577 5408</address>
+        <email>amarcus@wayne.edu, denys@wayne.edu</email>
+        <note>2</note>
+        <institution>Dipart. di Matem. e Informatica Universitdi Salerno</institution>
+        <address>Via ponte don Melillo, 84084, Fisciano (SA), Italy +39 089 963376</address>
+        <email>adelucia@unisa.it</email>
+        <note>3</note>
+        <institution>Department of Computer Science University of Kentucky</institution>
+        <address>301 Rose Street Lexington, KY 40506 859 257 3171</address>
+        <email>hayes@cs.uky.edu</email>
+   */
 }
 
 object EntityUtils{
+  def newId:String = ObjectId.get().toString//java.util.UUID.randomUUID.toString+""
   val shortDecimal = new java.text.DecimalFormat("0.0#")
   def export[T<:HierEntity](file:File,es:Seq[T]):Unit ={
     printClusteringStats(es)
@@ -296,7 +403,6 @@ object EntityUtils{
     pw.flush
     pw.close
   }
-
   def checkIntegrity(entities:Iterable[HierEntity]):Unit ={
     var numZeroChildren=0
     var numOneChild=0
@@ -565,7 +671,7 @@ object EntityUtils{
     var e = entity.parentEntity
     while(e!=null){
       val evar = e.attr[EditSetVariable]
-      for(edit <- entity.attr[EditSetVariable])evar.add(edit)(d)
+      if(evar!=null)for(edit <- entity.attr[EditSetVariable])evar.add(edit)(d)
       //entity.attr[EditSetVariable].value.foreach(evar.add(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value + entity.attr[MentionCountVariable].value)(d)
       for(bag <- entity.attr.all[BagOfWordsVariable])
@@ -577,7 +683,7 @@ object EntityUtils{
     var e = formerParent
     while(e!=null){
       val evar = e.attr[EditSetVariable]
-      parting.attr[EditSetVariable].value.foreach(evar.remove(_)(d))
+      if(evar!=null)parting.attr[EditSetVariable].value.foreach(evar.remove(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value - parting.attr[MentionCountVariable].value)(d)
       for(bag <- parting.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).remove(bag.value)(d)

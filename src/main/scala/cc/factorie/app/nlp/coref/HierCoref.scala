@@ -797,7 +797,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
   protected def wasLoadedFromDB(entity:E) = _id2cubbie.contains(entity.id)
   protected def entity2cubbie(e:E):C =  _id2cubbie(e.id)
   protected def putEntityInCubbie(e:E) = {val ec=newEntityCubbie;ec.store(e);ec}
-  protected def entityCubbieColl:MutableCubbieCollection[C]
+  def entityCubbieColl:MutableCubbieCollection[C]
   protected def changePriority(e:E):Unit ={
     val oldPriority = e.priority
     //e.priority = e.priority-1.0
