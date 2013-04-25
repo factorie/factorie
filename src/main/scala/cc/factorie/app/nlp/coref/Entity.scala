@@ -18,6 +18,7 @@ import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer,LinkedList}
 import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
+import annotation.tailrec
 
 /** A pointer from a child Entity (or Mention) to its parent Entity in an coreference problem. */
 class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {
@@ -115,8 +116,9 @@ trait Entity extends Attr {
   }
   */
   def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
-  def depth:Int = depth(0)
-  def depth(d:Int):Int = if(parentEntity==null)0 else parentEntity.depth(d+1)
+  final def depth:Int = if(parentEntity eq null)0 else 1 + parentEntity.depth
+  //def depth:Int = depth(0)
+  //def depth(d:Int):Int = if(parentEntity==null)0 else parentEntity.depth(d+1)
   def getAncestor(numGenerationsBack:Int):Entity = if(numGenerationsBack==0)this else getAncestor(numGenerationsBack - 1)
 }
 
