@@ -46,7 +46,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   //def this(values:C*) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
-  private val __indices = new mutable.HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
+  private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
   def _indices = __indices
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
@@ -134,6 +134,13 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     freeze()
     origEntries.size - size
   }
+  override def freeze(): Unit = {
+    _frozen = true
+    val newMap = mutable.HashMap[C, Value]()
+    __indices.foreach(i => newMap(i._1) = i._2)
+    __indices = newMap
+  }
+
   /** Return the number of unique entries with count equal to 'c'. */
   def sizeAtCount(c:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
