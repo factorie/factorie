@@ -13,7 +13,7 @@ class POS3 extends DocumentProcessor {
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
   val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
   
-  def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string).toLowerCase
+  def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string) // .toLowerCase
 
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
@@ -173,7 +173,7 @@ class POS3 extends DocumentProcessor {
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    val numIterations = 1
+    val numIterations = 3
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
@@ -184,7 +184,7 @@ class POS3 extends DocumentProcessor {
         (0 until sentence.length).map(i => new TokenClassifierExample(sentence.tokens(i),
             if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective))
       })
-      trainer.processExamples(examples.take(1000))
+      trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap
       var total = 0.0
       var correct = 0.0
@@ -199,8 +199,8 @@ class POS3 extends DocumentProcessor {
         }
       })
       println("Accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
-      if (saveModel) serialize(modelFile+"-iter-"+trainer.iteration)
     }
+    if (saveModel) serialize(modelFile)
   }
 
   // NOTE: this method may mutate and return the same document that was passed in
@@ -212,30 +212,31 @@ class POS3 extends DocumentProcessor {
 object POS3 {
   def main(args: Array[String]) {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val modelFile = new CmdOption("model", "", "FILENAME", "model file prefix")
-      val testFile = new CmdOption("test", "", "FILENAME", "test file")
-      val trainFile = new CmdOption("train", "", "FILENAME", "train file")
-      val lrate = new CmdOption("lrate", 0.1, "FLOAT", "learning rate")
-      val decay = new CmdOption("decay", 0.01, "FLOAT", "learning rate decay")
-      val cutoff = new CmdOption("cutoff", 2, "INT", "discard features less frequent than this")
-      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "whether to update examples in later iterations")
-      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "whether to use hinge loss (or log loss)")
-      val saveModel = new CmdOption("save-model", false, "BOOL", "whether to save the model")
+      val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
+      val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
+      val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
+      val lrate = new CmdOption("lrate", 0.1, "FLOAT", "Learning rate for training.")
+      val decay = new CmdOption("decay", 0.01, "FLOAT", "Learning rate decay for training.")
+      val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
+      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
+      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
+      val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
+      val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
     }
     opts.parse(args)
-    // Expects three command-line arguments: a train file, a test file, and a place to save the model in
-    // the train and test files are supposed to be in OWPL format
-    val Pos = new POS3
-    Pos.train(opts.trainFile.value,
-      opts.testFile.value,
-      opts.modelFile.value,
-      opts.lrate.value,
-      opts.decay.value,
-      opts.cutoff.value,
-      opts.updateExamples.value,
-      opts.useHingeLoss.value,
-      opts.saveModel.value)
-    //PTBPosDomain.categories.foreach(s => println(s))    // Print all the POS tags.
+    if (opts.trainFile.wasInvoked) {
+      // Expects three command-line arguments: a train file, a test file, and a place to save the model in
+      // the train and test files are supposed to be in OWPL format
+      val Pos = new POS3
+      Pos.train(opts.trainFile.value, opts.testFile.value, opts.modelFile.value,
+                opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, opts.saveModel.value)
+    } else if (opts.runText.wasInvoked) {
+      val pos = new POS3
+      pos.deSerialize(opts.modelFile.value)
+      val doc = cc.factorie.app.nlp.LoadPlainText.fromFile(new java.io.File(opts.runText.value), segmentSentences=true)
+      pos.process(doc)
+      println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
+    }
   }
 
   def load(name: String): ClassifierPos = {
