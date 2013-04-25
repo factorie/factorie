@@ -25,19 +25,33 @@ trait MeanField {
 }
 
 /** Performs naive mean field inference with a Q Summary that is a set of independent Discrete distributions */
-class DiscreteMeanField[V<:DiscreteVariable](val model:Model, val summary:DiscreteSummary1[V]) extends MeanField {
+class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSummary1[V]) extends MeanField {
   def this(vs:Iterable[V], model:Model) = this(model, new DiscreteSummary1(vs))
   def updateQ(d:V): Unit = {
     val marginal = summary.marginal(d)
     val p = marginal.proportions
     val distribution = new cc.factorie.la.DenseTensor1(p.size)
-    for (i <- 0 until p.size) {
-      val diff = new DiffList
-      d.set(i)(diff)
-      val factors = model.factors(diff)
-      // Inefficient to have this in inner loop; but what is the alternative?
-      //if (factors.flatMap(_.variables).exists(v => summary.marginal(v) != None)) throw new Error("Not yet implemented neighboring mean fields")
-      distribution(i) = diff.scoreAndUndo(model)
+    for (f <- model.factors(d)) {
+      val vars = (f.variables.toSet - d).intersect(summary.variableSet.asInstanceOf[Set[Var]]).toSeq
+      for (value <- 0 until d.domain.size) {
+        if (vars.length == 0) {
+          distribution(value) += f.assignmentScore(new Assignment1[V](d, d.domain(value).asInstanceOf[V#Value]))
+        } else if (vars.length == 1) {
+          val v0 = vars.head
+          val m0 = summary.marginal(v0)
+          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size) {
+            distribution(value) += m0.proportions(value0) * f.assignmentScore(new Assignment2[V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value]))
+          }
+        } else if (vars.length == 2) {
+          val v0 = vars.head
+          val m0 = summary.marginal(v0)
+          val v1 = vars(1)
+          val m1 = summary.marginal(v1)
+          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size; value1 <- 0 until v1.domain.asInstanceOf[DiscreteDomain].size) {
+            distribution(value) += m0.proportions(value0) * m1.proportions(value1) * f.assignmentScore(new Assignment3[V,V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value], v1.asInstanceOf[V], v1.domain.asInstanceOf[DiscreteDomain](value1).asInstanceOf[V#Value]))
+          }
+        } else throw new Error("Mean field currently doesn't work on factors with 3 or more varying neighbors. " + f.getClass.getName)
+      }
     }
     distribution.expNormalize()
     p.masses := distribution
@@ -45,11 +59,12 @@ class DiscreteMeanField[V<:DiscreteVariable](val model:Model, val summary:Discre
   def updateQ: Unit = summary.variables.foreach(updateQ(_))
 }
 
-class InferByMeanField {
-  def inferencer[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
-  def apply[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
+object InferByMeanField extends Infer {
+  def inferencer[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
+  def apply[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
-    for (i <- 0 until 50) inf.updateQ // TODO Replace with a proper convergence criterion!!!
+    for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
 }

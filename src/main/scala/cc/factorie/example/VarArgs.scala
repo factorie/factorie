@@ -75,8 +75,8 @@ object VarArgsDemo {
     val x3 = new X(8); for (i <- 1 to 5) x1.addY(i)
     val x4 = new X(9); for (i <- 1 to 6) x1.addY(i)
 
-    println(model.factors(Seq(x1)))
-    println(model.factors(List(x1,x2,x3,x4)))
-    println(model.factors(Seq(x1)).head.currentScore)
+//    println(model.factors(Seq(x1)))
+//    println(model.factors(List(x1,x2,x3,x4)))
+//    println(model.factors(Seq(x1)).head.currentScore)
   }
 }

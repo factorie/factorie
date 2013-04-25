@@ -38,7 +38,7 @@ object Cards4 {
 
     val summary = new DiscreteSummary1[BooleanVar](List(jane.wins))
     val sampler = new VariableSettingsSampler[Card](model) {
-      override def postProcessHook(c:Card, d:DiffList): Unit = if (iterationCount % 500 == 0) println(jane.cardsHere.sorted.toString+"  wins="+jane.wins.value)
+      // override def postProcessHook(c:Card, d:DiffList): Unit = if (iterationCount % 500 == 0) println(jane.cardsHere.sorted.toString+"  wins="+jane.wins.value)
     } 
     val inferencer = new SamplingInferencer(sampler, summary)
     inferencer.process(cards, iterations = 10000, thinning = 100, burnIn = 1)

@@ -79,25 +79,25 @@ object ChainNER2b {
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
     // Add features from next and previous tokens
-    println("Adding offset features...")
+    // println("Adding offset features...")
     allTokens.foreach(t => {
       if (t.label.hasPrev) t ++= t.label.prev.token.activeCategories.filter(!_.contains('@')).map(_+"@-1")
       if (t.label.hasNext) t ++= t.label.next.token.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
-    println("Using "+TokenDomain.dimensionSize+" observable features.")
+    // println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Train and test
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new StepwiseGradientAscent)
     val predictor = new VariableSettingsSampler[Label](model)
     for (i <- 1 to 4) {
-      println("Iteration "+i) 
+      //println("Iteration "+i)
       learner.processContexts(trainLabels)
-      trainLabels.take(50).foreach(printLabel _); println; println
-      printDiagnostic(trainLabels.take(400))
+      // trainLabels.take(50).foreach(printLabel _); println; println
+      // printDiagnostic(trainLabels.take(400))
       predictor.processAll(testLabels)
-      println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      println ("Test  accuracy = "+ objective.accuracy(testLabels))
+      //println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      //println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     predictor.temperature *= 0.1 // Be more greedy in inference
     repeat(2) { 

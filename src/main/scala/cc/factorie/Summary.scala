@@ -16,7 +16,8 @@ package cc.factorie
 import cc.factorie.generative._
 
 /** The result of inference: a collection of Marginal objects. */
-trait Summary[+M<:Marginal] {
+trait
+Summary[+M<:Marginal] {
   def marginals: Iterable[M]
   def marginal(vs:Var*): M // TODO Think carefully about how order of arguments should not matter.
   def getMarginal(vs:Var*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) }
@@ -71,9 +72,10 @@ class AssignmentSummary(val assignment:Assignment) extends Summary[Assignment] {
 class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarginal1[V]] {
   def this(vs:Iterable[V]) = { this(); ++=(vs) }
   //val variableClass = m.erasure
-  protected val _marginals1 = new scala.collection.mutable.HashMap[V,DiscreteMarginal1[V]]
+  val _marginals1 = new scala.collection.mutable.HashMap[V,DiscreteMarginal1[V]]
   def marginals = _marginals1.values
   def variables = _marginals1.keys
+  lazy val variableSet = variables.toSet
   def marginal1(v1:V) = _marginals1(v1)
   def marginal(vs:Var*): DiscreteMarginal1[V] = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter

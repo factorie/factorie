@@ -24,16 +24,19 @@ class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
 }
 */
 trait BibCubbie extends Cubbie{
+  val rootId = new StringSlot("rootid")
   //  var dataSource:String=""
   //var paperMentionId:String=null
   //val dataSource = StringSlot("ds")
   //val pid = StringSlot("pid")
   val pid = RefSlot("pid", () => new PaperCubbie)
   def storeBibAttributes(e:BibEntity):Unit ={
+    for(rid <- e.rootIdOpt)rootId := rid
     //dataSource := e.dataSource
     //pid := e.pid
   }
   def fetchBibAttributes(e:BibEntity):Unit ={
+    if(rootId.isDefined)e.rootIdOpt = Some(rootId.value)
     //if(dataSource.isDefined)e.dataSource = dataSource.value
     //if(pid.isDefined)e.paperMentionId = pid.value.toString
   }
@@ -51,8 +54,9 @@ trait BibEntityCubbie[E<:HierEntity with HasCanopyAttributes[E] with Prioritizab
 }
 class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
   protected var _author:AuthorEntity=null
- val index = IntSlot("idx")
+  val index = IntSlot("idx")
   val title = StringSlot("title")
+  val citedBy = new RefSlot("cby",() => newEntityCubbie) //todo: should be a "RefListSlot"
   val firstName = StringSlot("fn")
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
@@ -77,20 +81,22 @@ class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
 //  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
     super.fetch(e)
-    e.attr[FullName].setFirst(firstName.value)(null)
-    e.attr[FullName].setMiddle(middleName.value)(null)
-    e.attr[FullName].setLast(lastName.value)(null)
-    e.attr[FullName].setSuffix(suffix.value)(null)
+    if(firstName.isDefined)e.attr[FullName].setFirst(firstName.value)(null)
+    if(middleName.isDefined)e.attr[FullName].setMiddle(middleName.value)(null)
+    if(lastName.isDefined)e.attr[FullName].setLast(lastName.value)(null)
+    if(suffix.isDefined)e.attr[FullName].setSuffix(suffix.value)(null)
     //e.attr[FullName].setNickName(nickName.value)(null)
-    e.attr[BagOfTopics] ++= topics.value.fetch
-    e.attr[BagOfVenues] ++= venues.value.fetch
-    e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
-    e.attr[BagOfKeywords] ++= keywords.value.fetch
-    e.attr[BagOfEmails] ++= emails.value.fetch
-    e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
-    e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
+    if(topics.isDefined) e.attr[BagOfTopics] ++= topics.value.fetch
+    if(venues.isDefined) e.attr[BagOfVenues] ++= venues.value.fetch
+    if(coauthors.isDefined) e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
+    if(keywords.isDefined) e.attr[BagOfKeywords] ++= keywords.value.fetch
+    if(emails.isDefined) e.attr[BagOfEmails] ++= emails.value.fetch
+    if(firstNameBag.isDefined) e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
+    if(middleNameBag.isDefined) e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
     if(year.isDefined)e.attr[Year] := year.value
     if(title.isDefined)e.attr[Title].set(title.value)(null)
+    //if(citedBy.isDefined)e.citedBy=Some(citedBy.value)
+
     //
 //    e.attr[TensorBagOfTopics] ++= topicsTensor.value.fetch
 //    e.attr[TensorBagOfVenues] ++= venuesTensor.value.fetch
@@ -117,6 +123,7 @@ class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
     middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
     year := e.attr[Year].intValue
     title := e.attr[Title].value
+    if(e.citedBy != None)citedBy := e.citedBy.get.id
 
     //
 //    topicsTensor := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
@@ -128,7 +135,7 @@ class AuthorCubbie extends BibEntityCubbie[AuthorEntity] {
     this.id=e.id
     //println("pid: "+e.paperMentionId)
     if(e.paperMentionId != null)pid := e.paperMentionId
-    if(!e.isObserved && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
+//    if(!e.isObserved && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
     //if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
   def author:AuthorEntity=_author
@@ -146,10 +153,12 @@ class EssayCubbie extends Cubbie {
 // Articles, Patents, Proposals,...
 class PaperCubbie extends EssayCubbie with BibEntityCubbie[PaperEntity] {
   protected var _paper:PaperEntity=null
+  val citedBy = new RefSlot("cby",() => newEntityCubbie) //todo: should be a "RefListSlot"
   val authors = new CubbieSlot("authors", () => new BagOfWordsCubbie)
   val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
   val venueBag = new CubbieSlot("venueBag", () => new BagOfWordsCubbie)
   val institution = StringSlot("institution")
+  val emails = StringSlot("emails")
   val venue = StringSlot("venue") // booktitle, journal,...
   val series = StringSlot("series")
   val year = IntSlot("year")
@@ -180,11 +189,14 @@ class PaperCubbie extends EssayCubbie with BibEntityCubbie[PaperEntity] {
     e.attr[Title] := title.value
     e.dataSource = dataSource.value
     e._id = this.id.toString
+    //if(institution.isDefined)e.institutionString = institution.value
+    //if(emails.isDefined)e.emailString = emails.value
+//    if(citedBy.isDefined)e.citedBy=Some(citedBy.value)
   }
   override def store(e:PaperEntity) ={
     super.store(e)
     if(e.promotedMention.value!=null)pid := e.promotedMention.value
-    if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
+    //if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
     topics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
     authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     venueBag := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
@@ -194,6 +206,9 @@ class PaperCubbie extends EssayCubbie with BibEntityCubbie[PaperEntity] {
     title := e.attr[Title].value
     dataSource := e.dataSource
     this.id=e.id
+    if(e.citedBy != None)citedBy := e.citedBy.get.id
+    //if(e.institutionString!=null)institution := e.institutionString
+    //if(e.emailString!=null)emails := e.emailString
   }
 }
 class BibTeXCubbie{

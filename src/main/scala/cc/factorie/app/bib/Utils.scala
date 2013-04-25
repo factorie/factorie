@@ -1,8 +1,8 @@
 package cc.factorie.app.bib
+import cc.factorie._
 import cc.factorie.app.nlp.coref._
-import com.mongodb.DBCollection
-import cc.factorie.db.mongo.MutableCubbieCollection
-import collection.mutable.{HashSet, HashMap, ArrayBuffer}
+import org.bson.types.ObjectId
+import collection.mutable.{HashSet, LinkedHashSet,LinkedHashMap,HashMap, ArrayBuffer}
 import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
 import cc.factorie.app.topics.lda.{Document, LDA,SparseLDAInferencer}
@@ -11,6 +11,8 @@ import cc.factorie.generative.GenerativeModel._
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
+import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
+import collection.mutable
 
 object Utils{
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
@@ -88,18 +90,60 @@ object FeatureUtils{
     }
     (f,m,l)
   }
-
-
-
-
-  def titleHash(title:String):String = deAccent(title).toLowerCase.replaceAll("[^a-z ]","").replaceAll(" +"," ")
-  def paperHash(paper:PaperEntity):String ={
-    var result = new StringBuffer
-    result.append(limit(titleHash(paper.title.value.replaceAll("[aeiou]","")),10))
-    if(paper.authors.size>0)result.append(deAccent(firstInitialLastName(paper.authors.head)).toLowerCase)
+  def compressWord(word:String):String ={
+    var result =
+    if(word.length<=3)word
+    else{
+      //if(word.matches("[A-Z]+"))word
+      //else
+        word.substring(0,1)+word.substring(1,word.length-1).replaceAll("[AEIOUaeiou]","")+word.substring(word.length-1,word.length)
+    }
+    if(result.length==0)result=word
+    result
+  }
+  def removeRepeatedLetters(word:String):String ={
+    if(word.length<=1)return word
+    val result = new StringBuffer()
+    var oldc = word.charAt(0)
+    result.append(oldc)
+    for(i <- 1 until word.length){
+      if(word.charAt(i)!=oldc){
+        result.append(word.charAt(i))
+        oldc=word.charAt(i)
+      }
+    }
     result.toString
   }
-  def limit(s:String,size:Int):String = if(s.length>=size)s else s.substring(0,size)
+  //lazy val titleStops = {val r=new HashSet[String];r ++= List("the","a","with","using","from","by","to","of");r}
+  //val titleStops("using|with|from|the|and|of|to|by")
+  def titleHashOld(title:String):String = deAccent(title).split("[^A-Za-z0-9]").map(compressWord(_)).mkString("").toLowerCase.trim
+  def titleHash(title:String):String = removeRepeatedLetters(deAccent(title).replaceAll("[^A-Za-z0-9 ]+"," ").split("[ ]+").map(compressWord(_)).mkString("").toLowerCase.trim) //.replaceAll("[Ff]","").
+  //def titleHash(title:String):String = deAccent(title).toLowerCase.replaceAll("[^a-z0-9]","").replaceAll("[aeiou]","").replaceAll(" +"," ").trim
+  def paperHash(paper:PaperEntity):String ={
+    //TODO: filter out stop words "using/with" etc from title
+    /*
+    sri-->"", fi-->""
+    Efficient --> ecient
+    Efficient --> efcient
+ "idhar Mahadevan"
+{ "_id" : "51705d17498e162fcea5f7e3-2", "year" : 2003, "title" : "Semisupervised clustering with user feedback." }
+{ "_id" : "51705da7498e162fceaa6770-2", "year" : 2003, "title" : "Semi-supervised Clustering with User Feedback." }
+
+{ "_id" : "517060ff498e162fcec4ec10-1", "year" : 2006, "title" : "Topics over time a non-Markov continuous-time model of topical trends." }
+{ "_id" : "5170610c498e162fcec554a3-0", "year" : 2006, "title" : "Topics over Time A Non-Markov Continuous-Time Model of Topical Trends," }
+{ "_id" : "51706142498e162fcec70476-1", "year" : 2006, "title" : "Topics over time A nonmarkov continuous-time model of topical trends." }
+
+{ "_id" : "517040b130040b91033aff5d-1", "year" : 2001, "title" : "Conditional random fields Probabilistic models for segmenting and labeling sequence data." }
+{ "_id" : "5170413d30040b91033fb896-1", "year" : 2001, "title" : "Conditional Random Fields Probabilistic Models for Segmenting and Labeling Sequence Data." }
+     */
+    var result = new StringBuffer
+    result.append(limit(titleHash(paper.title.value),20))
+    if(paper.authors.size>0)result.append(removeRepeatedLetters(compressWord((deAccent(paper.authors.head.fullName.lastName).toLowerCase))))
+    //if(paper.authors.size>0)result.append(deAccent(firstInitialLastName(paper.authors.head)).toLowerCase)
+    result.toString.replaceAll("[f]","")
+  }
+  def limit(s:String,size:Int):String = if(s.length>=size)s.substring(0,size) else s//{println("size: "+size+" s.size: " + s.size);if(s.length>=size)s else s.substring(0,size)}
+
   //venue projections
   //def isInitial(s:String) = s.matches("[a-z]( [a-z])?")
   def isInitial(s:String) = (s.length==1 && s(0)>='a' && s(0)<='z') || (s.length==3 && s.charAt(1)==' ' && s(0)>='a' && s(0)<='z' && s(2)>='a' && s(2)<='z')
@@ -119,7 +163,8 @@ object FeatureUtils{
   }
   def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
-  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  //def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
   def deAccent(s:String):String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+","")
   def filterOnToken(s:String,stopWordsRegEx:String):String = s.split(" ").filter(!_.matches(stopWordsRegEx)).mkString(" ")
   def tokenizeVenuesForAuthors(s:String):Seq[String] ={
@@ -248,6 +293,7 @@ object FeatureUtils{
     if(author.groundTruth!=None)author.bagOfTruths += author.groundTruth.get
     val paper = author.paper
     if(paper!=null){
+      author.citedBy=paper.citedBy
       if(paper.attr[Year].intValue != -1)author.attr[Year] := paper.attr[Year].intValue
       //author.fullName.setSuffix(paper.title.value)(null)
       author.title.set(paper.title.value)(null)
@@ -277,9 +323,73 @@ object FeatureUtils{
       }
     }
   }
+  var emailExactSizeCount=0
+  var emailTotalCount=0
+  def extractEmails(paper:PaperEntity):Unit ={
+    if(paper.emails.size>0)emailTotalCount += 1
+    if(paper.authors.size == paper.emails.size){
+      for(i<-0 until paper.authors.size){
+        val author = paper.authors(i)
+        val email = paper.emails(i)
+        println(author.fullName.toString+" email: "+email)
+        emailExactSizeCount += 1
+      }
+    }
+  }
+  var affiliationExactSizeCount=0
+  var affiliationTotalCount=0
+  def extractAffiliations(paper:PaperEntity):Unit ={
+    if(paper.affiliations.size>0)affiliationTotalCount += 1
+    if(paper.authors.size == paper.affiliations.size){
+      for(i<-0 until paper.authors.size){
+        val author = paper.authors(i)
+        val affiliation = paper.affiliations(i)
+        println(author.fullName.toString+" affiliation: "+affiliation)
+        affiliationExactSizeCount += 1
+      }
+    }
+  }
+  /*
+        <email>{mhodorog, acraciun}@ieat.ro</email>
+
+
+
+              <authors>
+          <author>
+            <author-first>Andrian</author-first>
+            <author-last>Marcus 1 ,</author-last>
+          </author>
+          <author>
+            <author-first>Andrea</author-first>
+            <author-last>De Lucia</author-last>
+          </author>
+        </authors>
+        <note>2 , Jane Huffman Hayes 3 ,</note>
+        <authors>
+          <author>
+            <author-first>Denys</author-first>
+            <author-last>Poshyvanyk</author-last>
+            <note>1</note>
+          </author>
+        </authors>
+
+        <note>1</note>
+        <institution>Department of Computer Science Wayne State University</institution>
+        <address>Detroit, MI 48202 313 577 5408</address>
+        <email>amarcus@wayne.edu, denys@wayne.edu</email>
+        <note>2</note>
+        <institution>Dipart. di Matem. e Informatica Universitdi Salerno</institution>
+        <address>Via ponte don Melillo, 84084, Fisciano (SA), Italy +39 089 963376</address>
+        <email>adelucia@unisa.it</email>
+        <note>3</note>
+        <institution>Department of Computer Science University of Kentucky</institution>
+        <address>301 Rose Street Lexington, KY 40506 859 257 3171</address>
+        <email>hayes@cs.uky.edu</email>
+   */
 }
 
 object EntityUtils{
+  def newId:String = ObjectId.get().toString//java.util.UUID.randomUUID.toString+""
   val shortDecimal = new java.text.DecimalFormat("0.0#")
   def export[T<:HierEntity](file:File,es:Seq[T]):Unit ={
     printClusteringStats(es)
@@ -311,6 +421,95 @@ object EntityUtils{
     println("  *number of inferred entities with no children: "+numZeroChildren)
     println("  *number of inferred entities with one child: "+numOneChild)
   }
+  /*
+  def accumulateCanopies(authors:Seq[AuthorEntity], canopies:LinkedHashSet[String]):Unit ={
+    for(a <- authors)for(c <- a.canopyAttributes.map(_.canopyName))canopies += c
+  }
+  def writeCanopies(canopies:LinkedHashSet[String],outputDir:String,numFiles:Int):Unit ={
+    val pwa = new PrintWriter(new File(outDirPath+"canopy_all"))
+    for(canopy <- canopies)pwa.println(canopy)
+    pwa.flush
+    pwa.close
+    println("Done compiling list of canopies. Found "+canopies.size+" canopies.")
+    val groups=canopies.toSeq.grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
+    println("Found "+groups.size+" groups.")
+    println("Finished grouping canopies, about to write files.")
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+  }
+  */
+  def writeCanopies(col:MongoCubbieCollection[AuthorCubbie], outDirPath:String, numFiles:Int):Unit ={
+    val allCanopies = new LinkedHashMap[String,Int]
+    println("About to iterate over mongo collection")
+    var count = 0
+    for(cubbie <- col.iterator){
+      for(name <- cubbie.canopies.value)allCanopies(name) = allCanopies.getOrElse(name,0)+1//canopies += name
+      count += 1
+      if(count % 10000 == 0)print(".")
+      if(count % 500000 ==0)println(count)
+    }
+    //val canopies = allCanopies.filter(_._2 > 1).toSeq.sortBy(_._2).reverse.map(_._1).toSeq
+    val canopies = allCanopies.filter(_._2 > 1).map(_._1).toSeq
+    val pwa = new PrintWriter(new File(outDirPath+"canopy_all"))
+    for(canopy <- canopies)pwa.println(canopy)
+    pwa.flush
+    pwa.close
+    println("Done compiling list of canopies. Found "+canopies.size+" canopies.")
+
+    val groups = new Array[ArrayBuffer[String]](numFiles)
+    for(i<-0 until groups.size)groups(i) = new ArrayBuffer[String]
+    var i=0
+    while(i<canopies.size){groups((i % numFiles)) += canopies(i);i+=1}
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch_locality"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+    /*
+    val groups=random.shuffle(canopies.toSeq).grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
+    //val groups=random.shuffle(canopies.toSeq).grouped(math.ceil(canopies.size.toDouble/numFiles.toDouble).toInt).toSeq
+    println("Found "+groups.size+" groups.")
+    println("Finished grouping canopies, about to write files.")
+    var wroteSomething = false
+    var groupId=0
+    for(group <- groups){
+      val pw = new PrintWriter(new File(outDirPath+"canopy_batch"+groupId))
+      println("About to write "+group.size + " canopy names.")
+      if(group.size>0)wroteSomething=true
+      for(canopy <- group)pw.println(canopy)
+      pw.flush
+      pw.close
+      groupId+=1
+    }
+    */
+  }
+  def bucketByCoAuthorsAndTopics(entities:Iterable[AuthorEntity]):HashMap[String,ArrayBuffer[AuthorEntity]] ={
+    def f(e:AuthorEntity):Seq[String] = (e.bagOfCoAuthors.value.iterator.map(_._1) ++ e.bagOfTopics.value.iterator.map(_._1)).toSeq.map(e.canopyNames.headOption.getOrElse("")+"_"+_) ++ e.canopyNames
+    bucketBy(entities,f(_))
+  }
+  def bucketBy[E<:HierEntity](entities:Iterable[E],f:E=>Seq[String]):HashMap[String,ArrayBuffer[E]] ={
+    var result = new HashMap[String,ArrayBuffer[E]]
+    for(e<-entities){
+      val buckets = f(e)
+      for(bucket <- buckets){
+        result.getOrElseUpdate(bucket,new ArrayBuffer[E]) += e
+      }
+    }
+    result = result.filter(_._2.size>=2)
+    result
+  }
+
   def makeSingletons[E<:HierEntity](entities:Seq[E]):Seq[E] ={
     for(e <- entities)
       e.setParentEntity(null)(null)
@@ -325,6 +524,15 @@ object EntityUtils{
   ()=>new AuthorEntity,
   (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)}
   )
+  def collapseOnCanopyAndCoAuthors(entities:Seq[AuthorEntity],numCoAuthors:Int=1) = collapseOn[AuthorEntity](entities,(e:AuthorEntity) => {
+    val fmlCanopy = new AuthorFLNameCanopy(e)
+    val coauths = e.bagOfCoAuthors.value.asHashMap.take(numCoAuthors).map(_._1).toSeq
+    if(coauths.length==0)None else Some(fmlCanopy.canopyName+coauths.mkString(" "))
+  },
+  ()=>new AuthorEntity,
+  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)}
+  )
+
   def collapseOnTruth(entities:Seq[AuthorEntity]) = collapseOn[AuthorEntity](entities,(e:AuthorEntity)=>{e.groundTruth},()=>new AuthorEntity,  (e:AuthorEntity) => {e.fullName.setFullName(e.childEntitiesIterator.next.asInstanceOf[AuthorEntity].fullName)(null)})
   def collapseOn[E<:HierEntity](entities:Seq[E], collapser:E=>Option[String], newEntity:()=>E, propagater:E=>Unit):Seq[E] ={
     val result = new ArrayBuffer[E]
@@ -339,8 +547,9 @@ object EntityUtils{
         val root = newEntity()
         result += root
         for(e<-trueCluster){
-          e.setParentEntity(root)(null)
-          for(bag <- e.attr.all[BagOfWordsVariable])root.attr(bag.getClass).add(bag.value)(null)
+          this.linkChildToParent(e,root)(null)
+          //e.setParentEntity(root)(null)
+          //for(bag <- e.attr.all[BagOfWordsVariable])root.attr(bag.getClass).add(bag.value)(null)
         }
         propagater(root)
         //root.fullName.setFullName(trueCluster.head.fullName)(null)
@@ -462,7 +671,7 @@ object EntityUtils{
     var e = entity.parentEntity
     while(e!=null){
       val evar = e.attr[EditSetVariable]
-      for(edit <- entity.attr[EditSetVariable])evar.add(edit)(d)
+      if(evar!=null)for(edit <- entity.attr[EditSetVariable])evar.add(edit)(d)
       //entity.attr[EditSetVariable].value.foreach(evar.add(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value + entity.attr[MentionCountVariable].value)(d)
       for(bag <- entity.attr.all[BagOfWordsVariable])
@@ -474,7 +683,7 @@ object EntityUtils{
     var e = formerParent
     while(e!=null){
       val evar = e.attr[EditSetVariable]
-      parting.attr[EditSetVariable].value.foreach(evar.remove(_)(d))
+      if(evar!=null)parting.attr[EditSetVariable].value.foreach(evar.remove(_)(d))
       e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value - parting.attr[MentionCountVariable].value)(d)
       for(bag <- parting.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).remove(bag.value)(d)
@@ -614,6 +823,19 @@ object EntityUtils{
     result += "gen-vio"+generatedFromViolations+" should-sat:"+shouldLinkSatisfied+" should-not-vio:"+shouldNotLinkViolated
     result
   }
+  def printableClusteringStats[E<:HierEntity](entities:Seq[E]):String ={
+    val sizeDist = clusteringSizeDistribution(entities)
+    val largest = sizeDist.toList.sortBy(_._1).reverse.head._1
+    val result = new StringBuilder
+    result.append("largest: "+largest+" #singletons: "+sizeDist.getOrElse(1,0)+" num entities: "+sizeDist.size)
+    result.toString
+  }
+  def clusteringSizeDistribution[E<:HierEntity](entities:Seq[E]):Map[Int,Int] ={
+    var sizeDist = new HashMap[Int,Int]
+    for(e <- entities.filter((e:E) => {e.isRoot && e.isConnected}))sizeDist(e.numLeaves) = sizeDist.getOrElse(e.numLeaves,0) + 1
+    val sorted = sizeDist.toList.sortBy(_._2).reverse.toMap
+    sorted
+  }
   def defaultFeaturesToPrintForAuthors(e:Entity):Seq[String] = {
     val bags = defaultFeaturesToPrint(e)
     if(e.isObserved) Seq("title: "+e.attr[Title].value) ++ Seq(displayForEdits(e.attr[EditSetVariable])) ++ bags else bags
@@ -670,23 +892,10 @@ object EntityUtils{
     val levelIndent = {var r="";for(i<-0 until depth)r+=perLevelIndent;r}
     result.append("\n"+levelIndent)
     if(e.isRoot){
-      if(e.isInstanceOf[HumanEditMention] && e.asInstanceOf[HumanEditMention].editType != "none")result.append("Edit-")
       result.append("EntityRoot["+flatRepresent(e)+"]")
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"| Features\n"+levelIndent+"|   ")
     }else if(e.isObserved){
-      e match{
-        case he:HierEntity with HumanEditMention =>{
-          if(he.editType != "none"){
-            val test1 = if(he.generatedFrom != None && he.entityRoot.eq(he.generatedFrom.get.entityRoot))"o" else if(he.generatedFrom == None)"" else "x"
-            val test2 = if(he.linkedMention != None && he.entityRoot.eq(he.linkedMention.get.entityRoot))"o" else if(he.linkedMention == None)"" else "x"
-            result.append(test1+test2+"-Edit[")
-            result.append(" ety:"+he.editType)
-            for(lm <- he.linkedMention)result.append(" link:"+lm.id)
-            result.append(flatRepresent(e)+"]")
-          } else result.append("-Mention["+flatRepresent(e)+"]")
-        }
-        case _ => result.append("-Mention["+flatRepresent(e)+"]")
-      }
+      result.append("-Mention["+flatRepresent(e)+"]")
       if(featuresToPrint!=None)result.append("\n"+levelIndent+"|   ")
     }else{
       result.append("*SubEntity["+flatRepresent(e)+"]")
@@ -699,7 +908,6 @@ object EntityUtils{
     result.toString
   }
 }
-
 
 object LDAUtils{
   object WordSeqDomain extends CategoricalSeqDomain[String]
@@ -810,10 +1018,14 @@ object LDAUtils{
     }
     if(opts.bibDirectory.value.toLowerCase!="none"){
       StopWatch.start("Load BibTex")
+      /*
       val papers = BibReader.loadBibTexDirMultiThreaded(new File(opts.bibDirectory.value),false,false)
       val time = StopWatch.stop/1000L
       println("Loading BibTeX took: "+time+" seconds.")
       docs ++= papers.map((paper:PaperEntity)=>DEFAULT_DOCUMENT_GENERATOR(paper))
+      */
+      //docs ++= BibReader.loadBibTexDirForTopicModel(new File(opts.bibDirectory.value),DEFAULT_DOCUMENT_GENERATOR)
+      docs ++= BibReader.loadBibmogrifyOutputForTopicModel(new File(opts.bibDirectory.value))
     }
     println("Number of papers: "+docs.size)
     /*
@@ -883,7 +1095,7 @@ object LDAUtils{
   }
 
   def DEFAULT_DOCUMENT_GENERATOR(paper:PaperEntity):String = {
-    (paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")).toLowerCase
+    (paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")+" "+paper.bagOfKeywords.mkString(" ")).toLowerCase
   }
 /*
   def createDocumentsForLDA(papers:Iterable[PaperEntity], outputDir:File, documentGenerator:PaperEntity=>String=DEFAULT_DOCUMENT_GENERATOR(_)):Unit ={

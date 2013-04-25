@@ -45,15 +45,15 @@ object LDA2 {
     val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
-      println("Reading files from directory " + directory)
+      // println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
-        print("."); Console.flush
+        // print("."); Console.flush
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }
-      println()
+      // println()
     }
 
     val collapse = new ArrayBuffer[Var]
@@ -66,94 +66,17 @@ object LDA2 {
     for (i <- 1 to 20) {
       for (doc <- documents) sampler.process(doc.zs)
       if (i % 5 == 0) {
-        println("Iteration " + i)
+        // println("Iteration " + i)
         sampler.export()
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.value.massTotal.toInt))
-        println("Total words "+phis.map(_.value.massTotal).sum.toInt)
-        println
+        // phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.value.massTotal.toInt))
+        // println("Total words "+phis.map(_.value.massTotal).sum.toInt)
+        // println
       }
     }
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+    // println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
 }
-
-  /*
-  val numTopics = 10
-  object ZDomain extends DiscreteDomain { def size = numTopics }
-  object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(p: Proportions) extends PlatedMixtureChoice(p, Nil) { def domain = ZSeqDomain }
-  //object WordDomain extends CategoricalDomain[String]
-  object WordSeqDomain extends CategoricalSeqDomain[String] // { def elementDomain = WordDomain }
-  val WordDomain = WordSeqDomain.elementDomain
-  class Words(ps: CollapsibleFiniteMixture[Dirichlet], zs: PlatedMixtureChoice) extends PlatedCategoricalMixture[String](ps, zs, Nil) {
-    def domain = WordSeqDomain
-  }
-  class Document(val file:String, var theta: DenseDirichlet, phis:CollapsibleFiniteMixture[Dirichlet], zs:PlatedMixtureChoice) extends Words(phis, zs)
-
-  def main(args: Array[String]): Unit = {
-    val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
-
-    // Read data and create generative variables
-    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01, WordDomain) with CategoricalProportions[String] {
-      override def apply(index:Int) : Double = {
-        val result = super.apply(index)
-        //println("LDA.phi.apply "+index+" "+result)
-        result
-      }
-      def categoricalDomain = WordSeqDomain.elementDomain
-      override def toString = "Phi(" + countsSeq.take(20).toList + ")"
-    })
-    val alphaMean = new DenseProportions(numTopics)
-    val alphaPrecision = new RealVariableParameter(numTopics)
-    val documents = new ArrayBuffer[Document]
-    for (directory <- directories) {
-      println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
-        print("."); Console.flush
-        val theta = new DenseDirichlet(alphaMean, alphaPrecision, Nil) //(numTopics, 0.01) // Shouldn't this have been 1.0 instead of 0.01 anyway?
-        val zs = new Zs(theta)
-        val doc = new Document(file.toString, theta, phis, zs)
-        for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          zs appendInt cc.factorie.random.nextInt(numTopics)
-          doc appendCategory word
-        }
-        documents += doc
-      }
-    }
-    //documents.trimEnd(documents.length-10)
-
-    println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
-    // Fit model
-    val zss: Seq[PlatedMixtureChoiceVar] = documents.map(document => document.choice)
-
-    //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
-    //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
-
-    val collapsedVariables = new ArrayBuffer[CollapsibleParameter]
-    collapsedVariables += phis
-    collapsedVariables ++= documents.map(_.theta)
-    val sampler = new CollapsedGibbsSampler(collapsedVariables)
-    val startTime = System.currentTimeMillis
-    for (i <- 1 to 20) {
-      zss.foreach(sampler.process(_))
-      print("."); Console.flush
-      if (i % 5 == 0) {
-        println("Iteration " + i)
-        // (phis ++ documents.map(_.theta)).foreach(_.export)
-        sampler.export()
-        //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
-        DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
-        println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
-        //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
-        println
-      }
-    }
-    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
-  }
-  */

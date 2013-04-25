@@ -5,8 +5,9 @@ import org.junit.Test
 import cc.factorie.app.nlp.{Sentence, Document}
 import java.util.zip.ZipInputStream
 import java.io.{BufferedReader, StringReader, FileInputStream}
+import cc.factorie.util.FastLogging
 
-class TestTokenizer extends JUnitSuite {
+class TestTokenizer extends JUnitSuite with FastLogging {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
@@ -27,7 +28,7 @@ class TestTokenizer extends JUnitSuite {
       """.stripMargin
     val d = new Document("", (1 to 2).map(_ => text).mkString("\n"))
     seg.process(d)
-    d.sentences.map(_.string).foreach(println)
+    d.sentences.map(_.string).foreach(s => logger.debug(s.toString))
   }
 
   @Test def testClearSegmenterWithOneSentence() {
@@ -184,7 +185,7 @@ class TestTokenizer extends JUnitSuite {
 
     val reg = new PunktSentenceSegmenter.Punkt.PunktLanguageVars()
     val allMatches = reg.wordTokenizerRegex.findAllIn(testText2).toSeq
-    allMatches.foreach(println)
+    allMatches.foreach(s => logger.debug(s.toString))
 
     assert(allMatches == Seq("The", "problem", "with", "MacroTypeTag", "is", "that", "it", "can", "be", "used",
        "outside", "macros.", "A", "fact", "about", "FullTypeTag", "that", "I", "don", "'t", "like", "is", "that", "it", "implies",
@@ -265,7 +266,7 @@ class TestTokenizer extends JUnitSuite {
     assert(moreTokenized(0).length == 17, moreTokenized(0).length)
   }
 
-  def printTokenizedSentences(sentences: Seq[Sentence]): Unit = sentences.foreach(sen => println(sen.tokens.map(t =>   t.string)))
+  def printTokenizedSentences(sentences: Seq[Sentence]): Unit = sentences.foreach(sen => logger.debug(sen.tokens.map(t =>   t.string)))
 
   def getTokenizedSentences(text: Seq[String], inference: SentenceBoundaryInference = JointlyAcrossDocuments): Seq[Seq[Sentence]] = {
     val docs = text.map(t => new Document("", t))

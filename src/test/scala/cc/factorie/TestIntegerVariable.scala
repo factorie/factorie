@@ -19,13 +19,13 @@ import junit.framework._
 import Assert._
 
 /** @author Pallika Kanani */
-class TestIntegerVariable extends TestCase {
+class TestIntegerVariable extends TestCase  with cc.factorie.util.FastLogging {
 
    def testDiffLists:Unit = {
       var initialValue:Int = 100
       var v = new IntegerVariable(initialValue)
       var d: DiffList = new DiffList()
-      println("Initial Value = " + v.intValue)
+      logger.debug("Initial Value = " + v.intValue)
       v.set(200)(d)
       v.set(300)(d)
       v.set(400)(d)

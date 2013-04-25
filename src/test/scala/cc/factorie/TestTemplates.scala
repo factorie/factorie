@@ -7,7 +7,7 @@ import junit.framework.TestCase
 /**
  * @author sriedel
  */
-class TestTemplates extends JUnitSuite  {
+class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
 
   //implicit def template2initialized1[S1<:DiscretesValue](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
   //implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
@@ -94,16 +94,16 @@ class TestTemplates extends JUnitSuite  {
 //    val template = new TemplateWithDotStatistics1[BooleanVariable] { def statisticsDomains = Tuple1(BooleanDomain) }
 //    val factor = template.unroll1(v1).head
 //    assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 2)
-//    println("Template1 valuesIterator:")
-//    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(println(_))
-//    println("--------------------------------")
+//    logger.debug("Template1 valuesIterator:")
+//    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(logger.debug(_))
+//    logger.debug("--------------------------------")
 //
 //    template.addLimitedDiscreteValues(Seq(BooleanDomain.head.intValue))
 //    template.isLimitingValuesIterator = true
 //    assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 1)
-//    println("Template1 limitedValuesIterator:")
-//    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(println(_))
-//    println("--------------------------------")
+//    logger.debug("Template1 limitedValuesIterator:")
+//    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(logger.debug(_))
+//    logger.debug("--------------------------------")
 //  }
 //
 //  def testLimitedSettingsIterator2 {
@@ -115,17 +115,17 @@ class TestTemplates extends JUnitSuite  {
 //
 //    val factor = template.unroll1(v1).head
 //    assert(factor.valuesIterator(factor.variables.toSet).size == 4)
-//    println("Template2 valuesIterator:")
-//    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
-//    println("--------------------------------")
+//    logger.debug("Template2 valuesIterator:")
+//    factor.valuesIterator(factor.variables.toSet).foreach(logger.debug(_))
+//    logger.debug("--------------------------------")
 //
 //    template.addLimitedDiscreteValues(Seq((0,0),(1,1)))
 //    template.isLimitingValuesIterator = true
 //
 //    assert(factor.valuesIterator(factor.variables.toSet).size == 2)
-//    println("Template2 limitedValuesIterator:")
-//    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
-//    println("--------------------------------")
+//    logger.debug("Template2 limitedValuesIterator:")
+//    factor.valuesIterator(factor.variables.toSet).foreach(logger.debug(_))
+//    logger.debug("--------------------------------")
 //  }
 //
 //  def testLimitedSettingsIterator3 {
@@ -137,19 +137,19 @@ class TestTemplates extends JUnitSuite  {
 //    }
 //
 //    var factor = template.unroll1(v1).head
-//    println("Template3 valuesIterator:")
-//    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+//    logger.debug("Template3 valuesIterator:")
+//    factor.valuesIterator(factor.variables.toSet).foreach(logger.debug(_))
 //    assert(factor.valuesIterator(factor.variables.toSet).size == 8)
-//    println("--------------------------------")
+//    logger.debug("--------------------------------")
 //
 //    template.addLimitedDiscreteValues(Seq((0,0,0),(1,1,1)))
 //    template.isLimitingValuesIterator = true
 //
-//    println("limiting factor? : " + factor.isLimitingValuesIterator)
-//    println("Template3 limitedValuesIterator:")
-//    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+//    logger.debug("limiting factor? : " + factor.isLimitingValuesIterator)
+//    logger.debug("Template3 limitedValuesIterator:")
+//    factor.valuesIterator(factor.variables.toSet).foreach(logger.debug(_))
 //    assert(factor.valuesIterator(factor.variables.toSet).size == 2)
-//    println("--------------------------------")
+//    logger.debug("--------------------------------")
 //  }
 //
 //}

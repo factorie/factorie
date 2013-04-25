@@ -16,7 +16,7 @@ import collection.mutable.ArrayBuffer
  * @since Sep 5, 2011
  */
 
-class TestProposalSamplers extends TestCase {
+class TestProposalSamplers extends TestCase with cc.factorie.util.FastLogging {
 
   val numLabels: Int = 3
 
@@ -70,7 +70,7 @@ class TestProposalSamplers extends TestCase {
     val sampler = new VariablesSettingsSampler[BinVar](model)
 
     val origScore = model.currentScore(Seq(v1, v2))
-    println("orig score: " + origScore)
+    logger.debug("orig score: " + origScore)
     val assignCounts = Array.fill(numLabels, numLabels)(0)
     for (i <- 0 until samples) {
       sampler.process(Seq(v1, v2))
@@ -88,7 +88,7 @@ class TestProposalSamplers extends TestCase {
       p.diff.redo
       val modelScore = model.currentScore(Seq(v1, v2))
       val sampleProb = assignCounts(v1.intValue)(v2.intValue) / totalCount
-      println("%d %d : true: %f, prop: %f, trueProb: %f, sample: %f".format(v1.intValue, v2.intValue, modelScore - origScore, p.modelScore, e(modelScore) / Z, sampleProb))
+      logger.debug("%d %d : true: %f, prop: %f, trueProb: %f, sample: %f".format(v1.intValue, v2.intValue, modelScore - origScore, p.modelScore, e(modelScore) / Z, sampleProb))
       assertEquals(modelScore - origScore, p.modelScore, eps)
       assertEquals(e(modelScore) / Z, sampleProb, 0.01)
       p.diff.undo

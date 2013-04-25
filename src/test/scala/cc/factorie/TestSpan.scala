@@ -5,23 +5,23 @@ import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
 
-class TestSpanVariable extends TestCase {
+class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
 
    def testDiffLists:Unit = {
      val doc = LoadPlainText.fromString("testdoc", "aaa bb John Smith eee ff ggg", false)
-     //doc.foreach(println(_))
+     //doc.foreach(logger.debug(_))
      assert(doc.length == 7)
      val d = new DiffList
      val s1 = new TokenSpan(doc, 1, 1)(d)
      assert(doc.spans.head.start == 1)
-     //println("DiffList "+d)
-     //println("new span 1 1")
-     //println(doc.spans.mkString("\n"))
-     //println("DiffList "+d)
+     //logger.debug("DiffList "+d)
+     //logger.debug("new span 1 1")
+     //logger.debug(doc.spans.mkString("\n"))
+     //logger.debug("DiffList "+d)
      d.undo
-     //println("undo")
-     //println("DiffList "+d)
-     //println(doc.spans.mkString("\n"))
+     //logger.debug("undo")
+     //logger.debug("DiffList "+d)
+     //logger.debug(doc.spans.mkString("\n"))
      assert(doc.spans.length == 0)
      val s2 = new NerSpan(doc, "PER", 2, 2)(d)
      assert(s2.phrase == "John Smith")

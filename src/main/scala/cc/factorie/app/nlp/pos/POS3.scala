@@ -239,8 +239,8 @@ object POS3 {
     }
   }
 
-  def load(name: String): ClassifierPos = {
-    val c = new ClassifierPos
+  def load(name: String): POS3 = {
+    val c = new POS3
     c.deSerialize(name)
     c
   }

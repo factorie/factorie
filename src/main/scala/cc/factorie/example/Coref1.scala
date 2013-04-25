@@ -168,7 +168,7 @@ object Coref1 {
   }
 
   def main(args:Array[String]): Unit = {
-    println("Entity running...")
+    // println("Entity running...")
     //val doc = LoadPlainText.fromString("USAToday", docString.takeWhile(_ != '\n'), false)
     val doc = LoadPlainText.fromString("USAToday", docString1.take(800), false)
     //for (token <- doc) println(token.string)
@@ -177,7 +177,7 @@ object Coref1 {
     coref(doc)
     // Print the results
     for (mention <- doc.orderedSpansOfClass[TokenSpanMention]) {
-      println(mention+" => "+mention.parentEntity+"\n")
+      // println(mention+" => "+mention.parentEntity+"\n")
     }
   }
 

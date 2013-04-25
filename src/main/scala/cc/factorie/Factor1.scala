@@ -183,8 +183,15 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
   protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteDimensionTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
-
-  def valuesIterator(f:Factor): ValuesIterator1[N1] = throw new Error("Not yet implemented") // TODO Here could be the option to iterate over a subset of values for restricted FSA connectivity
+  def valuesIterator(f:Factor): ValuesIterator1[N1] = new ValuesIterator1[N1] {
+      def factor: Factor1[N1] = f
+      var _1: N1 = null.asInstanceOf[N1]
+      var value1: N1#Value = null.asInstanceOf[N1#Value]
+      def hasNext = false
+      def next() = this
+      def score: Double = Double.NaN
+      def valuesTensor: Tensor = null
+    }
 }
 
 trait TupleFamily1[N1<:Var] extends Family1[N1] {
