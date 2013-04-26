@@ -8,7 +8,7 @@ import cc.factorie.maths
 // Then AROW can be the default optimizer in SGDTrainer.
 class AROW(model:Model, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model) {
   //parameters specific to the algorithm
-  //
+  // TODO this shouldn't be 1-modelScore as it assumes a margin of 1 - should probably put 0 here now that margin is in objective - luke
   protected def alpha(modelScore:Double,gradient:WeightsTensor) : Double = math.max(0,1-modelScore) * beta(gradient)
   protected def beta(gradient:WeightsTensor) : Double = 1/(marginVariance(gradient) + 2*lambdaAROW)
   override def adjustConfidence(weights:WeightsTensor, gradient:WeightsTensor):Unit ={

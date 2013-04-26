@@ -41,6 +41,7 @@ object BinarySerializer {
   def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File, gzip: Boolean): Unit =
     deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip)
 
+  def serialize(c1: => Cubbie, filename: String): Unit = serialize(c1, new File(filename))
   def serialize(c1: => Cubbie, file: File): Unit =
     serialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip = false)
   def serialize(c1: => Cubbie, c2: => Cubbie, file: File): Unit =
@@ -50,6 +51,7 @@ object BinarySerializer {
   def serialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File): Unit =
     serialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip = false)
 
+  def deserialize(c1: => Cubbie, filename: String): Unit = deserialize(c1, new File(filename))
   def deserialize(c1: => Cubbie, file: File): Unit =
     deserialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip = false)
   def deserialize(c1: => Cubbie, c2: => Cubbie, file: File): Unit =
