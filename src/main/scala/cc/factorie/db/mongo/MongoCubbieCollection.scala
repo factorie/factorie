@@ -3,7 +3,7 @@ package cc.factorie.db.mongo
 import cc.factorie.Cubbie
 import org.bson.BSONObject
 import scala.collection.JavaConversions._
-import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
+import com.mongodb._
 import org.bson.types.BasicBSONList
 import cc.factorie.util.CubbieRefs
 import scala.annotation.tailrec
@@ -11,6 +11,7 @@ import collection.{Map => GenericMap, mutable, MapProxy, JavaConversions}
 import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
 import scala._
 import scala.Predef._
+import scala.Some
 
 
 /**
@@ -180,7 +181,14 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
   def ++=(c: TraversableOnce[C]) {
     coll.insert(JavaConversions.seqAsJavaList(c.map(eagerDBO(_)).toSeq))
   }
-
+  /**
+   * Batch insert of a collection of cubbies.
+   * @param c collection to insert.
+   * @param w writeConcern.
+   */
+  def ++=(c: TraversableOnce[C], w: WriteConcern) {
+    coll.insert(JavaConversions.seqAsJavaList(c.map(eagerDBO(_)).toSeq), w)
+  }
   case class Modification(op: String, value: Any)
 
   /**
