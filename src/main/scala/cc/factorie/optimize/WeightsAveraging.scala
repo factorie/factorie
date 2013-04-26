@@ -87,7 +87,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
             val updateReconstruction = gradientWT.blankCopy
             for(template <- gradientWT.families){
               (updateReconstruction(template), weightsWT(template)) match{
-                case (vecUpdateReconstruction:SparseIndexedTensor1,vecWeights:DenseTensor) =>{
+                case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
                   val urValues = vecUpdateReconstruction._values
                   val urIndices = vecUpdateReconstruction._indices
@@ -105,7 +105,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
             //3. reconstruct the "inner" update by adding the new values
             for(template <- gradientWT.families){
               (updateReconstruction(template), weightsWT(template)) match{
-                case (vecUpdateReconstruction:SparseIndexedTensor1,vecWeights:DenseTensor) =>{
+                case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
                   val urValues = vecUpdateReconstruction._values
                   val urIndices = vecUpdateReconstruction._indices
@@ -122,7 +122,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
             for(template:DotFamily <- updateReconstruction.families){
               val g = gradientWT.apply(template)
               (updateReconstruction(template), weightsSum(template),lastUpdateIteration(template),template.weights) match{
-                case (vecReconstruction:SparseIndexedTensor1,vecWeightsSum:DenseTensor,vecLastUpdateIteration:DenseTensor,template:DenseTensor) =>{
+                case (vecReconstruction:SparseIndexedTensor,vecWeightsSum:DenseTensor,vecLastUpdateIteration:DenseTensor,template:DenseTensor) =>{
 
                   val vrValues = vecReconstruction._values
                   val vrIndices = vecReconstruction._indices
@@ -257,7 +257,7 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
             timer = System.currentTimeMillis
             for(template <- gradientWT.families){
               (updateReconstruction(template), weightsWT(template)) match{
-                case (vecUpdateReconstruction:SparseIndexedTensor1,vecWeights:DenseTensor) =>{
+                case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
                   val urValues = vecUpdateReconstruction._values
                   val urIndices = vecUpdateReconstruction._indices
