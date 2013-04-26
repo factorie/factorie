@@ -92,7 +92,7 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
       for (af <- attributes) {
         buf.append("\t")
         af(token) match {
-          case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue)
+          case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue.toString)
           case null => buf.append("(null)")
           case v:Any => buf.append(v.toString)
         }
@@ -107,6 +107,9 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
 trait DocumentProcessor {
   // NOTE: this method may mutate and return the same document that was passed in
   def process(d: Document): Document
+  /** How the annotation of this DocumentProcessor should be printed in one-word-per-line (OWPL) format.
+      If there is no per-token annotation, return null.  Used in Document.owplString. */
+  def tokenAttrString(token:Token): String = null
   // TODO Implement these
   //def prereqs: Iterable[DocumentProcessor]
   //def tokenAttrs: Iterable[Class[_]] = Nil

@@ -10,6 +10,7 @@ import java.io.File
 import org.junit.Assert._
 
 class POS3 extends DocumentProcessor {
+  def this(filename: String) = { this(); deserialize(filename) }
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
   val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
   
@@ -107,11 +108,11 @@ class POS3 extends DocumentProcessor {
     addFeature(pm1+ap1+ap2)
     addFeature(a0+ap1+ap2)
     addFeature("PREFIX3="+w0.take(3))
-    addFeature("SUFIX4="+w0.takeRight(4))
+    addFeature("SUFFIX4="+w0.takeRight(4))
     addFeature("SHAPE="+cc.factorie.app.strings.stringShape(w0, 2)) // TODO(apassos): add the remaining jinho features not contained in shape
-    addFeature("HasPeriod="+w0.contains("."))
-    addFeature("HasDigit="+w0.contains("[0-9]"))
-    addFeature("HasHyphen="+w0.contains("-"))
+    addFeature("HasPeriod="+(w0.indexOf('.') >= 0))
+    addFeature("HasHyphen="+(w0.indexOf('-') >= 0))
+    addFeature("HasDigit="+w0.matches(".*[0-9].*"))
     result
   }
 
@@ -130,16 +131,21 @@ class POS3 extends DocumentProcessor {
     }
   }
   
-  def predict(s: Sentence)(implicit d: DiffList = null) {
+  def predict(tokens: Seq[Token]): Unit = {
     // TODO What is the best way to test/ensure that lemmatization has been done already?
-    for (token <- s.tokens) token.setLemmaString(lemmatize(token.string))
-    s.tokens.foreach(t => if (t.attr[PTBPosLabel] eq null) t.attr += new PTBPosLabel(t, "NNP"))
+    for (token <- tokens) token.setLemmaString(lemmatize(token.string))
+    tokens.foreach(t => if (t.attr[PTBPosLabel] eq null) t.attr += new PTBPosLabel(t, "NNP"))
     val weightsMatrix = model.evidenceTemplate.weights
-    for (i <- 0 until s.length) {
-      val featureVector = features(s.tokens(i))
+    for (i <- 0 until tokens.length) {
+      val featureVector = features(tokens(i))
       val prediction = weightsMatrix * featureVector
-      s.tokens(i).attr[PTBPosLabel].set(prediction.maxIndex)
+      tokens(i).attr[PTBPosLabel].set(prediction.maxIndex)(null)
     }
+  }
+  def predict(span: TokenSpan): Unit = predict(span.tokens)
+  def predict(document: Document): Unit = {
+    if (document.sentences.length > 0) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
+    else predict(document.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
   }
 
   def serialize(filename: String) {
@@ -151,7 +157,7 @@ class POS3 extends DocumentProcessor {
     //BinarySerializer.serialize(FeatureDomain.dimensionDomain, file)
   }
 
-  def deSerialize(filename: String) {
+  def deserialize(filename: String) {
     import CubbieConversions._
     val file = new File(filename)
     assert(file.exists(), "Trying to load non-existent file: '" +file)
@@ -203,9 +209,8 @@ class POS3 extends DocumentProcessor {
     if (saveModel) serialize(modelFile)
   }
 
-  // NOTE: this method may mutate and return the same document that was passed in
-  def process(d: Document) = { d.sentences.foreach(predict(_)); d}
-
+  def process(d: Document) = { predict(d); d}
+  override def tokenAttrString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
 
 
@@ -232,16 +237,16 @@ object POS3 {
                 opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, opts.saveModel.value)
     } else if (opts.runText.wasInvoked) {
       val pos = new POS3
-      pos.deSerialize(opts.modelFile.value)
+      pos.deserialize(opts.modelFile.value)
       val doc = cc.factorie.app.nlp.LoadPlainText.fromFile(new java.io.File(opts.runText.value), segmentSentences=true)
       pos.process(doc)
       println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
     }
   }
 
-  def load(name: String): POS3 = {
+  def fromFilename(name: String): POS3 = {
     val c = new POS3
-    c.deSerialize(name)
+    c.deserialize(name)
     c
   }
 }

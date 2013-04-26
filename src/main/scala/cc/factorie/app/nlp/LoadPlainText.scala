@@ -17,16 +17,16 @@ import java.io.File
 import cc.factorie.app.strings.StringSegmenter
 
 object LoadPlainText {
-  def fromFile(file: File, segmentSentences: Boolean = false): Document = {
-    val string = scala.io.Source.fromFile(file).mkString
-    fromString(file.getCanonicalPath, string, segmentSentences)
-  }
-
   def fromString(name: String, contents: String, segmentSentences: Boolean = false): Document =
     fromString(name, contents, if (segmentSentences) cc.factorie.app.nlp.segment.ClearSegmenter else cc.factorie.app.nlp.segment.ClearTokenizer)
 
   def fromString(name: String, contents: String, processor: DocumentProcessor): Document =
     processor.process(new Document(name, contents))
+
+  def fromFile(file: File, segmentSentences: Boolean = false): Document = {
+    val string = scala.io.Source.fromFile(file).mkString
+    fromString(file.getCanonicalPath, string, segmentSentences)
+  }
 
   def fromDirectory(dir:File, segmentSentences:Boolean): Seq[Document] = {
     for (file <- files(dir)) yield fromFile(file, segmentSentences)

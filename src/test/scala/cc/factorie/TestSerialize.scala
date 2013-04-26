@@ -152,7 +152,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     val model = new app.nlp.pos.POS3
     val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
     model.serialize(fileName)
-    val otherModel = app.nlp.pos.POS3.load(fileName)
+    val otherModel = app.nlp.pos.POS3.fromFilename(fileName)
   }
 
   @Test def testInstanceSerialize(): Unit = {

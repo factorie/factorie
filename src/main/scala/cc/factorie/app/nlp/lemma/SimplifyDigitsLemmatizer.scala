@@ -7,4 +7,5 @@ class SimplifyDigitsLemmatizer extends DocumentProcessor {
     for (token <- document.tokens) token.setLemmaString(cc.factorie.app.strings.simplifyDigits(token.string))
     document
   }
+  override def tokenAttrString(token:Token): String = token.lemmaString
 }
