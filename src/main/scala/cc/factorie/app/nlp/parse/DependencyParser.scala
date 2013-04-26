@@ -24,6 +24,7 @@ import cc.factorie._
 import app.classify.{Classification, Classifier, LabelList}
 //import bp.ParallelTrainer
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
 
@@ -103,7 +104,7 @@ object ParseFeatureExtractors {
   val nullLemma = new TokenLemma(null, "null")
   // assumes all locations > 0
   def formFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
-  def lemmaFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).lemma }, i))
+  def lemmaFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
   def tagFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).posLabel.value.toString }, i))
   def depRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
   def lChildDepRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {

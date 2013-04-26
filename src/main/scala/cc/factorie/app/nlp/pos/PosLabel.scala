@@ -22,6 +22,9 @@ object PosDomain extends CategoricalDomain[String]
 @deprecated("Use PTBPosLabel instead.")
 class PosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PosDomain } 
 
+// TODO Rename to PPosDomain, just because it is shorter and easier to pronounce
+// TODO Consider renaming classes POS1... to Pos1
+
 /** Penn Treebank part-of-speech tag domain. */
 object PTBPosDomain extends CategoricalDomain[String] {
   this ++= Vector(

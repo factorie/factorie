@@ -17,7 +17,11 @@ import java.io.File
 import cc.factorie.app.strings.StringSegmenter
 
 object LoadPlainText {
-  def fromString(name: String, contents: String, segmentSentences: Boolean = false): Document =
+  
+  def fromString(name: String, contents: String): Document = new Document(name, contents)
+  
+  @deprecated("Use fromString(String,String), and do segmentation separately.")
+  def fromString(name: String, contents: String, segmentSentences: Boolean): Document =
     fromString(name, contents, if (segmentSentences) cc.factorie.app.nlp.segment.ClearSegmenter else cc.factorie.app.nlp.segment.ClearTokenizer)
 
   def fromString(name: String, contents: String, processor: DocumentProcessor): Document =

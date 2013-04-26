@@ -36,7 +36,7 @@ object NLP {
       var document = cc.factorie.app.nlp.LoadPlainText.fromString("<stdin>", in.mkString)
       for (processor <- processors)
         document = processor.process(document)
-      out.println(document.owplString(processors.map(p => p.tokenAttrString(_))))
+      out.println(document.owplString(processors.map(p => p.tokenAnnotationString(_))))
       out.close();
       in.close();
       socket.close()

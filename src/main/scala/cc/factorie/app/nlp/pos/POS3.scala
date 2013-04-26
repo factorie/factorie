@@ -132,14 +132,13 @@ class POS3 extends DocumentProcessor {
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    // TODO What is the best way to test/ensure that lemmatization has been done already?
-    for (token <- tokens) token.setLemmaString(lemmatize(token.string))
-    tokens.foreach(t => if (t.attr[PTBPosLabel] eq null) t.attr += new PTBPosLabel(t, "NNP"))
     val weightsMatrix = model.evidenceTemplate.weights
-    for (i <- 0 until tokens.length) {
-      val featureVector = features(tokens(i))
+    for (token <- tokens) {
+      assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
+      if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
+      val featureVector = features(token)
       val prediction = weightsMatrix * featureVector
-      tokens(i).attr[PTBPosLabel].set(prediction.maxIndex)(null)
+      token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
     }
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
@@ -169,7 +168,8 @@ class POS3 extends DocumentProcessor {
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PTBPosLabel(t,s))
     println("Read %d training tokens.".format(trainDocs.map(_.length).sum))
     // TODO Lemmatizing should be pulled into a a DocumentProcessor
-    for (doc <- (trainDocs ++ testDocs); token <- doc.tokens) token.setLemmaString(lemmatize(token.string)) // Calculate and set the lemmas once and for all.
+    for (doc <- (trainDocs ++ testDocs)) cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
+    //for (doc <- (trainDocs ++ testDocs); token <- doc.tokens) token.setLemmaString(lemmatize(token.string)) // Calculate and set the lemmas once and for all.
     WordData.preProcess(trainDocs)
     val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)
@@ -209,8 +209,10 @@ class POS3 extends DocumentProcessor {
     if (saveModel) serialize(modelFile)
   }
 
-  def process(d: Document) = { predict(d); d}
-  override def tokenAttrString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+  def process1(d: Document) = { predict(d); d }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[lemma.SimplifyDigitsTokenLemma])
+  def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
+  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
 
 

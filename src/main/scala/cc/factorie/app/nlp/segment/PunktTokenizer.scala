@@ -105,9 +105,12 @@ class PunktTokenizer extends DocumentProcessor {
     //doc.tokens.map(_.string).iterator
   }
 
+  // TODO Fix this to fit better into the DocumentProcessor framework, e.g. setting postAttrs
   def process(documents: Seq[Document]): Unit = processLogic(documents, sentenceBoundaryInference)
 
-  def process(document: Document): Document = { processLogic(Seq(document), sentenceBoundaryInference); document }
+  def process1(document: Document): Document = { processLogic(Seq(document), sentenceBoundaryInference); document }
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 
   private[this] def processLogic(documents: Seq[Document], inference: SentenceBoundaryInference): Unit = inference match {
     case PerDocument => documents.foreach(d => processLogic(Seq(d), JointlyAcrossDocuments))

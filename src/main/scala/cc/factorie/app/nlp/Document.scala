@@ -65,6 +65,9 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     case s:TokenSpan => super.-=(s)
   }
   
+  // Keeping records of which DocumentAnnotators have been run on this document, producing which annotations
+  val documentProcessors = new DocumentProcessorMap
+  
   /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {
     val buf = new StringBuffer
@@ -101,20 +104,6 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     }
     buf.toString
   }
-}
-
-/** Performs some NLP inference on a Document and returns a Document (perhaps the same one) containing the new annotations. */
-trait DocumentProcessor {
-  // NOTE: this method may mutate and return the same document that was passed in
-  def process(d: Document): Document
-  /** How the annotation of this DocumentProcessor should be printed in one-word-per-line (OWPL) format.
-      If there is no per-token annotation, return null.  Used in Document.owplString. */
-  def tokenAttrString(token:Token): String = null
-  // TODO Implement these
-  //def prereqs: Iterable[DocumentProcessor]
-  //def tokenAttrs: Iterable[Class[_]] = Nil
-  //def sentenceAttrs: Iterable[Class[_]] = Nil
-  //def documentAttrs: Iterable[Class[_]] = Nil
 }
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. */

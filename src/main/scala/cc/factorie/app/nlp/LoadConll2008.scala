@@ -17,6 +17,7 @@ package cc.factorie.app.nlp
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
 import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.lemma.TokenLemma
 
 import java.io.PrintWriter
 
@@ -66,9 +67,9 @@ object LoadConll2008 {
         val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new PosLabel(token, partOfSpeech)
+        token.attr += new PosLabel(token, partOfSpeech) // TODO Change this to PTBPosLabel
         if (loadLemma)
-          token.attr += new TokenLemma(token, lemma)
+          token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }

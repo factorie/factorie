@@ -2,10 +2,16 @@ package cc.factorie.app.nlp.lemma
 import cc.factorie._
 import cc.factorie.app.nlp._
 
+class SimplifyDigitsTokenLemma(token:Token, s:String) extends TokenLemma(token, s)
+
 class SimplifyDigitsLemmatizer extends DocumentProcessor {
-  def process(document:Document): Document = {
-    for (token <- document.tokens) token.setLemmaString(cc.factorie.app.strings.simplifyDigits(token.string))
+  def process1(document:Document): Document = {
+    for (token <- document.tokens) token.attr += new SimplifyDigitsTokenLemma(token, cc.factorie.app.strings.simplifyDigits(token.string))
     document
   }
-  override def tokenAttrString(token:Token): String = token.lemmaString
+  override def tokenAnnotationString(token:Token): String = token.lemmaString
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = List(classOf[SimplifyDigitsTokenLemma])
 }
+
+object SimplifyDigitsLemmatizer extends SimplifyDigitsLemmatizer

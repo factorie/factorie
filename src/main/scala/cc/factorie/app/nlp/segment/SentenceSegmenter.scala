@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{DocumentProcessor, Sentence, Document}
+import cc.factorie.app.nlp._
 
 /** Author: martin */
 
@@ -9,7 +9,7 @@ import cc.factorie.app.nlp.{DocumentProcessor, Sentence, Document}
 class SentenceSegmenter extends DocumentProcessor {
   val lastTokenRegex = "^[.?!][\\p{Pe}\\p{Pf}]?$|^[\\p{Pe}\\p{Pf}]?[.?!]$".r
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
-  def process(document: Document): Document = {
+  def process1(document: Document): Document = {
     val endingIdxs = document.tokens.filter(token => lastTokenRegex.findFirstIn(token.string) != None).map(_.position)
     var prevIdx = 0
     for (idx <- endingIdxs) {
@@ -18,6 +18,8 @@ class SentenceSegmenter extends DocumentProcessor {
     }
     document
   }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
+  def postAttrs: Iterable[Class[_]] = List(classOf[Sentence])
 }
 
 object SentenceSegmenter extends SentenceSegmenter {
