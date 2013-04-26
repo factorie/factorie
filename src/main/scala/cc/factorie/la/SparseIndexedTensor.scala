@@ -40,7 +40,7 @@ trait SparseIndexedTensor extends Tensor {
     System.arraycopy(__values, 0, newVal, 0, __npos)
     __indices = newInd; __values = newVal
   }
-  private def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
+  def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
   def trim: Unit = setCapacity(__npos)
   
   // TODO There must already be functions somewhere that do this.
