@@ -18,6 +18,7 @@ import cc.factorie._
 import cc.factorie.optimize._
 import la.{Tensor1, Tensor}
 
+// TODO should really change this name since the SampleRank objective is not the MaxEnt objective -luke
 class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
