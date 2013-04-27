@@ -8,17 +8,19 @@ import cc.factorie._
  *
  * On each line, there should be a space-separated label and word.
  * Sentences are separated by blank lines.
+ * Returns all data in a single document.
  */
 object LoadOWPL {
-  def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], takeOnly: Int = -1): Seq[Document] = {
+  def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document("", "")
+    doc.documentProcessors(classOf[Token]) = null // register that we have token boundaries
     var sentence = new Sentence(doc)
     var numSentences = 1
     for (line <- io.Source.fromFile(file).getLines) {
       if (line.trim == "") {
         sentence = new Sentence(doc)
         numSentences += 1
-        if (takeOnly > -1 && numSentences > takeOnly)
+        if (limitSentenceCount > -1 && numSentences > limitSentenceCount)
           return Seq(doc)
       }
       else {
@@ -30,6 +32,8 @@ object LoadOWPL {
         doc.appendString(" ")
       }
     }
+    doc.chainFreeze
+    //println("LoadOWPL doc.tokens.length="+doc.tokens.length+" last token: "+doc.tokens.last.string+" "+doc.tokens.last.attr)
     Seq(doc)
   }
 }

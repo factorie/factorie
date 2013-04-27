@@ -26,9 +26,16 @@ object LoadConll2003 {
   def fromFilename(filename:String, BILOU:Boolean = false): Seq[Document] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
+    def newDocument(name:String): Document = {
+      val document = new Document(name, "")
+      document.documentProcessors(classOf[Token]) = null // register that we have token boundaries
+      document.documentProcessors(classOf[Sentence]) = null // register that we have sentence boundaries
+      document.documentProcessors(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
+      document
+    }
 
     val documents = new ArrayBuffer[Document]
-    var document = new Document("CoNLL2003-"+documents.length, "")
+    var document = newDocument("CoNLL2003-"+documents.length)
     documents += document
     val source = Source.fromFile(new java.io.File(filename))
     var sentence = new Sentence(document)(null)
@@ -40,7 +47,10 @@ object LoadConll2003 {
         sentence = new Sentence(document)(null)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
+        document.chainFreeze
         document = new Document("CoNLL2003-"+documents.length, "")
+        document.documentProcessors(classOf[Token]) = null // register that we have token boundaries
+        document.documentProcessors(classOf[Sentence]) = null // register that we have sentence boundaries
         documents += document
       } else {
         val fields = line.split(' ')
@@ -61,7 +71,7 @@ object LoadConll2003 {
         }
         token.attr += new Conll2003ChainNerLabel(token, ner)
 		    //println("token: " + token + " Ner: " + ner)
-		    token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
+		    token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
       }
     }
     if(BILOU) convertToBILOU(documents)

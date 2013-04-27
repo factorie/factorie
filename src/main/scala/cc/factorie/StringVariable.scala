@@ -17,6 +17,8 @@ package cc.factorie
 object StringDomain extends Domain[String]
 trait StringVar extends Var with VarWithValue[String] {
   def domain = StringDomain
+  def maxToStringLength = 10
+  override def toString = printName + "(" + (if (value.toString.length < maxToStringLength) value else value.toString.take(maxToStringLength)+"...") + ")"
 }
 
 trait MutableStringVar extends StringVar with MutableVar[String]

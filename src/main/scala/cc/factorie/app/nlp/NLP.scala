@@ -7,6 +7,7 @@ object NLP {
   val processors = new scala.collection.mutable.ArrayBuffer[DocumentProcessor]
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
+    //processors += cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer
     processors += new cc.factorie.app.nlp.pos.POS3("/Users/mccallum/tmp/pos-model") // TODO Create a command-line approach for setting this.
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val socket = new CmdOption("socket", 3228, "SOCKETNUM", "On which socket number NLP server should listen.")

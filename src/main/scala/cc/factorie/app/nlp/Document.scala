@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 /** Value is the sequence of tokens */
-// Consider Document(strValue:String, name:String = "")
+// Consider Document(strValue:String, val name:String = "")
 // TODO: Must all Documents have a name?  Alexandre thinks not.
 class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
     
@@ -66,7 +66,8 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   }
   
   // Keeping records of which DocumentAnnotators have been run on this document, producing which annotations
-  val documentProcessors = new DocumentProcessorMap
+  val documentProcessors = new DocumentProcessorMap // TODO Remove this
+  //val documentAnnotators = new DocumentAnnotatorMap
   
   /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {
@@ -84,19 +85,20 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   
   /** Return a String containing the token strings in the document, with one-word-per-line 
       and various tab-separated attributes appended on each line. */
+  // TODO Remove this default argument -akm
   def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.posLabel.categoryValue)): String = {
     val buf = new StringBuffer
     for (token <- tokens) {
       if (token.isSentenceStart) buf.append("\n")
       buf.append(token.string); buf.append("\t")
-      buf.append(token.lemmaString); buf.append("\t")
-      buf.append(token.stringStart); buf.append("\t")
-      buf.append(token.stringEnd)
+      //buf.append(token.lemmaString); buf.append("\t") // This can now be printed as an attribute
+      //buf.append(token.stringStart); buf.append("\t")
+      //buf.append(token.stringEnd)
       for (af <- attributes) {
         buf.append("\t")
         af(token) match {
           case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue.toString)
-          case null => buf.append("(null)")
+          case null => {}
           case v:Any => buf.append(v.toString)
         }
       }

@@ -24,8 +24,16 @@ class POS3 extends DocumentProcessor {
     def preProcess(documents: Seq[Document]) {
       val wordCounts = collection.mutable.HashMap[String,Int]()
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
+      var tokenCount = 0
       documents.foreach(doc => {
+        println("POS3.WordData.preProcess doc.tokens.length "+doc.tokens.length)
         doc.tokens.foreach(t => {
+          tokenCount += 1
+          if (t.attr[PTBPosLabel] eq null) {
+            println("POS3.WordData.preProcess tokenCount "+tokenCount)
+            println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+            println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
+          }
           val lemma = t.lemmaString
           if (!wordCounts.contains(lemma)) {
             wordCounts(lemma) = 0
@@ -109,6 +117,7 @@ class POS3 extends DocumentProcessor {
     addFeature(a0+ap1+ap2)
     addFeature("PREFIX3="+w0.take(3))
     addFeature("SUFFIX4="+w0.takeRight(4))
+    //addFeature("SUFFIX2="+w0.takeRight(2))  // I think this would help with NNPS -akm
     addFeature("SHAPE="+cc.factorie.app.strings.stringShape(w0, 2)) // TODO(apassos): add the remaining jinho features not contained in shape
     addFeature("HasPeriod="+(w0.indexOf('.') >= 0))
     addFeature("HasHyphen="+(w0.indexOf('-') >= 0))
@@ -166,10 +175,13 @@ class POS3 extends DocumentProcessor {
   def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean, saveModel: Boolean) {
     val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PTBPosLabel(t,s))
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PTBPosLabel(t,s))
+    //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.length).sum))
-    // TODO Lemmatizing should be pulled into a a DocumentProcessor
+    println("Read %d testing tokens.".format(testDocs.map(_.length).sum))
+    // TODO Accomplish this lemmatizing instead by calling POS3.preProcess
+    //for (d <- trainDocs) println("POS3.train 2 trainDoc.length="+d.length)
     for (doc <- (trainDocs ++ testDocs)) cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
-    //for (doc <- (trainDocs ++ testDocs); token <- doc.tokens) token.setLemmaString(lemmatize(token.string)) // Calculate and set the lemmas once and for all.
+    //for (d <- trainDocs) println("POS3.train 3 trainDoc.length="+d.length)
     WordData.preProcess(trainDocs)
     val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)

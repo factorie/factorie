@@ -307,7 +307,7 @@ class SpanNER {
       for (file <- files(new File(dirname))) {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
-        documents += LoadNYTimesXML.fromFile(file, false)
+        documents += cc.factorie.app.nlp.segment.ClearTokenizer.process(LoadNYTimesXML.fromFile(file))
         println("  "+documents.last.length)
         documents.last.foreach(t=> print(t.string+" ")); println
       }

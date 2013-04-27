@@ -9,8 +9,8 @@ class SimplifyDigitsLemmatizer extends DocumentProcessor {
     for (token <- document.tokens) token.attr += new SimplifyDigitsTokenLemma(token, cc.factorie.app.strings.simplifyDigits(token.string))
     document
   }
-  override def tokenAnnotationString(token:Token): String = token.lemmaString
-  def prereqAttrs: Iterable[Class[_]] = Nil
+  override def tokenAnnotationString(token:Token): String = { val l = token.attr[SimplifyDigitsTokenLemma]; l.value }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
   def postAttrs: Iterable[Class[_]] = List(classOf[SimplifyDigitsTokenLemma])
 }
 
