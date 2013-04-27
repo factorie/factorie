@@ -46,8 +46,9 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   //def this(values:C*) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
-  private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
+  private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
   def _indices = __indices
+  private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
@@ -58,26 +59,33 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     if (category == null) throw new Error("Null is not a valid category.")
     if (_frozen) _indices.getOrElse(category, null.asInstanceOf[Value])
     else {
-      if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
-        _indices.synchronized({
-          if (_indices.get(category).isEmpty) {
-            val m = _elements.size
-            if (maxSize > 0 && m >= maxSize) {
-              if (growPastMaxSize)
-                throw new Error("Index size exceeded maxSize")
-              else {
-                freeze()
-                return null.asInstanceOf[Value]
+      lock.withReadLock {
+        if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
+          lock.readUnlock()
+          lock.writeLock()
+          try {
+            if (_indices.get(category).isEmpty) {
+              val m = _elements.size
+              if (maxSize > 0 && m >= maxSize) {
+                if (growPastMaxSize)
+                  throw new Error("Index size exceeded maxSize")
+                else {
+                  freeze()
+                  return null.asInstanceOf[Value]
+                }
               }
+              val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
+              _elements += e
+              _indices(category) = e
             }
-            val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
-            _elements += e
-            _indices(category) = e
+          } finally {
+            lock.readLock()
+            lock.writeUnlock()
           }
-        })
+        }
+        //_indices.getOrElse(category, null)
+        _indices(category)
       }
-      //_indices.getOrElse(category, null)
-      _indices(category)
     }
   }
   override def apply(i:Int): Value = _elements(i)
@@ -95,12 +103,12 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     i
   }
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:C): Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
+  def getIndex(category:C): Int = lock.withReadLock({ _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue})
   
   def +=(x:C) : Unit = this.value(x)
   def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
   /** Wipe the domain and its indices clean */
-  def clear(): Unit = { _frozen = false; _elements.clear(); _indices.clear() }
+  def clear(): Unit = { _frozen = false; _elements.clear(); lock.withWriteLock { _indices.clear() } }
   // Separate argument types preserves return collection type
   def indexAll(c: Iterator[C]) = c map index
   def indexAll(c: List[C]) = c map index
@@ -144,9 +152,6 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
   override def freeze(): Unit = {
     _frozen = true
-    val newMap = mutable.HashMap[C, Value]()
-    __indices.foreach(i => newMap(i._1) = i._2)
-    __indices = newMap
   }
 
   /** Return the number of unique entries with count equal to 'c'. */

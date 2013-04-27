@@ -11,4 +11,12 @@ class RWLock {
   def writeLock() { _lock.writeLock().lock() }
   def readUnlock() { _lock.readLock().unlock() }
   def writeUnlock() { _lock.writeLock().unlock() }
+  def withReadLock[T](value: => T) = {
+    readLock()
+    try { value } finally { readUnlock() }
+  }
+  def withWriteLock[T](value: => T) = {
+    writeLock()
+    try { value } finally { writeUnlock() }
+  }
 }
