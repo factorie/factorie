@@ -117,16 +117,20 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
 trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with ElementType[E] {
   this: This =>
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
+  private var _frozen = false
   def apply(i:Int): E = _chainseq(i)
   def length = _chainseq.length
   @inline final def links: IndexedSeq[E] = _chainseq
   def +=(e:E): this.type = {
+    if (_frozen) throw new Error("Cannot append to frozen chain "+getClass)
     e._setChainPosition(this, _chainseq.length)
     _chainseq += e
     this
   }
   def ++=(es:Iterable[E]): this.type = { es.foreach(+=(_)); this }
   def asSeq: IndexedSeq[E] = _chainseq
+  def chainFrozen: Boolean = _frozen
+  def chainFreeze: Unit = _frozen = true
 }
 
 /** A Chain that is also a Variable, with value IndexedSeq[ElementType] */
