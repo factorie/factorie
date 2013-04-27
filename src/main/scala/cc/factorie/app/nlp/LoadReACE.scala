@@ -2,7 +2,7 @@ package cc.factorie.app.nlp
 
 import coref._
 import ner.NerSpan
-import pos.PosLabel
+import pos.PTBPosLabel
 import relation.RelationVariables.{RelationMention, RelationMentions}
 
 import xml.{XML, NodeSeq}
@@ -72,6 +72,10 @@ object LoadReACE {
 
   private def makeDoc(xml: String): Document = {
     val doc = new Document(xml)
+    doc.documentProcessors(classOf[Token]) = null
+    doc.documentProcessors(classOf[Sentence]) = null
+    doc.documentProcessors(classOf[PTBPosLabel]) = null
+
     doc.attr += new ACEFileIdentifier(xml)
     val xmlText: NodeSeq = XML.loadFile(xml + ".ttt.xml")
 
@@ -89,8 +93,8 @@ object LoadReACE {
           val t = new Token(sent, w.text)
           doc.appendString(" ")
           val annotations = makeTokenAnnotations(w)
-          t.attr += annotations
-          annotations.pos.foreach(p => t.attr += new PosLabel(t, p))
+          t.attr += annotations // TODO I think these annotations should go in more standard FACTORIE NLP form -akm
+          annotations.pos.foreach(p => t.attr += new PTBPosLabel(t, p))
         }
       }
     }

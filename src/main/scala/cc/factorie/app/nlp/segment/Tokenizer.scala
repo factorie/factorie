@@ -5,7 +5,7 @@ import cc.factorie.app.strings.RegexSegmenter
 
 // TODO: this still needs testing on more text, contractions, and probably simplification --brian
 // TODO: Gather abbreviations in separate Collection[String], and remove "may\\." from the collection. 
-
+// TODO: Rename to RegexTokenizer
 /** Split a String into Tokens.  Aims to adhere to CoNLL 2003 tokenization rules.
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
@@ -30,7 +30,7 @@ class Tokenizer extends RegexSegmenter(Seq(
 
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
 
-  def process(document: Document): Document = {
+  def process1(document: Document): Document = {
     val tokenIterator = this.apply(document.string)
     while (tokenIterator.hasNext) {
       tokenIterator.next()
@@ -38,6 +38,8 @@ class Tokenizer extends RegexSegmenter(Seq(
     }
     document
   }
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = List(classOf[Token])
 }
 
 object Tokenizer extends Tokenizer {

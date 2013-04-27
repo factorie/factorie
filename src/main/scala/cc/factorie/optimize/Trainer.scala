@@ -345,6 +345,7 @@ class InlineSGDTrainer[M<:Model](val model: M, val lrate : Double = 0.01, var op
   def isConverged = iteration >= maxIterations
 }
 
+// TODO Rename this OnlineTrainer, because this won't necessarily do "gradient descent", and "batch" vs "online" is more comment vocab.
 class SGDTrainer[M<:Model](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor.asInstanceOf[WeightsTensor])
   var iteration = 0

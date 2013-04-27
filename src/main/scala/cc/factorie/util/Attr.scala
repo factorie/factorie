@@ -14,6 +14,8 @@
 
 package cc.factorie.util
 
+// TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
+
 /** Provides member "attr" which is a map from a class to an attribute value (instance of that class).
     For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */
 trait Attr {
@@ -138,7 +140,8 @@ trait Attr {
         value
       }
     }
-
+   
+    override def toString = values.mkString(" ")
 
   }
 

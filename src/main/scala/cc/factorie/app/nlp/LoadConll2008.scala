@@ -17,6 +17,7 @@ package cc.factorie.app.nlp
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
 import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.lemma.TokenLemma
 
 import java.io.PrintWriter
 
@@ -44,6 +45,10 @@ object LoadConll2008 {
 
   def fromFilename(filename:String): Seq[Document] = {
     var document: Document = new Document("Conll2008", "")
+    document.documentProcessors(classOf[Token]) = null // register that we have token boundaries
+    document.documentProcessors(classOf[Sentence]) = null // register that we have sentence boundaries
+    document.documentProcessors(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
+    if (loadLemma) document.documentProcessors(classOf[TokenLemma]) = null // register that we have lemma
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -66,9 +71,9 @@ object LoadConll2008 {
         val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new PosLabel(token, partOfSpeech)
+        token.attr += new PosLabel(token, partOfSpeech) // TODO Change this to PTBPosLabel
         if (loadLemma)
-          token.attr += new TokenLemma(token, lemma)
+          token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }

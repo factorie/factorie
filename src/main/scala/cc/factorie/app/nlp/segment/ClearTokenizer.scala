@@ -12,8 +12,7 @@ object ClearSegmenter extends EnglishSegmenter(ClearTokenizer)
 trait AbstractSegmenter extends DocumentProcessor {
   def tokenizer: AbstractTokenizer
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]
-
-  def process(d: Document): Document = {
+  def process1(d: Document): Document = {
     val sentences = getSentences(d.string)
     TokenizerHelper.addTokensToDoc(sentences.flatten, d)
     var start = 0
@@ -23,12 +22,15 @@ trait AbstractSegmenter extends DocumentProcessor {
     }
     d
   }
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 }
 
 trait AbstractTokenizer extends DocumentProcessor {
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
-
-  def process(d: Document): Document = { TokenizerHelper.addTokensToDoc(getTokenList(d.string), d); d }
+  def process1(d: Document): Document = { TokenizerHelper.addTokensToDoc(getTokenList(d.string), d); d }
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 }
 
 class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegmenter {

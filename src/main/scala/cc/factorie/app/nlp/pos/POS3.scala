@@ -10,10 +10,11 @@ import java.io.File
 import org.junit.Assert._
 
 class POS3 extends DocumentProcessor {
+  def this(filename: String) = { this(); deserialize(filename) }
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
   val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
   
-  def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string).toLowerCase
+  def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string) // .toLowerCase
 
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
@@ -23,8 +24,16 @@ class POS3 extends DocumentProcessor {
     def preProcess(documents: Seq[Document]) {
       val wordCounts = collection.mutable.HashMap[String,Int]()
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
+      var tokenCount = 0
       documents.foreach(doc => {
+        println("POS3.WordData.preProcess doc.tokens.length "+doc.tokens.length)
         doc.tokens.foreach(t => {
+          tokenCount += 1
+          if (t.attr[PTBPosLabel] eq null) {
+            println("POS3.WordData.preProcess tokenCount "+tokenCount)
+            println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+            println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
+          }
           val lemma = t.lemmaString
           if (!wordCounts.contains(lemma)) {
             wordCounts(lemma) = 0
@@ -107,11 +116,12 @@ class POS3 extends DocumentProcessor {
     addFeature(pm1+ap1+ap2)
     addFeature(a0+ap1+ap2)
     addFeature("PREFIX3="+w0.take(3))
-    addFeature("SUFIX4="+w0.takeRight(4))
+    addFeature("SUFFIX4="+w0.takeRight(4))
+    //addFeature("SUFFIX2="+w0.takeRight(2))  // I think this would help with NNPS -akm
     addFeature("SHAPE="+cc.factorie.app.strings.stringShape(w0, 2)) // TODO(apassos): add the remaining jinho features not contained in shape
-    addFeature("HasPeriod="+w0.contains("."))
-    addFeature("HasDigit="+w0.contains("[0-9]"))
-    addFeature("HasHyphen="+w0.contains("-"))
+    addFeature("HasPeriod="+(w0.indexOf('.') >= 0))
+    addFeature("HasHyphen="+(w0.indexOf('-') >= 0))
+    addFeature("HasDigit="+w0.matches(".*[0-9].*"))
     result
   }
 
@@ -130,16 +140,20 @@ class POS3 extends DocumentProcessor {
     }
   }
   
-  def predict(s: Sentence)(implicit d: DiffList = null) {
-    // TODO What is the best way to test/ensure that lemmatization has been done already?
-    for (token <- s.tokens) token.setLemmaString(lemmatize(token.string))
-    s.tokens.foreach(t => if (t.attr[PTBPosLabel] eq null) t.attr += new PTBPosLabel(t, "NNP"))
+  def predict(tokens: Seq[Token]): Unit = {
     val weightsMatrix = model.evidenceTemplate.weights
-    for (i <- 0 until s.length) {
-      val featureVector = features(s.tokens(i))
+    for (token <- tokens) {
+      assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
+      if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
+      val featureVector = features(token)
       val prediction = weightsMatrix * featureVector
-      s.tokens(i).attr[PTBPosLabel].set(prediction.maxIndex)
+      token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
     }
+  }
+  def predict(span: TokenSpan): Unit = predict(span.tokens)
+  def predict(document: Document): Unit = {
+    if (document.sentences.length > 0) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
+    else predict(document.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
   }
 
   def serialize(filename: String) {
@@ -151,7 +165,7 @@ class POS3 extends DocumentProcessor {
     //BinarySerializer.serialize(FeatureDomain.dimensionDomain, file)
   }
 
-  def deSerialize(filename: String) {
+  def deserialize(filename: String) {
     import CubbieConversions._
     val file = new File(filename)
     assert(file.exists(), "Trying to load non-existent file: '" +file)
@@ -161,9 +175,13 @@ class POS3 extends DocumentProcessor {
   def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean, saveModel: Boolean) {
     val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PTBPosLabel(t,s))
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PTBPosLabel(t,s))
+    //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.length).sum))
-    // TODO Lemmatizing should be pulled into a a DocumentProcessor
-    for (doc <- (trainDocs ++ testDocs); token <- doc.tokens) token.setLemmaString(lemmatize(token.string)) // Calculate and set the lemmas once and for all.
+    println("Read %d testing tokens.".format(testDocs.map(_.length).sum))
+    // TODO Accomplish this lemmatizing instead by calling POS3.preProcess
+    //for (d <- trainDocs) println("POS3.train 2 trainDoc.length="+d.length)
+    for (doc <- (trainDocs ++ testDocs)) cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
+    //for (d <- trainDocs) println("POS3.train 3 trainDoc.length="+d.length)
     WordData.preProcess(trainDocs)
     val sentences = trainDocs.flatMap(_.sentences)
     val testSentences = testDocs.flatMap(_.sentences)
@@ -173,7 +191,7 @@ class POS3 extends DocumentProcessor {
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    val numIterations = 1
+    val numIterations = 3
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
@@ -184,7 +202,7 @@ class POS3 extends DocumentProcessor {
         (0 until sentence.length).map(i => new TokenClassifierExample(sentence.tokens(i),
             if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective))
       })
-      trainer.processExamples(examples.take(1000))
+      trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap
       var total = 0.0
       var correct = 0.0
@@ -199,48 +217,50 @@ class POS3 extends DocumentProcessor {
         }
       })
       println("Accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
-      if (saveModel) serialize(modelFile+"-iter-"+trainer.iteration)
     }
+    if (saveModel) serialize(modelFile)
   }
 
-  // NOTE: this method may mutate and return the same document that was passed in
-  def process(d: Document) = { d.sentences.foreach(predict(_)); d}
-
+  def process1(d: Document) = { predict(d); d }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[lemma.SimplifyDigitsTokenLemma])
+  def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
+  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
 
 
 object POS3 {
   def main(args: Array[String]) {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val modelFile = new CmdOption("model", "", "FILENAME", "model file prefix")
-      val testFile = new CmdOption("test", "", "FILENAME", "test file")
-      val trainFile = new CmdOption("train", "", "FILENAME", "train file")
-      val lrate = new CmdOption("lrate", 0.1, "FLOAT", "learning rate")
-      val decay = new CmdOption("decay", 0.01, "FLOAT", "learning rate decay")
-      val cutoff = new CmdOption("cutoff", 2, "INT", "discard features less frequent than this")
-      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "whether to update examples in later iterations")
-      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "whether to use hinge loss (or log loss)")
-      val saveModel = new CmdOption("save-model", false, "BOOL", "whether to save the model")
+      val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
+      val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
+      val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
+      val lrate = new CmdOption("lrate", 0.1, "FLOAT", "Learning rate for training.")
+      val decay = new CmdOption("decay", 0.01, "FLOAT", "Learning rate decay for training.")
+      val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
+      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
+      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
+      val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
+      val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
     }
     opts.parse(args)
-    // Expects three command-line arguments: a train file, a test file, and a place to save the model in
-    // the train and test files are supposed to be in OWPL format
-    val Pos = new POS3
-    Pos.train(opts.trainFile.value,
-      opts.testFile.value,
-      opts.modelFile.value,
-      opts.lrate.value,
-      opts.decay.value,
-      opts.cutoff.value,
-      opts.updateExamples.value,
-      opts.useHingeLoss.value,
-      opts.saveModel.value)
-    //PTBPosDomain.categories.foreach(s => println(s))    // Print all the POS tags.
+    if (opts.trainFile.wasInvoked) {
+      // Expects three command-line arguments: a train file, a test file, and a place to save the model in
+      // the train and test files are supposed to be in OWPL format
+      val Pos = new POS3
+      Pos.train(opts.trainFile.value, opts.testFile.value, opts.modelFile.value,
+                opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, opts.saveModel.value)
+    } else if (opts.runText.wasInvoked) {
+      val pos = new POS3
+      pos.deserialize(opts.modelFile.value)
+      val doc = cc.factorie.app.nlp.LoadPlainText.fromFile(new java.io.File(opts.runText.value), segmentSentences=true)
+      pos.process(doc)
+      println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
+    }
   }
 
-  def load(name: String): POS3 = {
+  def fromFilename(name: String): POS3 = {
     val c = new POS3
-    c.deSerialize(name)
+    c.deserialize(name)
     c
   }
 }
