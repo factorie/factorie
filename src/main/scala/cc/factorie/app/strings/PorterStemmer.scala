@@ -5,7 +5,7 @@ package cc.factorie.app.strings
  * for thread-safety and style (but definitely not too pretty yet).
  * @author Brian Martin
  */
-object Stemmer {
+object PorterStemmer {
   val vowels = "aeiou"
   val step1aVals = List(("sses", "ss"), ("ies","i"), ("ss","ss"), ("s", ""))
   val step1bVals = List(("at", "ate"), ("bl","ble"), ("iz","ize"))
