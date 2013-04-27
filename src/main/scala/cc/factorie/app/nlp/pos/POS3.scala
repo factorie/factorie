@@ -9,7 +9,7 @@ import scala.collection.mutable.HashMap
 import java.io.File
 import org.junit.Assert._
 
-class POS3 extends DocumentProcessor {
+class POS3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
   val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)

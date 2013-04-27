@@ -3,13 +3,13 @@ package cc.factorie.app.nlp.segment
 import scala.collection.mutable
 import java.util.regex.Pattern
 import jregex.{Replacer, TextBuffer, MatchResult, Substitution}
-import cc.factorie.app.nlp.{DocumentProcessor, Document, Token, Sentence}
+import cc.factorie.app.nlp.{DocumentAnnotator, Document, Token, Sentence}
 
 object ClearTokenizer extends EnglishTokenizer(EnglishTokenizerConfig.default)
 
 object ClearSegmenter extends EnglishSegmenter(ClearTokenizer)
 
-trait AbstractSegmenter extends DocumentProcessor {
+trait AbstractSegmenter extends DocumentAnnotator {
   def tokenizer: AbstractTokenizer
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]
   def process1(d: Document): Document = {
@@ -26,7 +26,7 @@ trait AbstractSegmenter extends DocumentProcessor {
   def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 }
 
-trait AbstractTokenizer extends DocumentProcessor {
+trait AbstractTokenizer extends DocumentAnnotator {
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
   def process1(d: Document): Document = { TokenizerHelper.addTokensToDoc(getTokenList(d.string), d); d }
   def prereqAttrs: Iterable[Class[_]] = Nil

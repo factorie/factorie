@@ -65,7 +65,7 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
     def hasNext = i < start + _length
     def next: ElementType = { i += 1; Span.this.chain.apply(i - 1) }
   }*/
-  def apply(i: Int) = _chain(i + start)
+  def apply(i: Int) = _chain(i + _start)
   def isAtStart = start == 0
   def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]) = {
     assert(this.chain eq that.chain)

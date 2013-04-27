@@ -66,8 +66,10 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   }
   
   // Keeping records of which DocumentAnnotators have been run on this document, producing which annotations
-  val documentProcessors = new DocumentProcessorMap // TODO Remove this
-  //val documentAnnotators = new DocumentAnnotatorMap
+  //val documentProcessors = new DocumentAnnotatorMap // TODO Remove this
+  val annotators = new DocumentAnnotatorMap
+  def hasAnnotation(c:Class[_]): Boolean = annotators.keys.exists(k => c.isAssignableFrom(k))
+  def annotatorFor(c:Class[_]): Option[DocumentAnnotator] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
   
   /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {

@@ -24,7 +24,7 @@ object LoadPlainText {
   def fromString(name: String, contents: String, segmentSentences: Boolean): Document =
     fromString(name, contents, if (segmentSentences) cc.factorie.app.nlp.segment.ClearSegmenter else cc.factorie.app.nlp.segment.ClearTokenizer)
 
-  def fromString(name: String, contents: String, processor: DocumentProcessor): Document =
+  def fromString(name: String, contents: String, processor: DocumentAnnotator): Document =
     processor.process(new Document(name, contents))
 
   def fromFile(file: File, segmentSentences: Boolean = false): Document = {

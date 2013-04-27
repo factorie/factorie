@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.{DocumentProcessor, Sentence, Document, Token}
+import cc.factorie.app.nlp.{DocumentAnnotator, Sentence, Document, Token}
 import cc.factorie.app.strings.StringSegmentIterator
 
 object DefaultRules {
@@ -81,7 +81,7 @@ case object Non extends SentenceBoundaryInference
 
 object PunktTokenizer extends PunktTokenizer
 
-class PunktTokenizer extends DocumentProcessor {
+class PunktTokenizer extends DocumentAnnotator {
 
   def commonAbbreviations: Set[String] = DefaultRules.commonAbbreviations
   def commonSentenceStarters: Set[String] = DefaultRules.commonSentenceStarters

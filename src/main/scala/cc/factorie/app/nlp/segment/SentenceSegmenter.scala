@@ -6,7 +6,7 @@ import cc.factorie.app.nlp._
 
 // Provides sentence spans to the input document.  The document should already be tokenized by nlp.segment.Tokenizer.
 // This segmenter will need generalization if documents are to be tokenized by any other method.
-class SentenceSegmenter extends DocumentProcessor {
+class SentenceSegmenter extends DocumentAnnotator {
   val lastTokenRegex = "^[.?!][\\p{Pe}\\p{Pf}]?$|^[\\p{Pe}\\p{Pf}]?[.?!]$".r
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
   def process1(document: Document): Document = {

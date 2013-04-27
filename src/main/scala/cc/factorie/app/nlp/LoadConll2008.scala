@@ -45,10 +45,10 @@ object LoadConll2008 {
 
   def fromFilename(filename:String): Seq[Document] = {
     var document: Document = new Document("Conll2008", "")
-    document.documentProcessors(classOf[Token]) = null // register that we have token boundaries
-    document.documentProcessors(classOf[Sentence]) = null // register that we have sentence boundaries
-    document.documentProcessors(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
-    if (loadLemma) document.documentProcessors(classOf[TokenLemma]) = null // register that we have lemma
+    document.annotators(classOf[Token]) = null // register that we have token boundaries
+    document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
+    document.annotators(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
+    if (loadLemma) document.annotators(classOf[TokenLemma]) = null // register that we have lemma
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
