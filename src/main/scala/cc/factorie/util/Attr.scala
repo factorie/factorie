@@ -140,7 +140,8 @@ trait Attr {
         value
       }
     }
-
+   
+    override def toString = values.mkString(" ")
 
   }
 
