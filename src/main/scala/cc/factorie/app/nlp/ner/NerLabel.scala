@@ -33,3 +33,56 @@ abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLa
 abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
 
 
+object ConllNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+   "O",
+   "PER", // even though this never occurs in the CoNLL-2003 training data, it could occur in some other training data
+   "ORG",
+   "LOC",
+   "MISC"
+  )
+  freeze()
+}
+class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
+
+
+object BioConllNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+   "O",
+   "B-PER", // even though this never occurs in the CoNLL-2003 training data, it could occur in some other training data
+   "I-PER",
+   "B-ORG",
+   "I-ORG",
+   "B-LOC",
+   "I-LOC",
+   "B-MISC",
+   "I-MISC"
+  )
+  freeze()
+}
+class BioConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioConllNerDomain }
+
+
+object BilouConllNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+   "O",
+   "B-PER",
+   "I-PER",
+   "L-PER",
+   "U-PER",
+   "B-ORG",
+   "I-ORG",
+   "L-ORG",
+   "U-ORG",
+   "B-LOC",
+   "I-LOC",
+   "L-LOC",
+   "U-LOC",
+   "B-MISC",
+   "I-MISC",
+   "L-MISC",
+   "U-MISC"
+  )  
+  freeze()
+}
+class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
