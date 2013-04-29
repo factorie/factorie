@@ -26,6 +26,9 @@ object LoadPlainText {
 
   def fromString(name: String, contents: String, processor: DocumentAnnotator): Document =
     processor.process(new Document(name, contents))
+    
+  def fromStream(name:String, stream:java.io.InputStream, encoding:String): Document = 
+    new Document(name, scala.io.Source.fromInputStream(stream, encoding).mkString)
 
   def fromFile(file: File, segmentSentences: Boolean = false): Document = {
     val string = scala.io.Source.fromFile(file).mkString
