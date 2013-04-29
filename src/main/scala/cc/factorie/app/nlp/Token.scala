@@ -54,11 +54,13 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
-  def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
-  def stringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.string else null }
+  def string: String = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
+  /** Return the string contents of this Token, either from its speficied attr[C], or if unset, directly as a substring of the Document. */
+  def stringNormalized[C<:TokenString](attrClass:Class[C]): String = { val ts = attr(attrClass); if (ts ne null) ts.value else docSubstring }
+  def stringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.string else null } // TODO I'd like to get rid of this -akm
   /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
   def lemmaString = { val tl = attr[cc.factorie.app.nlp.lemma.TokenLemma]; if (tl ne null) tl.value else string }
-  def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null }
+  def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null } // TODO I'd like to get rid of this -akm
   /** Assign this Token's lemmaString.  A new TokenLemma object will be added to the Token's attr only if the lemmaString is different than the current this.string. */
   //def setLemmaString(lemmaString:String): Unit = if (string != lemmaString) attr += new TokenLemma(this, lemmaString)
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
