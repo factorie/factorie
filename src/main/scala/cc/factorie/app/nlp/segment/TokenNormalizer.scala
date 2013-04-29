@@ -28,7 +28,7 @@ class TokenNormalizer(
       else if (unescapeAsterisk && token.string == "\\*") token.attr += new TokenString(token, "*")
       else if (unescapeAsterisk && token.string == "\\*\\*") token.attr += new TokenString(token, "**")
       else if (twoOneDash && token.string == "--") token.attr += new TokenString(token, "-")
-      else if (twoOneDash && token.string == "Ñ") token.attr += new TokenString(token, "-") // replace m-dash with dash
+      else if (twoOneDash && token.string == "Ã‘") token.attr += new TokenString(token, "-") // replace m-dash with dash
       else if (americanize && BritishToAmerican.contains(token.string)) token.attr += new TokenString(token, BritishToAmerican(token.string))
     }
     document
