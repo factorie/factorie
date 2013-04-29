@@ -26,7 +26,7 @@ class POS3 extends DocumentAnnotator {
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       var tokenCount = 0
       documents.foreach(doc => {
-        println("POS3.WordData.preProcess doc.tokens.length "+doc.tokens.length)
+        //println("POS3.WordData.preProcess doc.tokens.length "+doc.tokens.length)
         doc.tokens.foreach(t => {
           tokenCount += 1
           if (t.attr[PTBPosLabel] eq null) {
@@ -180,7 +180,11 @@ class POS3 extends DocumentAnnotator {
     println("Read %d testing tokens.".format(testDocs.map(_.length).sum))
     // TODO Accomplish this lemmatizing instead by calling POS3.preProcess
     //for (d <- trainDocs) println("POS3.train 2 trainDoc.length="+d.length)
-    for (doc <- (trainDocs ++ testDocs)) cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
+    for (doc <- (trainDocs ++ testDocs)) {
+      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)
+      cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
+      //println("POS3.train:"); doc.tokens.take(50).foreach(t => println(t.string))
+    }
     //for (d <- trainDocs) println("POS3.train 3 trainDoc.length="+d.length)
     WordData.preProcess(trainDocs)
     val sentences = trainDocs.flatMap(_.sentences)
@@ -191,7 +195,7 @@ class POS3 extends DocumentAnnotator {
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    val numIterations = 3
+    val numIterations = 2
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
