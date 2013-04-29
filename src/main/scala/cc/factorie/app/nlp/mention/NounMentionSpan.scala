@@ -13,7 +13,10 @@ object NounMention1 extends DocumentAnnotator {
       if (posPrefix == "NN" || posPrefix == "PR" || (posPrefix == "JJ" && token.hasNext && token.next.attr[pos.PTBPosLabel].categoryValue.take(2) == "NN")) {
         if (span eq null) span = new NounMentionSpan(document, token.position, 1)
         else span.append(1)(null)
-      } else if (span ne null) span = null
+      } else if (span ne null) {
+        if (token.string == "-" && token.hasNext && token.next.attr[pos.PTBPosLabel].categoryValue.take(2) == "NN") span.append(1)(null) // Handle dashed nouns
+        else span = null
+      }
     }
     document
   }

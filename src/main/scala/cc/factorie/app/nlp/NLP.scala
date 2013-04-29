@@ -9,12 +9,17 @@ object NLP {
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
     //processors += cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer
-    annotators += new cc.factorie.app.nlp.pos.POS3("/Users/mccallum/tmp/pos-model") // TODO Create a command-line approach for setting this.
-    annotators += cc.factorie.app.nlp.mention.NounMention1
+    //annotators += new cc.factorie.app.nlp.pos.POS3("/Users/mccallum/tmp/pos-model") // TODO Create a command-line approach for setting this.
+    //annotators += cc.factorie.app.nlp.mention.NounMention1
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val socket = new CmdOption("socket", 3228, "SOCKETNUM", "On which socket number NLP server should listen.")
-      val encoding = new CmdOption("encoding", "ENCODING", "UTF-8", "Character encoding, such as UTF-8")
+      val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding, such as UTF-8")
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
+      // TODO All these options should be replaced by something that will interpret object construction code. -akm
+      val tnorm = new CmdOption("tnorm", null, null, "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
+      val pos3 = new CmdOption("pos3", "/Users/mccallum/tmp/pos-model", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS3(value) }
+      val mention1 = new CmdOption("mention1", null, null, "Annotate noun mention") { override def invoke = annotators += cc.factorie.app.nlp.mention.NounMention1 }
+      val ner3 = new CmdOption("ner3", "/Users/mccallum/tmp/ner-model", "MODELFILE", "Annotate NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER3(value) }
     }
     opts.parse(args)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
@@ -23,7 +28,7 @@ object NLP {
       val listener = new ServerSocket(opts.socket.value)
       println("Listening on port "+opts.socket.value)
       while (true)
-        new ServerThread(listener.accept()).start()
+        new ServerThread(listener.accept(), opts.encoding.value).start()
       listener.close()
     }
     catch {
@@ -33,15 +38,16 @@ object NLP {
     }
   }
   
-  case class ServerThread(socket: Socket) extends Thread("ServerThread") {
+  case class ServerThread(socket: Socket, encoding:String) extends Thread("ServerThread") {
     override def run(): Unit = try {
       val out = new PrintStream(socket.getOutputStream())
-      val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream()))
-      val time = System.currentTimeMillis
+      val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       var document = cc.factorie.app.nlp.LoadPlainText.fromString("<stdin>", in.mkString)
+      val time = System.currentTimeMillis
       for (processor <- annotators)
         document = processor.process(document)
-      logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
+      //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
+      logStream.println("Processed %d tokens.".format(document.length))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
       out.close();
       in.close();
