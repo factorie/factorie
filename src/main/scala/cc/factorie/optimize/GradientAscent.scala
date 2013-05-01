@@ -18,36 +18,45 @@ import cc.factorie._
 import cc.factorie.la._
 
 /** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
-class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
+trait GradientStep extends GradientOptimizer {
+  var it = 0
+  def processGradient(gradient: Tensors, weights: Tensors): Unit = {}
+  def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = 1.0
+  def doGradStep(weights: Tensors, gradient: Tensors, rate: Double): Unit = weights += (gradient, rate)
   def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
-    weights.+=(gradient, rate)
-    rate = nextRate(rate)
+    it += 1
+    processGradient(gradient, weights)
+    val rate = lRate(gradient, weights, value)
+    doGradStep(weights, gradient, rate)
   }
-  def nextRate(oldRate: Double): Double = oldRate
-  // TODO What should go here?
   def isConverged = false
   // TODO What to put here?
-  def reset(): Unit = {}
+  def reset(): Unit = { it = 0 }
 }
 
-
-class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
-    val step = -value/(C + gradient.twoNormSquared)
-    weights.+=(gradient, step)
-  }
-  def isConverged = false
-  def reset() {}
+class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientStep {
+  override def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = rate
 }
 
-// C is the box constraint
-class MIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
-    val step = math.min(C, -value/(gradient.twoNormSquared))
-    weights.+=(gradient, step)
+class SimpleMIRA(var C: Double = 1.0) extends GradientStep {
+  override def lRate(gradient: Tensors, weights: Tensors, value: Double) = -value/(C + gradient.twoNormSquared)
+}
+
+class MIRA(var C: Double = 1.0) extends GradientStep {
+  override def lRate(gradient: Tensors, weights: Tensors, value: Double) = math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
+}
+
+trait ParameterAveraging extends GradientStep {
+  var wTmp: Tensors = null
+  override def doGradStep(weights: Tensors, gradient: Tensors, rate: Double): Unit = {
+    if (wTmp eq null) wTmp = weights.blankDenseCopy
+    super.doGradStep(weights, gradient, rate)
+    wTmp += (gradient, rate*it)
   }
-  def isConverged = false
-  def reset() {}
+
+  def setWeightsToAverage(weights: Tensors): Unit = weights += (wTmp,-1.0/it)
+  def unSetWeightsToAverage(weights: Tensors): Unit = weights += (wTmp,1.0/it)
+  override def reset(): Unit = { super.reset(); wTmp = null }
 }
 
 class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
@@ -122,37 +131,32 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
 
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
-class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) extends GradientOptimizer {
+class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) extends GradientStep {
   var HSq: Tensors = null
   var printed = false
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+  override def processGradient(gradient: Tensors, weights: Tensors): Unit = {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weights, -l2)
     if (HSq == null) { HSq = weights.blankDenseCopy }
     for (template <- gradient.keys)
-      (weights(template), gradient(template), HSq(template)) match {
-        case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor) =>
+      (gradient(template), HSq(template)) match {
+        case (g: DenseTensor, hSq: DenseTensor) =>
 //          println(hSq)
-          val wArr = w.asArray
           val gArr = g.asArray
           val hArr = hSq.asArray
           var i = 0
-          val len = wArr.length
+          val len = gArr.length
           while (i < len) {
             if (gArr(i) != 0) {
               hArr(i) += gArr(i) * gArr(i)
               val h = math.sqrt(hArr(i)) + delta
               val t1 = eta / h
-              val t2 = wArr(i) + t1 * gArr(i)
-//            val t3 = l1 * eta / h
-//            wArr(i) = math.signum(t2) * math.max(0, math.abs(t2) - t3)
-              wArr(i) = t2
+              gArr(i) *= t1
             }
             i += 1
           }
-        case (w: DenseTensor, g: SparseIndexedTensor,  hSq: DenseTensor) =>
-          val wArr = w.asArray
+        case (g: SparseIndexedTensor,  hSq: DenseTensor) =>
           val hArr = hSq.asArray
           var i = 0
           val len = g.activeDomainSize
@@ -165,12 +169,11 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) ext
               hArr(idx) += g*g
               val h = math.sqrt(hArr(idx)) + delta
               val t1 = eta / h
-              val t2 = wArr(idx) + t1 * g
-              wArr(idx) = t2
+              values(i) *= t1
             }
             i += 1
           }
-        case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
+        case (g: SparseIndexedTensor,  hSq: Tensor) =>
           if (!printed) {
             printed = true
             println("No implementations for: " + weights(template).getClass.getName + " " +
@@ -187,17 +190,16 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) ext
               hSq(idx) += g*g
               val h = math.sqrt(hSq(idx)) + delta
               val t1 = eta / h
-              val t2 = w(idx) + t1 * g
-              w(idx) = t2
+              values(i) *= t1
             }
             i += 1
           }
       }
   }
-  def reset(): Unit = {
+  override def reset(): Unit = {
+    super.reset()
     HSq = null
   }
-  def isConverged: Boolean = false
 }
 
 object DualAveraging {

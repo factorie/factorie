@@ -9,11 +9,12 @@ import com.mongodb.{DB, Mongo}
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import la.DenseTensor
-import optimize.{WeightsAveraging, AROW, MIRA, SampleRankTrainer}
+import cc.factorie.optimize._
 import org.w3c.dom.{Node, NodeList, Document}
 import scala.concurrent.ops._
 import java.io._
 import java.text.DecimalFormat
+import scala.Some
 
 trait BibEntity{
   var dataSource:String=""
@@ -402,7 +403,7 @@ object Coref{
       val trainingModel = new TrainingModel
       val sampler = new AuthorSampler(authorCorefModel){temperature=0.001;override def objective=trainingModel}
       sampler.setEntities(trainingSet)
-      val averager = new WeightsAveraging(new MIRA)
+      val averager = new MIRA with ParameterAveraging
       val trainer = new SampleRankTrainer(sampler, averager)
       //val trainer = new SampleRankTrainer(sampler, new AROW(authorCorefModel))
       //val trainer = new SampleRankTrainer(sampler, new MIRA)
