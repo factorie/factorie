@@ -23,8 +23,6 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Iterator[AbstractAssignment4[N1,N2,N3,N4]] with AbstractAssignment4[N1,N2,N3,N4] with ValuesIterator
-
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, val _3:N3, val _4:N4) extends Factor {
   factor =>
@@ -55,32 +53,6 @@ abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, va
     case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4)
     case _ => statistics(a(_1), a(_2), a(_3), a(_4))
   }
-  
-  def valuesIterator: ValuesIterator4[N1,N2,N3,N4] = new ValuesIterator4[N1,N2,N3,N4] {
-    def factor = Factor4.this
-    var _1: N1 = null.asInstanceOf[N1]
-    var _2: N2 = null.asInstanceOf[N2]
-    var _3: N3 = null.asInstanceOf[N3]
-    var _4: N4 = null.asInstanceOf[N4]
-    var value1: N1#Value = null.asInstanceOf[N1#Value]
-    var value2: N2#Value = null.asInstanceOf[N2#Value]
-    var value3: N3#Value = null.asInstanceOf[N3#Value]
-    var value4: N4#Value = null.asInstanceOf[N4#Value]
-    def hasNext = false
-    def next() = this
-    def score: Double = Double.NaN
-    def valuesTensor: Tensor = null
-  }
-  
-  
-//  /** valuesIterator in style of specifying varying neighbors */
-//  def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
-//    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[Seq[N1#Value]] else Seq(_1.value)
-//    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[Seq[N2#Value]] else Seq(_2.value)
-//    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[Seq[N3#Value]] else Seq(_3.value)
-//    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[Seq[N4#Value]] else Seq(_4.value)
-//    (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield Values(val1, val2, val3, val4)).iterator
-//  }
 }
 
 /** A 4-neighbor Factor whose statistics have type Tuple2.

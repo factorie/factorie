@@ -23,9 +23,6 @@ import cc.factorie.la._
 //import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator1[N1<:Var] extends Iterator[AbstractAssignment1[N1]] with AbstractAssignment1[N1] with ValuesIterator
-
-
 /** A Factor with one neighboring variable */
 abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   type NeighborType1 = N1
@@ -52,18 +49,6 @@ abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
     case _ => statistics(a(_1))
   }
 
-  /** Iterate over all value assignments of both neighbors, making available the score for each. 
-      Future alternative versions of this method would allow for iterating over restricted subsets. */
-  def valuesIterator: ValuesIterator1[N1] = new ValuesIterator1[N1] { //Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2]
-    def factor = Factor1.this
-    var _1: N1 = null.asInstanceOf[N1]
-    var value1: N1#Value = null.asInstanceOf[N1#Value]
-    def hasNext = false
-    def next() = this
-    def score: Double = Double.NaN
-    def valuesTensor: Tensor = null
-  }
-  
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
   def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
@@ -169,7 +154,6 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
     def score(v1:N1#Value): Double = Family1.this.score(v1)
     override def statistics(v1:N1#Value): StatisticsType = Family1.this.statistics(v1)
     override def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = Family1.this.scoreAndStatistics(v1)
-    override def valuesIterator: ValuesIterator1[N1] = Family1.this.valuesIterator(this) 
     override def valuesStatistics(tensor:Tensor): Tensor = Family1.this.valuesStatistics(tensor)
     override def limitedDiscreteValues1: SparseBinaryTensor1 = Family1.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor1[DiscreteDimensionTensorVar]])
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
@@ -183,15 +167,6 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
   protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteDimensionTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
-  def valuesIterator(f:Factor): ValuesIterator1[N1] = new ValuesIterator1[N1] {
-      def factor: Factor1[N1] = f
-      var _1: N1 = null.asInstanceOf[N1]
-      var value1: N1#Value = null.asInstanceOf[N1#Value]
-      def hasNext = false
-      def next() = this
-      def score: Double = Double.NaN
-      def valuesTensor: Tensor = null
-    }
 }
 
 trait TupleFamily1[N1<:Var] extends Family1[N1] {

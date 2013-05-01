@@ -17,8 +17,6 @@ package cc.factorie
 import scala.collection.mutable.HashMap
 import cc.factorie.la._
 
-trait ValuesIterator3[N1<:Var,N2<:Var,N3<:Var] extends Iterator[AbstractAssignment3[N1,N2,N3]] with AbstractAssignment3[N1,N2,N3] with ValuesIterator
-
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3) extends Factor {
   factor =>
@@ -47,19 +45,6 @@ abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3)
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
     case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => statistics(a.value1, a.value2, a.value3)
     case _ => statistics(a(_1), a(_2), a(_3))
-  }
-  def valuesIterator: ValuesIterator3[N1,N2,N3] = new ValuesIterator3[N1,N2,N3] {
-    def factor = Factor3.this
-    var _1: N1 = null.asInstanceOf[N1]
-    var _2: N2 = null.asInstanceOf[N2]
-    var _3: N3 = null.asInstanceOf[N3]
-    var value1: N1#Value = null.asInstanceOf[N1#Value]
-    var value2: N2#Value = null.asInstanceOf[N2#Value]
-    var value3: N3#Value = null.asInstanceOf[N3#Value]
-    def hasNext = false
-    def next() = this
-    def score: Double = Double.NaN
-    def valuesTensor: Tensor = null
   }
   // For implementing sparsity in belief propagation
   def hasLimitedDiscreteValues123: Boolean = limitedDiscreteValues123.activeDomainSize > 0

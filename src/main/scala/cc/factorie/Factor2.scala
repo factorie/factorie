@@ -23,8 +23,6 @@ import cc.factorie.la._
 //import cc.factorie.util.Substitutions
 import java.io._
 
-trait ValuesIterator2[N1<:Var,N2<:Var] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] with ValuesIterator
-
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType */
 abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   factor =>
@@ -54,20 +52,7 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
     case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => statistics(a.value1, a.value2)
     case _ => statistics(a(_1), a(_2))
   }
-  /** Iterate over all value assignments of both neighbors, making available the score for each. 
-      Future alternative versions of this method would allow for iterating over restricted subsets. */
-  def valuesIterator: ValuesIterator2[N1,N2] = new ValuesIterator2[N1,N2] { //Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2]
-    def factor: Factor2[N1,N2] = Factor2.this
-    var _1: N1 = null.asInstanceOf[N1]
-    var _2: N2 = null.asInstanceOf[N2]
-    var value1: N1#Value = null.asInstanceOf[N1#Value]
-    var value2: N2#Value = null.asInstanceOf[N2#Value]
-    def hasNext = false
-    def next() = this
-    def score: Double = Double.NaN
-    def valuesTensor: Tensor = null
-  }
-  /** Given multiplicative factors on values of neighbor _1 (which allow for limited iteration), and given the Tensor value of neighbor _2, 
+  /** Given multiplicative factors on values of neighbor _1 (which allow for limited iteration), and given the Tensor value of neighbor _2,
       return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
       If _1 is not a DiscreteVar then throws an Error. */

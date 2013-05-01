@@ -69,9 +69,7 @@ trait Factor extends Ordered[Factor] {
   def currentAssignment: Assignment
 
   /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
-  def valuesIterator: ValuesIterator
-  
-//  def valuesIterator(varying:Set[Variable]): Iterator[Values]
+
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
   //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
@@ -105,13 +103,6 @@ trait Factor extends Ordered[Factor] {
   }
   def factorName = "Factor"
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
-}
-
-/** Created by a method in a Factor to iterate over a (sub)set of assignments. */
-trait ValuesIterator extends Iterator[Assignment] {
-  def factor: Factor
-  def score: Double
-  def valuesTensor: Tensor
 }
 
 /** An iterable collection for efficiently holding a single Factor.
