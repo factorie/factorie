@@ -175,7 +175,7 @@ object GlmTest {
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model)
-    val strategy = new InlineSGDTrainer(model, optimizer = new AdagradAccumulatorMaximizer(model))
+    val strategy = new SGDTrainer(model, optimizer = new AdaGrad)
 
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)

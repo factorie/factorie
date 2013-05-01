@@ -19,7 +19,7 @@ import cc.factorie.la._
 
 /** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
 class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     weights.+=(gradient, rate)
     rate = nextRate(rate)
   }
@@ -32,7 +32,7 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
 
 
 class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     val step = -value/(C + gradient.twoNormSquared)
     weights.+=(gradient, step)
   }
@@ -42,7 +42,7 @@ class SimpleMIRA(var C: Double = 1.0) extends GradientOptimizer {
 
 // C is the box constraint
 class MIRA(var C: Double = 1.0) extends GradientOptimizer {
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     val step = math.min(C, -value/(gradient.twoNormSquared))
     weights.+=(gradient, step)
   }
@@ -51,21 +51,19 @@ class MIRA(var C: Double = 1.0) extends GradientOptimizer {
 }
 
 class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
-  var lastUpdate: Tensor = null
+  var lastUpdate: Tensors = null
   var t = 0
   @inline final def learningRate(t: Double): Double = {
     rate / math.sqrt(t)
   }
   var printed = false
 
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     t += 1
     val eta = rate
-    if (lastUpdate == null) { lastUpdate = weights.blankCopy }
-    for (template <- gradient.asInstanceOf[WeightsTensor].families)
-      (weights.asInstanceOf[WeightsTensor](template),
-       gradient.asInstanceOf[WeightsTensor](template),
-       lastUpdate.asInstanceOf[WeightsTensor](template)) match {
+    if (lastUpdate == null) { lastUpdate = weights.blankDenseCopy }
+    for (template <- gradient.keys)
+      (weights(template), gradient(template), lastUpdate(template)) match {
         case (w: DenseTensor, g: DenseTensor, lastUpdate: DenseTensor) =>
           val wArr = w.asArray
           val gArr = g.asArray
@@ -95,11 +93,11 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
             wArr(idx) = t2
             i += 1
           }
-        case (w: Tensor, g: SparseIndexedTensor,  lastUpdate: Tensor) =>
+        case (w: Tensor, g: SparseIndexedTensor,  lastUpdated: Tensor) =>
           if (!printed) {
             printed = true
-            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + lastUpdate.asInstanceOf[WeightsTensor](template).getClass.getName)
+            println("No implementations for: " + weights(template).getClass.getName + " " +
+              gradient(template).getClass.getName +" " + lastUpdate(template).getClass.getName)
           }
           var i = 0
           val len = g.activeDomainSize
@@ -108,9 +106,9 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
           while (i < len) {
             val g = values(i)
             val idx = indices(i)
-            lastUpdate(idx) += 1
-            w(idx) *= (1 - l2*learningRate(lastUpdate(idx)))
-            val t2 = w(idx) + learningRate(lastUpdate(idx)) * g
+            lastUpdated(idx) += 1
+            w(idx) *= (1 - l2*learningRate(lastUpdated(idx)))
+            val t2 = w(idx) + learningRate(lastUpdated(idx)) * g
             w(idx) = t2
             i += 1
           }
@@ -125,17 +123,15 @@ class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends Gradie
 // This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
 // "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
 class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) extends GradientOptimizer {
-  var HSq: Tensor = null
+  var HSq: Tensors = null
   var printed = false
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weights, -l2)
-    if (HSq == null) { HSq = weights.blankCopy }
-    for (template <- gradient.asInstanceOf[WeightsTensor].families)
-      (weights.asInstanceOf[WeightsTensor](template),
-       gradient.asInstanceOf[WeightsTensor](template),
-       HSq.asInstanceOf[WeightsTensor](template)) match {
+    if (HSq == null) { HSq = weights.blankDenseCopy }
+    for (template <- gradient.keys)
+      (weights(template), gradient(template), HSq(template)) match {
         case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor) =>
 //          println(hSq)
           val wArr = w.asArray
@@ -177,8 +173,8 @@ class AdaGrad(/*l1: Double = 0.0,*/ rate: Double = 1.0, delta: Double = 0.1) ext
         case (w: Tensor, g: SparseIndexedTensor,  hSq: Tensor) =>
           if (!printed) {
             printed = true
-            println("No implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+            println("No implementations for: " + weights(template).getClass.getName + " " +
+              gradient(template).getClass.getName +" " + HSq(template).getClass.getName)
           }
           var i = 0
           val len = g.activeDomainSize
@@ -216,23 +212,20 @@ object DualAveraging {
 
 // This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
 class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
-  var HSq: Tensor = null
-  var sumGs: Tensor = null
+  var HSq: Tensors = null
+  var sumGs: Tensors = null
   var t = 0
 
   import DualAveraging.truncate
   var printed = false
 
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     val eta = rate
     t += 1
-    if (HSq == null) { HSq = weights.blankCopy }
-    if (sumGs == null) { sumGs = weights.blankCopy }
-    for (template <- gradient.asInstanceOf[WeightsTensor].families)
-      (weights.asInstanceOf[WeightsTensor](template),
-        gradient.asInstanceOf[WeightsTensor](template),
-        HSq.asInstanceOf[WeightsTensor](template),
-        sumGs.asInstanceOf[WeightsTensor](template)) match {
+    if (HSq == null) { HSq = weights.blankDenseCopy }
+    if (sumGs == null) { sumGs = weights.blankDenseCopy }
+    for (template <- gradient.keys)
+      (weights(template), gradient(template), HSq(template), sumGs(template)) match {
         case (w: DenseTensor, g: DenseTensor, hSq: DenseTensor, sGs: DenseTensor) =>
           val wArr = w.asArray
           val gArr = g.asArray
@@ -275,8 +268,8 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate:
         case (w: Tensor, g: SparseIndexedTensor, hSq: Tensor, sGs: Tensor) =>
           if (!printed) {
             printed = true
-            println("AdaradDualAveaging: no implementations for: " + weights.asInstanceOf[WeightsTensor](template).getClass.getName + " " +
-              gradient.asInstanceOf[WeightsTensor](template).getClass.getName +" " + HSq.asInstanceOf[WeightsTensor](template).getClass.getName)
+            println("AdaradDualAveaging: no implementations for: " + weights(template).getClass.getName + " " +
+              gradient(template).getClass.getName +" " + HSq(template).getClass.getName)
           }
           var i = 0
           val len = g.activeDomainSize
@@ -304,44 +297,6 @@ class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate:
   def isConverged: Boolean = false
 }
 
-// This implements a slight variant on the Pegasos algorithm from "Pegasos: Primal Estimated sub-GrAdient SOlver for SVM" by Shalev-Shwartz et al.
-class L2ProjectedGradientAscent(l2: Double = 0.1, k: Int = 1, rate: Double = 1.0) extends GradientOptimizer {
-  private var step = 1
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
-    if (step == 1) {
-      // make sure weights start off with ||w|| <= 1 / sqrt(rate)
-      val weightsNorm = weights.twoNorm
-      if (weightsNorm > 1 / math.sqrt(l2))
-        weights /= (weightsNorm * math.sqrt(l2))
-    }
-    val eta_t = rate / (l2 * step)
-    weights *= (1 - eta_t * l2)
-    weights += (gradient, eta_t / k)
-    val projCoeff = math.min(1, (1 / math.sqrt(l2)) / weights.twoNorm)
-    weights *= projCoeff
-    step += 1
-  }
-  def isConverged = false
-  def reset(): Unit = {
-    step = 1
-  }
-}
-
-// Note: This implementation is slower than it should be in the online case, but should be fast enough in batch mode
-class L2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
-    gradient +=(weights, -l2)
-    super.step(weights, gradient, value)
-  }
-}
-
-class SparseL2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
-    super.step(weights, gradient, value)
-    weights *= (1.0 - rate * l2)
-  }
-}
-
 /** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
 class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
@@ -356,7 +311,7 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(weights: Tensor, gradient: Tensor, value: Double): Unit = {
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {

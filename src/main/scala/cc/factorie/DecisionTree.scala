@@ -14,8 +14,9 @@
 
 package cc.factorie
 
-import la.{SparseBinaryTensorLike1, SparseTensor1, Tensor1, Tensor}
+import cc.factorie.la._
 import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
+import scala.Some
 
 /**A template for factors who scores are the log-probability of
     label S1 given feature vector S2, according to a decision tree.
@@ -23,7 +24,8 @@ import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
 abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: TensorVar]
   (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
-  extends Template2[V1, V2] {
+  extends Template2[V1, V2] with Weights {
+  lazy val weightsTensor = new ItemizedTensors()
 
   type S1 = V1#Value
   type S2 = V2#Value

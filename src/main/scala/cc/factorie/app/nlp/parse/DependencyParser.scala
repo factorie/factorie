@@ -128,7 +128,7 @@ class ShiftReduceDependencyParserFeatures(val label: ActionLabel) extends Binary
   override def skipNonCategories = ActionModel.skipNonCategories
 }
 
-object ActionModel extends CombinedModel {
+object ActionModel extends TemplateModel {
   var skipNonCategories = false
 
   val localTemplate = new DotTemplateWithStatistics2[ActionLabel, ShiftReduceDependencyParserFeatures] {

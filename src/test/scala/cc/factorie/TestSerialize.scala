@@ -2,7 +2,7 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.ner.ChainNerLabel
-import la.{Tensor, DenseTensor1, UniformTensor1}
+import cc.factorie.la.{ItemizedTensors, Tensor, DenseTensor1, UniformTensor1}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
@@ -46,9 +46,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     logger.debug("successfully deserialized")
   }
 
-  def getWeights(model: Model): Seq[Tensor] = model.families.map({case f: DotFamily => f.weights})
+  def getWeights(model: Model with Weights): Seq[Tensor] = model.weightsTensor.values.toSeq
 
-  def assertSameWeights(model1: Model, model2: Model): Unit = {
+  def assertSameWeights(model1: Model with Weights, model2: Model with Weights): Unit = {
     val weights1 = getWeights(model1)
     val weights2 = getWeights(model2)
     assert(weights1.size == weights2.size,
@@ -85,11 +85,12 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     val words = "The quick brown fox jumped over the lazy dog".split(" ")
     words.foreach(domain1.index(_))
 
-    class Model1(d: CategoricalDomain[String]) extends Model {
+    class Model1(d: CategoricalDomain[String]) extends Model with Weights {
       object family1 extends DotFamilyWithStatistics1[CategoricalVariable[String]] {
         lazy val weights = new DenseTensor1(d.length)
       }
-      override def families = Seq(family1)
+      def families = Seq(family1)
+      lazy val weightsTensor = new ItemizedTensors(Seq((family1,family1.weights)))
       def factors(v: Var) = Nil
     }
     val model = new Model1(domain1)
@@ -248,7 +249,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
   }
   class Sentence extends Chain[Sentence, Token]
 
-  class SegmenterModel extends ModelWithContext[Seq[Label]] {
+  class SegmenterModel extends ModelWithContext[Seq[Label]] with Weights {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
@@ -257,7 +258,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
       factorName = "Label,Token"
       lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     }
-    override def families: Seq[Family] = Seq(bias, obs)
+    def families: Seq[Family] = Seq(bias, obs)
+    lazy val weightsTensor = new ItemizedTensors(Seq((bias,bias.weights), (obs,obs.weights)))
     def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
       Seq.empty[Factor]
     }

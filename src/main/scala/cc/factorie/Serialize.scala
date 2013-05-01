@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
-  implicit def modm(m: Model): Cubbie = new ModelCubbie(m)
+  implicit def modm(m: Model with Weights): Cubbie = new ModelCubbie(m)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
   implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)

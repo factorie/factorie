@@ -3,21 +3,22 @@ package cc.factorie
 import app.classify.ModelBasedClassifier
 import collection.mutable.ArrayBuffer
 import cc.factorie.maths._
-import la.{DenseTensor1, Tensor1}
+import cc.factorie.la.{ItemizedTensors, DenseTensor1, Tensor1}
 
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/
 abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: TensorVar]
   (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
   (implicit m1: Manifest[S1], m2: Manifest[S2])
-  extends Template2[S1, S2] {
+  extends Template2[S1, S2] with Weights {
+  lazy val weightsTensor = new ItemizedTensors()
 
   type StatisticsType = (S1#Value, S2#Value)
 
   def trainWeakClassifier(labels: ArrayBuffer[S1], instanceWeights: Tensor1): WeakClassifier
   def numIterations: Int
 
-  type WeakClassifier = Template2[S1, S2]
+  type WeakClassifier = Template2[S1, S2] with Weights
 
   private var weightedWeakClassifiers: Option[Seq[(WeakClassifier, Double)]] = None
 

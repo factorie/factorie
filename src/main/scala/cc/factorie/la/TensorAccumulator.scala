@@ -17,26 +17,23 @@ class LocalTensorAccumulator[T<:Tensor](val tensor:T) extends TensorAccumulator 
   def accumulate(t:Tensor, f:Double): Unit = tensor.+=(t, f) 
 }
 
-trait WeightsTensorAccumulator extends TensorAccumulator {
-  def accumulator(family:DotFamily): TensorAccumulator
+trait WeightsTensorAccumulator {
+  def accumulator(family:Any): TensorAccumulator
   // TODO Strong consider getting rid of the usage of DotFamily in arguments below, then next three methods disappear. 
-  def accumulate(family: DotFamily, t: Tensor): Unit
-  def accumulate(family: DotFamily, index: Int, value: Double): Unit
-  def accumulate(family: DotFamily, t: Tensor, factor: Double): Unit
+  def accumulate(family: Any, t: Tensor): Unit
+  def accumulate(family: Any, index: Int, value: Double): Unit
+  def accumulate(family: Any, t: Tensor, factor: Double): Unit
   // TODO Move this to TensorAccumulator, or perhaps even better: get rid of it, or use Outer1Tensor2 instead
-  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
+  def accumulateOuter(family: Any, t1: Tensor1, t2: Tensor1): Unit
 }
 
-class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
-  protected val map = new collection.mutable.HashMap[DotFamily,TensorAccumulator]
-  def accumulator(family:DotFamily): TensorAccumulator = map.getOrElseUpdate(family, new LocalTensorAccumulator(tensor(family))) 
-  def accumulate(t: Tensor) = tensor += t
-  def accumulate(t: Tensor, factor:Double) = tensor.+=(t, factor)
-  def accumulate(index: Int, value: Double): Unit = tensor(index) += value
-  def accumulate(family: DotFamily, t: Tensor): Unit = tensor(family) += t
-  def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor(family)(index) += value
-  def accumulate(family: DotFamily, t: Tensor, factor: Double) = tensor(family).+=(t, factor)
-  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
+class LocalWeightsTensorAccumulator(val tensor: Tensors) extends WeightsTensorAccumulator {
+  protected val map = new collection.mutable.HashMap[Any,TensorAccumulator]
+  def accumulator(family:Any): TensorAccumulator = map.getOrElseUpdate(family, new LocalTensorAccumulator(tensor(family)))
+  def accumulate(family: Any, t: Tensor): Unit = tensor(family) += t
+  def accumulate(family: Any, index: Int, value: Double): Unit = tensor(family)(index) += value
+  def accumulate(family: Any, t: Tensor, factor: Double) = tensor(family).+=(t, factor)
+  def accumulateOuter(family: Any, t1: Tensor1, t2: Tensor1): Unit = {
     (tensor(family), t1, t2) match {
       case (_, t1: UniformTensor1, _) if t1(0) == 0.0 => return
       case (_, _, t2: UniformTensor1) if t2(0) == 0.0 => return
@@ -113,22 +110,18 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
         if (myT.isInstanceOf[SparseIndexedTensor]) myT.asInstanceOf[SparseIndexedTensor]._makeReadable
     }
   }
-  def combine(a: Accumulator[Tensor]): Unit = a match {
+  def combine(a: WeightsTensorAccumulator): Unit = a match {
     case a: LocalWeightsTensorAccumulator => tensor += a.tensor
   }
 }
 
-class SynchronizedWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
+class SynchronizedWeightsTensorAccumulator(val tensor: Tensors) extends WeightsTensorAccumulator {
   val l = new LocalWeightsTensorAccumulator(tensor)
-  override def accumulator(family:DotFamily): TensorAccumulator = l.synchronized { l.accumulator(family) }
-  override def accumulate(t: Tensor) = l.synchronized { l.accumulate(t) }
-  override def accumulate(t: Tensor, factor:Double) = l.synchronized { l.accumulate(t, factor) }
-  override def accumulate(index: Int, value: Double): Unit = l.synchronized { l.accumulate(index,value)}
-  override def accumulate(family: DotFamily, t: Tensor): Unit = l.synchronized { l.accumulate(family, t) }
-  override def accumulate(family: DotFamily, index: Int, value: Double): Unit = l.synchronized { l.accumulate(family, index, value) }
-  override def accumulate(family: DotFamily, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, t, factor) }
-  override def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = l.synchronized { l.accumulateOuter(family, t1, t2) }
-  override def combine(a: Accumulator[Tensor]): Unit = l.synchronized { l.combine(a) }
+  override def accumulator(family:Any): TensorAccumulator = l.synchronized { l.accumulator(family) }
+  override def accumulate(family: Any, t: Tensor): Unit = l.synchronized { l.accumulate(family, t) }
+  override def accumulate(family: Any, index: Int, value: Double): Unit = l.synchronized { l.accumulate(family, index, value) }
+  override def accumulate(family: Any, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, t, factor) }
+  override def accumulateOuter(family: Any, t1: Tensor1, t2: Tensor1): Unit = l.synchronized { l.accumulateOuter(family, t1, t2) }
 }
 
 class SynchronizedDoubleAccumulator() extends cc.factorie.util.DoubleAccumulator {
@@ -139,14 +132,10 @@ class SynchronizedDoubleAccumulator() extends cc.factorie.util.DoubleAccumulator
 
 
 object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
-  def accumulator(family:DotFamily): TensorAccumulator = throw new Error("NoopWeightsTensorAccumulator cannot implement accumulator(DotFamily")
-  def accumulate(t: Tensor): Unit = {}
-  def accumulate(t:Tensor, factor:Double): Unit = {}
-  def accumulate(index: Int, value: Double): Unit = {}
-  def accumulate(family: DotFamily, t: Tensor): Unit = {}
-  def accumulate(family: DotFamily, index: Int, value: Double): Unit = {}
-  def combine(a: Accumulator[Tensor]): Unit = {}
-  def accumulate(family: DotFamily, t: Tensor, c: Double): Unit = {}
-  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
+  def accumulator(family:Any): TensorAccumulator = throw new Error("NoopWeightsTensorAccumulator cannot implement accumulator(DotFamily")
+  def accumulate(family: Any, t: Tensor): Unit = {}
+  def accumulate(family: Any, index: Int, value: Double): Unit = {}
+  def accumulate(family: Any, t: Tensor, c: Double): Unit = {}
+  def accumulateOuter(family: Any, t1: Tensor1, t2: Tensor1) = {}
 }
 

@@ -13,7 +13,7 @@ import scala.util.Random
 
 class DebugDiffList extends DiffList{
   override def scoreAndUndo(model:Model): Double = {
-    for(family <- model.families){
+    for(family <- model.asInstanceOf[TemplateModel].families){
       family match{
         case f:DebugableTemplate => f.debugOn
         case _ => {}
@@ -32,7 +32,7 @@ class DebugDiffList extends DiffList{
     println("  current: "+s2)
     s -= s2
     println("TOTAL SCORE: "+s)
-    for(family <- model.families){
+    for(family <- model.asInstanceOf[TemplateModel].families){
       family match{
         case f:DebugableTemplate => f.debugOff
         case _ => {}

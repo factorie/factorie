@@ -59,7 +59,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
       def unroll1(data: Data) = Factor(data, data.score)
       def unroll2(prob: Prob) = Nil
     }
-    val model = new CombinedModel(simpleTemplate)
+    val model = new TemplateModel(simpleTemplate)
     val objective = new HammingTemplate[Data]
 
     val pieces = new ArrayBuffer[LikelihoodExample[Data]]

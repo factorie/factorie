@@ -38,7 +38,7 @@ object ChainNER4 {
   class Sentence extends Chain[Sentence,Token]
   
   // The model
-  val model = new CombinedModel(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[Label] {
       override def neighborDomain1 = LabelDomain

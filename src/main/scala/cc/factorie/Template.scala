@@ -87,6 +87,6 @@ trait ModelAsTemplate extends Model with FamilyWithNeighborDomains with FamilyWi
   /** Causes future calls to factor.valuesIterator to limit the returned values to 
       those value combinations seen in the current values of the variables in factors touching "vars". */
   def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
-  override def families: Seq[Family] = Seq(this)
+  def families: Seq[Family] = Seq(this)
 }
 

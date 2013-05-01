@@ -1,7 +1,7 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import la.WeightsTensorAccumulator
+import cc.factorie.la.{ItemizedTensors, WeightsTensorAccumulator}
 import util.DoubleAccumulator
 
 /**
@@ -19,7 +19,7 @@ import util.DoubleAccumulator
  * "WSABIE: Scaling Up To Large Vocabulary Image Annotation" by Weston, Bengio, and Usunier
  */
 object WSabie {
-  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends DotFamilyWithStatistics2[TensorVar, TensorVar] with Model {
+  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends DotFamilyWithStatistics2[TensorVar, TensorVar] with Weights {
     override lazy val weights = setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng)
 
     def setToRandom(t: la.DenseTensor2, rng: java.util.Random): la.DenseTensor2 = {
@@ -31,8 +31,6 @@ object WSabie {
       t
     }
 
-    def factors(variable: Var) = Nil
-    override val families = Seq(this)
     def score(query: la.Tensor1, vector: la.Tensor1) = weights.*(query).dot(weights.*(vector))
     def rank(query: la.Tensor1, vectors: Seq[la.Tensor1]): Seq[la.Tensor1] = vectors.sortBy(v => -score(query, v))
   }

@@ -110,33 +110,6 @@ trait Model {
   def itemizedModel(variables:Iterable[Var]): ItemizedModel = new ItemizedModel(factors(variables))
   def itemizedModel(d:Diff): ItemizedModel = new ItemizedModel(factors(d))
   def itemizedModel(dl:DiffList): ItemizedModel = new ItemizedModel(factors(dl))
-  
-  // Some Model subclasses have a list of Families to which all its factors belong
-  // TODO Should we move families to some Model subclass? -akm
-  def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
-  def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
-  def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
-
-  // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
-  //def weights: Tensor = weightsTensor
-  lazy val weightsTensor: WeightsTensor = {
-    val t = new WeightsTensor(f => f match {
-      case f:DotFamily if (families.contains(f)) => f.weights.blankCopy // So that Model.weightsTensor.blankCopy will work
-      case _ => throw new Error("Trying to add Tensor for DotFamily that was not part of initialization") 
-    })
-    familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t
-  }
-  def newBlankWeightsTensor: Tensor = weightsTensor.blankCopy
-  // TODO Make these just return Tensor, not WeightsTensor
-  // TODO These methods don't properly copy the weights tensor since they don't preserve the dimension. Add sizeproxy? -luke
-  def newBlankDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
-  def newBlankSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
-
-  // Some Model subclasses that have a fixed set of factors and variables can override the methods below
-  // TODO Consider making a Model trait for these methods.  Yes!
-  def variables: Iterable[Var] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
-  def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
-  def currentScore: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
 trait ModelWithContext[-C] extends Model {
@@ -167,9 +140,9 @@ trait DotFamilyModel extends Model {
 
 
 import cc.factorie.util._
-class ModelCubbie(val model:Model) extends Cubbie {
+class ModelCubbie(val model:Model with Weights) extends Cubbie {
   val families = CubbieListSlot[DotFamilyCubbie]("families", () => throw new Error)
-  families := model.families.map({case df:DotFamily => new DotFamilyCubbie(df)})
+  families := model.weightsTensor.keys.filter(_.isInstanceOf[DotFamily]).map({case df:DotFamily => new DotFamilyCubbie(df)}).toSeq
 }
 
 // To actually do serialization
@@ -209,7 +182,7 @@ class ItemizedModel(initialFactors:Factor*) extends Model {
   def factors(variable:Var): Iterable[Factor] = _factors(variable)
   //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](variable:Variable, result:A): A = result ++= _factors(variable)
   //override def addFactors(variable:Variable, result:Set[Factor]): Unit = result ++= _factors(variable)
-  override def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
+  def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) match {
     case h:ListSet[Factor] => 
       if (h.size > 3) _factors(v) = { val nh = new LinkedHashSet[Factor] ++= h; nh += f; nh }
@@ -240,12 +213,9 @@ class CombinedModel(theSubModels:Model*) extends Model {
     while (s < len) { subModels(s).addFactors(variable, result); s += 1 }
     result
   }
-  override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
-  override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
-  override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
 }
 
-class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {
+class TemplateModel(theSubModels:ModelAsTemplate*) extends Model with Weights {
   val templates = new ArrayBuffer[ModelAsTemplate] ++= theSubModels
   def +=[M<:ModelAsTemplate](model:M): M = { templates += model; model }
   def ++=[M<:ModelAsTemplate](models:Iterable[M]): Iterable[M] = { templates ++= models; models }
@@ -253,14 +223,14 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model {
   override def addFactors(variable:Var, result:Set[Factor]): Unit = { templates.foreach(_.addFactors(variable, result)); result }
   //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
-  override def families: Seq[Family] = templates
+  def families: Seq[Family] = templates
+    // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
+  //def weights: Tensor = weightsTensor
+  lazy val weightsTensor: Tensors = new ItemizedTensors(families.filter(_.isInstanceOf[DotFamily]).map(f => (f,f.asInstanceOf[DotFamily].weights)))
 }
 
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {
   def model: ModelWithContext[C1]
-  override def variables = model.variables
-  override def factors = model.factors
-  override def families = model.families
 }
 

@@ -77,7 +77,6 @@ object Tensor {
   
   // Support for creating new empty Tensors with dimensions matching an argument
   def newDense(t:Tensor): Tensor = t match {
-    case t:WeightsTensor => new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
     case t:Tensor1 => new DenseTensor1(t.dim1)
     case t:Tensor2 => new DenseTensor2(t.dim1, t.dim2)
     case t:Tensor3 => new DenseTensor3(t.dim1, t.dim2, t.dim3)
@@ -105,7 +104,6 @@ object Tensor {
       newDense(t)
     else
       t match {
-        case t:WeightsTensor => new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
         case t:Tensor1 => new SparseTensor1(t.dim1)
         case t:Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
         case t:Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)

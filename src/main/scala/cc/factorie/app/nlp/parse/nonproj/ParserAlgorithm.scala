@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.parse.nonproj
 
 import cc.factorie._
 import cc.factorie.optimize.LinearL2SVM
-import cc.factorie.la.{WeightsTensor, Tensor1}
+import cc.factorie.la.{Tensor1}
 import cc.factorie.app.classify._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.parse.nonproj.ParserSupport._

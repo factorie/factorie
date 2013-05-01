@@ -45,13 +45,13 @@ class LBFGS(var numIterations: Double = 1000,
   // s = list of m previous "parameters" values
   // y = list of m previous "g" values
   // rho = intermediate calculation
-  var g: Tensor = null
-  var oldg: Tensor = null
-  var direction: Tensor = null
-  var params: Tensor = null
-  var oldParams: Tensor = null
-  var s: ArrayBuffer[Tensor] = null
-  var y: ArrayBuffer[Tensor] = null
+  var g: Tensors = null
+  var oldg: Tensors = null
+  var direction: Tensors = null
+  var params: Tensors = null
+  var oldParams: Tensors = null
+  var s: ArrayBuffer[Tensors] = null
+  var y: ArrayBuffer[Tensors] = null
   var rho: ArrayBuffer[Double] = null
   var alpha: Array[Double] = null
   var step = 1.0
@@ -80,7 +80,7 @@ class LBFGS(var numIterations: Double = 1000,
 
 
 
-  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
+  def step(weights:Tensors, gradient:Tensors, value:Double): Unit = {
     if (_isConverged) return
     //todo: is the right behavior to set _isConverged = true if exceeded numIters?
     if (iterations > numIterations) { logger.warn("LBFGS: Failed to converge: too many iterations"); _isConverged = true; return }
@@ -90,8 +90,8 @@ class LBFGS(var numIterations: Double = 1000,
       logger.debug("LBFGS: Initial value = " + value)
 
       iterations = 0
-      s = new ArrayBuffer[Tensor]
-      y = new ArrayBuffer[Tensor]
+      s = new ArrayBuffer[Tensors]
+      y = new ArrayBuffer[Tensors]
       rho = new ArrayBuffer[Double]
       alpha = new Array[Double](rankOfApproximation)
 
@@ -229,7 +229,7 @@ class LBFGS(var numIterations: Double = 1000,
 
 
   }
-  def pushTensor(l: ArrayBuffer[Tensor], toadd: Tensor): Unit = {
+  def pushTensor(l: ArrayBuffer[Tensors], toadd: Tensors): Unit = {
     assert(l.size <= rankOfApproximation)
 
     if (l.size == rankOfApproximation) {

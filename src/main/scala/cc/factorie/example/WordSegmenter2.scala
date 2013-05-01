@@ -20,6 +20,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
+import cc.factorie.la.ItemizedTensors
 
 object WordSegmenterDemo2 { 
   
@@ -34,7 +35,7 @@ object WordSegmenterDemo2 {
   }
   class Sentence extends Chain[Sentence,Token]
 
-  val model = new ModelWithContext[IndexedSeq[Label]] {
+  val model = new ModelWithContext[IndexedSeq[Label]] with Weights {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
@@ -56,7 +57,8 @@ object WordSegmenterDemo2 {
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
-    override def families = Seq(bias, obs, markov, obsmarkov) 
+    def families = Seq(bias, obs, markov, obsmarkov)
+    lazy val weightsTensor = new ItemizedTensors(families.map(f => (f,f.weights)))
     def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {

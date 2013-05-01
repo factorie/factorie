@@ -34,6 +34,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:Catego
  val tokenToLabel:Token=>Label) 
  (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
 extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
+with Weights
 {
   val labelClass = lm.erasure
   val featureClass = fm.erasure
@@ -55,10 +56,11 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
     lazy val weights = if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1)
   }
   var useObsMarkov = false
-  override def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
+  def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
+  lazy val weightsTensor = new ItemizedTensors(this.families.map(f => (f,f.weights)))
 
   // TODO this does not calculate statistics for obsmarkov template -luke
-  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): WeightsTensor = {
+  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): Tensors = {
     val biasStats = Tensor.newDense(bias.weights)
     val obsStats = Tensor.newSparse(obs.weights)
 //    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
@@ -84,15 +86,15 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       if (labels.length > 1) new DenseTensor1(ArrayOps.elementwiseSum(edgeMargs))
       else new SparseTensor1(labels(0).domain.size * labels(0).domain.size)
 
-    val result = new WeightsTensor
-    result(bias) = biasStats
-    result(obs) = obsStats
-    result(markov) = markovStats
+    val result = new ItemizedTensors()
+    result.append(bias, biasStats)
+    result.append(obs, obsStats)
+    result.append(markov, markovStats)
 //    if (useObsMarkov) result(obsmarkov) = obsmarkovStats
     result
   }
 
-  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): WeightsTensor = {
+  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): Tensors = {
     val biasStats = Tensor.newDense(bias.weights)
     val obsStats = Tensor.newSparse(obs.weights)
     val markovStats = Tensor.newSparse(markov.weights)
@@ -111,15 +113,15 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
       }
     }
 
-    val result = new WeightsTensor
-    result(bias) = biasStats
-    result(obs) = obsStats
-    result(markov) = markovStats
-    if (useObsMarkov) result(obsmarkov) = obsmarkovStats
+    val result = new ItemizedTensors()
+    result.append(bias, biasStats)
+    result.append(obs, obsStats)
+    result.append(markov, markovStats)
+    if (useObsMarkov) result.append(obsmarkov, obsmarkovStats)
     result
   }
 
-  def targetStatistics(labels: Seq[Label]): WeightsTensor =
+  def targetStatistics(labels: Seq[Label]): Tensors =
     assignmentStatistics(labels, labels.map(_.targetIntValue))
 
   def serialize(prefix: String) {
@@ -241,7 +243,7 @@ extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Feat
         }
       }
       val expectations = assignmentStatistics(labels, targetInts)
-      override val logZ = expectations.familyWeights.map({case (fam, stats) => fam.weights dot stats}).sum
+      override val logZ = expectations.map({case (fam, stats) => fam.asInstanceOf[DotFamily].weights dot stats}).sum
       override def marginal(_f: Factor): DiscreteMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias || f.family == obs)
@@ -263,7 +265,7 @@ trait ChainSummary extends Summary[DiscreteMarginal] {
   // Do we actually want the marginal of arbitrary sets of variables? -brian
   def marginal(vs:Var*): DiscreteMarginal = null
   def marginal(v:Var): DiscreteMarginal
-  def expectations: WeightsTensor // TODO this should be 1-hot tensors for Viterbi -luke
+  def expectations: Tensors // TODO this should be 1-hot tensors for Viterbi -luke
 }
 
 object ChainModel {
@@ -279,17 +281,17 @@ object ChainModel {
       model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
   }
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
-    private var cachedTargetStats: WeightsTensor = null
+    private var cachedTargetStats: Tensors = null
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = infer.infer(labels, model)
       if (gradient != null) {
-        for ((family, stats) <- cachedTargetStats.familyWeights) gradient.accumulate(family, stats)
-        for ((family, stats) <- summary.expectations.familyWeights) gradient.accumulate(family, stats, -1.0)
+        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
+        for ((family, stats) <- summary.expectations) gradient.accumulate(family, stats, -1.0)
       }
       if (value != null) {
-        val targetValue = cachedTargetStats.familyWeights.map({case (fam, stats) => fam.weights dot stats}).sum
+        val targetValue = cachedTargetStats.map({case (fam, stats) => fam.asInstanceOf[DotFamily].weights dot stats}).sum
         value.accumulate(targetValue - summary.logZ)
       }
     }

@@ -45,14 +45,15 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
-class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends Model {
+class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends Model with Weights {
   /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
   def factors(variable: Var) = Nil
   val family = new DotFamily {
     lazy val weights = new DenseTensor2(nLabel, nFeatures)
   }
-  override def families = Seq(family)
+  def families = Seq(family)
   def weights = family.weights.asInstanceOf[DenseTensor2]
+  lazy val weightsTensor = new ItemizedTensors(Seq((family,family.weights)))
 }
 
 object LinearRegressionObjectiveFunctions {

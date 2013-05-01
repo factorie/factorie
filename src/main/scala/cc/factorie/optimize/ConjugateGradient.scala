@@ -32,9 +32,9 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
   var gam = 0.0
   var dgg = 0.0
   var stepSize = 0.0
-  var xi: Tensor = null
-  var g: Tensor = null
-  var h: Tensor = null
+  var xi: Tensors = null
+  var g: Tensors = null
+  var h: Tensors = null
   var iterations = 0
   var lineOptimizer: BackTrackLineOptimizer = null
 
@@ -43,7 +43,7 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
   }
 
-  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
+  def step(weights:Tensors, gradient:Tensors, value:Double): Unit = {
     if (_isConverged) return
     
     // If this is our first time in, then initialize
@@ -80,8 +80,8 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     {
       dgg = 0.0
       gg = 0.0
-      val xia = xi.asArray
-      val ga = g.asArray
+      val xia = xi.toArray
+      val ga = g.toArray
       var i = 0
       while (i < ga.length) {
         gg += ga(i) * ga(i) // previous gradient
@@ -89,9 +89,10 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
         i += 1
       }
       gam = dgg / gg
-      g := xi
-      h *= gam; h += g
-      assert(!h.containsNaN)
+      g.keys.foreach(k => g(k) := xi(k))
+      h.keys.foreach(k => h(k) *= gam)
+      h += g
+      assert(!h.containsNaN())
     }
     
     /* gdruck: If using the BackTrackLineSearch, then the search stops whenever
@@ -114,7 +115,7 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
 }
 
 class L2RegularizedConjugateGradient(var l2: Double = 0.1, val initialStep: Double = 1.0) extends ConjugateGradient(initialStep) {
-  override def step(weights: Tensor, gradient: Tensor, value: Double) {
+  override def step(weights: Tensors, gradient: Tensors, value: Double) {
     gradient += (weights, -l2)
     super.step(weights, gradient, value - l2 * (weights dot weights))
   }

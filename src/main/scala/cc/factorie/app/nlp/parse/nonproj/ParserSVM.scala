@@ -26,7 +26,7 @@ object ParserSVM {
 
 class ParserSVM extends Parser with ParserImpl {
   
-  def getEmptyModel(): Model = new TemplateModel(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](lTof, DecisionDomain, NonProjParserFeaturesDomain))
+  def getEmptyModel(): TemplateModel = new TemplateModel(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](lTof, DecisionDomain, NonProjParserFeaturesDomain))
 
   def save(c: ParserClassifier, folder: File, gzip: Boolean) { save(c, folder, gzip, false) }
 

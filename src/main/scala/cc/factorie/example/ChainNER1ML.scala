@@ -28,7 +28,7 @@ object ChainNER1ML {
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
-  val model = new CombinedModel(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[ChainNerLabel] {
       //def statisticsDomains = Tuple1(Conll2003NerDomain)

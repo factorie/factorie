@@ -46,7 +46,7 @@ abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
 
-class SpanNerModel extends CombinedModel(
+class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[SpanNerLabel] {
       lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)

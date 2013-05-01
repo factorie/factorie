@@ -24,8 +24,8 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
   var _stepCount = 0L
   var _updateCount = 0L
   private var _weightsUpdatedOn = 0L
-  var weightsSum: WeightsTensor = null
-  protected var lastUpdateIteration:WeightsTensor = null
+  var weightsSum: Tensors = null
+  protected var lastUpdateIteration:Tensors = null
   def reset(): Unit = {
     weightsSum = null
     lastUpdateIteration = null
@@ -35,14 +35,14 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
   }
   def averageWeights(weights:Tensor= null) = {
     if(currentTimeStepT > _weightsUpdatedOn)updateWeightsSum(weights)
-    weightsSum/currentTimeStepT.toDouble
+    weightsSum *= 1.0/currentTimeStepT.toDouble
   }
   def setWeightsToAverage(weights:Tensor) : Unit ={
     weights match{
-      case weightsWT:WeightsTensor =>{
+      case weightsWT:Tensors =>{
         updateWeightsSum(weights)
-        for(template <- weightsWT.families){
-          template.weights := weightsSum(template)/currentTimeStepT.toDouble
+        for(template <- weightsWT.keys){
+          template.asInstanceOf[DotFamily].weights := weightsSum(template)/currentTimeStepT.toDouble
         }
       }
       case _ => throw new Exception("WeightsAveraging only implemented for WeightsTensor.")
@@ -50,12 +50,12 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
   }
   protected def updateWeightsSum(weights:Tensor) : Unit = {
     weights match{
-      case weightsWT:WeightsTensor =>{
+      case weightsWT:Tensors =>{
         _weightsUpdatedOn = currentTimeStepT
-        for(template <- weightsWT.families){
+        for(template <- weightsWT.keys){
           val vecWeightsSum = weightsSum(template)
           val vecLastUpdateIteration = lastUpdateIteration(template)
-          val vecWeights = template.weights
+          val vecWeights = template.asInstanceOf[DotFamily].weights
           vecWeights.foreachActiveElement((i,v) => {
             val iterationDiff = currentTimeStepT.toDouble - vecLastUpdateIteration(i)
             if(iterationDiff>0){
@@ -68,24 +68,24 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
       case _ => throw new Exception("WeightsAveraging only implemented for WeightsTensor.")
     }
   }
-  protected def isZero(wt:WeightsTensor):Boolean ={
-    for(t <- wt.families)if(t.weights.activeDomainSize>0)return false
+  protected def isZero(wt: Tensors):Boolean ={
+    for(t <- wt.keys)if(t.asInstanceOf[DotFamily].weights.activeDomainSize>0)return false
     true
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
+  def step(weights:Tensors, gradient:Tensors, value:Double): Unit = {
     _stepCount += 1L
     gradient match{
-      case gradientWT:WeightsTensor => {
+      case gradientWT:Tensors => {
         if(!isZero(gradientWT))_updateCount += 1L //TODO: this is not correct in cases where the gradient is 0 due to a subtraction.
         weights match{
-          case weightsWT:WeightsTensor =>{
+          case weightsWT:Tensors =>{
             if (weightsSum eq null) {
               weightsSum = weightsWT.copy
-              lastUpdateIteration = weightsWT.blankCopy
+              lastUpdateIteration = weightsWT.blankDenseCopy
             }
             //1. record the old value of the elements of the weight vector that are about to change
-            val updateReconstruction = gradientWT.blankCopy
-            for(template <- gradientWT.families){
+            val updateReconstruction = gradientWT.blankDenseCopy
+            for(template <- gradientWT.keys){
               (updateReconstruction(template), weightsWT(template)) match{
                 case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
@@ -103,7 +103,7 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
             //2. perform the update
             inner.step(weights, gradient, value)
             //3. reconstruct the "inner" update by adding the new values
-            for(template <- gradientWT.families){
+            for(template <- gradientWT.keys){
               (updateReconstruction(template), weightsWT(template)) match{
                 case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
@@ -119,15 +119,15 @@ class WeightsAveragingImpl1(val inner:GradientOptimizer) extends GradientOptimiz
               }
             }
             //4. accumulate the weights
-            for(template:DotFamily <- updateReconstruction.families){
+            for(template <- updateReconstruction.keys){
               val g = gradientWT.apply(template)
-              (updateReconstruction(template), weightsSum(template),lastUpdateIteration(template),template.weights) match{
+              (updateReconstruction(template), weightsSum(template),lastUpdateIteration(template),template.asInstanceOf[DotFamily].weights) match{
                 case (vecReconstruction:SparseIndexedTensor,vecWeightsSum:DenseTensor,vecLastUpdateIteration:DenseTensor,template:DenseTensor) =>{
 
                   val vrValues = vecReconstruction._values
                   val vrIndices = vecReconstruction._indices
                   val wsValues = vecWeightsSum.asArray
-                  val wValues = weightsWT.asArray
+                  val wValues = weightsWT.toArray
                   val luiValues = vecLastUpdateIteration.asArray
                   //val gValues = gradientWT(template).asInstanceOf[SparseIndexedTensor]._values
                   var i = 0
@@ -191,15 +191,15 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
   def currentTimeStepT:Long = _stepCount //TODO: ideally the inner optimizer would maintain the relevant time scale.
   var _stepCount = 0L
   var _updateCount = 0L
-  var weightsSum: WeightsTensor = null
+  var weightsSum: Tensors = null
   def reset(): Unit = {
     weightsSum = null
     _stepCount = 0L
     _updateCount = 0L
     inner.reset()
   }
-  protected def isZero(wt:WeightsTensor):Boolean ={
-    for(t <- wt.families)if(t.weights.activeDomainSize>0)return false
+  protected def isZero(wt:Tensors):Boolean ={
+    for(t <- wt.keys) if (t.asInstanceOf[DotFamily].weights.activeDomainSize>0)return false
     true
   }
   /*
@@ -219,43 +219,38 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
     }
   }
    */
-  def averageWeights(weights:Tensor=null):WeightsTensor = {
-    var result:WeightsTensor = null
+  def averageWeights(weights:Tensors=null):Tensors = {
+    var result:Tensors = null
     weights match{
-      case weightsWT:WeightsTensor =>{
+      case weightsWT:Tensors =>{
         result = weightsWT.copy
-        for(template <- weightsWT.families)
-          result(template) := weightsSum(template)/currentTimeStepT.toDouble + template.weights
+        for(template <- weightsWT.keys)
+          result(template) := weightsSum(template)/currentTimeStepT.toDouble + template.asInstanceOf[DotFamily].weights
       }
       case _ => throw new Exception("WeightsAveraging only implemented for WeightsTensor.")
     }
     result
   }
-  def setWeightsToAverage(weights:Tensor) : Unit = {
-    weights match{
-      case weightsWT:WeightsTensor =>{
-        for(template <- weightsWT.families)
-          template.weights := template.weights+weightsSum(template)/currentTimeStepT.toDouble
-      }
-      case _ => throw new Exception("WeightsAveraging only implemented for WeightsTensor.")
-    }
+  def setWeightsToAverage(weights:Tensors) : Unit = {
+    for(template <- weights.keys)
+      template.asInstanceOf[DotFamily].weights := template.asInstanceOf[DotFamily].weights+weightsSum(template)/currentTimeStepT.toDouble
   }
-  def step(weights:Tensor, gradient:Tensor, value:Double): Unit = {
+  def step(weights:Tensors, gradient:Tensors, value:Double): Unit = {
     _stepCount += 1L
     gradient match{
-      case gradientWT:WeightsTensor => {
+      case gradientWT:Tensors => {
         if(!isZero(gradientWT))_updateCount += 1L //TODO: this is not correct in cases where the gradient is 0 due to a subtraction.
         weights match{
-          case weightsWT:WeightsTensor =>{
+          case weightsWT:Tensors =>{
             if (weightsSum eq null) {
               weightsSum = weightsWT.copy
-              weightsSum = weightsWT.blankCopy
+              weightsSum = weightsWT.blankDenseCopy
             }
             //1. record the old value of the elements of the weight vector that are about to change
             var timer = System.currentTimeMillis
-            val updateReconstruction = gradientWT.blankCopy
+            val updateReconstruction = gradientWT.blankSparseCopy
             timer = System.currentTimeMillis
-            for(template <- gradientWT.families){
+            for(template <- gradientWT.keys){
               (updateReconstruction(template), weightsWT(template)) match{
                 case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
@@ -273,7 +268,7 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
             //2. perform the update
             inner.step(weights, gradient, value)
             //3. reconstruct the "inner" update by adding the new values
-            for(template <- gradientWT.families){
+            for(template <- gradientWT.keys){
               (updateReconstruction(template), weightsWT(template)) match{
                 case (vecUpdateReconstruction:SparseIndexedTensor,vecWeights:DenseTensor) =>{
                   val wValues = vecWeights.asArray
@@ -298,8 +293,8 @@ class WeightsAveragingImpl2(val inner:GradientOptimizer) extends GradientOptimiz
               }
             }
             //4. accumulate the weights
-            for(template <- weightsSum.families)
-              template.weights += updateReconstruction(template) * -currentTimeStepT.toDouble
+            for(template <- weightsSum.keys)
+              template.asInstanceOf[DotFamily].weights += updateReconstruction(template) * -currentTimeStepT.toDouble
           }
           case _ => throw new Exception("Weight averaging  only implemented for weight vectors of type WeightsTensor.")
         }

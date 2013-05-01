@@ -40,7 +40,7 @@ object DocumentClassifier2 {
     def domain = LabelDomain
   }
 
-  val model = new CombinedModel(
+  val model = new TemplateModel(
     /** Bias term just on labels */
     new DotTemplateWithStatistics1[Label] {
       lazy val weights = new la.DenseTensor1(LabelDomain.size)

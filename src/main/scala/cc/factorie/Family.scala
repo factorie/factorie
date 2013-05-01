@@ -63,10 +63,11 @@ trait TensorFamily extends Family {
 }
 
 /** A Family whose Factors have scores calculated as a dot-product between sufficient statistics Tensors and the Family's weights Tensor. */
-trait DotFamily extends TensorFamily {
+trait DotFamily extends TensorFamily with Weights{
   type FamilyType <: DotFamily
   def weights: Tensor
   @inline final override def statisticsScore(t:Tensor): Double = weights dot t
+  lazy val weightsTensor = new ItemizedTensors(Seq((this,weights)))
 }
 
 import cc.factorie.util._

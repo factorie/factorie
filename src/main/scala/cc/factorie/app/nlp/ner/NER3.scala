@@ -13,7 +13,7 @@ class NER3 extends DocumentAnnotator {
   } 
   
   // The model
-  val model = new CombinedModel(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain

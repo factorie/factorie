@@ -72,9 +72,9 @@ import util.DoubleAccumulator
 //}
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
-class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model] {
+class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model with Weights] {
   var learningMargin = 1.0
-  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with Weights, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -111,25 +111,25 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 }
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[Model] {
-  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
-  def this(sampler:ProposalSampler[C]) = this(sampler.model, sampler, new optimize.AdaGrad)
+class SampleRankTrainer[C](val model:Model with Weights, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[Model with Weights] {
+  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Weights], sampler, optimizer)
+  def this(sampler:ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with Weights], sampler, new optimize.AdaGrad)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(example:Example[Model]): Unit = {
+  def process(example:Example[Model with Weights]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor)
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
     if (gradientAccumulator.tensor.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
       optimizer.step(modelWeights, gradientAccumulator.tensor, valueAccumulator.value)
   }
-  def processExamples(examples: Iterable[Example[Model]]): Unit = examples.foreach(p => process(p))
-  def processExamples(examples: Iterable[Example[Model]], iterations:Int): Unit = for (i <- 0 until iterations) processExamples(examples)
+  def processExamples(examples: Iterable[Example[Model with Weights]]): Unit = examples.foreach(p => process(p))
+  def processExamples(examples: Iterable[Example[Model with Weights]], iterations:Int): Unit = for (i <- 0 until iterations) processExamples(examples)
   def isConverged: Boolean = false // TODO What more clever answer could we give here?
 }
 
