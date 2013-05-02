@@ -236,7 +236,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
+      val classifier = new ModelBasedClassifier[Label, LogLinearModel[Label,Features]](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
       BinarySerializer.deserialize(new ModelBasedClassifierCubbie(classifier), classifierFile)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
@@ -304,9 +304,9 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       // TODO should classifier cubbie write the vocab + the model in one file? -luke
-      if (!classifier.isInstanceOf[ModelBasedClassifier[Label]])
-        sys.error("Only ModelBasedClassifiers can be serialized.")
-      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label]]
+      if (!classifier.isInstanceOf[ModelBasedClassifier[Label, Model with Weights]])
+        sys.error("Only ModelBasedClassifiers with weights can be serialized.")
+      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with Weights]]
       BinarySerializer.serialize(new ModelBasedClassifierCubbie(mbc), classifierFile)
     }
 

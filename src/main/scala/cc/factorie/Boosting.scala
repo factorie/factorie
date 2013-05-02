@@ -10,8 +10,7 @@ import cc.factorie.la.{ItemizedTensors, DenseTensor1, Tensor1}
 abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: TensorVar]
   (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
   (implicit m1: Manifest[S1], m2: Manifest[S2])
-  extends Template2[S1, S2] with Weights {
-  lazy val weightsTensor = new ItemizedTensors()
+  extends Template2[S1, S2] {
 
   type StatisticsType = (S1#Value, S2#Value)
 
@@ -37,7 +36,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: TensorVa
     var i = 0
     while (!converged) {
       val classifierTemplate = trainWeakClassifier(labels, instanceWeights)
-      val currentClassifier = new ModelBasedClassifier[MutableDiscreteVar[_]](classifierTemplate, labels.head.domain)
+      val currentClassifier = new ModelBasedClassifier[MutableDiscreteVar[_],Model](classifierTemplate, labels.head.domain)
       val classifications = currentClassifier.classifications(labels.map(_.asInstanceOf[MutableDiscreteVar[_]])).toArray
       val isFail = mapIndex(numInstances)(i => classifications(i).bestLabelIndex != labels(i).asInstanceOf[DiscreteVar].intValue)
       val amountOfFail = (0 until numInstances).filter(isFail).foldLeft(0.0)((acc, el) => acc + instanceWeights(el))

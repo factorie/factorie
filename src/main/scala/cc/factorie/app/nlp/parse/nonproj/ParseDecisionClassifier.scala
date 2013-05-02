@@ -4,20 +4,17 @@ import ParserSupport._
 import cc.factorie.app.classify.ModelBasedClassifier
 import java.io.File
 import java.io.PrintWriter
-import cc.factorie.BinarySerializer
+import cc.factorie._
 import scala.io.Source
-import cc.factorie.BinarySerializer
-import cc.factorie.CategoricalDomainCubbie
-import cc.factorie.CubbieConversions
 import java.io.DataInputStream
 import java.io.BufferedInputStream
 import java.util.zip.GZIPInputStream
 import java.io.FileInputStream
-import cc.factorie.ModelCubbie
 import java.io.BufferedOutputStream
 import java.io.DataOutputStream
 import java.io.FileOutputStream
 import java.util.zip.GZIPOutputStream
+import cc.factorie.app.nlp.parse.nonproj.ParserSupport.ParseDecision
 
 // An abstraction which allows for easily changing the predictor
 trait ParserClassifier {
@@ -27,7 +24,7 @@ trait ParserClassifier {
 // The standard SVM one-vs-all classifier
 // The interface here is simpler than it seems: we're only saving, loading, and classifying.
 // To clean this up, we need better serialization support.
-class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable]) extends ParserClassifier {
+class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable, Model with Weights]) extends ParserClassifier {
   
   import CubbieConversions._
   

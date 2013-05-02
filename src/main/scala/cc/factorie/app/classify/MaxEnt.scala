@@ -29,7 +29,7 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
     }
     val learner = new SampleRankTrainer(sampler, optimizer)
     learner.processContexts(il, iterations)
-    new ModelBasedClassifier[L](cmodel, il.head.domain)
+    new ModelBasedClassifier(cmodel, il.head.domain)
   }
 }
 
@@ -47,7 +47,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
     val strategy = new BatchTrainer(cmodel, lbfgs)
     while (!strategy.isConverged)
       strategy.processExamples(pieces)
-    new ModelBasedClassifier[L](cmodel, il.head.domain)
+    new ModelBasedClassifier(cmodel, il.head.domain)
   }
 }
 
@@ -65,6 +65,6 @@ class GeneralClassifierTrainer(val trainerConstructor: Model => Trainer[_], val 
     val trainer = trainerConstructor(cmodel).asInstanceOf[Trainer[LogLinearModel[L,F]]]
     while (!trainer.isConverged)
       trainer.processExamples(examples)
-    new ModelBasedClassifier[L](cmodel, il.head.domain)
+    new ModelBasedClassifier(cmodel, il.head.domain)
   }
 }

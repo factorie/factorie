@@ -26,6 +26,6 @@ class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
       template.weights(l,f) = t(f)
     }
 
-    new ModelBasedClassifier[L](model, ll.head.domain)
+    new ModelBasedClassifier(model, ll.head.domain)
   }
 }
