@@ -134,7 +134,7 @@ class ChainNer {
       //printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new StepwiseGradientAscent) //ConfidenceWeightedUpdates { temperature = 0.01 }
+      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate) //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (iteration <- 1 until 3) {
         learner.processContexts(trainLabels)

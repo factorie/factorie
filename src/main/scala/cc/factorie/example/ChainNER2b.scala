@@ -88,7 +88,7 @@ object ChainNER2b {
     
     // Train and test
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new StepwiseGradientAscent)
+    val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate)
     val predictor = new VariableSettingsSampler[Label](model)
     for (i <- 1 to 4) {
       //println("Iteration "+i)

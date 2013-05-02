@@ -69,7 +69,7 @@ class POS2 extends Infer with util.FastLogging {
       for (document <- trainDocuments; sentence <- document.sentences.filter(_.tokens.size > 1)) yield 
         ChainModel.createChainExample(sentence.tokens.map(_.attr[PosLabel]))
     }
-    val trainer = new BatchTrainer(model, new StepwiseGradientAscent)
+    val trainer = new BatchTrainer(model, new ConstantLearningRate)
     
     var iteration = 0
     while (!trainer.isConverged && iteration < numIterations) {

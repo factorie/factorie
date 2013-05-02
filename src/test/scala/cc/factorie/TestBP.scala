@@ -185,7 +185,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weights.foreachElement((i, v) => f.weights(i) += random.nextDouble()))
       val ex = new LikelihoodExample(Seq(l0, l1, l2, l3), bpInfer)
       val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
-      val optimizer = new StepwiseGradientAscent()
+      val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {
         val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)
         val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)

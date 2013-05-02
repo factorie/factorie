@@ -144,3 +144,51 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
   }
 
 }
+
+
+/** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
+class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
+  private var _isConverged = false
+  def isConverged = _isConverged
+  var gradientTolerance = 0.001
+  var valueTolerance = 0.0001
+  var gradientNormMax = 100.0
+  var eps = 1.0e-10
+  var oldValue = Double.NaN
+  var lineOptimizer: BackTrackLineOptimizer = null
+  def reset(): Unit = {
+    _isConverged = false
+    oldValue = Double.NaN
+  }
+  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+    if (_isConverged) return
+    // Check for convergence by value
+    if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
+      logger.info("GradientAscent converged: old value=" + oldValue + " new value=" + value + " tolerance=" + valueTolerance)
+      _isConverged = true
+      return
+    }
+    // Check for convergence by gradient
+    val gradientTwoNorm = gradient.twoNorm
+    if (gradientTwoNorm < gradientTolerance) {
+      logger.info("GradientAscent converged: gradient twoNorm=" + gradient.twoNorm + " tolerance=" + gradientTolerance)
+      _isConverged = true
+      return
+    }
+
+    if (lineOptimizer eq null) {
+      // Before giving the BackTrackLineOptimizer a line direction to search, ensure it isn't too steep
+      // if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
+      lineOptimizer = new BackTrackLineOptimizer(gradient, gradient.copy, stepSize)
+      oldValue = value
+    }
+    lineOptimizer.step(weights, gradient, value)
+    if (!lineOptimizer.isConverged) return
+    lineOptimizer = null // So we create a new one next time
+    lineOptimizer = new BackTrackLineOptimizer(gradient, gradient.copy, stepSize)
+    lineOptimizer.step(weights, gradient, value)
+    oldValue = value
+  }
+}
+
+

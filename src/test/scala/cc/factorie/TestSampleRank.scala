@@ -63,7 +63,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
     val labels = List("n", "y").map(s => new Instance(s)).map(_.label)
     logger.debug("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
     logger.debug("feature tensors:\n"+labels.map(l => l.instance.tensor.toString+"\n"))
-    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, HammingObjective), new cc.factorie.optimize.StepwiseGradientAscent)
+    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, HammingObjective), new cc.factorie.optimize.ConstantLearningRate)
     //learner.logLevel = 10
     learner.processContexts(labels)
     labels.foreach(l => l.set(0)(null)); logger.debug("Set to 0")
