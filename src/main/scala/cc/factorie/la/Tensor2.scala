@@ -349,7 +349,8 @@ object Outer1Tensor2 {
 }
 
 /** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
-class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
+class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 with ReadOnlyTensor {
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def dim1 = tensor1.dim1
   def dim2 = tensor2.dim1
   def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i))
@@ -517,7 +518,7 @@ class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor
 
 // TODO Make a version of the above that uses an _innerValues: Array[Double] acting as (factor) weights multiplying the values of the inner Tensor1's?
 
-trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
+trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def singleValue1: Double
   def inner: Tensor1
@@ -544,7 +545,7 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
 }
 class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleValue1:Double, val inner:Tensor1) extends SingletonLayeredTensorLike2
 
-trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
+trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def inner: Tensor1
   def innerOffset: Int = singleIndex1 * dim2

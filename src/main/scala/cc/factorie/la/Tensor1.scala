@@ -35,14 +35,18 @@ trait Tensor1 extends Tensor {
   // FIXME: should "activeDomains" be a "def" there or a "val"?
   def reshape(dim: Array[Int]) : Tensor = {
     assert(dim.fold(1)((a,b) => a*b) == dim1)
-    new Tensor {
+    val self = this
+    new Tensor with ReadOnlyTensor {
       def dimensions = dim
       def activeDomain = tensor1.activeDomain
       def apply(i: Int) = tensor1(i)
       def length = tensor1.length
       def isDense = tensor1.isDense
       def numDimensions = dimensions.length
+      def dot(s: DoubleSeq) = self.dot(s)
       def activeDomains = dimensions.map(d => new RangeIntSeq(0, d)).toArray
+      def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
+      def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
     }
   }
   def +(t: Tensor1): Tensor1 = super.+(t).asInstanceOf[Tensor1]
@@ -139,16 +143,21 @@ class ScalarTensor(var singleValue:Double) extends Tensor1 {
   def dim1 = 1
   def activeDomain = new SingletonIntSeq(0)
   def isDense = false
+  def update(i: Int, v: Double) = if (i == 0) { singleValue = v} else throw new Error
+  def dot(s: DoubleSeq) = if (s.length == 1) { singleValue*s(0)} else throw new Error
+  def +=(i: Int, v: Double) = if (i == 0) { singleValue += v} else throw new Error
+  def +=(t: Tensor, v: Double) = if (t.length == 1) { singleValue += v*t(0)} else throw new Error
+  def zero() = singleValue = 0
   def apply(i:Int): Double = if (i == 0) singleValue else throw new Error
 }
 
 /** A one-dimensional one-hot Tensor. */
-class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
+class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends SingletonTensor with Tensor1 {
   def activeDomain = new SingletonIntSeq(singleIndex)
 } 
 
 /** A one-dimensional one-hot Tensor with hot value 1.0. */
-trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
+trait SingletonBinaryTensorLike1 extends SingletonBinaryTensor with Tensor1 {
   def activeDomain = new SingletonIntSeq(singleIndex)
 }
 /** A one-dimensional one-hot Tensor with hot value 1.0. */
@@ -173,7 +182,7 @@ class UniformTensor1(val dim1:Int, var uniformValue:Double) extends Tensor1 with
 class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
   override def copy = new UnaryTensor1(dim1)
 }
-class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Tensor1 with UniformTensor {
+class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensor with Tensor1 {
   def activeDomain = new RangeIntSeq(0, dim1)
   //def activeDomain = activeDomain1
   def dim1 = sizeProxy.size

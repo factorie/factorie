@@ -102,6 +102,7 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 }
 
 class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def isDense = false
   def activeDomain = activeIndices
   //def activeDomain = activeDomain1
@@ -113,6 +114,7 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
     assert(incr.floor == incr)
     incrementCountAtIndex(index, incr.toInt) 
   }
+  def update(i: Int, v: Double) = this += (i, v - this(i))
   override def zero(): Unit = clear()
   def massTotal = countsTotal.toDouble
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = {

@@ -18,7 +18,7 @@ import cc.factorie.util._
 import java.lang.IllegalStateException
 
 // TODO Finish this implementation
-class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
+class ConcatenatedTensor(theTensors:Seq[Tensor]) extends ReadOnlyTensor with Tensor1 {
   def tensors: Array[Tensor] = theTensors.toArray
   def foreachTensor(f:Tensor=>Unit): Unit = { var i = 0; while (i < tensors.length) { f(tensors(i)); i += 1 }}
   def isDense = throw new Error("Not yet implemented")

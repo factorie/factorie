@@ -16,7 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait UniformTensor extends Tensor {
+trait UniformTensor extends Tensor with ReadOnlyTensor {
   def uniformValue: Double
   def apply(i:Int) = uniformValue
   def isDense = true

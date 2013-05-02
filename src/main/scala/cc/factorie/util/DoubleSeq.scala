@@ -46,11 +46,6 @@ trait DoubleSeq {
   def twoNormSquared: Double = { val l = length; var result = 0.0; var i = 0; var v = 0.0; while (i < l) { v = apply(i); result += v * v; i += 1}; result }
   final def twoNorm: Double = math.sqrt(twoNormSquared)
   final def infinityNorm = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { val cur = math.abs(apply(i)); if (!(m >= cur)) m = cur; i += 1 }; m }
-  def cosineSimilarity(t:DoubleSeq): Double = {
-    val numerator:Double = this dot t
-    val denominator:Double = this.twoNorm * t.twoNorm
-    if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
-  }
   def l2Similarity(t:DoubleSeq): Double = {
     // TODO This will be inefficient for sparse this or t
     var sum = 0.0; var i = 0; var diff = 0.0; val len = length; assert(len == t.length)
@@ -62,10 +57,6 @@ trait DoubleSeq {
     math.sqrt(sum)
   }
   def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; false } // TODO Inefficient when sparse
-  def dot(ds:DoubleSeq): Double = ds match {
-    case t:SparseDoubleSeq => { assert(length == t.length); var result = 0.0; t.foreachActiveElement((i,v) => result += apply(i)*v); result}
-    case t:DoubleSeq => { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
-  }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
   def maxIndex2: (Int, Int) = {
     val l = length; var i = 1
@@ -215,10 +206,6 @@ trait SparseDoubleSeq extends DoubleSeq {
     case t:SparseDoubleSeq => super.different(t, threshold) // TODO Do something clever here
     case t:DoubleSeq => super.different(t, threshold)
   }
-  override def dot(t:DoubleSeq): Double = t match {
-    case t:SparseDoubleSeq => if (t.activeDomainSize < this.activeDomainSize) t.dot(this) else { var d = 0.0; foreachActiveElement((i,v) => d += v * t(i)); d }
-    case t:DoubleSeq => { var d = 0.0; foreachActiveElement((i,v) => d += v * t(i)); d }
-  } 
   override def maxIndex: Int = { var j = 0; var m = Double.NaN; foreachActiveElement((i,v) => { if (!(m >= v)) { m = v; j = i } }); j }
   override def containsNaN: Boolean = { foreachActiveElement((i,v) => if (v != v) return true); false } 
   override def sampleIndex(normalizer:Double)(implicit r:Random): Int = {

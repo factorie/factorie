@@ -25,7 +25,7 @@ import scala.util.Random
     Proportions contain Masses, which may not sum to 1.0;
     some Proportions subclasses can have their value changed by incrementing these inner masses.
     All Proportions also inherit directly from Masses, but, naturally, these Masses always sum to 1.0, and generally are not directly mutable. */
-trait Proportions extends Masses {
+trait Proportions extends Masses with ReadOnlyTensor {
   def masses: Masses
   //final def massTotal = 1.0
   @inline final override def pr(i:Int): Double = apply(i)
@@ -79,6 +79,7 @@ class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with 
 }
 class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends Proportions1 {
   val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
   def dim1 = masses.length
   def activeDomain = new cc.factorie.util.RangeIntSeq(0, masses.length)
@@ -99,6 +100,7 @@ trait DenseProportions extends Proportions {
   // Should this method be here? it's a really good way to get bugs when you're looking for masses.massTotal -luke
   def massTotal = 1.0
   def isDense = true
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   override def zero(): Unit = masses.zero()
 }
 
@@ -140,6 +142,7 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
 /** An immutable Proportions from a pre-normalized Tensor. */
 abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
   protected def _tensor: Tensor
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
   def apply(i:Int) = _tensor.apply(i)
   def massTotal = 1.0
@@ -187,6 +190,7 @@ class NormalizedTensorProportions4(tensor:Tensor4, checkNormalization:Boolean = 
 
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
   def activeDomain = masses.activeDomain  // throw new Error("Not implemented")
   def isDense = false

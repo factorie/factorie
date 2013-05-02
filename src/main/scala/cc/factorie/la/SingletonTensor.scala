@@ -16,7 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait SingletonTensor extends Tensor with SparseDoubleSeq {
+trait SingletonTensor extends Tensor with SparseDoubleSeq  with ReadOnlyTensor {
   def singleIndex: Int
   def singleValue: Double
   //def activeDomain: IntSeq = new SingletonIntSeq(singleIndex) // Can't be here and in Tensor1

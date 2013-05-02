@@ -19,7 +19,7 @@ import cc.factorie.util._
 /** An lazy product of a Vector and a scalar.
     Note that changes in the underlying Tensor will also show up here. 
     @author Andrew McCallum */
-class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
+class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor with ReadOnlyTensor {
   def numDimensions: Int = tensor numDimensions
   def dimensions: Array[Int] = tensor.dimensions
   // For handling sparsity
@@ -34,5 +34,7 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   //override def update(i:Int, v:Double): Unit = tensor.update(idx, value/scalar)
   //override def +=(v: Vector) { vector += v*(1.0/scalar) }
   def apply(index:Int) = tensor.apply(index) * scalar
+  def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
+  def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 

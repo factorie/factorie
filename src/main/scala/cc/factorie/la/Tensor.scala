@@ -46,13 +46,12 @@ trait Tensor extends MutableDoubleSeq {
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
   def exists(f:(Double)=>Boolean): Boolean = !forallActiveElements((i,v) => !f(v))
   def outer(t:Tensor): Tensor = Tensor.outer(this, t)
-  override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions. t1="+this.getClass.getName+" t2="+ds.getClass.getName)
-  // Methods for mutability not implemented in all Tensors
-  def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
-  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
-  def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
-  def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
-  def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+  def dot(ds:DoubleSeq): Double
+  def cosineSimilarity(t:DoubleSeq): Double = {
+    val numerator:Double = this dot t
+    val denominator:Double = this.twoNorm * t.twoNorm
+    if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
+  }
   def *(v:Double): Tensor = new TensorTimesScalar(this.copy, v) // TODO Should I use this.copy here?
   def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
@@ -63,8 +62,21 @@ trait Tensor extends MutableDoubleSeq {
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
+  // Methods for mutability not implemented in all Tensors
+  def +=(i:Int, incr:Double): Unit
+  def zero(): Unit
+  def update(i:Int, v:Double): Unit
+  def copy: Tensor
+  def blankCopy: Tensor
 }
 
+
+trait ReadOnlyTensor extends Tensor {
+  // Methods for mutability not implemented in all Tensors
+  def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
+  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
+  def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
+}
 
 object Tensor {
   

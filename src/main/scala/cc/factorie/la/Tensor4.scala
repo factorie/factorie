@@ -165,12 +165,13 @@ trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim3 + k).update(l, v)
   protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim3 + k); if (in eq null) { in = newTensor1(dim4); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i), index3(i)).+=(index4(i), incr)
+  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
 }
 class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val newTensor1:Int=>Tensor1) extends Dense3LayeredTensorLike4 {
   override def blankCopy = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, newTensor1)
 }
 
-trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
+trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def singleIndex2: Int
   def singleIndex3: Int
@@ -189,7 +190,7 @@ trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
     case t:SingletonBinaryTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) else 0.0
     case t:SingletonTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) * t.singleValue else 0.0
     case t:Singleton3LayeredTensorLike4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner.dot(t.inner) else 0.0
-    case t:Dense3LayeredTensor4 => super.dot(t)
+    case t:Dense3LayeredTensor4 => t.dot(this)
   }
 }
 class Singleton3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val inner:Tensor1) extends Singleton3LayeredTensorLike4

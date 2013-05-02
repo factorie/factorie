@@ -77,6 +77,10 @@ trait DualAveragingTensor extends Tensor  {
     ds.foreachActiveElement((i, x) => res += apply(i)*x)
     res
   }
+  def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
+  def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+  def +=(i: Int, v: Double): Unit = throw new Error("You should add tensors all at once to the DualAveragingTensor")
+  def zero(): Unit = for (i <- 0 until length) { gradients(i) = 0; gradSquares(i) = 0 }
 }
 
 class DualAveragingTensor1(val dim1: Int, val delta: Double, val eta: Double, val l1: Double, val l2: Double) extends DualAveragingTensor with Tensor1 {
