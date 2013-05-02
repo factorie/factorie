@@ -194,7 +194,7 @@ object GlmTest {
 
       totalTime += System.currentTimeMillis() - t0
 
-      val classifier = new ModelBasedClassifier[Label](model.evidenceTemplate, LabelDomain)
+      val classifier = new ModelBasedClassifier[Label, model.evidenceTemplate.type](model.evidenceTemplate, LabelDomain)
 
       val testTrial = new classify.Trial[Label](classifier)
       testTrial ++= testLabels
