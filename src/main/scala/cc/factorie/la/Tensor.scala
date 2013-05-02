@@ -52,8 +52,8 @@ trait Tensor extends MutableDoubleSeq {
     val denominator:Double = this.twoNorm * t.twoNorm
     if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
   }
-  def *(v:Double): Tensor = new TensorTimesScalar(this.copy, v) // TODO Should I use this.copy here?
-  def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
+  def *(v:Double): Tensor = {val c = this.copy; c *= v; c}// TODO Should I use this.copy here?
+  def /(v:Double): Tensor = {val c = this.copy; c /= v; c} // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   def normalized: Tensor = { val t = copy; t.normalize(); t } // TODO Make this return Proportions, then fix BP
