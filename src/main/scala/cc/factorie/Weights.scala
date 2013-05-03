@@ -1,6 +1,6 @@
 package cc.factorie
 
-import cc.factorie.la.Tensors
+import cc.factorie.la.{Tensor, Tensors}
 
 /**
  * User: apassos
@@ -9,4 +9,9 @@ import cc.factorie.la.Tensors
  */
 trait Weights {
   def weights: Tensors
+}
+
+class WeightsCubbie(val model:Weights) extends Cubbie {
+  val families = new PrimitiveListSlot[Tensor]("families") {}
+  families := model.weights.values.toSeq
 }

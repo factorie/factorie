@@ -37,7 +37,7 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
     if (_doubleGzip) {
       val fileStream = new BufferedOutputStream(new FileOutputStream(file))
       BinarySerializer.serialize(
-        new ModelCubbie(backingClassifier.model), 
+        new WeightsCubbie(backingClassifier.model),
         new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new GZIPOutputStream(fileStream))))
       )
     }
@@ -50,7 +50,7 @@ class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDeci
     if (_doubleGzip) {
       val fileStream = new BufferedInputStream(new FileInputStream(file))
       BinarySerializer.deserialize(
-        new ModelCubbie(backingClassifier.model), 
+        new WeightsCubbie(backingClassifier.model),
         new DataInputStream(new BufferedInputStream(new GZIPInputStream(new GZIPInputStream(fileStream))))
       )
     }

@@ -139,15 +139,6 @@ trait DotFamilyModel extends Model {
 }
 
 
-import cc.factorie.util._
-class ModelCubbie(val model:Model with Weights) extends Cubbie {
-  val families = CubbieListSlot[DotFamilyCubbie]("families", () => throw new Error)
-  families := model.weights.keys.filter(_.isInstanceOf[DotFamily]).map({case df:DotFamily => new DotFamilyCubbie(df)}).toSeq
-}
-
-// To actually do serialization
-// new CubbieFileSerializer(new File("foo")).serialize(new ModelCubbie(model))
-// class CubbieFileSerializer { def serialize(c:Cubbie): Unit = { for (elt <- c._map) elt._2 match { case i:Int => ... ; case t:Tensor => ... }
 
 
 // TODO Is this used?
