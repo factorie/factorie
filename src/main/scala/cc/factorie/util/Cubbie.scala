@@ -441,6 +441,7 @@ class Cubbie {
 
   case class StringListSlot(override val name: String) extends PrimitiveListSlot[String](name)
 
+  case class TensorListSlot(override val name: String) extends PrimitiveListSlot[Tensor](name)
   /**
    * A slot that contains a list of cubbies.
    * @param name the name of the slot.

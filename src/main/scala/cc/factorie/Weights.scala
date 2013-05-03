@@ -12,6 +12,6 @@ trait Weights {
 }
 
 class WeightsCubbie(val model:Weights) extends Cubbie {
-  val families = new PrimitiveListSlot[Tensor]("families") {}
+  val families = new TensorListSlot("tensors")
   families := model.weights.values.toSeq
 }
