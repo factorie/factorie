@@ -3,7 +3,7 @@ package cc.factorie
 import app.classify.ModelBasedClassifier
 import collection.mutable.ArrayBuffer
 import cc.factorie.maths._
-import cc.factorie.la.{ItemizedTensors, DenseTensor1, Tensor1}
+import cc.factorie.la.{Tensors, DenseTensor1, Tensor1}
 
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/

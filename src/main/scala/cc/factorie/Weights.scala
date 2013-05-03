@@ -8,5 +8,5 @@ import cc.factorie.la.Tensors
  * Time: 2:52 PM
  */
 trait Weights {
-  def weightsTensor: Tensors
+  def weights: Tensors
 }

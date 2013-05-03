@@ -159,7 +159,7 @@ trait DotFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends TensorFamily4[N1,N2,N3
 }
 
 trait DotFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFamilyWithStatistics4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4] {
-  override def weights: Tensor4
+  override def weightsTensor: Tensor4
   //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = weights dot statistics(v1, v2, v3, v4)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
 }

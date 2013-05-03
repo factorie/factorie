@@ -1,7 +1,7 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import cc.factorie.la.{ItemizedTensors, WeightsTensorAccumulator}
+import cc.factorie.la.{Tensors, TensorsAccumulator}
 import util.DoubleAccumulator
 
 /**
@@ -20,7 +20,7 @@ import util.DoubleAccumulator
  */
 object WSabie {
   class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends DotFamilyWithStatistics2[TensorVar, TensorVar] with Weights {
-    override lazy val weights = setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng)
+    override lazy val weightsTensor = setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng)
 
     def setToRandom(t: la.DenseTensor2, rng: java.util.Random): la.DenseTensor2 = {
       var i = 0
@@ -31,13 +31,13 @@ object WSabie {
       t
     }
 
-    def score(query: la.Tensor1, vector: la.Tensor1) = weights.*(query).dot(weights.*(vector))
+    def score(query: la.Tensor1, vector: la.Tensor1) = weightsTensor.*(query).dot(weightsTensor.*(vector))
     def rank(query: la.Tensor1, vectors: Seq[la.Tensor1]): Seq[la.Tensor1] = vectors.sortBy(v => -score(query, v))
   }
 
   class WSabieExample(val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example[WSabieModel] {
-    def accumulateExampleInto(model: WSabieModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-      val weights = model.weights
+    def accumulateExampleInto(model: WSabieModel, gradient: TensorsAccumulator, value: DoubleAccumulator) {
+      val weights = model.weightsTensor
       val queryEmbeddings = weights * query
       val posEmbeddings = weights * positive
       val negEmbeddings = weights * negative

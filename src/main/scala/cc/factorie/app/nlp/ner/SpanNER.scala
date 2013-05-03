@@ -41,7 +41,7 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
 
 abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
   //override def statisticsDomains = ((SpanNerFeaturesDomain, Conll2003NerDomain))
-  lazy val weights = new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, Conll2003NerDomain.size) // TODO This ordering seems backwards
+  lazy val weightsTensor = new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, Conll2003NerDomain.size) // TODO This ordering seems backwards
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
@@ -49,7 +49,7 @@ abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
 class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[SpanNerLabel] {
-      lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(Conll2003NerDomain.size)
     },
     // Token-Label within Span
     new SpanNerTemplate { 

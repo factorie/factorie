@@ -69,15 +69,14 @@ The following code declares data, model, inference and learning for a linear-cha
   // Define a model
   val model = new Model with Weights {
     // Two families of factors, where factor scores are dot-products of sufficient statistics and weights (which will be trained below)
-    val markov = new DotFamilyWithStatistics2[Label,Label] { lazy val weights = new DenseTensor2(LabelDomain.size, LabelDomain.size) }
-    val observ = new DotFamilyWithStatistics2[Label,Token] { lazy val weights = new DenseTensor2(LabelDomain.size, TokenDomain.size) }
-    def families = Seq(markov, observ)
+    val markov = new DotFamilyWithStatistics2[Label,Label] { lazy val weightsTensor = new DenseTensor2(LabelDomain.size, LabelDomain.size) }
+    val observ = new DotFamilyWithStatistics2[Label,Token] { lazy val weightsTensor = new DenseTensor2(LabelDomain.size, TokenDomain.size) }
     // Given some variables, return the collection of factors that neighbor them.
     override def factors(labels:Iterable[Var]) = labels match {
       case labels:LabelSeq => labels.map(label => new observ.Factor(label, label.token)) ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
     }
     def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
-    lazy val weightsTensor = new ItemizedTensors(Seq((markov,markov.weights), (observ,observ.weights)))
+    lazy val weights = new Tensors(Seq((markov,markov.weightsTensor), (observ,observ.weightsTensor)))
   }
   // Learn parameters
   val trainer = new BatchTrainer(model, new ConjugateGradient)
@@ -86,7 +85,7 @@ The following code declares data, model, inference and learning for a linear-cha
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
-  println(model.markov.weights)
+  println(model.markov.weightsTensor)
   // Print the inferred tags
   labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }

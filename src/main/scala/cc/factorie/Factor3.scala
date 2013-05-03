@@ -383,7 +383,7 @@ trait DotFamily3[N1<:Var,N2<:Var,N3<:Var] extends TensorFamily3[N1,N2,N3] with D
 }
 
 trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamilyWithStatistics3[N1,N2,N3] with DotFamily3[N1,N2,N3] {
-  override def weights: Tensor3
+  override def weightsTensor: Tensor3
   //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = weights dot statistics(v1, v2, v3)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases
@@ -393,9 +393,9 @@ trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extend
       If _1 is not a DiscreteVar then throws an Error. */
   def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = {
     val outer = Tensor.outer(tensor2, tensor3)
-    val dim = weights.dim1 //statisticsDomains._1.dimensionDomain.size
+    val dim = weightsTensor.dim1 //statisticsDomains._1.dimensionDomain.size
     val result = new DenseTensor1(dim)
-    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights(i*dim + j) * v)
+    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weightsTensor(i*dim + j) * v)
     result
   }
   def scores2(tensor1:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")

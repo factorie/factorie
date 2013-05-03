@@ -17,13 +17,13 @@ class NER3 extends DocumentAnnotator {
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
-      lazy val weights = new la.DenseTensor1(BilouConllNerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BilouConllNerDomain.size)
     },
     // Transition factors between two successive labels
     new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
       override def neighborDomain2 = BilouConllNerDomain
-      lazy val weights = new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size)
       def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouConllNerLabel] ne null); Factor(label.token.prev.attr[BilouConllNerLabel], label) } else Nil
       def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouConllNerLabel] ne null); Factor(label, label.token.next.attr[BilouConllNerLabel]) } else Nil
     },
@@ -31,7 +31,7 @@ class NER3 extends DocumentAnnotator {
     new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
       override def neighborDomain1 = BilouConllNerDomain
       override def neighborDomain2 = FeaturesDomain
-      lazy val weights = new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize)
       def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }

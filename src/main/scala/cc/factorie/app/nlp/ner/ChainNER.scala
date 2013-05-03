@@ -35,7 +35,7 @@ class ChainNerModel extends TemplateModel(
   new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "observation"
     //override def statisticsDomains = ((Conll2003NerDomain, ChainNerFeaturesDomain))
-    lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize)
+    lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
     def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
   },
@@ -43,7 +43,7 @@ class ChainNerModel extends TemplateModel(
   new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
     factorName = "markov"
     //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-    lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
+    lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
     def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
     def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
   }

@@ -55,7 +55,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
     trainings+=new Data(0.6, true)
     trainings+=new Data(0.8, true)
     object simpleTemplate extends DotTemplateWithStatistics2[Data, Prob]{
-      lazy val weights = new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize)
       def unroll1(data: Data) = Factor(data, data.score)
       def unroll2(prob: Prob) = Nil
     }
@@ -140,7 +140,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
         new DotTemplateWithStatistics2[MyBool, MyBool]
         {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))
-          lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
+          lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
           def unroll1(b: MyBool) = Factor(b, b.next)
           def unroll2(b: MyBool) = Factor(b.prev, b)
         }

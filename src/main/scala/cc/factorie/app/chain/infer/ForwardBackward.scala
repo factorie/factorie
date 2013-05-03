@@ -106,7 +106,7 @@ object ForwardBackward {
 
     val arrays = Array.fill(vs.size)(Array.ofDim[Double](vs.head.domain.size))
     if (biasTemplate ne null) {
-      val biasScores = biasTemplate.weights
+      val biasScores = biasTemplate.weightsTensor
       var vi = 0
       while (vi < vs.size) {
         val localFactor = localTemplate.Factor(vs(vi), labelToFeatures(vs(vi)))
@@ -141,8 +141,8 @@ object ForwardBackward {
   private def getTransScores[LV <: TensorVar](
          transTemplate: DotFamilyWithStatistics2[LV, LV]
        ): (Int,Int) => Double = {
-    val ds = transTemplate.weights.dim2 // optimization // TODO: this is from Feb 2012, is it still faster? -brian
-    (i: Int, j: Int) => transTemplate.weights(i * ds + j)
+    val ds = transTemplate.weightsTensor.dim2 // optimization // TODO: this is from Feb 2012, is it still faster? -brian
+    (i: Int, j: Int) => transTemplate.weightsTensor(i * ds + j)
   }
 
   def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {

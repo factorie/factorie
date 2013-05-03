@@ -23,7 +23,7 @@ class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
     }
     for (f <- 0 until numFeatures;
          (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      template.weights(l,f) = t(f)
+      template.weightsTensor(l,f) = t(f)
     }
 
     new ModelBasedClassifier(model, ll.head.domain)

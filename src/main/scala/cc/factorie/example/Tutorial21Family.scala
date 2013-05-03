@@ -16,7 +16,7 @@ object TutorialFamily {
     }
 
     val family2 = new DotFamilyWithStatistics2[BooleanVariable,BooleanVariable] {
-      val weights = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0)))
+      val weightsTensor = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0)))
     }
     
   }

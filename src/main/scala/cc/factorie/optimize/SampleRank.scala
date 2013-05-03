@@ -74,7 +74,7 @@ import util.DoubleAccumulator
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model with Weights] {
   var learningMargin = 1.0
-  def accumulateExampleInto(model: Model with Weights, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -114,14 +114,14 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 class SampleRankTrainer[C](val model:Model with Weights, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[Model with Weights] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Weights], sampler, optimizer)
   def this(sampler:ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with Weights], sampler, new optimize.AdaGrad)
-  val modelWeights = model.weightsTensor
+  val modelWeights = model.weights
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model with Weights]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)
+    val gradientAccumulator = new LocalTensorsAccumulator(model.weights.blankSparseCopy)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    

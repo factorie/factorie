@@ -42,9 +42,9 @@ class NaiveBayesTrainer extends ClassifierTrainer {
       }
     }
     // Put results into the model templates
-    forIndex(numLabels)(i => cmodel.biasTemplate.weights(i) = math.log(bias(i)))
+    forIndex(numLabels)(i => cmodel.biasTemplate.weightsTensor(i) = math.log(bias(i)))
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
-      cmodel.evidenceTemplate.weights(li * numFeatures + fi) = math.log(evid(li).apply(fi))
+      cmodel.evidenceTemplate.weightsTensor(li * numFeatures + fi) = math.log(evid(li).apply(fi))
     new ModelBasedClassifier(cmodel, il.head.domain)
   }
 }

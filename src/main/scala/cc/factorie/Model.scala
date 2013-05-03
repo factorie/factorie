@@ -142,7 +142,7 @@ trait DotFamilyModel extends Model {
 import cc.factorie.util._
 class ModelCubbie(val model:Model with Weights) extends Cubbie {
   val families = CubbieListSlot[DotFamilyCubbie]("families", () => throw new Error)
-  families := model.weightsTensor.keys.filter(_.isInstanceOf[DotFamily]).map({case df:DotFamily => new DotFamilyCubbie(df)}).toSeq
+  families := model.weights.keys.filter(_.isInstanceOf[DotFamily]).map({case df:DotFamily => new DotFamilyCubbie(df)}).toSeq
 }
 
 // To actually do serialization
@@ -226,7 +226,7 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model with Weights {
   def families: Seq[Family] = templates
     // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
   //def weights: Tensor = weightsTensor
-  lazy val weightsTensor: Tensors = new ItemizedTensors(families.filter(_.isInstanceOf[DotFamily]).map(f => (f,f.asInstanceOf[DotFamily].weights)))
+  lazy val weights: Tensors = new Tensors(families.filter(_.isInstanceOf[DotFamily]).map(f => (f,f.asInstanceOf[DotFamily].weightsTensor)))
 }
 
 

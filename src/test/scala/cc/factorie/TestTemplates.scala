@@ -23,7 +23,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
 
   @Test
   def testFactorsOfDiffList {
-    val template = new DotTemplateWithStatistics1[BooleanVariable] { lazy val weights = new la.DenseTensor1(BooleanDomain.size) }
+    val template = new DotTemplateWithStatistics1[BooleanVariable] { lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size) }
     val b = new BooleanVariable(true)
     val diff = new DiffList
     b.set(false)(diff)
@@ -42,7 +42,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       }
     }
     val diff = new DiffList
-    val template = new DotTemplateWithStatistics1[BooleanVariable] { lazy val weights = new la.DenseTensor1(BooleanDomain.size) }
+    val template = new DotTemplateWithStatistics1[BooleanVariable] { lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size) }
     Aggregate.b1.set(true)(diff)
     val factors = template.factors(diff)
     assert(factors.exists(factor => factor.variables.head == Aggregate.b1))
@@ -59,7 +59,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
     }
     val aggregate = new Aggregate
     val template = new DotTemplate2[Aggregate,Vars[Aggregate#Member]] {
-      lazy val weights = new la.DenseTensor1(1)
+      lazy val weightsTensor = new la.DenseTensor1(1)
       def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))

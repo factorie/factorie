@@ -2,7 +2,7 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.Token
-import la.{LocalWeightsTensorAccumulator}
+import la.{LocalTensorsAccumulator}
 import optimize._
 import scala.collection.mutable.Stack
 import org.junit.Assert._
@@ -182,13 +182,13 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2, l3 -> t3)
       val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
       val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
-      model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weights.foreachElement((i, v) => f.weights(i) += random.nextDouble()))
+      model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weightsTensor.foreachElement((i, v) => f.weightsTensor(i) += random.nextDouble()))
       val ex = new LikelihoodExample(Seq(l0, l1, l2, l3), bpInfer)
       val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
       val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {
-        val gradientAccumulator0 = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)
-        val gradientAccumulator1 = new LocalWeightsTensorAccumulator(model.weightsTensor.blankSparseCopy)
+        val gradientAccumulator0 = new LocalTensorsAccumulator(model.weights.blankSparseCopy)
+        val gradientAccumulator1 = new LocalTensorsAccumulator(model.weights.blankSparseCopy)
         val valueAccumulator0 = new LocalDoubleAccumulator
         val valueAccumulator1 = new LocalDoubleAccumulator
         ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0)
@@ -202,7 +202,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
             assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
           })
         })
-        optimizer.step(model.weightsTensor, gradientAccumulator0.tensor, Double.NaN)
+        optimizer.step(model.weights, gradientAccumulator0.tensor, Double.NaN)
       }
     }
   }
@@ -225,7 +225,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2, l3 -> t3)
     val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
     val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
-    model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weights.foreachElement((i, v) => f.weights(i) += random.nextDouble()))
+    model.families.asInstanceOf[Iterable[DotFamily]].foreach(f => f.weightsTensor.foreachElement((i, v) => f.weightsTensor(i) += random.nextDouble()))
     val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).head.logZ
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).head.logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
@@ -511,10 +511,10 @@ object BPTestUtils {
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new DotTemplateWithStatistics1[BinVar] {
-      lazy val weights = new la.DenseTensor1(BinDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BinDomain.size)
     }
-    family.weights(0) = score0
-    family.weights(1) = score1
+    family.weightsTensor(0) = score0
+    family.weightsTensor(1) = score1
     n1.set(0)(null)
     n1.set(1)(null)
     family.factors(n1).head
@@ -524,14 +524,14 @@ object BPTestUtils {
     val family = new DotTemplate2[BinVar, BinVar] {
       override def neighborDomain1 = BinDomain
       override def neighborDomain2 = BinDomain
-      lazy val weights = new la.DenseTensor1(BinDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BinDomain.size)
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
       override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
         BinDomain.valueOf(value1.intValue == value2.intValue)
     }
-    family.weights(0) = scoreEqual
-    family.weights(1) = scoreUnequal
+    family.weightsTensor(0) = scoreEqual
+    family.weightsTensor(1) = scoreUnequal
     family.factors(n1).head
   }
   

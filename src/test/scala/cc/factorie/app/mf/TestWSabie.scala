@@ -4,7 +4,7 @@ import org.junit._
 import org.junit.Assert._
 import cc.factorie._
 import la._
-import optimize.SGDTrainer
+import optimize.OnlineTrainer
 
 /**
  * User: apassos
@@ -22,7 +22,7 @@ class TestWSabie {
     val n = new SparseBinaryTensor1(3)
     n += 2
     val e = new WSabie.WSabieExample(q, p, n)
-    val trainer = new SGDTrainer(m)
+    val trainer = new OnlineTrainer(m)
     while (!trainer.isConverged) {
       trainer.processExamples(Seq(e))
     }

@@ -20,7 +20,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.la.ItemizedTensors
+import cc.factorie.la.Tensors
 
 object WordSegmenterDemo2 { 
   
@@ -38,27 +38,27 @@ object WordSegmenterDemo2 {
   val model = new ModelWithContext[IndexedSeq[Label]] with Weights {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
-      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
     }
     object obs extends DotFamilyWithStatistics2[Label,Token] {
       factorName = "Label,Token"
-      lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     }
     object markov extends DotFamilyWithStatistics2[Label,Label] {
       factorName = "Label,Label"
-      lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
+      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
     }
     object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Token] {
       factorName = "Label,Label,Token"
-      lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
+      lazy val weightsTensor = new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
     }
     object skip extends  DotFamily2[Label,Label] {
       factorName = "Label,Label:Boolean"
-      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
     def families = Seq(bias, obs, markov, obsmarkov)
-    lazy val weightsTensor = new ItemizedTensors(families.map(f => (f,f.weights)))
+    lazy val weights = new Tensors(families.map(f => (f,f.weightsTensor)))
     def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {
@@ -117,7 +117,7 @@ object WordSegmenterDemo2 {
     // println("Example Factors: "+exampleFactors.mkString(", "))
 
     val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    val trainer = new SGDTrainer(model, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
+    val trainer = new OnlineTrainer(model, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
 //    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
     trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label))))
     for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)

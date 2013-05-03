@@ -31,17 +31,17 @@ object Coref1 {
 
   class EntityMentionModel extends CombinedModel(
     new DotTemplate1[EntityRef] {
-      lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
       //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
       //weights.update(CorefAffinityDimensionDomain.Bias, -1)
-      weights(CorefAffinityDimensionDomain.Bias) = -1
-      weights(CorefAffinityDimensionDomain.ExactMatch) = 10
-      weights(CorefAffinityDimensionDomain.SuffixMatch) = 2
-      weights(CorefAffinityDimensionDomain.EntityContainsMention) = 3
-      weights(CorefAffinityDimensionDomain.EditDistance2) = 4
-      weights(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
-      weights(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
-      weights(CorefAffinityDimensionDomain.Singleton) = -1
+      weightsTensor(CorefAffinityDimensionDomain.Bias) = -1
+      weightsTensor(CorefAffinityDimensionDomain.ExactMatch) = 10
+      weightsTensor(CorefAffinityDimensionDomain.SuffixMatch) = 2
+      weightsTensor(CorefAffinityDimensionDomain.EntityContainsMention) = 3
+      weightsTensor(CorefAffinityDimensionDomain.EditDistance2) = 4
+      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
+      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
+      weightsTensor(CorefAffinityDimensionDomain.Singleton) = -1
       override def statistics(e:EntityRef#Value) = {
         val mention: Entity = e._1
         val entity: Entity = e._2
@@ -66,16 +66,16 @@ object Coref1 {
 
   class PairwiseModel extends CombinedModel(
     new DotTemplate1[EntityRef] {
-      lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
       //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
-      weights(CorefAffinityDimensionDomain.Bias) = -1
-      weights(CorefAffinityDimensionDomain.ExactMatch) = 10
-      weights(CorefAffinityDimensionDomain.SuffixMatch) = 2
-      weights(CorefAffinityDimensionDomain.EntityContainsMention) = 3
-      weights(CorefAffinityDimensionDomain.EditDistance2) = 4
-      weights(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
-      weights(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
-      weights(CorefAffinityDimensionDomain.Singleton) = -1
+      weightsTensor(CorefAffinityDimensionDomain.Bias) = -1
+      weightsTensor(CorefAffinityDimensionDomain.ExactMatch) = 10
+      weightsTensor(CorefAffinityDimensionDomain.SuffixMatch) = 2
+      weightsTensor(CorefAffinityDimensionDomain.EntityContainsMention) = 3
+      weightsTensor(CorefAffinityDimensionDomain.EditDistance2) = 4
+      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
+      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
+      weightsTensor(CorefAffinityDimensionDomain.Singleton) = -1
       override def statistics(e:EntityRef#Value) = {
         val mention: Entity = e._1
         val entity: Entity = e._2

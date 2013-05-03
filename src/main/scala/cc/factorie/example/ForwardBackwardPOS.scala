@@ -24,14 +24,14 @@ object ForwardBackwardPOS {
     // Factor between label and observed token
     val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
-      lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
       def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
     }
     // Transition factors between two successive labels
     val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
       //override def statisticsDomains = ((PosDomain, PosDomain))
-      lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
+      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosDomain.size)
       def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
       def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
@@ -99,7 +99,7 @@ object ForwardBackwardPOS {
 //    val optimizer = new LimitedMemoryBFGS(trainer) { override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") } }
 //    optimizer.optimize()
     val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(s, InferByBPChainSum))
-    val trainer = new optimize.SGDTrainer(PosModel, new optimize.AROW(PosModel))
+    val trainer = new optimize.OnlineTrainer(PosModel, new optimize.AROW(PosModel))
     (1 to 100).foreach(i => trainer.processExamples(examples))
     
     testSavePrint("final")

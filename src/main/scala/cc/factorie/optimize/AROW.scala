@@ -48,7 +48,7 @@ class ConfidenceWeighting(val model:Weights) extends GradientOptimizer {
   }
   lazy val sigma:Tensors = {
     //print("Initializing sigma...")
-    val result:Tensors = model.weightsTensor.blankDenseCopy
+    val result:Tensors = model.weights.blankDenseCopy
     for(template <- result.keys) result(template) := initialVariance
     //println(" done.")
     result

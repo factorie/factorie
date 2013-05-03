@@ -25,7 +25,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Tens
   (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: TensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends Template2[V1, V2] with Weights {
-  lazy val weightsTensor = new ItemizedTensors()
+  lazy val weights = new Tensors()
 
   type S1 = V1#Value
   type S2 = V2#Value

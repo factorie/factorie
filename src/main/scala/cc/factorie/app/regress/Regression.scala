@@ -49,11 +49,11 @@ class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends Model with Weig
   /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
   def factors(variable: Var) = Nil
   val family = new DotFamily {
-    lazy val weights = new DenseTensor2(nLabel, nFeatures)
+    lazy val weightsTensor = new DenseTensor2(nLabel, nFeatures)
   }
   def families = Seq(family)
-  def weights = family.weights.asInstanceOf[DenseTensor2]
-  lazy val weightsTensor = new ItemizedTensors(Seq((family,family.weights)))
+  // def weights = family.familyWeights.asInstanceOf[DenseTensor2]
+  lazy val weights = new Tensors(Seq((family,family.weightsTensor)))
 }
 
 object LinearRegressionObjectiveFunctions {
@@ -81,8 +81,8 @@ object LinearRegressionObjectiveFunctions {
 
 class LinearRegressionExample(features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example[LinearRegressionModel] {
   // gradient or value or margin can be null if they don't need to be computed.
-  def accumulateExampleInto(model: LinearRegressionModel, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-    val weights = model.weights
+  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorsAccumulator, value: DoubleAccumulator) {
+    val weights = model.family.weightsTensor
     val prediction = weights * features.value.asInstanceOf[Tensor1]
     val (objValue,objGradient) = objective(prediction, label.value.asInstanceOf[Tensor1])
     if (value != null) value.accumulate(objValue)
@@ -113,7 +113,7 @@ object LinearRegressionTrainer {
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }
-    new LinearRegressor(dependant2Explanatory, model.weights)
+    new LinearRegressor(dependant2Explanatory, model.family.weightsTensor)
   }
 }
 

@@ -33,19 +33,19 @@ object ChainNER1a {
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[ChainNerLabel] {
       //def statisticsDomains = Tuple1(Conll2003NerDomain) // TODO But sometimes there should be subclasses here?
-      lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(Conll2003NerDomain.size)
     }, 
     // Factor between label and observed token
     new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
       //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
-      lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
       def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
       def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     },
     // Transition factors between two successive labels
     new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
       //def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-      lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
       def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
       def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
     }
@@ -64,7 +64,7 @@ object ChainNER1a {
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingObjective)))
-    val learner = new SGDTrainer(model, new optimize.AROW(model))
+    val learner = new OnlineTrainer(model, new optimize.AROW(model))
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
       learner.processExamples(pieces)

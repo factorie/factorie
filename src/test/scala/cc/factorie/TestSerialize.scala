@@ -2,7 +2,7 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.ner.ChainNerLabel
-import cc.factorie.la.{ItemizedTensors, Tensor, DenseTensor1, UniformTensor1}
+import cc.factorie.la.{Tensors, Tensor, DenseTensor1, UniformTensor1}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
@@ -33,9 +33,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     OntoNerLabelDomain ++= Seq("Hello","GoodBye")
 
     val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-    model.bias.weights.:=(Array.fill[Double](model.bias.weights.length)(random.nextDouble()))
-    model.obs.weights.:=(Array.fill[Double](model.obs.weights.length)(random.nextDouble()))
-    model.markov.weights.:=(Array.fill[Double](model.markov.weights.length)(random.nextDouble()))
+    model.bias.weightsTensor.:=(Array.fill[Double](model.bias.weightsTensor.length)(random.nextDouble()))
+    model.obs.weightsTensor.:=(Array.fill[Double](model.obs.weightsTensor.length)(random.nextDouble()))
+    model.markov.weightsTensor.:=(Array.fill[Double](model.markov.weightsTensor.length)(random.nextDouble()))
     logger.debug("serializing chain model")
     model.serialize(modelFile)
 
@@ -46,7 +46,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     logger.debug("successfully deserialized")
   }
 
-  def getWeights(model: Model with Weights): Seq[Tensor] = model.weightsTensor.values.toSeq
+  def getWeights(model: Model with Weights): Seq[Tensor] = model.weights.values.toSeq
 
   def assertSameWeights(model1: Model with Weights, model2: Model with Weights): Unit = {
     val weights1 = getWeights(model1)
@@ -87,14 +87,14 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
     class Model1(d: CategoricalDomain[String]) extends Model with Weights {
       object family1 extends DotFamilyWithStatistics1[CategoricalVariable[String]] {
-        lazy val weights = new DenseTensor1(d.length)
+        lazy val weightsTensor = new DenseTensor1(d.length)
       }
       def families = Seq(family1)
-      lazy val weightsTensor = new ItemizedTensors(Seq((family1,family1.weights)))
+      lazy val weights = new Tensors(Seq((family1,family1.weightsTensor)))
       def factors(v: Var) = Nil
     }
     val model = new Model1(domain1)
-    model.family1.weights(6) = 12
+    model.family1.weightsTensor(6) = 12
 
     val fileName1 = java.io.File.createTempFile("foo", "domain")
     val domainFile = new File(fileName1.getAbsolutePath)
@@ -129,9 +129,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     OntoNerLabelDomain ++= Seq("Hello","GoodBye")
 
     val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-    model.bias.weights.:=(Array.fill[Double](model.bias.weights.length)(random.nextDouble()))
-    model.obs.weights.:=(Array.fill[Double](model.obs.weights.length)(random.nextDouble()))
-    model.markov.weights.:=(Array.fill[Double](model.markov.weights.length)(random.nextDouble()))
+    model.bias.weightsTensor.:=(Array.fill[Double](model.bias.weightsTensor.length)(random.nextDouble()))
+    model.obs.weightsTensor.:=(Array.fill[Double](model.obs.weightsTensor.length)(random.nextDouble()))
+    model.markov.weightsTensor.:=(Array.fill[Double](model.markov.weightsTensor.length)(random.nextDouble()))
 
     BinarySerializer.serialize(MyChainNerFeaturesDomain, OntoNerLabelDomain, model, file)
 
@@ -207,8 +207,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     logger.debug("TokenDomain.dimensionDomain.size=" + TokenDomain.dimensionDomain.size)
 
     val model = new SegmenterModel
-    model.bias.weights += new UniformTensor1(model.bias.weights.dim1, 1.0)
-    model.obs.weights += new la.UniformTensor2(model.obs.weights.dim1, model.obs.weights.dim2, 1.0)
+    model.bias.weightsTensor += new UniformTensor1(model.bias.weightsTensor.dim1, 1.0)
+    model.obs.weightsTensor += new la.UniformTensor2(model.obs.weightsTensor.dim1, model.obs.weightsTensor.dim2, 1.0)
 
     val modelFile = new File(fileName)
 
@@ -252,14 +252,14 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
   class SegmenterModel extends ModelWithContext[Seq[Label]] with Weights {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
-      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
     }
     object obs extends DotFamilyWithStatistics2[Label, Token] {
       factorName = "Label,Token"
-      lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     }
     def families: Seq[Family] = Seq(bias, obs)
-    lazy val weightsTensor = new ItemizedTensors(Seq((bias,bias.weights), (obs,obs.weights)))
+    lazy val weights = new Tensors(Seq((bias,bias.weightsTensor), (obs,obs.weightsTensor)))
     def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
       Seq.empty[Factor]
     }

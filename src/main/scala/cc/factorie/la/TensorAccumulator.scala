@@ -3,23 +3,9 @@ package cc.factorie.la
 import cc.factorie.util.{LocalDoubleAccumulator, TruncatedArrayIntSeq, Accumulator}
 import cc.factorie.DotFamily
 
-trait TensorAccumulator extends Accumulator[Tensor] {
-  def accumulate(index: Int, value: Double): Unit
-  def accumulate(t:Tensor, factor:Double): Unit
-}
 
-class LocalTensorAccumulator[T<:Tensor](val tensor:T) extends TensorAccumulator {
-  def accumulate(t:Tensor) : Unit = tensor += t
-  def combine(ta:Accumulator[Tensor]): Unit = ta match {
-    case ta:LocalTensorAccumulator[Tensor] => tensor += ta.tensor
-  }
-  def accumulate(index: Int, value: Double): Unit = tensor.+=(index, value)
-  def accumulate(t:Tensor, f:Double): Unit = tensor.+=(t, f) 
-}
-
-trait WeightsTensorAccumulator {
-  def accumulator(family:Any): TensorAccumulator
-  // TODO Strong consider getting rid of the usage of DotFamily in arguments below, then next three methods disappear. 
+trait TensorsAccumulator {
+  // TODO Strong consider getting rid of the usage of DotFamily in arguments below, then next three methods disappear.
   def accumulate(family: Any, t: Tensor): Unit
   def accumulate(family: Any, index: Int, value: Double): Unit
   def accumulate(family: Any, t: Tensor, factor: Double): Unit
@@ -27,9 +13,7 @@ trait WeightsTensorAccumulator {
   def accumulateOuter(family: Any, t1: Tensor1, t2: Tensor1): Unit
 }
 
-class LocalWeightsTensorAccumulator(val tensor: Tensors) extends WeightsTensorAccumulator {
-  protected val map = new collection.mutable.HashMap[Any,TensorAccumulator]
-  def accumulator(family:Any): TensorAccumulator = map.getOrElseUpdate(family, new LocalTensorAccumulator(tensor(family)))
+class LocalTensorsAccumulator(val tensor: Tensors) extends TensorsAccumulator {
   def accumulate(family: Any, t: Tensor): Unit = tensor(family) += t
   def accumulate(family: Any, index: Int, value: Double): Unit = tensor(family)(index) += value
   def accumulate(family: Any, t: Tensor, factor: Double) = tensor(family).+=(t, factor)
@@ -110,14 +94,13 @@ class LocalWeightsTensorAccumulator(val tensor: Tensors) extends WeightsTensorAc
         if (myT.isInstanceOf[SparseIndexedTensor]) myT.asInstanceOf[SparseIndexedTensor]._makeReadable
     }
   }
-  def combine(a: WeightsTensorAccumulator): Unit = a match {
-    case a: LocalWeightsTensorAccumulator => tensor += a.tensor
+  def combine(a: TensorsAccumulator): Unit = a match {
+    case a: LocalTensorsAccumulator => tensor += a.tensor
   }
 }
 
-class SynchronizedWeightsTensorAccumulator(val tensor: Tensors) extends WeightsTensorAccumulator {
-  val l = new LocalWeightsTensorAccumulator(tensor)
-  override def accumulator(family:Any): TensorAccumulator = l.synchronized { l.accumulator(family) }
+class SynchronizedTensorsAccumulator(val tensor: Tensors) extends TensorsAccumulator {
+  val l = new LocalTensorsAccumulator(tensor)
   override def accumulate(family: Any, t: Tensor): Unit = l.synchronized { l.accumulate(family, t) }
   override def accumulate(family: Any, index: Int, value: Double): Unit = l.synchronized { l.accumulate(family, index, value) }
   override def accumulate(family: Any, t: Tensor, factor: Double) = l.synchronized { l.accumulate(family, t, factor) }
@@ -131,8 +114,7 @@ class SynchronizedDoubleAccumulator() extends cc.factorie.util.DoubleAccumulator
 }
 
 
-object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
-  def accumulator(family:Any): TensorAccumulator = throw new Error("NoopWeightsTensorAccumulator cannot implement accumulator(DotFamily")
+object NoopWeightsTensorAccumulator extends TensorsAccumulator {
   def accumulate(family: Any, t: Tensor): Unit = {}
   def accumulate(family: Any, index: Int, value: Double): Unit = {}
   def accumulate(family: Any, t: Tensor, c: Double): Unit = {}

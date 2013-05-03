@@ -111,7 +111,7 @@ object CorefMentionsDemo {
       // Pairwise affinity factor between Mentions in the same partition
       model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
         //def statisticsDomains = Tuple1(AffinityVectorDomain)
-        lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
+        lazy val weightsTensor = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
         def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
           else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
@@ -124,7 +124,7 @@ object CorefMentionsDemo {
       // Pairwise repulsion factor between Mentions in different partitions
       model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
         //def statisticsDomains = Tuple1(AffinityVectorDomain)
-        lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
+        lazy val weightsTensor = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
         /*override def factors(d:Diff) = d.variable match {
           case mention: Mention => d match {
             case mention.entityRef.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
@@ -145,7 +145,7 @@ object CorefMentionsDemo {
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
       model += new DotTemplate1[Entity] {
         //def statisticsDomains = Tuple1(BooleanDomain)
-        lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+        lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
         override def statistics(e:Entity#Value) = {
           val mentions: Entity#Value= e
           if (mentions.isEmpty) BooleanDomain.trueValue

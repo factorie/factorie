@@ -235,7 +235,7 @@ abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, 
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor1]
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weightsTensor.asInstanceOf[Tensor1]
     case _ => {
       val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
       val result = new DenseTensor1(edge1.variable.domain.size)
@@ -444,8 +444,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = factor match {
     // TODO: this only works if statistics has not been overridden. See TestBP.loop2 for an example where this fails.
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weights.isInstanceOf[Tensor2]) => {
-      factor.family.weights.asInstanceOf[Tensor2]
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weightsTensor.isInstanceOf[Tensor2]) => {
+      factor.family.weightsTensor.asInstanceOf[Tensor2]
     }
     case _ => {
       // TODO Replace this with just efficiently getting factor.family.weights
@@ -473,8 +473,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
       result
     }
   }
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginalTensor), f)
-  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor) 
+  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginalTensor)
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
@@ -508,7 +507,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
     result
   }
   /** Add into the accumulator the factor's statistics, weighted by the marginal probability of the varying values involved. */
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
+  /*def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
     val marginal = calculateMarginalTensor.asInstanceOf[Tensor2]
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0
@@ -529,7 +528,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
 //        accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
 //      }
 //    }
-  }
+  }*/
   override def marginalTensorStatistics: Tensor = factor._2.value match {
     case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginalTensor.asInstanceOf[Tensor2], t2))
   }
@@ -556,7 +555,7 @@ abstract class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdg
   def calculateBeliefsTensor: Tensor3 = throw new Error("Not yet implemented")
   override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginalTensor, false)"
   //def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
+  // def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
 }
 
 object BPSummary {

@@ -129,7 +129,7 @@ object Tutorial40InferenceAndLearning {
      * To learn a model we need a trainer. We can do stochastic single-threaded training with the
      * SGDTrainer. We can also do multithreaded stochastic learning with the HogwildTrainer.
      **/
-    val trainer0 = new optimize.SGDTrainer(model, optimizer0)
+    val trainer0 = new optimize.OnlineTrainer(model, optimizer0)
     // One call to processExamples will do one pass over the training set doing updates.
     trainer0.processExamples(Seq(example1))
 

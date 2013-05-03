@@ -340,12 +340,12 @@ trait DotFamily2[N1<:Var,N2<:Var] extends TensorFamily2[N1,N2] with DotFamily {
 }
 
 trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamilyWithStatistics2[N1,N2] with DotFamily2[N1,N2] {
-  override def weights: Tensor2
+  override def weightsTensor: Tensor2
   //def score(v1:N1#Value, v2:N2#Value): Double = weights dot statistics(v1, v2)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
-  def valueScores1(tensor2:Tensor): Tensor1 = weights match {
+  def valueScores1(tensor2:Tensor): Tensor1 = weightsTensor match {
     case weights: Tensor2 => {
       val dim = weights.dim1 // statisticsDomains._1.dimensionDomain.size
       val result = new DenseTensor1(dim)
@@ -375,7 +375,7 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
   }
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
-  def valueScores2(tensor1:Tensor): Tensor1 = weights match {
+  def valueScores2(tensor1:Tensor): Tensor1 = weightsTensor match {
     case weights: Tensor2 => {
       val dim = weights.dim2 //statisticsDomains._2.dimensionDomain.size
       val result = new DenseTensor1(dim)

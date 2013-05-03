@@ -128,12 +128,12 @@ class POS3 extends DocumentAnnotator {
 
   var exampleSetsToPrediction = false
   class TokenClassifierExample(val token:Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorsAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
       new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
       if (exampleSetsToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weights
+        val weightsMatrix = model.evidenceTemplate.weightsTensor
         val prediction = weightsMatrix * featureVector
         token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
       }
@@ -141,7 +141,7 @@ class POS3 extends DocumentAnnotator {
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    val weightsMatrix = model.evidenceTemplate.weights
+    val weightsMatrix = model.evidenceTemplate.weightsTensor
     for (token <- tokens) {
       assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
@@ -199,7 +199,7 @@ class POS3 extends DocumentAnnotator {
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
-    val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
       val examples = sentences.shuffle.flatMap(sentence => {

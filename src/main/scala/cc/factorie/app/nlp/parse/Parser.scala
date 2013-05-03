@@ -23,12 +23,12 @@ class Parser {
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[ParseLabel] {
       //def statisticsDomains = Tuple1(ParseLabelDomain)
-      lazy val weights = new la.DenseTensor1(ParseLabelDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(ParseLabelDomain.size)
     },
     // Factor between label and observed token
     new DotTemplate3[ParseEdge,ParseFeatures,ParseFeatures] {
       //def statisticsDomains = ((ParseFeaturesDomain, ParseFeaturesDomain))
-      lazy val weights = new la.DenseLayeredTensor2(ParseFeaturesDomain.dimensionSize, ParseFeaturesDomain.dimensionSize) // TODO Change this to la.SparseTensor2 when it is available
+      lazy val weightsTensor = new la.DenseLayeredTensor2(ParseFeaturesDomain.dimensionSize, ParseFeaturesDomain.dimensionSize) // TODO Change this to la.SparseTensor2 when it is available
       def unroll1(n:ParseEdge) = Factor(n, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
       def unroll2(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, child, edge.parent.attr[ParseFeatures]) }
       def unroll3(parent:ParseFeatures) = Nil
@@ -36,7 +36,7 @@ class Parser {
     },
     new DotTemplate4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] {
       //def statisticsDomains = ((ParseLabelDomain, ParseFeaturesDomain))
-      lazy val weights = new la.DenseTensor2(ParseLabelDomain.size, ParseFeaturesDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(ParseLabelDomain.size, ParseFeaturesDomain.dimensionSize)
       def unroll1(n:ParseEdge) = Factor(n, n.label, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
       def unroll2(label:ParseLabel) = { val edge = label.edge; Factor(edge, label, edge.child.attr[ParseFeatures], edge.parent.attr[ParseFeatures]) }
       def unroll3(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, edge.label, child, edge.parent.attr[ParseFeatures]) }

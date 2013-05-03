@@ -101,9 +101,9 @@ object ObjectiveFunctions {
 class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
-  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:WeightsTensorAccumulator, value:DoubleAccumulator) {
+  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorsAccumulator, value:DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val weightsMatrix = model.evidenceTemplate.weights
+    val weightsMatrix = model.evidenceTemplate.weightsTensor
     val prediction = weightsMatrix * featureVector
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, targetLabel)
@@ -175,7 +175,7 @@ object GlmTest {
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model)
-    val strategy = new SGDTrainer(model, optimizer = new AdaGrad)
+    val strategy = new OnlineTrainer(model, optimizer = new AdaGrad)
 
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
@@ -189,7 +189,7 @@ object GlmTest {
     while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
       strategy.processExamples(pieces)
-      println(model.evidenceTemplate.weights)
+      println(model.evidenceTemplate.weightsTensor)
       //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
 
       totalTime += System.currentTimeMillis() - t0

@@ -41,7 +41,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
       l.intValue,
       ObjectiveFunctions.logMultiClassObjective,
       weight = il.instanceWeight(l)))
-    if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
+    if (warmStart != null) cmodel.evidenceTemplate.weightsTensor := warmStart
     // Do the training by BFGS
     val lbfgs = new optimize.LBFGS with L2Regularization { variance = variance }
     val strategy = new BatchTrainer(cmodel, lbfgs)

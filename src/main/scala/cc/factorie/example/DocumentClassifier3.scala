@@ -42,12 +42,12 @@ object DocumentClassifier3 {
     /** Bias term just on labels */
     new DotTemplateWithStatistics1[Label] { 
       //override def statisticsDomains = Tuple1(LabelDomain)
-      lazy val weights = new la.DenseTensor1(LabelDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(LabelDomain.size)
     },
     /** Factor between label and observed document */
     new DotTemplateWithStatistics2[Label,Document] {
       //override def statisticsDomains = ((LabelDomain, DocumentDomain))
-      lazy val weights = new la.DenseTensor2(LabelDomain.size, DocumentDomain.dimensionSize)
+      lazy val weightsTensor = new la.DenseTensor2(LabelDomain.size, DocumentDomain.dimensionSize)
       def unroll1 (label:Label) = Factor(label, label.document)
       def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
     }
@@ -78,7 +78,7 @@ object DocumentClassifier3 {
 
     // Train and test
     val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(v))
-    val trainer = new optimize.SGDTrainer(model, new optimize.AROW(model))
+    val trainer = new optimize.OnlineTrainer(model, new optimize.AROW(model))
     (1 to 100).foreach(i => trainer.processExamples(examples))
     val predictor = new IteratedConditionalModes[Label](model)
     predictor.processAll(trainVariables)

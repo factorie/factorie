@@ -6,7 +6,7 @@ package cc.factorie.la
  * Time: 1:40 PM
  */
 
-trait Tensors extends Map[Any,Tensor] {
+class Tensors extends Map[Any,Tensor] {
   self =>
   protected val _map = new scala.collection.mutable.LinkedHashMap[Any,Tensor] {
     override def default(f:Any) = { val t = defaultTensor(f); this(f) = t; t }
@@ -37,10 +37,8 @@ trait Tensors extends Map[Any,Tensor] {
   def blankDenseCopy: Tensors = new Tensors { override def defaultTensor(key:Any) = Tensor.newDense(self(key)) }
   def blankSparseCopy: Tensors = new Tensors { override def defaultTensor(key:Any) = Tensor.newSparse(self(key)) }
   def toArray: Array[Double] = { val a = new Array[Double](_map.values.map(_.length).sum); var offset = 0; _map.values.foreach(t => { System.arraycopy(t.asArray, 0, a, offset, t.length); offset += t.length }); a }
-}
-
-
-class ItemizedTensors() extends Tensors {
   def append(k: Any, v: Tensor) = _map(k) = v
   def this(items: Seq[(Any,Tensor)]) = { this(); items.foreach(i => append(i._1,i._2)) }
 }
+
+
