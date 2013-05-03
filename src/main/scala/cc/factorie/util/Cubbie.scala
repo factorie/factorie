@@ -16,6 +16,7 @@ package cc.factorie.util
 
 import collection.mutable
 import util.parsing.json.JSON
+import cc.factorie.la.Tensor
 
 /**
  * A Cubbie provides typed access to an underlying Map data-structure. This map can come
