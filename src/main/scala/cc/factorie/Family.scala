@@ -70,10 +70,5 @@ trait DotFamily extends TensorFamily with Weights {
   lazy val weights = new Tensors(Seq((this,weightsTensor)))
 }
 
-import cc.factorie.util._
-class DotFamilyCubbie(val family:DotFamily) extends Cubbie {
-  val weights = AnySlot[Tensor]("weights")
-  weights := family.weightsTensor
-}
 
 
