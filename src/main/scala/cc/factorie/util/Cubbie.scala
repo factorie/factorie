@@ -388,11 +388,25 @@ class Cubbie {
     }
   }
 
-  case class IntSlot(override val name: String) extends PrimitiveSlot[Int](name)
+  case class IntSlot(override val name: String) extends PrimitiveSlot[Int](name) {
+    override def value = _map(name) match {
+      case i: Int => i
+      case d: Double => d.toInt
+      case s: String => s.toInt
+      case x: Any => x.asInstanceOf[Int]
+    }
+  }
 
   case class BooleanSlot(override val name: String) extends PrimitiveSlot[Boolean](name)
 
-  case class DoubleSlot(override val name: String) extends PrimitiveSlot[Double](name)
+  case class DoubleSlot(override val name: String) extends PrimitiveSlot[Double](name) {
+    override def value = _map(name) match {
+      case d: Double => d
+      case i: Int => i.toDouble
+      case s: String => s.toDouble
+      case x: Any => x.asInstanceOf[Double]
+    }
+  }
 
   case class StringSlot(override val name: String) extends PrimitiveSlot[String](name)
 
