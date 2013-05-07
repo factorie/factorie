@@ -150,8 +150,8 @@ limitations under the License.
           </execution>
         </executions>
         <configuration>
-          <!--recompileMode>incremental</recompileMode>
-          <useZincServer>true</useZincServer-->
+          <recompileMode>incremental</recompileMode>
+          <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
