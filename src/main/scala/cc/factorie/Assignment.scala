@@ -14,16 +14,21 @@
 
 package cc.factorie
 
+import cc.factorie
+
 /** Typically Variable instances hold their value internally.
     Alternatively, variable values can be stored in an Assignment: a
     mapping from variables to their values.
     
     An Assignment is also a Marginal, with all its probability on one set of values.
+
+    Alex: an Assignment shouldn't be a Marginal, it should be able to give you marginals
+    of some of its variables. I imagine Assignments as "global" things and Marginals as "local". Let's talk.
     
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
-trait Assignment extends Marginal {
+trait Assignment {
   /** All variables with values in this Assignment */
   def variables: Iterable[Var]
   /** Return the value assigned to variable v, or throw an Error if the variable is not in this Assignment. */
@@ -37,7 +42,7 @@ trait Assignment extends Marginal {
   // TODO Rename this to "set" -akm
   def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
-      case v:MutableVar[_] => v.set(this.apply(v).asInstanceOf[v.Value])
+      case v:MutableVar[Any] => v.set(this.apply(v))
       case _ => throw new Error
     }
   }

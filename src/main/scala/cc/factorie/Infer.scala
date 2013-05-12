@@ -58,15 +58,15 @@ object InferDiscrete1 extends Infer {
     distribution
   }
   def proportions(d:DiscreteVariable, model:Model): Proportions1 = new DenseProportions1(array(d, model))
-  def marginal[V<:DiscreteVariable](d:V, model:Model): DiscreteMarginal1[V] = new DiscreteMarginal1(d, proportions(d, model))
+  def marginal[V<:DiscreteVariable](d:V, model:Model): DiscreteMarginal1[V] = new DiscreteMarginal1(d, proportions(d, model)) with MarginalWithoutTensorStatistics
   def apply[V<:DiscreteVariable](varying:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val summary = new DiscreteSummary1[V]
-    for (v <- varying) summary += new DiscreteMarginal1(v, proportions(v, model))
+    for (v <- varying) summary += new DiscreteMarginal1(v, proportions(v, model)) with MarginalWithoutTensorStatistics
     summary
   }
   def apply[V<:DiscreteVariable](varying:V, model:Model): DiscreteSummary1[V] = {
     val summary = new DiscreteSummary1[V]
-    summary += new DiscreteMarginal1(varying, proportions(varying, model))
+    summary += new DiscreteMarginal1(varying, proportions(varying, model)) with MarginalWithoutTensorStatistics
     summary
   }
   override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {

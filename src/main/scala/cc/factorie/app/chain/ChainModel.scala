@@ -190,9 +190,9 @@ with Weights
     val summary = new ChainSummary {
       private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
       private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
-      lazy private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m))})
-      lazy private val _edgeMarginals =
+      private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
+        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m)) with MarginalWithoutTensorStatistics })
+      private val _edgeMarginals =
         labels.zip(labels.drop(1)).zip(__edgeMarginals).map({ case ((l1, l2), m) =>
           // m is label X label
           val ds = labelDomain.length
@@ -201,12 +201,12 @@ with Weights
           while (d1 < ds) {
 	          var d2 = 0
             while (d2 < ds) {
-              t(d1, d2) += m(d1 * ds + d2)
+              t.masses(d1, d2) += m(d1 * ds + d2)
               d2 += 1
             }
 	          d1 += 1
           }
-          new DiscreteMarginal2(l1, l2, t)
+          new DiscreteMarginal2(l1, l2, t) with MarginalWithoutTensorStatistics
         }).toArray
       def expectations = _expectations
       override def logZ = _logZ
@@ -232,7 +232,7 @@ with Weights
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
       lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
+        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t)) with MarginalWithoutTensorStatistics})
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
       def marginal(v: Var): DiscreteMarginal = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {
@@ -246,13 +246,14 @@ with Weights
       override val logZ = expectations.map({case (fam, stats) => fam.asInstanceOf[DotFamily].weightsTensor dot stats}).sum
       override def marginal(_f: Factor): DiscreteMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
-        if (f.family == bias || f.family == obs)
-          marginal(f.variables.head)
+        if (f.family == bias)
+          f match { case f: DotFamilyWithStatistics1[Label]#Factor =>  new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
+        else if (f.family == obs)
+          f match { case f:DotFamilyWithStatistics2[Label,Features]#Factor => new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor2[Label,Features] { val factor = f } }
         else if (f.family == markov) {
           val f2 = _f.asInstanceOf[Factor2[Label, Label]]
-          val m = new DiscreteMarginal2(f2)
-          m.proportions.+=(variableTargetMap(f2._1), variableTargetMap(f2._2), 1.0)
-          m
+          val s = labelDomain.dimensionDomain.size
+          new DiscreteMarginal2(f2._1, f2._2, new NormalizedTensorProportions2(new SingletonBinaryTensor2(s, s, variableTargetMap(f2._1), variableTargetMap(f2._2)))) with DiscreteMarginal2Factor2[Label,Label] { val factor = f2 }
         }
         else
           throw new Error("ChainModel marginals can only be returned for ChainModel factors")

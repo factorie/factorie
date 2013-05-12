@@ -126,7 +126,7 @@ object MaximizeDiscrete extends Maximize {
   def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := maxIndex(d, model)
   def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
-    Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))))
+    Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))) with MarginalWithoutTensorStatistics)
   override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVar]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) return None

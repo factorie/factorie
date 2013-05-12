@@ -14,6 +14,7 @@
 
 package cc.factorie
 import cc.factorie.generative._
+import cc.factorie.la.Outer1Tensor2
 
 /** The result of inference: a collection of Marginal objects. */
 trait
@@ -22,7 +23,7 @@ Summary[+M<:Marginal] {
   def marginal(vs:Var*): M // TODO Think carefully about how order of arguments should not matter.
   def getMarginal(vs:Var*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) }
   def marginal(factor:Factor): M = marginal(factor.variables:_*)
-  def marginalTensorStatistics(factor:Factor): la.Tensor = throw new Error("Not yet implemented ")
+  def marginalTensorStatistics(factor:Factor): la.Tensor = marginal(factor).tensorStatistics
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
   // def variables: Iterable[Variable] // TODO Should we also have a method like this?
   def logZ: Double = throw new Error("Summary subclass does not provide logZ: "+getClass.getName)
@@ -60,16 +61,19 @@ class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
 }
 
 /** A Summary with all its probability on one variable-value Assignment.  Note that Assignment inherits from Marginal. */
-class AssignmentSummary(val assignment:Assignment) extends Summary[Assignment] {
-  def marginals = Seq(assignment)
-  def marginal(vs:Var*): Assignment = if (vs.toSet == assignment.variables.toSet) assignment else null
+class AssignmentSummary(val assignment:Assignment) extends Summary[Marginal] {
+  def marginals = assignment.variables.map(v=> new MarginalWithoutTensorStatistics {
+    def variables = Seq(v)
+    def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
+  })
+  def marginal(vs:Var*): Marginal = null
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
 }
 
 /** A summary with a separate Proportions distribution for each of its DiscreteVars */
 // TODO Consider renaming FullyFactorizedDiscreteSummary or IndependentDiscreteSummary or PerVariableDiscreteSummary
 // TODO Consider making this inherit from Summary1
-class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarginal1[V]] {
+class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarginal] {
   def this(vs:Iterable[V]) = { this(); ++=(vs) }
   //val variableClass = m.erasure
   val _marginals1 = new scala.collection.mutable.HashMap[V,DiscreteMarginal1[V]]
@@ -77,11 +81,12 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarg
   def variables = _marginals1.keys
   lazy val variableSet = variables.toSet
   def marginal1(v1:V) = _marginals1(v1)
-  def marginal(vs:Var*): DiscreteMarginal1[V] = vs match {
+  def marginal(vs:Var*): DiscreteMarginal = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
+    case Seq(v:V, w:V) => new DiscreteMarginal2[V,V](v, w, new NormalizedTensorProportions2(new Outer1Tensor2(_marginals1(v).proportions,_marginals1(w).proportions), false)) with MarginalWithoutTensorStatistics
     case _ => null
   }
-  def +=(v:V): Unit = _marginals1(v) = new DiscreteMarginal1(v, null) // but not yet initialized
+  def +=(v:V): Unit = _marginals1(v) = new DiscreteMarginal1(v, null) with MarginalWithoutTensorStatistics // but not yet initialized
   def ++=(vs:Iterable[V]): Unit = vs.foreach(+=(_))
   def +=(m:DiscreteMarginal1[V]): Unit = _marginals1(m._1) = m
   //def ++=(ms:Iterable[DiscreteMarginal1[V]]): Unit = ms.foreach(+=(_))

@@ -148,13 +148,13 @@ abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boo
   def massTotal = 1.0
   def isDense = _tensor.isDense
 }
-class NormalizedTensorProportions1(tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
+class NormalizedTensorProportions1(val tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def activeDomain = _tensor.activeDomain
   def masses = this
 }
-class NormalizedTensorProportions2(tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
+class NormalizedTensorProportions2(val tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def dim2 = _tensor.dim2
@@ -293,7 +293,7 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal {
+class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal with MarginalWithoutTensorStatistics {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   def mean = throw new Error // TODO!!! Should be this instead: value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?

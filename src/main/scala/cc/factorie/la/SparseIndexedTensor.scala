@@ -240,6 +240,11 @@ trait SparseIndexedTensor extends Tensor {
             }
             i += 1
           }
+        case (t1: NormalizedTensorProportions1, t2: SparseBinaryTensorLike1) =>
+          val inner = t1.tensor
+          val sum = t1.sum
+          val ff = f/sum
+          this += (new Outer1Tensor2(inner, t2),ff)
         case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
           var i = 0
           val arr = t1.asArray
