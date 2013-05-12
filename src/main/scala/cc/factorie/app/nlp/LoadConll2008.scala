@@ -23,13 +23,12 @@ import java.io.PrintWriter
 
 /*
  * Loader for the CoNLL 2008 closed-track shared task data.
+ * wordIndex word lemma POS parentIndex depLabel
  * Details on the format are available at http://barcelona.research.yahoo.net/dokuwiki/doku.php?id=conll2008:format
  *
  * @author Brian Martin
  */
 
-//case class Lemma(lemma: String)
-// replaced by cc.factorie.app.nlp.TokenLemma
 
 object LoadConll2008 {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {

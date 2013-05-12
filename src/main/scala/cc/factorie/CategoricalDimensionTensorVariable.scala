@@ -16,11 +16,15 @@ package cc.factorie
 import cc.factorie.la._
 import collection.mutable
 
-// TODO Just a placeholder for now
+/** A domain over Tensor values, where the dimensions of the Tensor correspond to a CategoricalDomain.
+    This trait is often used for the domain of feature vectors. */
 trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
-  lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] { }
+  def stringToCategory(s:String): C = s.asInstanceOf[C]
+  lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] {
+    final override def stringToCategory(s:String): C = CategoricalDimensionTensorDomain.this.stringToCategory(s)
+  }
 }
 
 class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTensorDomain[T]) extends Cubbie {
@@ -49,7 +53,7 @@ trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
   protected def doWithIndexSafely(elt:C, v:Double, update:Boolean): Unit = {
     val i = domain.dimensionDomain.index(elt)
     if (i == CategoricalDomain.NULL_INDEX) {
-      if (!skipNonCategories) throw new Error("CategoricalTensorVar += value " + value + " not found in domain " + domain)
+      if (!skipNonCategories) throw new Error("CategoricalTensorVar.+= " + elt + " not found in domain " + domain)
     } else {
       if (update) tensor.update(i, v)
       else tensor.+=(i, v)

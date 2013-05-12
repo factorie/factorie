@@ -144,7 +144,7 @@ abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boo
   protected def _tensor: Tensor
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
-  def apply(i:Int) = _tensor.apply(i)
+  @inline final def apply(i:Int) = _tensor.apply(i)
   def massTotal = 1.0
   def isDense = _tensor.isDense
 }

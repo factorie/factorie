@@ -162,7 +162,6 @@ class LockingStochasticTrainer[M<:Weights](model: M,
 }
 
 
-// TODO Rename this OnlineTrainer, because this won't necessarily do "gradient descent", and "batch" vs "online" is more comment vocab.
 class OnlineTrainer[M<:Weights](val model:M, val optimizer:GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer[M] with util.FastLogging {
   var gradientAccumulator = new LocalTensorsAccumulator(model.weights.blankSparseCopy)
   var iteration = 0
@@ -190,12 +189,15 @@ class OnlineTrainer[M<:Weights](val model:M, val optimizer:GradientOptimizer = n
   def isConverged = iteration >= maxIterations
 }
 
-class SGDThenBatchTrainer[M<:Weights](val model: M, sgdTrainer: Trainer[M], batchTrainer: Trainer[M]) {
+/** Train using one trainer, until it has converged, and then use the second trainer instead.
+    Typically use is to first train with an online sochastic gradient ascent such as OnlineTrainer and AdaGrad,
+    and then a batch trainer, like BatchTrainer and LBFGS. */
+class TwoStageTrainer[M<:Weights](val model: M, firstTrainer: Trainer[M], secondTrainer: Trainer[M]) {
   def processExamples(examples: Iterable[Example[M]]) {
-    if (!sgdTrainer.isConverged)
-      sgdTrainer.processExamples(examples)
+    if (!firstTrainer.isConverged)
+      firstTrainer.processExamples(examples)
     else
-      batchTrainer.processExamples(examples)
+      secondTrainer.processExamples(examples)
   }
-  def isConverged = sgdTrainer.isConverged && batchTrainer.isConverged
+  def isConverged = firstTrainer.isConverged && secondTrainer.isConverged
 }

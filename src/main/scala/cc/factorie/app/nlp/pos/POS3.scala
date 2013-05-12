@@ -158,7 +158,7 @@ class POS3 extends DocumentAnnotator {
 
   def serialize(filename: String) {
     import CubbieConversions._
-    val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
     assert(FeatureDomain.dimensionDomain ne null); assert(model ne null); assert(WordData.ambiguityClasses ne null)
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
     //val acCubbie: Cubbie = WordData.ambiguityClasses

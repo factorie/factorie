@@ -37,16 +37,17 @@ final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTens
   def -(r:RealValue) = new RealValue(r.doubleValue - singleValue)
   def *(r:RealValue) = new RealValue(r.doubleValue * singleValue)
   def /(r:RealValue) = new RealValue(r.doubleValue / singleValue)
-  type T = RealValue
-  def plus(x: T, y: T): T = x + y
-  def minus(x: T, y: T): T = x - y
-  def times(x: T, y: T): T = x * y
-  def negate(x: T): T = new RealValue(- x.doubleValue)
-  def fromInt(x: Int): T = new RealValue(x.toDouble)
-  def toInt(x: T): Int = singleValue.toInt
-  def toLong(x: T): Long = singleValue.toLong
-  def toFloat(x: T): Float = singleValue.toFloat
-  def toDouble(x: T): Double = singleValue
+  def unary_- = new RealValue(-singleValue)
+//  type T = RealValue
+//  def plus(x: T, y: T): T = x + y
+//  def minus(x: T, y: T): T = x - y
+//  def times(x: T, y: T): T = x * y
+//  def negate(x: T): T = new RealValue(- x.doubleValue)
+//  def fromInt(x: Int): T = new RealValue(x.toDouble)
+//  def toInt(x: T): Int = singleValue.toInt
+//  def toLong(x: T): Long = singleValue.toLong
+//  def toFloat(x: T): Float = singleValue.toFloat
+//  def toDouble(x: T): Double = singleValue
 }
 
 /** A variable with Tensor value which holds a single real (Double) value.

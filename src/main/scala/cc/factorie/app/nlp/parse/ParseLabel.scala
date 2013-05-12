@@ -18,36 +18,36 @@ import cc.factorie.app.nlp._
 import java.lang.StringBuffer
 
 // Representation for a dependency parse
-
-object ParseLabelDomain extends CategoricalDomain[String]
-class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = ParseLabelDomain }
-
-object ParseFeaturesDomain extends CategoricalDimensionTensorDomain[String]
-class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
-
-class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable[Token,Token](theChild, initialParent) {
-  @inline final def child = src
-  @inline final def parent = dst
-  val label = new ParseLabel(this, labelString)
-  val childEdges = new ParseChildEdges
-  def children = childEdges.value.map(_.child)
-
-  // Initialization
-  child.attr += this // Add the edge as an attribute to the child node.
-  if (initialParent ne null) initialParent.attr[ParseEdge].childEdges.add(this)(null)
-  // Note that the line above requires that the parent already have a ParseEdge attribute.
-  // One way to avoid this need is to create the ParseEdges with null parents, and then set them later.
-  
-  override def set(newParent: Token)(implicit d: DiffList): Unit =
-    if (newParent ne parent) {
-      // update parent's child pointers
-      if (parent ne null) parent.attr[ParseEdge].childEdges.remove(this)
-      if (newParent ne null) newParent.attr[ParseEdge].childEdges.add(this)
-      super.set(newParent)(d)
-    }
-}
-
-class ParseChildEdges extends SetVariable[ParseEdge]
+//
+//object ParseLabelDomain extends CategoricalDomain[String]
+//class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = ParseLabelDomain }
+//
+//object ParseFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+//class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
+//
+//class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable[Token,Token](theChild, initialParent) {
+//  @inline final def child = src
+//  @inline final def parent = dst
+//  val label = new ParseLabel(this, labelString)
+//  val childEdges = new ParseChildEdges
+//  def children = childEdges.value.map(_.child)
+//
+//  // Initialization
+//  child.attr += this // Add the edge as an attribute to the child node.
+//  if (initialParent ne null) initialParent.attr[ParseEdge].childEdges.add(this)(null)
+//  // Note that the line above requires that the parent already have a ParseEdge attribute.
+//  // One way to avoid this need is to create the ParseEdges with null parents, and then set them later.
+//  
+//  override def set(newParent: Token)(implicit d: DiffList): Unit =
+//    if (newParent ne parent) {
+//      // update parent's child pointers
+//      if (parent ne null) parent.attr[ParseEdge].childEdges.remove(this)
+//      if (newParent ne null) newParent.attr[ParseEdge].childEdges.add(this)
+//      super.set(newParent)(d)
+//    }
+//}
+//
+//class ParseChildEdges extends SetVariable[ParseEdge]
 
 // Example usages:
 // token.attr[ParseEdge].parent
