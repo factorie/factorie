@@ -66,7 +66,8 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
-  def sentencePosition = if (_sentence eq null) -1 else position - sentence.start
+  def positionInSentence = if (_sentence eq null) -1 else position - sentence.start
+  @deprecated("Use positionInSentence") def sentencePosition = positionInSentence
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel] // TODO Change this to PTBPosLabel
@@ -90,8 +91,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     if (_sentence eq null) _sentence = document.sentenceContaining(this)
     _sentence
   }
-  @deprecated("This method should be removed. use 'sentencePosition'.")
-  def indexInSentence: Int = sentencePosition
+  @deprecated("This method should be removed. use 'positionInSentence'.") def indexInSentence: Int = positionInSentence
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
