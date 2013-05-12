@@ -61,15 +61,15 @@ class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
 // This seems totally broken.  I tried:
 // scala -cp ~/workspace/factorie/target cc.factorie.app.strings.sentenceSegmenter ~/research/data/text/nipstxt/nips11/0620.txt
 // and got garbage
-object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenceInstance(java.util.Locale.US)) {
-  def main(args:Array[String]): Unit = {
-    for (filename <- args) {
-      println("\n"+filename)
-      val iterator = apply(new java.io.File(filename))
-      for (sentence <- iterator) println(sentence)
-    }
-  }
-}
+//object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenceInstance(java.util.Locale.US)) {
+//  def main(args:Array[String]): Unit = {
+//    for (filename <- args) {
+//      println("\n"+filename)
+//      val iterator = apply(new java.io.File(filename))
+//      for (sentence <- iterator) println(sentence)
+//    }
+//  }
+//}
 
 object alphaSegmenter extends RegexSegmenter("\\p{Alpha}+".r)
 object wordSegmenter extends RegexSegmenter("\\w+".r)
@@ -82,6 +82,7 @@ object urlSegmenter extends RegexSegmenter("\\b(https?|ftp|file)://[-A-Z0-9+&@#/
 // TODO Should this be moved to cc.factorie.nlp? -akm
 // TODO The regex needs more work.  Brian, care to do this?
 /** Approximately matching CoNLL2003 token segmentation */
+@deprecated("Use facilities in cc.factorie.app.nlp.segment instead.")
 object nlpTokenSegmenter extends RegexSegmenter("'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
 
 /** For segmenting fields of a comma-separated-value file.
