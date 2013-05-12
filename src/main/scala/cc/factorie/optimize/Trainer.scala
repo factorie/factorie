@@ -199,5 +199,5 @@ class TwoStageTrainer[M<:Weights](val model: M, firstTrainer: Trainer[M], second
     else
       secondTrainer.processExamples(examples)
   }
-  def isConverged = sgdTrainer.isConverged && batchTrainer.isConverged
+  def isConverged = firstTrainer.isConverged && secondTrainer.isConverged
 }
