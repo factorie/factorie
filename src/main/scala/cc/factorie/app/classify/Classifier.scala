@@ -54,7 +54,7 @@ trait ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L]
 }
 
-/** An object that can gather  */
+/** An object that can gather evaluation data for a Classifier, and convert it to a printable form. */
 trait ClassifierEvaluator[L <: MutableDiscreteVar[_]] {
   def += (c: Classification[L]): Unit
   def toString: String
