@@ -92,8 +92,7 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     val buf = new StringBuffer
     for (token <- tokens) {
       if (token.isSentenceStart) buf.append("\n")
-      buf.append(token.string); buf.append("\t")
-      //buf.append(token.lemmaString); buf.append("\t") // This can now be printed as an attribute
+      buf.append("%d\t%d\t%s\t".format(token.position+1, token.positionInSentence+1, token.string))
       //buf.append(token.stringStart); buf.append("\t")
       //buf.append(token.stringEnd)
       for (af <- attributes) {
