@@ -161,7 +161,7 @@ object FeatureUtils{
     val result = keywords.split(",;")
     result.map(_.trim)
   }
-  def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
+  def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ").trim()
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
   def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
   //def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
@@ -445,6 +445,7 @@ object EntityUtils{
     }
   }
   */
+//  def bucket
   def writeCanopies(col:MongoCubbieCollection[AuthorCubbie], outDirPath:String, numFiles:Int):Unit ={
     val allCanopies = new LinkedHashMap[String,Int]
     println("About to iterate over mongo collection")

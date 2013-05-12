@@ -353,7 +353,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
 
 
 /*Note: this template uses the inference invariant that a child's parent always exists in the current world (hence, no need to check the EntityExists variable).*/
-class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
+class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25,useLogChildren:Boolean=true)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
   val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
@@ -362,7 +362,9 @@ class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weigh
       //val childBow = s._2
       //val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
-      result = (result+shift)*weight * scala.math.log(scala.math.min(parentBow.l1Norm,childBow.l1Norm)+2)
+      var logCWeight=1.0
+      if(useLogChildren)logCWeight=scala.math.log(scala.math.min(parentBow.l1Norm,childBow.l1Norm)+2)
+      result = (result+shift)*weight * logCWeight
       if(_debug)println("  "+debug(result))
       result
     }
@@ -411,8 +413,8 @@ class DepthPenaltyTemplate(val weight:Double=1.0) extends TupleTemplateWithStati
   def score(er:EntityRef#Value):Double ={
     var depth = 0.0
     var numLeaves = 0.0
-    if(!(er._2 eq null)){
-      er._2 match{
+    if(!(er._1 eq null)){
+      er._1 match{
         case entity:HierEntity => {
           depth = entity.depth
           numLeaves = entity.attr[MentionCountVariable].doubleValue
@@ -420,7 +422,9 @@ class DepthPenaltyTemplate(val weight:Double=1.0) extends TupleTemplateWithStati
         case _ => {}
       }
     }
-    val result = if(depth>1) -depth*numLeaves*weight else 0.0
+    val result = if(depth>=1 && er._1.childEntitiesSize>0) -depth*numLeaves*weight else 0.0
+    //val result = -depth*numLeaves*weight
+    //println("  Depth penalty: "+result+" depth: "+depth+" num-leaves: "+numLeaves)
     result
   }
 }
@@ -431,6 +435,7 @@ abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extend
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
+
 class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,IsMention] with DebugableTemplate{
   val name = "StructuralPriorsTemplate(entityCost="+entityExistenceCost+", subEntityCost="+subEntityExistenceCost+")"
   println("StructuralPriorsTemplate("+entityExistenceCost+","+subEntityExistenceCost+")")
@@ -442,6 +447,7 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
     val isEntity:Boolean = isEntityValue.booleanValue
     val isMention:Boolean = isMentionValue.booleanValue
     var result = 0.0
+    var logCWeight=0.0
     if(exists && isEntity) result -= entityExistenceCost
     if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
     if(_debug)println("  "+debug(result))
@@ -490,6 +496,7 @@ class EntitySizePrior(val weight:Double=0.1, val exponent:Double=1.2, val satura
   def score(exists:EntityExists#Value, isEntity:IsEntity#Value, mentionCount:MentionCountVariable#Value): Double =
     if(exists.booleanValue && isEntity.booleanValue)scala.math.min(saturation,scala.math.pow(mentionCount.intValue,1.2)) * weight else 0.0
 }
+
 class BagOfWordsCubbie extends Cubbie{
   def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
   def fetch:HashMap[String,Double] = {

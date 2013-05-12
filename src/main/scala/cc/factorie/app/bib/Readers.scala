@@ -199,6 +199,78 @@ object RexaCitationLoader{
   }
 }
 
+/*
+object MSRKaggleReader{
+  def readData(authors:File,papers:File,paperAuthors:File):Seq[PaperEntity] ={
+    val result = new HashMap[Int,PaperEntity]
+    val authors = loadAuthors(authors)
+    val papers = loadPapers(papers)
+    val author2papers = loadAuthor2Papers(paperAuthors)
+    for((paperId,paperInfo) <- papers){
+
+    }
+    /*
+    for((authorId,authorInfo) <- authors){
+      val paperIds = papers.getOrElse(authorId, new ArrayBuffer[Int])
+      for(paperId <- paperIds){
+
+      }
+    }
+    result.map(_._2)
+  */
+  }
+
+  /*
+  PaperId,AuthorId,Name,Affiliation
+  1,521630,Ayman Kaheel,Cairo Microsoft Innovation Lab
+  */
+  def loadAuthor2Papers(file:File):HashMap[Int,ArrayBuffer[Int]] ={
+    val result = new HashMap[String,ArrayBuffer[Int]]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    while(line!=null){
+      val split = line.split(",",3)
+      result.getOrElseUpdate(split(1).toInt,new ArrayBuffer[Int]) += split(0).toInt
+      line = reader.readLine
+    }
+    reader.close
+    result
+  }
+  /*
+    Id,Name,Affiliation
+    9,Ernest Jordan,
+   */
+  def loadAuthors(file:File):HashMap[Int,String] ={
+    val result = new HashMap[Int,String]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    while(line!=null){
+      val split = line.split(",",2)
+      result += split(0).toInt -> split(1)
+      line = reader.readLine
+    }
+    reader.close
+    result
+  }
+  /*
+  Id,Title,Year,ConferenceId,JournalId,Keyword
+  1,Stitching videos streamed by mobile phones in real-time,2009,167,0,mobile video capturing|real-time|video stitching
+  */
+  def loadPapers(file:File):HashMap[Int,String] ={
+    val result = new HashMap[Int,String]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    while(line!=null){
+      val split = line.split(",")
+      result += split(0).toInt -> split(1)
+      line = reader.readLine
+    }
+    reader.close
+    result
+  }
+}
+*/
+
 object AclAnthologyReader{
   def loadAnnFile(file:File):Seq[PaperEntity] ={
     val fileText = scala.io.Source.fromFile(file).toArray.mkString

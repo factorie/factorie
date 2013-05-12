@@ -24,6 +24,13 @@ trait BibEntity{
   //TODO: modiy the sampler to check if ismoveable is ttrue
 
 }
+//class EntityAttributeCollectionVariable(val entity:Entity, collection:Seq[EntityAttr]) extends EntityAttr{}
+class CoAuthorTopicVar(val entity:Entity) extends VarAndValueGenericDomain[CoAuthorTopicVar,(BagOfCoAuthors#Value, BagOfTopics#Value)] with EntityAttr{
+  val coauthors=entity.attr[BagOfCoAuthors]
+  val topics = entity.attr[BagOfTopics]
+  def value = coauthors.value -> topics.value
+}
+
 class InfoBag(val entity:Entity) extends BagOfWordsVariable(Nil, null) with EntityAttr
 class ChildCountsForBag(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVariable(initialWords,initialMap)
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
@@ -857,6 +864,69 @@ trait BucketSampler[E<:HierEntity]{
 }
 */
 
+class AuthorStreamer(model:Model, val stream:Iterable[AuthorEntity]) extends AuthorSampler(model){
+  val currentEntities = new ArrayBuffer[AuthorEntity]
+  protected var streamedMention:AuthorEntity=null
+  protected var entityCandidate:AuthorEntity=null
+  //override def setEntities(entities:Seq[AuthorEntity]) = throw new Exception("Do not use this way.")
+  //override def addEntity(entity:AuthorEntity) = throw new Exception("Do not use this way.")
+  def go:Unit ={
+    entities = new ArrayBuffer[AuthorEntity];
+    println("Initializing")
+    var count=0
+    var hasp=0
+    for(author <- stream){
+      entities += author
+      if(author.isEntity.booleanValue){
+        var i=0
+        while(i<currentEntities.size){
+          var candidate = currentEntities(i)
+          if(!candidate.isEntity.booleanValue){
+            candidate=candidate.entityRoot.asInstanceOf[AuthorEntity]
+            currentEntities(i)=candidate
+          }
+          if(hasPotential(author,candidate)){
+            streamedMention=author
+            entityCandidate=candidate
+            process(1)
+            hasp+=1
+          }
+          //count += 1;if(count % 100==0)print(".");if(count % 2000==0)println(count+" num candidates: "+currentEntities.size)
+          i+=1
+        }
+        if(author.isEntity.booleanValue)currentEntities += author
+      }
+      //println("Still initializing: has potential"+hasp+" num entiites: "+currentEntities.size+" num-non-sng: "+currentEntities.filter(!_.isMention.booleanValue).size)
+    }
+    val es = this.getEntities
+    for(e <- es)if(e.isEntity.booleanValue != e.isRoot)println("ERROR: isEntity incorrectly set. isEntity:"+e.isEntity.booleanValue+" isRoot"+e.isRoot+" "+EntityUtils.prettyPrintAuthor(e))
+    println("Num nodes "+es.size+" num roots: "+es.filter(_.isEntity.booleanValue).size+" num mentions: "+es.filter(_.isMention.booleanValue).size)
+    println("Done initializing: has potential"+hasp+" num entities: "+currentEntities.size+" num-non-sng: "+currentEntities.filter(!_.isMention.booleanValue).size)
+  }
+  def hasPotential(mention:AuthorEntity,target:AuthorEntity):Boolean ={
+    mention.canopyNames(0)==target.canopyNames(0) && (mention.bagOfCoAuthors.value.cosineSimilarity(target.bagOfCoAuthors.value)>0 || mention.bagOfTopics.value.cosineSimilarity(target.bagOfTopics.value)>0)
+  }
+  override def settings(c:Null) : SettingIterator = new SettingIterator {
+    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
+    if(!entityCandidate.isMention){
+      changes += {(d:DiffList) => mergeLeft(entityCandidate, streamedMention)(d)}
+      /*
+      for(child <- entityCandidate.childEntitiesIterator)child match{
+        case ca:AuthorEntity=>{
+          if(!ca.isMention.booleanValue)
+            changes += {(d:DiffList) => mergeLeft(ca, streamedMention)(d)}
+        }
+      }
+      */
+    }else changes += {(d:DiffList) => mergeUp(streamedMention,entityCandidate)(d)}
+    changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
+    var i = 0
+    def hasNext = i < changes.length
+    def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
+    def reset = i = 0
+  }
+}
+
 class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
   //var buckets:HashMap[String,ArrayBuffer[AuthorEntity]] = null
   var settingsSamplerCount=0
@@ -1343,6 +1413,7 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
     initialize
     startTime = System.currentTimeMillis
     var timer=System.currentTimeMillis;val work = findWork;_workLoad=work.size;timeFindingWork += (System.currentTimeMillis() - timer)
+    //println("worker about to perform work on "+work.size+" mentities.")
     if(work.size>=2){
       timer=System.currentTimeMillis;completedWork = doWork(work);timeDoingWork += (System.currentTimeMillis() - timer)
       timer=System.currentTimeMillis;saveWork(completedWork);timeSavingWork += (System.currentTimeMillis() - timer)
@@ -1356,10 +1427,22 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
   //def numberOfSteps(numEntities:Int):Int = (if(numEntities<=20)numEntities*20 else if(numEntities <= 100)numEntities*numEntities else if(numEntities<=1000) 100*numEntities else if(numEntities<=5000) 200*numEntities else 300*numEntities)
   def initialize:Unit = {}
   def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);itemsProcessed=r.size;r}
-  def doWork(es:Seq[E]):Seq[E] = {val entities = initializeWork(es);sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.size));(sampler.getEntities ++ sampler.getDeletedEntities)}
+  def doWork(es:Seq[E]):Seq[E] = {val entities = initializeWork(es);sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.filter(_.isMention.booleanValue).size));(sampler.getEntities ++ sampler.getDeletedEntities)}
   def saveWork(entities:Seq[E]):Unit = workCollection.store(entities)
   //def initializeWork(entities:Seq[E]):Seq[E] = entities
-  def initializeWork(entities:Seq[E]):Seq[E] = if(!entities.exists((e:E) => {!e.isMention.booleanValue}))EntityUtils.collapseOnCanopyAndCoAuthors(entities.asInstanceOf[Seq[AuthorEntity]]).asInstanceOf[Seq[E]] else entities
+  //def initializeWork(entities:Seq[E]):Seq[E] = if(!entities.exists((e:E) => {!e.isMention.booleanValue}))EntityUtils.collapseOnCanopyAndCoAuthors(entities.asInstanceOf[Seq[AuthorEntity]]).asInstanceOf[Seq[E]] else entities
+  def initializeWork(entities:Seq[E]):Seq[E] ={
+    var result = entities
+    if(!entities.exists((e:E) => {!e.isMention.booleanValue})){
+      if(entities.headOption != None){
+        val initializer = new AuthorStreamer(sampler.model,entities.asInstanceOf[Seq[AuthorEntity]])
+        initializer.go
+        result = initializer.getEntities.asInstanceOf[Seq[E]]
+      }
+      else throw new Exception("Not implemented for non authors")
+    }
+    result
+  }
 }
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
   def triggerSafeQuit:Boolean= _triggerSafeQuit
