@@ -52,12 +52,16 @@ object Actions {
 }
 
 object ActionDomain extends CategoricalDomain[(Int, String)] {
-  dimensionDomain.string2T = {
-    (s: String) => {
+    override def stringToCategory(s: String): (Int, String) = {
       val (i, str) = s.splitAt(s.indexOf(","))
       (Integer.parseInt(i.substring(1,2)), str.substring(1,str.size-1)) // assumes single digit actionIdx
     }
-  }
+//  dimensionDomain.string2T = {
+//    (s: String) => {
+//      val (i, str) = s.splitAt(s.indexOf(","))
+//      (Integer.parseInt(i.substring(1,2)), str.substring(1,str.size-1)) // assumes single digit actionIdx
+//    }
+//  }
 }
 class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
   import ParseFeatureExtractors._
@@ -116,12 +120,16 @@ object ParseFeatureExtractors {
 // define the model
 object ParserFeaturesDomain extends CategoricalDimensionTensorDomain[(String, Int)] {
   // for deserialization
-  dimensionDomain.string2T = {
-    (s: String) => {
+    override def stringToCategory(s: String): (String,Int) = {
       val (str, i) = s.splitAt(s.lastIndexOf(","))
       (str.substring(1), Integer.parseInt(i.substring(1,i.size-1)))
     }
-  }
+//  dimensionDomain.string2T = {
+//    (s: String) => {
+//      val (str, i) = s.splitAt(s.lastIndexOf(","))
+//      (str.substring(1), Integer.parseInt(i.substring(1,i.size-1)))
+//    }
+//  }
 }
 class ShiftReduceDependencyParserFeatures(val label: ActionLabel) extends BinaryFeatureVectorVariable[(String, Int)] {
   def domain = ParserFeaturesDomain

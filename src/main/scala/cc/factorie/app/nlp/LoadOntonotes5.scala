@@ -2,7 +2,7 @@ package cc.factorie.app.nlp
 
 import scala.io.Source
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.PosLabel
+import cc.factorie.app.nlp.pos.PTBPosLabel
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -10,6 +10,7 @@ import java.io.PrintWriter
 
 /*
  * Loader for the OntoNotes 5 data
+ * tokenIndex word lemma POS semantic parentIndex depLabel
  * @author Brian Martin
  */
 
@@ -43,13 +44,13 @@ object LoadOntonotes5 {
         assert(fields.length >= 10)
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
-        val lemma = fields(3)
-        val partOfSpeech = fields(5)
-        val parentIdx = fields(7).toInt - 1
-        val depLabel = fields(9)
+        val lemma = fields(2) // was 3
+        val partOfSpeech = fields(3) // was 5
+        val parentIdx = fields(5).toInt - 1 // was 8
+        val depLabel = fields(6) // was 9
         document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new PosLabel(token, partOfSpeech) // TODO Replace with PTBPosLabel
+        token.attr += new PTBPosLabel(token, partOfSpeech)
         if (loadLemma)
           token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))

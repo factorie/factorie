@@ -124,9 +124,11 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     def domain = thisDomain
   }
 
-  var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
+  //@deprecated("Use stringToCategory instead.")
+  //var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
   // TODO Use this instead: -akm
-  //def stringToCategory(s:String): C = s.asInstanceOf[C]
+  /** If type T is not string, this should be overridden to provide deserialization */
+  override def stringToCategory(s:String): C = s.asInstanceOf[C]
 
   // Code for managing occurrence counts
   var gatherCounts = false
@@ -199,7 +201,8 @@ class CategoricalDomainCubbie[T](val cd: CategoricalDomain[T]) extends Cubbie {
       else if (key == "categories") {
         cd.unfreeze()
         val categories = value.asInstanceOf[Iterable[String]]
-        categories.map(c => if (cd.string2T != null) cd.string2T(c) else c.asInstanceOf[T]).foreach(cd.value(_))
+        //categories.map(c => if (cd.string2T != null) cd.string2T(c) else c.asInstanceOf[T]).foreach(cd.value(_))
+        categories.map(c => cd.stringToCategory(c)).foreach(cd.value(_))
         if (isFrozen) cd.freeze()
       } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
     }
@@ -208,13 +211,13 @@ class CategoricalDomainCubbie[T](val cd: CategoricalDomain[T]) extends Cubbie {
     def get(key: String): Option[Any] =
       if (key == "size") Some(cd.size)
       else if (key == "frozen") Some(cd.frozen)
-      else if (key == "categories") Some(cd.categories)
+      else if (key == "categories") Some(cd.categories.map(_.toString)) // toString because not all categories are already Strings
       else None //{ println("CategoricalDomainCubbie.get key="+key); None }
     def iterator: Iterator[(String, Any)] = List("size", "frozen", "categories").map(s => (s, get(s).get)).iterator
   })
 }
 
-/* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
+/* CategoricalDomain also facilitates counting occurrences of entries, and trimming the Domain size.
    WARNING: Any indices that you use and store before trimming will not be valid after trimming!
    Typical usage:
    <pre>
