@@ -28,23 +28,23 @@ class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
 
 object PosModel extends TemplateModel {
   // Bias term on each individual label
-  val bias = new DotTemplateWithStatistics1[PosLabel] {
+  val bias = new DotTemplateWithStatistics1[PTBPosLabel] {
     //override def statisticsDomains = Tuple1(PosDomain)
-    lazy val weightsTensor = new la.DenseTensor1(PosDomain.size)
+    lazy val weightsTensor = new la.DenseTensor1(PTBPosDomain.size)
   }
   // Factor between label and observed token
-  val local = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
+  val local = new DotTemplateWithStatistics2[PTBPosLabel,PosFeatures] {
     //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
-    lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
-    def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
+    lazy val weightsTensor = new la.DenseTensor2(PTBPosDomain.size, PosFeaturesDomain.dimensionSize)
+    def unroll1(label: PTBPosLabel) = Factor(label, label.token.attr[PosFeatures])
     def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
   }
   // Transition factors between two successive labels
-  val trans = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
+  val trans = new DotTemplateWithStatistics2[PTBPosLabel, PTBPosLabel] {
     //override def statisticsDomains = ((PosDomain, PosDomain))
-    lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosDomain.size)
-    def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
-    def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
+    lazy val weightsTensor = new la.DenseTensor2(PTBPosDomain.size, PTBPosDomain.size)
+    def unroll1(label: PTBPosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
+    def unroll2(label: PTBPosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
   }
 
   // Add the templates
@@ -53,7 +53,7 @@ object PosModel extends TemplateModel {
   this += trans
 }
 
-object PosObjective extends HammingTemplate[PosLabel]
+object PosObjective extends HammingTemplate[PTBPosLabel]
 
 object POS {
 
@@ -108,14 +108,14 @@ object POS {
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
-    BinarySerializer.serialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile))
+    BinarySerializer.serialize(PTBPosDomain, PosFeaturesDomain, PosModel, new File(modelFile))
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")
   }
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
-  def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
+  def predictSentence(vs: Seq[PTBPosLabel], oldBp: Boolean = false): Unit =
     if (vs.nonEmpty) BP.inferChainMax(vs, PosModel)
     //if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
 
@@ -128,16 +128,16 @@ object POS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile)); modelLoaded = true }
+  def load(modelFile: String) = { BinarySerializer.deserialize(PTBPosDomain, PosFeaturesDomain, PosModel, new File(modelFile)); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {
     if (!modelLoaded) throw new Error("First call PosModel.load(\"path/to/model\")")
 
     // add the labels and features if they aren't there already.
-    if (document.tokens.head.attr.get[PosLabel] == None) {
-      val defaultCategory = PosDomain.categories.head
-      document.tokens.foreach(t => t.attr += new PosLabel(t, defaultCategory))
+    if (document.tokens.head.attr.get[PTBPosLabel] == None) {
+      val defaultCategory = PTBPosDomain.categories.head
+      document.tokens.foreach(t => t.attr += new PTBPosLabel(t, defaultCategory))
       initPosFeatures(document)
     }
 
@@ -158,7 +158,7 @@ object POS {
 
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelFile.wasInvoked) {
       Template.enableCachedStatistics = false // for contention free parallelism
-      val labelMaker = (t: Token, l: String) => new PosLabel(t, l)
+      val labelMaker = (t: Token, l: String) => new PTBPosLabel(t, l)
       def load(file: String) = LoadOWPL.fromFilename(file, labelMaker, takeOnly.value.toInt)
 
       val trainDocs = load(trainFile.value)

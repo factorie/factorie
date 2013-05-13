@@ -70,7 +70,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   @deprecated("Use positionInSentence") def sentencePosition = positionInSentence
   
   // Common attributes, will return null if not present
-  def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel] // TODO Change this to PTBPosLabel
+  def posLabel = attr[cc.factorie.app.nlp.pos.PTBPosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
@@ -183,9 +183,9 @@ trait TokenNerLabelCubbie extends TokenCubbie {
   }
 }
 
-trait TokenPosLabelCubbie extends TokenCubbie {
+trait TokenPTBPosLabelCubbie extends TokenCubbie {
   val pos = StringSlot("pos")
-  def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PosLabel
+  def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PTBPosLabel
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
     pos:= t.posLabel.categoryValue

@@ -6,7 +6,7 @@ import java.io.File
 //import bp.specialized.Viterbi
 //import bp.{ParallelTrainer, ForwardBackwardExample}
 import app.nlp._
-import app.nlp.pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
+import app.nlp.pos.{PTBPosLabel, PosFeatures, PTBPosDomain, PosFeaturesDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 //import optimize.LimitedMemoryBFGS
 
@@ -22,18 +22,18 @@ object ForwardBackwardPOS {
 
   object PosModel extends TemplateModel {
     // Factor between label and observed token
-    val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
+    val localTemplate = new DotTemplateWithStatistics2[PTBPosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
-      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
-      def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
+      lazy val weightsTensor = new la.DenseTensor2(PTBPosDomain.size, PosFeaturesDomain.dimensionSize)
+      def unroll1(label: PTBPosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
     }
     // Transition factors between two successive labels
-    val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
+    val transTemplate = new DotTemplateWithStatistics2[PTBPosLabel, PTBPosLabel] {
       //override def statisticsDomains = ((PosDomain, PosDomain))
-      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosDomain.size)
-      def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
-      def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
+      lazy val weightsTensor = new la.DenseTensor2(PTBPosDomain.size, PTBPosDomain.size)
+      def unroll1(label: PTBPosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
+      def unroll2(label: PTBPosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
 
     this += localTemplate
@@ -69,7 +69,7 @@ object ForwardBackwardPOS {
   }
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
-  def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
+  def predictSentence(vs: Seq[PTBPosLabel], oldBp: Boolean = false): Unit =
     BP.inferChainMax(vs, PosModel)
     //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
@@ -88,7 +88,7 @@ object ForwardBackwardPOS {
       if (devDocuments.nonEmpty)
         test(devDocuments, label = "dev")
       if (modelFile != "")
-        BinarySerializer.serialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile + label + extraId), gzip = true)
+        BinarySerializer.serialize(PosFeaturesDomain, PosModel, new File(modelFile + label + extraId), gzip = true)
     }
 
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
@@ -114,14 +114,14 @@ object ForwardBackwardPOS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(modelFile), gzip = true); modelLoaded = true }
+  def load(modelFile: String) = { BinarySerializer.deserialize(PosFeaturesDomain, PosModel, new File(modelFile), gzip = true); modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {
     if (!modelLoaded) throw new Error("The model should be loaded before documents are processed.")
 
     // add the labels and features if they aren't there already.
-    if (document.tokens.head.attr.get[PosLabel] == None) {
+    if (document.tokens.head.attr.get[PTBPosLabel] == None) {
       document.tokens.foreach(t => t.attr += labelMaker(t))
       initPosFeatures(document)
     }
@@ -130,10 +130,10 @@ object ForwardBackwardPOS {
   }
 
   lazy val defaultCategory = {
-    try { PosDomain.categories.head }
+    try { PTBPosDomain.categories.head }
     catch { case e: NoSuchElementException => throw new Error("The domain must be loaded before it is accessed.") }
   }
-  def labelMaker(t: Token, l: String = defaultCategory) = new PosLabel(t, l)
+  def labelMaker(t: Token, l: String = defaultCategory) = new PTBPosLabel(t, l)
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
