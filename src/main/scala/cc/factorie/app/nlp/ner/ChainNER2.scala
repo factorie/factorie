@@ -593,7 +593,7 @@ object ChainNer2 extends ChainNer2 {
       deSerialize(opts.modelDir.value)
       for (filename <- opts.runPlainFiles.value) {
         val file = new File(filename)
-        val document = new Document( file.getAbsolutePath, io.Source.fromFile(file).mkString  )
+        val document = new Document(io.Source.fromFile(file).mkString).setName(file.getAbsolutePath)
 	    cc.factorie.app.nlp.segment.ClearSegmenter.process(document)
         //LoadPlainText.fromFile(new java.io.File(filename))
         //println("ChainNer plain document: <START>"+document.string+"<END>")

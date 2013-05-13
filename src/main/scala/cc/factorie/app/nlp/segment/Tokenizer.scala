@@ -45,7 +45,7 @@ class Tokenizer extends RegexSegmenter(Seq(
 object Tokenizer extends Tokenizer {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromFile(args(0)).mkString
-    val doc = new Document("", strValue = string)
+    val doc = new Document(string)
     Tokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }

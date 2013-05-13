@@ -40,7 +40,7 @@ object Tutorial40InferenceAndLearning {
       t => t.attr[Label])
 
     // The Document class implements documents as sequences of sentences and tokens.
-    val document = new Document("testDocument", "The quick brown fox jumped over the lazy dog.")
+    val document = new Document("The quick brown fox jumped over the lazy dog.")
     val tokenizer = new app.nlp.segment.Tokenizer
     tokenizer.process(document)
     val segmenter = new app.nlp.segment.SentenceSegmenter

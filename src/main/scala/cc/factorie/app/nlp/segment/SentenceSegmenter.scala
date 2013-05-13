@@ -25,7 +25,7 @@ class SentenceSegmenter extends DocumentAnnotator {
 object SentenceSegmenter extends SentenceSegmenter {
   def main(args: Array[String]): Unit = {
     for (filename <- args) {
-      val doc = new Document(filename, strValue = io.Source.fromFile(filename).mkString)
+      val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
       Tokenizer.process(doc)
       this.process(doc)
       println(filename)

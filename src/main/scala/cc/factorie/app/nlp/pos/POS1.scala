@@ -170,7 +170,7 @@
 //    def run(): Unit = {
 //      BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(opts.modelFile.value))
 //      for (filename <- opts.runFiles.value) {
-//        val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
+//        val document = new Document(io.Source.fromFile(filename).getLines.mkString("\n"))
 //        segment.Tokenizer.process(document)
 //        segment.SentenceSegmenter.process(document)
 //        initPosFeatures(document)

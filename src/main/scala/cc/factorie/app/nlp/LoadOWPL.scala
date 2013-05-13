@@ -12,7 +12,7 @@ import cc.factorie._
  */
 object LoadOWPL {
   def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], limitSentenceCount: Int = -1): Seq[Document] = {
-    val doc = new Document("", "")
+    val doc = new Document
     doc.annotators(classOf[Token]) = null // register that we have token boundaries
     var sentence = new Sentence(doc)
     var numSentences = 1

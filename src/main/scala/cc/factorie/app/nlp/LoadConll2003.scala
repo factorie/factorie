@@ -27,7 +27,7 @@ object LoadConll2003 {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
-      val document = new Document(name, "")
+      val document = new Document("").setName(name)
       document.annotators(classOf[Token]) = null // register that we have token boundaries
       document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
       document.annotators(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
@@ -48,7 +48,7 @@ object LoadConll2003 {
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
         document.chainFreeze
-        document = new Document("CoNLL2003-"+documents.length, "")
+        document = new Document().setName("CoNLL2003-"+documents.length)
         document.annotators(classOf[Token]) = null // register that we have token boundaries
         document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
         documents += document

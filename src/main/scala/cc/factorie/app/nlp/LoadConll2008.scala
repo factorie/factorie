@@ -43,7 +43,7 @@ object LoadConll2008 {
   var loadLemma = true
 
   def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document("Conll2008", "")
+    var document: Document = new Document
     document.annotators(classOf[Token]) = null // register that we have token boundaries
     document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
     document.annotators(classOf[pos.PTBPosLabel]) = null // register that we have POS tags

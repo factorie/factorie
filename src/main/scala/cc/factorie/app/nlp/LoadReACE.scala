@@ -71,7 +71,7 @@ object LoadReACE {
   }
 
   private def makeDoc(xml: String): Document = {
-    val doc = new Document(xml)
+    val doc = new Document().setName(xml)
     doc.annotators(classOf[Token]) = null
     doc.annotators(classOf[Sentence]) = null
     doc.annotators(classOf[PTBPosLabel]) = null

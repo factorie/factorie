@@ -17,12 +17,14 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 /** Value is the sequence of tokens */
-// Consider Document(strValue:String, val name:String = "")
-// TODO: Must all Documents have a name?  Alexandre thinks not.
-class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
-    
+class Document extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
+  def this(stringContents:String) = { this(); _string = stringContents }
+  private var _name: String = null
+  def name: String = _name
+  def setName(s:String): this.type = { _name = s; this }
+  
   // One of the following two is always null, the other non-null
-  private var _string: String = strValue
+  private var _string: String = ""
   private var _stringbuf: StringBuffer = null
   /** Append the string 's' to this Document.
       @return the length of the Document's string before string 's' was appended. */
@@ -126,7 +128,7 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
     this
   }
   def fetchDocument: Document = {
-    val doc = new Document(name.value, string.value)
+    val doc = new Document(string.value).setName(name.value)
     if (tokens.value ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
     //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
     if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc))

@@ -40,7 +40,7 @@ object LoadACE {
   private val matchTag = "<[A-Za-z=_\"/ ]*>".r
 
   private def makeDoc(sgm: String): Document = {
-    val doc = new Document(sgm, matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => ""))
+    val doc = new Document(matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
     Tokenizer.process(doc)
     SentenceSegmenter.process(doc)

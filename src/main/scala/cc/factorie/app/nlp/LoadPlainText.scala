@@ -18,17 +18,17 @@ import cc.factorie.app.strings.StringSegmenter
 
 object LoadPlainText {
   
-  def fromString(name: String, contents: String): Document = new Document(name, contents)
+  def fromString(name: String, contents: String): Document = new Document(contents).setName(name)
   
   @deprecated("Use fromString(String,String), and do segmentation separately.")
   def fromString(name: String, contents: String, segmentSentences: Boolean): Document =
     fromString(name, contents, if (segmentSentences) cc.factorie.app.nlp.segment.ClearSegmenter else cc.factorie.app.nlp.segment.ClearTokenizer)
 
   def fromString(name: String, contents: String, processor: DocumentAnnotator): Document =
-    processor.process(new Document(name, contents))
+    processor.process(new Document(contents).setName(name))
     
   def fromStream(name:String, stream:java.io.InputStream, encoding:String): Document = 
-    new Document(name, scala.io.Source.fromInputStream(stream, encoding).mkString)
+    new Document(scala.io.Source.fromInputStream(stream, encoding).mkString).setName(name)
 
   def fromFile(file: File, segmentSentences: Boolean = false): Document = {
     val string = scala.io.Source.fromFile(file).mkString

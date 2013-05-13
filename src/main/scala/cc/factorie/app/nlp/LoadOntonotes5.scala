@@ -27,7 +27,7 @@ object LoadOntonotes5 {
   var loadLemma = true
 
   def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document("Ontonotes499" + filename, "")
+    var document: Document = new Document().setName("Ontonotes499" + filename)
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
