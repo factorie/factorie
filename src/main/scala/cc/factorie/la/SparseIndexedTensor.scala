@@ -310,6 +310,7 @@ trait SparseIndexedTensor extends Tensor {
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
     case t:SingletonBinaryTensor => this += (t.singleIndex, f)
+    case t:NormalizedTensorProportions2 => this += (t.tensor, f)
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */

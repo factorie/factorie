@@ -2,16 +2,13 @@ package cc.factorie
 
 import cc.factorie.la.{Tensor, Tensors}
 
-/**
- * User: apassos
- * Date: 5/1/13
- * Time: 2:52 PM
- */
+/** And object containing parameter weights of type Tensors (which is a Map[Any,Tensor]).
+    The most common use-case is "MyModel extends Model with Weights". */
 trait Weights {
   def weights: Tensors
 }
 
 class WeightsCubbie(val model:Weights) extends Cubbie {
-  val families = new TensorListSlot("tensors")
-  families := model.weights.values.toSeq
+  val tensors = new TensorListSlot("tensors")
+  tensors := model.weights.values.toSeq // This relies on Tensors storing its contents in a LinkedHashMap which preserves order
 }

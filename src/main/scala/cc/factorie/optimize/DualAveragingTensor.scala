@@ -9,6 +9,7 @@ import util._
  * Date: 4/8/13
  * Time: 5:54 PM
  */
+// TODO Alex: please comment this. -akm
 trait DualAveragingTensor extends Tensor  {
   def activeDomain = new RangeIntSeq(0, length)
   val gradients = Array.fill(length)(0.0)
