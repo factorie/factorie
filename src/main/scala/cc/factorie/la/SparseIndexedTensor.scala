@@ -372,8 +372,6 @@ trait SparseIndexedTensor extends Tensor {
     }
   }
 
-  override def /=(other: Double) = this *= (1.0/other)
-  
   // TODO Use copyInto instead?
   def cloneFrom(t:SparseIndexedTensor): Unit = {
     makeReadable
