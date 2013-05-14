@@ -213,17 +213,6 @@ trait SparseIndexedTensor extends Tensor {
     __values(__npos) = incr
     __npos += 1
   }
-  override def twoNormSquared = {
-    _makeReadable
-    var sum = 0.0
-    var i = 0
-    val len = activeDomainSize
-    while (i < len) {
-      sum += __values(i)*__values(i)
-      i += 1
-    }
-    sum
-  }
   override def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
