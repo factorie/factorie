@@ -215,16 +215,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
         applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
         done = true
       }
-      else {
-        for (si <- stack.elements.drop(1);
-             if (inputIdx != ParseTree.rootIndex &&
-               ((inputIdxParent == si) || (inputIdx == { if (si == ParseTree.rootIndex) -3 // -3 doesn't conflict with noIndex or rootIndex //ParseTree.noIndex
-                                                         else  origTree.parentIndex(si) })))) {// is the -2 right here?
+      while ((stack.size > 1) && (tree.parentIndex(stack.head) < 0) && origTree.children(stack.head).length == tree.children(stack.head).length) {
           val action = new Action((4, ""), stack, input, tree) // Reduce
           actionLabels.append(action)
           applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
           done = true
-        }
       }
       if (!done) {
         val action = new Action((3, ""), stack, input, tree) // Shift
@@ -258,7 +253,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.OnlineTrainer[Weights](model, opt, maxIterations = 10, logEveryN=100000)
+    val trainer = new optimize.OnlineTrainer[Weights](model, opt, maxIterations = 10)
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
