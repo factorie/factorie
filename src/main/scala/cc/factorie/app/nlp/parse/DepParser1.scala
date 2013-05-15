@@ -187,7 +187,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   
   // Training
-  def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[Action]] = ss.par.map(generateTrainingLabels(_))
+  def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[Action]] = ss.par.map(generateTrainingLabels(_)).seq
   def generateTrainingLabels(s: Sentence): Seq[Action] = {
     val origTree = s.attr[ParseTree]
     val tree = new ParseTree(s)
