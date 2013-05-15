@@ -16,19 +16,14 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
 
-//// TODO can we not make the default implementation of NLP stuff use global variables, this is bug city -luke
-//@deprecated("Use PTBPosDomain instead.")
-//object PosDomain extends CategoricalDomain[String]
-//@deprecated("Use PTBPosLabel instead.")
-//class PosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PosDomain } 
 
-// TODO Rename to PPosDomain, just because it is shorter and easier to pronounce
+// TODO Consider renaming PTBPosDomain to PPosDomain, just because it is shorter and easier to pronounce
 // TODO Consider renaming classes POS1... to Pos1
 
 /** Penn Treebank part-of-speech tag domain. */
 object PTBPosDomain extends CategoricalDomain[String] {
   this ++= Vector(
-      "#",
+      "#", // In WSJ but not in Ontonotes
       "$",
       "''",
       ",",
@@ -36,17 +31,21 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "-RRB-",
       ".",
       ":",
+      "ADD", // in Ontonotes, but not WSJ
+      "AFX", // in Ontonotes, but not WSJ
       "CC",
       "CD",
       "DT",
       "EX",
       "FW",
+      "HYPH", // in Ontonotes, but not WSJ
       "IN",
       "JJ",
       "JJR",
       "JJS",
       "LS",
       "MD",
+      "NFP", // in Ontonotes, but not WSJ
       "NN",
       "NNP",
       "NNPS",
@@ -73,6 +72,17 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "WP$",
       "WRB",
       "``")
+      
   freeze()
+  def isNoun(pos:String): Boolean = pos(0) == 'N' 
+  def isProperNoun(pos:String) = { pos(0) == 'N' && pos.length > 2 && pos(3) == 'S' }
+  def isVerb(pos:String) = pos(0) == 'V'
+  def isAdjective(pos:String) = pos(0) == 'J'
 }
-class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PTBPosDomain }
+class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = PTBPosDomain
+  def isNoun = PTBPosDomain.isNoun(categoryValue)
+  def isProperNoun = PTBPosDomain.isProperNoun(categoryValue)
+  def isVerb = PTBPosDomain.isVerb(categoryValue)
+  def isAdjective = PTBPosDomain.isAdjective(categoryValue)
+}
