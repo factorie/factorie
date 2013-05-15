@@ -25,9 +25,11 @@ import cc.factorie
     Alex: an Assignment shouldn't be a Marginal, it should be able to give you marginals
     of some of its variables. I imagine Assignments as "global" things and Marginals as "local". Let's talk.
     
+    
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
+// TODO Yes, make Assignment extend Summary. -akm 
 trait Assignment {
   /** All variables with values in this Assignment */
   def variables: Iterable[Var]
@@ -39,7 +41,7 @@ trait Assignment {
   def contains(v:Var): Boolean
   def getOrElse[B<:Var](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
-  // TODO Rename this to "set" -akm
+  // TODO Rename this to "set" or "setVariables" -akm
   def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
       case v:MutableVar[Any] => v.set(this.apply(v))
