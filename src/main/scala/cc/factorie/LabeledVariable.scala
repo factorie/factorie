@@ -143,6 +143,12 @@ class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVa
 } 
 
 
+// For Integers
+
+trait LabeledIntegerVar extends IntegerVar with LabeledVar
+class LabeledIntegerVariable(val targetValue:Int) extends IntegerVariable(targetValue) with LabeledIntegerVar
+
+
 // Templates
 
 class HammingTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
@@ -153,21 +159,21 @@ class HammingTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Man
 }
 object HammingObjective extends HammingTemplate[LabeledVarWithTarget]
 
-class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
-  def unroll1(aimer:A) = Factor(aimer, aimer.target)
-  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
-  override def valuesScore(t: Tensor) = t match {
-    case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
-    case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
-    case v: Outer1Tensor2 =>
-      (v.tensor1, v.tensor2) match {
-        case (v1: SingletonBinaryTensorLike1, v2: Tensor1) =>
-          if (v1.singleIndex == v2.maxIndex) 0.0 else 1.0
-      }
-  }
-}
-object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]
+//class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+//  def unroll1(aimer:A) = Factor(aimer, aimer.target)
+//  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
+//  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
+//  override def valuesScore(t: Tensor) = t match {
+//    case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
+//    case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
+//    case v: Outer1Tensor2 =>
+//      (v.tensor1, v.tensor2) match {
+//        case (v1: SingletonBinaryTensorLike1, v2: Tensor1) =>
+//          if (v1.singleIndex == v2.maxIndex) 0.0 else 1.0
+//      }
+//  }
+//}
+//object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]
 
 // Evaluation
 
