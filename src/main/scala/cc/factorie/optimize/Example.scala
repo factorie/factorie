@@ -213,7 +213,7 @@ class StructuredPerceptronExample[V <: LabeledVar](labels: Iterable[V], infer: M
 // CombinedModel that subtracts one model's score from another
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
-class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], objective: Model = HammingObjective, infer: Maximize = MaximizeByBPLoopy)
+class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
   extends LikelihoodExample(labels, infer) {
   override def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
     if (value != null) {
