@@ -20,14 +20,25 @@ import cc.factorie.app.classify.{Classification, Classifier, LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.util.{ProtectedIntArrayBuffer, LocalDoubleAccumulator}
 import cc.factorie.la.Tensor1
 import cc.factorie.optimize.ParameterAveraging
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   def this(filename:String) = { this(); deserialize(filename) }
-  
+
+  class ParserStack extends ProtectedIntArrayBuffer {
+    def push(i: Int) = this._append(i)
+    def pop() = { val r = this._apply(this._length-1); this._remove(this._length-1); r}
+    def head = this._apply(this._length-1)
+    def size = this._length
+    def apply(i: Int) = this._apply(this._length-i-1)
+    def nonEmpty = _length > 0
+    def isEmpty = _length == 0
+    def elements = _asSeq.reverse
+  }
+
   // The shift/reduce actions predicted
   object ActionDomain extends CategoricalDomain[(Int, String)] {
     override def stringToCategory(s: String): (Int, String) = {
@@ -35,16 +46,16 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       (Integer.parseInt(i.substring(1,2)), str.substring(1,str.size-1)) // assumes single digit actionIdx
     }
   }
-  class Action(targetAction: (Int, String), val stack: ArrayBuffer[Int], val input: ArrayBuffer[Int], tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
+  class Action(targetAction: (Int, String), val stack: ParserStack, val input: ParserStack, tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
     def domain = ActionDomain
     val features = new Features(this, stack, input, tree)
     val validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.map(_.intValue).iterator
     private def isAllowedCategory(actionIdx: Int): Boolean = {
       actionIdx match {
-        /*Left*/   case 1 => { stack.size > 1 && tree.parentIndex(stack(0)) == ParseTree.noIndex && input.size > 0 }
+        /*Left*/   case 1 => { stack.size > 1 && tree.parentIndex(stack.head) == ParseTree.noIndex && input.size > 0 }
         /*Right*/  case 2 => { input.size > 0 }
         /*Shift*/  case 3 => { input.size > 1 }
-        /*Reduce*/ case 4 => { stack.size > 1 && tree.parentIndex(stack(0)) != ParseTree.noIndex }
+        /*Reduce*/ case 4 => { stack.size > 1 && tree.parentIndex(stack.head) != ParseTree.noIndex }
       }
     }
   }
@@ -57,18 +68,18 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
   }
   val nullLemma = new TokenLemma(null, "null")
-  class Features(val label: Action, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree) extends BinaryFeatureVectorVariable[(String, Int)] {
+  class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[(String, Int)] {
     def domain = FeaturesDomain
     override def skipNonCategories = featuresSkipNonCategories
     import cc.factorie.app.strings.simplifyDigits
     // assumes all locations > 0
-    def formFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
-    def lemmaFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
-    def tagFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
-    def depRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
-    def lChildDepRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
+    def formFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
+    def lemmaFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
+    def tagFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
+    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
+    def lChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
       locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" + t.parseLabel.value.toString(), i))) }
-    def rChildDepRelFeatures(seq: ArrayBuffer[Int], locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
+    def rChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
       locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" + t.parseLabel.value.toString(), i))) }
     // Initialize the Features value
     this ++= formFeatures(stack, Seq(0,1), tree)
@@ -101,24 +112,24 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   
   // Action implementations
-  def applyLeftArc(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit = {
-    val child: Int = stack.remove(0)
-    val parent: Int = input(0)
+  def applyLeftArc(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit = {
+    val child: Int = stack.pop()
+    val parent: Int = input.head
     tree.setParent(child, parent)
     tree.label(child).setCategory(relation)(null)
   }
-  def applyRightArc(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit = {
-    val child: Int = input.remove(0)
-    val parent: Int = stack(0)
+  def applyRightArc(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit = {
+    val child: Int = input.pop()
+    val parent: Int = stack.head
     tree.setParent(child, parent)
     tree.label(child).setCategory(relation)(null)
-    stack.prepend(child)
+    stack.push(child)
   }
-  def applyShift(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit =
-    stack.prepend(input.remove(0))
-  def applyReduce(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit =
-    stack.remove(0)
-  def applyAction(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], actionIdx: Int, relation: String) {
+  def applyShift(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit =
+    stack.push(input.pop())
+  def applyReduce(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit =
+    stack.pop()
+  def applyAction(tree: ParseTree, stack: ParserStack, input: ParserStack, actionIdx: Int, relation: String) {
     actionIdx match {
       case 1 => applyLeftArc(tree,stack,input,relation)
       case 2 => applyRightArc(tree,stack,input,relation)
@@ -128,7 +139,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
   }
 
-  def predict(stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree): (Action, (Int, String)) = {
+  def predict(stack: ParserStack, input: ParserStack, tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
     val weights = model.family.weightsTensor
     val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
@@ -139,17 +150,18 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val actionsPerformed = new ArrayBuffer[Action]
     //s.attr.remove[ParseTree]
     val tree = s.attr.getOrElseUpdate(new ParseTree(s))
-    val stack = ArrayBuffer[Int](ParseTree.rootIndex)
-    val input = ArrayBuffer[Int](); for (i <- (0 until s.length)) input.append(i)
+    val stack = new ParserStack
+    stack.push(ParseTree.rootIndex)
+    val input = new ParserStack; for (i <- (0 until s.length).reverse) input.push(i)
     while(input.nonEmpty) {
       val (action,  (actionIdx, relation)) = predict(stack, input, tree)
       actionsPerformed.append(action)
       applyAction(tree, stack, input, actionIdx, relation)
       while (input.isEmpty && stack.size > 1) {
         if (tree.parentIndex(stack.head) == ParseTree.noIndex)
-          input.append(stack.remove(0))
+          input.push(stack.pop())
         else
-          stack.remove(0)
+          stack.pop()
       }
     }
     actionsPerformed
@@ -179,14 +191,14 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   def generateTrainingLabels(s: Sentence): Seq[Action] = {
     val origTree = s.attr[ParseTree]
     val tree = new ParseTree(s)
-    val stack = ArrayBuffer[Int](ParseTree.rootIndex)
-    val input = ArrayBuffer[Int](); for (i <- 0 until s.length) input.append(i)
+    val stack = new ParserStack; stack.push(ParseTree.rootIndex)
+    val input = new ParserStack; for (i <- (0 until s.length).reverse) input.push(i)
     val actionLabels = new ArrayBuffer[Action]
     while (input.nonEmpty) {
       var done = false
-      val inputIdx = input(0)
+      val inputIdx = input.head
       val inputIdxParent = origTree.parentIndex(inputIdx)
-      val stackIdx = stack(0)
+      val stackIdx = stack.head
       val stackIdxParent = {
         if (stackIdx == ParseTree.rootIndex) -3
         else origTree.parentIndex(stackIdx)
@@ -204,7 +216,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
         done = true
       }
       else {
-        for (si <- stack.drop(1);
+        for (si <- stack.elements.drop(1);
              if (inputIdx != ParseTree.rootIndex &&
                ((inputIdxParent == si) || (inputIdx == { if (si == ParseTree.rootIndex) -3 // -3 doesn't conflict with noIndex or rootIndex //ParseTree.noIndex
                                                          else  origTree.parentIndex(si) })))) {// is the -2 right here?
@@ -243,6 +255,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.family.weightsTensor.length))
     println("Generating examples...")
     val examples = trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
+    freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
     val trainer = new optimize.OnlineTrainer[Weights](model, opt, maxIterations = 10, logEveryN=100000)
@@ -261,7 +274,6 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
     println("Finished training.")
     opt.setWeightsToAverage(model.weights)
-    freezeDomains()
     // Print accuracy diagnostics
   }
 
