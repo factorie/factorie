@@ -15,6 +15,7 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.pos._
 import cc.factorie.app.classify.{Classification, Classifier, LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
@@ -76,8 +77,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     this ++= formFeatures(stack, Seq(0,1), tree)
     this ++= formFeatures(input, Seq(0,1), tree)
     // TODO We don't have have a good lemma annotator for new text
-    //this ++= lemmaFeatures(stack, Seq(0,1), tree)
-    //this ++= lemmaFeatures(input, Seq(0,1), tree)
+    this ++= lemmaFeatures(stack, Seq(0,1), tree) //
+    this ++= lemmaFeatures(input, Seq(0,1), tree) //
     this ++= tagFeatures(stack, Seq(0,1,2,3), tree)
     this ++= tagFeatures(input, Seq(0,1,2,3), tree)
     this ++= depRelFeatures(stack, Seq(0), tree)
@@ -152,9 +153,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
   def parse(s: Sentence, predict: (ArrayBuffer[Int], ArrayBuffer[Int], ParseTree) => (Action, (Int, String)) = predict): Seq[Action] = {
     val actionsPerformed = new ArrayBuffer[Action]
-    s.attr.remove[ParseTree]
-    val tree = new ParseTree(s)
-    s.attr += tree
+    //s.attr.remove[ParseTree]
+    val tree = s.attr.getOrElseUpdate(new ParseTree(s))
     val stack = ArrayBuffer[Int](ParseTree.rootIndex)
     val input = ArrayBuffer[Int](); for (i <- (0 until s.length)) input.append(i)
     while(input.nonEmpty) {
@@ -259,9 +259,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val examples = trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
     println("Training...")
     val trainer = new optimize.OnlineTrainer[Weights](model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
-    for (iteration <- 1 until 2) trainer.processExamples(examples)
+    for (iteration <- 1 until 10) trainer.processExamples(examples)
     println("Finished training.")
     freezeDomains()
+    // Print accuracy diagnostics
     trainActions.foreach(classifier.classify(_)); println("Training action accuracy = "+HammingObjective.accuracy(trainActions))
   }
 
@@ -271,8 +272,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
     val pt = token.sentence.attr[ParseTree]
-    if (pt eq null) "(null)\t(null)"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
+    if (pt eq null) "_\t_"
+    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+(pt.targetParentIndex(token.sentencePosition)+1)+"\t"+pt.label(token.sentencePosition).categoryValue+"\t"+pt.label(token.sentencePosition).targetCategory
   }
 }
 
@@ -307,16 +308,26 @@ object DepParser1 {
     parser.train(trainDoc.sentences, testDoc.sentences, null)
     // Test
     parser.freezeDomains()
+    
+    // Print accuracy diagnostics
     println("Predicting train set..."); trainDoc.sentences.foreach { s => parser.parse(s) } // Was par
     println("Predicting test set...");  testDoc.sentences.foreach { s => parser.parse(s) } // Was par
-    println("Training action label accuracy = "+HammingObjective.accuracy(trainDoc.sentences.flatMap(s => s.parse.labels)))
-    println("Testing action label accuracy = "+HammingObjective.accuracy(testDoc.sentences.flatMap(s => s.parse.labels)))
+    println("Training label accuracy = "+HammingObjective.accuracy(trainDoc.sentences.flatMap(s => s.parse.labels)))
+    println(" Testing label accuracy = "+HammingObjective.accuracy(testDoc.sentences.flatMap(s => s.parse.labels)))
+    println("Training arc accuracy = "+(trainDoc.sentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainDoc.tokens.length))
+    println(" Testing arc accuracy = "+(testDoc.sentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testDoc.tokens.length))
 
     //parser.model.skipNonCategories = false
     // Write results
     println("Writing results...")
-    WriteConll2008.toFile(opts.outputDir.value + "/dep.train", trainDoc, opts.trainFile.value)
-    WriteConll2008.toFile(opts.outputDir.value + "/dep.test", testDoc, opts.testFile.value)
+    //WriteConll2008.toFile(opts.outputDir.value + "/dep.train", trainDoc, opts.trainFile.value)
+    //WriteConll2008.toFile(opts.outputDir.value + "/dep.test", testDoc, opts.testFile.value)
+    var out = new java.io.PrintStream(new java.io.File(opts.outputDir.value + "/dep.train"))
+    out.println(trainDoc.owplString(Seq((t:Token) => t.attr[PTBPosLabel].categoryValue, parser.tokenAnnotationString(_))))
+    out.close()
+    out = new java.io.PrintStream(new java.io.File(opts.outputDir.value + "/dep.test"))
+    out.println(testDoc.owplString(Seq((t:Token) => t.attr[PTBPosLabel].categoryValue, parser.tokenAnnotationString(_))))
+    out.close()    
 
     println("Saving model...")
     parser.serialize(opts.model.value)

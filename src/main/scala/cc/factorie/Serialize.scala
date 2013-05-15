@@ -7,6 +7,8 @@ import collection.mutable
 import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
 
+// TODO I think Serialize should be moved to cc.factorie.util, along side Cubbie.  I try to put only factor-graph-related classes in cc.factorie. -akm
+
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
   implicit def modm(m: Weights): Cubbie = new WeightsCubbie(m)
