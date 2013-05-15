@@ -187,7 +187,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   
   // Training
-  def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[Action]] = ss.map(generateTrainingLabels(_))
+  def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[Action]] = ss.par.map(generateTrainingLabels(_))
   def generateTrainingLabels(s: Sentence): Seq[Action] = {
     val origTree = s.attr[ParseTree]
     val tree = new ParseTree(s)
@@ -253,7 +253,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.OnlineTrainer[Weights](model, opt, maxIterations = 10)
+    val trainer = new optimize.HogwildTrainer[Weights](model, opt, maxIterations = 10)
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
