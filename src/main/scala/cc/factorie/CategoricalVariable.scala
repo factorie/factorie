@@ -35,7 +35,12 @@ trait MutableCategoricalVar[V<:CategoricalValue[C],C] extends CategoricalVar[V,C
 /** A MutableDiscreteVar whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
 abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValue[A]] with MutableCategoricalVar[CategoricalValue[A],A] {
-  def this(initialCategory:A) = { this(); _set(domain.index(initialCategory)) }
+  def this(initialCategory:A) = {
+    this()
+    val idx = domain.index(initialCategory)
+    if (idx < 0) throw new Error("Initial value not in domain: "+initialCategory.toString)
+    _set(idx)
+  }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
 
