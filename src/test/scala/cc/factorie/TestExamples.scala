@@ -37,7 +37,7 @@ class TestExamples {
     cc.factorie.example.Cards4.main(emptyArgs)
   }
 
-  val dummyNERFile = dummyFileWithContents("train", "A B C D\nA C D E\nA A C B")
+  val dummyNERFile = dummyFileWithContents("train", "A NN C PER\nA NNS D O\nA NNP C LOC")
 
   @Test def testChainNer1() {
     cc.factorie.example.ChainNER1a.main(Array(dummyNERFile, dummyNERFile))
