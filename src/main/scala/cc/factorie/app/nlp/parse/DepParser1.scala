@@ -252,14 +252,19 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
+    val testActions = new LabelList[Action, Features]((action: Action) => action.features)
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
+    for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.family.weightsTensor.length))
     println("Generating examples...")
     val examples = trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
     println("Training...")
     val trainer = new optimize.OnlineTrainer[Weights](model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
-    for (iteration <- 1 until 10) trainer.processExamples(examples)
+    for (iteration <- 1 until 10) {
+      trainer.processExamples(examples)
+      testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
+    }
     println("Finished training.")
     freezeDomains()
     // Print accuracy diagnostics
