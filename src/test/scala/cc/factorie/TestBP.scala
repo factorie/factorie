@@ -495,16 +495,9 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
 object BPTestUtils {
   // a binary variable that takes values 0 or 1
-  object BinDomain extends CategoricalDomain[Int](List(0, 1)) {
-    def valueOf(b: Boolean) = {
-      val v = if (b) 0 else 1
-      value(v)
-    }
-  }
-  
-  object BoolDomain extends CategoricalDomain[Boolean](List(true, false))
+  object BinDomain extends DiscreteDomain(2)
 
-  class BinVar(i: Int) extends LabeledCategoricalVariable(i) {
+  class BinVar(i: Int) extends DiscreteVariable {
     def domain = BinDomain
   }
   
@@ -528,7 +521,7 @@ object BPTestUtils {
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
       override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
-        BinDomain.valueOf(value1.intValue == value2.intValue)
+        BinDomain(if (value1.intValue == value2.intValue) 0 else 1)
     }
     family.weightsTensor(0) = scoreEqual
     family.weightsTensor(1) = scoreUnequal
@@ -548,7 +541,7 @@ object BPTestUtils {
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
     new TupleFactorWithStatistics3[BinVar, BinVar, BinVar](n1, n2, n3) {
       factor =>
-      def score(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value): Double = scores(v1.category * 4 + v2.category * 2 + v3.category)
+      def score(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value): Double = scores(v1.intValue * 4 + v2.intValue * 2 + v3.intValue)
       override def equalityPrerequisite = this
       override def toString = "F(%s,%s,%s)".format(n1, n2, n3)
     }

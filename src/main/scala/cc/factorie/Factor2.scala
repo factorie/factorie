@@ -253,11 +253,8 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
       //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
     case v: SingletonBinaryLayeredTensor2 => {
-      val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
-      //println("Family2.valuesScore domain="+domain0+" singleIndex=%d".format(v.singleIndex1))
-      //score(domain0(v.singleIndex1), v.inner.asInstanceOf[N2#Value])
-      // TODO Simplify this when DiscreteValue no longer has a domain member
-      score(new DiscreteValue { def domain = new DiscreteDomain(v.dim1); def singleIndex = v.singleIndex1 }.asInstanceOf[N1#Value], v.inner.asInstanceOf[N2#Value])
+      val domain0 = if (neighborDomain1 ne null) neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] else new DiscreteDomain(Int.MaxValue).asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      score(domain0(v.singleIndex1), v.inner.asInstanceOf[N2#Value])
     }
     case v: Outer1Tensor2 => {
       (v.tensor1, v.tensor2) match {
