@@ -259,8 +259,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       // trainActions.foreach()
       // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
       opt.setWeightsToAverage(model.weights)
-      println("Predicting train set..."); trainSentences.foreach { s => parse(s) } // Was par
-      println("Predicting test set...");  testSentences.foreach { s => parse(s) } // Was par
+      println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
+      println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
       println("Training label accuracy = "+HammingObjective.accuracy(trainSentences.flatMap(s => s.parse.labels)))
       println(" Testing label accuracy = "+HammingObjective.accuracy(testSentences.flatMap(s => s.parse.labels)))
       println("Training arc accuracy = "+(trainSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainSentences.map(_.tokens.length).sum))
