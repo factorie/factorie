@@ -16,9 +16,8 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 
-//object NerLabelDomain extends CategoricalDomain[String]
+/** The abstract class for all named-entity recognition labels. */
 abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {
-  //def domain = NerLabelDomain
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
   def cubbieSlotName = "ner"
@@ -29,7 +28,9 @@ class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")
 }
 
+@deprecated("Use BioConllNerLabel")
 abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
+@deprecated("Use ConllNerLabel")
 abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
 
 
@@ -86,3 +87,49 @@ object BilouConllNerDomain extends CategoricalDomain[String] {
   freeze()
 }
 class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
+
+
+object BioOntonotesNerDomain extends EnumDomain {
+  this ++= Vector(
+      "O",
+      "B-CARDINAL",
+      "I-CARDINAL",
+      "B-DATE",
+      "I-DATE",
+      "B-EVENT",
+      "I-EVENT",
+      "B-FAC",
+      "I-FAC",
+      "B-GPE",
+      "I-GPE",
+      "B-LANGUAGE",
+      "I-LANGUAGE",
+      "B-LAW",
+      "I-LAW",
+      "B-LOC",
+      "I-LOC",
+      "B-MONEY",
+      "I-MONEY",
+      "B-NORP",
+      "I-NORP",
+      "B-ORDINAL",
+      "I-ORDINAL",
+      "B-ORG",
+      "I-ORG",
+      "B-PERCENT",
+      "I-PERCENT",
+      "B-PERSON",
+      "I-PERSON",
+      "B-PRODUCT",
+      "I-PRODUCT",
+      "B-QUANTITY",
+      "I-QUANTITY",
+      "B-TIME",
+      "I-TIME",
+      "B-WORK_OF_ART",
+      "I-WORK_OF_ART"
+  )
+  freeze()
+}
+class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
+
