@@ -20,6 +20,9 @@ import cc.factorie.app.classify.{Classification, Classifier, LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
+import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.la.Tensor1
+import cc.factorie.optimize.ParameterAveraging
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
@@ -35,13 +38,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   class Action(targetAction: (Int, String), val stack: ArrayBuffer[Int], val input: ArrayBuffer[Int], tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
     def domain = ActionDomain
     val features = new Features(this, stack, input, tree)
-    override def settings = new SettingIterator {
-      private var validActionList: Iterator[Action.this.Value] = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
-      def hasNext = validActionList.hasNext
-      def next(difflist:DiffList) = { val d = new DiffList; val v = validActionList.next; /*println("Action.settings "+v.intValue);*/ set(v)(d); d }
-      def reset = validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
-      override def variable: Action.this.type = Action.this
-    }
+    val validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.map(_.intValue).iterator
     private def isAllowedCategory(actionIdx: Int): Boolean = {
       actionIdx match {
         /*Left*/   case 1 => { stack.size > 1 && tree.parentIndex(stack(0)) == ParseTree.noIndex && input.size > 0 }
@@ -103,20 +100,6 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     def factor(a:Action) = family.Factor(a, a.features)
   }
   
-  val classifier = new Classifier[Action] {
-    val labelDomain = ActionDomain
-    override def classification(label: Action): Classification[Action] = {
-      //**val factor = new model.family.Factor(label, label.features) // This causes crash in Scala 2.9.2 compiler
-      val factor = model.factor(label)
-      //println("DepParser.classifier.classification "+factor._2.value.maxIndex+" "+FeaturesDomain.dimensionSize+" "+model.family.weightsTensor.length)
-      val t = new la.DenseTensor1(labelDomain.size, Double.NegativeInfinity)
-      label.settings.foreach(s => t(label.intValue) = factor.currentScore) // Only score the allowedCategories
-      t.expNormalize()
-      val proportions = new NormalizedTensorProportions1(t, checkNormalization = false)
-      new Classification(label, this, proportions)
-    }
-  }
-
   // Action implementations
   def applyLeftArc(tree: ParseTree, stack: ArrayBuffer[Int], input: ArrayBuffer[Int], relation: String = ""): Unit = {
     val child: Int = stack.remove(0)
@@ -147,11 +130,12 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
   def predict(stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
-    classifier.classify(v) // set v to max scoring value
-    (v, v.categoryValue)
+    val weights = model.family.weightsTensor
+    val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
+    (v, v.domain.categories(v.validActionList.maxBy(prediction(_))))
   }
 
-  def parse(s: Sentence, predict: (ArrayBuffer[Int], ArrayBuffer[Int], ParseTree) => (Action, (Int, String)) = predict): Seq[Action] = {
+  def parse(s: Sentence): Seq[Action] = {
     val actionsPerformed = new ArrayBuffer[Action]
     //s.attr.remove[ParseTree]
     val tree = s.attr.getOrElseUpdate(new ParseTree(s))
@@ -260,15 +244,25 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("Generating examples...")
     val examples = trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
     println("Training...")
-    val trainer = new optimize.OnlineTrainer[Weights](model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
-    for (iteration <- 1 until 10) {
+    val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
+    val trainer = new optimize.OnlineTrainer[Weights](model, opt, maxIterations = 10, logEveryN=100000)
+    for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
-      testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
+      // trainActions.foreach()
+      // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
+      opt.setWeightsToAverage(model.weights)
+      println("Predicting train set..."); trainSentences.foreach { s => parse(s) } // Was par
+      println("Predicting test set...");  testSentences.foreach { s => parse(s) } // Was par
+      println("Training label accuracy = "+HammingObjective.accuracy(trainSentences.flatMap(s => s.parse.labels)))
+      println(" Testing label accuracy = "+HammingObjective.accuracy(testSentences.flatMap(s => s.parse.labels)))
+      println("Training arc accuracy = "+(trainSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainSentences.map(_.tokens.length).sum))
+      println(" Testing arc accuracy = "+(testSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testSentences.map(_.tokens.length).sum))
+      opt.unSetWeightsToAverage(model.weights)
     }
     println("Finished training.")
+    opt.setWeightsToAverage(model.weights)
     freezeDomains()
     // Print accuracy diagnostics
-    trainActions.foreach(classifier.classify(_)); println("Training action accuracy = "+HammingObjective.accuracy(trainActions))
   }
 
   // DocumentAnnotator interface
