@@ -57,26 +57,36 @@ import java.lang.StringBuffer
 
 // Proposed new style
 
-object ParseTreeLabelDomain extends CategoricalDomain[String]
-class ParseTreeLabel(val tree:ParseTree, targetValue:String = "O") extends LabeledCategoricalVariable(targetValue) { def domain = ParseTreeLabelDomain }
+object ParseTreeLabelDomain extends EnumDomain {
+  val acomp, advcl, advmod, agent, amod, appos, attr, aux, auxpass, cc, ccomp, complm, conj, csubj, csubjpass, 
+  dep, det, dobj, expl, hmod, hyph, infmod, intj, iobj, mark, meta, neg, nmod, nn, npadvmod, nsubj, nsubjpass, 
+  num, number, oprd, parataxis, partmod, pcomp, pobj, poss, possessive, preconj, predet, prep, prt, punct, 
+  quantmod, rcmod, root, xcomp = Value
+  freeze()
+  def defaultCategory = "nn"
+}
+class ParseTreeLabel(val tree:ParseTree, targetValue:String = ParseTreeLabelDomain.defaultCategory) extends LabeledCategoricalVariable(targetValue) { def domain = ParseTreeLabelDomain }
 
 object ParseTree {
   val rootIndex = -1
   val noIndex = -2
 }
-class ParseTree(val sentence:Sentence) {
-  def copy: ParseTree = {
-    val newTree = new ParseTree(sentence)
-    for ((p,i) <- parents.zipWithIndex)
-      newTree.setParent(i, p)
-    for ((l,i) <- labels.map(_.intValue).zipWithIndex)
-      newTree.label(i).set(l)(null)
-    newTree
-  }
-  private val _parents = Array.fill[Int](sentence.length)(ParseTree.noIndex)
-  private val _labels = Array.tabulate(sentence.length)(i => new ParseTreeLabel(this))
-  def parents: Seq[Int] = _parents
-  def labels: Seq[ParseTreeLabel] = _labels
+class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) {
+  def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory))
+  private val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray
+  private val _parents = theTargetParents.toArray
+  private val _targetParents = theTargetParents.toArray
+  //println("ParseTree parents "+theTargetParents.mkString(" "))
+  //println(" ParseTree labels "+theTargetLabels.mkString(" "))
+  //println(" ParseTree labels "+_labels.map(_.categoryValue).mkString(" "))
+  def labels: Array[ParseTreeLabel] = _labels
+  def parents: Array[Int] = _parents
+  def targetParents: Array[Int] = _targetParents
+  def setParentsToTarget: Unit = System.arraycopy(_targetParents, 0, _parents, 0, _parents.length)
+  def numParentsCorrect: Int = { var result = 0; for (i <- 0 until _parents.length) if (_parents(i) == _targetParents(i)) result += 1; result }
+  def parentsAccuracy: Double = numParentsCorrect.toDouble / _parents.length
+  def numLabelsCorrect: Int = {var result = 0; for (i <- 0 until _labels.length) if (_labels(i).valueIsTarget) result += 1; result }
+  def labelsAccuracy: Double = numLabelsCorrect.toDouble / _labels.length
   /** Returns the position in the sentence of the root token. */ 
   def rootChildIndex: Int = firstChild(-1)
   /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
@@ -85,6 +95,7 @@ class ParseTree(val sentence:Sentence) {
   def setRootChild(token:Token): Unit = setParent(token.position - sentence.start, -1)
   /** Returns the sentence position of the parent of the token at position childIndex */
   def parentIndex(childIndex:Int): Int = if (childIndex == ParseTree.rootIndex) ParseTree.noIndex else _parents(childIndex)
+  def targetParentIndex(childIndex:Int): Int = if (childIndex == ParseTree.rootIndex) ParseTree.noIndex else _targetParents(childIndex)
   /** Returns the parent token of the token at position childIndex (or null if the token at childIndex is the root) */
   def parent(childIndex:Int): Token = {
     val idx = _parents(childIndex)
@@ -95,6 +106,7 @@ class ParseTree(val sentence:Sentence) {
   def parent(token:Token): Token = { require(token.sentence eq sentence); parent(token.position - sentence.start) }
   /** Set the parent of the token at position 'child' to be at position 'parentIndex'.  A parentIndex of -1 indicates the root.  */
   def setParent(childIndex:Int, parentIndex:Int): Unit = _parents(childIndex) = parentIndex
+  def setTargetParent(childIndex:Int, parentIndex:Int): Unit = _targetParents(childIndex) = parentIndex
   /** Set the parent of the token 'child' to be 'parent'. */
   def setParent(child:Token, parent:Token): Unit = {
     require(child.sentence eq sentence)
@@ -177,6 +189,14 @@ class ParseTree(val sentence:Sentence) {
   //def childrenOfLabel(token:Token, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelValue.intValue)
   /** Return the label on the edge from the child at sentence position 'index' to its parent. */
   def label(index:Int): ParseTreeLabel = _labels(index)
+  def copy: ParseTree = {
+    val newTree = new ParseTree(sentence, targetParents, labels.map(_.targetCategory))
+    for (i <- 0 until sentence.length) {
+      newTree._parents(i) = this._parents(i)
+      newTree._labels(i).set(this._labels(i).intValue)(null)
+    }
+    newTree
+  }
   /** Return the label on the edge from 'childToken' to its parent. */
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
   override def toString(): String = {

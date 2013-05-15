@@ -175,6 +175,7 @@ object GoodBadExample {
 // The actual loss used in this version is the maximum (margin-augmented) difference between
 // goodCandidates and badCandidates.
 // See DominationLossExampleAllGood for one that outputs a gradient for all goodCandidates
+// In FACTORIE we don't minimize a "loss" we maximize an "objective".  I think this class should be renamed. -akm 
 class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example[Model with Weights] {
   def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
@@ -212,12 +213,12 @@ class StructuredPerceptronExample[V <: LabeledVar](labels: Iterable[V], infer: M
 // CombinedModel that subtracts one model's score from another
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
-class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], loss: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
+class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], objective: Model = HammingObjective, infer: Maximize = MaximizeByBPLoopy)
   extends LikelihoodExample(labels, infer) {
   override def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
     if (value != null) {
       val valueAcc = new LocalDoubleAccumulator(0.0)
-      super.accumulateExampleInto(new CombinedModel(model, loss) with Weights { def weights = model.weights }, gradient, valueAcc)
+      super.accumulateExampleInto(new CombinedModel(model, objective) with Weights { def weights = model.weights }, gradient, valueAcc)
       // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
       if (value != null) value.accumulate(valueAcc.value)
     }

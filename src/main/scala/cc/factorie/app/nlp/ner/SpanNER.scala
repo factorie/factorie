@@ -22,7 +22,7 @@ import cc.factorie.util.DefaultCmdOptions
 import java.io.File
 
 class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
-  def domain = Conll2003NerDomain
+  def domain = ConllNerDomain
 }
 
 class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.coref.TokenSpanMention {
@@ -41,7 +41,7 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
 
 abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
   //override def statisticsDomains = ((SpanNerFeaturesDomain, Conll2003NerDomain))
-  lazy val weightsTensor = new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, Conll2003NerDomain.size) // TODO This ordering seems backwards
+  lazy val weightsTensor = new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, ConllNerDomain.size) // TODO This ordering seems backwards
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
@@ -49,7 +49,7 @@ abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
 class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[SpanNerLabel] {
-      lazy val weightsTensor = new la.DenseTensor1(Conll2003NerDomain.size)
+      lazy val weightsTensor = new la.DenseTensor1(ConllNerDomain.size)
     },
     // Token-Label within Span
     new SpanNerTemplate { 
@@ -95,7 +95,11 @@ class SpanNerModel extends TemplateModel(
     // Label of span that preceeds or follows this one
     //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
   ) {
-  def this(file:File) = { this(); BinarySerializer.deserialize(Conll2003NerDomain, SpanNerFeaturesDomain, this, file) }
+  def this(file:File) = {
+    this()
+    import cc.factorie.CubbieConversions._
+    BinarySerializer.deserialize(SpanNerFeaturesDomain, this, file)
+  }
 }
 
 // The training objective
@@ -141,7 +145,7 @@ class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Tok
     //println("existing spans = "+existingSpans)
     for (span <- existingSpans) {
       // Change label without changing boundaries
-      for (labelValue <- Conll2003NerDomain; if (labelValue.category != "O"))
+      for (labelValue <- ConllNerDomain; if (labelValue.category != "O"))
         changes += {(d:DiffList) => span.label.set(labelValue)(d)}
       // Delete the span
       changes += {(d:DiffList) => span.delete(d)}
@@ -151,7 +155,7 @@ class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Tok
         // Trim first word, without changing label
         changes += {(d:DiffList) => span.trimStart(1)(d)}
         // Split off first and last word, with choices of the label of the split off portion
-        for (labelValue <- Conll2003NerDomain; if (labelValue.category != "O")) {
+        for (labelValue <- ConllNerDomain; if (labelValue.category != "O")) {
           changes += {(d:DiffList) => { span.trimEnd(1)(d); new NerSpan(_seq, labelValue.category, span.end+1, 1)(d) } }
           changes += {(d:DiffList) => { span.trimStart(1)(d); new NerSpan(_seq, labelValue.category, span.start-1, 1)(d) } }
         }
@@ -162,12 +166,12 @@ class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Tok
       }
       // Add a new word to beginning, and change label
       if (span.canPrepend(1)) {
-        for (labelValue <- Conll2003NerDomain; if (labelValue.category != "O"))
+        for (labelValue <- ConllNerDomain; if (labelValue.category != "O"))
           changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.head.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
       }
       // Add a new word to the end, and change label
       if (span.canAppend(1)) {
-        for (labelValue <- Conll2003NerDomain; if (labelValue.category != "O"))
+        for (labelValue <- ConllNerDomain; if (labelValue.category != "O"))
           changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
       }
       // Merge two neighboring spans having the same label
@@ -189,7 +193,7 @@ class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Tok
     }
     if (existingSpans.isEmpty) {
       changes += {(d:DiffList) => {}} // The no-op action
-      for (labelValue <- Conll2003NerDomain; if (labelValue.category != "O")) {
+      for (labelValue <- ConllNerDomain; if (labelValue.category != "O")) {
         // Add new length=1 span, for each label value
         changes += {(d:DiffList) => new NerSpan(_seq, labelValue.category, token.position, 1)(d)}
         //if (position != _seq.length-1) changes += {(d:DiffList) => new Span(labelValue.category, _seq, position, 2)(d)}
@@ -258,7 +262,7 @@ class SpanNER {
 
     println("Have "+trainDocuments.map(_.length).sum+" trainTokens "+testDocuments.map(_.length).sum+" testTokens")
     println("FeaturesDomain size="+SpanNerFeaturesDomain.dimensionSize)
-    println("LabelDomain "+Conll2003NerDomain.toList)
+    println("LabelDomain "+ConllNerDomain.toList)
     
     if (verbose) trainDocuments.take(10).map(_.tokens).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
     
@@ -316,7 +320,7 @@ class SpanNER {
     val testTokens = documents.map(_.tokens).flatten
     println("Have "+testTokens.length+" tokens")
     println("TokenDomain size="+SpanNerFeaturesDomain.dimensionSize)
-    println("LabelDomain "+Conll2003NerDomain.toList)
+    println("LabelDomain "+ConllNerDomain.toList)
     predictor.processAll(testTokens, 2)
     documents.foreach(d => { println("FILE "+d.name); printDocument(d) })
   }  
@@ -449,6 +453,7 @@ class SpanNER {
 object SpanNER extends SpanNER {
   // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
+    import cc.factorie.CubbieConversions._
     // Parse command-line
     object opts extends DefaultCmdOptions {
       val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")
@@ -470,12 +475,12 @@ object SpanNER extends SpanNER {
     
     if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinarySerializer.deserialize(Conll2003NerDomain, SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
       run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelFile.wasInvoked)
-        BinarySerializer.serialize(Conll2003NerDomain, SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
+        BinarySerializer.serialize(SpanNerFeaturesDomain, model, new File(opts.modelFile.value))
     }
   }
 }
