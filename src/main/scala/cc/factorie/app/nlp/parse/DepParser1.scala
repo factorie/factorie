@@ -22,7 +22,7 @@ import collection.mutable.ArrayBuffer
 import java.io.File
 import cc.factorie.util.{ProtectedIntArrayBuffer, LocalDoubleAccumulator}
 import cc.factorie.la.Tensor1
-import cc.factorie.optimize.ParameterAveraging
+import cc.factorie.optimize.{MiniBatchExample, ParameterAveraging}
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
@@ -249,11 +249,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.family.weightsTensor.length))
     println("Generating examples...")
-    val examples = trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
+    val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.HogwildTrainer[Weights](model, opt, maxIterations = 10)
+    val trainer = new optimize.HogwildTrainer[Weights](model, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
