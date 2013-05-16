@@ -265,6 +265,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println(" Testing label accuracy = "+HammingObjective.accuracy(testSentences.flatMap(s => s.parse.labels)))
       println("Training arc accuracy = "+(trainSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainSentences.map(_.tokens.length).sum))
       println(" Testing arc accuracy = "+(testSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testSentences.map(_.tokens.length).sum))
+      println("Saving model...")
+      parser.serialize(opts.model.value + "-iter-"+iteration)
       opt.unSetWeightsToAverage(model.weights)
     }
     println("Finished training.")
@@ -335,9 +337,6 @@ object DepParser1 {
     out.println(testDoc.owplString(Seq((t:Token) => t.attr[PTBPosLabel].categoryValue, parser.tokenAnnotationString(_))))
     out.close()    
 
-    println("Saving model...")
-    parser.serialize(opts.model.value)
-    
     println("Done.")
   }
   
