@@ -420,6 +420,17 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 wi
               }
               idx1 += 1
             }
+          case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) =>
+            val t2Size = t2.size
+            val t2IndexSeq = t2.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
+            val t2Indices = t2IndexSeq.array
+            var idx1 = 0
+            var t2i = 0
+            while (t2i < t2IndexSeq.size) {
+              val idx2 = t2Indices(t2i)
+              a(singleIndex(t1.singleIndex,idx2)) += 1
+              t2i += 1
+            }
           case (t1, t2) =>
             if (!Outer1Tensor2.hasWarned) {
               Outer1Tensor2.hasWarned = true
