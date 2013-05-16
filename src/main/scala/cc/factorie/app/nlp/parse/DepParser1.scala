@@ -239,7 +239,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulateOuter(model.family, grad, featureVector)
     }
   }
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence]): Unit = {
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
@@ -266,7 +266,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println("Training arc accuracy = "+(trainSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainSentences.map(_.tokens.length).sum))
       println(" Testing arc accuracy = "+(testSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testSentences.map(_.tokens.length).sum))
       println("Saving model...")
-      parser.serialize(opts.model.value + "-iter-"+iteration)
+      serialize(name + "-iter-"+iteration)
       opt.unSetWeightsToAverage(model.weights)
     }
     println("Finished training.")
@@ -313,7 +313,7 @@ object DepParser1 {
     val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
     
     // Train
-    parser.train(trainDoc.sentences, testDoc.sentences, null)
+    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value)
     // Test
     parser.freezeDomains()
     
