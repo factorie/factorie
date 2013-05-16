@@ -72,7 +72,7 @@ class SynchronizedBatchTrainer[M<:Weights](val model: M, val optimizer: Gradient
   def examplesToRunnables[M<: Weights](es: Iterable[Example[M]], model: M, grad: TensorsAccumulator, va: DoubleAccumulator): Seq[Callable[Object]] =
     es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(model, grad, va); null.asInstanceOf[Object] } }).toSeq
 
-  val gradientAccumulator = new SynchronizedTensorsAccumulator(model.weights.blankSparseCopy)
+  val gradientAccumulator = new SynchronizedTensorsAccumulator(model.weights.blankDenseCopy)
   val valueAccumulator = new SynchronizedDoubleAccumulator
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   def processExamples(examples: Iterable[Example[M]]): Unit = {
