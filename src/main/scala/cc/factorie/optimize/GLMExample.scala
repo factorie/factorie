@@ -17,6 +17,23 @@ import io.Source
 
 
 object ObjectiveFunctions {
+  type RegressionObjectiveFunction = (Double, Double) => (Double, Double)
+  val squaredLossRegressionObjective: RegressionObjectiveFunction =  (prediction, label) => {
+    (0.5*(prediction - label)*(prediction - label),(prediction - label))
+  }
+  type RegressionLinkFunction = (Double) => Double
+  val squaredLossLinkFunction: RegressionLinkFunction = prediction => prediction
+
+  type BinaryObjectiveFunction = (Double, Double) => (Double, Double)
+  val logisticLossBinaryObjective: BinaryObjectiveFunction = (prediction, label) => {
+      val probCorrect = 1.0/(1 + math.exp(-label*prediction))
+      (math.log(probCorrect),(1- probCorrect)*label)
+  }
+
+  type BinaryLinkFunction = (Double) => (Double)
+  val logisticLinkFunction:  BinaryLinkFunction = prediction => 1.0/(1 + math.exp(-prediction))
+
+
   type MultiClassObjectiveFunction = (Tensor1, Int) => (Double, Tensor1)
   val logMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     val normed = prediction.expNormalized
