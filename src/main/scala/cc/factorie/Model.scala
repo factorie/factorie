@@ -215,6 +215,8 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model with Weights {
   //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   def families: Seq[Family] = templates
+  def familiesOfClass[F<:AnyRef](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+
     // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
   //def weights: Tensor = weightsTensor
   lazy val weights: Tensors = new Tensors(families.filter(_.isInstanceOf[DotFamily]).map(f => (f,f.asInstanceOf[DotFamily].weightsTensor)))
