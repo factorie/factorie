@@ -110,10 +110,10 @@ class HogwildTrainer[M<:Weights](val model: M, val optimizer: GradientOptimizer,
         gradient.values.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
         optimizer.synchronized {
           optimizer.step(model.weights, gradient, value.value)
-          val accumulatedTime = System.currentTimeMillis() - t0
           examplesProcessed += 1
           accumulatedValue += value.value
           if (examplesProcessed % logEveryN == 0) {
+            val accumulatedTime = System.currentTimeMillis() - t0
             logger.info(examplesProcessed + " examples at " + (1000.0*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
             t0 = System.currentTimeMillis()
             accumulatedValue = 0
