@@ -98,11 +98,10 @@ class HogwildTrainer[M<:Weights](val model: M, val optimizer: GradientOptimizer,
   import collection.JavaConversions._
   var examplesProcessed = 0
   var accumulatedValue = 0.0
-  var accumulatedTime = 0L
+  var t0 = System.currentTimeMillis()
   def examplesToRunnables[M<: Weights](es: Iterable[Example[M]], model: M): Seq[Callable[Object]] = es.map(e => {
     new Callable[Object] { 
       def call() = {
-        val t0 = System.currentTimeMillis()
         val gradient = model.weights.blankSparseCopy
         val gradientAccumulator = new LocalTensorsAccumulator(gradient)
         val value = new LocalDoubleAccumulator()
@@ -111,12 +110,12 @@ class HogwildTrainer[M<:Weights](val model: M, val optimizer: GradientOptimizer,
         gradient.values.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
         optimizer.synchronized {
           optimizer.step(model.weights, gradient, value.value)
-          accumulatedTime += System.currentTimeMillis() - t0
+          val accumulatedTime = System.currentTimeMillis() - t0
           examplesProcessed += 1
           accumulatedValue += value.value
           if (examplesProcessed % logEveryN == 0) {
             logger.info(examplesProcessed + " examples at " + (1000.0*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
-            accumulatedTime = 0
+            t0 = System.currentTimeMillis()
             accumulatedValue = 0
           }
         }
