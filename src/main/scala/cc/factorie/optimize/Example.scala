@@ -116,6 +116,43 @@ class PseudolikelihoodExample[V <: LabeledDiscreteVar](val labels: Iterable[V]) 
   }
 }
 
+// Generalization of Pseudo likelihood to sets of variables, instead of a single one
+class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterable[Iterable[V]]) extends Example[Model with Weights] {
+
+  def computeProportions(labels: Iterable[V], factors:Iterable[Factor]): (Proportions1, Int) = {
+    val iterator = AssignmentIterator.assignments(labels.toSeq)
+    val l = iterator.length
+    val distribution = new DenseTensor1(l)
+    var score = 0.0
+    var i = 0
+    var targetIndex = -1
+    for (assignment <- iterator) {
+      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+      distribution(i) = score
+      if(labels.forall(v => assignment(v).intValue == v.targetIntValue)) targetIndex = i
+      i += 1
+    }
+    distribution.expNormalize()
+    (new NormalizedTensorProportions1(distribution, checkNormalization=false), targetIndex)
+  }
+
+  def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+    for (component <- components) {
+      val factors = model.factorsOfFamilyClass[DotFamily](component) // should this be just DotFamily factors?
+      val (proportions, targetIndex) = computeProportions(component, factors)
+      if (value ne null) value.accumulate(math.log(proportions(targetIndex)))
+      if (gradient ne null) {
+        var i = 0
+        for(assignment <- AssignmentIterator.assignments(component.toSeq)) {
+          val p = if (i == targetIndex) 1.0 - proportions(i) else -proportions(i)
+          factors.foreach(f => gradient.accumulate(f.family, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
+          i += 1
+        }
+      }
+    }
+  }
+}
+
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
 class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](val label:V) extends Example[Model with Weights] {
   def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
