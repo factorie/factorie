@@ -221,4 +221,67 @@ class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null
   def +:(a:Assignment): AssignmentStack = new AssignmentStack(a, this)
 }
 
+/**
+ * Allows an iterator over the assignments to the neighbors of a factor (optionally specifying the variables that should vary)
+ * @author Sameer
+ */
+object AssignmentIterator {
+  def assignments1[N1 <: Var](f1: Factor1[N1], varying: Set[Var]): Iterator[Assignment] = assignments1(f1._1, varying)
 
+  def assignments1[N1 <: Var](v1:N1, varying: Set[Var]): Iterator[Assignment] = {
+    if (varying(v1))
+        v1.domain match {
+          case d: DiscreteDomain => d.iterator.map(value => new Assignment1(v1, value.asInstanceOf[v1.Value]))
+        }
+    else Iterator.empty
+  }
+
+  def assignments2[N1 <: Var, N2 <: Var](f2: Factor2[N1, N2], varying: Set[Var]): Iterator[Assignment] = assignments2(f2._1, f2._2, varying)
+
+  def assignments2[N1 <: Var, N2 <: Var](v1:N1, v2:N2, varying: Set[Var]): Iterator[Assignment] = {
+    val values1 = if (varying.contains(v1)) v1.domain.asInstanceOf[DiscreteDomain] else Seq(v1.value.asInstanceOf[DiscreteValue])
+    val values2 = if (varying.contains(v2)) v2.domain.asInstanceOf[DiscreteDomain] else Seq(v2.value.asInstanceOf[DiscreteValue])
+    (for (val1 <- values1; val2 <- values2) yield new Assignment2(v1, val1.asInstanceOf[v1.Value], v2, val2.asInstanceOf[v2.Value])).iterator
+  }
+
+  def assignments3[N1 <: Var, N2 <: Var, N3 <: Var](f3: Factor3[N1, N2, N3], varying: Set[Var]): Iterator[Assignment] = assignments3(f3._1, f3._2, f3._3, varying)
+
+  def assignments3[N1 <: Var, N2 <: Var, N3 <: Var](v1:N1, v2:N2, v3:N3, varying: Set[Var]): Iterator[Assignment] = {
+    val values1 = if (varying.contains(v1)) v1.domain.asInstanceOf[DiscreteDomain] else Seq(v1.value.asInstanceOf[DiscreteValue])
+    val values2 = if (varying.contains(v2)) v2.domain.asInstanceOf[DiscreteDomain] else Seq(v2.value.asInstanceOf[DiscreteValue])
+    val values3 = if (varying.contains(v3)) v3.domain.asInstanceOf[DiscreteDomain] else Seq(v3.value.asInstanceOf[DiscreteValue])
+    (for (val1 <- values1; val2 <- values2; val3 <- values3) yield new Assignment3(v1, val1.asInstanceOf[v1.Value], v2, val2.asInstanceOf[v2.Value], v3, val3.asInstanceOf[v3.Value])).iterator
+  }
+
+  def assignments4[N1 <: Var, N2 <: Var, N3 <: Var, N4 <: Var](f4: Factor4[N1, N2, N3, N4], varying: Set[Var]): Iterator[Assignment] = assignments4(f4._1, f4._2, f4._3, f4._4, varying)
+
+  def assignments4[N1 <: Var, N2 <: Var, N3 <: Var, N4 <: Var](v1:N1, v2:N2, v3:N3, v4:N4, varying: Set[Var]): Iterator[Assignment] = {
+    val values1 = if (varying.contains(v1)) v1.domain.asInstanceOf[DiscreteDomain] else Seq(v1.value.asInstanceOf[DiscreteValue])
+    val values2 = if (varying.contains(v2)) v2.domain.asInstanceOf[DiscreteDomain] else Seq(v2.value.asInstanceOf[DiscreteValue])
+    val values3 = if (varying.contains(v3)) v3.domain.asInstanceOf[DiscreteDomain] else Seq(v3.value.asInstanceOf[DiscreteValue])
+    val values4 = if (varying.contains(v4)) v4.domain.asInstanceOf[DiscreteDomain] else Seq(v4.value.asInstanceOf[DiscreteValue])
+    (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield new Assignment4(v1, val1.asInstanceOf[v1.Value], v2, val2.asInstanceOf[v2.Value], v3, val3.asInstanceOf[v3.Value], v4, val4.asInstanceOf[v4.Value])).iterator
+  }
+
+  def assignments(vars: Seq[Var]): Iterator[Assignment] = {
+    if(vars.length == 1) assignments1(vars.head, vars.toSet)
+    else if(vars.length == 2) assignments2(vars(0), vars(1), vars.toSet)
+    else if(vars.length == 3) assignments3(vars(0), vars(1), vars(2), vars.toSet)
+    else if(vars.length == 4) assignments4(vars(0), vars(1), vars(2), vars(3), vars.toSet)
+    else throw new Error ("To many variables to iterate over (>4): " + vars.length)
+  }
+
+  def assignments(f: Factor, varying: Set[Var]): Iterator[Assignment] = {
+    f match {
+      // Factor 1
+      case f1: Factor1[_] => assignments1(f1, varying)
+      // Factor 2
+      case f2: Factor2[_, _] => assignments2(f2, varying)
+      // Factor 3
+      case f3: Factor3[_, _, _] => assignments3(f3, varying)
+      // Factor 4
+      case f4: Factor4[_, _, _, _] => assignments4(f4, varying)
+    }
+  }
+
+}
