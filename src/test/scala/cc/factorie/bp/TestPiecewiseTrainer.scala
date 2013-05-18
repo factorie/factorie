@@ -50,7 +50,7 @@
 ////    optimizer.optimize(10)
 //    println("FD: " + FeaturesDomain.dimensionDomain.map(_.category))
 //    println("LD: " + LabelDomain.map(_.category))
-//    println("weights: " + localTemplate.weights)
+//    println("weightsSet: " + localTemplate.weightsSet)
 //    for (ftr <- FeaturesDomain.dimensionDomain)
 //      for (label <- LabelDomain) {
 //        println(ftr.category + " " + label.category + " : " + localTemplate.weight(label.intValue, ftr.intValue))

@@ -34,36 +34,35 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:Catego
  val tokenToLabel:Token=>Label) 
  (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
 extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
-with Weights
+with WeightsDef
 {
   val labelClass = lm.erasure
   val featureClass = fm.erasure
   val tokenClass = tm.erasure
-  object bias extends DotFamilyWithStatistics1[Label] {
+  val bias = new DotFamilyWithStatistics1[Label] {
     factorName = "Label"
-    lazy val weightsTensor = new la.DenseTensor1(labelDomain.size)
+    val weights = Weights(new la.DenseTensor1(labelDomain.size))
   }
-  object obs extends DotFamilyWithStatistics2[Label,Features] {
+  val obs = new DotFamilyWithStatistics2[Label,Features] {
     factorName = "Label,Token"
-    lazy val weightsTensor = new la.DenseTensor2(labelDomain.size, featuresDomain.dimensionSize)
+    val weights = Weights(new la.DenseTensor2(labelDomain.size, featuresDomain.dimensionSize))
   }
-  object markov extends DotFamilyWithStatistics2[Label,Label] {
+  val markov = new DotFamilyWithStatistics2[Label,Label] {
     factorName = "Label,Label"
-    lazy val weightsTensor = new la.DenseTensor2(labelDomain.size, labelDomain.size)
+    val weights = Weights(new la.DenseTensor2(labelDomain.size, labelDomain.size))
   }
-  object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Features] {
-    factorName = "Label,Label,Token"
-    lazy val weightsTensor = if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1)
-  }
+//  val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Features] {
+//    factorName = "Label,Label,Token"
+//    val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
+//  }
   var useObsMarkov = false
-  def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
-  lazy val weights = new Tensors(this.families.map(f => (f,f.weightsTensor)))
+//  def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   // TODO this does not calculate statistics for obsmarkov template -luke
-  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): Tensors = {
-    val biasStats = Tensor.newDense(bias.weightsTensor)
-    val obsStats = Tensor.newSparse(obs.weightsTensor)
-//    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights) else null
+  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): TensorSet = {
+    val biasStats = Tensor.newDense(bias.weights.value)
+    val obsStats = Tensor.newSparse(obs.weights.value)
+//    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weightsSet) else null
 
     var li = 0
     while (li < labels.length) {
@@ -86,19 +85,19 @@ with Weights
       if (labels.length > 1) new DenseTensor1(ArrayOps.elementwiseSum(edgeMargs))
       else new SparseTensor1(labels(0).domain.size * labels(0).domain.size)
 
-    val result = new Tensors()
-    result.append(bias, biasStats)
-    result.append(obs, obsStats)
-    result.append(markov, markovStats)
+    val result = weightsSet.blankSparseCopy
+    result(bias.weights) = biasStats
+    result(obs.weights) = obsStats
+    result(markov.weights) = markovStats
 //    if (useObsMarkov) result(obsmarkov) = obsmarkovStats
     result
   }
 
-  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): Tensors = {
-    val biasStats = Tensor.newDense(bias.weightsTensor)
-    val obsStats = Tensor.newSparse(obs.weightsTensor)
-    val markovStats = Tensor.newSparse(markov.weightsTensor)
-    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weightsTensor) else null
+  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): TensorSet = {
+    val biasStats = Tensor.newDense(bias.weights.value)
+    val obsStats = Tensor.newSparse(obs.weights.value)
+    val markovStats = Tensor.newSparse(markov.weights.value)
+//    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
 
     for (i <- 0 until labels.length) {
       val l = labels(i)
@@ -108,20 +107,20 @@ with Weights
       if (i > 0) {
         val prev = labels(i - 1)
         markovStats += (assignments(i - 1) * labelDomain.size + assignments(i), 1)
-        if (useObsMarkov) obsmarkovStats += Tensor.outer(
-          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
+//        if (useObsMarkov) obsmarkovStats += Tensor.outer(
+//          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
       }
     }
 
-    val result = new Tensors()
-    result.append(bias, biasStats)
-    result.append(obs, obsStats)
-    result.append(markov, markovStats)
-    if (useObsMarkov) result.append(obsmarkov, obsmarkovStats)
+    val result = weightsSet.blankSparseCopy
+    result(bias.weights) = biasStats
+    result(obs.weights) = obsStats
+    result(markov.weights) = markovStats
+//    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
     result
   }
 
-  def targetStatistics(labels: Seq[Label]): Tensors =
+  def targetStatistics(labels: Seq[Label]): TensorSet =
     assignmentStatistics(labels, labels.map(_.targetIntValue))
 
   def serialize(prefix: String) {
@@ -144,7 +143,7 @@ with Weights
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    assertEquals(markov.weightsTensor.length, labelDomain.length * labelDomain.length)
+    assertEquals(markov.weights.value.length, labelDomain.length * labelDomain.length)
     BinarySerializer.deserialize(this, modelFile)
   }
 
@@ -155,7 +154,7 @@ with Weights
       result += obs.Factor(labels(i), labelToFeatures(labels(i)))
       if (i > 0) {
         result += markov.Factor(labels(i-1), labels(i))
-        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
+//        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
       }
     }
     result
@@ -172,13 +171,13 @@ with Weights
       val token = labelToToken(label)
       if (token.hasPrev) {
         result += markov.Factor(tokenToLabel(token.prev), label)
-        if (useObsMarkov)
-          result += obsmarkov.Factor(tokenToLabel(token.prev), label, labelToFeatures(label))
+//        if (useObsMarkov)
+//          result += obsmarkov.Factor(tokenToLabel(token.prev), label, labelToFeatures(label))
       }
       if (token.hasNext) {
         result += markov.Factor(label, tokenToLabel(token.next))
-        if (useObsMarkov)
-          result += obsmarkov.Factor(label, tokenToLabel(token.next), labelToFeatures(tokenToLabel(token.next)))
+//        if (useObsMarkov)
+//          result += obsmarkov.Factor(label, tokenToLabel(token.next), labelToFeatures(tokenToLabel(token.next)))
       }
       result
     }
@@ -243,11 +242,11 @@ with Weights
         }
       }
       val expectations = assignmentStatistics(labels, targetInts)
-      override val logZ = expectations.map({case (fam, stats) => fam.asInstanceOf[DotFamily].weightsTensor dot stats}).sum
+      override val logZ = expectations.toSeq.map({case (weights, stats) => weights.value dot stats}).sum
       override def marginal(_f: Factor): DiscreteMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias)
-          f match { case f: DotFamilyWithStatistics1[Label]#Factor =>  new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
+          f match { case f: DotFamilyWithStatistics1[Label]#Factor => new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
         else if (f.family == obs)
           f match { case f:DotFamilyWithStatistics2[Label,Features]#Factor => new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor2[Label,Features] { val factor = f } }
         else if (f.family == markov) {
@@ -266,7 +265,7 @@ trait ChainSummary extends Summary[DiscreteMarginal] {
   // Do we actually want the marginal of arbitrary sets of variables? -brian
   def marginal(vs:Var*): DiscreteMarginal = null
   def marginal(v:Var): DiscreteMarginal
-  def expectations: Tensors // TODO this should be 1-hot tensors for Viterbi -luke
+  def expectations: TensorSet // TODO this should be 1-hot tensors for Viterbi -luke
 }
 
 object ChainModel {
@@ -282,17 +281,17 @@ object ChainModel {
       model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
   }
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
-    private var cachedTargetStats: Tensors = null
+    private var cachedTargetStats: TensorSet = null
     def accumulateExampleInto(model: ChainModel[L, _, _], gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = infer.infer(labels, model)
       if (gradient != null) {
-        for ((family, stats) <- cachedTargetStats) gradient.accumulate(family, stats)
-        for ((family, stats) <- summary.expectations) gradient.accumulate(family, stats, -1.0)
+        for ((weights, stats) <- cachedTargetStats.toSeq) gradient.accumulate(weights, stats)
+        for ((weights, stats) <- summary.expectations.toSeq) gradient.accumulate(weights, stats, -1.0)
       }
       if (value != null) {
-        val targetValue = cachedTargetStats.map({case (fam, stats) => fam.asInstanceOf[DotFamily].weightsTensor dot stats}).sum
+        val targetValue = cachedTargetStats.toSeq.map({case (weights, stats) => weights.value dot stats}).sum
         value.accumulate(targetValue - summary.logZ)
       }
     }

@@ -206,20 +206,17 @@ class CombinedModel(theSubModels:Model*) extends Model {
   }
 }
 
-class TemplateModel(theSubModels:ModelAsTemplate*) extends Model with Weights {
-  val templates = new ArrayBuffer[ModelAsTemplate] ++= theSubModels
+class TemplateModel/*(theSubModels:ModelAsTemplate*)*/ extends Model with WeightsDef {
+  val templates = new ArrayBuffer[ModelAsTemplate] //++= theSubModels
   def +=[M<:ModelAsTemplate](model:M): M = { templates += model; model }
   def ++=[M<:ModelAsTemplate](models:Iterable[M]): Iterable[M] = { templates ++= models; models }
+  def addTemplates(models: ModelAsTemplate*) = this ++= models
   def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
   override def addFactors(variable:Var, result:Set[Factor]): Unit = { templates.foreach(_.addFactors(variable, result)); result }
   //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   def families: Seq[Family] = templates
   def familiesOfClass[F<:AnyRef](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
-
-    // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
-  //def weights: Tensor = weightsTensor
-  lazy val weights: Tensors = new Tensors(families.filter(_.isInstanceOf[DotFamily]).map(f => (f,f.asInstanceOf[DotFamily].weightsTensor)))
 }
 
 

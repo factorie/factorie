@@ -123,8 +123,8 @@ trait TensorFactorStatistics1[N1<:TensorVar] extends TensorFactor1[N1] {
 abstract class TensorFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends TensorFactor1[N1](_1) with TensorFactorStatistics1[N1]
 
 /** A 1-neighbor Factor whose statistics have type Tensor, 
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "statistics" and "weights" methods are abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "statistics" and "weightsSet" methods are abstract. */
 abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFactor1[N1](_1) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -132,8 +132,8 @@ abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFacto
 
 /** A 1-neighbor Factor whose neighbor has Tensor values, 
     and whose statistics are the outer product of those values,
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "weights" method is abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "weightsSet" method is abstract. */
 abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends DotFactor1[N1](_1) with TensorFactorStatistics1[N1] {
   override def valuesScore(valueTensor:Tensor) = valueTensor dot weights // Because valueTensor is the same as the statisticsTensor
 }
@@ -193,12 +193,12 @@ trait DotFamily1[N1<:Var] extends TensorFamily1[N1] with DotFamily {
 }
 
 trait DotFamilyWithStatistics1[N1<:TensorVar] extends TensorFamilyWithStatistics1[N1] with DotFamily1[N1] {
-  override def weightsTensor: Tensor1 // TODO Perhaps this should just be Tensor because neighbor value might be Tensor2,...
+  override def weights: TensorSetKey1 // TODO Perhaps this should just be Tensor because neighbor value might be Tensor2,...
   //def score(v1:N1#Value): Double = statisticsScore(v1)
   def setWeight(entry:Tensor1, w:Double) = entry match {
-    case t:SingletonBinaryTensor1 => weightsTensor(t.singleIndex) = w // e.g. DiscreteValue
+    case t:SingletonBinaryTensor1 => weights.value(t.singleIndex) = w // e.g. DiscreteValue
   }
-  def scores1(): Tensor1 = weightsTensor.copy
+  def scores1(): Tensor1 = weights.value.copy
 }
 
 //trait Statistics1[S1] extends FamilyWithStatistics[S1] {
@@ -221,13 +221,13 @@ trait DotFamilyWithStatistics1[N1<:TensorVar] extends TensorFamilyWithStatistics
 //}
 //
 //trait DotStatistics1[S1<:Tensor] extends TensorStatistics1[S1] with FamilyWithDotStatistics {
-//  override def weights: Tensor1
+//  override def weightsSet: Tensor1
 //  def setWeight(entry:S1, w:Double) = entry match {
-//    case t:SingletonBinaryTensor1 => weights(t.singleIndex) = w // e.g. DiscreteValue
-//    //case t:SingletonTensor1 => weights(t.singleIndex) = w * t.singleValue 
-//    //case ds:Tensor => ds.activeDomain.foreach(i => weights(i) = w)
+//    case t:SingletonBinaryTensor1 => weightsSet(t.singleIndex) = w // e.g. DiscreteValue
+//    //case t:SingletonTensor1 => weightsSet(t.singleIndex) = w * t.singleValue
+//    //case ds:Tensor => ds.activeDomain.foreach(i => weightsSet(i) = w)
 //  }
-//  def scores1(): Tensor1 = weights.copy //  match { case weights: Tensor1 => weights.copy }
+//  def scores1(): Tensor1 = weightsSet.copy //  match { case weightsSet: Tensor1 => weightsSet.copy }
 //}
 //
 //trait FamilyWithStatistics1[N1<:Variable] extends Family1WithStatistics[N1] with Statistics1[N1#Value] {

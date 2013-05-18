@@ -1,6 +1,7 @@
 package cc.factorie.optimize
 
-import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor, Tensors}
+import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor, TensorSet}
+import cc.factorie.WeightsSet
 
 /**
  * User: apassos
@@ -8,14 +9,14 @@ import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor, Tensors}
  * Time: 9:47 AM
  */
 class LazyL2ProjectedGD(var l2: Double = 0.0, rate: Double = 1.0) extends GradientOptimizer {
-  var lastUpdate: Tensors = null
+  var lastUpdate: TensorSet = null
   var t = 0
   @inline final def learningRate(t: Double): Double = {
     rate / math.sqrt(t)
   }
   var printed = false
 
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
     t += 1
     val eta = rate
     if (lastUpdate == null) { lastUpdate = weights.blankDenseCopy }
@@ -89,14 +90,14 @@ object DualAveraging {
 
 // This implements the AdaGrad algorithm with primal-dual updates and support for l1 regularization
 class AdaGradDualAveraging(var l1: Double = 0.0, var l2: Double = 0.0, var rate: Double = 1.0, var delta: Double = 0.1) extends GradientOptimizer {
-  var HSq: Tensors = null
-  var sumGs: Tensors = null
+  var HSq: TensorSet = null
+  var sumGs: TensorSet = null
   var t = 0
 
   import DualAveraging.truncate
   var printed = false
 
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
     val eta = rate
     t += 1
     if (HSq == null) { HSq = weights.blankDenseCopy }

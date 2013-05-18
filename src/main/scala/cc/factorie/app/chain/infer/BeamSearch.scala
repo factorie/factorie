@@ -57,11 +57,11 @@ trait BeamSearch {
     if (vs.size == 0) return Seq.empty[Int]
     else if (vs.size == 1) return Seq(ArrayOps.maxIndex(localScores.head))
 
-    @inline def transScores(i: Int, j: Int): Double = transTemplate.weightsTensor(i,j) // (i * ds + j)
+    @inline def transScores(i: Int, j: Int): Double = transTemplate.weights.value(i,j) // (i * ds + j)
     
     val biasScores: Tensor = {
       if (biasTemplate ne null)
-        biasTemplate.weightsTensor
+        biasTemplate.weights.value
       else
         Tensor.newSparse(localScores(0).size)
     }

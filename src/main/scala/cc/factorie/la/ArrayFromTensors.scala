@@ -18,7 +18,7 @@ package cc.factorie.la
 import cc.factorie._
 
 class ArrayFromTensors(theTensors:Seq[Tensor]) {
-  //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weights))
+  //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weightsSet))
   val tensors = theTensors.toIndexedSeq // Save a copy, in case theVectors would be changed
   //templates.foreach(_.freeze)
 

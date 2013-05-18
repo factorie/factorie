@@ -277,7 +277,7 @@
 //    class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
 //      override def default(template: TemplatesToUpdate) = {
 //        template.freezeDomains
-//        val vector: Vector = template.weights match {
+//        val vector: Vector = template.weightsSet match {
 //          case w: SparseVector => new SparseVector(w.length)
 //          case w: DenseVector => new DenseVector(w.length)
 //        }
@@ -331,11 +331,11 @@
 //        val invVariance = -1.0 / gaussianPriorVariance
 //        model.familiesOfClass(classOf[TemplatesToUpdate]).foreach {
 //          t =>
-//            oValue += 0.5 * t.weights.dot(t.weights) * invVariance
+//            oValue += 0.5 * t.weightsSet.dot(t.weightsSet) * invVariance
 //            // sum positive constraints into (previously negated) expectations
 //            expectations(t) += constraints(t)
-//            // subtract weights due to regularization
-//            expectations(t) += t.weights * invVariance
+//            // subtract weightsSet due to regularization
+//            expectations(t) += t.weightsSet * invVariance
 //        }
 //        // constraints.keys.foreach(t => expectations(t) += constraints(t))
 //        oGradient = (new ArrayFromTensors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)

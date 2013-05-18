@@ -39,52 +39,54 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
   override def skipNonCategories = true
 }
 
-abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
+abstract class SpanNerTemplate(val model: WeightsDef) extends DotTemplate2[NerSpan,SpanNerLabel] {
   //override def statisticsDomains = ((SpanNerFeaturesDomain, Conll2003NerDomain))
-  lazy val weightsTensor = new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, ConllNerDomain.size) // TODO This ordering seems backwards
+  val weights = model.Weights(new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, ConllNerDomain.size)) // TODO This ordering seems backwards
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
 
-class SpanNerModel extends TemplateModel(
+class SpanNerModel extends TemplateModel{
+  self =>
+  addTemplates(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[SpanNerLabel] {
-      lazy val weightsTensor = new la.DenseTensor1(ConllNerDomain.size)
+      val weights = Weights(new la.DenseTensor1(ConllNerDomain.size))
     },
     // Token-Label within Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = {
         // TODO Yipes, this is awkward, but more convenient infrastructure could be build.
         //var vector = new cc.factorie.la.SparseBinaryVector(v._1.head.value.length) with CategoricalVectorValue[String] { val domain = SpanNerFeaturesDomain }
         val firstToken = v1.head
         var vector = firstToken.attr[SpanNerFeatures].value.blankCopy
-        for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].tensor.activeDomain.asSeq) 
+        for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].tensor.activeDomain.asSeq)
           vector += (featureIndex, 1.0) // TODO This is shifing array pieces all over; slow.  Fix it.
-        vector outer v2 
+        vector outer v2
       }
     },
     // First Token of Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
     },
     // Last Token of Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.attr[SpanNerFeatures].value outer v2
     },
     // Token before Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def unroll1(span:NerSpan) = if (span.head.hasPrev) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.head.hasPrev) Factor(label.span, label) else Nil
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.prev.attr[SpanNerFeatures].value outer v2
     },
     // Token after Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def unroll1(span:NerSpan) = if (span.last.hasNext) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.last.hasNext) Factor(label.span, label) else Nil
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.next.attr[SpanNerFeatures].value outer v2
     },
     // Single Token Span
-    new SpanNerTemplate { 
+    new SpanNerTemplate(self) {
       override def unroll1(span:NerSpan) = if (span.length == 1) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.length == 1) Factor(label.span, label) else Nil
       override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
@@ -94,46 +96,48 @@ class SpanNerModel extends TemplateModel(
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) },
     // Label of span that preceeds or follows this one
     //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
-  ) {
-  def this(file:File) = {
-    this()
-    import cc.factorie.CubbieConversions._
-    BinarySerializer.deserialize(SpanNerFeaturesDomain, this, file)
-  }
+    )
+    def this(file:File) = {
+      this()
+      import cc.factorie.CubbieConversions._
+      BinarySerializer.deserialize(SpanNerFeaturesDomain, this, file)
+    }
 }
 
 // The training objective
-class SpanNerObjective extends TemplateModel(
-  new TupleTemplateWithStatistics2[NerSpan,SpanNerLabel] {
-    //def statisticsDomains = ((NerSpanDomain, SpanNerLabelDomain))
-    def unroll1(span:NerSpan) = Factor(span, span.label)
-    def unroll2(label:SpanNerLabel) = Factor(label.span, label)
-    def score(spanValue:NerSpan#Value, labelValue:SpanNerLabel#Value) = {
-      var result = 0.0
-      var trueLabelIncrement = 10.0
-      var allTokensCorrect = true
-      for (token <- spanValue) {
-        //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
-        if (token.nerLabel.intValue == labelValue.intValue) {
-          result += trueLabelIncrement
-          trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
-        } else if (token.nerLabel.target.categoryValue == "O") {
-          result -= 1.0
-          allTokensCorrect = false
-        } else {
-          result += 1.0
-          allTokensCorrect = false
+class SpanNerObjective extends TemplateModel {
+  addTemplates(
+    new TupleTemplateWithStatistics2[NerSpan,SpanNerLabel] {
+      //def statisticsDomains = ((NerSpanDomain, SpanNerLabelDomain))
+      def unroll1(span:NerSpan) = Factor(span, span.label)
+      def unroll2(label:SpanNerLabel) = Factor(label.span, label)
+      def score(spanValue:NerSpan#Value, labelValue:SpanNerLabel#Value) = {
+        var result = 0.0
+        var trueLabelIncrement = 10.0
+        var allTokensCorrect = true
+        for (token <- spanValue) {
+          //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
+          if (token.nerLabel.intValue == labelValue.intValue) {
+            result += trueLabelIncrement
+            trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
+          } else if (token.nerLabel.target.categoryValue == "O") {
+            result -= 1.0
+            allTokensCorrect = false
+          } else {
+            result += 1.0
+            allTokensCorrect = false
+          }
+          if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
-        if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
+        if (allTokensCorrect) {
+          if (!spanValue.head.hasPrev || spanValue.head.prev.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
+          if (!spanValue.last.hasNext || spanValue.last.next.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
+        }
+        result
       }
-      if (allTokensCorrect) {
-        if (!spanValue.head.hasPrev || spanValue.head.prev.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
-        if (!spanValue.last.hasNext || spanValue.last.next.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
-      }
-      result
     }
-  }
-)
+  )
+}
 
 // The sampler
 class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {

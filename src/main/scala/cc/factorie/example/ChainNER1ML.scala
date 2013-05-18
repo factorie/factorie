@@ -28,27 +28,29 @@ object ChainNER1ML {
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
-  val model = new TemplateModel(
-    // Bias term on each individual label 
-    new DotTemplateWithStatistics1[ChainNerLabel] {
-      //def statisticsDomains = Tuple1(Conll2003NerDomain)
-      lazy val weightsTensor = new la.DenseTensor1(Conll2003NerDomain.size)
-    },
-    // Factor between label and observed token
-    new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
-      //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
-      lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
-      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
-      def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
-    },
-    // Transition factors between two successive labels
-    new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
-      //def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-      lazy val weightsTensor = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
-      def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
-      def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
-    }
-  )
+  val model = new TemplateModel {
+    addTemplates(
+      // Bias term on each individual label
+      new DotTemplateWithStatistics1[ChainNerLabel] {
+        //def statisticsDomains = Tuple1(Conll2003NerDomain)
+        val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
+      },
+      // Factor between label and observed token
+      new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
+        //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
+        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize))
+        def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+        def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+      },
+      // Transition factors between two successive labels
+      new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
+        //def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
+        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
+        def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
+        def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
+      }
+    )
+  }
 
   
   def main(args:Array[String]): Unit = {

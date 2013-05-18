@@ -2,17 +2,17 @@ package cc.factorie.app.classify
 import cc.factorie._
 import collection.mutable
 
-// Bias weights
-class LogLinearTemplate1[L<:DiscreteVar](val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
+// Bias weightsSet
+class LogLinearTemplate1[L<:DiscreteVar](val model: WeightsDef, val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
   //def statisticsDomains = Tuple1(labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]])
-  lazy val weightsTensor = new la.DenseTensor1(labelStatisticsDomain.size)
+  val weights = model.Weights(new la.DenseTensor1(labelStatisticsDomain.size))
 }
 
-// Label-Feature weights
-class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends DotTemplateWithStatistics2[L,F]() {
-  def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
+// Label-Feature weightsSet
+class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](val model: WeightsDef, lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends DotTemplateWithStatistics2[L,F]() {
+  def this(model: WeightsDef, lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(model, lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   //def statisticsDomains = ((labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]], featureStatisticsDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]]))
-  lazy val weightsTensor: la.Tensor2 = new la.DenseTensor2(labelStatisticsDomain.size, featureStatisticsDomain.dimensionSize)
+  val weights = model.Weights(new la.DenseTensor2(labelStatisticsDomain.size, featureStatisticsDomain.dimensionSize))
   def unroll1(label: L) = Factor(label, lf(label))
   def unroll2(features: F) = Factor(fl(features), features)
 }
@@ -20,8 +20,8 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, 
 // TODO Consider renaming this DotModel, like DotMaximumLikelihood
 class LogLinearModel[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
-  val biasTemplate = new LogLinearTemplate1[L](labelStatisticsDomain)
-  val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
+  val biasTemplate = new LogLinearTemplate1[L](this, labelStatisticsDomain)
+  val evidenceTemplate = new LogLinearTemplate2[L,F](this, lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
   val factorCache = mutable.HashMap[Var, Iterable[Factor]]()

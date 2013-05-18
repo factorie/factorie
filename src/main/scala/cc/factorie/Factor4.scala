@@ -91,8 +91,8 @@ trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Tens
 abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4]
 
 /** A 4-neighbor Factor whose statistics have type Tensor, 
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "statistics" and "weights" methods are abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "statistics" and "weightsSet" methods are abstract. */
 abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -100,8 +100,8 @@ abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVa
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values,
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "weights" method is abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "weightsSet" method is abstract. */
 abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends DotFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4] {
   override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
@@ -159,8 +159,8 @@ trait DotFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends TensorFamily4[N1,N2,N3
 }
 
 trait DotFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFamilyWithStatistics4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4] {
-  override def weightsTensor: Tensor4
-  //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = weights dot statistics(v1, v2, v3, v4)
+  override def weights: TensorSetKey4
+  //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = weightsSet dot statistics(v1, v2, v3, v4)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
 }
 
@@ -186,7 +186,7 @@ trait DotFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Ten
 //}
 //
 //trait DotStatistics4[S1<:Tensor,S2<:Tensor,S3<:Tensor,S4<:Tensor] extends TensorStatistics4[S1,S2,S3,S4] with DotFamily {
-//  def weights: Tensor4
+//  def weightsSet: Tensor4
 //}
 //
 //trait FamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {

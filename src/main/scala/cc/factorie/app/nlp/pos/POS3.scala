@@ -133,7 +133,7 @@ class POS3 extends DocumentAnnotator {
       val posLabel = token.attr[PTBPosLabel]
       new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
       if (exampleSetsToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weightsTensor
+        val weightsMatrix = model.evidenceTemplate.weights.value
         val prediction = weightsMatrix * featureVector
         token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
       }
@@ -141,7 +141,7 @@ class POS3 extends DocumentAnnotator {
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    val weightsMatrix = model.evidenceTemplate.weightsTensor
+    val weightsMatrix = model.evidenceTemplate.weights.value
     for (token <- tokens) {
       assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")

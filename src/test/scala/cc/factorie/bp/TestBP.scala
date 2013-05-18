@@ -260,8 +260,8 @@
 //    }
 //    val model = new TemplateModel(template)
 //
-//    template.weights.update(1, 2.0)
-//    template.weights.update(3, 3.0)
+//    template.weightsSet.update(1, 2.0)
+//    template.weightsSet.update(3, 3.0)
 //
 //    template.addLimitedDiscreteValues(Seq((0,0), (0,1)))
 //

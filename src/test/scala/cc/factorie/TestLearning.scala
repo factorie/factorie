@@ -32,7 +32,7 @@ SampleRank requires
 (3) Show examples of specifying proposal distribution
 
 
-DOES MIRA/CW work with manually specified weights?
+DOES MIRA/CW work with manually specified weightsSet?
 
  ** TEST SAMPLERANK**
 test if model ranking agrees with training signal (randomly created?)
@@ -54,12 +54,12 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
     trainings+=new Data(0.4, false)
     trainings+=new Data(0.6, true)
     trainings+=new Data(0.8, true)
-    object simpleTemplate extends DotTemplateWithStatistics2[Data, Prob]{
-      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize)
+    class SimpleTemplate(model: WeightsDef) extends DotTemplateWithStatistics2[Data, Prob]{
+      val weights = model.Weights(new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize))
       def unroll1(data: Data) = Factor(data, data.score)
       def unroll2(prob: Prob) = Nil
     }
-    val model = new TemplateModel(simpleTemplate)
+    val model = new TemplateModel { addTemplates(new SimpleTemplate(this)) }
     val objective = new HammingTemplate[Data]
 
     val pieces = new ArrayBuffer[LikelihoodExample[Data]]
@@ -101,7 +101,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
       }
     }
   )
-  var model: CombinedModel = null
+  var model: TemplateModel = null
 
 
   class AllPairsProposer(model: CombinedModel) extends MHSampler[Null](model)
@@ -136,15 +136,14 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
       bools(bools.length - 1).next = bools(0)
       logger.debug("NUM BOOL VARS: " + bools.size)
 
-      model = new CombinedModel(
-        new DotTemplateWithStatistics2[MyBool, MyBool]
-        {
+      model = new TemplateModel {
+        this += new DotTemplateWithStatistics2[MyBool, MyBool] {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))
-          lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
+          val weights = Weights(new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size))
           def unroll1(b: MyBool) = Factor(b, b.next)
           def unroll2(b: MyBool) = Factor(b.prev, b)
         }
-      )
+      }
     }
 
 

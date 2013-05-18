@@ -55,19 +55,18 @@ trait Statistics[A] extends Family {
   type StatisticsType = A
 }
 
-/** A Family whose Factors have statistics that are Tensors. */
+/** A Family whose Factors have statistics that are TensorSet. */
 trait TensorFamily extends Family {
   type FamilyType <: TensorFamily
   type StatisticsType = Tensor
   //trait Statistics extends super.Statistics { def tensor: Tensor }
 }
 
-/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics Tensors and the Family's weights Tensor. */
-trait DotFamily extends TensorFamily with Weights {
+/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics TensorSet and the Family's weightsSet Tensor. */
+trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
-  def weightsTensor: Tensor
-  @inline final override def statisticsScore(t:Tensor): Double = weightsTensor dot t
-  lazy val weights = new Tensors(Seq((this,weightsTensor)))
+  def weights: TensorSetKey
+  @inline final override def statisticsScore(t:Tensor): Double = weights.value dot t
 }
 
 

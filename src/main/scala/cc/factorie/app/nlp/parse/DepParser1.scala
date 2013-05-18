@@ -99,16 +99,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   var featuresSkipNonCategories = true
   
   // The model scoring an Action in the context of Features
-  val model = new Model with Weights {
-    object family extends DotFamilyWithStatistics2[Action, Features] {
-      lazy val weightsTensor = new la.DenseTensor2(ActionDomain.size, FeaturesDomain.dimensionSize)
-    }
-    lazy val weights: la.Tensors = new la.Tensors(Seq((family, family.weightsTensor)))
-    def factors(v:Var) = v match {
-      case action:Action => new family.Factor(action, action.features)
-      case _ => Nil
-    }
-    def factor(a:Action) = family.Factor(a, a.features)
+  val model = new WeightsDef {
+    val weights = Weights(new la.DenseTensor2(ActionDomain.size, FeaturesDomain.dimensionSize))
   }
   
   // Action implementations
@@ -141,7 +133,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
   def predict(stack: ParserStack, input: ParserStack, tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
-    val weights = model.family.weightsTensor
+    val weights = model.weights.value
     val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
     (v, v.domain.categories(v.validActionList.maxBy(prediction(_))))
   }
@@ -229,14 +221,14 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
     actionLabels
   }
-  class Example(featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example[Weights] {
+  class Example(featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example[WeightsDef] {
     // similar to GLMExample, but specialized to DepParser.model
-    def accumulateExampleInto(ignoredModel:Weights, gradient:la.TensorsAccumulator, value:util.DoubleAccumulator): Unit = {
-      val weights = model.family.weightsTensor
+    def accumulateExampleInto(ignoredModel:WeightsDef, gradient:la.TensorsAccumulator, value:util.DoubleAccumulator): Unit = {
+      val weights = model.weights.value
       val prediction = weights * featureVector
       val (obj, grad) = optimize.ObjectiveFunctions.logMultiClassObjective(prediction, targetLabel)
       if (value ne null) value.accumulate(obj)
-      if (gradient ne null) gradient.accumulateOuter(model.family, grad, featureVector)
+      if (gradient ne null) gradient.accumulate(model.weights, grad outer featureVector)
     }
   }
   def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String): Unit = {
@@ -247,18 +239,18 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
-    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.family.weightsTensor.length))
+    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.weights.value.length))
     println("Generating examples...")
     val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.HogwildTrainer[Weights](model, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
+    val trainer = new optimize.HogwildTrainer[WeightsDef](model, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
       // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
-      opt.setWeightsToAverage(model.weights)
+      opt.setWeightsToAverage(model.weightsSet)
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
       println("Training label accuracy = "+HammingObjective.accuracy(trainSentences.flatMap(s => s.parse.labels)))
@@ -267,10 +259,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println(" Testing arc accuracy = "+(testSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testSentences.map(_.tokens.length).sum))
       println("Saving model...")
       serialize(name + "-iter-"+iteration)
-      opt.unSetWeightsToAverage(model.weights)
+      opt.unSetWeightsToAverage(model.weightsSet)
     }
     println("Finished training.")
-    opt.setWeightsToAverage(model.weights)
+    opt.setWeightsToAverage(model.weightsSet)
     // Print accuracy diagnostics
   }
 

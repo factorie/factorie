@@ -527,7 +527,7 @@ class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor
   override def stringPrefix = "DenseLayeredTensor2"
 }
 
-// TODO Make a version of the above that uses an _innerValues: Array[Double] acting as (factor) weights multiplying the values of the inner Tensor1's?
+// TODO Make a version of the above that uses an _innerValues: Array[Double] acting as (factor) weightsSet multiplying the values of the inner Tensor1's?
 
 trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int

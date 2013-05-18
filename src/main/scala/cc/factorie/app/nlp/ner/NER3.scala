@@ -13,30 +13,31 @@ class NER3 extends DocumentAnnotator {
   } 
   
   // The model
-  val model = new TemplateModel(
-    // Bias term on each individual label 
-    new DotTemplateWithStatistics1[BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      lazy val weightsTensor = new la.DenseTensor1(BilouConllNerDomain.size)
-    },
-    // Transition factors between two successive labels
-    new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = BilouConllNerDomain
-      lazy val weightsTensor = new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size)
-      def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouConllNerLabel] ne null); Factor(label.token.prev.attr[BilouConllNerLabel], label) } else Nil
-      def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouConllNerLabel] ne null); Factor(label, label.token.next.attr[BilouConllNerLabel]) } else Nil
-    },
-    // Factor between label and observed token
-    new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = FeaturesDomain
-      lazy val weightsTensor = new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize)
-      def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
-      def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
-    }
-  )
-
+  val model = new TemplateModel {
+    addTemplates(
+      // Bias term on each individual label
+      new DotTemplateWithStatistics1[BilouConllNerLabel] {
+        override def neighborDomain1 = BilouConllNerDomain
+        val weights = Weights(new la.DenseTensor1(BilouConllNerDomain.size))
+      },
+      // Transition factors between two successive labels
+      new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
+        override def neighborDomain1 = BilouConllNerDomain
+        override def neighborDomain2 = BilouConllNerDomain
+        val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
+        def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouConllNerLabel] ne null); Factor(label.token.prev.attr[BilouConllNerLabel], label) } else Nil
+        def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouConllNerLabel] ne null); Factor(label, label.token.next.attr[BilouConllNerLabel]) } else Nil
+      },
+      // Factor between label and observed token
+      new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
+        override def neighborDomain1 = BilouConllNerDomain
+        override def neighborDomain2 = FeaturesDomain
+        val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize))
+        def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
+        def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
+      }
+    )
+  }
   // The training objective
   val objective = new HammingTemplate[BilouConllNerLabel]
 

@@ -38,29 +38,31 @@ object ChainNER4 {
   class Sentence extends Chain[Sentence,Token]
   
   // The model
-  val model = new TemplateModel(
-    // Bias term on each individual label 
-    new DotTemplateWithStatistics1[Label] {
-      override def neighborDomain1 = LabelDomain
-      lazy val weightsTensor = new la.DenseTensor1(LabelDomain.size)
-    },
-    // Transition factors between two successive labels
-    new DotTemplateWithStatistics2[Label, Label] {
-      override def neighborDomain1 = LabelDomain
-      override def neighborDomain2 = LabelDomain
-      lazy val weightsTensor = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
-      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
-      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
-    },
-    // Factor between label and observed token
-    new DotTemplateWithStatistics2[Label, Token] {
-      override def neighborDomain1 = LabelDomain
-      override def neighborDomain2 = TokenDomain
-      lazy val weightsTensor = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
-      def unroll1(label: Label) = Factor(label, label.token)
-      def unroll2(token: Token) = throw new Error("Token values shouldn't change")
-    }
-  )
+  val model = new TemplateModel {
+    addTemplates(
+      // Bias term on each individual label
+      new DotTemplateWithStatistics1[Label] {
+        override def neighborDomain1 = LabelDomain
+        val weights = Weights(new la.DenseTensor1(LabelDomain.size))
+      },
+      // Transition factors between two successive labels
+      new DotTemplateWithStatistics2[Label, Label] {
+        override def neighborDomain1 = LabelDomain
+        override def neighborDomain2 = LabelDomain
+        val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size))
+        def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
+        def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
+      },
+      // Factor between label and observed token
+      new DotTemplateWithStatistics2[Label, Token] {
+        override def neighborDomain1 = LabelDomain
+        override def neighborDomain2 = TokenDomain
+        val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize))
+        def unroll1(label: Label) = Factor(label, label.token)
+        def unroll2(token: Token) = throw new Error("Token values shouldn't change")
+      }
+    )
+  }
   
   // The training objective
   val objective = new HammingTemplate[Label]
@@ -138,7 +140,7 @@ object ChainNER4 {
       predictor.processAll(testLabels, 2)
     }
     println ("Final Test  accuracy = "+ objective.accuracy(testLabels))
-    //println("norm " + model.weightsTensor.twoNorm)
+    //println("norm " + model.weights.twoNorm)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
     
     //for (sentence <- testSentences) BP.inferChainMax(sentence.asSeq.map(_.label), model); println ("MaxBP Test accuracy = "+ objective.accuracy(testLabels))

@@ -386,10 +386,10 @@ object Coref{
     else if(opts.inferenceType.value=="trained-authors"){
       val initGroundTruth=false
       if(opts.trainingSamples.value>0){
-        if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfTopics]("topics",opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
-        if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfCoAuthors]("coauthors",opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value)
-        if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfVenues]("venues",opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
-        if(opts.bagKeywordsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfKeywords]("keywords",opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
+        if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfTopics](authorCorefModel, "topics",opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
+        if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfCoAuthors](authorCorefModel, "coauthors",opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value)
+        if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfVenues](authorCorefModel, "venues",opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
+        if(opts.bagKeywordsWeight.value != 0.0)authorCorefModel += new WeightedChildParentCosineDistance[BagOfKeywords](authorCorefModel, "keywords",opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
       }
       println("Num templates: "+authorCorefModel.families.size)
       //paralellizing learning will require either having a thread-safe growable domain or just having separate domains for each thread.
@@ -416,7 +416,7 @@ object Coref{
       //val trainer = new SampleRankTrainer(sampler, new MIRA)
       println ("Beginning inference and learning")
       trainer.processContext(null, opts.trainingSamples.value) // 3000
-      averager.setWeightsToAverage(authorCorefModel.weights)
+      averager.setWeightsToAverage(authorCorefModel.weightsSet)
       //val pSampler = new ParallelAuthorSampler(authorCorefModel){temperature = 0.001}
       sampler.setEntities(testingSet)
       println("Beginning testing")
@@ -2320,11 +2320,12 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
 }
 
 
-abstract class WeightedChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends ChildParentTemplate[A] with DotFamily3[EntityRef,A,A]{
-  lazy val weightsTensor = new la.GrowableDenseTensor1(ChildParentFeatureDomain.dimensionDomain.maxSize)
+abstract class WeightedChildParentTemplate[A<:EntityAttr](val model: WeightsDef)(implicit m:Manifest[A]) extends ChildParentTemplate[A] with DotFamily3[EntityRef,A,A]{
+  val weights = model.Weights(new la.GrowableDenseTensor1(ChildParentFeatureDomain.dimensionDomain.maxSize))
   //def statistics (eref:EntityRef#Value, child:A#Value, parent:A#Value) = new ChildParentFeatureVector[A](child, parent).value
 }
-class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B]) extends WeightedChildParentTemplate[B]{
+class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](model: WeightsDef, val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B])
+  extends WeightedChildParentTemplate[B](model){
   def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }
 object ChildParentFeatureDomain extends CategoricalDimensionTensorDomain[String]{dimensionDomain.maxSize=10000}
@@ -2362,7 +2363,7 @@ class ChildParentBagsFeatureVector[B<:BagOfWordsVariable with EntityAttr](name:S
 /*
         new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
       //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
-      lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
+      lazy val weightsSet = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
       def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
       def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     },
@@ -2411,10 +2412,10 @@ object CorefDomain extends CategoricalVectorDomain[String] {
   override lazy val dimensionDomain = CorefDimensionDomain
   def printWeightsOld(model:TemplateModel){
     for(template<-model.familiesOfClass(classOf[DotFamily])){
-      for(i<-template.weights.activeDomain){
-        if(template.weights(i)!=0){
+      for(i<-template.weightsSet.activeDomain){
+        if(template.weightsSet(i)!=0){
           val feature = dimensionDomain.getCategory(i)
-          println(template.weights(i)+": "+feature)
+          println(template.weightsSet(i)+": "+feature)
         }
       }
     }
@@ -2424,9 +2425,9 @@ object CorefDomain extends CategoricalVectorDomain[String] {
     val positive = new ArrayBuffer[(String,Double)]
     val negative = new ArrayBuffer[(String,Double)]
     for(template<-model.familiesOfClass(classOf[DotFamily])){
-      for(i<-template.weights.activeDomain){
-        if(template.weights(i)>0)positive += dimensionDomain.getCategory(i) -> template.weights(i)
-        else if(template.weights(i)<0)negative += dimensionDomain.getCategory(i) -> template.weights(i)
+      for(i<-template.weightsSet.activeDomain){
+        if(template.weightsSet(i)>0)positive += dimensionDomain.getCategory(i) -> template.weightsSet(i)
+        else if(template.weightsSet(i)<0)negative += dimensionDomain.getCategory(i) -> template.weightsSet(i)
       }
     }
     val sortedPositive = positive.sortWith(_._2 < _._2)

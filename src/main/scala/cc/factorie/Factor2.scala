@@ -198,8 +198,8 @@ trait TensorFactorStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFactor2
 abstract class TensorFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactor2[N1,N2](_1, _2) with TensorFactorStatistics2[N1,N2]
 
 /** A 2-neighbor Factor whose statistics have type Tensor, 
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "statistics" and "weights" methods are abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "statistics" and "weightsSet" methods are abstract. */
 abstract class DotFactor2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactor2[N1,N2](_1, _2) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -207,8 +207,8 @@ abstract class DotFactor2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, overr
 
 /** A 2-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values,
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "weights" method is abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "weightsSet" method is abstract. */
 abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends DotFactor2(_1, _2) with TensorFactorStatistics2[N1,N2] {
   override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
@@ -280,7 +280,7 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
 //  // Cached Statistics
 //  private var cachedStatisticsArray: Array[StatisticsType] = null
 //  private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
-//  /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
+//  /** It is callers responsibility to clearCachedStatistics if weightsSet or other relevant state changes. */
 //  override def cachedStatistics(values:Values): StatisticsType =
 //    if (Template.enableCachedStatistics) values._1 match {
 //    case v1:DiscreteValue => { 
@@ -340,12 +340,12 @@ trait DotFamily2[N1<:Var,N2<:Var] extends TensorFamily2[N1,N2] with DotFamily {
 }
 
 trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamilyWithStatistics2[N1,N2] with DotFamily2[N1,N2] {
-  override def weightsTensor: Tensor2
-  //def score(v1:N1#Value, v2:N2#Value): Double = weights dot statistics(v1, v2)
+  override def weights: TensorSetKey2
+  //def score(v1:N1#Value, v2:N2#Value): Double = weightsSet dot statistics(v1, v2)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
-  def valueScores1(tensor2:Tensor): Tensor1 = weightsTensor match {
+  def valueScores1(tensor2:Tensor): Tensor1 = weights.value match {
     case weights: Tensor2 => {
       val dim = weights.dim1 // statisticsDomains._1.dimensionDomain.size
       val result = new DenseTensor1(dim)
@@ -375,7 +375,7 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
   }
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
-  def valueScores2(tensor1:Tensor): Tensor1 = weightsTensor match {
+  def valueScores2(tensor1:Tensor): Tensor1 = weights.value match {
     case weights: Tensor2 => {
       val dim = weights.dim2 //statisticsDomains._2.dimensionDomain.size
       val result = new DenseTensor1(dim)
@@ -425,8 +425,8 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
 //}
 //
 //trait DotStatistics2[S1<:Tensor,S2<:Tensor] extends TensorStatistics2[S1,S2] with DotFamily {
-//  override def weights: Tensor2
-//  //def statisticsScore(tensor:Tensor) = weights dot tensor
+//  override def weightsSet: Tensor2
+//  //def statisticsScore(tensor:Tensor) = weightsSet dot tensor
 //}
 //
 //trait FamilyWithStatistics2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
@@ -445,29 +445,29 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
 //  override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
 //  // TODO Consider a more efficient implementation of some cases
 //  // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
-//  def valueScores1(tensor2:Tensor): Tensor1 = weights match {
-//    case weights: Tensor2 => {
-//      val dim = weights.dim1 // statisticsDomains._1.dimensionDomain.size
+//  def valueScores1(tensor2:Tensor): Tensor1 = weightsSet match {
+//    case weightsSet: Tensor2 => {
+//      val dim = weightsSet.dim1 // statisticsDomains._1.dimensionDomain.size
 //      val result = new DenseTensor1(dim)
 //      tensor2 match {
 //        case tensor2:SingletonBinaryTensor1 => {
 //          val j = tensor2.singleIndex
-//          for (i <- 0 until dim) result(i) = weights(i, j)
+//          for (i <- 0 until dim) result(i) = weightsSet(i, j)
 //        }
 //        case tensor2:SingletonTensor1 => {
 //          val j = tensor2.singleIndex
 //          val v = tensor2.singleValue
-//          for (i <- 0 until dim) result(i) = v * weights(i, j)
+//          for (i <- 0 until dim) result(i) = v * weightsSet(i, j)
 //        }
 //        case tensor2:UnaryTensor1 => {
-//          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += weights(i, j) 
+//          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += weightsSet(i, j)
 //        }
 //        case tensor2:UniformTensor1 => {
 //          val v = tensor2.uniformValue
-//          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += v * weights(i, j) 
+//          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += v * weightsSet(i, j)
 //        }
 //        case _ => {
-//          tensor2.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += v * weights(i, j))
+//          tensor2.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += v * weightsSet(i, j))
 //        }
 //      }
 //      result
@@ -475,29 +475,29 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
 //  }
 //  // TODO Consider a more efficient implementation of some cases
 //  // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
-//  def valueScores2(tensor1:Tensor): Tensor1 = weights match {
-//    case weights: Tensor2 => {
-//      val dim = weights.dim2 //statisticsDomains._2.dimensionDomain.size
+//  def valueScores2(tensor1:Tensor): Tensor1 = weightsSet match {
+//    case weightsSet: Tensor2 => {
+//      val dim = weightsSet.dim2 //statisticsDomains._2.dimensionDomain.size
 //      val result = new DenseTensor1(dim)
 //      tensor1 match {
 //        case tensor1:SingletonBinaryTensor1 => {
 //          val i = tensor1.singleIndex
-//          for (j <- 0 until dim) result(j) = weights(i, j)
+//          for (j <- 0 until dim) result(j) = weightsSet(i, j)
 //        }
 //        case tensor1:SingletonTensor1 => {
 //          val i = tensor1.singleIndex
 //          val v = tensor1.singleValue
-//          for (j <- 0 until dim) result(j) = v * weights(i, j)
+//          for (j <- 0 until dim) result(j) = v * weightsSet(i, j)
 //        }
 //        case tensor1:UnaryTensor1 => {
-//          for (i <- 0 until tensor1.length; j <- 0 until dim) result(i) += weights(i, j) 
+//          for (i <- 0 until tensor1.length; j <- 0 until dim) result(i) += weightsSet(i, j)
 //        }
 //        case tensor1:UniformTensor1 => {
 //          val v = tensor1.uniformValue
-//          for (i <- 0 until tensor1.length; j <- 0 until dim) result(j) += v * weights(i, j) 
+//          for (i <- 0 until tensor1.length; j <- 0 until dim) result(j) += v * weightsSet(i, j)
 //        }
 //        case _ => {
-//          tensor1.foreachActiveElement((i,v) => for (j <- 0 until dim) result(j) += v * weights(i, j))
+//          tensor1.foreachActiveElement((i,v) => for (j <- 0 until dim) result(j) += v * weightsSet(i, j))
 //        }
 //      }
 //      result

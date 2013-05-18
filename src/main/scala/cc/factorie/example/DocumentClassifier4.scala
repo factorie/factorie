@@ -87,15 +87,15 @@ object DocumentClassifier4 {
     // println("Test  accuracy = " + testTrial.accuracy)
     // println("Number of ms to train/test: " + (System.currentTimeMillis - start))
     
-    // Print highest weights
-//    val weights = classifier.asInstanceOf[classify.ModelBasedClassifier[Label]].model.asInstanceOf[classify.LogLinearModel[Label,Document]].evidenceTemplate.weights
-//    val elements = weights.activeElements.toSeq.sortBy(_._2).reverse
+    // Print highest weightsSet
+//    val weightsSet = classifier.asInstanceOf[classify.ModelBasedClassifier[Label]].model.asInstanceOf[classify.LogLinearModel[Label,Document]].evidenceTemplate.weightsSet
+//    val elements = weightsSet.activeElements.toSeq.sortBy(_._2).reverse
 //    println("Class labels: "+LabelDomain.categories.mkString(" "))
 //    for (e <- elements.take(100)) {
 //      val i = e._1
 //      val w = e._2
-//      val ci = weights.index1(i)
-//      val fi = weights.index2(i)
+//      val ci = weightsSet.index1(i)
+//      val fi = weightsSet.index2(i)
 //      println("%7f %-10s %s".format(w, DocumentDomain.dimensionDomain.category(fi), LabelDomain.category(ci)))
 //    }
     

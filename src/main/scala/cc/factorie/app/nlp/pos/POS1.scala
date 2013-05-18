@@ -33,17 +33,17 @@
 //  object PosModel extends TemplateModel {
 //    // Bias term on each individual label 
 //    val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
-//      lazy val weightsTensor = new la.DenseTensor1(PosDomain.size)
+//      lazy val weights = new la.DenseTensor1(PosDomain.size)
 //    }
 //    // Factor between label and observed token
 //    val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
-//      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
+//      lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
 //      def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
 //      def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
 //    }
 //    // Transition factors between two successive labels
 //    val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
-//      lazy val weightsTensor = new la.DenseTensor2(PosDomain.size, PosDomain.size)
+//      lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
 //      def unroll1(label: PosLabel) = {
 //        if (useSentenceBoundaries) {
 //          if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil

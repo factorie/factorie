@@ -190,7 +190,7 @@ object Classify {
       // TODO should we make an overload that doesnt req. a cubbie and reads the cubbie type from file? -luke
       // or automatically picks the cubbie based on the input type?
       BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, LabelDomain, vocabFile)
-      FeaturesDomain.freeze() // TODO should this always be frozen? otherwise weights won't match... -luke
+      FeaturesDomain.freeze() // TODO should this always be frozen? otherwise weightsSet won't match... -luke
       LabelDomain.freeze()
     }
 
@@ -304,9 +304,9 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       // TODO should classifier cubbie write the vocab + the model in one file? -luke
-      if (!classifier.isInstanceOf[ModelBasedClassifier[Label, Model with Weights]])
-        sys.error("Only ModelBasedClassifiers with weights can be serialized.")
-      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with Weights]]
+      if (!classifier.isInstanceOf[ModelBasedClassifier[Label, Model with WeightsDef]])
+        sys.error("Only ModelBasedClassifiers with weightsSet can be serialized.")
+      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with WeightsDef]]
       BinarySerializer.serialize(new ModelBasedClassifierCubbie(mbc), classifierFile)
     }
 

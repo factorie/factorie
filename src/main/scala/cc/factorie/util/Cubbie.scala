@@ -414,7 +414,7 @@ class Cubbie {
   // TODO We need other primitive types supported in BSON
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
-      FACTORIE uses this to store Tensors (because copying them to a DoubleListSlot would take too much memory for dependency parsing).
+      FACTORIE uses this to store TensorSet (because copying them to a DoubleListSlot would take too much memory for dependency parsing).
       So Cubbie serialization of DotFamily only works for PrintStream serialization, not BSON and JSON. */
   case class AnySlot[A<:Any](override val name:String) extends PrimitiveSlot[A](name)
   

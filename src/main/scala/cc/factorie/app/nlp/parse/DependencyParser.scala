@@ -141,7 +141,7 @@ object ActionModel extends TemplateModel {
 
   val localTemplate = new DotTemplateWithStatistics2[ActionLabel, ShiftReduceDependencyParserFeatures] {
     //override def statisticsDomains = ((ActionDomain, ParserFeaturesDomain))
-    lazy val weightsTensor = new la.DenseTensor2(ActionDomain.size, ParserFeaturesDomain.dimensionSize)
+    val weights = Weights(new la.DenseTensor2(ActionDomain.size, ParserFeaturesDomain.dimensionSize))
     def unroll1(label: ActionLabel) = Factor(label, label.features)
     def unroll2(features: ShiftReduceDependencyParserFeatures) = Factor(features.label, features)
   }

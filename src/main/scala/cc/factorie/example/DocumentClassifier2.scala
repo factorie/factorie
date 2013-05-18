@@ -40,18 +40,20 @@ object DocumentClassifier2 {
     def domain = LabelDomain
   }
 
-  val model = new TemplateModel(
-    /** Bias term just on labels */
-    new DotTemplateWithStatistics1[Label] {
-      lazy val weightsTensor = new la.DenseTensor1(LabelDomain.size)
-    }, 
-    /** Factor between label and observed document */
-    new DotTemplateWithStatistics2[Label,Document] {
-      lazy val weightsTensor = new la.DenseTensor2(LabelDomain.size, DocumentDomain.dimensionSize)
-      def unroll1 (label:Label) = Factor(label, label.document)
-      def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
-    }
-  )
+  val model = new TemplateModel {
+    addTemplates(
+      /** Bias term just on labels */
+      new DotTemplateWithStatistics1[Label] {
+        val weights = Weights(new la.DenseTensor1(LabelDomain.size))
+      },
+      /** Factor between label and observed document */
+      new DotTemplateWithStatistics2[Label,Document] {
+        val weights = Weights(new la.DenseTensor2(LabelDomain.size, DocumentDomain.dimensionSize))
+        def unroll1 (label:Label) = Factor(label, label.document)
+        def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
+      }
+    )
+  }
 
   val objective = new HammingTemplate[Label]
 
