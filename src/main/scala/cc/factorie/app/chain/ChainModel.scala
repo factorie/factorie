@@ -51,18 +51,19 @@ with WeightsDef
     factorName = "Label,Label"
     val weights = Weights(new la.DenseTensor2(labelDomain.size, labelDomain.size))
   }
-//  val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Features] {
-//    factorName = "Label,Label,Token"
-//    val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
-//  }
+  val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Features] {
+    factorName = "Label,Label,Token"
+    val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
+  }
   var useObsMarkov = false
-//  def families = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
+  // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types
+  def families: Seq[DotFamily] = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   // TODO this does not calculate statistics for obsmarkov template -luke
   def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): TensorSet = {
     val biasStats = Tensor.newDense(bias.weights.value)
     val obsStats = Tensor.newSparse(obs.weights.value)
-//    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weightsSet) else null
+    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
 
     var li = 0
     while (li < labels.length) {
@@ -89,7 +90,7 @@ with WeightsDef
     result(bias.weights) = biasStats
     result(obs.weights) = obsStats
     result(markov.weights) = markovStats
-//    if (useObsMarkov) result(obsmarkov) = obsmarkovStats
+    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
     result
   }
 
@@ -97,7 +98,7 @@ with WeightsDef
     val biasStats = Tensor.newDense(bias.weights.value)
     val obsStats = Tensor.newSparse(obs.weights.value)
     val markovStats = Tensor.newSparse(markov.weights.value)
-//    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
+    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
 
     for (i <- 0 until labels.length) {
       val l = labels(i)
@@ -107,8 +108,8 @@ with WeightsDef
       if (i > 0) {
         val prev = labels(i - 1)
         markovStats += (assignments(i - 1) * labelDomain.size + assignments(i), 1)
-//        if (useObsMarkov) obsmarkovStats += Tensor.outer(
-//          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
+        if (useObsMarkov) obsmarkovStats += Tensor.outer(
+          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
       }
     }
 
@@ -116,7 +117,7 @@ with WeightsDef
     result(bias.weights) = biasStats
     result(obs.weights) = obsStats
     result(markov.weights) = markovStats
-//    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
+    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
     result
   }
 
@@ -154,7 +155,7 @@ with WeightsDef
       result += obs.Factor(labels(i), labelToFeatures(labels(i)))
       if (i > 0) {
         result += markov.Factor(labels(i-1), labels(i))
-//        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
+        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
       }
     }
     result
@@ -171,13 +172,13 @@ with WeightsDef
       val token = labelToToken(label)
       if (token.hasPrev) {
         result += markov.Factor(tokenToLabel(token.prev), label)
-//        if (useObsMarkov)
-//          result += obsmarkov.Factor(tokenToLabel(token.prev), label, labelToFeatures(label))
+        if (useObsMarkov)
+          result += obsmarkov.Factor(tokenToLabel(token.prev), label, labelToFeatures(label))
       }
       if (token.hasNext) {
         result += markov.Factor(label, tokenToLabel(token.next))
-//        if (useObsMarkov)
-//          result += obsmarkov.Factor(label, tokenToLabel(token.next), labelToFeatures(tokenToLabel(token.next)))
+        if (useObsMarkov)
+          result += obsmarkov.Factor(label, tokenToLabel(token.next), labelToFeatures(tokenToLabel(token.next)))
       }
       result
     }
