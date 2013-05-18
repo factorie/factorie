@@ -25,9 +25,15 @@ object ObjectiveFunctions {
   val squaredLossLinkFunction: RegressionLinkFunction = prediction => prediction
 
   type BinaryObjectiveFunction = (Double, Double) => (Double, Double)
-  val logisticLossBinaryObjective: BinaryObjectiveFunction = (prediction, label) => {
+  val logBinaryObjective: BinaryObjectiveFunction = (prediction, label) => {
       val probCorrect = 1.0/(1 + math.exp(-label*prediction))
       (math.log(probCorrect),(1- probCorrect)*label)
+  }
+  val hingeBinaryObjective: BinaryObjectiveFunction = (prediction, label) => {
+    if (prediction * label < 1.0)
+      (prediction * label - 1.0, label)
+    else
+      (0.0, 0.0)
   }
 
   type BinaryLinkFunction = (Double) => (Double)
@@ -113,6 +119,27 @@ object ObjectiveFunctions {
     (loss, if (isPerfectlyClassified) new UniformTensor1(len, 0.0) else gradient)
   }
 }
+
+class LinearMultiClassifierExample(weights: TensorSetKey2, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, weight: Double = 1.0)
+  extends Example[WeightsDef] {
+  def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+    val prediction = weights.value * featureVector
+    val (obj, sgrad) = lossAndGradient(prediction, label)
+    if (value != null) value.accumulate(obj)
+    if (gradient != null) gradient.accumulate(weights, sgrad outer featureVector, weight)
+  }
+}
+
+class LinearBinaryClassifierExample(weights: TensorSetKey1, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.BinaryObjectiveFunction, weight: Double = 1.0)
+  extends Example[WeightsDef] {
+  def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+    val score = weights.value dot featureVector
+    val (obj, sgrad) = lossAndGradient(score, label)
+    if (value != null) value.accumulate(obj)
+    if (gradient != null) gradient.accumulate(weights, featureVector, weight * sgrad)
+  }
+}
+
 
 class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
