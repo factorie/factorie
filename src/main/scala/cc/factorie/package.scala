@@ -40,6 +40,8 @@ package object factorie extends CubbieConversions {
   // TODO If we keep it, find a way to automatically maintain this string value
   //def factorieVersionString = "0.9.0.SNAPSHOT"
 
+  val BinarySerializer = util.BinarySerializer
+
   trait ThisType[+This<:AnyRef] {
     this: This =>
     type ThisType = This
