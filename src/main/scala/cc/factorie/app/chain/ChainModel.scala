@@ -24,7 +24,7 @@ import java.io.File
 import scala.collection.mutable
 import org.junit.Assert._
 import scala.collection.mutable.LinkedHashMap
-import cc.factorie.util.{DoubleAccumulator}
+import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalDimensionTensorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
