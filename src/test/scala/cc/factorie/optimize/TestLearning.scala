@@ -48,7 +48,7 @@ class TestLearning {
         override def toString = "bias"
       }
       this += new DotTemplateWithStatistics2[Label, Features] {
-        lazy val weights = Weights(new DenseTensor2(LabelDomain.size, FeatureDomain.dimensionSize))
+        val weights = Weights(new DenseTensor2(LabelDomain.size, FeatureDomain.dimensionSize))
 
         for (i <- 0 until LabelDomain.size)
           for (j <- 0 until FeatureDomain.dimensionSize)
