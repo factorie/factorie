@@ -38,7 +38,8 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
 class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val pieces = il.map(l => new GLMExample(
+    val pieces = il.map(l => new LinearMultiClassExample(
+      cmodel.evidenceTemplate.weights,
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
       l.intValue,
       ObjectiveFunctions.logMultiClassObjective,
@@ -60,7 +61,8 @@ class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDime
   val trainerConstructor: LogLinearModel[L,F] => Trainer[LogLinearModel[L,F]], val objective: ObjectiveFunctions.MultiClassObjectiveFunction)  {
   def train(il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val examples = il.map(l => new GLMExample(
+    val examples = il.map(l => new LinearMultiClassExample(
+      cmodel.evidenceTemplate.weights,
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
       l.intValue,
       objective,

@@ -120,7 +120,7 @@ object ObjectiveFunctions {
   }
 }
 
-class LinearMultiClassifierExample(weights: TensorSetKey2, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, weight: Double = 1.0)
+class LinearMultiClassExample(weights: TensorSetKey2, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, weight: Double = 1.0)
   extends Example[WeightsDef] {
   def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
     val prediction = weights.value * featureVector
@@ -130,7 +130,7 @@ class LinearMultiClassifierExample(weights: TensorSetKey2, featureVector: Tensor
   }
 }
 
-class LinearBinaryClassifierExample(weights: TensorSetKey1, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.BinaryObjectiveFunction, weight: Double = 1.0)
+class LinearBinaryExample(weights: TensorSetKey1, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.BinaryObjectiveFunction, weight: Double = 1.0)
   extends Example[WeightsDef] {
   def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
     val score = weights.value dot featureVector
@@ -140,24 +140,24 @@ class LinearBinaryClassifierExample(weights: TensorSetKey1, featureVector: Tenso
   }
 }
 
-
-class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
-  //def updateState(state: ExampleState): Unit = { }
-  def state = null
-  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorSetAccumulator, value:DoubleAccumulator) {
-    // println("featureVector size: %d weightsSet size: %d" format (featureVector.size, model.weightsSet.size))
-    val weightsMatrix = model.evidenceTemplate.weights.value
-    val prediction = weightsMatrix * featureVector
-    //    println("Prediction: " + prediction)
-    val (loss, sgrad) = lossAndGradient(prediction, targetLabel)
-    if (value != null) value.accumulate(loss)
-    if (weight != 1.0) sgrad *= weight
-    //    println("Stochastic gradient: " + sgrad)
-    // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
-    //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
-    if (gradient != null) gradient.accumulate(model.evidenceTemplate.weights, sgrad outer featureVector)
-  }
-}
+//
+//class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
+//  //def updateState(state: ExampleState): Unit = { }
+//  def state = null
+//  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+//    // println("featureVector size: %d weightsSet size: %d" format (featureVector.size, model.weightsSet.size))
+//    val weightsMatrix = model.evidenceTemplate.weights.value
+//    val prediction = weightsMatrix * featureVector
+//    //    println("Prediction: " + prediction)
+//    val (loss, sgrad) = lossAndGradient(prediction, targetLabel)
+//    if (value != null) value.accumulate(loss)
+//    if (weight != 1.0) sgrad *= weight
+//    //    println("Stochastic gradient: " + sgrad)
+//    // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
+//    //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
+//    if (gradient != null) gradient.accumulate(model.evidenceTemplate.weights, sgrad outer featureVector)
+//  }
+//}
 
 // This family exists only to  allow us to map a single tensor into a WeightsTensor
 //object DummyFamily extends DotFamily {
@@ -214,7 +214,7 @@ object GlmTest {
     //val modelWithWeights = new ModelWithWeightsImpl(model)
 
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
-    val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
+    val pieces = trainLabels.map(l => new LinearMultiClassExample(model.evidenceTemplate.weights, l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model)

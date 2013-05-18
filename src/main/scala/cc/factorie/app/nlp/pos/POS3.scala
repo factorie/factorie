@@ -12,8 +12,11 @@ import org.junit.Assert._
 class POS3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
-  val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
-  
+  class ClassifierModel extends WeightsDef {
+    val evidence = Weights(new la.DenseTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize))
+  }
+  val model = new ClassifierModel
+
   def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string) // .toLowerCase
 
   object WordData {
@@ -127,21 +130,20 @@ class POS3 extends DocumentAnnotator {
 
 
   var exampleSetsToPrediction = false
-  class TokenClassifierExample(val token:Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  class TokenClassifierExample(val token: Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[ClassifierModel] {
+    override def accumulateExampleInto(model: ClassifierModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
-      new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
+      new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
       if (exampleSetsToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weights.value
-        val prediction = weightsMatrix * featureVector
+        val prediction = model.evidence.value * featureVector
         token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
       }
     }
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    val weightsMatrix = model.evidenceTemplate.weights.value
+    val weightsMatrix = model.evidence.value
     for (token <- tokens) {
       assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
