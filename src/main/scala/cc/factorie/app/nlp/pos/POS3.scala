@@ -130,11 +130,11 @@ class POS3 extends DocumentAnnotator {
 
 
   var exampleSetsToPrediction = false
-  class TokenClassifierExample(val token: Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[ClassifierModel] {
-    override def accumulateExampleInto(model: ClassifierModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  class TokenClassifierExample(model: ClassifierModel, val token: Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example {
+    override def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
-      new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value)
+      new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(gradient, value)
       if (exampleSetsToPrediction) {
         val prediction = model.evidence.value * featureVector
         token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
@@ -201,11 +201,11 @@ class POS3 extends DocumentAnnotator {
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
-    val trainer = new cc.factorie.optimize.OnlineTrainer(model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model.weightsSet, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
       val examples = sentences.shuffle.flatMap(sentence => {
-        (0 until sentence.length).map(i => new TokenClassifierExample(sentence.tokens(i),
+        (0 until sentence.length).map(i => new TokenClassifierExample(model, sentence.tokens(i),
             if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective))
       })
       trainer.processExamples(examples)

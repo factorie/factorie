@@ -81,8 +81,8 @@ object ChainNER1ML {
     val start = System.currentTimeMillis
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
-    val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, InferByBPChainSum))
-    val learner = new BatchTrainer(model)
+    val examples = trainLabelsSentences.map(s => new LikelihoodExample(model, s, InferByBPChainSum))
+    val learner = new BatchTrainer(model.weightsSet)
     (1 to 10).foreach(_ => learner.processExamples(examples))
     val objective = HammingObjective
     // slightly more memory efficient - kedarb

@@ -72,9 +72,9 @@ import util.DoubleAccumulator
 //}
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
-class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model with WeightsDef] {
+class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {
   var learningMargin = 1.0
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -85,25 +85,25 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       bestObjective1.diff.redo
-      model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       bestObjective1.diff.undo
-      model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
       bestModel1.diff.redo
-      model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
       bestModel1.diff.undo
-      model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       value.accumulate(bestObjective1.modelScore - bestModel1.modelScore - learningMargin)
     }
     else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
       bestObjective1.diff.redo
-      model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       bestObjective1.diff.undo
-      model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
       bestModel2.diff.redo
-      model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
       bestModel2.diff.undo
-      model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       value.accumulate(marg - learningMargin)
     }
     sampler.processProposals(proposals)
@@ -111,25 +111,24 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 }
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val model:Model with WeightsDef, sampler:ProposalSampler[C], optimizer:GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[Model with WeightsDef] {
-  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model.asInstanceOf[Model with WeightsDef], sampler, optimizer)
-  def this(sampler:ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with WeightsDef], sampler, new optimize.AdaGrad)
-  val modelWeights = model.weightsSet
-  def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
-  def processContext(context:C, iterations:Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
-  def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
-  def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(example:Example[Model with WeightsDef]): Unit = {
+class SampleRankTrainer[C](val weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[SampleRankExample[C]] {
+  def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with WeightsDef].weightsSet, sampler, optimizer)
+  def this(sampler: ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with WeightsDef].weightsSet, sampler, new optimize.AdaGrad)
+  def processContext(context: C): Unit = process(new SampleRankExample(context, sampler))
+  def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
+  def processContexts(contexts: Iterable[C]): Unit = contexts.foreach(c => processContext(c))
+  def processContexts(contexts: Iterable[C], iterations: Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
+  def process(example: SampleRankExample[C]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
+    val gradientAccumulator = new LocalTensorSetAccumulator(weightsSet.blankSparseCopy)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
-    example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
+    example.accumulateExampleInto(gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
     if (gradientAccumulator.tensorSet.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
-      optimizer.step(modelWeights, gradientAccumulator.tensorSet, valueAccumulator.value)
+      optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
   }
-  def processExamples(examples: Iterable[Example[Model with WeightsDef]]): Unit = examples.foreach(p => process(p))
-  def processExamples(examples: Iterable[Example[Model with WeightsDef]], iterations:Int): Unit = for (i <- 0 until iterations) processExamples(examples)
+  def processExamples(examples: Iterable[SampleRankExample[C]]): Unit = examples.foreach(p => process(p))
+  def processExamples(examples: Iterable[SampleRankExample[C]], iterations: Int): Unit = for (i <- 0 until iterations) processExamples(examples)
   def isConverged: Boolean = false // TODO What more clever answer could we give here?
 }
 

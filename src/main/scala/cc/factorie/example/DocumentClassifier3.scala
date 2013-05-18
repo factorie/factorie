@@ -79,8 +79,8 @@ object DocumentClassifier3 {
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     // Train and test
-    val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(v))
-    val trainer = new optimize.OnlineTrainer(model, new optimize.AROW(model))
+    val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(model, v))
+    val trainer = new optimize.OnlineTrainer(model.weightsSet, new optimize.AROW(model))
     (1 to 100).foreach(i => trainer.processExamples(examples))
     val predictor = new IteratedConditionalModes[Label](model)
     predictor.processAll(trainVariables)

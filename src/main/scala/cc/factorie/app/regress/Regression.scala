@@ -71,9 +71,9 @@ object LinearRegressionObjectiveFunctions {
   }
 }
 
-class LinearRegressionExample(features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example[LinearRegressionModel] {
+class LinearRegressionExample(model: LinearRegressionModel, features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example {
   // gradient or value or margin can be null if they don't need to be computed.
-  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     val prediction = model.weights.value * features.value.asInstanceOf[Tensor1]
     val (objValue,objGradient) = objective(prediction, label.value.asInstanceOf[Tensor1])
     if (value != null) value.accumulate(objValue)
@@ -89,18 +89,18 @@ object LinearRegressionTrainer {
   def train[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, l2: Double, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
     val optimizer = new cc.factorie.optimize.LBFGS() with cc.factorie.optimize.L2Regularization
     optimizer.variance = 1.0/l2
-    val trainerMaker: LinearRegressionModel => Trainer[LinearRegressionModel] = m => new BatchTrainer(m, optimizer)
-    trainCustom(examples, dependant2Explanatory, trainerMaker, objective)
+    val trainer: WeightsSet => Trainer[Example] = m => new BatchTrainer(m, optimizer)
+    trainCustom(examples, dependant2Explanatory, trainer, objective)
   }
 
-  def trainCustom[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, trainerMaker: LinearRegressionModel => Trainer[LinearRegressionModel], objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
+  def trainCustom[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, trainerMaker: WeightsSet => Trainer[Example], objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)
     val dependentSize = exampleDependent.value.dimensions.product
     val explanatorySize = exampleExplanatory.value.dimensions.product
     val model = new LinearRegressionModel(explanatorySize, dependentSize)
-    val trainer = trainerMaker(model)
-    val trainingExamples = examples.map(e => new LinearRegressionExample(dependant2Explanatory(e), e, objective))
+    val trainer = trainerMaker(model.weightsSet)
+    val trainingExamples = examples.map(e => new LinearRegressionExample(model, dependant2Explanatory(e), e, objective))
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }

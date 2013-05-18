@@ -183,16 +183,16 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
       val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
       model.weightsSet.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-      val ex = new LikelihoodExample(Seq(l0, l1, l2, l3), bpInfer)
-      val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
+      val ex = new LikelihoodExample(model, Seq(l0, l1, l2, l3), bpInfer)
+      val ex1 = new ChainModel.ChainExample(model, Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
       val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {
         val gradientAccumulator0 = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
         val gradientAccumulator1 = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
         val valueAccumulator0 = new LocalDoubleAccumulator
         val valueAccumulator1 = new LocalDoubleAccumulator
-        ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0)
-        ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1)
+        ex.accumulateExampleInto(/*model, */gradientAccumulator0, valueAccumulator0)
+        ex1.accumulateExampleInto(/*model, */gradientAccumulator1, valueAccumulator1)
         assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
         gradientAccumulator0.tensorSet.keys.foreach(f => {
           logger.debug("checking family: " + f.getClass.getName)
