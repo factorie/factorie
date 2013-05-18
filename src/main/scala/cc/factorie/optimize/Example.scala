@@ -19,6 +19,7 @@ import cc.factorie.la._
 // "Training" also associated with education, for which there are "grades".
 
 // Examples must be thread safe? -alex  Really? Must they be? -akm
+// TODO clean up all these redundant comments e.g. above comment is obsolete after LockingExample -luke
 trait Example[-M<:WeightsDef] {
   // gradient or value can be null if they don't need to be computed.
   def accumulateExampleInto(model:M, gradient:TensorSetAccumulator, value:DoubleAccumulator): Unit
@@ -117,7 +118,7 @@ class PseudolikelihoodExample[V <: LabeledDiscreteVar](val labels: Iterable[V]) 
 }
 
 // Generalization of Pseudo likelihood to sets of variables, instead of a single one
-class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterable[Iterable[V]]) extends Example[Model with Weights] {
+class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterable[Iterable[V]]) extends Example[Model with WeightsDef] {
 
   def computeProportions(labels: Iterable[V], factors:Iterable[Factor]): (Proportions1, Int) = {
     val iterator = AssignmentIterator.assignments(labels.toSeq)
@@ -136,7 +137,7 @@ class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterab
     (new NormalizedTensorProportions1(distribution, checkNormalization=false), targetIndex)
   }
 
-  def accumulateExampleInto(model: Model with Weights, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     for (component <- components) {
       val factors = model.factorsOfFamilyClass[DotFamily](component) // should this be just DotFamily factors?
       val (proportions, targetIndex) = computeProportions(component, factors)
@@ -145,7 +146,7 @@ class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterab
         var i = 0
         for(assignment <- AssignmentIterator.assignments(component.toSeq)) {
           val p = if (i == targetIndex) 1.0 - proportions(i) else -proportions(i)
-          factors.foreach(f => gradient.accumulate(f.family, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
+          factors.foreach(f => gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
           i += 1
         }
       }
