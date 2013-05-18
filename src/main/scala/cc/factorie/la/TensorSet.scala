@@ -37,27 +37,30 @@ trait TensorSetKey {
   type TensorType <: Tensor
   def sharedWeights: TensorSet
   def newBlankTensor: TensorType
-  val weightsIndex: Int
-  def value: TensorType = sharedWeights(this).asInstanceOf[TensorType]
+  protected def realValue: TensorType
+  def value: TensorType = realValue
 }
 
+trait TensorSetKeySetType extends TensorSetKey {
+  override type TensorType = Tensor
+}
 trait TensorSetKey1 extends TensorSetKey {
   override type TensorType = Tensor1
   def newBlankTensor: TensorType
-  override def value: TensorType = sharedWeights(this).asInstanceOf[TensorType]
+  override def value: TensorType = realValue.asInstanceOf[TensorType]
 }
 trait TensorSetKey2 extends TensorSetKey {
   override type TensorType = Tensor2
   def newBlankTensor: TensorType
-  override def value: TensorType = sharedWeights(this).asInstanceOf[TensorType]
+  override def value: TensorType = realValue.asInstanceOf[TensorType]
 }
 trait TensorSetKey3 extends TensorSetKey {
   override type TensorType = Tensor3
   def newBlankTensor: TensorType
-  override def value: TensorType = sharedWeights(this).asInstanceOf[TensorType]
+  override def value: TensorType = realValue.asInstanceOf[TensorType]
 }
 trait TensorSetKey4 extends TensorSetKey {
   override type TensorType = Tensor4
   def newBlankTensor: TensorType
-  override def value: TensorType = sharedWeights(this).asInstanceOf[TensorType]
+  override def value: TensorType = realValue.asInstanceOf[TensorType]
 }

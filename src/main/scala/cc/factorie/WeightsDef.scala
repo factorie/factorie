@@ -4,7 +4,7 @@ import cc.factorie.la._
 import scala.collection.mutable
 
 /** And object containing a WeightsSet member, which is an extensible TensorSet for holding weights, with factories for dense and sparse copying.
-    The most common use-case is "MyModel extends Model with WeightsDef". */
+    The most common use-case is "MyModel extends Model with WeightsDef". For efficiency the weights are stored in the TensorSetKeys themselves,*/
 
 trait WeightsDef {
   val weightsSet: WeightsSet = new WeightsTensorSet
@@ -25,47 +25,36 @@ trait WeightsSet extends TensorSet {
   def add(ctor: => Tensor4): TensorSetKey4
 }
 
+/* This implementation actually stores the weights in the TensorSetKeys themselves instead
+ * of storing them in the map itself. This is just for efficiency, as the API remains the same.
+ */
 class WeightsTensorSet extends WeightsSet {
   self =>
-  private val _tensors = mutable.ArrayBuffer[Tensor]()
   private val _keys = mutable.ArrayBuffer[TensorSetKey]()
 
-  private var _forcedTensors = false
-  private var lastIndex = -1
-
   def keys: Seq[TensorSetKey] = _keys
-  def tensors: Seq[Tensor] = { if (! _forcedTensors) forceTensors(); _tensors }
+  def tensors: Seq[Tensor] = keys.map(_.value)
 
-  def update(key:TensorSetKey, value:Tensor) = _tensors(key.weightsIndex) = value
-  def apply(key: TensorSetKey): Tensor = getOrNewBlank(key)
+  def update(key:TensorSetKey, value:Tensor) = {
+    val actualKey = key.asInstanceOf[InnerKey]
+    actualKey._actualWeights = value.asInstanceOf[actualKey.TensorType]
+  }
+  def apply(key: TensorSetKey): Tensor = key.value
 
   def copy: TensorSet = { val copyTensor = blankDenseCopy; copyTensor += self; copyTensor }
   def blankDenseCopy: TensorSet = new HashTensorSet(key => Tensor.newDense(self(key)))
   def blankSparseCopy: TensorSet = new HashTensorSet(key => Tensor.newSparse(self(key)))
 
-  def add(ctor: => Tensor): TensorSetKey = new DefaultTensorSetKey { def newBlankTensor = ctor }
+  def add(ctor: => Tensor): TensorSetKey = new TensorSetKeySetType with InnerKey { def newBlankTensor = ctor }
   def add(ctor: => Tensor1): TensorSetKey1 = new TensorSetKey1 with InnerKey { def newBlankTensor = ctor }
   def add(ctor: => Tensor2): TensorSetKey2 = new TensorSetKey2 with InnerKey { def newBlankTensor = ctor }
   def add(ctor: => Tensor3): TensorSetKey3 = new TensorSetKey3 with InnerKey { def newBlankTensor = ctor }
   def add(ctor: => Tensor4): TensorSetKey4 = new TensorSetKey4 with InnerKey { def newBlankTensor = ctor }
 
-  private def register(key: TensorSetKey): Int = { lastIndex += 1; _keys += key; _tensors += null; lastIndex }
-  private def forceTensors(): Unit = { _keys.foreach(this(_)); _forcedTensors = true }
-  private def getOrNewBlank(key: TensorSetKey) = {
-    val current = _tensors(key.weightsIndex)
-    if (current ne null)
-      current
-    else {
-      _tensors(key.weightsIndex) = key.newBlankTensor
-      _tensors(key.weightsIndex)
-    }
-  }
   private trait InnerKey extends TensorSetKey {
     def sharedWeights = self
-    val weightsIndex = register(this)
-  }
-  private trait DefaultTensorSetKey extends InnerKey {
-    override type TensorType = Tensor
+    var _actualWeights: TensorType = null.asInstanceOf[TensorType]
+    def realValue = { if (_actualWeights eq null) { _actualWeights = newBlankTensor} ; _actualWeights }
   }
 }
 
