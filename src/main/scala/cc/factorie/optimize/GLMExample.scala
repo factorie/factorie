@@ -40,39 +40,30 @@ object ObjectiveFunctions {
   val logisticLinkFunction:  BinaryLinkFunction = prediction => 1.0/(1 + math.exp(-prediction))
 
   type MultiClassObjectiveFunction = (Tensor1, Int) => (Double, Tensor1)
+
   val logMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
-    val normed = prediction.expNormalized
+    val normed = prediction.expNormalized.asInstanceOf[Tensor1]
     val loss = math.log(normed(label))
     normed *= -1
     normed(label) += 1.0
-    val gradient = normed.asInstanceOf[Tensor1]
-    (loss, gradient)
+    (loss, normed)
   }
-  // This implements Structured SVM loss for the multiclass problem (create a margin between the 2 best-ranked labels)
+
+    // This implements Structured SVM loss for the multiclass problem (create a margin between the 2 best-ranked labels)
   val hingeMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
-    var loss = 0.0; var i = 0; val len = prediction.length
-    while (i < len) {
-      if (i == label) loss += -math.max(0, 1 - prediction(label))
-      else loss += -math.max(0, prediction(i) - 1)
-      i += 1
+    val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
+    val maxLabel = lossAugmented.maxIndex
+    if (maxLabel == label)
+      (0.0, new UniformTensor1(prediction.size, 0.0))
+    else {
+      val grad = new DenseTensor1(prediction.size, 0.0)
+      grad(label) += 1.0
+      grad(maxLabel) -= 1.0
+      val value = prediction(label) - prediction(maxLabel)
+      (value, grad)
     }
-    val (maxLabel1, maxLabel2) = prediction.maxIndex2
-    val gradient =
-      if (label == maxLabel1 && prediction(maxLabel1) > 1 + prediction(maxLabel2))
-        new UniformTensor1(prediction.size, 0.0)
-      else if (label == maxLabel1) {
-        val g = new DenseTensor1(prediction.size, 0.0)
-        g(label) += 1.0
-        g(maxLabel2) += -1.0
-        g
-      } else {
-        val g = new DenseTensor1(prediction.size, 0.0)
-        g(label) += 1.0
-        g(maxLabel1) += -1.0
-        g
-      }
-    (loss, gradient)
   }
+
   val hingeSqMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     var loss = 0.0; var i = 0; val len = prediction.length
     while (i < len) {
