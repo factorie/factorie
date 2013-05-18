@@ -281,9 +281,9 @@ object ChainModel {
     def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
       model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
   }
-  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
+  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](model: ChainModel[L, _, _], val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example {
     private var cachedTargetStats: TensorSet = null
-    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+    def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = infer.infer(labels, model)
@@ -298,5 +298,5 @@ object ChainModel {
     }
   }
   
-  def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](labels: IndexedSeq[L]) = new ChainExample(labels)
+  def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](model: ChainModel[L,_,_], labels: IndexedSeq[L]) = new ChainExample(model, labels)
 }

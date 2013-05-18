@@ -221,9 +221,9 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
     actionLabels
   }
-  class Example(featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example[WeightsDef] {
+  class Example(ignoredModel:WeightsDef, featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example {
     // similar to GLMExample, but specialized to DepParser.model
-    def accumulateExampleInto(ignoredModel:WeightsDef, gradient:la.TensorSetAccumulator, value:util.DoubleAccumulator): Unit = {
+    def accumulateExampleInto(gradient:la.TensorSetAccumulator, value:util.DoubleAccumulator): Unit = {
       val weights = model.weights.value
       val prediction = weights * featureVector
       val (obj, grad) = optimize.ObjectiveFunctions.logMultiClassObjective(prediction, targetLabel)
@@ -241,11 +241,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.weights.value.length))
     println("Generating examples...")
-    val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
+    val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.HogwildTrainer[WeightsDef](model, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
+    val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()

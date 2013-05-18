@@ -33,8 +33,8 @@ object WSabie {
     def rank(query: la.Tensor1, vectors: Seq[la.Tensor1]): Seq[la.Tensor1] = vectors.sortBy(v => -score(query, v))
   }
 
-  class WSabieExample(val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example[WSabieModel] {
-    def accumulateExampleInto(model: WSabieModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  class WSabieExample(model: WSabieModel, val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example {
+    def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val weights = model.weights.value
       val queryEmbeddings = weights * query
       val posEmbeddings = weights * positive

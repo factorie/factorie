@@ -67,24 +67,24 @@ class TestLearning {
     val data = createData(10)
     val model = createModel()
 
-    val plExamples = data.map(d => new PseudolikelihoodExample(Seq(d)))
+    val plExamples = data.map(d => new PseudolikelihoodExample(model, Seq(d)))
     val plgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
     val plvalue = new LocalDoubleAccumulator(0.0)
 
-    val llExamples = data.map(d => new LikelihoodExample(Seq(d), InferByBPTreeSum))
+    val llExamples = data.map(d => new LikelihoodExample(model, Seq(d), InferByBPTreeSum))
     val llgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
     val llvalue = new LocalDoubleAccumulator(0.0)
 
     for ((ple, lle) <- plExamples.zip(llExamples)) {
       val localPLgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
       val localPLvalue = new LocalDoubleAccumulator(0.0)
-      ple.accumulateExampleInto(model, localPLgrad, localPLvalue)
-      ple.accumulateExampleInto(model, plgrad, plvalue)
+      ple.accumulateExampleInto(localPLgrad, localPLvalue)
+      ple.accumulateExampleInto(plgrad, plvalue)
 
       val localLLgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
       val localLLvalue = new LocalDoubleAccumulator(0.0)
-      lle.accumulateExampleInto(model, localLLgrad, localLLvalue)
-      lle.accumulateExampleInto(model, llgrad, llvalue)
+      lle.accumulateExampleInto(localLLgrad, localLLvalue)
+      lle.accumulateExampleInto(llgrad, llvalue)
 
       // check local
       assertEquals("local value does not match", localPLvalue.value, localLLvalue.value, 1.0e-7)

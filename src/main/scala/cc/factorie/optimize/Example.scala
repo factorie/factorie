@@ -12,50 +12,28 @@ import cc.factorie.la._
  * Time: 11:13 AM
  * To change this template use File | Settings | File Templates.
  */
-//trait ExampleState { def merge(other: ExampleState): ExampleState }
 
-// TODO Rename Example to "Grade" or "Example"
-// Lately I like "Grade" better.  "Example" can mean the data, not the gradient/value evaluation.  "Grade" has one syllable.
-// "Training" also associated with education, for which there are "grades".
-
-// Examples must be thread safe? -alex  Really? Must they be? -akm
-// TODO clean up all these redundant comments e.g. above comment is obsolete after LockingExample -luke
-trait Example[-M<:WeightsDef] {
+trait Example {
   // gradient or value can be null if they don't need to be computed.
-  def accumulateExampleInto(model:M, gradient:TensorSetAccumulator, value:DoubleAccumulator): Unit
-  // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
-  //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit
 }
 
 /** Treats a few examples as a single example. creating minibatches which can be fed to the stochastic trainers */
-class MiniBatchExample[-M<:WeightsDef](val baseExamples: Seq[Example[M]]) extends Example[M] {
-  def accumulateExampleInto(model: M, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
-    baseExamples.foreach(_.accumulateExampleInto(model, gradient, value))
+class MiniBatchExample(val baseExamples: Seq[Example]) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+    baseExamples.foreach(_.accumulateExampleInto(gradient, value))
   }
 }
 
 object MiniBatchExample {
-  def apply[M <: WeightsDef](batchSize: Int, examples: Seq[Example[M]]): Seq[MiniBatchExample[M]] = {
-    examples.grouped(batchSize).map(e => new MiniBatchExample[M](e.toSeq)).toSeq
+  def apply(batchSize: Int, examples: Seq[Example]): Seq[MiniBatchExample] = {
+    examples.grouped(batchSize).map(e => new MiniBatchExample(e.toSeq)).toSeq
   }
-}
-
-// A locking example wraps an example with knowledge on how to
-// lock the structure it needs at runtime to ensure
-// that there are no race conditions
-trait LockingExample  {
-  def lockExample()
-  def unlockExample()
-}
-
-// An ExampleLocker is an implicit that knows how to create locking examples from examples
-trait ExampleLocker {
-  def getLockingExample[M<:WeightsDef](e: Example[M], model: M): LockingExample
 }
 
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
-class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class LikelihoodExample(model: Model with WeightsDef, labels: Iterable[LabeledVar], val infer: Infer) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
     if (value != null)
@@ -75,30 +53,32 @@ class LikelihoodExample[V<:LabeledVar](val labels:Iterable[V], val infer:Infer) 
   }
 }
 
-class LikelihoodExample2[C<:Iterable[LabeledVar]](val labels:C, val infer:Infer) extends Example[ModelWithContext[C] with WeightsDef] {
-  def accumulateExampleInto(model: ModelWithContext[C] with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
-    if (labels.size == 0) return
-    val summary = infer.infer(labels, model).get
-    if (value != null)
-      value.accumulate(-summary.logZ)
-    val factors = summary.usedFactors.getOrElse(model.factors(labels))
-    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
-      val aStat = factor.assignmentStatistics(TargetAssignment)
-      if (value != null) value.accumulate(factor.statisticsScore(aStat))
-      if (gradient != null) {
-        gradient.accumulate(factor.family.weights, aStat)
-        gradient.accumulate(factor.family.weights, summary.marginalTensorStatistics(factor), -1.0)
-      }
-    }
-    if (value != null) // add in the score from non-DotFamilies
-      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
-        value.accumulate(factor.assignmentScore(TargetAssignment))
-  }
-}
+// NOTE: this doesn't do anything right now because our infer objects don't call factorsWithContext -luke
+
+//class LikelihoodExample2[C <: Iterable[LabeledVar]](model: ModelWithContext[C] with WeightsDef, val labels: C, val infer: Infer) extends Example {
+//  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+//    if (labels.size == 0) return
+//    val summary = infer.infer(labels, model).get
+//    if (value != null)
+//      value.accumulate(-summary.logZ)
+//    val factors = summary.usedFactors.getOrElse(model.factors(labels))
+//    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
+//      val aStat = factor.assignmentStatistics(TargetAssignment)
+//      if (value != null) value.accumulate(factor.statisticsScore(aStat))
+//      if (gradient != null) {
+//        gradient.accumulate(factor.family.weights, aStat)
+//        gradient.accumulate(factor.family.weights, summary.marginalTensorStatistics(factor), -1.0)
+//      }
+//    }
+//    if (value != null) // add in the score from non-DotFamilies
+//      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
+//        value.accumulate(factor.assignmentScore(TargetAssignment))
+//  }
+//}
 
 // This is just like DiscreteLikelihoodExample but it loops over all variables passed in
-class PseudolikelihoodExample[V <: LabeledDiscreteVar](val labels: Iterable[V]) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class PseudolikelihoodExample(model: Model with WeightsDef, labels: Iterable[LabeledDiscreteVar]) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     for (label <- labels) {
       val factors = model.factorsOfFamilyClass[DotFamily](label) // should this be just DotFamily factors?
       val proportions = label.proportions(factors)
@@ -118,9 +98,8 @@ class PseudolikelihoodExample[V <: LabeledDiscreteVar](val labels: Iterable[V]) 
 }
 
 // Generalization of Pseudo likelihood to sets of variables, instead of a single one
-class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterable[Iterable[V]]) extends Example[Model with WeightsDef] {
-
-  def computeProportions(labels: Iterable[V], factors:Iterable[Factor]): (Proportions1, Int) = {
+class CompositeLikelihoodExample(model: Model with WeightsDef, components: Iterable[Iterable[LabeledDiscreteVar]]) extends Example {
+  def computeProportions(labels: Iterable[LabeledDiscreteVar], factors:Iterable[Factor]): (Proportions1, Int) = {
     val iterator = AssignmentIterator.assignments(labels.toSeq)
     val l = iterator.length
     val distribution = new DenseTensor1(l)
@@ -136,8 +115,7 @@ class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterab
     distribution.expNormalize()
     (new NormalizedTensorProportions1(distribution, checkNormalization=false), targetIndex)
   }
-
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     for (component <- components) {
       val factors = model.factorsOfFamilyClass[DotFamily](component) // should this be just DotFamily factors?
       val (proportions, targetIndex) = computeProportions(component, factors)
@@ -155,8 +133,8 @@ class CompositeLikelihoodExample[V <: LabeledDiscreteVar](val components: Iterab
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
-class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](val label:V) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class DiscreteLikelihoodExample(model: Model with WeightsDef, label: LabeledDiscreteVar) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     val factors = model.factorsOfFamilyClass[DotFamily](label)
     val proportions = label.proportions(factors)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
@@ -174,8 +152,8 @@ class DiscreteLikelihoodExample[V<:LabeledDiscreteVar](val label:V) extends Exam
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors is allowed to change based on the DiscreteVar value. */
-class CaseFactorDiscreteLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](val label:V) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class CaseFactorDiscreteLikelihoodExample(model: Model with WeightsDef, label: LabeledMutableDiscreteVar[_]) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
     if (gradient ne null) {
@@ -214,8 +192,8 @@ object GoodBadExample {
 // goodCandidates and badCandidates.
 // See DominationLossExampleAllGood for one that outputs a gradient for all goodCandidates
 // In FACTORIE we don't minimize a "loss" we maximize an "objective".  I think this class should be renamed. -akm 
-class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+class DominationLossExample(model: Model with WeightsDef, goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
@@ -228,8 +206,8 @@ class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var]) e
   }
 }
 
-class DominationLossExampleAllGood(goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+class DominationLossExampleAllGood(model: Model with WeightsDef, goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     require(gradient != null, "The DominationLossExampleAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
@@ -245,26 +223,26 @@ class DominationLossExampleAllGood(goodCandidates: Seq[Var], badCandidates: Seq[
 
 // StructuredPerceptron is just Likelihood with a Maximize ("value" will be correct as long as the marginals returned by
 // Maximize have the max model score as "logZ")
-class StructuredPerceptronExample[V <: LabeledVar](labels: Iterable[V], infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(labels, infer)
+class StructuredPerceptronExample(model: Model with WeightsDef, labels: Iterable[LabeledVar], infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(model, labels, infer)
 
 // NOTE: a "loss" is a negated objective - so higher score is worse - otherwise this won't work since there is no way to make a
 // CombinedModel that subtracts one model's score from another
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
-class StructuredSVMExample[V <: LabeledVar](labels: Iterable[V], objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
-  extends LikelihoodExample(labels, infer) {
-  override def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class StructuredSVMExample(model: Model with WeightsDef, labels: Iterable[LabeledVar], objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
+  extends StructuredPerceptronExample(new CombinedModel(model, objective) with WeightsDef { override val weightsSet = model.weightsSet }, labels, infer) {
+  override def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     if (value != null) {
       val valueAcc = new LocalDoubleAccumulator(0.0)
-      super.accumulateExampleInto(new CombinedModel(model, objective) with WeightsDef { override val weightsSet = model.weightsSet }, gradient, valueAcc)
+      super.accumulateExampleInto(gradient, valueAcc)
       // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
       if (value != null) value.accumulate(valueAcc.value)
     }
   }
 }
 
-class SemiSupervisedExample[V<:LabeledVar](val labels:Iterable[V], val inferConstrained:Infer, val inferUnconstrained: Infer) extends Example[Model with WeightsDef] {
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+class SemiSupervisedExample(model: Model with WeightsDef, labels: Iterable[LabeledVar], inferConstrained: Infer, inferUnconstrained: Infer) extends Example {
+  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val constrainedSummary = inferConstrained.infer(labels, model).get
     val unconstrainedSummary = inferUnconstrained.infer(labels, model).get

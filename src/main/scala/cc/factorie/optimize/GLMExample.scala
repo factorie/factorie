@@ -112,8 +112,8 @@ object ObjectiveFunctions {
 }
 
 class LinearMultiClassExample(weights: TensorSetKey2, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, weight: Double = 1.0)
-  extends Example[WeightsDef] {
-  def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+  extends Example {
+  def accumulateExampleInto(gradient:TensorSetAccumulator, value:DoubleAccumulator) {
     val prediction = weights.value * featureVector
     val (obj, sgrad) = lossAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
@@ -122,8 +122,8 @@ class LinearMultiClassExample(weights: TensorSetKey2, featureVector: Tensor1, la
 }
 
 class LinearBinaryExample(weights: TensorSetKey1, featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.BinaryObjectiveFunction, weight: Double = 1.0)
-  extends Example[WeightsDef] {
-  def accumulateExampleInto(model: WeightsDef, gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+  extends Example {
+  def accumulateExampleInto(gradient:TensorSetAccumulator, value:DoubleAccumulator) {
     val score = weights.value dot featureVector
     val (obj, sgrad) = lossAndGradient(score, label)
     if (value != null) value.accumulate(obj)
@@ -209,7 +209,7 @@ object GlmTest {
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model)
-    val strategy = new OnlineTrainer(model, optimizer = new AdaGrad)
+    val strategy = new OnlineTrainer(model.weightsSet, optimizer = new AdaGrad)
 
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)

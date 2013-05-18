@@ -99,8 +99,8 @@ object ForwardBackwardPOS {
 //    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
 //    val optimizer = new LimitedMemoryBFGS(trainer) { override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") } }
 //    optimizer.optimize()
-    val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(s, InferByBPChainSum))
-    val trainer = new optimize.OnlineTrainer(PosModel, new optimize.AROW(PosModel))
+    val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(PosModel, s, InferByBPChainSum))
+    val trainer = new optimize.OnlineTrainer(PosModel.weightsSet, new optimize.AROW(PosModel))
     (1 to 100).foreach(i => trainer.processExamples(examples))
     
     testSavePrint("final")

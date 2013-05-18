@@ -66,7 +66,7 @@ object ChainNER1a {
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingObjective)))
-    val learner = new OnlineTrainer(model, new optimize.AROW(model))
+    val learner = new OnlineTrainer(model.weightsSet, new optimize.AROW(model))
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
       learner.processExamples(pieces)

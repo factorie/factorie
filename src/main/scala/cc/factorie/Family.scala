@@ -65,6 +65,9 @@ trait TensorFamily extends Family {
 /** A Family whose Factors have scores calculated as a dot-product between sufficient statistics TensorSet and the Family's weightsSet Tensor. */
 trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
+  /** This can only be set given a WeightsDef. Code will look like
+    * val weights = model.Weights(new DenseTensor1(10))
+    * or something of the sort */
   def weights: TensorSetKey
   @inline final override def statisticsScore(t:Tensor): Double = weights.value dot t
 }

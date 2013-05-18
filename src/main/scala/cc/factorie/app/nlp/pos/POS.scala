@@ -103,8 +103,8 @@ object POS {
 //      }
 //    }
 //    optimizer.optimize()
-    val examples = labels.map(l => new optimize.LikelihoodExample(l, InferByBPChainSum))
-    val trainer = new optimize.BatchTrainer(PosModel)
+    val examples = labels.map(l => new optimize.LikelihoodExample(PosModel, l, InferByBPChainSum))
+    val trainer = new optimize.BatchTrainer(PosModel.weightsSet)
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
