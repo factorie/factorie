@@ -420,6 +420,8 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 wi
               }
               idx1 += 1
             }
+          case (t1: NormalizedTensorProportions1, t2: Tensor) =>
+            new Outer1Tensor2(t1.tensor, t2).=+(a, v/t1.tensor.sum)
           case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) =>
             val t2Size = t2.size
             val t2IndexSeq = t2.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
@@ -428,7 +430,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 wi
             var t2i = 0
             while (t2i < t2IndexSeq.size) {
               val idx2 = t2Indices(t2i)
-              a(singleIndex(t1.singleIndex,idx2)) += 1
+              a(singleIndex(t1.singleIndex,idx2)) += v
               t2i += 1
             }
           case (t1, t2) =>

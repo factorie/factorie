@@ -29,6 +29,7 @@ trait Trainer[M<:Weights] {
 }
 
 
+
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
 class BatchTrainer[M<:Weights](val model:M, val optimizer:GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[M] with FastLogging {
