@@ -2,7 +2,7 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.Token
-import la.{LocalTensorsAccumulator}
+import la.{LocalTensorSetAccumulator}
 import optimize._
 import scala.collection.mutable.Stack
 import org.junit.Assert._
@@ -187,22 +187,22 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val ex1 = new ChainModel.ChainExample(Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
       val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {
-        val gradientAccumulator0 = new LocalTensorsAccumulator(model.weightsSet.blankSparseCopy)
-        val gradientAccumulator1 = new LocalTensorsAccumulator(model.weightsSet.blankSparseCopy)
+        val gradientAccumulator0 = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
+        val gradientAccumulator1 = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
         val valueAccumulator0 = new LocalDoubleAccumulator
         val valueAccumulator1 = new LocalDoubleAccumulator
         ex.accumulateExampleInto(model, gradientAccumulator0, valueAccumulator0)
         ex1.accumulateExampleInto(model, gradientAccumulator1, valueAccumulator1)
         assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
-        gradientAccumulator0.tensor.keys.foreach(f => {
+        gradientAccumulator0.tensorSet.keys.foreach(f => {
           logger.debug("checking family: " + f.getClass.getName)
-          logger.debug("good grad: " + gradientAccumulator0.tensor)
-          logger.debug("bad grad: " + gradientAccumulator1.tensor)
-          gradientAccumulator0.tensor(f).foreachActiveElement((i,d) => {
-            assertEquals(gradientAccumulator0.tensor(f)(i), gradientAccumulator1.tensor(f)(i), 0.001)
+          logger.debug("good grad: " + gradientAccumulator0.tensorSet)
+          logger.debug("bad grad: " + gradientAccumulator1.tensorSet)
+          gradientAccumulator0.tensorSet(f).foreachActiveElement((i,d) => {
+            assertEquals(gradientAccumulator0.tensorSet(f)(i), gradientAccumulator1.tensorSet(f)(i), 0.001)
           })
         })
-        optimizer.step(model.weightsSet, gradientAccumulator0.tensor, Double.NaN)
+        optimizer.step(model.weightsSet, gradientAccumulator0.tensorSet, Double.NaN)
       }
     }
   }

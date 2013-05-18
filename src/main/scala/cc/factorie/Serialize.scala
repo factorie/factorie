@@ -8,6 +8,8 @@ import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
 
 // TODO I think Serialize should be moved to cc.factorie.util, along side Cubbie.  I try to put only factor-graph-related classes in cc.factorie. -akm
+// TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
+// We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {

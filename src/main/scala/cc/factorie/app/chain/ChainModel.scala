@@ -56,7 +56,7 @@ with WeightsDef
     val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
   }
   var useObsMarkov = false
-  // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types
+  // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types -luke
   def families: Seq[DotFamily] = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
 
   // TODO this does not calculate statistics for obsmarkov template -luke
@@ -283,7 +283,7 @@ object ChainModel {
   }
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example[ChainModel[L,_,_]] {
     private var cachedTargetStats: TensorSet = null
-    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+    def accumulateExampleInto(model: ChainModel[L, _, _], gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = infer.infer(labels, model)

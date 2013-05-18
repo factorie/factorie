@@ -56,7 +56,8 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 // The default trainer
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
-class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDimensionTensorVar](val trainerConstructor: LogLinearModel[L,F] => Trainer[LogLinearModel[L,F]], val objective: ObjectiveFunctions.MultiClassObjectiveFunction)  {
+class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDimensionTensorVar](
+  val trainerConstructor: LogLinearModel[L,F] => Trainer[LogLinearModel[L,F]], val objective: ObjectiveFunctions.MultiClassObjectiveFunction)  {
   def train(il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val examples = il.map(l => new GLMExample(

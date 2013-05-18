@@ -33,7 +33,6 @@ object ObjectiveFunctions {
   type BinaryLinkFunction = (Double) => (Double)
   val logisticLinkFunction:  BinaryLinkFunction = prediction => 1.0/(1 + math.exp(-prediction))
 
-
   type MultiClassObjectiveFunction = (Tensor1, Int) => (Double, Tensor1)
   val logMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     val normed = prediction.expNormalized
@@ -118,7 +117,7 @@ object ObjectiveFunctions {
 class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
-  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorsAccumulator, value:DoubleAccumulator) {
+  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorSetAccumulator, value:DoubleAccumulator) {
     // println("featureVector size: %d weightsSet size: %d" format (featureVector.size, model.weightsSet.size))
     val weightsMatrix = model.evidenceTemplate.weights.value
     val prediction = weightsMatrix * featureVector

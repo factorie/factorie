@@ -1,12 +1,12 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.la.TensorsAccumulator
+import cc.factorie.la.TensorSetAccumulator
 import cc.factorie.util.DoubleAccumulator
 
 class ContrastiveDivergenceExample[C](val context: C, val sampler: Sampler[C], val k: Int = 1) extends Example[Model with WeightsDef] {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The ContrastiveDivergenceExample needs a gradient accumulator")
     val proposalDiff = new DiffList
     repeat(k) { proposalDiff ++= sampler.process(context) }
@@ -18,7 +18,7 @@ class ContrastiveDivergenceExample[C](val context: C, val sampler: Sampler[C], v
 
 class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val context: C, val sampler: Sampler[Var]) extends Example[Model with WeightsDef] {
   // NOTE: this assumes that the initial configuration is the ground truth
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The PersistentContrastiveDivergenceExample needs a gradient accumulator")
     val groundTruthDiff = new DiffList
     context.setToTarget(groundTruthDiff)
@@ -32,7 +32,7 @@ class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val cont
 class ContrastiveDivergenceHingeExample[C <: Var](
   val context: C, val sampler: Sampler[C], val learningMargin: Double = 1.0, val k: Int = 1) extends Example[Model with WeightsDef] {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The ContrastiveDivergenceHingeExample needs a gradient accumulator")
     require(value != null, "The ContrastiveDivergenceHingeExample needs a value accumulator")
     val truthScore = model.currentScore(context)
@@ -52,7 +52,7 @@ class ContrastiveDivergenceHingeExample[C <: Var](
 class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
   val context: C, val sampler: Sampler[Var], val learningMargin: Double = 1.0) extends Example[Model with WeightsDef] {
   // NOTE: this assumes that the initial configuration is the ground truth
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The PersistentContrastiveDivergenceHingeExample needs a gradient accumulator")
     require(value != null, "The PersistentContrastiveDivergenceHingeExample needs a value accumulator")
     val proposalDiff = sampler.process(context)

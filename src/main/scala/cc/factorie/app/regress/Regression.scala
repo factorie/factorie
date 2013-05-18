@@ -73,7 +73,7 @@ object LinearRegressionObjectiveFunctions {
 
 class LinearRegressionExample(features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example[LinearRegressionModel] {
   // gradient or value or margin can be null if they don't need to be computed.
-  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorsAccumulator, value: DoubleAccumulator) {
+  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     val prediction = model.weights.value * features.value.asInstanceOf[Tensor1]
     val (objValue,objGradient) = objective(prediction, label.value.asInstanceOf[Tensor1])
     if (value != null) value.accumulate(objValue)

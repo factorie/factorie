@@ -74,7 +74,7 @@ import util.DoubleAccumulator
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model with WeightsDef] {
   var learningMargin = 1.0
-  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorsAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model with WeightsDef, gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -121,12 +121,12 @@ class SampleRankTrainer[C](val model:Model with WeightsDef, sampler:ProposalSamp
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model with WeightsDef]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalTensorsAccumulator(model.weightsSet.blankSparseCopy)
+    val gradientAccumulator = new LocalTensorSetAccumulator(model.weightsSet.blankSparseCopy)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
-    if (gradientAccumulator.tensor.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
-      optimizer.step(modelWeights, gradientAccumulator.tensor, valueAccumulator.value)
+    if (gradientAccumulator.tensorSet.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
+      optimizer.step(modelWeights, gradientAccumulator.tensorSet, valueAccumulator.value)
   }
   def processExamples(examples: Iterable[Example[Model with WeightsDef]]): Unit = examples.foreach(p => process(p))
   def processExamples(examples: Iterable[Example[Model with WeightsDef]], iterations:Int): Unit = for (i <- 0 until iterations) processExamples(examples)

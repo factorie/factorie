@@ -57,7 +57,7 @@ object WordSegmenterDemo2 {
       val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
-    // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types
+    // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types -luke
     def families: Seq[DotFamily] = Seq(bias, obs, markov, obsmarkov)
     def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]

@@ -128,7 +128,7 @@ class POS3 extends DocumentAnnotator {
 
   var exampleSetsToPrediction = false
   class TokenClassifierExample(val token:Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorsAccumulator, value: DoubleAccumulator) {
+    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
       new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
