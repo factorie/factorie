@@ -149,7 +149,7 @@ object TutorialFactors {
     val flag2 = new BooleanVariable(true)
     
     // Here is a factor whose statistics are an outer product of the Tensor values of both neighbors.
-    // The score is the dot product between this tensor an a Tensor of "weights" parameters.
+    // The score is the dot product between this tensor an a Tensor of "weightsSet" parameters.
     val f5 = new Factor2(label1, label2) {
       type StatisticsType = Tensor
       val weights = new DenseTensor2(Array(Array(2.0, 1.0, 0.0), Array(1.0, 2.0, 1.0), Array(0.0, 1.0, 2.0)))
@@ -158,7 +158,7 @@ object TutorialFactors {
       def score(lv1:Label#Value, lv2:Label#Value): Double = weights dot statistics(lv1, lv2) 
     }
     /*&
-     * It is up to you to make the dimensions of the weights Tensor match the dimensions of the statistics Tensor
+     * It is up to you to make the dimensions of the weightsSet Tensor match the dimensions of the statistics Tensor
      * There are no compile-time checks for this.
      **/
     
@@ -190,7 +190,7 @@ object TutorialFactors {
      * Because it is furthermore common that the score be 
      * a dot product of the Tensor statistics and a "weight" parameter Tensor,
      * there are Factor subclasses that pre-define scoreStatistics to perform this dot-product.
-     * Only the "weights" method is abstract.
+     * Only the "weightsSet" method is abstract.
      **/
     val f8 = new DotFactorWithStatistics2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
@@ -200,7 +200,7 @@ object TutorialFactors {
      * If you want the score to be such a dot-product, but you want the statistics Tensor
      * to be something other than the outer product of the neighbor values, 
      * you can use the DotFactor{1,2,3,4} classes.
-     * Here only the "statistics" and "weights" methods are abstract.
+     * Here only the "statistics" and "weightsSet" methods are abstract.
      **/
     val f9 = new DotFactor4(label1, label2, label3, flag1) {
       val weights = new DenseTensor2(Array(Array(2.0, 1.0, 0.0), Array(1.0, 2.0, 1.0), Array(0.0, 1.0, 2.0)))
@@ -279,8 +279,8 @@ object TutorialFactors {
      * (including pre-built large-vocabulary document classification) available in FACTORIE.
      * The above is a simple demonstration.
      * 
-     * Note that all MyClassifier Factors share the same weights Tensor, 
-     * yet weights is inefficiently created and filled separate for each MyClassifier instance.
+     * Note that all MyClassifier Factors share the same weightsSet Tensor,
+     * yet weightsSet is inefficiently created and filled separate for each MyClassifier instance.
      * FACTORIE has special support for representing commonalities between Factors
      * that belong to the same "Family".
      **/

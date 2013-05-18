@@ -353,7 +353,8 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
 
 
 /*Note: this template uses the inference invariant that a child's parent always exists in the current world (hence, no need to check the EntityExists variable).*/
-class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25,useLogChildren:Boolean=true)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
+class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25,useLogChildren:Boolean=true)(implicit m:Manifest[B])
+  extends ChildParentTemplateWithStatistics[B] with DebugableTemplate{
   val name = "ChildParentCosineDistance(weight="+weight+" shift="+shift+")"
   println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency

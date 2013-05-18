@@ -17,16 +17,16 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-/** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
+/** Change the weightsSet in the direction of the gradient by a factor of "rate" for each step. */
 trait GradientStep extends GradientOptimizer {
   var it = 0
-  def processGradient(gradient: Tensors, weights: Tensors): Unit = {}
-  def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = 1.0
-  def doGradStep(weights: Tensors, gradient: Tensors, rate: Double): Unit = weights += (gradient, rate)
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+  def processGradient(weights: WeightsSet, gradient: TensorSet): Unit = {}
+  def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = 1.0
+  def doGradStep(weights: WeightsSet, gradient: TensorSet, rate: Double): Unit = weights += (gradient, rate)
+  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
     it += 1
-    processGradient(gradient, weights)
-    val rate = lRate(gradient, weights, value)
+    processGradient(weights, gradient)
+    val rate = lRate(weights, gradient, value)
     doGradStep(weights, gradient, rate)
   }
   def isConverged = false
@@ -34,21 +34,16 @@ trait GradientStep extends GradientOptimizer {
   def reset(): Unit = { it = 0 }
 }
 
-trait MarginScaled extends GradientStep {
-  val C: Double = 1.0
-  override def lRate(gradient: Tensors, weights: Tensors, value: Double) = math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
-}
-
 trait ParameterAveraging extends GradientStep {
-  var wTmp: Tensors = null
-  override def doGradStep(weights: Tensors, gradient: Tensors, rate: Double): Unit = {
+  var wTmp: TensorSet = null
+  override def doGradStep(weights: WeightsSet, gradient: TensorSet, rate: Double): Unit = {
     if (wTmp eq null) wTmp = weights.blankDenseCopy
     super.doGradStep(weights, gradient, rate)
     wTmp += (gradient, rate*it)
   }
 
-  def setWeightsToAverage(weights: Tensors): Unit = weights += (wTmp,-1.0/it)
-  def unSetWeightsToAverage(weights: Tensors): Unit = weights += (wTmp,1.0/it)
+  def setWeightsToAverage(weights: WeightsSet): Unit = weights += (wTmp,-1.0/it)
+  def unSetWeightsToAverage(weights: WeightsSet): Unit = weights += (wTmp,1.0/it)
   override def reset(): Unit = { super.reset(); wTmp = null }
 }
 
@@ -57,12 +52,12 @@ trait ParameterAveraging extends GradientStep {
 trait AdaptiveLearningRate extends GradientStep {
   val rate: Double = 1.0
   val delta: Double = 0.1
-  private var HSq: Tensors = null
+  private var HSq: TensorSet = null
   var printed = false
-  override def processGradient(gradient: Tensors, weights: Tensors): Unit = {
+  override def processGradient(weights: WeightsSet, gradient: TensorSet): Unit = {
     val eta = rate
 //    val l2 = 0.1
-//    gradient += (weights, -l2)
+//    gradient += (weightsSet, -l2)
     if (HSq == null) { HSq = weights.blankDenseCopy }
     for (template <- gradient.keys)
       (gradient(template), HSq(template)) match {
@@ -127,25 +122,46 @@ trait AdaptiveLearningRate extends GradientStep {
   }
 }
 
-trait InvSqrtTLearningRate extends GradientStep {
-  val baseRate = 1.0
-  override def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = baseRate/math.sqrt(it+1)
+trait MarginScaled extends GradientStep {
+  val C: Double = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double) = math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
 }
 
-trait InvTLearningRate extends GradientStep {
+trait InvSqrtTStepSize extends GradientStep {
   val baseRate = 1.0
-  override def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = baseRate/(it+1)
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate / math.sqrt(it + 1)
+}
+
+trait InvTStepSize extends GradientStep {
+  val baseRate = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate / (it + 1)
+}
+
+trait ConstantStepSize extends GradientStep {
+  val baseRate = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate
+}
+
+trait InvSqrtTLengthStepSize extends GradientStep {
+  val baseRate = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate / (math.sqrt(it + 1) * gradient.twoNorm)
+}
+
+trait InvTLengthStepSize extends GradientStep {
+  val baseRate = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate / ((it + 1) * gradient.twoNorm)
+}
+
+trait ConstantLengthStepSize extends GradientStep {
+  val baseRate  = 1.0
+  override def lRate(weights: WeightsSet, gradient: TensorSet, value: Double): Double = baseRate / gradient.twoNorm
 }
 
 class AdaGrad(override val rate: Double = 1.0, override val delta: Double = 0.1) extends AdaptiveLearningRate
 
+class ConstantLearningRate(override val baseRate: Double = 1.0) extends ConstantStepSize
 
-trait ConstantLR extends GradientStep {
-  val baseRate = 1.0
-  override def lRate(gradient: Tensors, weights: Tensors, value: Double): Double = baseRate
-}
-
-class ConstantLearningRate(override val baseRate: Double = 1.0) extends ConstantLR
+class ConstantLengthLearningRate(override val baseRate: Double = 1.0) extends ConstantLengthStepSize
 
 class MIRA(override val C: Double = 1.0) extends MarginScaled
 

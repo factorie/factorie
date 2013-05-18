@@ -29,19 +29,19 @@ object Coref1 {
     def domain = CorefAffinityDomain
   }
 
-  class EntityMentionModel extends CombinedModel(
-    new DotTemplate1[EntityRef] {
-      lazy val weightsTensor = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
+  class EntityMentionModel extends TemplateModel {
+    this += new DotTemplate1[EntityRef] {
+      val weights = Weights(new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize))
       //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
-      //weights.update(CorefAffinityDimensionDomain.Bias, -1)
-      weightsTensor(CorefAffinityDimensionDomain.Bias) = -1
-      weightsTensor(CorefAffinityDimensionDomain.ExactMatch) = 10
-      weightsTensor(CorefAffinityDimensionDomain.SuffixMatch) = 2
-      weightsTensor(CorefAffinityDimensionDomain.EntityContainsMention) = 3
-      weightsTensor(CorefAffinityDimensionDomain.EditDistance2) = 4
-      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
-      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
-      weightsTensor(CorefAffinityDimensionDomain.Singleton) = -1
+      //weightsSet.update(CorefAffinityDimensionDomain.Bias, -1)
+      weights.value(CorefAffinityDimensionDomain.Bias) = -1
+      weights.value(CorefAffinityDimensionDomain.ExactMatch) = 10
+      weights.value(CorefAffinityDimensionDomain.SuffixMatch) = 2
+      weights.value(CorefAffinityDimensionDomain.EntityContainsMention) = 3
+      weights.value(CorefAffinityDimensionDomain.EditDistance2) = 4
+      weights.value(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
+      weights.value(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
+      weights.value(CorefAffinityDimensionDomain.Singleton) = -1
       override def statistics(e:EntityRef#Value) = {
         val mention: Entity = e._1
         val entity: Entity = e._2
@@ -62,41 +62,43 @@ object Coref1 {
         result
       }
     }
-  )
+  }
 
-  class PairwiseModel extends CombinedModel(
-    new DotTemplate1[EntityRef] {
-      lazy val weightsTensor = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
-      //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
-      weightsTensor(CorefAffinityDimensionDomain.Bias) = -1
-      weightsTensor(CorefAffinityDimensionDomain.ExactMatch) = 10
-      weightsTensor(CorefAffinityDimensionDomain.SuffixMatch) = 2
-      weightsTensor(CorefAffinityDimensionDomain.EntityContainsMention) = 3
-      weightsTensor(CorefAffinityDimensionDomain.EditDistance2) = 4
-      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
-      weightsTensor(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
-      weightsTensor(CorefAffinityDimensionDomain.Singleton) = -1
-      override def statistics(e:EntityRef#Value) = {
-        val mention: Entity = e._1
-        val entity: Entity = e._2
-        val affinity = new CorefAffinity
-        if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
-        if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch
-        if (entity.string.contains(mention.string)) affinity += CorefAffinityDimensionDomain.EntityContainsMention
-        val editDistance = entity.string.editDistance(mention.string)
-        val normalizedEditDistance = editDistance / entity.string.length
-        if (editDistance <= 2) affinity += CorefAffinityDimensionDomain.EditDistance2
-        if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
-        if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
-        if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
-        if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
-        val result = affinity.value
-        val str = result.toString
-        //println("### PairwiseModel Stat="+str)
-        result
+  class PairwiseModel extends TemplateModel {
+    addTemplates(
+      new DotTemplate1[EntityRef] {
+        val weights = Weights(new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize))
+        //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
+        weights.value(CorefAffinityDimensionDomain.Bias) = -1
+        weights.value(CorefAffinityDimensionDomain.ExactMatch) = 10
+        weights.value(CorefAffinityDimensionDomain.SuffixMatch) = 2
+        weights.value(CorefAffinityDimensionDomain.EntityContainsMention) = 3
+        weights.value(CorefAffinityDimensionDomain.EditDistance2) = 4
+        weights.value(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
+        weights.value(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
+        weights.value(CorefAffinityDimensionDomain.Singleton) = -1
+        override def statistics(e:EntityRef#Value) = {
+          val mention: Entity = e._1
+          val entity: Entity = e._2
+          val affinity = new CorefAffinity
+          if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
+          if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch
+          if (entity.string.contains(mention.string)) affinity += CorefAffinityDimensionDomain.EntityContainsMention
+          val editDistance = entity.string.editDistance(mention.string)
+          val normalizedEditDistance = editDistance / entity.string.length
+          if (editDistance <= 2) affinity += CorefAffinityDimensionDomain.EditDistance2
+          if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
+          if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
+          if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
+          if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
+          val result = affinity.value
+          val str = result.toString
+          //println("### PairwiseModel Stat="+str)
+          result
+        }
       }
-    }
-  )
+    )
+  }
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {

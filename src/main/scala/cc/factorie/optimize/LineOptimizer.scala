@@ -18,7 +18,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
+class BackTrackLineOptimizer(val gradient:TensorSet, val line:TensorSet, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
   def stepSize = alam
@@ -29,7 +29,7 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
   var ALF = 1e-4
   val EPS = 3.0e-12
   val stpmax = 100.0
-  var origWeights: Tensors = null //weights.copy
+  var origWeights: TensorSet = null //weightsSet.copy
 
   var oldValue = Double.NaN
   var origValue = Double.NaN
@@ -52,7 +52,7 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
     tmplam = 0.0;
     alam2 = 0.0
   }
-    def step(weights:Tensors, gradient:Tensors, value:Double): Unit = {
+    def step(weights:WeightsSet, gradient:TensorSet, value:Double): Unit = {
     logger.debug("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
@@ -60,7 +60,7 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
       // Set the slope
 
       val sum = line.twoNorm
-      if (sum > initialStepSize) line.values.foreach(_*=(initialStepSize / sum)) // If gradient is too steep, bring it down to gradientNormMax
+      if (sum > initialStepSize) line.tensors.foreach(_*=(initialStepSize / sum)) // If gradient is too steep, bring it down to gradientNormMax
       slope = gradient dot line     //todo, it's redundant, and expensive to do both gradient.twoNorm and gradient dot line when they're the same
       logger.debug("BackTrackLineOptimizer slope="+slope)
       if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
@@ -70,7 +70,7 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
       // Largest step size that triggers this threshold is saved in alamin
       var test = 0.0;
       var temp = 0.0
-      if (!weights.keys.forall(k => weights(k).dimensionsMatch(line(k)))) throw new Error("line and weights do not have same dimensionality.")
+      if (!weights.keys.forall(k => weights(k).dimensionsMatch(line(k)))) throw new Error("line and weightsSet do not have same dimensionality.")
       // Do the check above because toArray will yield non-matching results if called on a WeightsTensor that has missing keys.
       val lineA = line.toArray
       val weightsA = weights.toArray
@@ -146,7 +146,7 @@ class BackTrackLineOptimizer(val gradient:Tensors, val line:Tensors, val initial
 }
 
 
-/** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
+/** Change the weightsSet in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
 class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
@@ -160,7 +160,7 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(weights: Tensors, gradient: Tensors, value: Double): Unit = {
+  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {

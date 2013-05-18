@@ -1,16 +1,16 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
-   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License. */
+///* Copyright (C) 2008-2010 University of Massachusetts Amherst,
+//   Department of Computer Science.
+//   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+//   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License. */
 
 
 
@@ -20,10 +20,10 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.la.Tensors
+import cc.factorie.la.TensorSet
 
-object WordSegmenterDemo2 { 
-  
+object WordSegmenterDemo2 {
+
   // The variable types:
   class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)
   object TokenDomain extends CategoricalDimensionTensorDomain[String]
@@ -35,30 +35,30 @@ object WordSegmenterDemo2 {
   }
   class Sentence extends Chain[Sentence,Token]
 
-  val model = new ModelWithContext[IndexedSeq[Label]] with Weights {
-    object bias extends DotFamilyWithStatistics1[Label] {
+  val model = new ModelWithContext[IndexedSeq[Label]] with WeightsDef {
+    val bias = new DotFamilyWithStatistics1[Label] {
       factorName = "Label"
-      lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
+      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
     }
-    object obs extends DotFamilyWithStatistics2[Label,Token] {
+    val obs = new DotFamilyWithStatistics2[Label,Token] {
       factorName = "Label,Token"
-      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
+      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
     }
-    object markov extends DotFamilyWithStatistics2[Label,Label] {
+    val markov = new DotFamilyWithStatistics2[Label,Label] {
       factorName = "Label,Label"
-      lazy val weightsTensor = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
+      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size))
     }
-    object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Token] {
+    val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Token] {
       factorName = "Label,Label,Token"
-      lazy val weightsTensor = new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
+      val weights = Weights(new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_)))
     }
-    object skip extends  DotFamily2[Label,Label] {
+    val skip = new DotFamily2[Label,Label] {
       factorName = "Label,Label:Boolean"
-      lazy val weightsTensor = new la.DenseTensor1(BooleanDomain.size)
+      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
-    def families = Seq(bias, obs, markov, obsmarkov)
-    lazy val weights = new Tensors(families.map(f => (f,f.weightsTensor)))
+    // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types -luke
+    def families: Seq[DotFamily] = Seq(bias, obs, markov, obsmarkov)
     def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {
@@ -107,12 +107,12 @@ object WordSegmenterDemo2 {
     val (testSet, trainSet) = sentences.shuffle.split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
     val trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
-    
+
     testVariables.foreach(_.setRandomly())
     // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     // println ("Initial test accuracy = "+ objective.accuracy(testVariables))
-    
+
     val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
     // println("Example Factors: "+exampleFactors.mkString(", "))
 

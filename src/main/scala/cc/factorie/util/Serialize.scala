@@ -1,17 +1,20 @@
-package cc.factorie
+package cc.factorie.util
 
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import la.Tensor
 import collection.mutable
 import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
+import cc.factorie._
+import cc.factorie.la._
 
 // TODO I think Serialize should be moved to cc.factorie.util, along side Cubbie.  I try to put only factor-graph-related classes in cc.factorie. -akm
+// TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
+// We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
-  implicit def modm(m: Weights): Cubbie = new WeightsCubbie(m)
+  implicit def modm(m: WeightsDef): Cubbie = new WeightsCubbie(m)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
   implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)
@@ -23,7 +26,7 @@ object CubbieConversions extends CubbieConversions
 
 object BinarySerializer {
   private def getLazyCubbieSeq(vals: Seq[() => Cubbie]): Seq[Cubbie] = vals.view.map(_())
-  // We lazily create the cubbies because, for example, model cubbies will force their model's weights lazy vals
+  // We lazily create the cubbies because, for example, model cubbies will force their model's weightsSet lazy vals
   // so we need to control the order of cubbie creation and serialization (domains are deserialized before model cubbies are even created)
   def serialize(c1: => Cubbie, file: File, gzip: Boolean): Unit =
     serialize(getLazyCubbieSeq(Seq(() => c1)), file, gzip)

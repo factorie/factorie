@@ -49,7 +49,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
   def _indices = __indices
   private val lock = new util.RWLock
-  /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
+  /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
   override def dimensionDomain: CategoricalDomain[C] = this

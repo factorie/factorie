@@ -22,6 +22,8 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie._
 import app.classify.{Classification, Classifier, LabelList}
+import cc.factorie.util.BinarySerializer
+
 //import bp.ParallelTrainer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.lemma.TokenLemma
@@ -141,7 +143,7 @@ object ActionModel extends TemplateModel {
 
   val localTemplate = new DotTemplateWithStatistics2[ActionLabel, ShiftReduceDependencyParserFeatures] {
     //override def statisticsDomains = ((ActionDomain, ParserFeaturesDomain))
-    lazy val weightsTensor = new la.DenseTensor2(ActionDomain.size, ParserFeaturesDomain.dimensionSize)
+    val weights = Weights(new la.DenseTensor2(ActionDomain.size, ParserFeaturesDomain.dimensionSize))
     def unroll1(label: ActionLabel) = Factor(label, label.features)
     def unroll2(features: ShiftReduceDependencyParserFeatures) = Factor(features.label, features)
   }

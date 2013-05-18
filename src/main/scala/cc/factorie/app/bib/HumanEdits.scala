@@ -110,7 +110,7 @@ var debugFlag=false
 }
 
 class HumanEditTemplateWithReliability(shouldLinkReward: Double, shouldNotLinkPenalty:Double, val sigma:Double=2.0) extends HumanEditTemplate(shouldLinkReward,shouldNotLinkPenalty) {
-  /* We need a better scoring function that weights the reliability adjustment
+  /* We need a better scoring function that weightsSet the reliability adjustment
    * based on the number of edits that user has made...maybe something like log(totalEdits)
    * we should mix the two together so that if you have made lots of edits, we are more
    * confident about your reliability.

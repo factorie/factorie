@@ -33,7 +33,6 @@ object ObjectiveFunctions {
   type BinaryLinkFunction = (Double) => (Double)
   val logisticLinkFunction:  BinaryLinkFunction = prediction => 1.0/(1 + math.exp(-prediction))
 
-
   type MultiClassObjectiveFunction = (Tensor1, Int) => (Double, Tensor1)
   val logMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     val normed = prediction.expNormalized
@@ -118,9 +117,9 @@ object ObjectiveFunctions {
 class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
-  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorsAccumulator, value:DoubleAccumulator) {
-    // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val weightsMatrix = model.evidenceTemplate.weightsTensor
+  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:TensorSetAccumulator, value:DoubleAccumulator) {
+    // println("featureVector size: %d weightsSet size: %d" format (featureVector.size, model.weightsSet.size))
+    val weightsMatrix = model.evidenceTemplate.weights.value
     val prediction = weightsMatrix * featureVector
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, targetLabel)
@@ -129,7 +128,7 @@ class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: Obje
     //    println("Stochastic gradient: " + sgrad)
     // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
     //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
-    if (gradient != null) gradient.accumulateOuter(model.evidenceTemplate, sgrad, featureVector)
+    if (gradient != null) gradient.accumulate(model.evidenceTemplate.weights, sgrad outer featureVector)
   }
 }
 
@@ -138,15 +137,15 @@ class GLMExample(featureVector: Tensor1, targetLabel: Int, lossAndGradient: Obje
 //  type FamilyType = this.type
 //  type NeighborType1 = Variable
 //  type FactorType = Factor
-//  def weights = null
+//  def weightsSet = null
 //}
 //class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
 //  def factors(v: Variable): Iterable[Factor] = throw new Error
 //  def copy = sys.error("unimpl")
-//  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-//  val weights = new WeightsTensor()
-//  weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
-//  override def weightsTensor = weights
+//  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weightsSet := t }
+//  val weightsSet = new WeightsTensor()
+//  weightsSet(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weightsSet
+//  override def weights = weightsSet
 //}
 
 object GlmTest {
@@ -206,7 +205,7 @@ object GlmTest {
     while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
       strategy.processExamples(pieces)
-      println(model.evidenceTemplate.weightsTensor)
+      println(model.evidenceTemplate.weights)
       //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
 
       totalTime += System.currentTimeMillis() - t0
@@ -219,7 +218,7 @@ object GlmTest {
       val trainTrial = new classify.Trial[Label](classifier)
       trainTrial ++= trainLabels
 
-      //      println("Weights = " + model.evidenceTemplate.weights)
+      //      println("WeightsDef = " + model.evidenceTemplate.weightsSet)
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)

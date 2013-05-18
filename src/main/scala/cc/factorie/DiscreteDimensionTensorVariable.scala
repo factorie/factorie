@@ -51,7 +51,7 @@ trait DiscreteDimensionTensorVar extends TensorVar {
   def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
-/** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
+/** A vector with dimensions corresponding to a DiscreteDomain, and with Double weightsSet for each dimension, represented by a sparse vector. */
 abstract class DiscreteDimensionTensorVariable extends MutableTensorVar[Tensor] with DiscreteDimensionTensorVar {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
   //thisVariable =>

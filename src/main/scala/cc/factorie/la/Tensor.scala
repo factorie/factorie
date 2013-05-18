@@ -62,7 +62,7 @@ trait Tensor extends MutableDoubleSeq {
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
-  // Methods for mutability not implemented in all Tensors
+  // Methods for mutability not implemented in all TensorSet
   def +=(i:Int, incr:Double): Unit
   def zero(): Unit
   def update(i:Int, v:Double): Unit
@@ -72,7 +72,7 @@ trait Tensor extends MutableDoubleSeq {
 
 
 trait ReadOnlyTensor extends Tensor {
-  // Methods for mutability not implemented in all Tensors
+  // Methods for mutability not implemented in all TensorSet
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
@@ -87,7 +87,7 @@ object Tensor {
     t
   }
   
-  // Support for creating new empty Tensors with dimensions matching an argument
+  // Support for creating new empty TensorSet with dimensions matching an argument
   def newDense(t:Tensor): Tensor = t match {
     case t:Tensor1 => new DenseTensor1(t.dim1)
     case t:Tensor2 => new DenseTensor2(t.dim1, t.dim2)

@@ -27,16 +27,18 @@ object Coref4{
     def bow = attr[Bow]
     for(keyword <- keywords)bow += keyword
   }
-  class SimpleHierModel extends TemplateModel(
-    new ChildParentTemplateWithStatistics[Name]{
-      override def score(er:EntityRef#Value, childName:Name#Value, parentName:Name#Value):Double = { -childName.editDistance(parentName).toDouble }
-    },
-    new ChildParentCosineDistance[Bow](2.0,-0.25), //first argument is the weight, second argument is the shift
-    new StructuralPriorsTemplate(2.0,0.25) //first argument is the penalty for the existence of an entity, second argument is the penalty for the exitence of a subentity
-    //new ChildParentTemplateWithStatistics[Bow]{
-    //  override def score(er:EntityRef#Value, childBow:Bow#Value, parentBow:Bow#Value):Double = childBow.cosineSimilarity(parentBow)
-    //},
-  )
+  class SimpleHierModel extends TemplateModel {
+    addTemplates(
+      new ChildParentTemplateWithStatistics[Name]{
+        override def score(er:EntityRef#Value, childName:Name#Value, parentName:Name#Value):Double = { -childName.editDistance(parentName).toDouble }
+      },
+      new ChildParentCosineDistance[Bow](2.0,-0.25), //first argument is the weight, second argument is the shift
+      new StructuralPriorsTemplate(2.0,0.25) //first argument is the penalty for the existence of an entity, second argument is the penalty for the exitence of a subentity
+      //new ChildParentTemplateWithStatistics[Bow]{
+      //  override def score(er:EntityRef#Value, childBow:Bow#Value, parentBow:Bow#Value):Double = childBow.cosineSimilarity(parentBow)
+      //},
+    )
+  }
   /**The database: entity cubbies and database for persistence*/
   class MyEntityCubbie(entity:MyEntity=null) extends HierEntityCubbie{
     protected var _entity:MyEntity = entity

@@ -38,7 +38,7 @@ trait DoubleSeq {
   def max: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m >= apply(i))) m = apply(i); i += 1 }; m }
   def min: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m <= apply(i))) m = apply(i); i += 1 }; m }
   def sum: Double = { var s = 0.0; val l = length; var i = 0; while (i < l) { s += apply(i); i += 1 }; s }
-  // Don't do this here because in sparse Tensors missing entries would be treated as NegativeInfinity, but are treated in all other operations as 0.0
+  // Don't do this here because in sparse TensorSet missing entries would be treated as NegativeInfinity, but are treated in all other operations as 0.0
   // Sum of two doubles expressed in log space 
   //def sumLog: Double = { var s = 0.0; val l = length; var i = 0; while (i < l) { s = cc.factorie.maths.sumLogProb(s, apply(i)); i += 1 }; s }
   def oneNorm: Double = { val l = length; var result = 0.0; var i = 0; while (i < l) { result += math.abs(apply(i)); i += 1}; result }

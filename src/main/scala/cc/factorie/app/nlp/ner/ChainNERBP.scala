@@ -15,6 +15,8 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
+import cc.factorie.util.BinarySerializer
+
 //import bp._
 import optimize._
 import cc.factorie.app.nlp._

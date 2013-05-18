@@ -1,7 +1,7 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import cc.factorie.la.{Tensors, TensorsAccumulator}
+import cc.factorie.la.{TensorSet, TensorSetAccumulator}
 import util.DoubleAccumulator
 
 /**
@@ -19,9 +19,8 @@ import util.DoubleAccumulator
  * "WSABIE: Scaling Up To Large Vocabulary Image Annotation" by Weston, Bengio, and Usunier
  */
 object WSabie {
-  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends DotFamilyWithStatistics2[TensorVar, TensorVar] with Weights {
-    override lazy val weightsTensor = setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng)
-
+  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends WeightsDef {
+    val weights = Weights(setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng))
     def setToRandom(t: la.DenseTensor2, rng: java.util.Random): la.DenseTensor2 = {
       var i = 0
       while (i < t.length) {
@@ -30,14 +29,13 @@ object WSabie {
       }
       t
     }
-
-    def score(query: la.Tensor1, vector: la.Tensor1) = weightsTensor.*(query).dot(weightsTensor.*(vector))
+    def score(query: la.Tensor1, vector: la.Tensor1) = (weights.value * query) dot (weights.value * vector)
     def rank(query: la.Tensor1, vectors: Seq[la.Tensor1]): Seq[la.Tensor1] = vectors.sortBy(v => -score(query, v))
   }
 
   class WSabieExample(val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example[WSabieModel] {
-    def accumulateExampleInto(model: WSabieModel, gradient: TensorsAccumulator, value: DoubleAccumulator) {
-      val weights = model.weightsTensor
+    def accumulateExampleInto(model: WSabieModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+      val weights = model.weights.value
       val queryEmbeddings = weights * query
       val posEmbeddings = weights * positive
       val negEmbeddings = weights * negative
@@ -47,10 +45,10 @@ object WSabie {
       if (queryPos < queryNeg + 1) {
         if (value ne null) value.accumulate(queryPos - queryNeg - 1)
         if (gradient ne null) {
-          gradient.accumulate(model, posEmbeddings.outer(query))
-          gradient.accumulate(model, negEmbeddings.outer(query), -1)
-          gradient.accumulate(model, queryEmbeddings.outer(positive))
-          gradient.accumulate(model, queryEmbeddings.outer(negative), -1)
+          gradient.accumulate(model.weights, posEmbeddings.outer(query))
+          gradient.accumulate(model.weights, negEmbeddings.outer(query), -1)
+          gradient.accumulate(model.weights, queryEmbeddings.outer(positive))
+          gradient.accumulate(model.weights, queryEmbeddings.outer(negative), -1)
         }
       }
     }

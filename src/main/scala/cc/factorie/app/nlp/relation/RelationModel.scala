@@ -10,23 +10,23 @@ import cc.factorie._
 object RelationModel {
   import RelationVariables._
 
-  class LocalTemplate extends DotTemplateWithStatistics2[RelationLabel, Features] {
+  class LocalTemplate(val model: WeightsDef) extends DotTemplateWithStatistics2[RelationLabel, Features] {
     //override def statisticsDomains = ((RelationLabelDomain, RelationFeaturesDomain))
-    lazy val weightsTensor = new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationFeaturesDomain.dimensionSize)
+    val weights = model.Weights(new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationFeaturesDomain.dimensionSize))
     def unroll1(v: RelationLabel) = Factor(v, v.mention.features)
     def unroll2(v: Features) = throw new Error("features don't change")
   }
 
-  class Arg1Template extends DotTemplateWithStatistics2[RelationLabel, ArgFeatures] {
+  class Arg1Template(val model: WeightsDef) extends DotTemplateWithStatistics2[RelationLabel, ArgFeatures] {
     //override def statisticsDomains = ((RelationLabelDomain, RelationArgFeaturesDomain))
-    lazy val weightsTensor = new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationArgFeaturesDomain.dimensionSize)
+    val weights = model.Weights(new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationArgFeaturesDomain.dimensionSize))
     def unroll1(v: RelationLabel) = Factor(v, v.mention.arg1Features)
     def unroll2(v: ArgFeatures) = throw new Error("features don't change")
   }
 
-  class Arg2Template extends DotTemplateWithStatistics2[RelationLabel, ArgFeatures] {
+  class Arg2Template(val model: WeightsDef) extends DotTemplateWithStatistics2[RelationLabel, ArgFeatures] {
     //override def statisticsDomains = ((RelationLabelDomain, RelationArgFeaturesDomain))
-    lazy val weightsTensor = new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationArgFeaturesDomain.dimensionSize)
+    val weights = model.Weights(new cc.factorie.la.DenseTensor2(RelationLabelDomain.size, RelationArgFeaturesDomain.dimensionSize))
     def unroll1(v: RelationLabel) = Factor(v, v.mention.arg2Features)
     def unroll2(v: ArgFeatures) = throw new Error("features don't change")
   }

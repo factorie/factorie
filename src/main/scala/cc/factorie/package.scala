@@ -14,10 +14,11 @@
 
 package cc
 import scala.util.Random
+import cc.factorie.util.CubbieConversions
 
 package object factorie extends CubbieConversions {
 
-  // Common cases for DotFamily weights
+  // Common cases for DotFamily weightsSet
 //  type Tensor = cc.factorie.la.Tensor
 //  type Tensor1 = cc.factorie.la.Tensor1
 //  type Tensor2 = cc.factorie.la.Tensor2

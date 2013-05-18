@@ -1216,11 +1216,11 @@ object SummaryStatistics{
 
 }
 
-class SummaryStatistics[S<:SummaryStatistic](val weights:HashMap[S,Double] = new HashMap[S,Double]){
+class SummaryStatistics[S<:SummaryStatistic](val weightsSet:HashMap[S,Double] = new HashMap[S,Double]){
   def updateDelta(add:Iterable[S],remove:Iterable[S]){
 
     for(a<-add){
-      if(weights.contains(a))weights(a).weight += a.weight else
+      if(weightsSet.contains(a))weightsSet(a).weight += a.weight else
     }
   }
   protected def add(summaries:Iterable[S]) = {

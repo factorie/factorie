@@ -203,7 +203,7 @@ abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, 
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weightsTensor.asInstanceOf[Tensor1]
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.value.asInstanceOf[Tensor1]
     case _ => {
       val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
       val result = new DenseTensor1(edge1.variable.domain.size)
@@ -384,11 +384,11 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = factor match {
     // TODO: this only works if statistics has not been overridden. See TestBP.loop2 for an example where this fails.
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weightsTensor.isInstanceOf[Tensor2]) => {
-      factor.family.weightsTensor.asInstanceOf[Tensor2]
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weights.isInstanceOf[Tensor2]) => {
+      factor.family.weights.value.asInstanceOf[Tensor2]
     }
     case _ => {
-      // TODO Replace this with just efficiently getting factor.family.weights
+      // TODO Replace this with just efficiently getting factor.family.weightsSet
       val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
       val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
       val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0

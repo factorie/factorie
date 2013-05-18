@@ -7,10 +7,10 @@ import cc.factorie.la.Tensor1
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
 
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](ll: LabelList[L, F]): Classifier[L] = {
-    
-    val template = new LogLinearTemplate2[L,F](ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
-    val model = new TemplateModel(template)
-    
+    val model = new TemplateModel
+    val template = new LogLinearTemplate2[L,F](model, ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
+    model += template
+
     val numLabels = ll.labelDomain.size
     val numFeatures = ll.featureDomain.size
     val xs: Seq[Tensor1] = ll.map(ll.labelToFeatures(_).tensor.asInstanceOf[Tensor1])
@@ -21,9 +21,10 @@ class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
       else
         (0 until numLabels).map { label => (new LinearL2SVM).train(xs, ys, label) }
     }
+    val weightsValue = template.weights.value
     for (f <- 0 until numFeatures;
          (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      template.weightsTensor(l,f) = t(f)
+      weightsValue(l,f) = t(f)
     }
 
     new ModelBasedClassifier(model, ll.head.domain)

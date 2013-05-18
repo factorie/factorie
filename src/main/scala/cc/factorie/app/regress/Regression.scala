@@ -45,15 +45,8 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
-class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends Model with Weights {
-  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-  def factors(variable: Var) = Nil
-  val family = new DotFamily {
-    lazy val weightsTensor = new DenseTensor2(nLabel, nFeatures)
-  }
-  def families = Seq(family)
-  // def weights = family.familyWeights.asInstanceOf[DenseTensor2]
-  lazy val weights = new Tensors(Seq((family,family.weightsTensor)))
+class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends WeightsDef {
+  val weights = Weights(new DenseTensor2(nLabel, nFeatures))
 }
 
 object LinearRegressionObjectiveFunctions {
@@ -78,17 +71,15 @@ object LinearRegressionObjectiveFunctions {
   }
 }
 
-
 class LinearRegressionExample(features: TensorVar, label: TensorVar, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective) extends Example[LinearRegressionModel] {
   // gradient or value or margin can be null if they don't need to be computed.
-  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorsAccumulator, value: DoubleAccumulator) {
-    val weights = model.family.weightsTensor
-    val prediction = weights * features.value.asInstanceOf[Tensor1]
+  def accumulateExampleInto(model: LinearRegressionModel, gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+    val prediction = model.weights.value * features.value.asInstanceOf[Tensor1]
     val (objValue,objGradient) = objective(prediction, label.value.asInstanceOf[Tensor1])
     if (value != null) value.accumulate(objValue)
     // add the gradients
     if (gradient != null) {
-      gradient.accumulate(model.family, new cc.factorie.la.Outer1Tensor2(objGradient, features.value.asInstanceOf[Tensor1]))
+      gradient.accumulate(model.weights, new cc.factorie.la.Outer1Tensor2(objGradient, features.value.asInstanceOf[Tensor1]))
     }
   }
 }
@@ -98,7 +89,7 @@ object LinearRegressionTrainer {
   def train[E <: TensorVar, A <: TensorVar](examples: Iterable[A], dependant2Explanatory: A => E, l2: Double, objective: LinearRegressionObjectiveFunctions.ObjectiveFunctionType = LinearRegressionObjectiveFunctions.squaredObjective): LinearRegressor[E, A] = {
     val optimizer = new cc.factorie.optimize.LBFGS() with cc.factorie.optimize.L2Regularization
     optimizer.variance = 1.0/l2
-    val trainerMaker : LinearRegressionModel => Trainer[LinearRegressionModel] = m => new BatchTrainer(m, optimizer)
+    val trainerMaker: LinearRegressionModel => Trainer[LinearRegressionModel] = m => new BatchTrainer(m, optimizer)
     trainCustom(examples, dependant2Explanatory, trainerMaker, objective)
   }
 
@@ -113,7 +104,7 @@ object LinearRegressionTrainer {
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }
-    new LinearRegressor(dependant2Explanatory, model.family.weightsTensor)
+    new LinearRegressor(dependant2Explanatory, model.weights.value)
   }
 }
 

@@ -9,7 +9,7 @@ class ModelBasedClassifierCubbie(cls: Classifier[Label]) extends Cubbie {
 //  val labelDomain = CubbieSlot[CategoricalDomainCubbie]("labelDomain", () => throw new Error)
 //  labelDomain := new CategoricalDomainCubbie(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
   val model = CubbieSlot[WeightsCubbie]("model", () => throw new Error)
-  model := new WeightsCubbie(cls.asInstanceOf[ModelBasedClassifier[Label, Model with Weights]].model)
+  model := new WeightsCubbie(cls.asInstanceOf[ModelBasedClassifier[Label, Model with WeightsDef]].model)
 }
 
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require

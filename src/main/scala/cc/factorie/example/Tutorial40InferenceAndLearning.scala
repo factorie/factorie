@@ -25,7 +25,7 @@ object Tutorial40InferenceAndLearning {
      *
      * As we saw in the Model tutorial, a model in factorie is an object that
      * can take some variables and return some factors, which know how to score
-     * assignments of those variables. So models store weights, and things like that.
+     * assignments of those variables. So models store weightsSet, and things like that.
      *
      * To construct a chain model you need to give it a few things. First, the domains
      * of the labels and the token features. Then, functions that can take a label to
@@ -103,7 +103,7 @@ object Tutorial40InferenceAndLearning {
      * An Example abstracts over a piece of data and knows how to compute objectives
      * and gradients.
      *
-     * GradientOptimizers know how to update a model's weights given gradients and values.
+     * GradientOptimizers know how to update a model's weightsSet given gradients and values.
      *
      * In the middle between Examples and GradientOptimizers we have Trainers, which control
      * when the gradients are evaluated, where they are stored, the degree of parallelism, etc.
@@ -160,7 +160,7 @@ object Tutorial40InferenceAndLearning {
      * Factorie also has support for more efficient learning algorithms than traditional
      * inference-based batch and online methods.
      *
-     * The main such method is SampleRank, which runs a sampler and updates the weights
+     * The main such method is SampleRank, which runs a sampler and updates the weightsSet
      * while the sampler explores the posterior to make the model's predictions match an
      * arbitrary loss function.
     **/

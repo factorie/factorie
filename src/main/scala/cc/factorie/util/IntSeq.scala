@@ -91,7 +91,7 @@ final class SubArrayIntSeq(val array:Array[Int], val start:Int, val length:Int) 
   def toArray = { val a = new Array[Int](length); System.arraycopy(array, start, a, 0, length); a }
 }
 
-/** A sequence of (activeDomain) indices for a possibly sparse outer product of (the activeDomains of) Tensors. */
+/** A sequence of (activeDomain) indices for a possibly sparse outer product of (the activeDomains of) TensorSet. */
 final class Outer2IntSeq(val dim1:Int, val dim2:Int, val intSeq1:IntSeq, val intSeq2:IntSeq) extends IntSeq {
   private val _array = new Array[Int](intSeq1.length * intSeq2.length)
   def toArray = { val a = new Array[Int](length); System.arraycopy(_array, 0, a, 0, _array.length); a }

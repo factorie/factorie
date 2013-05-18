@@ -43,7 +43,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
       l.intValue,
       ObjectiveFunctions.logMultiClassObjective,
       weight = il.instanceWeight(l)))
-    if (warmStart != null) cmodel.evidenceTemplate.weightsTensor := warmStart
+    if (warmStart != null) cmodel.evidenceTemplate.weights.value := warmStart
     // Do the training by BFGS
     val lbfgs = new optimize.LBFGS with L2Regularization { variance = variance }
     val strategy = new BatchTrainer(cmodel, lbfgs)
@@ -56,7 +56,8 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 // The default trainer
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
-class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDimensionTensorVar](val trainerConstructor: LogLinearModel[L,F] => Trainer[LogLinearModel[L,F]], val objective: ObjectiveFunctions.MultiClassObjectiveFunction)  {
+class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDimensionTensorVar](
+  val trainerConstructor: LogLinearModel[L,F] => Trainer[LogLinearModel[L,F]], val objective: ObjectiveFunctions.MultiClassObjectiveFunction)  {
   def train(il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val examples = il.map(l => new GLMExample(

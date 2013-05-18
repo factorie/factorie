@@ -62,7 +62,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   /** Allow subclasses to access the list objects.  Useful for subclasses calling reset and then re-entering a filtered subset of the old objects. */
   protected def _entries: IndexedSeq[T] = _objects
 
-  /**If positive, throw error if Index reaches size larger than this.  Use for growable multi-dim Factor weights */
+  /**If positive, throw error if Index reaches size larger than this.  Use for growable multi-dim Factor weightsSet */
   var maxSize = -1
   // TODO consider putting the following method back in later -akm
   //override def maxSize_=(s:Int) : Unit = if (maxSize >= size) maxSize = s else throw new Error("Trying to set maxSize smaller than size.")

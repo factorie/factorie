@@ -300,8 +300,8 @@ trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends
 abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3]
 
 /** A 3-neighbor Factor whose statistics have type Tensor, 
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "statistics" and "weights" methods are abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "statistics" and "weightsSet" methods are abstract. */
 abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -309,8 +309,8 @@ abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override va
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values,
-    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
-    Only "weights" method is abstract. */
+    and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
+    Only "weightsSet" method is abstract. */
 abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends DotFactor3(_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3] {
   override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
@@ -383,8 +383,8 @@ trait DotFamily3[N1<:Var,N2<:Var,N3<:Var] extends TensorFamily3[N1,N2,N3] with D
 }
 
 trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamilyWithStatistics3[N1,N2,N3] with DotFamily3[N1,N2,N3] {
-  override def weightsTensor: Tensor3
-  //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = weights dot statistics(v1, v2, v3)
+  override def weights: TensorSetKey3
+  //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = weightsSet dot statistics(v1, v2, v3)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
@@ -393,9 +393,9 @@ trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extend
       If _1 is not a DiscreteVar then throws an Error. */
   def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = {
     val outer = Tensor.outer(tensor2, tensor3)
-    val dim = weightsTensor.dim1 //statisticsDomains._1.dimensionDomain.size
+    val dim = weights.value.dim1 //statisticsDomains._1.dimensionDomain.size
     val result = new DenseTensor1(dim)
-    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weightsTensor(i*dim + j) * v)
+    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights.value(i*dim + j) * v)
     result
   }
   def scores2(tensor1:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
@@ -422,15 +422,15 @@ trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extend
 //}
 //
 //trait DotStatistics3[S1<:Tensor,S2<:Tensor,S3<:Tensor] extends TensorStatistics3[S1,S2,S3] with DotFamily {
-//  override def weights: Tensor3
+//  override def weightsSet: Tensor3
 //  /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
 //      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
 //      If _1 is not a DiscreteVar then throws an Error. */
 //  def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = {
 //    val outer = Tensor.outer(tensor2, tensor3)
-//    val dim = weights.dim1 //statisticsDomains._1.dimensionDomain.size
+//    val dim = weightsSet.dim1 //statisticsDomains._1.dimensionDomain.size
 //    val result = new DenseTensor1(dim)
-//    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights(i*dim + j) * v)
+//    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weightsSet(i*dim + j) * v)
 //    result
 //  }
 //  def scores2(tensor1:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")

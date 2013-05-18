@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, HogwildTrainer}
-import cc.factorie.util.DoubleAccumulator
+import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import scala.collection.mutable.HashMap
 import java.io.File
 import org.junit.Assert._
@@ -128,12 +128,12 @@ class POS3 extends DocumentAnnotator {
 
   var exampleSetsToPrediction = false
   class TokenClassifierExample(val token:Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
-    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorsAccumulator, value: DoubleAccumulator) {
+    override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
       new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
       if (exampleSetsToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weightsTensor
+        val weightsMatrix = model.evidenceTemplate.weights.value
         val prediction = weightsMatrix * featureVector
         token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
       }
@@ -141,7 +141,7 @@ class POS3 extends DocumentAnnotator {
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    val weightsMatrix = model.evidenceTemplate.weightsTensor
+    val weightsMatrix = model.evidenceTemplate.weights.value
     for (token <- tokens) {
       assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
