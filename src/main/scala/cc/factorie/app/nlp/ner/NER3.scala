@@ -2,6 +2,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 import java.io.File
+import cc.factorie.util.{BinarySerializer, CubbieConversions}
 
 class NER3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }

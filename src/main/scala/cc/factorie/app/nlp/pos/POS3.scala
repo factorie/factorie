@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, HogwildTrainer}
-import cc.factorie.util.DoubleAccumulator
+import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import scala.collection.mutable.HashMap
 import java.io.File
 import org.junit.Assert._

@@ -22,6 +22,8 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie._
 import app.classify.{Classification, Classifier, LabelList}
+import cc.factorie.util.BinarySerializer
+
 //import bp.ParallelTrainer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.lemma.TokenLemma

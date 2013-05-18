@@ -20,6 +20,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import java.io.File
+import cc.factorie.util.BinarySerializer
 
 object WordSegmenterDemo { 
   

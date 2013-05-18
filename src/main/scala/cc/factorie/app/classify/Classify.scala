@@ -18,6 +18,7 @@ import cc.factorie._
 import app.classify
 import app.strings.SetBasedStopwords
 import java.io._
+import cc.factorie.util.BinarySerializer
 
 // Feature and Label classes
 

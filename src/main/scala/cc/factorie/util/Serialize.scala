@@ -1,11 +1,12 @@
-package cc.factorie
+package cc.factorie.util
 
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import la.Tensor
 import collection.mutable
 import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
 import java.nio.ByteBuffer
+import cc.factorie._
+import cc.factorie.la._
 
 // TODO I think Serialize should be moved to cc.factorie.util, along side Cubbie.  I try to put only factor-graph-related classes in cc.factorie. -akm
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke

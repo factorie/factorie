@@ -7,6 +7,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
 import cc.factorie.app.nlp
+import cc.factorie.util.BinarySerializer
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 

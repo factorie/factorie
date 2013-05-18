@@ -18,7 +18,7 @@ import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import cc.factorie.util.DefaultCmdOptions
+import cc.factorie.util.{BinarySerializer, CubbieConversions, DefaultCmdOptions}
 import java.io.File
 
 class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
@@ -99,7 +99,7 @@ class SpanNerModel extends TemplateModel{
     )
     def this(file:File) = {
       this()
-      import cc.factorie.CubbieConversions._
+      import CubbieConversions._
       BinarySerializer.deserialize(SpanNerFeaturesDomain, this, file)
     }
 }
@@ -457,7 +457,7 @@ class SpanNER {
 object SpanNER extends SpanNER {
   // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
-    import cc.factorie.CubbieConversions._
+    import CubbieConversions._
     // Parse command-line
     object opts extends DefaultCmdOptions {
       val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")

@@ -2,6 +2,7 @@ package cc.factorie.example
 
 import cc.factorie._
 import java.io.File
+import cc.factorie.util.BinarySerializer
 
 //import bp.specialized.Viterbi
 //import bp.{ParallelTrainer, ForwardBackwardExample}

@@ -16,6 +16,8 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.optimize._
 import app.strings._
+import cc.factorie.util.BinarySerializer
+
 //import bp._
 //import bp.specialized.Viterbi
 import optimize._

@@ -15,6 +15,7 @@ import java.io.DataOutputStream
 import java.io.FileOutputStream
 import java.util.zip.GZIPOutputStream
 import cc.factorie.app.nlp.parse.nonproj.ParserSupport.ParseDecision
+import cc.factorie.util.{BinarySerializer, CubbieConversions}
 
 // An abstraction which allows for easily changing the predictor
 trait ParserClassifier {

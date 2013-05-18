@@ -18,6 +18,7 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import java.io.File
+import cc.factorie.util.BinarySerializer
 
 object ChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {

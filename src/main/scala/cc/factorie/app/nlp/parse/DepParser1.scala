@@ -20,7 +20,7 @@ import cc.factorie.app.classify.{Classification, Classifier, LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie.util.{ProtectedIntArrayBuffer, LocalDoubleAccumulator}
+import cc.factorie.util.{BinarySerializer, CubbieConversions, ProtectedIntArrayBuffer, LocalDoubleAccumulator}
 import cc.factorie.la.Tensor1
 import cc.factorie.optimize.{MiniBatchExample, ParameterAveraging}
 
