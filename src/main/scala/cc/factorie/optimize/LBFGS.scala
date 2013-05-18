@@ -102,8 +102,6 @@ class LBFGS(var numIterations: Double = 1000,
       oldg = gradient.copy
       direction = gradient.copy
 
-
-
       if (direction.twoNorm == 0) {
         logger.info("LBFGS: Initial initial gradient is zero; saying converged")
         g = null

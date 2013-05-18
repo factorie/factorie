@@ -42,8 +42,8 @@ class WeightsTensorSet extends WeightsSet {
   def apply(key: TensorSetKey): Tensor = key.value
 
   def copy: TensorSet = { val copyTensor = blankDenseCopy; copyTensor += self; copyTensor }
-  def blankDenseCopy: TensorSet = new HashTensorSet(key => Tensor.newDense(self(key)))
-  def blankSparseCopy: TensorSet = new HashTensorSet(key => Tensor.newSparse(self(key)))
+  def blankDenseCopy: TensorSet = new HashTensorSet(key => Tensor.newDense(key.value))
+  def blankSparseCopy: TensorSet = new HashTensorSet(key => Tensor.newSparse(key.value))
 
   def add(ctor: => Tensor): TensorSetKey = new TensorSetKeySetType with InnerKey { def newBlankTensor = ctor }
   def add(ctor: => Tensor1): TensorSetKey1 = new TensorSetKey1 with InnerKey { def newBlankTensor = ctor }
@@ -53,6 +53,7 @@ class WeightsTensorSet extends WeightsSet {
 
   private trait InnerKey extends TensorSetKey {
     def sharedWeights = self
+    _keys.append(this)
     var _actualWeights: TensorType = null.asInstanceOf[TensorType]
     def realValue = { if (_actualWeights eq null) { _actualWeights = newBlankTensor} ; _actualWeights }
   }

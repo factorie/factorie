@@ -48,8 +48,8 @@ class BackTrackLineOptimizer(val gradient:TensorSet, val line:TensorSet, val ini
     slope = Double.NaN
     alamin = Double.NaN
     alam = initialStepSize
-    oldAlam = 0.0;
-    tmplam = 0.0;
+    oldAlam = 0.0
+    tmplam = 0.0
     alam2 = 0.0
   }
     def step(weights:WeightsSet, gradient:TensorSet, value:Double): Unit = {
