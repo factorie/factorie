@@ -245,13 +245,13 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
-    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.00001, 0.00001)
+    val opt = new cc.factorie.optimize.AdaGrad(0.01) with ParameterAveraging// DualAveragingOptimizer(1.0, 0.0, 0.00001, 0.00001)
     val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
       // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
-      // opt.setWeightsToAverage(model.weightsSet)
+      opt.setWeightsToAverage(model.weightsSet)
       import DepParser1.{uas,las}
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
@@ -263,10 +263,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println()
       println("Saving model...")
       serialize(name + "-iter-"+iteration)
-      // opt.unSetWeightsToAverage(model.weightsSet)
+      opt.unSetWeightsToAverage(model.weightsSet)
     }
     println("Finished training.")
-    // opt.setWeightsToAverage(model.weightsSet)
+    opt.setWeightsToAverage(model.weightsSet)
     // Print accuracy diagnostics
   }
 
