@@ -21,7 +21,7 @@ import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions, ProtectedIntArrayBuffer, LocalDoubleAccumulator}
-import cc.factorie.la.Tensor1
+import cc.factorie.la.{DenseTensor1, Tensor1}
 import cc.factorie.optimize.{MiniBatchExample, ParameterAveraging}
 
 
@@ -53,7 +53,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     private def isAllowedCategory(actionIdx: Int): Boolean = {
       actionIdx match {
         /*Left*/   case 1 => { stack.size > 1 && tree.parentIndex(stack.head) == ParseTree.noIndex && input.size > 0 }
-        /*Right*/  case 2 => { input.size > 0 }
+        /*Right*/  case 2 => { input.size > 0 && tree.parentIndex(input.head) == ParseTree.noIndex && stack.size > 0 }
         /*Shift*/  case 3 => { input.size > 1 }
         /*Reduce*/ case 4 => { stack.size > 1 && tree.parentIndex(stack.head) != ParseTree.noIndex }
       }
@@ -142,6 +142,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val actionsPerformed = new ArrayBuffer[Action]
     //s.attr.remove[ParseTree]
     val tree = s.attr.getOrElseUpdate(new ParseTree(s))
+    for (i <- 0 until s.length) tree._parents(i) = ParseTree.noIndex // need to clear the parse tree before parsing
     val stack = new ParserStack
     stack.push(ParseTree.rootIndex)
     val input = new ParserStack; for (i <- (0 until s.length).reverse) input.push(i)
@@ -244,13 +245,13 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
-    val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
+    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.00001, 0.00001)
     val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
       // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
-      opt.setWeightsToAverage(model.weightsSet)
+      // opt.setWeightsToAverage(model.weightsSet)
       import DepParser1.{uas,las}
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
@@ -262,10 +263,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println()
       println("Saving model...")
       serialize(name + "-iter-"+iteration)
-      opt.unSetWeightsToAverage(model.weightsSet)
+      // opt.unSetWeightsToAverage(model.weightsSet)
     }
     println("Finished training.")
-    opt.setWeightsToAverage(model.weightsSet)
+    // opt.setWeightsToAverage(model.weightsSet)
     // Print accuracy diagnostics
   }
 
@@ -286,7 +287,7 @@ object DepParser1 {
   def uas(sentences: Seq[Sentence]) = {
     var tokens = 0.0
     var correct = 0.0
-    for (s <- sentences; t <- s.tokens.filter(!_.isPunctuation)) {
+    for (s <- sentences; t <- s.tokens){//.filter(!_.isPunctuation)) {
       tokens += 1
       if (s.parse._parents(t.positionInSentence) == s.parse._targetParents(t.positionInSentence)) correct += 1
     }
