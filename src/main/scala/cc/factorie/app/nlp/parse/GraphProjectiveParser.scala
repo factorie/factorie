@@ -262,8 +262,10 @@ class GraphProjectiveParser extends DocumentAnnotator {
     for (iteration <- 0 until 10) {
       trainer.processExamples(rng.shuffle(examples))
       import DepParser1.uas
+      val t0 = System.currentTimeMillis()
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
+      println("Processed in " + (trainSentences.length+testSentences.length)*1000.0/(System.currentTimeMillis()-t0) + " sentences per second")
       println("Training UAS = "+ uas(trainSentences.toSeq))
       println(" Testing UAS = "+ uas(testSentences.toSeq))
       println()

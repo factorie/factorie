@@ -49,15 +49,15 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   class Action(targetAction: (Int, String), val stack: ParserStack, val input: ParserStack, tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
     def domain = ActionDomain
     val features = new Features(this, stack, input, tree)
-    val validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.map(_.intValue).iterator
-    private def isAllowedCategory(actionIdx: Int): Boolean = {
+    val allowedActions = (1 to 4).filter(actionIdx => {
       actionIdx match {
         /*Left*/   case 1 => { stack.size > 1 && tree.parentIndex(stack.head) == ParseTree.noIndex && input.size > 0 }
-        /*Right*/  case 2 => { input.size > 0 && tree.parentIndex(input.head) == ParseTree.noIndex && stack.size > 0 }
+        /*Right*/  case 2 => { input.size > 0 }
         /*Shift*/  case 3 => { input.size > 1 }
         /*Reduce*/ case 4 => { stack.size > 1 && tree.parentIndex(stack.head) != ParseTree.noIndex }
       }
-    }
+    }).toSet
+    val validTargetList = domain.filter(a => allowedActions.contains(a.category._1)).toSeq.map(_.intValue).iterator
   }
 
   // The features representing the input and stacks
@@ -76,11 +76,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     def formFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
     def lemmaFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
     def tagFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
-    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
+    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else "" /* tree.label(seq(i)).value */ }, i))
     def lChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" + t.parseLabel.value.toString(), i))) }
+      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" /*+ t.parseLabel.value.toString()*/, i))) }
     def rChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" + t.parseLabel.value.toString(), i))) }
+      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" /*+ t.parseLabel.value.toString()*/, i))) }
     // Initialize the Features value
     this ++= formFeatures(stack, Seq(0,1), tree)
     this ++= formFeatures(input, Seq(0,1), tree)
@@ -135,7 +135,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val v = new Action((4, ""), stack, input, tree)
     val weights = model.weights.value
     val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
-    (v, v.domain.categories(v.validActionList.maxBy(prediction(_))))
+    (v, v.domain.categories(v.validTargetList.maxBy(prediction(_))))
   }
 
   def parse(s: Sentence): Seq[Action] = {
@@ -198,21 +198,32 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       }
       if (inputIdxParent == stackIdx) {
         val action = new Action((2, { if (useLabels) origTree.label(inputIdx).categoryValue else "" }), stack, input, tree) // RightArc
+        assert(action.allowedActions.contains(action.targetCategory._1), action.targetCategory._1 + " stack " + stack + " input " + input)
         actionLabels.append(action)
         applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
         done = true
       }
       else if (inputIdx == stackIdxParent) {
         val action = new Action((1, { if (useLabels) origTree.label(stackIdx).categoryValue else "" }), stack, input, tree) // LeftArc
+        assert(action.allowedActions.contains(action.targetCategory._1), action.targetCategory._1 + " stack " + stack + " input " + input)
         actionLabels.append(action)
         applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
         done = true
       }
-      while ((stack.size > 1) && (tree.parentIndex(stack.head) < 0) && origTree.children(stack.head).length == tree.children(stack.head).length) {
+      else {
+        for (si <- stack.elements.drop(1);
+             if (inputIdx != ParseTree.rootIndex &&
+               new Action((1, ""), stack, input, tree).allowedActions.contains(4) &&
+               ((inputIdxParent == si) ||
+                 (inputIdx == { if (si == ParseTree.rootIndex) -3 // -3 doesn't conflict with noIndex or rootIndex //ParseTree.noIndex
+                                else  origTree.parentIndex(si) })))) {// is the -2 right here?
+
           val action = new Action((4, ""), stack, input, tree) // Reduce
+          assert(action.allowedActions.contains(action.targetCategory._1), action.targetCategory._1 + " stack " + stack + " input " + input)
           actionLabels.append(action)
           applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
           done = true
+        }
       }
       if (!done) {
         val action = new Action((3, ""), stack, input, tree) // Shift
@@ -246,16 +257,24 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     freezeDomains()
     println("Training...")
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.001, 0.001)
+    val opt = new cc.factorie.optimize.AdaGrad// DualAveragingOptimizer(1.0, 0.0, 0.001, 0.001)
     val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
-    for (iteration <- 0 until 10) {
+    var iter = 0
+    while(!trainer.isConverged) {
+      iter += 1
       trainer.processExamples(rng.shuffle(examples))
       // trainActions.foreach()
-      // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
+      trainActions.foreach(a => {
+        a.set((model.weights.value * a.features.tensor.asInstanceOf[Tensor1]).maxIndex)(null)
+      })
+      println("Train action accuracy = "+HammingObjective.accuracy(trainActions))
       //opt.setWeightsToAverage(model.weightsSet)
       import DepParser1.{uas,las}
-      println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
-      println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
+      val t0 = System.currentTimeMillis()
+
+      println("Predicting train set..."); trainSentences.foreach { s => parse(s) } // Was par
+      println("Predicting test set...");  testSentences.foreach { s => parse(s) } // Was par
+      println("Processed in " + (trainSentences.toSeq.length+testSentences.toSeq.length)*1000.0/(System.currentTimeMillis()-t0) + " sentences per second")
       println("Training UAS = "+ uas(trainSentences.toSeq))
       println(" Testing UAS = "+ uas(testSentences.toSeq))
       println()
@@ -263,12 +282,13 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println(" Testing LAS = "+ las(testSentences.toSeq))
       println()
       println("Saving model...")
-      serialize(name + "-iter-"+iteration)
+      serialize(name + "-iter-"+iter)
+
       //opt.unSetWeightsToAverage(model.weightsSet)
     }
     println("Finished training.")
     //opt.setWeightsToAverage(model.weightsSet)
-    opt.setToDense(model.weightsSet)
+    //opt.setToDense(model.weightsSet)
     // Print accuracy diagnostics
   }
 
