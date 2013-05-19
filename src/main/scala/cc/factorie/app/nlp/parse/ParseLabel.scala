@@ -73,9 +73,9 @@ object ParseTree {
 }
 class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) {
   def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory))
-  private val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray
-  private val _parents = theTargetParents.toArray
-  private val _targetParents = theTargetParents.toArray
+  val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray
+  val _parents = theTargetParents.toArray
+  val _targetParents = theTargetParents.toArray
   //println("ParseTree parents "+theTargetParents.mkString(" "))
   //println(" ParseTree labels "+theTargetLabels.mkString(" "))
   //println(" ParseTree labels "+_labels.map(_.categoryValue).mkString(" "))

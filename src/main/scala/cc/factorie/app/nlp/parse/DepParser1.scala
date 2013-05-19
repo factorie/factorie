@@ -231,7 +231,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.weights, grad outer featureVector)
     }
   }
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String): Unit = {
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
@@ -245,18 +245,21 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     freezeDomains()
     println("Training...")
     val opt = new cc.factorie.optimize.AdaGrad(rate=1.0) with ParameterAveraging
-    val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = math.min(10, Runtime.getRuntime.availableProcessors()))
+    val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(examples)
       // trainActions.foreach()
       // testActions.foreach(classifier.classify(_)); println("Test action accuracy = "+HammingObjective.accuracy(testActions))
       opt.setWeightsToAverage(model.weightsSet)
+      import DepParser1.{uas,las}
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
-      println("Training label accuracy = "+HammingObjective.accuracy(trainSentences.flatMap(s => s.parse.labels)))
-      println(" Testing label accuracy = "+HammingObjective.accuracy(testSentences.flatMap(s => s.parse.labels)))
-      println("Training arc accuracy = "+(trainSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainSentences.map(_.tokens.length).sum))
-      println(" Testing arc accuracy = "+(testSentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testSentences.map(_.tokens.length).sum))
+      println("Training UAS = "+ uas(trainSentences.toSeq))
+      println(" Testing UAS = "+ uas(testSentences.toSeq))
+      println()
+      println("Training LAS = "+ las(trainSentences.toSeq))
+      println(" Testing LAS = "+ las(testSentences.toSeq))
+      println()
       println("Saving model...")
       serialize(name + "-iter-"+iteration)
       opt.unSetWeightsToAverage(model.weightsSet)
@@ -280,6 +283,24 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
 // Driver for training
 object DepParser1 {
+  def uas(sentences: Seq[Sentence]) = {
+    var tokens = 0.0
+    var correct = 0.0
+    for (s <- sentences; t <- s.tokens.filter(!_.isPunctuation)) {
+      tokens += 1
+      if (s.parse._parents(t.positionInSentence) == s.parse._targetParents(t.positionInSentence)) correct += 1
+    }
+    correct/tokens
+  }
+  def las(sentences: Seq[Sentence]) = {
+    var tokens = 0.0
+    var correct = 0.0
+    for (s <- sentences; t <- s.tokens.filter(!_.isPunctuation)) {
+      tokens += 1
+      if (s.parse._parents(t.positionInSentence) == s.parse._targetParents(t.positionInSentence) && s.parse._labels(t.positionInSentence).valueIsTarget) correct += 1
+    }
+    correct/tokens
+  }
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -290,6 +311,7 @@ object DepParser1 {
       val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
       val outputDir  = new CmdOption("output", ".", "DIR", "Directory in which to save the parsed output (to be scored by eval.pl).")
       val warmModel  = new CmdOption("warm", "parser-model", "FILE", "File from which to read a model for warm-start training.")
+      val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
     }
     opts.parse(args)
     
@@ -305,17 +327,18 @@ object DepParser1 {
     val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
     
     // Train
-    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value)
+    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
     // Test
     parser.freezeDomains()
     
     // Print accuracy diagnostics
     println("Predicting train set..."); trainDoc.sentences.foreach { s => parser.parse(s) } // Was par
     println("Predicting test set...");  testDoc.sentences.foreach { s => parser.parse(s) } // Was par
-    println("Training label accuracy = "+HammingObjective.accuracy(trainDoc.sentences.flatMap(s => s.parse.labels)))
-    println(" Testing label accuracy = "+HammingObjective.accuracy(testDoc.sentences.flatMap(s => s.parse.labels)))
-    println("Training arc accuracy = "+(trainDoc.sentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / trainDoc.tokens.length))
-    println(" Testing arc accuracy = "+(testDoc.sentences.map((s:Sentence) => s.parse.numParentsCorrect).sum.toDouble / testDoc.tokens.length))
+    println("Training UAS = "+ uas(trainDoc.sentences))
+    println(" Testing UAS = "+ uas(testDoc.sentences))
+    println()
+    println("Training LAS = "+ las(trainDoc.sentences))
+    println(" Testing LAS = "+ las(testDoc.sentences))
 
     //parser.model.skipNonCategories = false
     // Write results
