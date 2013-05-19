@@ -257,7 +257,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     freezeDomains()
     println("Training...")
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad// DualAveragingOptimizer(1.0, 0.0, 0.001, 0.001)
+    val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
     val trainer = new optimize.HogwildTrainer(model.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {

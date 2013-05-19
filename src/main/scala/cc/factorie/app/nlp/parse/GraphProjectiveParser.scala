@@ -61,7 +61,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       var x = first
       while (x.sentenceNext ne second) {
         x = x.sentenceNext
-        // f += "BETWEENPOS="+pPos+"&"+x.attr[PosLabel].categoryValue+"&"+tPos
+        f += "BETWEENPOS="+pPos+"&"+x.attr[PTBPosLabel].categoryValue+"&"+tPos
       }
       val prevHeadPos = if (p.sentenceHasPrev) p.sentencePrev.attr[PTBPosLabel].categoryValue else "NOPREV"
       val prevTokPos = if (t.sentenceHasPrev) t.sentencePrev.attr[PTBPosLabel].categoryValue else "NOPREV"
@@ -73,11 +73,11 @@ class GraphProjectiveParser extends DocumentAnnotator {
       f += "PhHCNc="+prevHeadPos+"&"+pPos+"&"+tPos+"&"+nextTokPos
       val distance = math.abs(t.sentencePosition - p.sentencePosition)
       for (i <- 0 to distance) {
-        // f += "EdgeLength>="+i
+        f += "EdgeLength>="+i
       }
       val normDistance = distance*10/(t.sentence.length)
       for (i <- 0 to normDistance) {
-        // f += "NormDistance>="+i
+        f += "NormDistance>="+i
       }
     }
     f
@@ -197,12 +197,8 @@ class GraphProjectiveParser extends DocumentAnnotator {
           rcTable(left)(right) = bestRC
         }
       }
-      // because node 0 in the graph represents the root, we're really interested in the best
-      // left complete span that covers from the root to the end of the sentence
       val finalParse = lcTable(0)(sentLength)
       val score = finalParse.score
-
-      // now let's search for the right splits so we can get all edges in the tree
       val edges = ArrayBuffer[(Int, Int)]()
       backwardSearch(0, sentLength, finalParse, edges)
       val parents = Array.ofDim[Int](sentLength)
@@ -257,7 +253,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], file: String, nThreads: Int) {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.001, 0.001)
+    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.0001, 0.0001)
     val trainer = new optimize.HogwildTrainer(DependencyModel.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(rng.shuffle(examples))

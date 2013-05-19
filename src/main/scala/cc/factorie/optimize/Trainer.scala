@@ -177,3 +177,107 @@ class TwoStageTrainer[E <: Example](firstTrainer: Trainer[E], secondTrainer: Tra
   }
   def isConverged = firstTrainer.isConverged && secondTrainer.isConverged
 }
+
+// Technically we could use other optimizers than GradientSteps but I want something
+// which is guaranteed to use += and to not replace the tensors
+class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep, val maxIterations: Int = 3, var logEveryN: Int = -1, val nThreads: Int = Runtime.getRuntime.availableProcessors())
+ extends Trainer[Example] with FastLogging {
+  var iteration = 0
+  var initialized = false
+
+  import collection.JavaConversions._
+  var examplesProcessed = 0
+  var accumulatedValue = 0.0
+  var t0 = System.currentTimeMillis()
+  def examplesToRunnables(es: Iterable[Example]): Seq[Callable[Object]] = es.map(e => {
+    new Callable[Object] {
+      def call() = {
+        val gradient = weightsSet.blankSparseCopy
+        val gradientAccumulator = new LocalTensorSetAccumulator(gradient)
+        val value = new LocalDoubleAccumulator()
+        e.accumulateExampleInto(gradientAccumulator, value)
+        // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+        gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+        optimizer.step(weightsSet, gradient, value.value)
+        this synchronized {
+          examplesProcessed += 1
+          accumulatedValue += value.value
+          if (examplesProcessed % logEveryN == 0) {
+            val accumulatedTime = System.currentTimeMillis() - t0
+            logger.info(examplesProcessed + " examples at " + (1000.0*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN))
+            t0 = System.currentTimeMillis()
+            accumulatedValue = 0
+          }
+        }
+        null.asInstanceOf[Object]
+      }
+    }
+  }).toSeq
+  var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
+
+  def processExamples(examples: Iterable[Example]) {
+    if (!initialized) replaceTensorsWithLocks()
+    if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
+    iteration += 1
+    if (runnables eq null) runnables = examplesToRunnables(examples)
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
+    pool.invokeAll(runnables)
+    pool.shutdown()
+  }
+
+  def isConverged = iteration >= maxIterations
+
+  def replaceTensorsWithLocks() {
+    for (key <- weightsSet.keys) {
+      key.value match {
+        case t: Tensor1 => weightsSet(key) = new LockingTensor1(t)
+        case t: Tensor2 => weightsSet(key) = new LockingTensor2(t)
+        case t: Tensor3 => weightsSet(key) = new LockingTensor3(t)
+        case t: Tensor4 => weightsSet(key) = new LockingTensor4(t)
+      }
+    }
+    initialized = true
+  }
+
+  private trait LockingTensor extends Tensor {
+    val base: Tensor
+    val lock = new util.RWLock
+    def activeDomain = base.activeDomain
+    def isDense = base.isDense
+    def zero() { lock.withWriteLock(base.zero())}
+    def +=(i: Int, incr: Double) { lock.withWriteLock( base.+=(i,incr))}
+    override def +=(i: DoubleSeq, v: Double) = lock.withWriteLock(base.+=(i,v))
+    def dot(ds: DoubleSeq) = lock.withReadLock(base.dot(ds))
+    def update(i: Int, v: Double) { lock.withWriteLock(base.update(i,v)) }
+    def apply(i: Int) = lock.withReadLock(base.apply(i))
+  }
+
+  private class LockingTensor1(val base: Tensor1) extends Tensor1 with LockingTensor {
+    def dim1 = base.dim1
+  }
+  private class LockingTensor2(val base: Tensor2) extends Tensor2 with LockingTensor {
+    def dim1 = base.dim1
+    def dim2 = base.dim2
+    def activeDomain1 = lock.withReadLock(base.activeDomain1)
+    def activeDomain2 = lock.withReadLock(base.activeDomain2)
+    override def *(other: Tensor1) = lock.withReadLock(base * other)
+  }
+  private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {
+    def dim1 = base.dim1
+    def dim2 = base.dim2
+    def dim3 = base.dim3
+    def activeDomain1 = lock.withReadLock(base.activeDomain1)
+    def activeDomain2 = lock.withReadLock(base.activeDomain2)
+    def activeDomain3 = lock.withReadLock(base.activeDomain3)
+  }
+  private class LockingTensor4(val base: Tensor4) extends Tensor4 with LockingTensor {
+    def dim1 = base.dim1
+    def dim2 = base.dim2
+    def dim3 = base.dim3
+    def dim4 = base.dim4
+    def activeDomain1 = lock.withReadLock(base.activeDomain1)
+    def activeDomain2 = lock.withReadLock(base.activeDomain2)
+    def activeDomain3 = lock.withReadLock(base.activeDomain3)
+    def activeDomain4 = lock.withReadLock(base.activeDomain4)
+  }
+}
