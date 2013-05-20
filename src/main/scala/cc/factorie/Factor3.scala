@@ -383,7 +383,7 @@ trait DotFamily3[N1<:Var,N2<:Var,N3<:Var] extends TensorFamily3[N1,N2,N3] with D
 }
 
 trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamilyWithStatistics3[N1,N2,N3] with DotFamily3[N1,N2,N3] {
-  override def weights: TensorSetKey3
+  override def weights: Weights3
   //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = weightsSet dot statistics(v1, v2, v3)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases

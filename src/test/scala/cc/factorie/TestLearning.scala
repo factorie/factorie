@@ -54,7 +54,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
     trainings+=new Data(0.4, false)
     trainings+=new Data(0.6, true)
     trainings+=new Data(0.8, true)
-    class SimpleTemplate(model: WeightsDef) extends DotTemplateWithStatistics2[Data, Prob]{
+    class SimpleTemplate(model: Parameters) extends DotTemplateWithStatistics2[Data, Prob]{
       val weights = model.Weights(new la.DenseTensor2(BooleanDomain.dimensionSize, RealDomain.dimensionSize))
       def unroll1(data: Data) = Factor(data, data.score)
       def unroll2(prob: Prob) = Nil
@@ -64,7 +64,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
 
     val pieces = new ArrayBuffer[LikelihoodExample]
     pieces += new LikelihoodExample(model, trainings, InferByBPLoopy)
-    val trainer = new BatchTrainer(model.weightsSet)
+    val trainer = new BatchTrainer(model.parameters)
     while (!trainer.optimizer.isConverged) {
       trainer.processExamples(pieces)
       logger.debug("Accuracy after sampling: " + objective.accuracy(trainings))

@@ -45,13 +45,13 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
-trait MultivariateModel extends WeightsDef {
-  val weights: TensorSetKey2
+trait MultivariateModel extends Parameters {
+  val weights: Weights2
   def predict(feats: Tensor1): Tensor1 = weights.value * feats
 }
 
-trait UnivariateModel extends WeightsDef {
-  val weights: TensorSetKey1
+trait UnivariateModel extends Parameters {
+  val weights: Weights1
   def predict(feats: Tensor1): Double = weights.value dot feats
 }
 
@@ -79,7 +79,7 @@ object LinearRegressionTrainer {
     val dependentSize = exampleDependent.value.dimensions.product
     val explanatorySize = exampleExplanatory.value.dimensions.product
     val model = new LinearRegressionModel(explanatorySize, dependentSize)
-    val trainer = trainerMaker(model.weightsSet)
+    val trainer = trainerMaker(model.parameters)
     val trainingExamples = examples.map(e => new LinearMultivariateExample[Tensor1](model.weights, dependant2Explanatory(e).tensor.asInstanceOf[Tensor1], e.tensor.asInstanceOf[Tensor1], objective))
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)

@@ -67,7 +67,7 @@ The following code declares data, model, inference and learning for a linear-cha
   val data = List("See/V Spot/N run/V", "Spot/N is/V a/DET big/J dog/N", "He/N is/V fast/J")
   val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => { val a = s.split("/"); new Label(a(1), new Token(a(0)))})
   // Define a model
-  val model = new Model with WeightsDef {
+  val model = new Model with Parameters {
     // Two families of factors, where factor scores are dot-products of sufficient statistics and weightsSet (which will be trained below)
     val markov = new DotFamilyWithStatistics2[Label,Label] { val weights = Weights(new DenseTensor2(LabelDomain.size, LabelDomain.size)) }
     val observ = new DotFamilyWithStatistics2[Label,Token] { val weights = Weights(new DenseTensor2(LabelDomain.size, TokenDomain.size)) }
@@ -78,7 +78,7 @@ The following code declares data, model, inference and learning for a linear-cha
     def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
-  val trainer = new BatchTrainer(model.weightsSet, new ConjugateGradient)
+  val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
   trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(model, labels, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain

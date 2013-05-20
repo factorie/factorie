@@ -20,7 +20,6 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.la.TensorSet
 
 object WordSegmenterDemo2 {
 
@@ -35,7 +34,7 @@ object WordSegmenterDemo2 {
   }
   class Sentence extends Chain[Sentence,Token]
 
-  val model = new ModelWithContext[IndexedSeq[Label]] with WeightsDef {
+  val model = new ModelWithContext[IndexedSeq[Label]] with Parameters {
     val bias = new DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
@@ -117,7 +116,7 @@ object WordSegmenterDemo2 {
     // println("Example Factors: "+exampleFactors.mkString(", "))
 
     val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    val trainer = new OnlineTrainer(model.weightsSet, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
+    val trainer = new OnlineTrainer(model.parameters, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
 //    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
     trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(model, sentence.asSeq.map(_.label))))
     for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)

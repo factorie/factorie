@@ -45,13 +45,13 @@ class LBFGS(var numIterations: Double = 1000,
   // s = list of m previous "parameters" values
   // y = list of m previous "g" values
   // rho = intermediate calculation
-  var g: TensorSet = null
-  var oldg: TensorSet = null
-  var direction: TensorSet = null
-  var params: TensorSet = null
-  var oldParams: TensorSet = null
-  var s: ArrayBuffer[TensorSet] = null
-  var y: ArrayBuffer[TensorSet] = null
+  var g: WeightsMap = null
+  var oldg: WeightsMap = null
+  var direction: WeightsMap = null
+  var params: WeightsSet = null
+  var oldParams: WeightsMap = null
+  var s: ArrayBuffer[WeightsMap] = null
+  var y: ArrayBuffer[WeightsMap] = null
   var rho: ArrayBuffer[Double] = null
   var alpha: Array[Double] = null
   var step = 1.0
@@ -78,9 +78,7 @@ class LBFGS(var numIterations: Double = 1000,
 
   }
 
-
-
-  def step(weights:WeightsSet, gradient:TensorSet, value:Double): Unit = {
+  def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     if (_isConverged) return
     //todo: is the right behavior to set _isConverged = true if exceeded numIters?
     if (iterations > numIterations) { logger.warn("LBFGS: Failed to converge: too many iterations"); _isConverged = true; return }
@@ -90,8 +88,8 @@ class LBFGS(var numIterations: Double = 1000,
       logger.debug("LBFGS: Initial value = " + value)
 
       iterations = 0
-      s = new ArrayBuffer[TensorSet]
-      y = new ArrayBuffer[TensorSet]
+      s = new ArrayBuffer[WeightsMap]
+      y = new ArrayBuffer[WeightsMap]
       rho = new ArrayBuffer[Double]
       alpha = new Array[Double](rankOfApproximation)
 
@@ -166,8 +164,6 @@ class LBFGS(var numIterations: Double = 1000,
       }
 
 
-
-
       // get difference between previous 2 gradients and parameters
       var sy = 0.0
       var yy = 0.0
@@ -227,7 +223,7 @@ class LBFGS(var numIterations: Double = 1000,
 
 
   }
-  def pushTensor(l: ArrayBuffer[TensorSet], toadd: TensorSet): Unit = {
+  def pushTensor(l: ArrayBuffer[WeightsMap], toadd: WeightsMap): Unit = {
     assert(l.size <= rankOfApproximation)
 
     if (l.size == rankOfApproximation) {

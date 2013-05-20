@@ -15,7 +15,7 @@
 package cc.factorie.app.classify
 
 import cc.factorie._
-import cc.factorie.la.{TensorSetKey1, TensorSetKey2, Tensor2, Tensor1}
+import cc.factorie.la.Tensor1
 
 /** Infrastructure for independent classification of feature vectors with String-valued features. 
     @author Andrew McCallum
@@ -61,14 +61,14 @@ trait ClassifierEvaluator[L <: MutableDiscreteVar[_]] {
   def toString: String
 }
 
-trait MultiClassModel extends WeightsDef {
-  val evidence: TensorSetKey2
+trait MultiClassModel extends Parameters {
+  val evidence: Weights2
   def predict(feats: Tensor1): Int = scores(feats).maxIndex
   def scores(feats: Tensor1): Tensor1 = evidence.value * feats
 }
 
-trait BinaryModel extends WeightsDef {
-  val evidence: TensorSetKey1
+trait BinaryModel extends Parameters {
+  val evidence: Weights1
   def predict(feats: Tensor1): Int = if (score(feats) > 0) 1 else -1
   def score(feats: Tensor1): Double = evidence.value dot feats
 }

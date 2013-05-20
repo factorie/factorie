@@ -90,7 +90,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       Seq(getTokenFeatureVector(childToken), getParentFeatureVector(parentToken), getPairwiseFeatureVector(childToken, parentToken))
     })
   }
-  object DependencyModel extends WeightsDef {
+  object DependencyModel extends Parameters {
     val weights = Weights(new cc.factorie.la.DenseTensor1(MyFeaturesDomain.dimensionSize))
   }
 
@@ -254,7 +254,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.0001, 0.0001)
-    val trainer = new optimize.HogwildTrainer(DependencyModel.weightsSet, opt, maxIterations = 10, nThreads = nThreads)
+    val trainer = new optimize.HogwildTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(rng.shuffle(examples))
       import DepParser1.uas
@@ -269,7 +269,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       serialize(file + "-iter-"+iteration)
     }
     println("Finished training.")
-    opt.setToDense(DependencyModel.weightsSet)
+    opt.setToDense(DependencyModel.parameters)
   }
 
   def parse(sent: Sentence) {

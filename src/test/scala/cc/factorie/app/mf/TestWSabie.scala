@@ -22,7 +22,7 @@ class TestWSabie {
     val n = new SparseBinaryTensor1(3)
     n += 2
     val e = new WSabie.WSabieExample(m, q, p, n)
-    val trainer = new OnlineTrainer(m.weightsSet)
+    val trainer = new OnlineTrainer(m.parameters)
     while (!trainer.isConverged) {
       trainer.processExamples(Seq(e))
     }

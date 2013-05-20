@@ -120,13 +120,13 @@ object LinearObjectives {
   val logisticLinkFunction: UnivariateLinkFunction = prediction => 1.0 / (1 + math.exp(-prediction))
 }
 
-class LinearMultiClassExample(weights: TensorSetKey2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
+class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
   extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
 
-class LinearBinaryExample(weights: TensorSetKey1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
+class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
   extends LinearUnivariateExample(weights, featureVector, label, objective, weight)
 
-class LinearMultivariateExample[Label](weights: TensorSetKey2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
+class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     val prediction = weights.value * featureVector
@@ -136,7 +136,7 @@ class LinearMultivariateExample[Label](weights: TensorSetKey2, featureVector: Te
   }
 }
 
-class LinearUnivariateExample[Label](weights: TensorSetKey1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
+class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
     val score = weights.value dot featureVector
@@ -189,7 +189,7 @@ object LinearObjectivesTest {
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
 //            val strategy = new BatchTrainer(model)
-    val strategy = new OnlineTrainer(model.weightsSet, optimizer = new AdaGrad)
+    val strategy = new OnlineTrainer(model.parameters, optimizer = new AdaGrad)
 
 //        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
 //    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
@@ -216,7 +216,7 @@ object LinearObjectivesTest {
       val trainTrial = new classify.Trial[Label](classifier)
       trainTrial ++= trainLabels
 
-      //      println("WeightsDef = " + model.evidenceTemplate.weightsSet)
+      //      println("Parameters = " + model.evidenceTemplate.weightsSet)
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)

@@ -305,9 +305,9 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       // TODO should classifier cubbie write the vocab + the model in one file? -luke
-      if (!classifier.isInstanceOf[ModelBasedClassifier[Label, Model with WeightsDef]])
+      if (!classifier.isInstanceOf[ModelBasedClassifier[Label, Model with Parameters]])
         sys.error("Only ModelBasedClassifiers with weightsSet can be serialized.")
-      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with WeightsDef]]
+      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with Parameters]]
       BinarySerializer.serialize(new ModelBasedClassifierCubbie(mbc), classifierFile)
     }
 

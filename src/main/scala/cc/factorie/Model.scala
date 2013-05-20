@@ -206,7 +206,8 @@ class CombinedModel(theSubModels:Model*) extends Model {
   }
 }
 
-class TemplateModel/*(theSubModels:ModelAsTemplate*)*/ extends Model with WeightsDef {
+// TODO templates don't need to have parameters - strongly consider removing "with Parameters" -akm
+class TemplateModel/*(theSubModels:ModelAsTemplate*)*/ extends Model with Parameters {
   val templates = new ArrayBuffer[ModelAsTemplate] //++= theSubModels
   def +=[M<:ModelAsTemplate](model:M): M = { templates += model; model }
   def ++=[M<:ModelAsTemplate](models:Iterable[M]): Iterable[M] = { templates ++= models; models }

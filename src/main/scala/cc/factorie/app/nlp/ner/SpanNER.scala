@@ -39,7 +39,7 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
   override def skipNonCategories = true
 }
 
-abstract class SpanNerTemplate(val model: WeightsDef) extends DotTemplate2[NerSpan,SpanNerLabel] {
+abstract class SpanNerTemplate(val model: Parameters) extends DotTemplate2[NerSpan,SpanNerLabel] {
   //override def statisticsDomains = ((SpanNerFeaturesDomain, Conll2003NerDomain))
   val weights = model.Weights(new la.DenseTensor2(SpanNerFeaturesDomain.dimensionSize, ConllNerDomain.size)) // TODO This ordering seems backwards
   def unroll1(span:NerSpan) = Factor(span, span.label)

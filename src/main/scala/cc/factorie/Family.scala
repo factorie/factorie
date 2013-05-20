@@ -55,20 +55,20 @@ trait Statistics[A] extends Family {
   type StatisticsType = A
 }
 
-/** A Family whose Factors have statistics that are TensorSet. */
+/** A Family whose Factors have statistics that are WeightsMap. */
 trait TensorFamily extends Family {
   type FamilyType <: TensorFamily
   type StatisticsType = Tensor
   //trait Statistics extends super.Statistics { def tensor: Tensor }
 }
 
-/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics TensorSet and the Family's weightsSet Tensor. */
+/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics WeightsMap and the Family's weightsSet Tensor. */
 trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
-  /** This can only be set given a WeightsDef. Code will look like
+  /** This can only be set given a Parameters. Code will look like
     * val weights = model.Weights(new DenseTensor1(10))
     * or something of the sort */
-  def weights: TensorSetKey
+  def weights: Weights
   @inline final override def statisticsScore(t:Tensor): Double = weights.value dot t
 }
 

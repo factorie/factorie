@@ -6,12 +6,12 @@ import cc.factorie.maths
 
 // TODO Change this so it doesn't require the "model" constructor argument, and instead gets the weightsSet from the "step" call.
 // Then AROW can be the default optimizer in SGDTrainer.
-class AROW(model:WeightsDef, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model) {
+class AROW(model:Parameters, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model) {
   //parameters specific to the algorithm
   // TODO this shouldn't be 1-modelScore as it assumes a margin of 1 - should probably put 0 here now that margin is in objective - luke
-  protected def alpha(modelScore:Double,gradient:TensorSet) : Double = math.max(0,1-modelScore) * beta(gradient)
-  protected def beta(gradient:TensorSet) : Double = 1/(marginVariance(gradient) + 2*lambdaAROW)
-  override def adjustConfidence(weights:TensorSet, gradient:TensorSet):Unit ={
+  protected def alpha(modelScore:Double,gradient:WeightsMap) : Double = math.max(0,1-modelScore) * beta(gradient)
+  protected def beta(gradient:WeightsMap) : Double = 1/(marginVariance(gradient) + 2*lambdaAROW)
+  override def adjustConfidence(weights: WeightsSet, gradient: WeightsMap):Unit ={
     val betaVal = beta(gradient)
     for(template <- gradient.keys){ //Update per-parameter learning rates.
       val templateWeights = weights(template)
@@ -24,10 +24,10 @@ class AROW(model:WeightsDef, val lambdaAROW:Double=1.0) extends ConfidenceWeight
       })
     }
   }
-  override def calculateLearningRate(gradient: TensorSet,margin:Double): Double = alpha(margin,gradient)
+  override def calculateLearningRate(gradient: WeightsMap,margin:Double): Double = alpha(margin,gradient)
 }
 
-class ConfidenceWeighting(val model:WeightsDef) extends GradientOptimizer {
+class ConfidenceWeighting(val model:Parameters) extends GradientOptimizer {
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   var initialVariance = 0.1
   var numUpdates : Double = 0
@@ -46,30 +46,20 @@ class ConfidenceWeighting(val model:WeightsDef) extends GradientOptimizer {
     eta = aeta
     gaussDeviate = maths.probit(eta)
   }
-  lazy val sigma:TensorSet = {
+  lazy val sigma:WeightsMap = {
     //print("Initializing sigma...")
-    val result:TensorSet = model.weightsSet.blankDenseCopy
+    val result:WeightsMap = model.parameters.blankDenseCopy
     for(template <- result.keys) result(template) := initialVariance
     //println(" done.")
     result
   }
-  def step(weights:WeightsSet, gradient:TensorSet, value:Double): Unit = {
+  def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     //println("Performing step")
-    gradient match{
-      case gradient:TensorSet => {
-        weights match{
-          case weights:TensorSet =>{
-            learningRate = calculateLearningRate(gradient, value)
-            gradient.keys.foreach(k => weights(k).+=(gradient(k),sigma(k),learningRate))
-            adjustConfidence(weights,gradient)
-          }
-          case _ => throw new Exception("Confidence weighting only implemented for weight vectors of type WeightsTensor.")
-        }
-      }
-      case _ => throw new Exception("Confidence weighting only implemented for gradients of type WeightsTensor.")
-    }
+    learningRate = calculateLearningRate(gradient, value)
+    gradient.keys.foreach(k => weights(k).+=(gradient(k),sigma(k),learningRate))
+    adjustConfidence(weights,gradient)
   }
-  def adjustConfidence(weights:TensorSet, gradient:TensorSet):Unit ={
+  def adjustConfidence(weights: WeightsSet, gradient:WeightsMap):Unit ={
     for(template <- gradient.keys){ //Update per-parameter learning rates.
       val templateWeights = weights(template)
       val templateGradient = gradient(template)
@@ -95,7 +85,7 @@ class ConfidenceWeighting(val model:WeightsDef) extends GradientOptimizer {
       }
     }
   }
-  def calculateLearningRate(gradient: TensorSet, margin:Double): Double = {
+  def calculateLearningRate(gradient: WeightsMap, margin:Double): Double = {
     val marginMean = margin.abs
     val v = 1.0 + 2.0 * gaussDeviate * marginMean
     val marginVar = marginVariance(gradient)
@@ -106,7 +96,7 @@ class ConfidenceWeighting(val model:WeightsDef) extends GradientOptimizer {
       lambda = (-v + math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar)
     math.max(0, lambda)
   }
-  def marginVariance(gradient:TensorSet):Double ={
+  def marginVariance(gradient:WeightsMap):Double ={
     var result = 0.0
     for(template <- gradient.keys){
       val templateLearningRates=sigma(template)

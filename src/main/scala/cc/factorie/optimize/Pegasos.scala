@@ -1,7 +1,7 @@
 package cc.factorie.optimize
 
 import cc.factorie.la._
-import cc.factorie.WeightsSet
+import cc.factorie.{WeightsMap, WeightsSet}
 import cc.factorie.util.{TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
 
 // This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
@@ -11,7 +11,7 @@ class Pegasos(l2: Double = 0.1) extends GradientOptimizer {
   private var step = 1
   private var initialized = false
 
-  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
+  def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (!initialized) { initializeWeights(weights); initialized = true }
     if (step == 1) {
       // make sure weights start off with ||w|| <= 1 / sqrt(l2)

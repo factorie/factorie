@@ -15,7 +15,7 @@ import util._
 class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double, val l2: Double) extends GradientOptimizer {
   var initialized = false
 
-  def step(weights: WeightsSet, gradient: TensorSet, value: Double) {
+  def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
     if (!initialized) setUpTensors(weights)
     weights.+=(gradient)
   }

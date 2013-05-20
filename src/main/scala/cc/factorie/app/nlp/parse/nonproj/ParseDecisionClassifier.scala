@@ -25,7 +25,7 @@ trait ParserClassifier {
 // The standard SVM one-vs-all classifier
 // The interface here is simpler than it seems: we're only saving, loading, and classifying.
 // To clean this up, we need better serialization support.
-class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable, Model with WeightsDef]) extends ParserClassifier {
+class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable, Model with Parameters]) extends ParserClassifier {
   
   import CubbieConversions._
   

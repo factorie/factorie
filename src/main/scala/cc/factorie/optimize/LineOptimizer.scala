@@ -18,7 +18,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-class BackTrackLineOptimizer(val gradient:TensorSet, val line:TensorSet, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
+class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
   def stepSize = alam
@@ -29,7 +29,7 @@ class BackTrackLineOptimizer(val gradient:TensorSet, val line:TensorSet, val ini
   var ALF = 1e-4
   val EPS = 3.0e-12
   val stpmax = 100.0
-  var origWeights: TensorSet = null //weightsSet.copy
+  var origWeights: WeightsMap = null //weightsSet.copy
 
   var oldValue = Double.NaN
   var origValue = Double.NaN
@@ -52,7 +52,7 @@ class BackTrackLineOptimizer(val gradient:TensorSet, val line:TensorSet, val ini
     tmplam = 0.0
     alam2 = 0.0
   }
-    def step(weights:WeightsSet, gradient:TensorSet, value:Double): Unit = {
+    def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     logger.debug("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
@@ -160,7 +160,7 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(weights: WeightsSet, gradient: TensorSet, value: Double): Unit = {
+  def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {

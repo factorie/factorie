@@ -127,24 +127,24 @@ object TutorialVariables {
     println("Tensor st oneNorm is "+st.oneNorm)
     assertEquals(st.oneNorm, 2.3, 0.01)
     val ut = new UniformTensor1(33, 0.1) // A vector of length 33, in which all values are 0.1
-    // TensorSet of ranks 1 through 4 are available
+    // WeightsMap of ranks 1 through 4 are available
     val dt4 = new DenseTensor4(3, 4, 5, 2) // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
     println("dt4 value at indices (2,3,4,1) is "+dt4(2,3,4,1))
 
     /*&
-     * TensorSet
+     * WeightsMap
      * -------
      *
-     * TensorSet have many useful methods, including:
+     * WeightsMap have many useful methods, including:
      *
      *   - dot (products)
      *   - outer (products)
      *   - twoNorm
      *   - etc.
      *
-     * See Tutorial*TensorSet for more information
+     * See Tutorial*WeightsMap for more information
      *
-     * TensorSet are important because some important special cases of Factors require variables with Tensor values
+     * WeightsMap are important because some important special cases of Factors require variables with Tensor values
      *  because the Factors calculate their scores as dot-products between these Tensor values and a "weight" parameter Tensor.
      *
      * RealVariable is like DoubleVariable in that it holds a single floating-point number,
@@ -225,7 +225,7 @@ object TutorialVariables {
 
     /*&
      * Another type of Tensor is Masses.
-     * These are TensorSet with only non-negative elements, whose sum is efficiently cached.
+     * These are WeightsMap with only non-negative elements, whose sum is efficiently cached.
      * They are useful for the parameters of a Dirichlet, and also as the sufficient statistics for a Proportions
      **/
     val m1 = new DenseMasses1(5) // A vector of length 5
@@ -235,7 +235,7 @@ object TutorialVariables {
     
     /*&
      * Proportions inherits from Masses
-     * They are TensorSet with only non-negative elements, whose sum must always be 1.0.
+     * They are WeightsMap with only non-negative elements, whose sum must always be 1.0.
      * Proportions also have a method "masses".  In some classes this returns itself.  
      *  In others it returns an inner object that holds the sufficient statistics determining the Proportions values.
      * Proportions themselves cannot be incremented (e.g. to gather counts for estimating a Proportions), but its inner Masses sometimes can.
@@ -250,7 +250,7 @@ object TutorialVariables {
     
 
     // All Variables that hold Tensor values inherit from TensorVar.
-    // Its concrete, simplest subclass is TensorVariable, which can hold arbitrary TensorSet.
+    // Its concrete, simplest subclass is TensorVariable, which can hold arbitrary WeightsMap.
     val tv = new TensorVariable(new DenseTensor2(Array(Array(2.0,3.0,4.0), Array(6.0,7.0,8.0))))
     
     

@@ -201,7 +201,7 @@ class POS3 extends DocumentAnnotator {
     var iteration = 0
     
     //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
-    val trainer = new cc.factorie.optimize.OnlineTrainer(model.weightsSet, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
       val examples = sentences.shuffle.flatMap(sentence => {

@@ -1,7 +1,7 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import cc.factorie.la.{TensorSet, TensorSetAccumulator}
+import cc.factorie.la.{TensorSetAccumulator}
 import util.DoubleAccumulator
 
 /**
@@ -19,7 +19,7 @@ import util.DoubleAccumulator
  * "WSABIE: Scaling Up To Large Vocabulary Image Annotation" by Weston, Bengio, and Usunier
  */
 object WSabie {
-  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends WeightsDef {
+  class WSabieModel(val domain: DiscreteDomain, val numEmbeddings: Int, val rng: java.util.Random) extends Parameters {
     val weights = Weights(setToRandom(new la.DenseTensor2(numEmbeddings, domain.size), rng))
     def setToRandom(t: la.DenseTensor2, rng: java.util.Random): la.DenseTensor2 = {
       var i = 0

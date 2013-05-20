@@ -129,14 +129,14 @@ object Tutorial40InferenceAndLearning {
      * To learn a model we need a trainer. We can do stochastic single-threaded training with the
      * SGDTrainer. We can also do multithreaded stochastic learning with the HogwildTrainer.
      **/
-    val trainer0 = new optimize.OnlineTrainer(model.weightsSet, optimizer0)
+    val trainer0 = new optimize.OnlineTrainer(model.parameters, optimizer0)
     // One call to processExamples will do one pass over the training set doing updates.
     trainer0.processExamples(Seq(example1))
 
     // Factorie also supports batch learning. Note that regularization is built into the optimizer
     val optimizer1 = new optimize.LBFGS with optimize.L2Regularization
     optimizer1.variance = 10000.0
-    val trainer1 = new optimize.BatchTrainer(model.weightsSet, optimizer1)
+    val trainer1 = new optimize.BatchTrainer(model.parameters, optimizer1)
     // For batch learning we can test for convergence
     while (!trainer1.isConverged) {
       trainer1.processExamples(Seq(example1))
@@ -168,7 +168,7 @@ object Tutorial40InferenceAndLearning {
     val sampleRankExamples = document.tokens.map(t => new optimize.SampleRankExample(t.attr[Label], sampler))
     trainer0.processExamples(sampleRankExamples)
     // SampleRank comes with its own trainer, however, for ease of use
-    val trainer2 = new SampleRankTrainer(model.weightsSet, sampler, optimizer0)
+    val trainer2 = new SampleRankTrainer(model.parameters, sampler, optimizer0)
     trainer2.processContexts(document.tokens.map(_.attr[Label]))
 
     /*&

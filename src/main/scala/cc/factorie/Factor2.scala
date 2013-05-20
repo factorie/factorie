@@ -340,7 +340,7 @@ trait DotFamily2[N1<:Var,N2<:Var] extends TensorFamily2[N1,N2] with DotFamily {
 }
 
 trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamilyWithStatistics2[N1,N2] with DotFamily2[N1,N2] {
-  override def weights: TensorSetKey2
+  override def weights: Weights2
   //def score(v1:N1#Value, v2:N2#Value): Double = weightsSet dot statistics(v1, v2)
   override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases

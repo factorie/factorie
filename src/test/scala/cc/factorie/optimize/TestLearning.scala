@@ -68,20 +68,20 @@ class TestLearning {
     val model = createModel()
 
     val plExamples = data.map(d => new PseudolikelihoodExample(model, Seq(d)))
-    val plgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
+    val plgrad = new LocalTensorSetAccumulator(model.parameters.blankDenseCopy)
     val plvalue = new LocalDoubleAccumulator(0.0)
 
     val llExamples = data.map(d => new LikelihoodExample(model, Seq(d), InferByBPTreeSum))
-    val llgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
+    val llgrad = new LocalTensorSetAccumulator(model.parameters.blankDenseCopy)
     val llvalue = new LocalDoubleAccumulator(0.0)
 
     for ((ple, lle) <- plExamples.zip(llExamples)) {
-      val localPLgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
+      val localPLgrad = new LocalTensorSetAccumulator(model.parameters.blankDenseCopy)
       val localPLvalue = new LocalDoubleAccumulator(0.0)
       ple.accumulateExampleInto(localPLgrad, localPLvalue)
       ple.accumulateExampleInto(plgrad, plvalue)
 
-      val localLLgrad = new LocalTensorSetAccumulator(model.weightsSet.blankDenseCopy)
+      val localLLgrad = new LocalTensorSetAccumulator(model.parameters.blankDenseCopy)
       val localLLvalue = new LocalDoubleAccumulator(0.0)
       lle.accumulateExampleInto(localLLgrad, localLLvalue)
       lle.accumulateExampleInto(llgrad, llvalue)

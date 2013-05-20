@@ -416,7 +416,7 @@ object Coref{
       //val trainer = new SampleRankTrainer(sampler, new MIRA)
       println ("Beginning inference and learning")
       trainer.processContext(null, opts.trainingSamples.value) // 3000
-      averager.setWeightsToAverage(authorCorefModel.weightsSet)
+      averager.setWeightsToAverage(authorCorefModel.parameters)
       //val pSampler = new ParallelAuthorSampler(authorCorefModel){temperature = 0.001}
       sampler.setEntities(testingSet)
       println("Beginning testing")
@@ -2320,11 +2320,11 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
 }
 
 
-abstract class WeightedChildParentTemplate[A<:EntityAttr](val model: WeightsDef)(implicit m:Manifest[A]) extends ChildParentTemplate[A] with DotFamily3[EntityRef,A,A]{
+abstract class WeightedChildParentTemplate[A<:EntityAttr](val model: Parameters)(implicit m:Manifest[A]) extends ChildParentTemplate[A] with DotFamily3[EntityRef,A,A]{
   val weights = model.Weights(new la.GrowableDenseTensor1(ChildParentFeatureDomain.dimensionDomain.maxSize))
   //def statistics (eref:EntityRef#Value, child:A#Value, parent:A#Value) = new ChildParentFeatureVector[A](child, parent).value
 }
-class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](model: WeightsDef, val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B])
+class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](model: Parameters, val name:String,val weight:Double=4.0,val shift:Double= -0.25)(implicit m:Manifest[B])
   extends WeightedChildParentTemplate[B](model){
   def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }

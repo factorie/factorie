@@ -2,7 +2,7 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.ner.ChainNerLabel
-import cc.factorie.la.{TensorSet, Tensor, DenseTensor1, UniformTensor1}
+import cc.factorie.la.{Tensor, DenseTensor1, UniformTensor1}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
@@ -46,9 +46,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    logger.debug("successfully deserialized")
  }
 
- def getWeights(model: Model with WeightsDef): Seq[Tensor] = model.weightsSet.tensors.toSeq
+ def getWeights(model: Parameters): Seq[Tensor] = model.parameters.tensors.toSeq
 
- def assertSameWeights(model1: Model with WeightsDef, model2: Model with WeightsDef): Unit = {
+ def assertSameWeights(model1: Parameters, model2: Parameters): Unit = {
    val weights1 = getWeights(model1)
    val weights2 = getWeights(model2)
    assert(weights1.size == weights2.size,
@@ -85,7 +85,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    val words = "The quick brown fox jumped over the lazy dog".split(" ")
    words.foreach(domain1.index(_))
 
-   class Model1(d: CategoricalDomain[String]) extends Model with WeightsDef {
+   class Model1(d: CategoricalDomain[String]) extends Model with Parameters {
      val family1 = new DotFamilyWithStatistics1[CategoricalVariable[String]] {
        val weights = Weights(new DenseTensor1(d.length))
      }
@@ -248,7 +248,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
  class Sentence extends Chain[Sentence, Token]
 
- class SegmenterModel extends ModelWithContext[Seq[Label]] with WeightsDef {
+ class SegmenterModel extends ModelWithContext[Seq[Label]] with Parameters {
    val bias = new DotFamilyWithStatistics1[Label] {
      factorName = "Label"
      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))

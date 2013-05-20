@@ -3,14 +3,14 @@ import cc.factorie._
 import collection.mutable
 
 // Bias weightsSet
-class LogLinearTemplate1[L<:DiscreteVar](val model: WeightsDef, val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
+class LogLinearTemplate1[L<:DiscreteVar](val model: Parameters, val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
   //def statisticsDomains = Tuple1(labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]])
   val weights = model.Weights(new la.DenseTensor1(labelStatisticsDomain.size))
 }
 
 // Label-Feature weightsSet
-class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](val model: WeightsDef, lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends DotTemplateWithStatistics2[L,F]() {
-  def this(model: WeightsDef, lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(model, lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
+class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](val model: Parameters, lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends DotTemplateWithStatistics2[L,F]() {
+  def this(model: Parameters, lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(model, lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   //def statisticsDomains = ((labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]], featureStatisticsDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]]))
   val weights = model.Weights(new la.DenseTensor2(labelStatisticsDomain.size, featureStatisticsDomain.dimensionSize))
   def unroll1(label: L) = Factor(label, lf(label))

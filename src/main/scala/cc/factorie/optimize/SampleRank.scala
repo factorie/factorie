@@ -27,7 +27,7 @@ import util.DoubleAccumulator
 //  def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
 //  def gradientAndMargin(proposals:Seq[Proposal]): (Tensor,Double) = {
 //    var g: WeightsTensor = null // model.newSparseWeightsTensor
-//    //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weightsSet)
+//    //val g2 = new WeightsMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weightsSet)
 //    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel = bestModels._2
 //    val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
 //    val margin = bestModel1.modelScore - bestModel.modelScore
@@ -112,8 +112,8 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
 class SampleRankTrainer[C](val weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[SampleRankExample[C]] {
-  def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with WeightsDef].weightsSet, sampler, optimizer)
-  def this(sampler: ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with WeightsDef].weightsSet, sampler, new optimize.AdaGrad)
+  def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, optimizer)
+  def this(sampler: ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, new optimize.AdaGrad)
   def processContext(context: C): Unit = process(new SampleRankExample(context, sampler))
   def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
   def processContexts(contexts: Iterable[C]): Unit = contexts.foreach(c => processContext(c))

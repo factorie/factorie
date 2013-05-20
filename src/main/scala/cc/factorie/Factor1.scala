@@ -193,7 +193,7 @@ trait DotFamily1[N1<:Var] extends TensorFamily1[N1] with DotFamily {
 }
 
 trait DotFamilyWithStatistics1[N1<:TensorVar] extends TensorFamilyWithStatistics1[N1] with DotFamily1[N1] {
-  override def weights: TensorSetKey1 // TODO Perhaps this should just be Tensor because neighbor value might be Tensor2,...
+  override def weights: Weights1 // TODO Perhaps this should just be Tensor because neighbor value might be Tensor2,...
   //def score(v1:N1#Value): Double = statisticsScore(v1)
   def setWeight(entry:Tensor1, w:Double) = entry match {
     case t:SingletonBinaryTensor1 => weights.value(t.singleIndex) = w // e.g. DiscreteValue

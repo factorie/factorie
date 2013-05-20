@@ -43,7 +43,7 @@ class ParserSVM extends Parser with ParserImpl {
   def save(c: ParserClassifier, folder: File, gzip: Boolean, doubleGzip: Boolean): Unit = c.asInstanceOf[BaseParserClassifier].save(folder, gzip, doubleGzip)
   
   def train[B <: ParseDecisionVariable](vs: Seq[B]): ParserClassifier = {
-    val backingClassifier = (new SVMTrainer(parallel = true)).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)).asInstanceOf[ModelBasedClassifier[ParseDecisionVariable, Model with WeightsDef]]
+    val backingClassifier = (new SVMTrainer(parallel = true)).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)).asInstanceOf[ModelBasedClassifier[ParseDecisionVariable, Model with Parameters]]
     new BaseParserClassifier(backingClassifier)
   }
   

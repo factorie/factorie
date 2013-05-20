@@ -14,7 +14,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
     this += "f2"+labelString; logger.debug("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
     this += "f3"+labelString; logger.debug("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
   }
-  val model = new DotTemplateWithStatistics2[Label,Instance] with WeightsDef {
+  val model = new DotTemplateWithStatistics2[Label,Instance] with Parameters {
     val weights = Weights(new la.DenseTensor2(LabelDomain.size, InstanceDomain.dimensionSize))
     def unroll1(l:Label) = Factor(l, l.instance)
     def unroll2(i:Instance) = Factor(i.label, i)

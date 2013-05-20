@@ -23,7 +23,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
 
   @Test
   def testFactorsOfDiffList {
-    val template = new DotTemplateWithStatistics1[BooleanVariable] with WeightsDef { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
+    val template = new DotTemplateWithStatistics1[BooleanVariable] with Parameters { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
     val b = new BooleanVariable(true)
     val diff = new DiffList
     b.set(false)(diff)
@@ -42,7 +42,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       }
     }
     val diff = new DiffList
-    val template = new DotTemplateWithStatistics1[BooleanVariable] with WeightsDef { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
+    val template = new DotTemplateWithStatistics1[BooleanVariable] with Parameters { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
     Aggregate.b1.set(true)(diff)
     val factors = template.factors(diff)
     assert(factors.exists(factor => factor.variables.head == Aggregate.b1))
@@ -58,7 +58,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       val members = for (i <- 0 until 10) yield new Member 
     }
     val aggregate = new Aggregate
-    val template = new DotTemplate2[Aggregate,Vars[Aggregate#Member]] with WeightsDef {
+    val template = new DotTemplate2[Aggregate,Vars[Aggregate#Member]] with Parameters {
       val weights = Weights(new la.DenseTensor1(1))
       def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))

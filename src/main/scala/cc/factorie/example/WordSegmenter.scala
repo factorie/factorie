@@ -160,7 +160,7 @@ object WordSegmenterDemo {
     //var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //val learner = new optimize.SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
 //    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
-    val learner = new optimize.OnlineTrainer(model.weightsSet, maxIterations = 15, optimizer = new optimize.AdaGrad(rate = 0.1))
+    val learner = new optimize.OnlineTrainer(model.parameters, maxIterations = 15, optimizer = new optimize.AdaGrad(rate = 0.1))
     //learner.learningRate = 1.0
     // println("Pre-training:")
     // println("Train accuracy = "+ objective.accuracy(trainVariables))
