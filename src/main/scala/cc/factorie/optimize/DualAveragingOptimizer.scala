@@ -10,6 +10,7 @@ import util._
  * Time: 5:54 PM
  */
 // TODO Alex: please comment this. -akm
+// TODO probably should rename this to AdaGradDualAveraging since it specifically does the AdaGrad proximal step -luke
 
 class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double, val l2: Double) extends GradientOptimizer {
   var initialized = false
@@ -30,6 +31,8 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
     initialized = true
   }
 
+  // TODO can we use the tensorsetkey's "newBlank" thing here?
+  // I guess either way we still need to figure out how to combine with locking -luke
   def setToDense(weights: WeightsSet): Unit = {
     for (key <- weights.keys) {
       val daTensor = key.value.asInstanceOf[DualAveragingTensor]
@@ -55,13 +58,15 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
     val l1: Double
     val l2: Double
 
-    def toDenseTensor(d: DenseTensor) {
+    // can we use += here?
+    def toDenseTensor[D <: DenseTensor](d: D): D = {
       var i = 0
       assert(length == d.length)
       while (i < length) {
         d(i) = apply(i)
         i += 1
       }
+      d
     }
 
     override def update(i: Int, v: Double) { throw new Error("DualAveragingTensors can't be updated") }
@@ -96,6 +101,15 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
             gradSquares(indices(i)) += factor*factor
             i += 1
           }
+        case o: SparseBinaryTensorLike1 =>
+          val len = o.activeDomainSize
+          val indices = o._indices
+          var i = 0
+          while (i < len) {
+            gradients(indices(i)) += factor
+            gradSquares(indices(i)) += factor*factor
+            i += 1
+          }
         case o: DenseTensor =>
           val arr = o.asArray
           var i = 0
@@ -121,14 +135,14 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
 
   private class DualAveragingTensor1(val dim1: Int, val eta: Double, val delta: Double, val l1: Double, val l2: Double) extends DualAveragingTensor with Tensor1 {
     def isDense = false
+    override def copy = toDenseTensor(new DenseTensor1(dim1))
   }
-
   private class DualAveragingTensor2(val dim1: Int, val dim2: Int, val eta: Double, val delta: Double, val l1: Double, val l2: Double) extends DualAveragingTensor with Tensor2 {
 
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
-
     def isDense = false
+    override def copy = toDenseTensor(new DenseTensor2(dim1, dim2))
 
     override def *(t: Tensor1): Tensor1 = {
   //    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
@@ -200,6 +214,7 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def activeDomain3 = new RangeIntSeq(0, dim3)
+    override def copy = toDenseTensor(new DenseTensor3(dim1, dim2, dim3))
   }
   private class DualAveragingTensor4(val dim1: Int, val dim2: Int, val dim3: Int, val dim4: Int, val eta: Double, val delta: Double, val l1: Double, val l2: Double) extends DualAveragingTensor with Tensor4 {
     def isDense = false
@@ -207,6 +222,16 @@ class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double,
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def activeDomain3 = new RangeIntSeq(0, dim3)
     def activeDomain4 = new RangeIntSeq(0, dim4)
+    override def copy = toDenseTensor(new DenseTensor4(dim1, dim2, dim3, dim4))
   }
 }
 
+object DualAveraging {
+  @inline final def truncate(x0: Double, l1: Double): Double = {
+    if (x0 > l1)
+      x0-l1
+    else if (x0 < -l1)
+      x0+l1
+    else 0.0
+  }
+}
