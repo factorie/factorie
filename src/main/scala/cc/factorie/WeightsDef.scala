@@ -52,7 +52,6 @@ class WeightsTensorSet extends WeightsSet {
   def add(ctor: => Tensor4): TensorSetKey4 = new TensorSetKey4 with InnerKey { def newBlankTensor = ctor }
 
   private trait InnerKey extends TensorSetKey {
-    def sharedWeights = self
     _keys.append(this)
     var _actualWeights: TensorType = null.asInstanceOf[TensorType]
     def realValue = { if (_actualWeights eq null) { _actualWeights = newBlankTensor} ; _actualWeights }

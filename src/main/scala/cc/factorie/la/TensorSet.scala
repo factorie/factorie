@@ -35,7 +35,6 @@ trait TensorSet {
 
 trait TensorSetKey {
   type TensorType <: Tensor
-  def sharedWeights: TensorSet
   def newBlankTensor: TensorType
   protected def realValue: TensorType
   def value: TensorType = realValue
