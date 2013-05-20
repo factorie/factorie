@@ -196,8 +196,8 @@ class POS3 extends DocumentAnnotator {
       cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)
     }
     WordData.preProcess(trainDocs)
-    val sentences = trainDocs.flatMap(_.sentences).take(1000) // TODO remove this
-    val testSentences = testDocs.flatMap(_.sentences).take(1000)
+    val sentences = trainDocs.flatMap(_.sentences)
+    val testSentences = testDocs.flatMap(_.sentences)
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
     for (sentence <- sentences) features(sentence.tokens) // just to create and count all features
