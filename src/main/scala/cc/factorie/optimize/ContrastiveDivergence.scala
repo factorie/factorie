@@ -4,7 +4,7 @@ import cc.factorie._
 import cc.factorie.la.WeightsMapAccumulator
 import cc.factorie.util.DoubleAccumulator
 
-class ContrastiveDivergenceExample[C](model: Model with Parameters, val context: C, val sampler: Sampler[C], val k: Int = 1) extends Example {
+class ContrastiveDivergenceExample[C](val context: C, model: Model with Parameters, val sampler: Sampler[C], val k: Int = 1) extends Example {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The ContrastiveDivergenceExample needs a gradient accumulator")
@@ -16,7 +16,7 @@ class ContrastiveDivergenceExample[C](model: Model with Parameters, val context:
   }
 }
 
-class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](model: Model with Parameters, val context: C, val sampler: Sampler[Var]) extends Example {
+class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val context: C, model: Model with Parameters, val sampler: Sampler[Var]) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The PersistentContrastiveDivergenceExample needs a gradient accumulator")
@@ -30,7 +30,7 @@ class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](model: M
 }
 
 class ContrastiveDivergenceHingeExample[C <: Var](
-  model: Model with Parameters, val context: C, val sampler: Sampler[C], val learningMargin: Double = 1.0, val k: Int = 1) extends Example {
+  val context: C, model: Model with Parameters, val sampler: Sampler[C], val learningMargin: Double = 1.0, val k: Int = 1) extends Example {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The ContrastiveDivergenceHingeExample needs a gradient accumulator")
@@ -50,7 +50,7 @@ class ContrastiveDivergenceHingeExample[C <: Var](
 }
 
 class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
-  model: Model with Parameters, val context: C, val sampler: Sampler[Var], val learningMargin: Double = 1.0) extends Example {
+  val context: C, model: Model with Parameters, val sampler: Sampler[Var], val learningMargin: Double = 1.0) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The PersistentContrastiveDivergenceHingeExample needs a gradient accumulator")

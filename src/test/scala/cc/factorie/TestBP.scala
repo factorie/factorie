@@ -183,7 +183,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
       val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
       model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-      val ex = new LikelihoodExample(model, Seq(l0, l1, l2, l3), bpInfer)
+      val ex = new LikelihoodExample(Seq(l0, l1, l2, l3), model, bpInfer)
       val ex1 = new ChainModel.ChainExample(model, Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
       val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {

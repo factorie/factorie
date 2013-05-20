@@ -351,7 +351,7 @@ class ChainNer2 {
  
 		if(bP) {
   		val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
-      val examples = vars.map(v => new LikelihoodExample(model, v.toSeq, InferByBPChainSum))
+      val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
       val trainer = new SynchronizedBatchTrainer(model.parameters, new LBFGS with L2Regularization)
 			trainer.trainFromExamples(examples)
       (trainLabels ++ testLabels).foreach(_.setRandomly())
@@ -385,7 +385,7 @@ class ChainNer2 {
 	    if(bP) {
 			  val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-        val examples = vars.map(v => new LikelihoodExample(model2, v.toSeq, InferByBPChainSum))
+        val examples = vars.map(v => new LikelihoodExample(v.toSeq, model2, InferByBPChainSum))
         val trainer = new SynchronizedBatchTrainer(model2.parameters, new LBFGS with L2Regularization)
 			  trainer.trainFromExamples(examples)
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())

@@ -79,7 +79,7 @@ The following code declares data, model, inference and learning for a linear-cha
   }
   // Learn parameters
   val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
-  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(model, labels, InferByBPChainSum)))
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))

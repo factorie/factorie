@@ -166,7 +166,7 @@ object WordSegmenterDemo {
     // println("Train accuracy = "+ objective.accuracy(trainVariables))
     // println("Test  accuracy = "+ objective.accuracy(testVariables))
     for (i <- 0 until 25) {
-      learner.processExamples(trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(model, _)))
+      learner.processExamples(trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_, model)))
 //      learner.processExamples(trainVariables.map(tv => new optimize.DiscreteLikelihoodExample(tv)))
       //learner.processAll(trainVariables, 2)
       //learner.learningRate *= 0.8

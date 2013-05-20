@@ -67,11 +67,11 @@ class TestLearning {
     val data = createData(10)
     val model = createModel()
 
-    val plExamples = data.map(d => new PseudolikelihoodExample(model, Seq(d)))
+    val plExamples = data.map(d => new PseudolikelihoodExample(Seq(d), model))
     val plgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseCopy)
     val plvalue = new LocalDoubleAccumulator(0.0)
 
-    val llExamples = data.map(d => new LikelihoodExample(model, Seq(d), InferByBPTreeSum))
+    val llExamples = data.map(d => new LikelihoodExample(Seq(d), model, InferByBPTreeSum))
     val llgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseCopy)
     val llvalue = new LocalDoubleAccumulator(0.0)
 

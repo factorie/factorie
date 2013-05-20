@@ -115,7 +115,7 @@ object Tutorial40InferenceAndLearning {
      * gradient for maximum likelihood training. Here's how to construct one for this sentence
      * using Factorie's BP inferencer.
      **/
-    val example0 = new optimize.LikelihoodExample(model, document.tokens.map(_.attr[Label]), InferByBPChainSum)
+    val example0 = new optimize.LikelihoodExample(document.tokens.map(_.attr[Label]), model, InferByBPChainSum)
 
     // The ChainModel, however, comes with its own more efficient example
     val example1 = ChainModel.createChainExample(model, document.tokens.map(_.attr[Label]))

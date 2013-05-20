@@ -60,12 +60,13 @@ trait Model {
   def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(d), fclass)
   def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
 
+  // TODO maybe these methods should be moved to a model companion object since they do not require anything from the model -luke, akm
   def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
     factors.filter(f => f match {
       case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
       case _ => false
     }).asInstanceOf[Iterable[F#Factor]]
-  def filterNotByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[Factor] =
+  def filterByNotFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[Factor] =
     factors.filterNot({
       case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
       case _ => false

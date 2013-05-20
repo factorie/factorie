@@ -92,7 +92,7 @@ object ChainNER2 {
     // Train for 5 iterations
     //val pieces = trainLabels.map(l => new SampleRankExample[Variable](l, new GibbsSampler(model, HammingLossObjective)))
     //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
-    val pieces = trainSentences.map(s => new LikelihoodExample(model, s.asSeq, InferByBPChainSum))
+    val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChainSum))
     val trainer = new BatchTrainer(model.parameters)
     val predictor = MaximizeByBPChain // new VariableSettingsSampler[ChainNerLabel](model, null)
     while (!trainer.optimizer.isConverged) {

@@ -32,7 +32,7 @@ object MiniBatchExample {
 }
 
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
-class LikelihoodExample(model: Model with Parameters, labels: Iterable[LabeledVar], val infer: Infer) extends Example {
+class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Parameters, val infer: Infer) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
@@ -48,7 +48,7 @@ class LikelihoodExample(model: Model with Parameters, labels: Iterable[LabeledVa
       }
     }
     if (value != null) // add in the score from non-DotFamilies
-      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
+      for (factor <- model.filterByNotFamilyClass(factors, classOf[DotFamily]))
         value.accumulate(factor.assignmentScore(TargetAssignment))
   }
 }
@@ -71,16 +71,16 @@ class LikelihoodExample(model: Model with Parameters, labels: Iterable[LabeledVa
 //      }
 //    }
 //    if (value != null) // add in the score from non-DotFamilies
-//      for (factor <- model.filterNotByFamilyClass(factors, classOf[DotFamily]))
+//      for (factor <- model.filterByNotFamilyClass(factors, classOf[DotFamily]))
 //        value.accumulate(factor.assignmentScore(TargetAssignment))
 //  }
 //}
 
 // This is just like DiscreteLikelihoodExample but it loops over all variables passed in
-class PseudolikelihoodExample(model: Model with Parameters, labels: Iterable[LabeledDiscreteVar]) extends Example {
+class PseudolikelihoodExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     for (label <- labels) {
-      val factors = model.factorsOfFamilyClass[DotFamily](label) // should this be just DotFamily factors?
+      val factors = model.factors(label)
       val proportions = label.proportions(factors)
       if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
       if (gradient ne null) {
@@ -89,7 +89,8 @@ class PseudolikelihoodExample(model: Model with Parameters, labels: Iterable[Lab
         while (i < proportions.length) {
           assignment.intValue1 = i
           val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
-          factors.foreach(f => gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p)) // TODO Consider instance weightsSet here also?
+          for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily]))
+            gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p) // TODO Consider instance weights here also?
           i += 1
         }
       }
@@ -98,7 +99,7 @@ class PseudolikelihoodExample(model: Model with Parameters, labels: Iterable[Lab
 }
 
 // Generalization of Pseudo likelihood to sets of variables, instead of a single one
-class CompositeLikelihoodExample(model: Model with Parameters, components: Iterable[Iterable[LabeledDiscreteVar]]) extends Example {
+class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVar]], model: Model with Parameters) extends Example {
   def computeProportions(labels: Iterable[LabeledDiscreteVar], factors:Iterable[Factor]): (Proportions1, Int) = {
     val iterator = AssignmentIterator.assignments(labels.toSeq)
     val l = iterator.length
@@ -117,14 +118,15 @@ class CompositeLikelihoodExample(model: Model with Parameters, components: Itera
   }
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     for (component <- components) {
-      val factors = model.factorsOfFamilyClass[DotFamily](component) // should this be just DotFamily factors?
+      val factors = model.factors(component) // should this be just DotFamily factors?
       val (proportions, targetIndex) = computeProportions(component, factors)
       if (value ne null) value.accumulate(math.log(proportions(targetIndex)))
       if (gradient ne null) {
         var i = 0
         for(assignment <- AssignmentIterator.assignments(component.toSeq)) {
           val p = if (i == targetIndex) 1.0 - proportions(i) else -proportions(i)
-          factors.foreach(f => gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p)) // TODO Consider instance weights here also?
+          for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily]))
+            gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p) // TODO Consider instance weights here also?
           i += 1
         }
       }
@@ -133,9 +135,9 @@ class CompositeLikelihoodExample(model: Model with Parameters, components: Itera
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
-class DiscreteLikelihoodExample(model: Model with Parameters, label: LabeledDiscreteVar) extends Example {
+class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Parameters) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
-    val factors = model.factorsOfFamilyClass[DotFamily](label)
+    val factors = model.factors(label)
     val proportions = label.proportions(factors)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
     if (gradient ne null) {
@@ -144,7 +146,8 @@ class DiscreteLikelihoodExample(model: Model with Parameters, label: LabeledDisc
       while (i < proportions.length) {
         assignment.intValue1 = i
         val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
-        factors.foreach(f => gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p)) // TODO Consider instance weightsSet here also?
+        for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily]))
+          gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p) // TODO Consider instance weights here also?
         i += 1
       }
     }
@@ -152,7 +155,7 @@ class DiscreteLikelihoodExample(model: Model with Parameters, label: LabeledDisc
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors is allowed to change based on the DiscreteVar value. */
-class CaseFactorDiscreteLikelihoodExample(model: Model with Parameters, label: LabeledMutableDiscreteVar[_]) extends Example {
+class CaseFactorDiscreteLikelihoodExample(label: LabeledMutableDiscreteVar[_], model: Model with Parameters) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
@@ -192,7 +195,7 @@ object GoodBadExample {
 // goodCandidates and badCandidates.
 // See DominationLossExampleAllGood for one that outputs a gradient for all goodCandidates
 // In FACTORIE we don't minimize a "loss" we maximize an "objective".  I think this class should be renamed. -akm 
-class DominationLossExample(model: Model with Parameters, goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example {
+class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var], model: Model with Parameters) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
@@ -223,14 +226,14 @@ class DominationLossExampleAllGood(model: Model with Parameters, goodCandidates:
 
 // StructuredPerceptron is just Likelihood with a Maximize ("value" will be correct as long as the marginals returned by
 // Maximize have the max model score as "logZ")
-class StructuredPerceptronExample(model: Model with Parameters, labels: Iterable[LabeledVar], infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(model, labels, infer)
+class StructuredPerceptronExample(labels: Iterable[LabeledVar], model: Model with Parameters, infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(labels, model, infer)
 
 // NOTE: a "loss" is a negated objective - so higher score is worse - otherwise this won't work since there is no way to make a
 // CombinedModel that subtracts one model's score from another
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
-class StructuredSVMExample(model: Model with Parameters, labels: Iterable[LabeledVar], objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
-  extends StructuredPerceptronExample(new CombinedModel(model, objective) with Parameters { override val parameters = model.parameters }, labels, infer) {
+class StructuredSVMExample(labels: Iterable[LabeledVar], model: Model with Parameters, objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
+  extends StructuredPerceptronExample(labels, new CombinedModel(model, objective) with Parameters { override val parameters = model.parameters }, infer) {
   override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     if (value != null) {
       val valueAcc = new LocalDoubleAccumulator(0.0)
@@ -241,7 +244,7 @@ class StructuredSVMExample(model: Model with Parameters, labels: Iterable[Labele
   }
 }
 
-class SemiSupervisedExample(model: Model with Parameters, labels: Iterable[LabeledVar], inferConstrained: Infer, inferUnconstrained: Infer) extends Example {
+class SemiSupervisedLikelihoodExample(labels: Iterable[LabeledVar], model: Model with Parameters, inferConstrained: Infer, inferUnconstrained: Infer) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val constrainedSummary = inferConstrained.infer(labels, model).get
