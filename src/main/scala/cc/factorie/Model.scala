@@ -135,17 +135,15 @@ trait ModelWithContext[-C] extends Model {
   def assignmentScore(context:C, assignment:Assignment): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.assignmentScore(assignment); sum }
 }
 
-trait DotFamilyModel extends Model {
-  //abstract override def families: Seq[DotFamily]
-}
-
 
 
 
 // TODO Is this used?
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait ModelWithFactorType extends Model {
+trait ModelWithFactorType /*extends Model*/ {
   trait FactorType <: Factor
+  //type FactorType <: Factor
+
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
   //override def factors(context:C): Iterable[FactorType] // = super.factors(context).asInstanceOf[FactorType] 
   //{ val result = newFactorsCollection; addFactors(context, newFactorsCollection).asInstanceOf[Iterable[FactorType]] }

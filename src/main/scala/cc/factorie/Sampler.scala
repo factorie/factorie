@@ -264,7 +264,7 @@ trait FactorQueue[C] extends Sampler[C] {
   }
   def sampleFromQueue : DiffList = {
     val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
-    for (variable <- factor.variables.toSeq.shuffle; if (!variable.isConstant)) {
+    for (variable <- factor.variables.toSeq.shuffle; if (!variable.isInstanceOf[VarWithConstantValue])) {
       val difflist = process0(variable)
       if (difflist != null && difflist.size > 0) return difflist
     }
