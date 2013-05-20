@@ -131,7 +131,7 @@ class POS3 extends DocumentAnnotator {
 
   var exampleSetsToPrediction = false
   class TokenClassifierExample(model: ClassifierModel, val token: Token, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
-    override def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+    override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
       new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(gradient, value)

@@ -238,7 +238,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   class Example(ignoredModel:Parameters, featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example {
     // similar to GLMExample, but specialized to DepParser.model
-    def accumulateExampleInto(gradient:la.TensorSetAccumulator, value:util.DoubleAccumulator): Unit = {
+    def accumulateExampleInto(gradient:la.WeightsMapAccumulator, value:util.DoubleAccumulator): Unit = {
       val weights = model.evidence.value
       val prediction = weights * featureVector
       val (obj, grad) = optimize.LinearObjectives.logMultiClass.valueAndGradient(prediction, targetLabel)

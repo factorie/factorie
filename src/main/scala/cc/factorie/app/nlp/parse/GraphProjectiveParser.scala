@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.parse
 import cc.factorie.app.nlp._
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PTBPosLabel
-import cc.factorie.la.{Tensor, TensorSetAccumulator}
+import cc.factorie.la.{Tensor, WeightsMapAccumulator}
 import cc.factorie.util.DoubleAccumulator
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
@@ -215,7 +215,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   }
 
   class StructuredPerceptronParsingExample(val sent: Sentence) extends cc.factorie.optimize.Example {
-    def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
       if (gradient ne null) {
         val gt = groundTruthEdges(sent)
         gt.foreach(f => gradient.accumulate(DependencyModel.weights, f.value))

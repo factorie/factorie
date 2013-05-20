@@ -32,7 +32,7 @@ trait Trainer[E <: Example] {
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
 class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[Example] with FastLogging {
-  val gradientAccumulator = new LocalTensorSetAccumulator(weightsSet.blankDenseCopy)
+  val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankDenseCopy)
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   // TODO This is sad:  The optimizer determines which of gradient/value/margin it needs, but we don't know here
   // so we create them all, possibly causing the Example to do more work.
@@ -53,7 +53,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
 class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer[Example] with FastLogging {
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
-    val gradientAccumulator = new ThreadLocal[LocalTensorSetAccumulator] { def initialValue = new LocalTensorSetAccumulator(weightsSet.blankDenseCopy) }
+    val gradientAccumulator = new ThreadLocal[LocalWeightsMapAccumulator] { def initialValue = new LocalWeightsMapAccumulator(weightsSet.blankDenseCopy) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { def initialValue = new LocalDoubleAccumulator }
     val startTime = System.currentTimeMillis
     examples.par.foreach(example => example.accumulateExampleInto(gradientAccumulator.get, valueAccumulator.get))
@@ -70,10 +70,10 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
 class SynchronizedBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors())
   extends Trainer[Example] with FastLogging {
   import collection.JavaConversions._
-  def examplesToRunnables(es: Iterable[Example], grad: TensorSetAccumulator, va: DoubleAccumulator): Seq[Callable[Object]] =
+  def examplesToRunnables(es: Iterable[Example], grad: WeightsMapAccumulator, va: DoubleAccumulator): Seq[Callable[Object]] =
     es.map(e => new Callable[Object] { def call() = { e.accumulateExampleInto(grad, va); null.asInstanceOf[Object] } }).toSeq
 
-  val gradientAccumulator = new SynchronizedTensorSetAccumulator(weightsSet.blankDenseCopy)
+  val gradientAccumulator = new SynchronizedWeightsMapAccumulator(weightsSet.blankDenseCopy)
   val valueAccumulator = new SynchronizedDoubleAccumulator
   var runnables = null.asInstanceOf[java.util.Collection[Callable[Object]]]
   def processExamples(examples: Iterable[Example]): Unit = {
@@ -105,7 +105,7 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
     new Callable[Object] { 
       def call() = {
         val gradient = weightsSet.blankSparseCopy
-        val gradientAccumulator = new LocalTensorSetAccumulator(gradient)
+        val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
         val value = new LocalDoubleAccumulator()
         e.accumulateExampleInto(gradientAccumulator, value)
         // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
@@ -139,7 +139,7 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
 }
 
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer[Example] with util.FastLogging {
-  var gradientAccumulator = new LocalTensorSetAccumulator(weightsSet.blankSparseCopy)
+  var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseCopy)
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -193,7 +193,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
     new Callable[Object] {
       def call() = {
         val gradient = weightsSet.blankSparseCopy
-        val gradientAccumulator = new LocalTensorSetAccumulator(gradient)
+        val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
         val value = new LocalDoubleAccumulator()
         e.accumulateExampleInto(gradientAccumulator, value)
         // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock

@@ -128,7 +128,7 @@ class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int,
 
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
     val prediction = weights.value * featureVector
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
@@ -138,7 +138,7 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
 
 class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
     val score = weights.value dot featureVector
     val (obj, sgrad) = objective.valueAndGradient(score, label)
     if (value != null) value.accumulate(obj)

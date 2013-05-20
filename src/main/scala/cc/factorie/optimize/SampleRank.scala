@@ -74,7 +74,7 @@ import util.DoubleAccumulator
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {
   var learningMargin = 1.0
-  def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -120,7 +120,7 @@ class SampleRankTrainer[C](val weightsSet: WeightsSet, sampler: ProposalSampler[
   def processContexts(contexts: Iterable[C], iterations: Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example: SampleRankExample[C]): Unit = {
     //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalTensorSetAccumulator(weightsSet.blankSparseCopy)
+    val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseCopy)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(gradientAccumulator, valueAccumulator)
     //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    

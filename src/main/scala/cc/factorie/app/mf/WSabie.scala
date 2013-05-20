@@ -1,7 +1,7 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import cc.factorie.la.{TensorSetAccumulator}
+import cc.factorie.la.{WeightsMapAccumulator}
 import util.DoubleAccumulator
 
 /**
@@ -34,7 +34,7 @@ object WSabie {
   }
 
   class WSabieExample(model: WSabieModel, val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example {
-    def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
+    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
       val weights = model.weights.value
       val queryEmbeddings = weights * query
       val posEmbeddings = weights * positive

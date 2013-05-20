@@ -283,7 +283,7 @@ object ChainModel {
   }
   class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](model: ChainModel[L, _, _], val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example {
     private var cachedTargetStats: WeightsMap = null
-    def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator): Unit = {
+    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
       if (labels.size == 0) return
       if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
       val summary = infer.infer(labels, model)
