@@ -254,7 +254,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.0001, 0.0001)
-    val trainer = new optimize.HogwildTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
+    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until 10) {
       trainer.processExamples(rng.shuffle(examples))
       import DepParser1.uas
