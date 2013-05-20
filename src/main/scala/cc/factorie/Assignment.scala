@@ -49,6 +49,7 @@ trait Assignment {
     }
   }
   // For Marginal trait
+  // TODO Now that Assignment is no longer a Marginal, remove this.
   final def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
 

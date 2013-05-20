@@ -50,6 +50,7 @@ class Document extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
   // Managing Sentences
   private var _sentences = new ArrayBuffer[Sentence]
   def sentences: Seq[Sentence] = _sentences
+  def hasSentences: Boolean = _sentences.length > 0
   // potentially very slow for large documents. // TODO Why isn't this simply using token.sentence??  Or even better, just remove this method. -akm
   def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
 
