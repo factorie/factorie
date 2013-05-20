@@ -143,7 +143,7 @@ class POS3 extends DocumentAnnotator {
   def predict(tokens: Seq[Token]): Unit = {
     val weightsMatrix = model.evidenceTemplate.weightsTensor
     for (token <- tokens) {
-      assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
+      assert(token.attr[cc.factorie.app.nlp.lemma.SimplifyDigitsTokenLemma] ne null)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
       val featureVector = features(token)
       val prediction = weightsMatrix * featureVector
