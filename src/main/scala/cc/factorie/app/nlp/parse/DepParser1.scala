@@ -64,6 +64,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   object FeaturesDomain extends CategoricalDimensionTensorDomain[(String, Int)] {
     override def stringToCategory(s: String): (String,Int) = {
       val (str, i) = s.splitAt(s.lastIndexOf(","))
+
       (str.substring(1), Integer.parseInt(i.substring(1,i.size-1)))
     }
   }
@@ -76,11 +77,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     def formFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
     def lemmaFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
     def tagFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
-    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else "" /* tree.label(seq(i)).value */ }, i))
+    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
     def lChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" /*+ t.parseLabel.value.toString()*/, i))) }
+      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
     def rChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" /*+ t.parseLabel.value.toString()*/, i))) }
+      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
     // Initialize the Features value
     this ++= formFeatures(stack, Seq(0,1), tree)
     this ++= formFeatures(input, Seq(0,1), tree)
@@ -109,12 +110,14 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val parent: Int = input.head
     tree.setParent(child, parent)
     tree.label(child).setCategory(relation)(null)
+    assert(tree.label(child).intValue != -1, "Relation is: " + relation)
   }
   def applyRightArc(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit = {
     val child: Int = input.pop()
     val parent: Int = stack.head
     tree.setParent(child, parent)
     tree.label(child).setCategory(relation)(null)
+    assert(tree.label(child).intValue != -1)
     stack.push(child)
   }
   def applyShift(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit =

@@ -62,6 +62,7 @@ object ParseTreeLabelDomain extends EnumDomain {
   dep, det, dobj, expl, hmod, hyph, infmod, intj, iobj, mark, meta, neg, nmod, nn, npadvmod, nsubj, nsubjpass, 
   num, number, oprd, parataxis, partmod, pcomp, pobj, poss, possessive, preconj, predet, prep, prt, punct, 
   quantmod, rcmod, root, xcomp = Value
+  index("") // necessary for empty categories
   freeze()
   def defaultCategory = "nn"
 }

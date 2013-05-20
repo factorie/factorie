@@ -188,7 +188,7 @@ class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, object
     //println("VariablesSettingsSampler.settings "+variables)
     var _hasNext = true
     var prevDiffList: DiffList = null
-    /**Iterate through all combinations of values in Variables given their `SettingIterators */
+    /**Iterate through all combinations of values in Variables given their SettingIterators */
     def nextValues(vs: List[IterableSettings#SettingIterator], vds: List[DiffList]): Boolean = {
       if (vs == Nil) false
       else if (vs.head.hasNext) {
