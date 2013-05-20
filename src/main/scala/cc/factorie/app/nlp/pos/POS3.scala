@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
+import cc.factorie.app.classify.{MultiClassModel, LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, HogwildTrainer}
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
@@ -12,7 +12,7 @@ import org.junit.Assert._
 class POS3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
-  class ClassifierModel extends WeightsDef {
+  class ClassifierModel extends MultiClassModel {
     val evidence = Weights(new la.DenseTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize))
   }
   val model = new ClassifierModel
@@ -130,7 +130,7 @@ class POS3 extends DocumentAnnotator {
 
 
   var exampleSetsToPrediction = false
-  class TokenClassifierExample(model: ClassifierModel, val token: Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example {
+  class TokenClassifierExample(model: ClassifierModel, val token: Token, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
     override def accumulateExampleInto(gradient: TensorSetAccumulator, value: DoubleAccumulator) {
       val featureVector = features(token)
       val posLabel = token.attr[PTBPosLabel]
@@ -206,7 +206,7 @@ class POS3 extends DocumentAnnotator {
       iteration += 1
       val examples = sentences.shuffle.flatMap(sentence => {
         (0 until sentence.length).map(i => new TokenClassifierExample(model, sentence.tokens(i),
-            if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective))
+            if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.logMultiClass))
       })
       trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap

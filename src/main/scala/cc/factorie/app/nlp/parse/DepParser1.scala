@@ -16,7 +16,7 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.classify.{Classification, Classifier, LabelList}
+import cc.factorie.app.classify.{MultiClassModel, Classification, Classifier, LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
@@ -99,8 +99,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   var featuresSkipNonCategories = true
   
   // The model scoring an Action in the context of Features
-  val model = new WeightsDef {
-    val weights = Weights(new la.DenseTensor2(ActionDomain.size, FeaturesDomain.dimensionSize))
+  val model = new MultiClassModel {
+    val evidence = Weights(new la.DenseTensor2(ActionDomain.size, FeaturesDomain.dimensionSize))
   }
   
   // Action implementations
@@ -133,7 +133,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
   def predict(stack: ParserStack, input: ParserStack, tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
-    val weights = model.weights.value
+    val weights = model.evidence.value
     val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
     (v, v.domain.categories(v.validTargetList.maxBy(prediction(_))))
   }
@@ -236,11 +236,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   class Example(ignoredModel:WeightsDef, featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example {
     // similar to GLMExample, but specialized to DepParser.model
     def accumulateExampleInto(gradient:la.TensorSetAccumulator, value:util.DoubleAccumulator): Unit = {
-      val weights = model.weights.value
+      val weights = model.evidence.value
       val prediction = weights * featureVector
-      val (obj, grad) = optimize.ObjectiveFunctions.logMultiClassObjective(prediction, targetLabel)
+      val (obj, grad) = optimize.LinearObjectives.logMultiClass.valueAndGradient(prediction, targetLabel)
       if (value ne null) value.accumulate(obj)
-      if (gradient ne null) gradient.accumulate(model.weights, grad outer featureVector)
+      if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
   def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int): Unit = {
@@ -251,7 +251,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
-    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.weights.value.length))
+    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.evidence.value.length))
     println("Generating examples...")
     val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
@@ -265,7 +265,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       trainer.processExamples(rng.shuffle(examples))
       // trainActions.foreach()
       trainActions.foreach(a => {
-        a.set((model.weights.value * a.features.tensor.asInstanceOf[Tensor1]).maxIndex)(null)
+        a.set((model.evidence.value * a.features.tensor.asInstanceOf[Tensor1]).maxIndex)(null)
       })
       println("Train action accuracy = "+HammingObjective.accuracy(trainActions))
       //opt.setWeightsToAverage(model.weightsSet)

@@ -4,6 +4,7 @@ import cc.factorie._
 import cc.factorie.la._
 import org.junit.Test
 import org.junit.Assert._
+import cc.factorie.optimize.LinearObjectives
 
 /**
  * Created by IntelliJ IDEA.
@@ -36,7 +37,7 @@ class TestRegression {
     assertEquals(5, regressor.regress(y1).dependantValue(0), 0.01)
     assertEquals(3, regressor.regress(y2).dependantValue(0), 0.01)
 
-    val regressor2 = LinearRegressionTrainer.train[TensorVariable[Tensor1], MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0, app.regress.LinearRegressionObjectiveFunctions.epsilonInsensitiveObjectiveSq(0.001))
+    val regressor2 = LinearRegressionTrainer.train[TensorVariable[Tensor1], MyTensorVariable](Seq(y0, y1, y2), f => f.getFeatures, 0.0, LinearObjectives.epsilonInsensitiveSqMultivariate(0.001))
     assertEquals(4, regressor2.regress(y0).dependantValue(0), 0.01)
     assertEquals(5, regressor2.regress(y1).dependantValue(0), 0.01)
     assertEquals(3, regressor2.regress(y2).dependantValue(0), 0.01)
