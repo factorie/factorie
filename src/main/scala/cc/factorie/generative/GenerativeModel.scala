@@ -77,7 +77,7 @@ class ItemizedGenerativeModel extends MutableGenerativeModel {
   def extendedParentFactors(v:Var): Iterable[GenerativeFactor] = {
     val result = new ArrayBuffer[GenerativeFactor]
     result ++= getParentFactor(v)
-    for (parent <- parents(v); if (parent.isDeterministic)) result ++= extendedParentFactors(parent)
+    for (parent <- parents(v); if (parent.isInstanceOf[VarWithDeterministicValue])) result ++= extendedParentFactors(parent)
     result
   }
   def extendedChildFactors(v:Var): Iterable[GenerativeFactor] = {
@@ -85,7 +85,7 @@ class ItemizedGenerativeModel extends MutableGenerativeModel {
     val result = new ArrayBuffer[GenerativeFactor]
     for (factor <- childFactors(v)) {
       result += factor
-      if (factor.child.isDeterministic) result ++= extendedChildFactors(factor.child)
+      if (factor.child.isInstanceOf[VarWithDeterministicValue]) result ++= extendedChildFactors(factor.child)
     }
     result
   }

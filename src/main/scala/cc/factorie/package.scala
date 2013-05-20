@@ -136,6 +136,12 @@ package object factorie extends CubbieConversions {
     while (i < n) { result(i) = f(i); i += 1 }
     result
   }
+  
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+      and add this new factor to the given model. */
+  implicit def generatedVarExtras[V<:Var](v:V) = new GeneratedVarWrapper(v)
+  implicit def generatedMutableVarExtras[V<:MutableVar[_]](v:V) = new GeneratedMutableVarWrapper(v)
+
 
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }

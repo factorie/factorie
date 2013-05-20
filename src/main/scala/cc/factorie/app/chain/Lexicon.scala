@@ -16,7 +16,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-/** A list of words or phrases, with methods to easily check whether a TokenInSeq is in the list.
+/** A list of words or phrases, with methods to easily check whether a Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
 class Lexicon(val caseSensitive:Boolean) {
   import scala.io.Source
@@ -30,15 +30,7 @@ class Lexicon(val caseSensitive:Boolean) {
     def hasNext = next != null
     def hasPrev = prev != null
     def position = lengthToEnd
-    //def firstInSeq = if (prev == null) this else prev.firstInSeq
     def lengthToEnd: Int = if (next == null) 1 else 1 + next.lengthToEnd
-    //def length = firstInSeq.lengthToEnd
-    /*def seq: Seq[LexiconToken] = {
-      val result = new ArrayBuffer[LexiconToken];
-      var t = firstInSeq; result += t
-      while (t.hasNext) { t = t.next; result += t }
-      result
-    }*/
   }
   private def newLexiconTokens(words:Seq[String]): Seq[LexiconToken] = {
     val result = new ArrayBuffer[LexiconToken]
@@ -63,10 +55,14 @@ class Lexicon(val caseSensitive:Boolean) {
     //println("Lexicon adding "+ts.map(_.word))
     ts.foreach(t => this += t)
   }
+  /** Add a new lexicon entry consisting of a single string word */
   def +=(w:String): Unit = this.+=(new LexiconToken(w))
-  def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-  def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.regex.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+  /** Add a new lexicon entry consisting of a multi-string phrase. */
+  def +=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
+  def ++=(source:Source): Unit = for (line <- source.getLines()) { this.+=(lexer.regex.findAllIn(line).toSeq); /*println("TokenSeqs.Lexicon adding "+line)*/ }
   //def phrases: Seq[String] = contents.values.flatten.distinct
+  /** Do any of the Lexicon entries contain the given word string. */
+  def contains(s:String): Boolean = contents.contains(s)
   /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
   def contains[T<:Observation[T]](query:T): Boolean = {
     //println("contains "+query.word+" "+query.hasPrev+" "+query)

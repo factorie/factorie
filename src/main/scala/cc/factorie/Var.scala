@@ -80,12 +80,12 @@ trait Var extends ValueBound[Any] {
       See also PyMC's "Containers"? */
   def unrollCascade: Iterable[Var] = Nil
   
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
-      and add this new factor to the given model. */
-  def ~[V<:Var](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
-    model += partialFactor(this.asInstanceOf[V])
-    this
-  }
+//  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+//      and add this new factor to the given model. */
+//  def ~[V<:Var](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+//    model += partialFactor(this.asInstanceOf[V])
+//    this
+//  }
     
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
@@ -100,23 +100,48 @@ trait Var extends ValueBound[Any] {
   }
   def printName = shortClassName
   override def toString = printName + "(_)"
-  def isConstant = false
+  //def isConstant = false
   /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its GenerativeModel parents.
       Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
       variable's value changes automatically with changes to the parent variables' values.  How the automatic
       values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
       This function is used in cc.factorie.generative.GenerativeModel.extendedParents and extendedChildren.
       */
-  def isDeterministic = false  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
+  //def isDeterministic = false  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
+}
+
+class GeneratedVarWrapper[V<:Var](val v:V) {
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+      and add this new factor to the given model. */
+  def ~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): V = {
+    model += partialFactor(v.asInstanceOf[V2])
+    v
+  }
+}
+
+class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
+      add this new factor to the given model, 
+      and also assign the variable a new value randomly drawn from this factor. */
+  def :~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): V = {
+    model += partialFactor(v.asInstanceOf[V2])
+    v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
+    v
+  }
 }
 
 
-/** Used as a marker for Variables whose value does not change once created.  
+/** Used as a marker for variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
-// Semantically a "Value" is not really a "Variable", but we must inherit in order to override
-trait VarWithConstantValue extends Var {
-  override final def isConstant = true
-}
+trait VarWithConstantValue extends Var 
+
+/** Used as a marker for variables whose value is a deterministic (non-stochastic) function of some other state,
+    for example, a deterministic function of its GenerativeModel parents.
+    Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
+    variable's value changes automatically with changes to the parent variables' values.  How the automatic
+    values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
+    This function is used in cc.factorie.generative.GenerativeModel.extendedParents and extendedChildren. */
+trait VarWithDeterministicValue extends Var
 
 /** A Variable with a value that can be changed.
     @author Andrew McCallum */
@@ -125,14 +150,14 @@ trait MutableVar[A] extends VarWithValue[A] {
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
   final def :=(newValue:Value): Unit = set(newValue)(null)
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
-      add this new factor to the given model, 
-      and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V<:MutableVar[A]](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
-    this ~ (partialFactor)
-    this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
-    this
-  }
+//  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
+//      add this new factor to the given model, 
+//      and also assign the variable a new value randomly drawn from this factor. */
+//  def :~[V<:MutableVar[A]](partialFactor: V => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+//    this ~ (partialFactor)
+//    this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
+//    this
+//  }
 }
 
 

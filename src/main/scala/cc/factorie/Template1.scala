@@ -27,6 +27,7 @@ import java.io._
 //  and have it be generic as a collection of arbitrary Models.
 //  (Now possible if Templates are now responsible for their own de-duplication.)
 // A Template is basically a Model that is also a Family -luke
+/** A Template that creates Factors with one neighbor. */
 abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1]
 {
 

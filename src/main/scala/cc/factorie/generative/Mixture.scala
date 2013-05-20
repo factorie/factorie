@@ -42,8 +42,11 @@ trait MixtureFactor extends GenerativeFactor {
 class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
 object MixtureDomain extends MixtureDomain[Any]
 // NOTE Was Mixture[+P...]
-class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with Var with VarWithValue[scala.collection.Seq[P#Value]]
+class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
 {
+  /* A Mixture is a deterministic function of its parents.  
+     This fact is examined in GenerativeModel.factors, causing factors(mixtureComponent) 
+     to return not only this Mixture but also all the children of this Mixture. */
   //type Value <: scala.collection.Seq[P#Value]
   this ~ Mixture() // This will make this a child of each of the mixture components.
   def domain = MixtureDomain.asInstanceOf[MixtureDomain[P#Value]]
@@ -55,10 +58,7 @@ class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerati
   //val parentFactors = components.map(c => { val f = new MixtureComponent.Factor(this, c); c.addChildFactor(f); f })
   //parentFactor = new MixtureComponent.Factor(this, new SeqParameterVars(components)) // TODO Look at this again carefully
   //components.foreach(p => p.addChildFactor(parentFactor)) 
-  /** A Mixture is a deterministic function of its parents.  
-      This fact is examined in GenerativeModel.factors, causing factors(mixtureComponent) 
-      to return not only this Mixture but also all the children of this Mixture. */
-  override def isDeterministic = true
+  //override def isDeterministic = true
   /*def childFactorsOf[P2>:P](p:P2): Seq[MixtureFactor] = {
     val index = this.indexOf(p)
     //children.filter(_.isInstanceOf[MixtureGeneratedVar]).asInstanceOf[Iterable[MixtureGeneratedVar]].filter(_.choice.intValue == index)

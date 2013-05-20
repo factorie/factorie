@@ -15,9 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait DeterministicFunction extends Var {
+trait DeterministicFunction extends VarWithDeterministicValue {
   //overrride var parentFactor: GenerativeFactor = null
-  override def isDeterministic = true
+  //override def isDeterministic = true
 }
 trait DoubleFunction extends DeterministicFunction with DoubleVar
 
