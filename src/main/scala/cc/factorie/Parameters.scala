@@ -73,10 +73,10 @@ trait TensorSet {
   def copy: TensorSet
 
   def apply(key: Weights): Tensor
-  def apply(key: Weights1): Tensor1 = apply(key: Weights).asInstanceOf[Tensor1]
-  def apply(key: Weights2): Tensor2 = apply(key: Weights).asInstanceOf[Tensor2]
-  def apply(key: Weights3): Tensor3 = apply(key: Weights).asInstanceOf[Tensor3]
-  def apply(key: Weights4): Tensor4 = apply(key: Weights).asInstanceOf[Tensor4]
+//  def apply(key: Weights1): Tensor1 = apply(key: Weights).asInstanceOf[Tensor1]
+//  def apply(key: Weights2): Tensor2 = apply(key: Weights).asInstanceOf[Tensor2]
+//  def apply(key: Weights3): Tensor3 = apply(key: Weights).asInstanceOf[Tensor3]
+//  def apply(key: Weights4): Tensor4 = apply(key: Weights).asInstanceOf[Tensor4]
 
   def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
   def zero(): Unit = tensors.foreach(_.zero())
