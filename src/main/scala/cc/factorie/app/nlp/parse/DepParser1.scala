@@ -74,28 +74,32 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     override def skipNonCategories = featuresSkipNonCategories
     import cc.factorie.app.strings.simplifyDigits
     // assumes all locations > 0
-    def formFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =   locations.filter(_ < seq.size).map(i => ("sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
-    def lemmaFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =  locations.filter(_ < seq.size).map(i => ("lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
-    def tagFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =    locations.filter(_ < seq.size).map(i => ("it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
-    def depRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = locations.filter(_ < seq.size).map(i => ("sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
-    def lChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => ("lcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
-    def rChildDepRelFeatures(seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => ("rcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
+    def formFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
+      locations.filter(_ < seq.size).map(i => (s + "sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
+    def lemmaFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
+      locations.filter(_ < seq.size).map(i => (s + "lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
+    def tagFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
+      locations.filter(_ < seq.size).map(i => (s + "it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
+    def depRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
+      locations.filter(_ < seq.size).map(i => (s + "sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
+    def lChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
+      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => (s + "lcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
+    def rChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
+      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => (s + "rcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
     // Initialize the Features value
-    this ++= formFeatures(stack, Seq(0,1), tree)
-    this ++= formFeatures(input, Seq(0,1), tree)
+    this ++= formFeatures("s", stack, Seq(0,1), tree)
+    this ++= formFeatures("i", input, Seq(0,1), tree)
     // TODO We don't have have a good lemma annotator for new text
-    this ++= lemmaFeatures(stack, Seq(0,1), tree) //
-    this ++= lemmaFeatures(input, Seq(0,1), tree) //
-    this ++= tagFeatures(stack, Seq(0,1,2,3), tree)
-    this ++= tagFeatures(input, Seq(0,1,2,3), tree)
-    this ++= depRelFeatures(stack, Seq(0), tree)
-    this ++= depRelFeatures(input, Seq(0), tree)
-    this ++= lChildDepRelFeatures(stack, Seq(0), tree)
-    this ++= lChildDepRelFeatures(input, Seq(0), tree)
-    this ++= rChildDepRelFeatures(stack, Seq(0), tree)
-    this ++= rChildDepRelFeatures(input, Seq(0), tree)
+    this ++= lemmaFeatures("s", stack, Seq(0,1), tree) //
+    this ++= lemmaFeatures("i", input, Seq(0,1), tree) //
+    this ++= tagFeatures("s", stack, Seq(0,1,2,3), tree)
+    this ++= tagFeatures("i", input, Seq(0,1,2,3), tree)
+    this ++= depRelFeatures("s", stack, Seq(0), tree)
+    this ++= depRelFeatures("i", input, Seq(0), tree)
+    this ++= lChildDepRelFeatures("s", stack, Seq(0), tree)
+    this ++= lChildDepRelFeatures("i", input, Seq(0), tree)
+    this ++= rChildDepRelFeatures("s", stack, Seq(0), tree)
+    this ++= rChildDepRelFeatures("i", input, Seq(0), tree)
   }
   var featuresSkipNonCategories = true
   
@@ -205,22 +209,19 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
         actionLabels.append(action)
         applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
         done = true
-      }
-      else if (inputIdx == stackIdxParent) {
+      } else if (inputIdx == stackIdxParent) {
         val action = new Action((1, { if (useLabels) origTree.label(stackIdx).categoryValue else "" }), stack, input, tree) // LeftArc
         assert(action.allowedActions.contains(action.targetCategory._1), action.targetCategory._1 + " stack " + stack + " input " + input)
         actionLabels.append(action)
         applyAction(tree, stack, input, action.categoryValue._1, action.categoryValue._2)
         done = true
-      }
-      else {
+      } else {
         for (si <- stack.elements.drop(1);
              if (inputIdx != ParseTree.rootIndex &&
-               new Action((1, ""), stack, input, tree).allowedActions.contains(4) &&
-               ((inputIdxParent == si) ||
+                (tree.parentIndex(stack.head) != ParseTree.noIndex) &&
+                ((inputIdxParent == si) ||
                  (inputIdx == { if (si == ParseTree.rootIndex) -3 // -3 doesn't conflict with noIndex or rootIndex //ParseTree.noIndex
                                 else  origTree.parentIndex(si) })))) {// is the -2 right here?
-
           val action = new Action((4, ""), stack, input, tree) // Reduce
           assert(action.allowedActions.contains(action.targetCategory._1), action.targetCategory._1 + " stack " + stack + " input " + input)
           actionLabels.append(action)
