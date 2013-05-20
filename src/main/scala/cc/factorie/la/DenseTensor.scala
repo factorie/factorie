@@ -61,8 +61,11 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
       var s = 0.0; t2.foreachActiveElement((i,v) => s += __values(i)); s
     }
     case t:UniformTensor => sum * t.uniformValue
-    case t2:SparseIndexedTensor => {var s = 0.0;t2.foreachActiveElement((i,v) => s += __values(i)*v);s}
     // TODO Any other special cases here?
+//    case t2:SparseIndexedTensor => {var s = 0.0;t2.foreachActiveElement((i,v) => s += __values(i)*v);s}
+    case t: Tensor =>
+      // can we just do this? since dense things are easy for other tensors to dot against cause they can grab the array -luke
+      t dot this
     case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
       if (!hasLogged) {
         hasLogged = true
