@@ -50,6 +50,7 @@ object Template {
 //     (alternatively the score may be calculated using parameter stored externally to the Template,
 //      or in some fixed way without learned parameters).
 
+// TODO Make Templates no longer be Models; we don't really gain much, and it is confusing. -akm
 
 /** Superclass of Template1, Template2, Template3, Template4.
     They are templates that are also Model's with Variable context.
