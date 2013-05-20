@@ -3,6 +3,10 @@ package cc.factorie.app.nlp
 import java.io._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
 
+/** A command-line driver for DocumentAnnotators.
+    Launch on the command-line, specifying which NLP pipeline steps you want, 
+    then it listens on a socket port for new text input, and replies with annoted text, one word per line.
+    @author Andrew McCallum */
 object NLP {
   val annotators = new scala.collection.mutable.ArrayBuffer[DocumentAnnotator]
   var logStream = System.err

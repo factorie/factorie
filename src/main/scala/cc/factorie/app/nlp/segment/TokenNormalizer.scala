@@ -17,25 +17,26 @@ class TokenNormalizer(
   private def matches(source:String, targets:String*): Boolean = false
   def process1(document:Document): Document = {
     for (token <- document.tokens) { 
-      if (asciiQuotes && (token.string == "``" || token.string == "''")) token.attr += new TokenString(token, "\"")
-      else if (undoPTBParens && token.string == "-LRB-") token.attr += new TokenString(token, "(")
-      else if (undoPTBParens && token.string == "-RRB-") token.attr += new TokenString(token, ")")
-      else if (undoPTBParens && token.string == "-LCB-") token.attr += new TokenString(token, "{")
-      else if (undoPTBParens && token.string == "-RCB-") token.attr += new TokenString(token, "}")
-      else if (undoPTBParens && token.string == "-LSB-") token.attr += new TokenString(token, "[")
-      else if (undoPTBParens && token.string == "-RSB-") token.attr += new TokenString(token, "]")
-      else if (unescapeSlash && token.string.contains("\\/")) token.attr += new TokenString(token, token.string.replace("\\/", "/"))
-      else if (unescapeAsterisk && token.string == "\\*") token.attr += new TokenString(token, "*")
-      else if (unescapeAsterisk && token.string == "\\*\\*") token.attr += new TokenString(token, "**")
-      else if (twoOneDash && token.string == "--") token.attr += new TokenString(token, "-")
-      else if (twoOneDash && token.string == "Ñ") token.attr += new TokenString(token, "-") // replace m-dash with dash
-      else if (americanize && BritishToAmerican.contains(token.string)) token.attr += new TokenString(token, BritishToAmerican(token.string))
+      if (asciiQuotes && (token.string == "``" || token.string == "''")) token.attr += newTokenString(token, "\"")
+      else if (undoPTBParens && token.string == "-LRB-") token.attr += newTokenString(token, "(")
+      else if (undoPTBParens && token.string == "-RRB-") token.attr += newTokenString(token, ")")
+      else if (undoPTBParens && token.string == "-LCB-") token.attr += newTokenString(token, "{")
+      else if (undoPTBParens && token.string == "-RCB-") token.attr += newTokenString(token, "}")
+      else if (undoPTBParens && token.string == "-LSB-") token.attr += newTokenString(token, "[")
+      else if (undoPTBParens && token.string == "-RSB-") token.attr += newTokenString(token, "]")
+      else if (unescapeSlash && token.string.contains("\\/")) token.attr += newTokenString(token, token.string.replace("\\/", "/"))
+      else if (unescapeAsterisk && token.string == "\\*") token.attr += newTokenString(token, "*")
+      else if (unescapeAsterisk && token.string == "\\*\\*") token.attr += newTokenString(token, "**")
+      else if (twoOneDash && token.string == "--") token.attr += newTokenString(token, "-")
+      else if (twoOneDash && token.string == "Ñ") token.attr += newTokenString(token, "-") // replace m-dash with dash
+      else if (americanize && BritishToAmerican.contains(token.string)) token.attr += newTokenString(token, BritishToAmerican(token.string))
     }
+    document.attr += this
     document
   }
   override def tokenAnnotationString(token:Token): String = null
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
-  def postAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = List(classOf[SimplifyPTBTokenString])
 }
 
 class SimplifyPTBTokenString(token:Token, str:String) extends TokenString(token, str)
