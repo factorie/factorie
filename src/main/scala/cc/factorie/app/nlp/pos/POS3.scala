@@ -1,6 +1,7 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
 import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, HogwildTrainer}
@@ -14,8 +15,17 @@ class POS3 extends DocumentAnnotator {
   object FeatureDomain extends CategoricalDimensionTensorDomain[String]
   val model = new LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
   
-  def lemmatize(string:String): String = cc.factorie.app.strings.simplifyDigits(string) // .toLowerCase
-
+  /** Local lemmatizer used for POS features. */
+  protected def lemmatize(string:String): String = cc.factorie.app.strings.collapseDigits(string) // .toLowerCase?
+  /** A special IndexedSeq[String] that will return "null" for indices out of bounds, rather than throwing an error */
+  protected def lemmas(tokens:Seq[Token]): IndexedSeq[String] = new IndexedSeq[String] {
+    val inner: IndexedSeq[String] = tokens.toIndexedSeq.map((t:Token) => lemmatize(t.string))
+    val length: Int = inner.length
+    def apply(i:Int): String = if (i < 0 || i > length-1) null else inner(i)
+  }
+  
+  /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
+      Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger. */
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
     val ambiguityClassThreshold = 0.7
@@ -26,7 +36,6 @@ class POS3 extends DocumentAnnotator {
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       var tokenCount = 0
       documents.foreach(doc => {
-        //println("POS3.WordData.preProcess doc.tokens.length "+doc.tokens.length)
         doc.tokens.foreach(t => {
           tokenCount += 1
           if (t.attr[PTBPosLabel] eq null) {
@@ -55,14 +64,12 @@ class POS3 extends DocumentAnnotator {
     }
   }
   
-  /** Return the features for the given Token */
-  def features(token:Token): SparseBinaryTensor1 = {
-    val result = new SparseBinaryTensor1(FeatureDomain.dimensionSize)
-    result.sizeHint(40)
-    def lemmaStringAtOffset(offset:Int): String = "W@"+offset+"="+token.lemmaStringAtOffset(offset)
-    def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(token.lemmaStringAtOffset(offset), null)
+  def features(token:Token, lemmaIndex:Int, lemmas:IndexedSeq[String]): SparseBinaryTensor1 = {
+    def lemmaStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas(lemmaIndex + offset)
+    def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(lemmas(lemmaIndex + offset), null)
     def posTagAtOffset(offset:Int): String = { val t = token.next(offset); if (t ne null) t.attr[PTBPosLabel].categoryValue else null }
-    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) result._appendUnsafe(i) }
+    val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
+    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor._appendUnsafe(i) }
     // Lemmas at offsets
     val wp3 = lemmaStringAtOffset(-3)
     val wp2 = lemmaStringAtOffset(-2)
@@ -80,7 +87,6 @@ class POS3 extends DocumentAnnotator {
     val pm1 = posTagAtOffset(-1)
     val pm2 = posTagAtOffset(-2)
     val pm3 = posTagAtOffset(-3)
-    
     addFeature(wp3)
     addFeature(wp2)
     addFeature(wp1)
@@ -122,37 +128,46 @@ class POS3 extends DocumentAnnotator {
     addFeature("HasPeriod="+(w0.indexOf('.') >= 0))
     addFeature("HasHyphen="+(w0.indexOf('-') >= 0))
     addFeature("HasDigit="+w0.matches(".*[0-9].*"))
-    result
+    tensor
+  }
+  def features(tokens:Seq[Token]): Seq[SparseBinaryTensor1] = {
+    val lemmaStrings = lemmas(tokens)
+    tokens.zipWithIndex.map({case (t:Token, i:Int) => features(t, i, lemmaStrings)})
   }
 
-
   var exampleSetsToPrediction = false
-  class TokenClassifierExample(val token:Token, lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
+  class TokensClassifierExample(val tokens:Seq[Token], lossAndGradient: optimize.ObjectiveFunctions.MultiClassObjectiveFunction) extends optimize.Example[LogLinearModel[_,_]] {
     override def accumulateExampleInto(model: LogLinearModel[_,_], gradient: TensorsAccumulator, value: DoubleAccumulator) {
-      val featureVector = features(token)
-      val posLabel = token.attr[PTBPosLabel]
-      new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
-      if (exampleSetsToPrediction) {
-        val weightsMatrix = model.evidenceTemplate.weightsTensor
-        val prediction = weightsMatrix * featureVector
-        token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
+      val lemmaStrings = lemmas(tokens)
+      for (index <- 0 until tokens.length) {
+        val token = tokens(index)
+        val posLabel = token.attr[PTBPosLabel]
+        val featureVector = features(token, index, lemmaStrings)
+        new optimize.GLMExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
+        if (exampleSetsToPrediction) {
+          val weightsMatrix = model.evidenceTemplate.weightsTensor
+          val prediction = weightsMatrix * featureVector
+          posLabel.set(prediction.maxIndex)(null)
+        }
       }
     }
   }
   
   def predict(tokens: Seq[Token]): Unit = {
     val weightsMatrix = model.evidenceTemplate.weightsTensor
-    for (token <- tokens) {
-      assert(token.attr[cc.factorie.app.nlp.lemma.TokenLemma] ne null)
+    val lemmaStrings = lemmas(tokens)
+    for (index <- 0 until tokens.length) {
+      val token = tokens(index)
+      val posLabel = token.attr[PTBPosLabel]
+      val featureVector = features(token, index, lemmaStrings)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
-      val featureVector = features(token)
       val prediction = weightsMatrix * featureVector
       token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
     }
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
   def predict(document: Document): Unit = {
-    if (document.sentences.length > 0) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
+    if (document.hasSentences) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
     else predict(document.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
   }
 
@@ -161,8 +176,6 @@ class POS3 extends DocumentAnnotator {
     val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
     assert(FeatureDomain.dimensionDomain ne null); assert(model ne null); assert(WordData.ambiguityClasses ne null)
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
-    //val acCubbie: Cubbie = WordData.ambiguityClasses
-    //BinarySerializer.serialize(FeatureDomain.dimensionDomain, file)
   }
 
   def deserialize(filename: String) {
@@ -178,33 +191,28 @@ class POS3 extends DocumentAnnotator {
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.length).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.length).sum))
-    // TODO Accomplish this lemmatizing instead by calling POS3.preProcess
-    //for (d <- trainDocs) println("POS3.train 2 trainDoc.length="+d.length)
+    // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     for (doc <- (trainDocs ++ testDocs)) {
       cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)
-      cc.factorie.app.nlp.lemma.SimplifyDigitsLemmatizer.process(doc)
-      //println("POS3.train:"); doc.tokens.take(50).foreach(t => println(t.string))
     }
-    //for (d <- trainDocs) println("POS3.train 3 trainDoc.length="+d.length)
     WordData.preProcess(trainDocs)
-    val sentences = trainDocs.flatMap(_.sentences)
-    val testSentences = testDocs.flatMap(_.sentences)
+    val sentences = trainDocs.flatMap(_.sentences).take(1000) // TODO remove this
+    val testSentences = testDocs.flatMap(_.sentences).take(1000)
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
-    for (sentence <- sentences; token <- sentence.tokens) features(token)
+    for (sentence <- sentences) features(sentence.tokens) // just to create and count all features
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
     val numIterations = 2
     var iteration = 0
     
-    //val trainer = new cc.factorie.optimize.SGDTrainer(model, new cc.factorie.optimize.LazyL2ProjectedGD(l2=1.0, rate=1.0), maxIterations = 10, logEveryN=100000)
     val trainer = new cc.factorie.optimize.OnlineTrainer(model, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
-      val examples = sentences.shuffle.flatMap(sentence => {
-        (0 until sentence.length).map(i => new TokenClassifierExample(sentence.tokens(i),
-            if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective))
+      val examples = sentences.shuffle.map(sentence => {
+        new TokensClassifierExample(sentence.tokens,
+          if (useHingeLoss) cc.factorie.optimize.ObjectiveFunctions.hingeMultiClassObjective else cc.factorie.optimize.ObjectiveFunctions.logMultiClassObjective)
       })
       trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap
@@ -226,7 +234,7 @@ class POS3 extends DocumentAnnotator {
   }
 
   def process1(d: Document) = { predict(d); d }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[lemma.SimplifyDigitsTokenLemma])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.SimplifyPTBTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
