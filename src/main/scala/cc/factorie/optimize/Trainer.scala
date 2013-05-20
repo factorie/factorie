@@ -157,7 +157,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
   import collection.JavaConversions._
   var examplesProcessed = 0
   var accumulatedValue = 0.0
-  var t0 = System.currentTimeMillis()
+  var t0 = 0L
   def examplesToRunnables(es: Iterable[Example]): Seq[Callable[Object]] = es.map(e => {
     new Callable[Object] {
       def call() = {
@@ -186,6 +186,9 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
 
   def processExamples(examples: Iterable[Example]) {
     if (!initialized) replaceTensorsWithLocks()
+    t0 = System.currentTimeMillis()
+    examplesProcessed = 0
+    accumulatedValue = 0.0
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
     if (runnables eq null) runnables = examplesToRunnables(examples)
@@ -292,6 +295,9 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   def processExamples(examples: Iterable[Example]): Unit = {
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
+    t0 = System.currentTimeMillis()
+    examplesProcessed = 0
+    accumulatedValue = 0.0
     if (runnables eq null) runnables = examplesToRunnables(examples)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     pool.invokeAll(runnables)
