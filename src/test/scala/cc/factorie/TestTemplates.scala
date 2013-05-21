@@ -38,11 +38,14 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   def testCascadeUnroll {
     object Aggregate extends BooleanVariable {
       val b1 = new BooleanVariable {
-        override def unrollCascade: scala.Iterable[Var] = Seq(Aggregate)
+        //override def unrollCascade: scala.Iterable[Var] = Seq(Aggregate)
       }
     }
     val diff = new DiffList
-    val template = new DotTemplateWithStatistics1[BooleanVariable] with Parameters { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
+    val template = new DotTemplateWithStatistics1[BooleanVariable] with Parameters {
+      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
+      override def unroll(v:Var) = v match { case Aggregate.b1 => Factor(Aggregate); case _ => Nil }
+    }
     Aggregate.b1.set(true)(diff)
     val factors = template.factors(diff)
     assert(factors.exists(factor => factor.variables.head == Aggregate.b1))
