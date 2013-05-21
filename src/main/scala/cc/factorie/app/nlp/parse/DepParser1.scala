@@ -262,7 +262,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("Training...")
     val rng = new scala.util.Random(0)
     //val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
-    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.000001, 0.000001)
+    val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.000001, 0.000001)
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = 10, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {

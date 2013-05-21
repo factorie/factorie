@@ -6,8 +6,9 @@ import cc.factorie.util.{TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
 
 // This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
 // it won't necessarily work with other losses because of the aggressive projection steps
-// note that adding a learning rate here is nontrivial since the update relies on eta_t * l2 < 1.0 to avoid zeroing the weights
-class Pegasos(l2: Double = 0.1) extends GradientOptimizer {
+// note that adding a learning rate here is nontrivial since the update relies on baseRate / step < 1.0 to avoid zeroing the weights
+// but if I don't add a rate <1 here this optimizer does terribly in my tests -luke
+class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimizer {
   private var step = 1
   private var initialized = false
 
@@ -18,7 +19,7 @@ class Pegasos(l2: Double = 0.1) extends GradientOptimizer {
       if (weights.twoNorm > 1.0 / math.sqrt(l2))
         weights *= 1.0 / (weights.twoNorm * math.sqrt(l2))
     }
-    val eta_t = l2 * step
+    val eta_t = baseRate / (l2 * step)
     weights *= (1.0 - eta_t * l2)
     weights += (gradient, eta_t)
     val projCoeff = math.min(1.0, (1.0 / math.sqrt(l2)) / weights.twoNorm)
