@@ -39,29 +39,25 @@ object ChainNER4 {
   
   // The model
   val model = new TemplateModel {
-    addTemplates(
+    val bias = this +=
       // Bias term on each individual label
       new DotTemplateWithStatistics1[Label] {
-        override def neighborDomain1 = LabelDomain
         val weights = Weights(new la.DenseTensor1(LabelDomain.size))
-      },
+      }
+    val transtion = this +=
       // Transition factors between two successive labels
       new DotTemplateWithStatistics2[Label, Label] {
-        override def neighborDomain1 = LabelDomain
-        override def neighborDomain2 = LabelDomain
         val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size))
         def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
         def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
-      },
+      }
+    val evidence = this +=
       // Factor between label and observed token
       new DotTemplateWithStatistics2[Label, Token] {
-        override def neighborDomain1 = LabelDomain
-        override def neighborDomain2 = TokenDomain
         val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize))
         def unroll1(label: Label) = Factor(label, label.token)
         def unroll2(token: Token) = throw new Error("Token values shouldn't change")
       }
-    )
   }
   
   // The training objective

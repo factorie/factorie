@@ -34,6 +34,28 @@ trait GenerativeFactor extends Factor {
   def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
 }
 
+class GeneratedVarWrapper[V<:Var](val v:V) {
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+      and add this new factor to the given model. */
+  def ~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+    model += partialFactor(v.asInstanceOf[V2])
+    v
+  }
+}
+
+class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
+      add this new factor to the given model, 
+      and also assign the variable a new value randomly drawn from this factor. */
+  def :~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+    model += partialFactor(v.asInstanceOf[V2])
+    v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
+    v
+  }
+}
+
+
+
 trait RealGeneratingFactor extends GenerativeFactor {
   def sampleDouble: Double
   def pr(x:Double): Double

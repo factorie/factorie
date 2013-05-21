@@ -19,7 +19,7 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](labels:Iter
   
   def top(labelIndex:Int, n:Int): TopN[String] = new TopN[String](n, infogains(labelIndex), featureDomain.asInstanceOf[CategoricalDomain[String]].categories)
   def top(labelValue:DiscreteValue, n:Int): TopN[String] = {
-    require(labelValue.domain == labelDomain)
+    require(labelValue.dim1 == labelDomain.size) //require(labelValue.domain == labelDomain)
     top(labelValue.intValue, n)
   }
   

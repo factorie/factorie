@@ -218,7 +218,7 @@ abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override va
 trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
-    /** Override this if you want to matchNeighborDomains */
+  /** Override this if you want to matchNeighborDomains */
   def neighborDomain1: Domain[N1#Value] = null
   def neighborDomain2: Domain[N2#Value] = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2)

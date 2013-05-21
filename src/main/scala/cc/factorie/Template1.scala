@@ -28,13 +28,13 @@ import java.io._
 //  (Now possible if Templates are now responsible for their own de-duplication.)
 // A Template is basically a Model that is also a Family -luke
 /** A Template that creates Factors with one neighbor. */
-abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1]
+abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithFactorType with Template with Family1[N1]
 {
 
 
   val neighborClass1 = nm1.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1)
-  val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
+  //val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
 
   
 //  def addLimitedDiscreteValuesIn(variables:Iterable[DiscreteVar]): Unit = {
@@ -47,9 +47,13 @@ abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithF
   override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
     val vClass = v.getClass
     if (nm1.erasure.isAssignableFrom(vClass)) unroll1(v.asInstanceOf[N1]) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
-    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, result)) }
+    unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
+    //if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    //if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, result)) }
   }
+  //* Override this method if you want to re-capture old unrollCascade functionality. */ 
+  def unroll(v:Var): Iterable[Factor] = Nil
+
 //  {
 //    val factorList = new collection.mutable.ListBuffer[Factor]
 //    for (v <- variables) addFactorsWithDuplicates(v, factorList)
@@ -70,7 +74,7 @@ abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends ModelWithF
 //    ret
 //  }
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
-  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  //def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
 }
 
 

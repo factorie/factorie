@@ -50,44 +50,45 @@ object Template {
 //     (alternatively the score may be calculated using parameter stored externally to the Template,
 //      or in some fixed way without learned parameters).
 
-// TODO Make Templates no longer be Models; we don't really gain much, and it is confusing. -akm
-
 /** Superclass of Template1, Template2, Template3, Template4.
     They are templates that are also Model's with Variable context.
     Its subclasses use "unroll*" methods, which given on of the Factor's variables, finding the other neighboring variables.
     @author Andrew McCallum
 */
-trait ModelAsTemplate extends Model with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
-  // TODO This method is a little messy.  Clean up this situation. -akm
-  def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit
+trait Template extends Model with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+  // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
-  def factors(v:Var): Iterable[FactorType] = {
+  override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
+    unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
+  }
+  def unroll(v:Var): Iterable[FactorType]
+  final def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]
   }
 
-  /** Called in implementations of factors(Variable) to give the variable a chance
-      to specify additional dependent variables on which factors(Variable) should also be called. */
-  def unrollCascade(v:Var): Iterable[Var] = v.unrollCascade
-  def tryCascade: Boolean = true //hasContainerNeighbors
-  def hasContainerNeighbors: Boolean = {
-    println("TemplateModel hasContainerNeighbors neighborClasses: "+neighborClasses.mkString(","))
-//    this match {
-//      case t:Template1[_] => {
-//        println("TemplateModel Template1 neighborClass1 = "+t.neighborClass1)
-//        //println("TemplateModel Template1 nm1.erasure = "+t.nm1.erasure)
-//      }
-//      case _ => {}
-//    }
-    //neighborClasses.exists(classOf[ContainerVariable[_]].isAssignableFrom(_))
-    throw new Error("Not yet implemented.  Why am I getting nulls in neighborClasses?")
-    false // TODO Fix the above line
-  }
+//  /** Called in implementations of factors(Variable) to give the variable a chance
+//      to specify additional dependent variables on which factors(Variable) should also be called. */
+//  def unrollCascade(v:Var): Iterable[Var] = v.unrollCascade
+//  def tryCascade: Boolean = true //hasContainerNeighbors
+//  def hasContainerNeighbors: Boolean = {
+//    println("TemplateModel hasContainerNeighbors neighborClasses: "+neighborClasses.mkString(","))
+////    this match {
+////      case t:Template1[_] => {
+////        println("TemplateModel Template1 neighborClass1 = "+t.neighborClass1)
+////        //println("TemplateModel Template1 nm1.erasure = "+t.nm1.erasure)
+////      }
+////      case _ => {}
+////    }
+//    //neighborClasses.exists(classOf[ContainerVariable[_]].isAssignableFrom(_))
+//    throw new Error("Not yet implemented.  Why am I getting nulls in neighborClasses?")
+//    false // TODO Fix the above line
+//  }
   
   /** Causes future calls to factor.valuesIterator to limit the returned values to 
       those value combinations seen in the current values of the variables in factors touching "vars". */
   def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
-  def families: Seq[Family] = Seq(this)
+  def families: Seq[Family] = Seq(Template.this)
 }
 
