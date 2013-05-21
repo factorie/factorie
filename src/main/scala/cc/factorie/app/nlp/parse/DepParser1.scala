@@ -257,16 +257,17 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.evidence.value.length))
     println("Generating examples...")
-    val examples = optimize.MiniBatchExample(50, trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
+    val examples = trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
     freezeDomains()
     println("Training...")
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
+    //val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
+    val opt = new cc.factorie.optimize.DualAveragingOptimizer(1.0, 0.0, 0.000001, 0.000001)
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = 10, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {
       iter += 1
-      trainer.processExamples(rng.shuffle(examples))
+      trainer.processExamples(rng.shuffle(examples).toSeq.asInstanceOf[Seq[Example]])
       // trainActions.foreach()
       trainActions.foreach(a => {
         a.set((model.evidence.value * a.features.tensor.asInstanceOf[Tensor1]).maxIndex)(null)
