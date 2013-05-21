@@ -65,7 +65,7 @@ trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[
 
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */ 
-// TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain
+// TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain // TODO I think this is no longer true.
 class BooleanVariable extends MutableCategoricalVar[BooleanValue,Boolean] with BooleanVar {
   //type Value = BooleanValue
   // Default will be false, because initial setting of MutableDiscreteVar.__value is 0

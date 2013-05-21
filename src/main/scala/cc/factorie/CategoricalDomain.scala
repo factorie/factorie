@@ -122,6 +122,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   protected class CategoricalValue(val singleIndex:Int, val category:C) extends cc.factorie.CategoricalValue[C] {
     override def copy = this
     def domain = thisDomain
+    def dim1 = thisDomain.size
   }
 
   //@deprecated("Use stringToCategory instead.")

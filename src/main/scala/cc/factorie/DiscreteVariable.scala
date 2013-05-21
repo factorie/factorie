@@ -105,7 +105,7 @@ trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar[A] with
 /** A concrete single discrete variable whose value can be changed. */
 abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
   def this(initialValue:Int) = { this(); _set(initialValue) }
-  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.dim1 == domain.size); _set(initialValue.intValue) }
 }
 
 

@@ -66,13 +66,13 @@ object LinearRegressionTrainer {
     objective: MultivariateLinearObjective[Tensor1] = LinearObjectives.squaredMultivariate): LinearRegressor[E, A] = {
     val optimizer = new cc.factorie.optimize.LBFGS() with cc.factorie.optimize.L2Regularization
     optimizer.variance = 1.0/l2
-    val trainer: WeightsSet => Trainer[Example] = m => new BatchTrainer(m, optimizer)
+    val trainer: WeightsSet => Trainer = m => new BatchTrainer(m, optimizer)
     trainCustom(examples, dependant2Explanatory, trainer, objective)
   }
 
   def trainCustom[E <: TensorVar, A <: TensorVar](
     examples: Iterable[A], dependant2Explanatory: A => E,
-    trainerMaker: WeightsSet => Trainer[Example],
+    trainerMaker: WeightsSet => Trainer,
     objective: MultivariateLinearObjective[Tensor1] = LinearObjectives.squaredMultivariate): LinearRegressor[E, A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)

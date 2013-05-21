@@ -41,6 +41,7 @@ trait Model {
   /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
   def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
 
+  // TODO Make these addFactors protected. -akm
   /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
   def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= factors(variable)
   /** Append to "result" all Factors in this Model that touch any of the given "variables".  This method must not append duplicates. */
@@ -206,19 +207,23 @@ class CombinedModel(theSubModels:Model*) extends Model {
 }
 
 // TODO templates don't need to have parameters - strongly consider removing "with Parameters" -akm
-class TemplateModel/*(theSubModels:ModelAsTemplate*)*/ extends Model with Parameters {
-  val templates = new ArrayBuffer[ModelAsTemplate] //++= theSubModels
-  def +=[M<:ModelAsTemplate](model:M): M = { templates += model; model }
-  def ++=[M<:ModelAsTemplate](models:Iterable[M]): Iterable[M] = { templates ++= models; models }
-  def addTemplates(models: ModelAsTemplate*) = this ++= models
+class TemplateModel(theTemplates:Template*) extends Model with Parameters {
+  val templates = new ArrayBuffer[Template] //++= theSubModels
+  def +=[T<:Template](template:T): T = { templates += template; template }
+  def ++=[T<:Template](templates:Iterable[T]): Iterable[T] = { this.templates ++= templates; templates }
+  def addTemplates(models: Template*) = this ++= models // TODO I don't like this method -akm
   def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
   override def addFactors(variable:Var, result:Set[Factor]): Unit = { templates.foreach(_.addFactors(variable, result)); result }
-  //override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
-  //override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
-  def families: Seq[Family] = templates
-  def familiesOfClass[F<:AnyRef](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+  def families: Seq[Template] = templates
+  def familiesOfClass[F<:Template](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
 }
 
+//class SingleTemplateModel(val template:Template) extends Model {
+//  def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
+//  override def addFactors(variable:Var, result:Set[Factor]): Unit = template.addFactors(variable, result)
+//  def families: Seq[Family] = Seq(template)
+//  def familiesOfClass[F<:AnyRef](fclass:Class[F]): Iterable[F] = if (fclass.isAssignableFrom(template.getClass)) Seq(template).asInstanceOf[Iterable[F]] else Nil //families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+//}
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {
   def model: ModelWithContext[C1]

@@ -29,28 +29,26 @@ object ChainNER1a {
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
-  val model = new TemplateModel {
-    addTemplates(
+  val model = new TemplateModel with Parameters {
+    val bias = this += 
       // Bias term on each individual label
       new DotTemplateWithStatistics1[ChainNerLabel] {
-        //def statisticsDomains = Tuple1(Conll2003NerDomain) // TODO But sometimes there should be subclasses here?
         val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
-      },
+      }
+    val evidence = this +=
       // Factor between label and observed token
       new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
-        //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
         val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize))
         def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
         def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
-      },
+      }
+    val markov = this +=
       // Transition factors between two successive labels
       new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
-        //def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
         val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
         def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
         def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
       }
-    )
   }
 
   def main(args:Array[String]): Unit = {

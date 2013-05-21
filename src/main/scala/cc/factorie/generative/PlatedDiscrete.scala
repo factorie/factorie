@@ -34,10 +34,10 @@ object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,ProportionsV
   case class Factor(override val _1:DiscreteSeqVariable, override val _2:ProportionsVariable) extends super.Factor(_1, _2) {
     def pr(child:DiscreteSeqVariable#Value, p:Proportions): Double = self.pr(child, p)
     //override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
-    override def sampledValue: DiscreteSeqVariable#Value = self.sampledValue(_1.discreteValues.head.domain, _1.length, _2.value) // Avoid creating a Statistics
+    override def sampledValue: DiscreteSeqVariable#Value = self.sampledValue(_1.domain.elementDomain, _1.length, _2.value) // Avoid creating a Statistics
     def sampledValue(p:Proportions): IndexedSeq[DiscreteValue] = {
       if (_1.length == 0) IndexedSeq[DiscreteValue]()
-      else self.sampledValue(_1.head.domain, _1.length, p)
+      else self.sampledValue(_1.domain.elementDomain, _1.length, p)
     }
     def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
   }

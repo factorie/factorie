@@ -19,7 +19,7 @@ class PerLabelLogOdds[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](labels:Itera
   
   def top(labelIndex:Int, n:Int): TopN[String] = new TopN[String](n, logodds(labelIndex), featureDomain.asInstanceOf[CategoricalDomain[String]].categories)
   def top(labelValue:DiscreteValue, n:Int): TopN[String] = {
-    require(labelValue.domain == labelDomain)
+    require(labelValue.dim1 == labelDomain.size) // require(labelValue.domain == labelDomain)
     top(labelValue.intValue, n)
   }
   

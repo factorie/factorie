@@ -181,7 +181,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
-      val domainSize = gates(0).domain.size
+      val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
       val gParentCollapsed = sampler.isCollapsed(gParent)
@@ -235,7 +235,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
-      val domainSize = gates(0).domain.size
+      val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
       val gParentCollapsed = sampler.isCollapsed(gParent)

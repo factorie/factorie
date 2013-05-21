@@ -155,7 +155,7 @@ class HammingTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Man
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
-  def accuracy(context: Iterable[A]): Double = context.map(currentScore(_)).sum / context.size
+  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target).currentScore).sum / variables.size
 }
 object HammingObjective extends HammingTemplate[LabeledVarWithTarget]
 

@@ -15,7 +15,7 @@ trait Parameters {
   def Weights(t4: => Tensor4): Weights4 = parameters.newWeights(t4)
 }
 
-/* This implementation actually stores the weights in the TensorSetKeys themselves instead
+/* This implementation actually stores the weights in the Weights themselves instead
  * of storing them in the map itself. This is just for efficiency, as the API remains the same.
  */
 class WeightsSet extends TensorSet {
@@ -26,15 +26,18 @@ class WeightsSet extends TensorSet {
   def tensors: Seq[Tensor] = keys.map(_.value)
 
   def update(key:Weights, value:Tensor) = {
-    val actualKey = key.asInstanceOf[InnerKey]
+    val actualKey = key.asInstanceOf[InnerKey] // Avoid this casting by allowing Weight.set directly.
     actualKey._actualWeights = value.asInstanceOf[actualKey.Value]
   }
   def apply(key: Weights): Tensor = key.value
 
-  def copy: WeightsMap = { val copyTensor = blankDenseCopy; copyTensor += self; copyTensor }
+  // TODO But these aren't really "copies", they are WeightsMaps.  Rename to blankDenseMap and blankSparseMap
+  def copy: WeightsMap = { val copyTensor = blankDenseCopy; copyTensor += self; copyTensor } // TODO Why doesn't this preserve sparse/denseness?
   def blankDenseCopy: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
   def blankSparseCopy: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
 
+  // TODO Why not create Weights separately, and then add Weights to the WeightsSet?  This would enable "new TemplateModel(MyTemplate1, MyTemplate2)".
+  // TODO Would it be a problem for one Weights to belong to more than one WeightsSet?  I don't think so.
   def newWeights(ctor: => Tensor): Weights = new Weights with InnerKey with VarWithValue[Tensor] { def newBlankTensor = ctor }
   def newWeights(ctor: => Tensor1): Weights1 = new Weights1 with InnerKey { def newBlankTensor = ctor }
   def newWeights(ctor: => Tensor2): Weights2 = new Weights2 with InnerKey { def newBlankTensor = ctor }
@@ -46,7 +49,7 @@ class WeightsSet extends TensorSet {
   private trait InnerKey extends Weights {
     _keys.append(this)
     var _actualWeights: Value = null.asInstanceOf[Value]
-    def value = { if (_actualWeights eq null) { _actualWeights = newBlankTensor} ; _actualWeights }
+    def value = { if (_actualWeights eq null) { _actualWeights = newBlankTensor }; _actualWeights }
   }
 }
 
@@ -114,6 +117,7 @@ trait Weights2 extends Weights with VarWithValue[Tensor2]
 trait Weights3 extends Weights with VarWithValue[Tensor3]
 trait Weights4 extends Weights with VarWithValue[Tensor4]
 
+@deprecated("Use WeightsSetCubbie.")
 class WeightsCubbie(val model: Parameters) extends Cubbie {
   val tensors = new TensorListSlot("tensors")
   tensors := model.parameters.tensors.toSeq // This relies on WeightsMap storing its contents in a LinkedHashMap which preserves order
