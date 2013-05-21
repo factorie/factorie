@@ -100,7 +100,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
           var i = 0
           var dot = 0.0
           while (i < iArr.length) {
-            dot += this(singleIndex(iArr(i),t2.singleIndex))   
+            dot += this(singleIndex(iArr(i),t2.singleIndex))
             i += 1
           }
           dot
