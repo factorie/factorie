@@ -61,4 +61,22 @@ object NumberWords extends WordLexicon(
       )
 
 
-
+object DeterminerWords extends WordLexicon(
+    "the",
+    "a",
+    "this",
+    "an",
+    "that",
+    "some",
+    "all",
+    "these",
+    "no",
+    "any",
+    "those",
+    "another",
+    "both",
+    "each",
+    "every",
+    "either",
+    "neither"
+    )
