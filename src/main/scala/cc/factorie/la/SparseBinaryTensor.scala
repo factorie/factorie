@@ -51,11 +51,11 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   /** In SparseBinary, this is equivalent to update(i,v) */
   override def +=(i:Int, v:Double): Unit = update(i, v)
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
-  override def dot(v:DoubleSeq): Double = v match {
-    case t:SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
-    case t:SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
+  override def dot(v: DoubleSeq): Double = v match {
+    case t: SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
+    case t: SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
     // TODO Any other special cases here?
-    case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
+    case ds: DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
   override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
     var acc = seed; var i = 0

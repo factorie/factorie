@@ -110,26 +110,14 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
   }
 }
 
-/** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad) extends optimize.Trainer[SampleRankExample[C]] {
+class SampleRankTrainer[C](weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad)
+  extends OnlineTrainer(weightsSet, optimizer = optimizer, maxIterations = Int.MaxValue) {
   def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, optimizer)
   def this(sampler: ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, new optimize.AdaGrad)
-  def processContext(context: C): Unit = process(new SampleRankExample(context, sampler))
-  def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
-  def processContexts(contexts: Iterable[C]): Unit = contexts.foreach(c => processContext(c))
+  def processContext(context: C): Unit = processExamples(Seq(new SampleRankExample(context, sampler)))
+  def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) processExamples(Seq(new SampleRankExample(context, sampler)))
+  def processContexts(contexts: Iterable[C]): Unit = contexts.map(new SampleRankExample(_, sampler))
   def processContexts(contexts: Iterable[C], iterations: Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(example: SampleRankExample[C]): Unit = {
-    //println("SampleRankTrainer.process(Example)")
-    val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseCopy)
-    val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
-    example.accumulateExampleInto(gradientAccumulator, valueAccumulator)
-    //println("SampleRankTrainer gradient="+gradientAccumulator.tensor.oneNorm+" margin="+marginAccumulator.value)    
-    if (gradientAccumulator.tensorSet.oneNorm != 0.0) // There was a ranking error and a gradient was placed in the accumulator
-      optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
-  }
-  def processExamples(examples: Iterable[SampleRankExample[C]]): Unit = examples.foreach(p => process(p))
-  def processExamples(examples: Iterable[SampleRankExample[C]], iterations: Int): Unit = for (i <- 0 until iterations) processExamples(examples)
-  def isConverged: Boolean = false // TODO What more clever answer could we give here?
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?
