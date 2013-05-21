@@ -96,6 +96,11 @@ trait SparseIndexedTensor extends Tensor {
     result
   }
 
+  override def oneNorm: Double = {
+    val len = activeDomainSize
+    _values.take(len).map(_.abs).sum
+  }
+
   override def dot(v:DoubleSeq): Double = {
     makeReadable
     v match {

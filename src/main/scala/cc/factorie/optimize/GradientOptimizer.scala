@@ -17,7 +17,6 @@ trait L2Regularization extends GradientOptimizer {
   var variance: Double = 10.0
   abstract override def step(weights: WeightsSet, gradient: WeightsMap, value:Double) {
     gradient += (weights, -1 / variance)
-    // TODO: should this be -0.5 / variance * (weightsSet dot weightsSet)? -luke
-    super.step(weights, gradient, value - 1 / variance * (weights dot weights))
+    super.step(weights, gradient, value - 0.5 / variance * (weights dot weights))
   }
 }

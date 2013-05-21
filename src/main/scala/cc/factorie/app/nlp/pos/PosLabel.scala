@@ -54,6 +54,7 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "POS",
       "PRP",
       "PRP$",
+      "PUNC",
       "RB",
       "RBR",
       "RBS",
@@ -71,9 +72,12 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "WP",
       "WP$",
       "WRB",
-      "``")
+      "``",
+      "XX" // in Ontonotes, but not WSJ
+  )
       
   freeze()
+
   def isNoun(pos:String): Boolean = pos(0) == 'N' 
   def isProperNoun(pos:String) = { pos(0) == 'N' && pos.length > 2 && pos(3) == 'S' }
   def isVerb(pos:String) = pos(0) == 'V'
