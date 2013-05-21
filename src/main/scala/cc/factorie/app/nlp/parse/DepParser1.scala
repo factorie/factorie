@@ -81,24 +81,27 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     def rChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
       locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => s + "rcd-" + tree.label(t.positionInSentence).value.toString() + i))
     // Initialize the Features value
-    val sff = formFeatures("s", stack, Seq(0,1), tree)
-    val iff = formFeatures("i", input, Seq(0,1), tree)
-    // TODO We don't have have a good lemma annotator for new text
-    val slf = lemmaFeatures("s", stack, Seq(0,1), tree)
-    val ilf = lemmaFeatures("i", input, Seq(0,1), tree)
-    val stf = tagFeatures("s", stack, Seq(0,1,2,3), tree)
-    val itf = tagFeatures("i", input, Seq(0,1,2,3), tree)
-    val sdr = depRelFeatures("s", stack, Seq(0), tree)
-    val idr = depRelFeatures("i", input, Seq(0), tree)
-    val slc = lChildDepRelFeatures("s", stack, Seq(0), tree)
-    val ilc = lChildDepRelFeatures("i", input, Seq(0), tree)
-    val src = rChildDepRelFeatures("s", stack, Seq(0), tree)
-    val irc = rChildDepRelFeatures("i", input, Seq(0), tree)
-    Seq(sff, iff, slf, ilf, stf, itf, sdr, idr, slc, ilc, src, irc).foreach(this ++= _)
-    for ((stack,input) <- Seq((sff, iff), (slf, ilf), (sdr, idr));
-         left <- stack; right <- input) {
-      this += (left + "&" + right)
+    def initialize() {
+      val sff = formFeatures("s", stack, Seq(0,1), tree)
+      val iff = formFeatures("i", input, Seq(0,1), tree)
+      // TODO We don't have have a good lemma annotator for new text
+      val slf = lemmaFeatures("s", stack, Seq(0,1), tree)
+      val ilf = lemmaFeatures("i", input, Seq(0,1), tree)
+      val stf = tagFeatures("s", stack, Seq(0,1,2,3), tree)
+      val itf = tagFeatures("i", input, Seq(0,1,2,3), tree)
+      val sdr = depRelFeatures("s", stack, Seq(0), tree)
+      val idr = depRelFeatures("i", input, Seq(0), tree)
+      val slc = lChildDepRelFeatures("s", stack, Seq(0), tree)
+      val ilc = lChildDepRelFeatures("i", input, Seq(0), tree)
+      val src = rChildDepRelFeatures("s", stack, Seq(0), tree)
+      val irc = rChildDepRelFeatures("i", input, Seq(0), tree)
+      Seq(sff, iff, slf, ilf, stf, itf, sdr, idr, slc, ilc, src, irc).foreach(this ++= _)
+      for ((stack,input) <- Seq((sff, iff), (slf, ilf), (sdr, idr));
+           left <- stack; right <- input) {
+        this += (left + "&" + right)
+      }
     }
+    initialize()
   }
   var featuresSkipNonCategories = true
   
