@@ -116,9 +116,15 @@ object WordSegmenterDemo2 {
     // println("Example Factors: "+exampleFactors.mkString(", "))
 
     val startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    val trainer = new OnlineTrainer(model.parameters, maxIterations = 15, optimizer = new AdaGrad(rate = 0.1))
+//    val opt = new Pegasos(l2 = 0.1)
+//    val opt = new L2RegularizedConstantRate(rate = 0.01, l2 = 0.005)
+    val opt = new AdaGradRDA(delta = 0.1, eta = 0.1, l1 = 0.1, l2 = 0.0)
+
+    val trainer = new OnlineTrainer(model.parameters, maxIterations = 15, optimizer = opt)
 //    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
     trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model)))
+//    opt.finalizeWeights(model.parameters)
+//    opt.setToDense(model.parameters)
     for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))

@@ -10,9 +10,9 @@ import util._
  * Time: 5:54 PM
  */
 // TODO Alex: please comment this. -akm
-// TODO probably should rename this to AdaGradDualAveraging since it specifically does the AdaGrad proximal step -luke
 
-class DualAveragingOptimizer(val delta: Double, val eta: Double, val l1: Double, val l2: Double) extends GradientOptimizer {
+// This implements the AdaGrad algorithm with efficient dual averaging updates and support for l1 and l2 regularization
+class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
   var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
