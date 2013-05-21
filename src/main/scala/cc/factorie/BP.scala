@@ -328,7 +328,16 @@ trait BPFactor2MaxProduct extends BPFactor2 with BPFactorMaxProduct { this: BPFa
   var edge2Max1 = new Array[Int](edge2.variable.domain.size)
   def calculateOutgoing1: Tensor = {
     scores match {
-      case scores:DenseTensor2 => {
+      case scores:SparseIndexedTensor2 => { // SparseTensor case
+        val result = new DenseTensor1(scores.dim1, Double.NegativeInfinity) // TODO Consider a non-Dense tensor here
+        for (element <- scores.activeElements2) {
+          val i = element.index1; val j = element.index2
+          val s = element.value + edge2.messageFromVariable(j)
+          if (s > result(i)) { result(i) = s; edge1Max2(i) = j }
+        }
+        result
+      }
+      case scores: Tensor2 => {
         val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
         val lenj = edge2.variable.domain.size; val leni = edge1.variable.domain.size; var j = 0; var i = 0
         while (i < leni) {
@@ -338,19 +347,6 @@ trait BPFactor2MaxProduct extends BPFactor2 with BPFactorMaxProduct { this: BPFa
             j += 1
           }
           i += 1
-        }
-//        for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
-//          val s = scores(i,j) + edge2.messageFromVariable(j)
-//          if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-//        }
-        result
-      }
-      case scores:SparseIndexedTensor2 => { // SparseTensor case
-        val result = new DenseTensor1(scores.dim1, Double.NegativeInfinity) // TODO Consider a non-Dense tensor here
-        for (element <- scores.activeElements2) {
-          val i = element.index1; val j = element.index2
-          val s = element.value + edge2.messageFromVariable(j)
-          if (s > result(i)) { result(i) = s; edge1Max2(i) = j }
         }
         result
       }
