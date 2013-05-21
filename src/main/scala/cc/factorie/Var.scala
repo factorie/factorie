@@ -68,10 +68,10 @@ trait Var extends ValueBound[Any] {
   def ===(other: Var) = value == other.value
   def !==(other: Var) = value != other.value
   
-  /** The type of the variable contained inside this variable.
-      Used for handling var-args. 
-      @see ContainerVariable */
-  type ContainedVariableType <: Var
+//  /** The type of the variable contained inside this variable.
+//      Used for handling var-args. 
+//      @see ContainerVariable */
+//  type ContainedVariableType <: Var
 
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
       This is typically used in "contained variables" to return "container variables".
@@ -108,26 +108,6 @@ trait Var extends ValueBound[Any] {
       This function is used in cc.factorie.generative.GenerativeModel.extendedParents and extendedChildren.
       */
   //def isDeterministic = false  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
-}
-
-class GeneratedVarWrapper[V<:Var](val v:V) {
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
-      and add this new factor to the given model. */
-  def ~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): V = {
-    model += partialFactor(v.asInstanceOf[V2])
-    v
-  }
-}
-
-class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
-      add this new factor to the given model, 
-      and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:cc.factorie.generative.MutableGenerativeModel): V = {
-    model += partialFactor(v.asInstanceOf[V2])
-    v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
-    v
-  }
 }
 
 

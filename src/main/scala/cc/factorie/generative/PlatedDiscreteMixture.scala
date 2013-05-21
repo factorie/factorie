@@ -32,7 +32,7 @@ object PlatedDiscreteMixture extends GenerativeFamily3[DiscreteSeqVariable,Mixtu
     def gate = throw new Error("Not yet implemented. Need to make PlatedGate be a Gate?") // f._3
     def pr(child:IndexedSeq[DiscreteValue], mixture:scala.collection.Seq[Proportions], zs:IndexedSeq[DiscreteValue]): Double = self.pr(child, mixture, zs)
     override def logpr(child:IndexedSeq[DiscreteValue], mixture:scala.collection.Seq[Proportions], zs:IndexedSeq[DiscreteValue]): Double = self.logpr(child, mixture, zs)
-    def sampledValue(mixture:scala.collection.Seq[Proportions], zs:IndexedSeq[DiscreteValue]): IndexedSeq[DiscreteValue] = self.sampledValue(_1.head.domain, mixture, zs)
+    def sampledValue(mixture:scala.collection.Seq[Proportions], zs:IndexedSeq[DiscreteValue]): IndexedSeq[DiscreteValue] = self.sampledValue(_1.domain.elementDomain, mixture, zs)
     def prChoosing(child:IndexedSeq[DiscreteValue], mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = throw new Error("Not yet implemented")
     def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): ChildType#Value = throw new Error("Not yet implemented")
     //def prValue(s:Statistics, value:Int, index:Int): Double = throw new Error("Not yet implemented")

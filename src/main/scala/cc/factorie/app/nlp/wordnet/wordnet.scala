@@ -2,9 +2,10 @@ package cc.factorie.app.nlp.wordnet
 
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 class WordNet(wordNetDir: String) {
-
+  val ignoredSynsets = Set("n00002137", "n00001930", "n00001740")
   /* for converting from hexidecimal */
   val HEX = 16
 
@@ -84,14 +85,12 @@ class WordNet(wordNetDir: String) {
       }
       val synPtrs = ptrMap.map(kv => (kv._1, kv._2.toSet)).toMap  // make sets immutable
 
-      synsetsBuilder += (id ->
-        new Synset(id, synPtrs(HYPERNYM) ++ synPtrs(HYPERNYM_INSTANCE), synPtrs(ANTONYM)
-        )
-      )
+      val hypernyms = (synPtrs(HYPERNYM) ++ synPtrs(HYPERNYM_INSTANCE)).filter(!ignoredSynsets.contains(_))
+      synsetsBuilder += (id -> new Synset(id, hypernyms, synPtrs(ANTONYM)))
     }
   }
 
-  val allSynsets    = synsetsBuilder.toMap        // make immutable
+  val allSynsets    = synsetsBuilder
   val lemma2synsets = lemma2synsetsBuilder.map(x => (x._1,x._2.toList)).toMap
 
   /* pass in a lemmatized word and return a sequence of its synsets
@@ -104,6 +103,21 @@ class WordNet(wordNetDir: String) {
       synsetIds.get.map(x => allSynsets(x)).toSeq
     }
   }
+
+  def hypernyms(s: String) = {
+    val hSet = collection.mutable.Set[Synset]()
+    for (synset <- synsets(s)) {
+      hSet ++= synset.allHypernyms()
+    }
+    hSet
+  }
+
+  def shareHypernyms(s1: String, s2: String) = {
+    val s2h = hypernyms(s2)
+    hypernyms(s1).exists(s2h.contains(_))
+  }
+
+  def sharedHypernyms(s1: String, s2: String) = hypernyms(s1).intersect(hypernyms(s2))
 
   /* tests if both words passed in are part of at least 1 of the same
    * synsets; both words passed in must be lemmatized */
@@ -148,25 +162,26 @@ class WordNet(wordNetDir: String) {
     def antonyms(): Set[Synset] = this.ants.map(x => allSynsets(x))
 
     /* get the parent synsets (hypernyms) of this synset */
-    def hypernym(): Set[Synset] = this.hyps.map(x => allSynsets(x))
+    def hypernyms(): Set[Synset] = this.hyps.map(x => allSynsets(x))
 
     /* recursively get all parent synsets (hypernyms) of this synset */
-    def hypernyms(): Set[Synset] = {
-
-      def allHypernyms(visited: Set[Synset], unvisited: Set[Synset]):
-					      Set[Synset] = unvisited match {
-        case Seq(_,_*) => allHypernyms(visited ++ unvisited,
-          unvisited.map(x => x.hypernym()).flatten)
-        case _ => visited
+    def allHypernyms(): Set[Synset] = {
+      val result = mutable.Set[Synset]()
+      def visit(s: Synset) {
+        if (!result.contains(s)) {
+          result.add(s)
+          s.hypernyms().foreach(visit)
+        }
       }
-      allHypernyms(Set[Synset](), this.hypernym())
+      visit(this)
+      result.toSet
     }
   }
 }
 
 object WordNet {
   def main(args: Array[String]) {
-    val wn = new cc.factorie.app.nlp.wordnet.WordNet("/Users/akobren/software/dev/scala/wordnet/data/dict/")
+    val wn = new cc.factorie.app.nlp.wordnet.WordNet("/Users/apassos/data/wordnet/")
     assert(wn.areAntonyms("good", "evil"))
     assert(!wn.areAntonyms("good", "star"))
     assert(wn.areAntonyms("right", "left"))
@@ -179,6 +194,7 @@ object WordNet {
 
     assert(wn.areSynonyms("soul", "person"))
     assert(!wn.areSynonyms("dog", "cat"))
+    assert(wn.shareHypernyms("dog", "cat"))
     assert(!wn.areSynonyms("hot", "cold"))
 
     println("[done small tests.]")

@@ -31,27 +31,22 @@ object VarArgsDemo {
       def domain = XDomain
     }
 
-    val model = new TemplateModel {
-      addTemplates(
-        // "Vars[]" indicates that there can be a variable number of these neighbors
-        new DotTemplate2[X,Vars[Y]] {
-          //def statisticsDomains = Tuple1(XDomain)
-          val weights = Weights(new la.DenseTensor1(XDomain.size))
-          def unroll1(x:X) = Factor(x, Vars(x.ys))
-          // The "Vars" container will not change...
-          def unroll2(ys:Vars[Y]) = throw new Error
-          // ...but this template will notice changes to the individual "Y" contents of "Vars"
-          // While unroll1 and unroll2 do not need the "override" modifier,
-          // (unfortunately, because of Scala limitations) unroll2s does.
-          override def unroll2s(y:Y) = Factor(y.x, Vars(y.x.ys))
-          override def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
-            val x: Int = v1.intValue
-            val ys: Seq[Int] = v2.map(_.intValue)
-            XDomain.apply(x % ys.foldLeft(0)(_+_))
-          }
-          //def statistics(x:DiscreteValue, ys:Seq[DiscreteValue]) = Stat(XDomain.getValue(x.index % ys.foldLeft(0)(_ + _.index)))
+    val model = new TemplateModel with Parameters {
+      this += new DotTemplate2[X,Vars[Y]] { // "Vars[]" indicates that there can be a variable number of these neighbors
+        val weights = Weights(new la.DenseTensor1(XDomain.size))
+        def unroll1(x:X) = Factor(x, Vars(x.ys))
+        // The "Vars" container will not change...
+        def unroll2(ys:Vars[Y]) = throw new Error
+        // ...but this template will notice changes to the individual "Y" contents of "Vars"
+        // While unroll1 and unroll2 do not need the "override" modifier,
+        // (unfortunately, because of Scala limitations) unroll2s does.
+        override def unroll(y:Var) = y match { case y:Y => Factor(y.x, Vars(y.x.ys)); case _ => Nil }
+        override def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
+          val x: Int = v1.intValue
+          val ys: Seq[Int] = v2.map(_.intValue)
+          XDomain.apply(x % ys.foldLeft(0)(_+_))
         }
-      )
+      }
     }
 
     // The "Vars" trait is defined in Variable.scala

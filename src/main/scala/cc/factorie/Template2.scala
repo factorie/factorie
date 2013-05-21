@@ -23,13 +23,13 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends ModelWithFactorType with Family2[N1,N2] with ModelAsTemplate
+abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends ModelWithFactorType with Family2[N1,N2] with Template
 {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2)
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
-  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
+//  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
+//  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
 
   def addLimitedDiscreteCurrentValuesIn12(variables:Iterable[Var]): Unit = {
     if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) && classOf[DiscreteVar].isAssignableFrom(neighborClass2)) 
@@ -44,14 +44,16 @@ abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifes
   override def addFactors(v:Var, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
     if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) result ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, result)) }
+//    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+//    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) result ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+//    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, result)) }
   }
+  //* Override this method if you want to re-capture old unrollCascade functionality. */ 
+  def unroll(v:Var): Iterable[Factor] = Nil
   def unroll1(v:N1): Iterable[FactorType]
   def unroll2(v:N2): Iterable[FactorType]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
+//  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+//  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
 }
 
 

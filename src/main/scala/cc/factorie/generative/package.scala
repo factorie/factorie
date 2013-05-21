@@ -21,6 +21,13 @@ import scala.collection.mutable.ArrayBuffer
 
 package object generative {
 
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+      and add this new factor to the given model. */
+  implicit def generatedVarExtras[V<:Var](v:V) = new GeneratedVarWrapper(v)
+  implicit def generatedMutableVarExtras[V<:MutableVar[_]](v:V) = new GeneratedMutableVarWrapper(v)
+
+
+
   /*@deprecated
   object GenerativeModel extends Model {
     /** Only works on Iterable[GeneratedVar] */

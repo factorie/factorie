@@ -21,10 +21,10 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A value in a DiscreteDomain. */
 trait DiscreteValue extends SingletonBinaryTensorLike1 {
-  def domain: DiscreteDomain // TODO Strongly consider removing this so that anyone can create a DiscreteValue to pass into Factor.statistics() without knowing the domain.
+  //def domain: DiscreteDomain // TODO Strongly consider removing this so that anyone can create a DiscreteValue to pass into Factor.statistics() without knowing the domain.
   @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
   @inline final def booleanValue = if (intValue == 0) false else true
-  @inline final def dim1 = domain.size
+  //@inline final def dim1 = domain.size
   override def toString: String = singleIndex.toString
 }
 
@@ -70,6 +70,7 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
 
   protected class DiscreteValue(val singleIndex:Int) extends cc.factorie.DiscreteValue {
     def domain = thisDomain
+    def dim1 = thisDomain.size // Do this rather than constant, so that it will grow dynamically if necessary.
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.singleIndex == other.singleIndex; case _ => false }
     // TODO Above we shouldn't be also insisting that the Domain objects match?
