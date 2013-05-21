@@ -95,7 +95,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val src = rChildDepRelFeatures("s", stack, Seq(0), tree)
     val irc = rChildDepRelFeatures("i", input, Seq(0), tree)
     Seq(sff, iff, slf, ilf, stf, itf, sdr, idr, slc, ilc, src, irc).foreach(this ++= _)
-    for ((stack,input) <- Seq((sff, iff), (slf, ilf), (stf, itf), (sdr, idr), (slc, ilc), (src, irc));
+    for ((stack,input) <- Seq((sff, iff), (slf, ilf), (sdr, idr));
          left <- stack; right <- input) {
       this += (left + "&" + right)
     }
