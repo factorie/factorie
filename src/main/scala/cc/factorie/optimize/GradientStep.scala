@@ -73,6 +73,7 @@ trait AdaptiveLearningRate extends GradientStep {
               val h = math.sqrt(hArr(i)) + delta
               val t1 = eta / h
               gArr(i) *= t1
+//              assert(!gArr(i).isNaN)
             }
             i += 1
           }
@@ -90,6 +91,7 @@ trait AdaptiveLearningRate extends GradientStep {
               val h = math.sqrt(hArr(idx)) + delta
               val t1 = eta / h
               values(i) *= t1
+//              assert(!values(i).isNaN)
             }
             i += 1
           }
@@ -111,6 +113,7 @@ trait AdaptiveLearningRate extends GradientStep {
               val h = math.sqrt(hSq(idx)) + delta
               val t1 = eta / h
               values(i) *= t1
+//              assert(!values(i).isNaN)
             }
             i += 1
           }
@@ -124,7 +127,10 @@ trait AdaptiveLearningRate extends GradientStep {
 
 trait MarginScaled extends GradientStep {
   val C: Double = 1.0
-  override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double) = math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
+  override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double) ={
+    val sqNorm = gradient.twoNormSquared
+    if (sqNorm == 0.0) 0.0 else math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
+  }
 }
 
 trait InvSqrtTStepSize extends GradientStep {

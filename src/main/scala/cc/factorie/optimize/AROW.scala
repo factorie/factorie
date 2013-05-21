@@ -57,6 +57,7 @@ class ConfidenceWeighting(val model:Parameters) extends GradientOptimizer {
   }
   def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     //println("Performing step")
+    if (gradient.twoNormSquared == 0.0) return
     learningRate = calculateLearningRate(gradient, value)
     gradient.keys.foreach(k => weights(k).+=(gradient(k),sigma(k),learningRate))
     adjustConfidence(weights,gradient)

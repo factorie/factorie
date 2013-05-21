@@ -88,8 +88,6 @@ trait TraversableExtras[A] {
   }
 
   /**Returns both the maximum element and the second-to-max element */
-  // TODO reimplement this to make it more efficient; no need to sort the whole sequence
-  // TODO fix this, its returning null for #2 when theres 2+ things sometimes -luke
   def max2ByDouble(extractor: A => Double): (A, A) = {
     val s1 = t.toSeq
     assert(s1.length > 1)
@@ -111,7 +109,7 @@ trait TraversableExtras[A] {
       }
       i += 1
     }
-    (best1i,best2i)
+    (best1i, best2i)
   }
 
   /** Sorts with minimum first. */
