@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.wordnet
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-class WordNet(rootDir: String) {
+class WordNet(wordNetDir: String) {
 
   /* for converting from hexidecimal */
   val HEX = 16
@@ -43,11 +43,11 @@ class WordNet(rootDir: String) {
     val dataFilename  = kv._2._1
     val indexFilename = kv._2._2
 
-    val indexFile  = scala.io.Source.fromFile(rootDir + indexFilename)
+    val indexFile  = scala.io.Source.fromFile(wordNetDir + indexFilename)
     val indexLines = indexFile.getLines.mkString("\n").split("\n")
     indexFile.close()
 
-    val dataFile  = scala.io.Source.fromFile(rootDir + dataFilename)
+    val dataFile  = scala.io.Source.fromFile(wordNetDir + dataFilename)
     val dataLines = dataFile.getLines.mkString("\n").split("\n")
     dataFile.close()
 
