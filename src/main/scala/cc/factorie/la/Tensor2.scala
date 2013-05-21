@@ -66,6 +66,8 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:SingletonBinaryLayeredTensorLike2 => t dot this
     case t:SingletonLayeredTensorLike2 => t dot this
     case t:Outer1Tensor2 => {
+      val dim2 = t.dim2
+      @inline def singleIndex(i1: Int, i2: Int) = dim2 * i1 + i2
       (t.tensor1,t.tensor2) match {
         case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
         case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
@@ -73,8 +75,9 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
           val iArr = t2.asIntArray
           var i = 0
           var dot = 0.0
+          val arr = this.asArray
           while (i < iArr.length) {
-            dot += this(t.singleIndex(t1.singleIndex,iArr(i)))
+            dot += arr(singleIndex(t1.singleIndex,iArr(i)))
             i += 1
           }
           dot
@@ -86,7 +89,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
           while (i < t1Arr.length) {
             var j = 0
             while (j < iArr.length) {
-              dot += this(t.singleIndex(i,iArr(j)))*t1(i)
+              dot += this(singleIndex(i,iArr(j)))*t1(i)
               j += 1
             }
             i += 1
@@ -97,7 +100,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
           var i = 0
           var dot = 0.0
           while (i < iArr.length) {
-            dot += this(t.singleIndex(iArr(i),t2.singleIndex))
+            dot += this(singleIndex(iArr(i),t2.singleIndex))   
             i += 1
           }
           dot
@@ -108,7 +111,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
           val values = t2._values
           var i = 0
           while (i < len) {
-            dot += this(t.singleIndex(t1.singleIndex, indices(i)))*values(i)
+            dot += this(singleIndex(t1.singleIndex, indices(i)))*values(i)
             i += 1
           }
           dot
