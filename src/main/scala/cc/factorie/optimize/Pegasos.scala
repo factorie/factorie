@@ -100,15 +100,6 @@ object MutableScalableWeights {
             _values(idx) = (_values(idx) * multiplier + factor) / multiplier
             i += 1
           }
-        case o: SparseBinaryTensorLike1 =>
-          val len = o.activeDomainSize
-          val indices = o._indices
-          var i = 0
-          while (i < len) {
-            val idx = indices(i)
-            _values(idx) = (_values(idx) * multiplier + factor) / multiplier
-            i += 1
-          }
         case o: DenseTensor =>
           val arr = o.asArray
           var i = 0
@@ -196,20 +187,6 @@ object MutableScalableWeights {
             ti += 1
           }
         case t: SparseBinaryTensor =>
-          val tActiveDomainSize = t.activeDomainSize
-          val tIndices = t._indices
-          var ti = 0
-          while (ti < tActiveDomainSize) {
-            val col = tIndices(ti)
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += apply(offset + col)
-              row += 1
-            }
-            ti += 1
-          }
-        case t: SparseBinaryTensorLike1 =>
           val tActiveDomainSize = t.activeDomainSize
           val tIndices = t._indices
           var ti = 0

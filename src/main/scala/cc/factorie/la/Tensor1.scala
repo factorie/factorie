@@ -189,56 +189,8 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   override def copy = new GrowableUniformTensor1(sizeProxy, uniformValue)
 }
 
+trait SparseBinaryTensorLike1 extends SparseBinaryTensor with Tensor1 { }
 
-// TODO Use SparseBinaryTensor here
-trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
-  def _indices = _array
-  def activeDomain: TruncatedArrayIntSeq = new TruncatedArrayIntSeq(_array, _length)
-  override def activeDomain1: TruncatedArrayIntSeq = activeDomain
-  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _length) { f(_array(i), 1.0); i += 1 } }
-  override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
-    var i = 0
-    def hasNext = i < _length
-    def next = { i += 1 ; (_array(i-1), 1.0) }
-  }
-  def isDense = false
-  @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
-  @inline final def contains(index:Int): Boolean = _containsSorted(index)
-  override def sum: Double = _length.toDouble
-  override def max: Double = if (_length > 0) 1.0 else 0.0
-  override def min: Double = if (_length == 0) 0.0 else 1.0
-  override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
-  override def maxIndex: Int = if (_length == 0) 0 else _apply(_length-1)
-  override def containsNaN: Boolean = false
-  def _appendUnsafe(i: Int) = _append(i) // TODO Make a new class UnsortedSparseBinaryTensorLike1, because, note, then the indices don't get sorted, and various index search methods will fail. 
-  @deprecated("Use sizeHint(Int) instead.")
-  def _hintSize(i: Int) = _ensureCapacity(i)
-  def sizeHint(size:Int) = _sizeHint(size)
-  // TODO FIXME this method will never be called since DoubleSeq provides a +=(d: Double) method already -luke
-  def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
-  //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
-  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
-  def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
-  def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
-  def ++=(is:IntSeq): Unit = ++=(is.asArray)
-  def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSortedNoDuplicates(_)) }
-  def toIntArray: Array[Int] = _toArray
-  def asIntArray: Array[Int] = _asArray
-  override def update(i:Int, v:Double): Unit = {
-    if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
-    if (v == 1.0) this += i else if (v == 0.0) tryRemove(i) else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
-  }
-  private def tryRemove(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) }
-  /** In SparseBinary, this is equivalent to update(i,v) */
-  override def +=(i:Int, v:Double): Unit = update(i, v)
-  override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
-  override def dot(v:DoubleSeq): Double = v match {
-    case t:SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
-    case t:SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
-    // TODO Any other special cases here?
-    case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
-  }
-}
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
   override def blankCopy: SparseBinaryTensor1 = new SparseBinaryTensor1(dim1)

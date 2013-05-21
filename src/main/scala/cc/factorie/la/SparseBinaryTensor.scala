@@ -18,7 +18,9 @@ import cc.factorie.util._
 
 trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer with SparseDoubleSeq {
   def isDense = false
-  def activeDomain = new ArrayIntSeq(_array)
+  def activeDomain = new TruncatedArrayIntSeq(_array, _length)
+  def _appendUnsafe(i: Int) = _append(i) // TODO Make a new class UnsortedSparseBinaryTensorLike1, because, note, then the indices don't get sorted, and various index search methods will fail.
+  def sizeHint(size:Int) = _sizeHint(size)
   override def activeDomainSize = _length
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
@@ -26,11 +28,10 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
     var i = 0
     def hasNext = i < _length
-    def next = { i += 1 ; (_array(i-1), 1.0) }
+    def next() = { i += 1; (_array(i-1), 1.0) }
   }
   /** Efficient (but dangerous) direct access to underlying array of indices.  Note that the array.length may be larger than the number of indices. */
   def _indices: Array[Int] = _array
-  def _indicesLength: Int = _length // TODO Remove because we have activeDomainSize?
   override def sum: Double = _length.toDouble
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0
@@ -39,6 +40,7 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   override def containsNaN: Boolean = false
   //def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
+  // FIX: this will never be called since overloading will pick the +=(double) method that adds a double uniformly to the whole DoubleSeq
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
@@ -51,12 +53,14 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   /** In SparseBinary, this is equivalent to update(i,v) */
   override def +=(i:Int, v:Double): Unit = update(i, v)
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
-  override def dot(v:DoubleSeq): Double = v match {
-    case t:SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
-    case t:SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
+  override def dot(v: DoubleSeq): Double = v match {
+    case t: SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
+    case t: SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
     // TODO Any other special cases here?
-    case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
+    case ds: DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
+  def asIntArray = _asArray
+  def toIntArray = _toArray
   override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
     var acc = seed; var i = 0
     while (i < _length) { acc = f(_apply(i), 1.0, acc); i += 1 }

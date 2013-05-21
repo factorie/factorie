@@ -222,7 +222,7 @@ trait SparseIndexedTensor extends Tensor {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
-    case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
+    case t:SparseBinaryTensorLike1 => { val a = t._indices; val len = t.activeDomainSize; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this += (i, arr(i)*f)  ; i += 1} }
     case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this += (e._1, e._2 * f) )}
