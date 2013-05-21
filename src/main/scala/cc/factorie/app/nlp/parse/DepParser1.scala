@@ -61,45 +61,47 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
 
   // The features representing the input and stacks
-  object FeaturesDomain extends CategoricalDimensionTensorDomain[(String, Int)] {
-    override def stringToCategory(s: String): (String,Int) = {
-      val (str, i) = s.splitAt(s.lastIndexOf(","))
-
-      (str.substring(1), Integer.parseInt(i.substring(1,i.size-1)))
-    }
-  }
+  object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
   val nullLemma = new TokenLemma(null, "null")
-  class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[(String, Int)] {
+  class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
     override def skipNonCategories = featuresSkipNonCategories
     import cc.factorie.app.strings.simplifyDigits
     // assumes all locations > 0
-    def formFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
-      locations.filter(_ < seq.size).map(i => (s + "sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) }, i))
-    def lemmaFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
-      locations.filter(_ < seq.size).map(i => (s + "lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }, i))
-    def tagFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
-      locations.filter(_ < seq.size).map(i => (s + "it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }, i))
-    def depRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] =
-      locations.filter(_ < seq.size).map(i => (s + "sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value }, i))
-    def lChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => (s + "lcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
-    def rChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[(String, Int)] = {
-      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => (s + "rcd-" + tree.label(t.positionInSentence).value.toString(), i))) }
+    def formFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).map(i => s + "sf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else simplifyDigits(tree.sentence.tokens(seq(i)).string) } + i)
+    def lemmaFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).map(i => s + "lf-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr.getOrElse[TokenLemma](nullLemma).value }+ i)
+    def tagFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).map(i => s + "it-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.sentence.tokens(seq(i)).attr[pos.PTBPosLabel].categoryValue }+ i)
+    def depRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).map(i => s + "sd-" + { if (seq(i) == ParseTree.noIndex || seq(i) == ParseTree.rootIndex) "null" else tree.label(seq(i)).value } + i)
+    def lChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).flatMap(i => tree.leftChildren(seq(i)).map(t => s + "lcd-" + tree.label(t.positionInSentence).value.toString() + i))
+    def rChildDepRelFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
+      locations.filter(_ < seq.size).flatMap(i => tree.rightChildren(seq(i)).map(t => s + "rcd-" + tree.label(t.positionInSentence).value.toString() + i))
     // Initialize the Features value
-    this ++= formFeatures("s", stack, Seq(0,1), tree)
-    this ++= formFeatures("i", input, Seq(0,1), tree)
-    // TODO We don't have have a good lemma annotator for new text
-    this ++= lemmaFeatures("s", stack, Seq(0,1), tree) //
-    this ++= lemmaFeatures("i", input, Seq(0,1), tree) //
-    this ++= tagFeatures("s", stack, Seq(0,1,2,3), tree)
-    this ++= tagFeatures("i", input, Seq(0,1,2,3), tree)
-    this ++= depRelFeatures("s", stack, Seq(0), tree)
-    this ++= depRelFeatures("i", input, Seq(0), tree)
-    this ++= lChildDepRelFeatures("s", stack, Seq(0), tree)
-    this ++= lChildDepRelFeatures("i", input, Seq(0), tree)
-    this ++= rChildDepRelFeatures("s", stack, Seq(0), tree)
-    this ++= rChildDepRelFeatures("i", input, Seq(0), tree)
+    def initialize() {
+      val sff = formFeatures("s", stack, Seq(0,1), tree)
+      val iff = formFeatures("i", input, Seq(0,1), tree)
+      // TODO We don't have have a good lemma annotator for new text
+      val slf = lemmaFeatures("s", stack, Seq(0,1), tree)
+      val ilf = lemmaFeatures("i", input, Seq(0,1), tree)
+      val stf = tagFeatures("s", stack, Seq(0,1,2,3), tree)
+      val itf = tagFeatures("i", input, Seq(0,1,2,3), tree)
+      val sdr = depRelFeatures("s", stack, Seq(0), tree)
+      val idr = depRelFeatures("i", input, Seq(0), tree)
+      val slc = lChildDepRelFeatures("s", stack, Seq(0), tree)
+      val ilc = lChildDepRelFeatures("i", input, Seq(0), tree)
+      val src = rChildDepRelFeatures("s", stack, Seq(0), tree)
+      val irc = rChildDepRelFeatures("i", input, Seq(0), tree)
+      Seq(sff, iff, slf, ilf, stf, itf, sdr, idr, slc, ilc, src, irc).foreach(this ++= _)
+      for ((stack,input) <- Seq((sff, iff), (slf, ilf), (sdr, idr));
+           left <- stack; right <- input) {
+        this += (left + "&" + right)
+      }
+    }
+    initialize()
   }
   var featuresSkipNonCategories = true
   
@@ -262,7 +264,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("Training...")
     val rng = new scala.util.Random(0)
     //val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
-    val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.000001, 0.000001)
+    val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.000001, 0.00000)
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = 10, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {
