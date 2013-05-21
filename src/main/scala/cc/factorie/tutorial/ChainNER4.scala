@@ -39,31 +39,29 @@ object ChainNER4 {
   
   // The model
   val model = new TemplateModel {
-    val bias = this +=
-      // Bias term on each individual label
-      new DotTemplateWithStatistics1[Label] {
-        val weights = Weights(new la.DenseTensor1(LabelDomain.size))
-      }
-    val transtion = this +=
-      // Transition factors between two successive labels
-      new DotTemplateWithStatistics2[Label, Label] {
-        val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size))
-        def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
-        def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
-      }
-    val evidence = this +=
-      // Factor between label and observed token
-      new DotTemplateWithStatistics2[Label, Token] {
-        val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize))
-        def unroll1(label: Label) = Factor(label, label.token)
-        def unroll2(token: Token) = throw new Error("Token values shouldn't change")
-      }
+    // Bias term on each individual label
+    object bias extends DotTemplateWithStatistics1[Label] {
+      val weights = Weights(new la.DenseTensor1(LabelDomain.size))
+    }
+    // Transition factors between two successive labels
+    object transtion extends DotTemplateWithStatistics2[Label, Label] {
+      val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size))
+      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
+      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
+    }
+    // Factor between label and observed token
+    object evidence extends DotTemplateWithStatistics2[Label, Token] {
+      val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize))
+      def unroll1(label: Label) = Factor(label, label.token)
+      def unroll2(token: Token) = throw new Error("Token values shouldn't change")
+    }
+    this += evidence
+    this += bias
+    this += transtion
   }
   
   // The training objective
   val objective = new HammingTemplate[Label]
-  
-
 
   def main(args: Array[String]): Unit = {
     if (args.length != 2) throw new Error("Usage: ChainNER4 trainfile testfile")
