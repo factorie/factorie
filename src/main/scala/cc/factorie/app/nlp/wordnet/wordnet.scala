@@ -113,8 +113,6 @@ class WordNet(wordNetDir: String) {
   }
 
   def shareHypernyms(s1: String, s2: String) = {
-    println(hypernyms(s1).mkString(" "))
-    println(hypernyms(s2).mkString(" "))
     val s2h = hypernyms(s2)
     hypernyms(s1).exists(s2h.contains(_))
   }
