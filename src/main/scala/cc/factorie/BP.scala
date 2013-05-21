@@ -273,7 +273,7 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
       //throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
       val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12._indicesLength; var ii = 0
+      val len = limitedDiscreteValues12.activeDomainSize; var ii = 0
       while (ii < len) {
         val ij = indices(ii)
         val i = scores.index1(ij)
@@ -299,7 +299,7 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
       val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12._indicesLength; var ii = 0
+      val len = limitedDiscreteValues12.activeDomainSize; var ii = 0
       while (ii < len) {
         val ij = indices(ii)
         val i = scores.index1(ij)

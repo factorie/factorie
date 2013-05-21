@@ -101,15 +101,6 @@ class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double 
             gradSquares(indices(i)) += factor*factor
             i += 1
           }
-        case o: SparseBinaryTensorLike1 =>
-          val len = o.activeDomainSize
-          val indices = o._indices
-          var i = 0
-          while (i < len) {
-            gradients(indices(i)) += factor
-            gradSquares(indices(i)) += factor*factor
-            i += 1
-          }
         case o: DenseTensor =>
           val arr = o.asArray
           var i = 0

@@ -158,7 +158,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Tens
     val featureValues = Array.fill(numFeatures)(ArrayBuilder.make[Double]())
     while (s < numSamples) {
       stats(s)._2 match {
-        case sT: SparseTensor1 =>
+        case sT: SparseIndexedTensor =>
           val len = sT.activeDomainSize
           val sIndices = sT._indices
           val sValues = sT._values
@@ -167,10 +167,9 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Tens
             featureValues(sIndices(i)) += sValues(i)
             i += 1
           }
-        case sT: SparseBinaryTensorLike1 =>
-          val dom = sT.activeDomain1
-          val len = dom.length
-          val dArr = dom.array
+        case sT: SparseBinaryTensor =>
+          val len = sT.activeDomainSize
+          val dArr = sT._indices
           var i = 0
           while (i < len) {
             featureValues(dArr(i)) += 1.0
