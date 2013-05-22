@@ -40,7 +40,13 @@ trait Tensor2 extends Tensor {
   def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
-    activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
+    activeDomain1.foreach(i => t.activeDomain1.foreach(j => newT(i) += this(i,j)*t(j)))
+    newT
+  }
+  def leftMultiply(t: Tensor1): Tensor1 = {
+    assert(dim1 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim1 + " " + t.dimensions)
+    val newT = new DenseTensor1(dim2)
+    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(i)))
     newT
   }
   @inline final def length = dim1 * dim2
@@ -71,50 +77,92 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
       (t.tensor1,t.tensor2) match {
         case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
         case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
-        case (t1: SingletonBinaryTensor, t2: SparseBinaryTensorLike1) =>
+        case (t1: SingletonTensor, t2: SparseTensor) =>
           val len = t2.activeDomainSize
           val indices = t2._indices
+          val values = t2._valuesSeq
           var i = 0
           var dot = 0.0
           val arr = this.asArray
           while (i < len) {
-            dot += arr(singleIndex(t1.singleIndex, indices(i)))
+            dot += arr(singleIndex(t1.singleIndex, indices(i)))*values(i)
             i += 1
           }
-          dot
-        case (t1: DenseTensor, t2: SparseBinaryTensorLike1) =>
+          dot*t1.singleValue
+        case (t1: SparseTensor, t2: SingletonTensor) =>
+          val len = t1.activeDomainSize
+          val indices = t1._indices
+          val values = t1._valuesSeq
+          var i = 0
+          var dot = 0.0
+          while (i < len) {
+            dot += this(singleIndex(indices(i), t2.singleIndex))*values(i)
+            i += 1
+          }
+          dot*t2.singleValue
+        case (t1: DenseTensor, t2: SparseTensor) =>
           val len = t2.activeDomainSize
           val indices = t2._indices
+          val values = t2._valuesSeq
           var i = 0
           var dot = 0.0
           val t1Arr = t1.asArray
           while (i < t1Arr.length) {
             var j = 0
             while (j < len) {
-              dot += this(singleIndex(i, indices(j)))*t1(i)
+              dot += this(singleIndex(i, indices(j)))*t1(i)*values(j)
               j += 1
             }
             i += 1
           }
           dot
-        case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) =>
-          val len = t2.activeDomainSize
-          val indices = t2._indices
+        case (t1: SparseTensor, t2: DenseTensor) =>
+          val len = t1.activeDomainSize
+          val indices = t1._indices
+          val values = t1._valuesSeq
           var i = 0
           var dot = 0.0
+          val t2Arr = t2.asArray
           while (i < len) {
-            dot += this(singleIndex(indices(i), t2.singleIndex))
+            var j = 0
+            while (j < t2Arr.length) {
+              dot += this(singleIndex(indices(i), j))*values(i)*t2Arr(j)
+              j += 1
+            }
             i += 1
           }
           dot
-        case (t1: SingletonBinaryTensor, t2: SparseIndexedTensor) =>
+        case (t1: SparseTensor, t2: SparseTensor) =>
           var dot = 0.0
-          val len = t2.activeDomainSize
-          val indices = t2._indices
-          val values = t2._values
+          val len1 = t1.activeDomainSize
+          val indices1 = t1._indices
+          val values1 = t2._valuesSeq
+          val len2 = t2.activeDomainSize
+          val indices2 = t2._indices
+          val values2 = t2._valuesSeq
           var i = 0
-          while (i < len) {
-            dot += this(singleIndex(t1.singleIndex, indices(i)))*values(i)
+          while (i < len1) {
+            var j = 0
+            while (j < len2) {
+              dot += this(singleIndex(indices1(i), indices2(j)))*values1(i)*values2(j)
+              j += 1
+            }
+            i += 1
+          }
+          dot
+        case (t1: DenseTensor, t2: DenseTensor) =>
+          var dot = 0.0
+          var i = 0
+          val arr1 = t1.asArray
+          val len1 = t1.length
+          val arr2 = t2.asArray
+          val len2 = t2.length
+          while (i < len1) {
+            var j = 0
+            while (j < len2) {
+              dot += this(i,j)*arr1(i)*arr2(j)
+              j += 1
+            }
             i += 1
           }
           dot
@@ -194,10 +242,10 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           }
           col += 1
         }
-      case t: SparseIndexedTensor =>
+      case t: SparseTensor =>
         val tActiveDomainSize = t.activeDomainSize
         val tIndices = t._indices
-        val tValues = t._values
+        val tValues = t._valuesSeq
         var ti = 0
         while (ti < tActiveDomainSize) {
           val col = tIndices(ti)
@@ -210,23 +258,11 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           }
           ti += 1
         }
-      case t: SparseBinaryTensorLike1 =>
-        val tIndexSeq = t.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
-        val tIndices = tIndexSeq.array
-        var row = 0
-        while (row < dim1) {
-          val offset = row * dim2
-          var ti = 0
-          var dot = 0.0
-          while (ti < tIndexSeq.size) {
-            val col = tIndices(ti)
-            dot += _values(offset + col)
-            ti += 1
-          }
-          newArray(row) = dot
-          row += 1
-        }
       case _ =>
+        if (!haveWarned) {
+          haveWarned = true
+          println("Warning: unknown tensor type for *: " + t.getClass.getName)
+        }
         val vecIter = t.activeElements
         while (vecIter.hasNext) {
           val (col, v) = vecIter.next()
@@ -239,6 +275,42 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
         }
     }
     newT
+  }
+
+  override def leftMultiply(t: Tensor1): Tensor1 = {
+    val res = new DenseTensor1(dim2)
+    t match {
+      case t: DenseTensor =>
+        var i = 0
+        while (i < dim1) {
+          var j = 0
+          while (j < dim2) {
+            res(j) += this(i,j)*t(i)
+            j += 1
+          }
+          i += 1
+        }
+      case t: SparseTensor =>
+        val len = t.activeDomainSize
+        val indices = t._indices
+        val values = t._valuesSeq
+        var i = 0
+        while (i < len) {
+          var j = 0
+          while (j < dim2) {
+            res(j) += values(i) * this(indices(i), j)
+            j += 1
+          }
+          i += 1
+        }
+      case _ =>
+        if (!haveWarned) {
+          haveWarned = true
+          println("DenseTensor2 unrecognized leftMultiply type: " + t.getClass.getName)
+        }
+        super.leftMultiply(t)
+    }
+    res
   }
 }
 
@@ -388,13 +460,13 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 wi
               }
               idx1 += 1
             }
-          case (t1: DenseTensor1, t2: SparseIndexedTensor) =>
+          case (t1: DenseTensor1, t2: SparseTensor) =>
             val t2Size = t2.size
             val t1Size = t1.size
             val t1Values = t1.asArray
             val t2ActiveDomainSize = t2.activeDomainSize
             val t2Indices = t2._indices
-            val t2Values = t2._values
+            val t2Values = t2._valuesSeq
             var idx1 = 0
             while (idx1 < t1Size) {
               val v1 = t1Values(idx1) * v
@@ -408,36 +480,51 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 wi
               }
               idx1 += 1
             }
-          case (t1: DenseTensor1, t2: SparseBinaryTensorLike1) =>
-            val t2Size = t2.size
-            val t1Size = t1.size
-            val t2IndexSeq = t2.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
-            val t2Indices = t2IndexSeq.array
-            val t1Values = t1.asArray
-            var idx1 = 0
-            while (idx1 < t1Size) {
-              val v1 = t1Values(idx1) * v
-              val offset = t2Size * idx1
-              var t2i = 0
-              while (t2i < t2IndexSeq.size) {
-                val idx2 = t2Indices(t2i)
-                a(offset + idx2) += v1
-                t2i += 1
+          case (t1: SparseTensor, t2: DenseTensor) =>
+            val t1Size = t1.activeDomainSize
+            val t1Values = t1._valuesSeq
+            val t1Indices = t1._indices
+            val t2ActiveDomainSize = t2.length
+            val t2Arr = t2.asArray
+            var i = 0
+            while (i < t1Size) {
+              var j = 0
+              while (j < t2ActiveDomainSize) {
+                a(singleIndex(t1Indices(i),j)) += (t1Values(i) * t2Arr(j))*v
+                j += 1
               }
-              idx1 += 1
+              i += 1
             }
           case (t1: NormalizedTensorProportions1, t2: Tensor) =>
             new Outer1Tensor2(t1.tensor, t2).=+(a, v/t1.tensor.sum)
-          case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) =>
-            val t2Size = t2.size
-            val t2IndexSeq = t2.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
-            val t2Indices = t2IndexSeq.array
+          case (t1: Tensor, t2: NormalizedTensorProportions1) =>
+            new Outer1Tensor2(t1, t2.tensor).=+(a, v/t2.tensor.sum)
+          case (t1: SingletonTensor, t2: SparseTensor) =>
+            val t2Size = t2.activeDomainSize
+            val t2IndexSeq = t2._indices
+            val t2Values = t2._valuesSeq
             var idx1 = 0
-            var t2i = 0
-            while (t2i < t2IndexSeq.size) {
-              val idx2 = t2Indices(t2i)
-              a(singleIndex(t1.singleIndex,idx2)) += v
-              t2i += 1
+            var i = 0
+            while (i < t2Size) {
+              a(singleIndex(t1.singleIndex,t2IndexSeq(i))) += v*t1.singleValue*t2Values(i)
+              i += 1
+            }
+          case (t1: SparseTensor, t2: SparseTensor) =>
+            val t1Size = t1.activeDomainSize
+            val t1Indices = t1._indices
+            val t1Values = t2._valuesSeq
+            val t2Size = t2.activeDomainSize
+            val t2IndexSeq = t2._indices
+            val t2Values = t2._valuesSeq
+            var idx1 = 0
+            var i = 0
+            while (i < t1Size) {
+              var j = 0
+              while (j < t2Size) {
+                a(singleIndex(t1Indices(i),t2IndexSeq(j))) += v*t1Values(i)*t2Values(j)
+                j += 1
+              }
+              i += 1
             }
           case (t1, t2) =>
             if (!Outer1Tensor2.hasWarned) {
