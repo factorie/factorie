@@ -68,8 +68,8 @@ class Lexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitesp
     contents(key) = t :: old
   }
   /** Add a new lexicon entry consisting of one or more words.  The Lexicon's tokenizer will be used to split the string, if possible. */
-  def +=(string:String): Unit = {
-    val words: Seq[String] = tokenizer(string).toSeq
+  def +=(phrase:String): Unit = {
+    val words: Seq[String] = tokenizer(phrase).toSeq
     if (words.length == 1) {
       val word = words.head
       val key = lemmatizer.lemmatize(word)
@@ -86,6 +86,7 @@ class Lexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitesp
   /** Add a new lexicon entry consisting of a multi-string phrase. */
   //def +=(ws:Seq[String]): Unit = this.+=(newLexiconTokens(ws.map(lemmatizer.lemmatize(_))))
   def ++=(source:Source): Unit = for (line <- source.getLines()) { this.+=(line); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+  def ++=(phrases:String): Unit = ++=(Source.fromString(phrases))
   def ++=(file:File, enc:String = "UTF-8"): Unit = ++=(Source.fromFile(file, enc))
   def phrases: Seq[String] = {
     def phrase(entry:LexiconToken): String = if (entry.hasNext) entry.string + " " + phrase(entry.next) else entry.string 
