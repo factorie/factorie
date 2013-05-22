@@ -31,9 +31,9 @@ trait SparseTensor extends SparseDoubleSeq with Tensor {
 }
 
 trait SparseIndexedTensor extends SparseTensor {
-  def copyInto(t: SparseIndexedTensor): Unit
+  // unsafe - call makeReadable first
   def _values: Array[Double]
-
+  // unsafe - call makeReadable first
   def _valuesSeq = new ArrayDoubleSeq(_values)
 }
 

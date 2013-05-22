@@ -17,6 +17,7 @@ import cc.factorie._
 import cc.factorie.util._
 
 trait SparseBinaryTensor extends SparseTensor {
+  // unsafe - call makeReadable first
   def _valuesSeq: DoubleSeq = new UniformTensor1(this._unsafeActiveDomainSize, 1.0)
 }
 
