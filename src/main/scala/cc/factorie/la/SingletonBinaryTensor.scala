@@ -16,8 +16,11 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait SingletonBinaryTensor extends SingletonTensor with ReadOnlyTensor {
-  def singleValue: Double = 1.0
+trait SingletonBinaryTensor extends SparseBinaryTensor with SingletonTensor {
+  def singleIndex: Int
+
+  def singleValue = 1.0
+
   override def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, 1.0)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, 1.0))

@@ -17,11 +17,32 @@ import cc.factorie._
 import cc.factorie.util._
 
 /** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */
-trait SparseIndexedTensor extends Tensor {
+
+trait SparseTensor extends SparseDoubleSeq with Tensor {
   def isDense = false
+  def _makeReadable(): Unit
+  // unsafe - call makeReadable first
+  def _unsafeActiveDomainSize: Int
+  // unsafe - call makeReadable first
+  def _indices: Array[Int]
+  // unsafe - call makeReadable first
+  // this has to be a DoubleSeq and not an Array[Int] so we can efficiently return a UniformTensor for binary tensor values
+  def _valuesSeq: DoubleSeq
+}
+
+trait SparseIndexedTensor extends SparseTensor {
+  // unsafe - call makeReadable first
+  def _values: Array[Double]
+  // unsafe - call makeReadable first
+  def _valuesSeq = new ArrayDoubleSeq(_values)
+}
+
+trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   // In subclasses either _length should be set > 0 or _sizeProxy should be set non-null, but not both.
   //private var _length: Int = 0
   //private var _sizeProxy: Iterable[Any] = null
+
+  // TODO Alex and I confirmed that private var access in traits still has getter and setter methods - we need to find out a better way to do this -luke
   private var __values: Array[Double] = new Array[Double](4)
   private var __indices: Array[Int] = new Array[Int](4) // the indices, in order corresponding to _values
   private var _positions: Array[Int] = null // a dense array containing the index into _indices and _values; not yet implemented
@@ -31,9 +52,10 @@ trait SparseIndexedTensor extends Tensor {
   // TODO Avoid making these public?  But used in BP now. -akm
   def _values = __values
   def _indices = __indices
-  def _npos = __npos
+  def _unsafeActiveDomainSize: Int = __npos
+
   private def setCapacity(cap:Int): Unit = {
-    assert(cap >= __npos)
+    require(cap >= __npos)
     val newInd = new Array[Int](cap)
     val newVal = new Array[Double](cap)
     System.arraycopy(__indices, 0, newInd, 0, __npos)
@@ -41,12 +63,16 @@ trait SparseIndexedTensor extends Tensor {
     __indices = newInd; __values = newVal
   }
   def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
-  def trim: Unit = setCapacity(__npos)
-  
+  def trim(): Unit = setCapacity(__npos)
+
+  // unsafe - call makeReadable first
   // TODO There must already be functions somewhere that do this.
   private def copyarray(a:Array[Double]): Array[Double] = { if (a eq null) return null; val r = new Array[Double](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
   private def copyarray(a:Array[Int]): Array[Int] = { if (a eq null) return null; val r = new Array[Int](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
-  def copyInto(t:SparseIndexedTensor): Unit = { t.__values = copyarray(__values); t.__indices = copyarray(__indices); t._positions = copyarray(_positions); t.__npos = __npos; t._sorted = _sorted }
+  def copyInto(t:SparseIndexedTensor): Unit = t match {
+    case t: ArraySparseIndexedTensor =>
+      t.__values = copyarray(__values); t.__indices = copyarray(__indices); t._positions = copyarray(_positions); t.__npos = __npos; t._sorted = _sorted
+  }
   
   //def length: Int = if (_sizeProxy ne null) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; __npos }
@@ -105,12 +131,12 @@ trait SparseIndexedTensor extends Tensor {
     makeReadable
     v match {
       // TODO add fast implementations for Dense here! -luke
-      case v:SingletonBinaryTensor1 => apply(v.singleIndex)
-      case v:SingletonTensor1 => apply(v.singleIndex) * v.singleValue
-      case v:SparseIndexedTensor => {
-        v.makeReadable
+      case v:SingletonBinaryTensor => apply(v.singleIndex)
+      case v:SingletonIndexedTensor => apply(v.singleIndex) * v.singleValue
+      case v:ArraySparseIndexedTensor => {
+        v._makeReadable()
         val v1 = if (this.__npos < v.__npos) this else v
-        val v2 = if (v.__npos< this.__npos) v else this
+        val v2 = if (v.__npos < this.__npos) v else this
         var i = 0; var j = -1; var j2 = 0
         var result = 0.0
         while (i < v1.__npos) {
@@ -129,24 +155,24 @@ trait SparseIndexedTensor extends Tensor {
   
   // Sort _indexs & _values between start and end; does not modify positions outside that range.
   // Return the number of duplicate indices.  
-  @inline private def sort(start:Int, end:Int): Int = {
-    throw new Error("Not yet implemented")
-    var cp = start
-    while (cp < end) {
-      val ci = __indices(cp)
-      val cv = __values(cp)
-      var i = cp - 1
-      while (i >= 0 && __indices(i) >= ci) {
-        val tmpi = 
-        i -= 1
-      }
-    }
-    0
-  }
+//  @inline private def sort(start:Int, end:Int): Int = {
+//    throw new Error("Not yet implemented")
+//    var cp = start
+//    while (cp < end) {
+//      val ci = __indices(cp)
+//      val cv = __values(cp)
+//      var i = cp - 1
+//      while (i >= 0 && __indices(i) >= ci) {
+//        val tmpi =
+//        i -= 1
+//      }
+//    }
+//    0
+//  }
   
   override def toString = "SparseIndexedTensor npos="+__npos+" sorted="+_sorted+" ind="+__indices.mkString(",")+" val="+__values.mkString(",")
   
-  def _makeReadable: Unit = makeReadable
+  def _makeReadable(): Unit = makeReadable
   @inline private def makeReadable: Unit = {
     if ((_sorted <= 10) && (__npos > 0)) {
       // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
@@ -191,7 +217,7 @@ trait SparseIndexedTensor extends Tensor {
       }
     }
     __npos = _sorted
-    if (__npos * 1.5 > __values.length) trim
+    if (__npos * 1.5 > __values.length) trim()
   }
   
   // Caller is responsible for making sure there is enough capacity
@@ -223,12 +249,13 @@ trait SparseIndexedTensor extends Tensor {
     case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
     case t:SparseBinaryTensorLike1 => { val a = t._indices; val len = t.activeDomainSize; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
-    case t:SparseIndexedTensor => { val len = t.__npos; var i = 0; while (i < len) { +=(t.__indices(i), f * t.__values(i)); i += 1 }}
+    case t:SparseIndexedTensor => { val as = t._indices; val vs = t._values; val len = t.activeDomainSize; var i = 0; while (i < len) { +=(as(i), f * vs(i)); i += 1 }}
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this += (i, arr(i)*f)  ; i += 1} }
     case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this += (e._1, e._2 * f) )}
     case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this +=  (e._1, e._2 * f) )}
     case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this += (i, f) ) }
     case t:SingletonLayeredTensor2 => { t.foreachActiveElement((i, v) => this += (i, f*v) ) }
+    case t:SingletonBinaryTensor => this += (t.singleIndex, f)
     case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this += (i, f) ) }
     case t:Outer1Tensor2 => {
       (t.tensor1,t.tensor2) match {
@@ -273,10 +300,12 @@ trait SparseIndexedTensor extends Tensor {
           }
         case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) => {
           val i0 = t1.singleIndex
-          val arr = t2.asIntArray
+          val arr = t2._indices
+          val len = t2.activeDomainSize
           var i = 0
-          while (i < arr.length) {
-            this += (t.singleIndex(i0, arr(i)), f)
+          while (i < len) {
+            val singleidx = t.singleIndex(i0, arr(i))
+            this += (singleidx, f)
             i += 1
           }
         }
@@ -302,10 +331,11 @@ trait SparseIndexedTensor extends Tensor {
         }
         case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => {
           val i0 = t2.singleIndex
-          val arr = t1.asIntArray
+          val len = t1.activeDomainSize
+          val indices = t1._indices
           var i = 0
-          while (i < arr.length) {
-            this += (t.singleIndex(arr(i), i0), f)
+          while (i < len) {
+            this += (t.singleIndex(indices(i), i0), f)
             i += 1
           }
         }
@@ -324,7 +354,6 @@ trait SparseIndexedTensor extends Tensor {
         }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
-    case t:SingletonBinaryTensor => this += (t.singleIndex, f)
     case t:NormalizedTensorProportions2 => this += (t.tensor, f)
     case _ => assert(false, t.getClass.getName + " doesn't have a match")
   }
@@ -387,17 +416,18 @@ trait SparseIndexedTensor extends Tensor {
       i += 1
     }
   }
-
-  // TODO Use copyInto instead?
-  def cloneFrom(t:SparseIndexedTensor): Unit = {
-    makeReadable
-    //t._length = _length
-    //t._sizeProxy = _sizeProxy
-    t.__npos = __npos
-    t._sorted = _sorted
-    t.__values = __values.clone
-    t.__indices = __indices.clone
-    // TODO Deal with _positions, once is it implemented
-  }
+//
+//  // TODO Use copyInto instead?
+//  def cloneFrom(t:SparseIndexedTensor): Unit = t match {
+//    case t: ArraySparseIndexedTensor =>
+//      makeReadable
+//      //t._length = _length
+//      //t._sizeProxy = _sizeProxy
+//      t.__npos = __npos
+//      t._sorted = _sorted
+//      t.__values = __values.clone
+//      t.__indices = __indices.clone
+//      // TODO Deal with _positions, once is it implemented
+//  }
 }
 

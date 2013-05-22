@@ -72,35 +72,38 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
         case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
         case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
         case (t1: SingletonBinaryTensor, t2: SparseBinaryTensorLike1) =>
-          val iArr = t2.asIntArray
+          val len = t2.activeDomainSize
+          val indices = t2._indices
           var i = 0
           var dot = 0.0
           val arr = this.asArray
-          while (i < iArr.length) {
-            dot += arr(singleIndex(t1.singleIndex,iArr(i)))
+          while (i < len) {
+            dot += arr(singleIndex(t1.singleIndex, indices(i)))
             i += 1
           }
           dot
         case (t1: DenseTensor, t2: SparseBinaryTensorLike1) =>
-          val iArr = t2.asIntArray
+          val len = t2.activeDomainSize
+          val indices = t2._indices
           var i = 0
           var dot = 0.0
           val t1Arr = t1.asArray
           while (i < t1Arr.length) {
             var j = 0
-            while (j < iArr.length) {
-              dot += this(singleIndex(i,iArr(j)))*t1(i)
+            while (j < len) {
+              dot += this(singleIndex(i, indices(j)))*t1(i)
               j += 1
             }
             i += 1
           }
           dot
         case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) =>
-          val iArr = t1.asIntArray
+          val len = t2.activeDomainSize
+          val indices = t2._indices
           var i = 0
           var dot = 0.0
-          while (i < iArr.length) {
-            dot += this(singleIndex(iArr(i),t2.singleIndex))
+          while (i < len) {
+            dot += this(singleIndex(indices(i), t2.singleIndex))
             i += 1
           }
           dot
@@ -292,7 +295,7 @@ class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, v
 }
 //class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
 
-class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
+class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonIndexedTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
@@ -300,7 +303,7 @@ class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val sin
   override def copy = new SingletonTensor2(dim1, dim2, singleIndex1, singleIndex2, singleValue)
 }
 
-trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
+trait SparseBinaryTensorLike2 extends Tensor2 with ArraySparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def +=(i:Int, j:Int): Unit = _insertSortedNoDuplicates(singleIndex(i,j))
@@ -318,14 +321,14 @@ trait Tensor2ElementIterator extends DoubleSeqIterator with Iterator[Tensor2Elem
   def value: Double
 }
 
-class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with SparseIndexedTensor {
+class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with ArraySparseIndexedTensor {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeElements2: Tensor2ElementIterator = {
     _makeReadable
     new Tensor2ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
-      def hasNext = i < _npos
+      def hasNext = i < _unsafeActiveDomainSize
       def index = _indices(i-1)
       def index1 = SparseIndexedTensor2.this.index1(_indices(i-1))
       def index2 = SparseIndexedTensor2.this.index2(_indices(i-1))

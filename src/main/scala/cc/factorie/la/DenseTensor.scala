@@ -80,6 +80,10 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:SingletonBinaryLayeredTensor2 => {
       val i0 = t.singleIndex1
       t.inner match {
+        case inner: SingletonTensor => {
+          val i = inner.singleIndex
+          this(t.singleIndex(i0, i)) += inner.singleValue * f
+        }
         case inner:SparseBinaryTensorLike1 => {
           var i = 0
           val indices = inner.activeDomain
@@ -92,10 +96,6 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
           for ((i,v) <- inner.activeElements) {
             this(t.singleIndex(i0, i)) += v * f
           }
-        }
-        case inner: SingletonTensor => {
-          val i = inner.singleIndex
-          this(t.singleIndex(i0, i)) += inner.singleValue * f
         }
         case _ => assert(false, t.inner.getClass.getName + " doesn't match")
       }
