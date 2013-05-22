@@ -210,12 +210,12 @@ class POS3 extends DocumentAnnotator {
     val numIterations = 2
     var iteration = 0
     
-    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations = 10, logEveryN=100000)
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations=numIterations)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
       val examples = sentences.shuffle.flatMap(sentence => {
         (0 until sentence.length).map(i => new TokensClassifierExample(sentence.tokens, model,
-            if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.logMultiClass))})
+            if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))})
       trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap
       var total = 0.0

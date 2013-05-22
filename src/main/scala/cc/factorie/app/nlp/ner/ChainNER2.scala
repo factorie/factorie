@@ -360,7 +360,7 @@ class ChainNer2 {
       printEvaluation(trainDocuments, testDocuments, "FINAL")
 	  } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConfidenceWeighting(model))
+      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new AdaGrad)
       val predictor = new IteratedConditionalModes[ChainNerLabel](model) // {temperature=0.01}
       println("Example Token features")
       for (iteration <- 1 until 8) {
@@ -394,7 +394,7 @@ class ChainNer2 {
 		    testDocuments.foreach(process(_))
 			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
 	  } else {
-      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new ConfidenceWeighting(model2))
+      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new AdaGrad())
       	val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
 
       	for (iteration <- 1 until 8) {
