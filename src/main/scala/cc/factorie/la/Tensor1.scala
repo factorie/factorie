@@ -152,12 +152,12 @@ class ScalarTensor(var singleValue:Double) extends Tensor1 {
 }
 
 /** A one-dimensional one-hot Tensor. */
-class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends SingletonTensor with Tensor1 {
+class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends SingletonIndexedTensor with Tensor1 {
   def activeDomain = new SingletonIntSeq(singleIndex)
 } 
 
 /** A one-dimensional one-hot Tensor with hot value 1.0. */
-trait SingletonBinaryTensorLike1 extends SingletonBinaryTensor with Tensor1 {
+trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def activeDomain = new SingletonIntSeq(singleIndex)
 }
 /** A one-dimensional one-hot Tensor with hot value 1.0. */
@@ -189,7 +189,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   override def copy = new GrowableUniformTensor1(sizeProxy, uniformValue)
 }
 
-trait SparseBinaryTensorLike1 extends SparseBinaryTensor with Tensor1 { }
+trait SparseBinaryTensorLike1 extends Tensor1 with ArraySparseBinaryTensor { }
 
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
@@ -263,12 +263,12 @@ trait Tensor1ElementIterator extends DoubleSeqIterator with Iterator[Tensor1Elem
 }
 
 
-class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with SparseIndexedTensor {
+class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with ArraySparseIndexedTensor {
   def activeElements1: Tensor1ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor1ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
-      def hasNext = i < _npos
+      def hasNext = i < _unsafeActiveDomainSize
       def index = _indices(i-1)
       def value = _values(i-1)
       def next() = { i += 1; this }
@@ -278,13 +278,13 @@ class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with SparseIndexedTenso
   override def copy: SparseIndexedTensor1 = { val t = new SparseIndexedTensor1(dim1); this.copyInto(t); t }
 }
 
-class GrowableSparseIndexedTensor1(val sizeProxy:Iterable[Any]) extends Tensor1 with SparseIndexedTensor {
+class GrowableSparseIndexedTensor1(val sizeProxy:Iterable[Any]) extends Tensor1 with ArraySparseIndexedTensor {
   def dim1 = sizeProxy.size
   def activeElements1: Tensor1ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor1ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
-      def hasNext = i < _npos
+      def hasNext = i < _unsafeActiveDomainSize
       def index = _indices(i-1)
       def value = _values(i-1)
       def next() = { i += 1; this }

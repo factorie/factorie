@@ -273,4 +273,17 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     new PunktTokenizer { override def sentenceBoundaryInference = inference }.process(docs)
     docs.map(_.sentences)
   }
+  
+  
+  
+  @Test def testRegexTokenizer(): Unit = {
+    assert(RegexTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
+    assert(RegexTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
+    assert(RegexTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
+    assert(RegexTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
+    //println(RegexTokenizer("MR. SMITH.").mkString(" "))
+    //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
+    assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", "."))
+  }
+  
 }

@@ -16,12 +16,25 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait SingletonTensor extends Tensor with SparseDoubleSeq  with ReadOnlyTensor {
+//trait SingletonTensor extends SparseTensor with SparseDoubleSeq with ReadOnlyTensor {
+//}
+
+trait SingletonTensor extends SparseTensor with ReadOnlyTensor {
   def singleIndex: Int
   def singleValue: Double
+
+  def _makeReadable(): Unit = { }
+  def _unsafeActiveDomainSize: Int = 1
+  def _indices: Array[Int] = Array(singleIndex)
+}
+
+trait SingletonIndexedTensor extends SparseBinaryTensor with SingletonTensor {
+
+  def _values: Array[Double] = Array(singleValue)
+  def copyInto(t: SparseIndexedTensor): Unit = t(singleIndex) = singleValue
+
   //def activeDomain: IntSeq = new SingletonIntSeq(singleIndex) // Can't be here and in Tensor1
-  def isDense = false
-  def apply(i:Int) = if (i == singleIndex) singleValue else 0.0
+  override def apply(i:Int) = if (i == singleIndex) singleValue else 0.0
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, singleValue)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, singleValue))
   override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, singleValue)

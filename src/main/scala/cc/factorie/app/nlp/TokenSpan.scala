@@ -47,7 +47,7 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
 }
 
 object TokenSpan {
-  def fromLexicon(lexicon:cc.factorie.app.chain.Lexicon, document:Document): Int = {
+  def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.Lexicon, document:Document): Int = {
     var spanCount = 0
     for (token <- document.tokens) {
       val len = lexicon.startsAt(token) 

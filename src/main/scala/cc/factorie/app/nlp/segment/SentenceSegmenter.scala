@@ -26,7 +26,7 @@ object SentenceSegmenter extends SentenceSegmenter {
   def main(args: Array[String]): Unit = {
     for (filename <- args) {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      Tokenizer.process(doc)
+      RegexTokenizer.process(doc)
       this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)

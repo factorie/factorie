@@ -72,13 +72,13 @@ package object strings {
   val containsDigitRegex = ".*\\d.*".r
   /** Return input string, with digits replaced, either the whole string with "<YEAR>" or "<NUM>" or just the digits replaced with "#" */
   def simplifyDigits(word:String): String = {
-    if (! recentYearRegex.findFirstIn(word).nonEmpty) "<YEAR>"
-    else if (! digitsRegex.findFirstIn(word).nonEmpty) "<NUM>"
-    else if (! containsDigitRegex.findFirstIn(word).nonEmpty) word.replaceAll("\\d","#")
+    if (recentYearRegex.findFirstIn(word).nonEmpty) "<YEAR>"
+    else if (digitsRegex.findFirstIn(word).nonEmpty) "<NUM>"
+    else if (containsDigitRegex.findFirstIn(word).nonEmpty) word.replaceAll("\\d","#")
     else word
   }
   def collapseDigits(word:String): String = {
-    if (cc.factorie.app.nlp.lexicon.NumberWords.contains(word) || containsDigitRegex.findFirstIn(word).nonEmpty) "0" else word
+    if (cc.factorie.app.nlp.lexicon.NumberWords.containsWord(word) || containsDigitRegex.findFirstIn(word).nonEmpty) "0" else word
   }
 
   /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */

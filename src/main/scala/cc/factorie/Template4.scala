@@ -34,17 +34,18 @@ abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[
 //  val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass3)) { assert(ta.length == 1); ta.head.erasure } else null }
 //  val nc4a = { val ta = nm4.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass4)) { assert(ta.length == 1); ta.head.erasure } else null }
 
-  override def addFactors(v:Var, ret:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-    if (neighborClass4.isAssignableFrom(v.getClass) && ((neighborDomain4 eq null) || (neighborDomain4 eq v.domain))) ret ++= unroll4(v.asInstanceOf[N4])
+  override def addFactors(v:Var, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) result ++= unroll3(v.asInstanceOf[N3])
+    if (neighborClass4.isAssignableFrom(v.getClass) && ((neighborDomain4 eq null) || (neighborDomain4 eq v.domain))) result ++= unroll4(v.asInstanceOf[N4])
+    unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
 //    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
 //    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
 //    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
 //    if ((nc4a ne null) && nc4a.isAssignableFrom(v.getClass)) ret ++= unroll4s(v.asInstanceOf[N4#ContainedVariableType])
 //    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, ret)) }
-    ret
+    result
   }
   //* Override this method if you want to re-capture old unrollCascade functionality. */ 
   def unroll(v:Var): Iterable[Factor] = Nil

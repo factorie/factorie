@@ -25,7 +25,7 @@ object RealDomain extends RealDomain
 
 /** A Tensor holding a single real (Double) value. */
 // In Scala 2.10 make this an implicit class.
-final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor /*with scala.math.Numeric[RealValue]*/ {
+final class RealValue(val singleValue:Double) extends Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
   def domain = RealDomain
   @inline final def dim1 = 1
   @inline final def singleIndex = 0

@@ -42,7 +42,7 @@ object LoadACE {
   private def makeDoc(sgm: String): Document = {
     val doc = new Document(matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
-    Tokenizer.process(doc)
+    RegexTokenizer.process(doc)
     SentenceSegmenter.process(doc)
 
     // trailing tokens should be in a sentence

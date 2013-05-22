@@ -160,7 +160,7 @@ class MutableSingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, va
   override def copy = new MutableSingletonBinaryTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3)
 }
 
-class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleValue:Double) extends Tensor3 with SingletonTensor {
+class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleValue:Double) extends Tensor3 with SingletonIndexedTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
@@ -169,7 +169,7 @@ class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex
   override def copy = new SingletonTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3, singleValue)
 }
 
-trait SparseBinaryTensorLike3 extends Tensor3 with SparseBinaryTensor {
+trait SparseBinaryTensorLike3 extends Tensor3 with ArraySparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def activeDomain3 = throw new Error("Not yet implemented")
@@ -187,21 +187,21 @@ trait Tensor3ElementIterator extends DoubleSeqIterator with Iterator[Tensor3Elem
   def value: Double
 }
 
-class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Tensor3 with SparseIndexedTensor {
+class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Tensor3 with ArraySparseIndexedTensor {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeDomain3: IntSeq = throw new Error("Not yet implemented")
   def activeElements3: Tensor3ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor3ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
-      def hasNext = i < _npos
+      def hasNext = i < _unsafeActiveDomainSize
       def index = _indices(i-1)
       def index1 = SparseIndexedTensor3.this.index1(_indices(i-1))
       def index2 = SparseIndexedTensor3.this.index2(_indices(i-1))
       def index3 = SparseIndexedTensor3.this.index3(_indices(i-1))
       def value = _values(i-1)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def blankCopy: SparseIndexedTensor3 = new SparseIndexedTensor3(dim1, dim2, dim3)

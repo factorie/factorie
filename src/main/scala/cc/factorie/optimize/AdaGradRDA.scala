@@ -82,23 +82,14 @@ class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double 
     override def +=(ds: DoubleSeq, factor: Double) {
       t += 1
       ds match {
-        case o: SparseIndexedTensor =>
+        case o: SparseTensor =>
           val len = o.activeDomainSize
           val indices = o._indices
-          val values = o._values
+          val values = o._valuesSeq
           var i = 0
           while (i < len) {
             gradients(indices(i)) += values(i)*factor
             gradSquares(indices(i)) += values(i)*values(i)*factor*factor
-            i += 1
-          }
-        case o: SparseBinaryTensor =>
-          val len = o.activeDomainSize
-          val indices = o._indices
-          var i = 0
-          while (i < len) {
-            gradients(indices(i)) += factor
-            gradSquares(indices(i)) += factor*factor
             i += 1
           }
         case o: DenseTensor =>
@@ -140,7 +131,7 @@ class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double 
       val newT = new DenseTensor1(dim1)
       val newArray = newT.asArray
       t match {
-        case t: DenseTensor1 =>
+        case t: DenseTensor =>
           val tArr = t.asArray
           var col = 0
           while (col < tArr.length) {
@@ -153,10 +144,10 @@ class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double 
             }
             col += 1
           }
-        case t: SparseIndexedTensor =>
+        case t: SparseTensor =>
           val tActiveDomainSize = t.activeDomainSize
           val tIndices = t._indices
-          val tValues = t._values
+          val tValues = t._valuesSeq
           var ti = 0
           while (ti < tActiveDomainSize) {
             val col = tIndices(ti)
@@ -169,33 +160,8 @@ class AdaGradRDA(val delta: Double = 0.1, val eta: Double = 0.1, val l1: Double 
             }
             ti += 1
           }
-        case t: SparseBinaryTensorLike1 =>
-          val tIndexSeq = t.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
-          val tIndices = tIndexSeq.array
-          var row = 0
-          while (row < dim1) {
-            val offset = row * dim2
-            var ti = 0
-            var dot = 0.0
-            while (ti < tIndexSeq.size) {
-              val col = tIndices(ti)
-              dot += apply(offset + col)
-              ti += 1
-            }
-            newArray(row) = dot
-            row += 1
-          }
         case _ =>
-          val vecIter = t.activeElements
-          while (vecIter.hasNext) {
-            val (col, v) = vecIter.next()
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
-            }
-          }
+          throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
       }
       newT
     }

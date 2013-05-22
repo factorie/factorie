@@ -22,7 +22,7 @@ import collection.mutable.ArrayBuffer
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions, ProtectedIntArrayBuffer, LocalDoubleAccumulator}
 import cc.factorie.la.{DenseTensor1, Tensor1}
-import cc.factorie.optimize.{MiniBatchExample, ParameterAveraging}
+import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
@@ -249,7 +249,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int): Unit = {
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int,options: TrainOptions): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
@@ -259,12 +259,21 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
     println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.evidence.value.length))
     println("Generating examples...")
-    val examples = trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue))
+    val examples = MiniBatchExample(10,trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
     freezeDomains()
     println("Training...")
     val rng = new scala.util.Random(0)
-    //val opt = new cc.factorie.optimize.AdaGrad // DualAveragingOptimizer(1.0, 0.0, 0.01/examples.length, 0.0)
-    val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.000001, 0.00000)
+    val l1 = 10*options.l1/examples.length
+    val l2 = 10*options.l2/examples.length
+
+    val opt = options.optimizer match {
+      case "AdaGradRDA" =>  new cc.factorie.optimize.AdaGradRDA(0.1, options.lrate, l1, l2)
+      case "AdaMira" =>  new cc.factorie.optimize.AdaMira(options.lrate)
+      case "AdaGrad" =>  new AdaGrad(options.lrate, 0.1)
+      case "L2RegularizedConstantRate" => new cc.factorie.optimize.L2RegularizedConstantRate(l2,options.lrate)
+    }
+
+
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = 10, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {
@@ -342,9 +351,16 @@ object DepParser1 {
       val outputDir  = new CmdOption("output", ".", "DIR", "Directory in which to save the parsed output (to be scored by eval.pl).")
       val warmModel  = new CmdOption("warm", "parser-model", "FILE", "File from which to read a model for warm-start training.")
       val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
+      val l2 = new CmdOption("l2",1.0,"FLOAT","l2 regularization param")
+      val l1 = new CmdOption("l1",1.0,"FLOAT","l1 regularization param")
+      val optimizerStr = new CmdOption("optimizer","AdaGradRDA","STRING","what optimizer to use")
+      val lrate = new CmdOption("lrate",1.0,"FLOAT","Learning Rate Param")
     }
+
+
     opts.parse(args)
-    
+
+    val trainOptions = new TrainOptions(opts.l2.value, opts.l1.value, opts.lrate.value ,opts.optimizerStr.value)
     val parser = new DepParser1(!opts.unlabeled.value)
 
     if (opts.warmModel.wasInvoked) {
@@ -357,7 +373,7 @@ object DepParser1 {
     val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
     
     // Train
-    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()),trainOptions)
     // Test
     parser.freezeDomains()
     
@@ -385,4 +401,9 @@ object DepParser1 {
     println("Done.")
   }
   
+}
+
+
+case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String){
+
 }
