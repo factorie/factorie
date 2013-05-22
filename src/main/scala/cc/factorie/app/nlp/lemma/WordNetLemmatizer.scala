@@ -87,6 +87,7 @@ class WordNetLemmatizer(val wordNetDir:String) extends DocumentAnnotator {
 }
 
 object WordNetLemmatizer {
+  // TODO Move this to a JUnit test. -akm
   def main(args: Array[String]) {
     val wnl = new cc.factorie.app.nlp.lemma.WordNetLemmatizer("/Users/akobren/software/dev/scala/wordnet/data/dict/")
     val testWords = List(

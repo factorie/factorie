@@ -246,7 +246,7 @@ class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
 class SpanNER {
   var verbose = false
   
-  class Lexicon(filename:String) extends cc.factorie.app.chain.Lexicon(filename) {
+  class Lexicon(filename:String) extends cc.factorie.app.nlp.lexicon.Lexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
   }
   val lexicons = new scala.collection.mutable.ArrayBuffer[Lexicon]

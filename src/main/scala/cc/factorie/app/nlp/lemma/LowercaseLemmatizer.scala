@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.lemma
 import cc.factorie.app.nlp._
 
-class PorterLemmatizer extends DocumentAnnotator with Lemmatizer {
-  def lemmatize(word:String): String = cc.factorie.app.strings.PorterStemmer(word)
+class LowercaseLemmatizer extends DocumentAnnotator with Lemmatizer {
+  def lemmatize(word:String): String = word.toLowerCase
   def process1(document:Document): Document = {
     for (token <- document.tokens) token.attr += new PorterTokenLemma(token, lemmatize(token.string))
     document
@@ -11,6 +11,6 @@ class PorterLemmatizer extends DocumentAnnotator with Lemmatizer {
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
   def postAttrs: Iterable[Class[_]] = List(classOf[PorterTokenLemma])
 }
-object PorterLemmatizer extends PorterLemmatizer
+object LowercaseLemmatizer extends LowercaseLemmatizer
 
-class PorterTokenLemma(token:Token, s:String) extends TokenLemma(token, s)
+class LowercaseTokenLemma(token:Token, s:String) extends TokenLemma(token, s)
