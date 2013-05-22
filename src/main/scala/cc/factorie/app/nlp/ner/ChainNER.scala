@@ -250,6 +250,7 @@ object ChainNer extends ChainNer {
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = ChainNer.this.verbose = true }
       //val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
+    cc.factorie.app.nlp.pos.PTBPosDomain.unfreeze()
     opts.parse(args)
     
     if (opts.lexiconDir.wasInvoked) {

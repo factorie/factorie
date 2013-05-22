@@ -394,7 +394,7 @@ class ChainNer2 {
 		    testDocuments.foreach(process(_))
 			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
 	  } else {
-      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new ConfidenceWeighting(model2))
+      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new AdaGrad())
       	val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
 
       	for (iteration <- 1 until 8) {
@@ -572,6 +572,7 @@ object ChainNer2 extends ChainNer2 {
       val twoagg = new CmdOption("twoagg", "Turn on second stage aggreggation features.")
     }
     opts.parse(args)
+    cc.factorie.app.nlp.pos.PTBPosDomain.unfreeze()
 
     val lexes = List("WikiArtWork.lst", "WikiArtWorkRedirects.lst", "WikiCompetitionsBattlesEvents.lst", "WikiCompetitionsBattlesEventsRedirects.lst", "WikiFilms.lst", "WikiFilmsRedirects.lst", "WikiLocations.lst", "WikiLocationsRedirects.lst", "WikiManMadeObjectNames.lst", "WikiManMadeObjectNamesRedirects.lst", "WikiOrganizations.lst", "WikiOrganizationsRedirects.lst", "WikiPeople.lst", "WikiPeopleRedirects.lst", "WikiSongs.lst", "WikiSongsRedirects.lst", "cardinalNumber.txt", "currencyFinal.txt", "known_corporations.lst", "known_country.lst", "known_jobs.lst", "known_name.lst", "known_names.big.lst", "known_nationalities.lst",  "known_state.lst", "known_title.lst", "measurments.txt", "ordinalNumber.txt", "temporal_words.txt")
 
