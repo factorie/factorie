@@ -189,7 +189,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   override def copy = new GrowableUniformTensor1(sizeProxy, uniformValue)
 }
 
-trait SparseBinaryTensorLike1 extends Tensor1 with SparseBinaryTensorArrayImpl { }
+trait SparseBinaryTensorLike1 extends Tensor1 with ArraySparseBinaryTensor { }
 
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
@@ -263,7 +263,7 @@ trait Tensor1ElementIterator extends DoubleSeqIterator with Iterator[Tensor1Elem
 }
 
 
-class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with SparseIndexedTensorArrayImpl {
+class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with ArraySparseIndexedTensor {
   def activeElements1: Tensor1ElementIterator = {
     _makeReadable()
     new Tensor1ElementIterator { // Must not change _indexs and _values during iteration!
@@ -278,7 +278,7 @@ class SparseIndexedTensor1(val dim1:Int) extends Tensor1 with SparseIndexedTenso
   override def copy: SparseIndexedTensor1 = { val t = new SparseIndexedTensor1(dim1); this.copyInto(t); t }
 }
 
-class GrowableSparseIndexedTensor1(val sizeProxy:Iterable[Any]) extends Tensor1 with SparseIndexedTensorArrayImpl {
+class GrowableSparseIndexedTensor1(val sizeProxy:Iterable[Any]) extends Tensor1 with ArraySparseIndexedTensor {
   def dim1 = sizeProxy.size
   def activeElements1: Tensor1ElementIterator = {
     _makeReadable()

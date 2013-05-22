@@ -169,7 +169,7 @@ class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex
   override def copy = new SingletonTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3, singleValue)
 }
 
-trait SparseBinaryTensorLike3 extends Tensor3 with SparseBinaryTensorArrayImpl {
+trait SparseBinaryTensorLike3 extends Tensor3 with ArraySparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def activeDomain3 = throw new Error("Not yet implemented")
@@ -187,7 +187,7 @@ trait Tensor3ElementIterator extends DoubleSeqIterator with Iterator[Tensor3Elem
   def value: Double
 }
 
-class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Tensor3 with SparseIndexedTensorArrayImpl {
+class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Tensor3 with ArraySparseIndexedTensor {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeDomain3: IntSeq = throw new Error("Not yet implemented")

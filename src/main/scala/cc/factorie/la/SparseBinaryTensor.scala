@@ -21,7 +21,7 @@ trait SparseBinaryTensor extends SparseTensor {
   def _valuesSeq: DoubleSeq = new UniformTensor1(this._unsafeActiveDomainSize, 1.0)
 }
 
-trait SparseBinaryTensorArrayImpl extends SparseBinaryTensor with cc.factorie.util.ProtectedIntArrayBuffer {
+trait ArraySparseBinaryTensor extends SparseBinaryTensor with cc.factorie.util.ProtectedIntArrayBuffer {
   def activeDomain = new TruncatedArrayIntSeq(_array, _length)
   def _appendUnsafe(i: Int) = _append(i) // TODO Make a new class UnsortedSparseBinaryTensorLike1, because, note, then the indices don't get sorted, and various index search methods will fail.
   def sizeHint(size:Int) = _sizeHint(size)

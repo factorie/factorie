@@ -303,7 +303,7 @@ class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val sin
   override def copy = new SingletonTensor2(dim1, dim2, singleIndex1, singleIndex2, singleValue)
 }
 
-trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensorArrayImpl {
+trait SparseBinaryTensorLike2 extends Tensor2 with ArraySparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def +=(i:Int, j:Int): Unit = _insertSortedNoDuplicates(singleIndex(i,j))
@@ -321,7 +321,7 @@ trait Tensor2ElementIterator extends DoubleSeqIterator with Iterator[Tensor2Elem
   def value: Double
 }
 
-class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with SparseIndexedTensorArrayImpl {
+class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with ArraySparseIndexedTensor {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeElements2: Tensor2ElementIterator = {

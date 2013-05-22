@@ -85,7 +85,7 @@ trait Tensor4ElementIterator extends DoubleSeqIterator with Iterator[Tensor4Elem
   def value: Double
 }
 
-class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends Tensor4 with SparseIndexedTensorArrayImpl {
+class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends Tensor4 with ArraySparseIndexedTensor {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeDomain3: IntSeq = throw new Error("Not yet implemented")
@@ -138,7 +138,7 @@ class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, v
   override def copy = new SingletonTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4, singleValue)
 }
 
-trait SparseBinaryTensorLike4 extends Tensor4 with SparseBinaryTensorArrayImpl {
+trait SparseBinaryTensorLike4 extends Tensor4 with ArraySparseBinaryTensor {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def activeDomain3 = throw new Error("Not yet implemented")

@@ -37,7 +37,7 @@ trait SparseIndexedTensor extends SparseTensor {
   def _valuesSeq = new ArrayDoubleSeq(_values)
 }
 
-trait SparseIndexedTensorArrayImpl extends SparseIndexedTensor {
+trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   // In subclasses either _length should be set > 0 or _sizeProxy should be set non-null, but not both.
   //private var _length: Int = 0
   //private var _sizeProxy: Iterable[Any] = null
@@ -70,7 +70,7 @@ trait SparseIndexedTensorArrayImpl extends SparseIndexedTensor {
   private def copyarray(a:Array[Double]): Array[Double] = { if (a eq null) return null; val r = new Array[Double](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
   private def copyarray(a:Array[Int]): Array[Int] = { if (a eq null) return null; val r = new Array[Int](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
   def copyInto(t:SparseIndexedTensor): Unit = t match {
-    case t: SparseIndexedTensorArrayImpl =>
+    case t: ArraySparseIndexedTensor =>
       t.__values = copyarray(__values); t.__indices = copyarray(__indices); t._positions = copyarray(_positions); t.__npos = __npos; t._sorted = _sorted
   }
   
@@ -133,7 +133,7 @@ trait SparseIndexedTensorArrayImpl extends SparseIndexedTensor {
       // TODO add fast implementations for Dense here! -luke
       case v:SingletonBinaryTensor => apply(v.singleIndex)
       case v:SingletonIndexedTensor => apply(v.singleIndex) * v.singleValue
-      case v:SparseIndexedTensorArrayImpl => {
+      case v:ArraySparseIndexedTensor => {
         v._makeReadable()
         val v1 = if (this.__npos < v.__npos) this else v
         val v2 = if (v.__npos < this.__npos) v else this
@@ -419,7 +419,7 @@ trait SparseIndexedTensorArrayImpl extends SparseIndexedTensor {
 //
 //  // TODO Use copyInto instead?
 //  def cloneFrom(t:SparseIndexedTensor): Unit = t match {
-//    case t: SparseIndexedTensorArrayImpl =>
+//    case t: ArraySparseIndexedTensor =>
 //      makeReadable
 //      //t._length = _length
 //      //t._sizeProxy = _sizeProxy
