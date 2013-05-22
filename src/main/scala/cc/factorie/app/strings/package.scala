@@ -78,7 +78,7 @@ package object strings {
     else word
   }
   def collapseDigits(word:String): String = {
-    if (cc.factorie.app.nlp.lexicon.NumberWords.contains(word) || containsDigitRegex.findFirstIn(word).nonEmpty) "0" else word
+    if (cc.factorie.app.nlp.lexicon.NumberWords.containsWord(word) || containsDigitRegex.findFirstIn(word).nonEmpty) "0" else word
   }
 
   /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */
