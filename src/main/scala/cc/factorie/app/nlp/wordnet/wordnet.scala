@@ -16,6 +16,12 @@ class WordNet(wordNetDir: String) {
   val HYPONYM_INSTANCE  = "~i"
   val HYPERNYM_INSTANCE = "@i"
 
+  /* the following line includes the wnLemmatizer which goes through and reads
+   * all of the data and index files and extracts information from them
+   * To speed this up, we can combine the wnLemmatizer intialization and the
+   * WordNet intialization used below */
+  val wnLemmatizer = new cc.factorie.app.nlp.lemma.WordNetLemmatizer(wordNetDir)
+
   /* There are 2 types of files we deal with here for wordnet:
        1) the data file - this file has 1 line per synset and
           includes the ids of all related synsets. This means
@@ -44,11 +50,11 @@ class WordNet(wordNetDir: String) {
     val dataFilename  = kv._2._1
     val indexFilename = kv._2._2
 
-    val indexFile  = scala.io.Source.fromFile(wordNetDir + indexFilename)
+    val indexFile  = scala.io.Source.fromFile(wordNetDir + "/" + indexFilename)
     val indexLines = indexFile.getLines.mkString("\n").split("\n")
     indexFile.close()
 
-    val dataFile  = scala.io.Source.fromFile(wordNetDir + dataFilename)
+    val dataFile  = scala.io.Source.fromFile(wordNetDir + "/" + dataFilename)
     val dataLines = dataFile.getLines.mkString("\n").split("\n")
     dataFile.close()
 
@@ -92,6 +98,9 @@ class WordNet(wordNetDir: String) {
 
   val allSynsets    = synsetsBuilder
   val lemma2synsets = lemma2synsetsBuilder.map(x => (x._1,x._2.toList)).toMap
+
+  /* get the lemma of a particular word using a port of the wordnet lemmatizer */
+  def lemma(s: String, pos: String): String = this.wnLemmatizer.lemma(s, pos)
 
   /* pass in a lemmatized word and return a sequence of its synsets
    * See class below for more info on synsets */
@@ -180,8 +189,10 @@ class WordNet(wordNetDir: String) {
 }
 
 object WordNet {
+
+  /*  pass in the absolute path to the wordnet data dir (that includes the data.* and index.* files  */
   def main(args: Array[String]) {
-    val wn = new cc.factorie.app.nlp.wordnet.WordNet("/Users/apassos/data/wordnet/")
+    val wn = new cc.factorie.app.nlp.wordnet.WordNet(args(0))
     assert(wn.areAntonyms("good", "evil"))
     assert(!wn.areAntonyms("good", "star"))
     assert(wn.areAntonyms("right", "left"))
@@ -196,6 +207,8 @@ object WordNet {
     assert(!wn.areSynonyms("dog", "cat"))
     assert(wn.shareHypernyms("dog", "cat"))
     assert(!wn.areSynonyms("hot", "cold"))
+
+    assert(wn.areAntonyms(wn.lemma("goodness", "N"), "evil"))
 
     println("[done small tests.]")
   }
