@@ -18,7 +18,7 @@ import cc.factorie.la._
 
 trait Family {
   type FamilyType <: Family // like a self-type
-  type FactorType <: Factor // TODO Remove this?
+  //type FactorType <: Factor // TODO Remove this?
   type StatisticsType <: Any
   type NeighborType1
   @inline final def thisFamily: this.type = this

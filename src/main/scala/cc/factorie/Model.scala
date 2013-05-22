@@ -142,7 +142,7 @@ trait ModelWithContext[-C] extends Model {
 // TODO Is this used?
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
 trait ModelWithFactorType /*extends Model*/ {
-  trait FactorType <: Factor
+  //trait FactorType <: Factor
   //type FactorType <: Factor
 
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */

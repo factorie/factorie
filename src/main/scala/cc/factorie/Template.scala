@@ -55,7 +55,8 @@ object Template {
     Its subclasses use "unroll*" methods, which given on of the Factor's variables, finding the other neighboring variables.
     @author Andrew McCallum
 */
-trait Template extends Model with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses with Model { thisTemplate =>
+  type FactorType <: cc.factorie.Factor
   // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {

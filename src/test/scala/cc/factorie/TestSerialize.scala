@@ -89,7 +89,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
      val family1 = new DotFamilyWithStatistics1[CategoricalVariable[String]] {
        val weights = Weights(new DenseTensor1(d.length))
      }
-     def families = Seq(family1)
+     def families: Seq[DotFamily] = Seq(family1)
      def factors(v: Var) = Nil
    }
    val model = new Model1(domain1)

@@ -29,7 +29,7 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, fl:F
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
   }
-  override def families = Seq(biasTemplate, evidenceTemplate)
+  override def families: Seq[DotFamily with Template] = Seq(biasTemplate, evidenceTemplate)
   override def factors(v:Var): Iterable[Factor] = {
     v match {
       case v:L if lm.erasure.isAssignableFrom(v.getClass) => Seq(biasTemplate.Factor(v), evidenceTemplate.Factor(v, lf(v)))
