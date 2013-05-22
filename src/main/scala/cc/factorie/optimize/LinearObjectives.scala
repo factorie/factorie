@@ -99,6 +99,16 @@ object LinearObjectives {
         (0.0, 0.0)
   }
 
+  class HingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) extends UnivariateLinearObjective[Int] {
+    def valueAndGradient(prediction: Double, label: Int): (Double, Double) = {
+      val slackRescale = if (label == 1.0) negSlackRescale else posSlackRescale
+      if (prediction * label < 1.0)
+        (prediction * label * slackRescale - 1.0, label * slackRescale)
+      else
+        (0.0, 0.0)
+    }
+  }
+
   class SquaredUnivariate extends UnivariateLinearObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
       (0.5 * (prediction - label) * (prediction - label), prediction - label)
@@ -109,6 +119,7 @@ object LinearObjectives {
   val hingeSqMultiClass = new HingeSqMultiClass
   val logMultiClass = new LogMultiClass
   def epsilonInsensitiveSqMultivariate(epsilon: Double) = new EpsilonInsensitiveSqMultivariate(epsilon)
+  def hingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) = new HingeScaledBinary(posSlackRescale, negSlackRescale)
 
   val logBinary = new LogBinary
   val hingeBinary = new HingeBinary
