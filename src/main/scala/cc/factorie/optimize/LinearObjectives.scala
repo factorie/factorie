@@ -24,7 +24,7 @@ object LinearObjectives {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
       if (maxLabel == label)
-        (0.0, new UniformTensor1(prediction.size, 0.0))
+        (0.0, new SparseIndexedTensor1(prediction.size))
       else {
         val grad = new DenseTensor1(prediction.size, 0.0)
         grad(label) += 1.0
@@ -40,7 +40,7 @@ object LinearObjectives {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
       if (maxLabel == label)
-        (0.0, new UniformTensor1(prediction.size, 0.0))
+        (0.0, new SparseIndexedTensor1(prediction.size))
       else {
         val violation = prediction(label) - prediction(maxLabel)
         val grad = new DenseTensor1(prediction.size, 0.0)
@@ -58,6 +58,23 @@ object LinearObjectives {
       normed *= -1
       normed(label) += 1.0
       (loss, normed)
+    }
+  }
+
+  class SparseLogMultiClass extends MultivariateLinearObjective[Int] {
+    def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
+      val normed = prediction.expNormalized.asInstanceOf[Tensor1]
+      val loss = math.log(normed(label))
+      normed *= -1
+      normed(label) += 1.0
+      val sparse = new SparseIndexedTensor1(normed.dim1)
+      var i = 0
+      while (i < normed.dim1) {
+        if (math.abs(normed(i)) > 0.01)
+          sparse += (i,normed(i))
+        i += 1
+      }
+      (loss, sparse)
     }
   }
 
@@ -108,6 +125,7 @@ object LinearObjectives {
   val hingeMultiClass = new HingeMultiClass
   val hingeSqMultiClass = new HingeSqMultiClass
   val logMultiClass = new LogMultiClass
+  val sparseLogMultiClass = new SparseLogMultiClass
   def epsilonInsensitiveSqMultivariate(epsilon: Double) = new EpsilonInsensitiveSqMultivariate(epsilon)
 
   val logBinary = new LogBinary
@@ -132,7 +150,7 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
     val prediction = weights.value * featureVector
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null) gradient.accumulate(weights, sgrad outer featureVector, weight)
+    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, sgrad outer featureVector, weight)
   }
 }
 

@@ -173,10 +173,12 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   override def toString = "SparseIndexedTensor npos="+__npos+" sorted="+_sorted+" ind="+__indices.mkString(",")+" val="+__values.mkString(",")
   
   def _makeReadable(): Unit = makeReadable
-  @inline private def makeReadable: Unit = {
-    if ((_sorted <= 10) && (__npos > 0)) {
-      // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
-      val sortedIndices = (0 to __npos-1).toArray.sortBy(i => __indices(i))
+
+  final private def doTheSort() = (0 to __npos-1).sortBy(i => __indices(i))
+
+  final private def makeReadableEmpty(): Unit = {
+          // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
+      val sortedIndices = doTheSort()
       val newIndices = Array.ofDim[Int](__indices.length)
       val newValues = Array.ofDim[Double](__indices.length)
       var prevIndex = __indices(sortedIndices(0))
@@ -197,24 +199,33 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       _sorted = j+1
       __indices = newIndices
       __values = newValues
+  }
+
+  final private def makeReadableIncremental(): Unit = {
+    var cp = _sorted // "current position", the position next to be placed into sorted order
+    while (cp < __npos) {
+      //println("cp="+cp)
+      val ci = __indices(cp) // "current index", the index next to be placed into sorted order.
+      val cv = __values(cp) // "current value"
+      var i = _sorted - 1
+      //println("i="+i)
+      // Find the position at which the current index/value belongs
+      while (i >= 0 && __indices(i) >= ci) i -= 1
+      i += 1
+      // Put it there, shifting to make room if necessary
+      //println("Placing at position "+i)
+      if (__indices(i) == ci) { if (i != cp) __values(i) += cv else _sorted += 1 }
+      else insert(i, ci, cv, incrementNpos=false, incrementSorted=true)
+      //println("sorted="+_sorted)
+      cp += 1
+    }
+  }
+
+  final private def makeReadable: Unit = {
+    if ((_sorted <= 10) && (__npos > 0)) {
+      makeReadableEmpty()
     } else {
-      var cp = _sorted // "current position", the position next to be placed into sorted order
-      while (cp < __npos) {
-        //println("cp="+cp)
-        val ci = __indices(cp) // "current index", the index next to be placed into sorted order.
-        val cv = __values(cp) // "current value"
-        var i = _sorted - 1
-        //println("i="+i)
-        // Find the position at which the current index/value belongs
-        while (i >= 0 && __indices(i) >= ci) i -= 1
-        i += 1
-        // Put it there, shifting to make room if necessary
-        //println("Placing at position "+i)
-        if (__indices(i) == ci) { if (i != cp) __values(i) += cv else _sorted += 1 }
-        else insert(i, ci, cv, incrementNpos=false, incrementSorted=true)
-        //println("sorted="+_sorted)
-        cp += 1
-      }
+      makeReadableIncremental()
     }
     __npos = _sorted
     if (__npos * 1.5 > __values.length) trim()
@@ -259,7 +270,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this += (i, f) ) }
     case t:Outer1Tensor2 => {
       (t.tensor1,t.tensor2) match {
-        case (t1: DenseTensor, t2: SparseBinaryTensorLike1) =>
+        case (t1: DenseTensor, t2: SparseBinaryTensor) =>
           var i = 0
           val arr = t1.asArray
           while (i < arr.length) {
@@ -271,18 +282,18 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             }
             i += 1
           }
-        case (t1: NormalizedTensorProportions1, t2: SparseBinaryTensorLike1) =>
+        case (t1: NormalizedTensorProportions1, t2: Tensor) =>
           val inner = t1.tensor
           val sum = t1.sum
           val ff = f/sum
           this += (new Outer1Tensor2(inner, t2),ff)
-        case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+        case (t1: DenseTensor1, t2: SparseTensor) =>
           var i = 0
           val arr = t1.asArray
           while (i < arr.length) {
             val len = t2.activeDomainSize
             val indices = t2._indices
-            val values = t2._values
+            val values = t2._valuesSeq
             var j = 0
             while (j < len) {
               this += (t.singleIndex(i, indices(j)), f*t1(i)*values(j))
@@ -290,33 +301,32 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             }
             i += 1
           }
-        case (t1: DenseTensor1, t2: SingletonBinaryTensorLike1) =>
-          val j0 = t2.singleIndex
-          var i = 0
-          val arr = t1.asArray
-          while (i < arr.length) {
-            this += (t.singleIndex(i, j0), f*arr(i))
-            i += 1
-          }
-        case (t1: SingletonBinaryTensorLike1, t2: SparseBinaryTensorLike1) => {
+        case (t1: SingletonTensor, t2: SparseTensor) => {
           val i0 = t1.singleIndex
           val arr = t2._indices
+          val values = t2._valuesSeq
           val len = t2.activeDomainSize
           var i = 0
           while (i < len) {
             val singleidx = t.singleIndex(i0, arr(i))
-            this += (singleidx, f)
+            this += (singleidx, f*t1.singleValue*values(i))
             i += 1
           }
         }
-        case (t1: SingletonBinaryTensorLike1, t2: SparseIndexedTensor) => {
-          val i0 = t1.singleIndex
-          val len = t2.activeDomainSize
-          val indices = t2._indices
-          val values = t2._values
+        case (t1: SparseTensor, t2: SparseTensor) => {
+          val len1 = t1.activeDomainSize
+          val indices1 = t1._indices
+          val values1 = t1._valuesSeq
+          val len2 = t2.activeDomainSize
+          val indices2 = t2._indices
+          val values2 = t2._valuesSeq
           var i = 0
-          while (i < len) {
-            this += (t.singleIndex(i0, indices(i)), f*values(i))
+          while (i < len1) {
+            var j = 0
+            while (j < len2) {
+              this += (t.singleIndex(indices1(i), indices2(j)), f*values1(i)*values2(j))
+              j += 1
+            }
             i += 1
           }
         }
@@ -326,16 +336,6 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           var i = 0
           while (i < arr.length) {
             this += (t.singleIndex(i0, i), f*arr(i))
-            i += 1
-          }
-        }
-        case (t1: SparseBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => {
-          val i0 = t2.singleIndex
-          val len = t1.activeDomainSize
-          val indices = t1._indices
-          var i = 0
-          while (i < len) {
-            this += (t.singleIndex(indices(i), i0), f)
             i += 1
           }
         }

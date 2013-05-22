@@ -18,6 +18,8 @@ import cc.factorie._
 import app.nlp._
 import java.io.File
 import app.chain.Observations.addNeighboringFeatureConjunctions
+import cc.factorie.optimize.AdaGrad
+
 //import optimize.LimitedMemoryBFGS
 //import bp._
 //import bp.specialized.Viterbi
@@ -104,11 +106,11 @@ object POS {
 //    }
 //    optimizer.optimize()
     val examples = labels.map(l => new optimize.LikelihoodExample(l, PosModel, InferByBPChainSum))
-    val trainer = new optimize.BatchTrainer(PosModel.parameters)
+    val trainer = new optimize.OnlineTrainer(PosModel.parameters, new AdaGrad, maxIterations = 5)
     trainer.trainFromExamples(examples)
     //(1 to 100).foreach(i =>trainer.processExamples(examples))
 
-    BinarySerializer.serialize(PTBPosDomain, PosFeaturesDomain, PosModel, new File(modelFile))
+    if (modelFile != "") BinarySerializer.serialize(PTBPosDomain, PosFeaturesDomain, PosModel, new File(modelFile))
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")

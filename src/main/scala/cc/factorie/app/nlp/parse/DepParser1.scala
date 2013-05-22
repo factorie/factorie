@@ -244,7 +244,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     def accumulateExampleInto(gradient:la.WeightsMapAccumulator, value:util.DoubleAccumulator): Unit = {
       val weights = model.evidence.value
       val prediction = weights * featureVector
-      val (obj, grad) = optimize.LinearObjectives.logMultiClass.valueAndGradient(prediction, targetLabel)
+      val (obj, grad) = optimize.LinearObjectives.sparseLogMultiClass.valueAndGradient(prediction, targetLabel)
       if (value ne null) value.accumulate(obj)
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
