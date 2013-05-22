@@ -16,12 +16,17 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer with SparseDoubleSeq {
-  def isDense = false
+trait SparseBinaryTensor extends SparseTensor {
+  def _valuesSeq: DoubleSeq = new UniformTensor1(this._unsafeActiveDomainSize, 1.0)
+}
+
+trait SparseBinaryTensorArrayImpl extends SparseBinaryTensor with cc.factorie.util.ProtectedIntArrayBuffer {
   def activeDomain = new TruncatedArrayIntSeq(_array, _length)
   def _appendUnsafe(i: Int) = _append(i) // TODO Make a new class UnsortedSparseBinaryTensorLike1, because, note, then the indices don't get sorted, and various index search methods will fail.
   def sizeHint(size:Int) = _sizeHint(size)
   override def activeDomainSize = _length
+  def _makeReadable(): Unit = { }
+  def _unsafeActiveDomainSize: Int = _length
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val len = _length; var i = 0; while (i < len) { f(_array(i), 1.0); i += 1 }}
@@ -59,7 +64,7 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
     // TODO Any other special cases here?
     case ds: DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
-  def asIntArray = _asArray
+//  def asIntArray = _asArray
   def toIntArray = _toArray
   override def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
     var acc = seed; var i = 0

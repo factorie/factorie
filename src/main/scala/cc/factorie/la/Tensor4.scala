@@ -85,7 +85,7 @@ trait Tensor4ElementIterator extends DoubleSeqIterator with Iterator[Tensor4Elem
   def value: Double
 }
 
-class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends Tensor4 with SparseIndexedTensor {
+class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends Tensor4 with SparseIndexedTensorArrayImpl {
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeDomain3: IntSeq = throw new Error("Not yet implemented")
@@ -94,7 +94,7 @@ class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
     _makeReadable
     new Tensor4ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
-      def hasNext = i < _npos
+      def hasNext = i < _unsafeActiveDomainSize
       def index = _indices(i-1)
       def index1 = SparseIndexedTensor4.this.index1(_indices(i-1))
       def index2 = SparseIndexedTensor4.this.index2(_indices(i-1))
@@ -107,7 +107,6 @@ class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
   override def blankCopy: SparseIndexedTensor4 = new SparseIndexedTensor4(dim1, dim2, dim3, dim4)
   override def copy: SparseIndexedTensor4 = { val t = new SparseIndexedTensor4(dim1, dim2, dim3, dim4); this.copyInto(t); t }
 }
-
 
 class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int) extends Tensor4 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
@@ -128,7 +127,8 @@ class MutableSingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, va
   override def copy = new MutableSingletonBinaryTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4)
 }
 
-class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int, val singleValue:Double) extends Tensor4 with SingletonTensor {
+// TODO why don't we just store "singleIndex" - less memory and simpler implementation - this just sems weird for something whose purpose is mostly to do dot products -luke
+class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int, val singleValue:Double) extends Tensor4 with SingletonIndexedTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
@@ -138,7 +138,7 @@ class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, v
   override def copy = new SingletonTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4, singleValue)
 }
 
-trait SparseBinaryTensorLike4 extends Tensor4 with SparseBinaryTensor {
+trait SparseBinaryTensorLike4 extends Tensor4 with SparseBinaryTensorArrayImpl {
   def activeDomain1 = throw new Error("Not yet implemented")
   def activeDomain2 = throw new Error("Not yet implemented")
   def activeDomain3 = throw new Error("Not yet implemented")
@@ -156,7 +156,7 @@ trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain4 = new RangeIntSeq(0, dim4) // It probably could be more sparse than this
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
-  private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim4))
+  private val _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim4))
   override def zero() = _inners.foreach(_.zero())
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim3 + k).apply(l)
   def isDense = false
