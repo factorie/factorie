@@ -14,7 +14,8 @@
 
 package cc.factorie
 
-// Used by app.chain.Observation and app.chain.Lexicon.LexiconToken
+/** A simple version of ChainLink used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
+    @author Andrew McCallum */
 trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   this: This =>
   def hasNext: Boolean
@@ -48,7 +49,8 @@ trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   def chainLast: This = { var result = this; while (result.hasPrev) result = prev; result }
 }
 
-/** An element or "link" of a Chain, having methods "next", "prev", etc. */
+/** An element or "link" of a Chain, having methods "next", "prev", etc. 
+    @author Andrew McCallum */
 trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainLink[This] with ThisType[This] {
   this: This =>
   private var _position: Int = -1
@@ -113,7 +115,8 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   }*/
 }
 
-/** A chain of elements, each of which has methods "next", "prev", etc */
+/** A chain of elements, each of which has methods "next", "prev", etc.
+    @author Andrew McCallum */
 trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with ElementType[E] {
   this: This =>
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
@@ -133,18 +136,24 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   def chainFreeze: Unit = _frozen = true
 }
 
-/** A Chain that is also a Variable, with value IndexedSeq[ElementType] */
+object ChainDomain extends Domain[IndexedSeq[ChainLink[_,_]]]
+
+/** An abstract variable that is a Chain, with value IndexedSeq[ElementType].
+    @author Andrew McCallum */
 trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
   this: This =>
   def value: IndexedSeq[E] = links // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
 }
 
+/** A variable that is a Chain, with value IndexedSeq[ElementType].
+    @author Andrew McCallum */
 class ChainVariable[This<:ChainVariable[This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] {
   this: This =>
   def this(elements:Iterable[E]) = { this(); elements.foreach(+=(_)) }
 }
 
-/** A Chain which itself is also an element of an outer Chain */
+/** A Chain which itself is also an element of an outer Chain.
+    @author Andrew McCallum */
 trait ChainInChain[This<:ChainInChain[This,E,S],E<:ChainLink[E,This],S<:Chain[S,This]] extends ChainLink[This,S] with Chain[This,E] {
   this: This =>
 }

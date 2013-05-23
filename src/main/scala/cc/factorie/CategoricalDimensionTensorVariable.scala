@@ -17,7 +17,8 @@ import cc.factorie.la._
 import collection.mutable
 
 /** A domain over Tensor values, where the dimensions of the Tensor correspond to a CategoricalDomain.
-    This trait is often used for the domain of feature vectors. */
+    This trait is often used for the domain of feature vectors.
+    @author Andrew McCallum */
 trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
@@ -27,6 +28,9 @@ trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain 
   }
 }
 
+/** A Cubbie for serializing CategoricalDimensionTensorDomain.
+    It stores the sequence of categories.
+    @author Luke Vilnis */
 class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTensorDomain[T]) extends Cubbie {
   val dimensionDomainCubbie = new CategoricalDomainCubbie[T](cdtd.dimensionDomain)
   setMap(new mutable.Map[String, Any] {
@@ -45,6 +49,9 @@ class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTe
   })
 }
 
+/** An abstract variable whose value is a Tensor whose length matches the size of a CategoricalDomain,
+    and whose dimensions each correspond to a category.
+    These are commonly used for feature vectors, with String categories. */
 trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
   def domain: CategoricalDimensionTensorDomain[C]
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
@@ -63,21 +70,32 @@ trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
   //def update(elt:C, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
   def +=(elt:C, incr:Double): Unit = doWithIndexSafely(elt, incr, update = false)
   def +=(elt:C): Unit = +=(elt, 1.0)
-  @deprecated("Use this.tensor.+= instead.") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
   def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))
-  @deprecated("This method may be removed.") def zero(): Unit = tensor.zero()
+  @deprecated("Use this.tensor.+= instead?") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
   def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
+
+/** An abstract variable whose value is a Tensor whose length matches the size of a CategoricalDomain,
+    and whose dimensions each correspond to a category.
+    These are commonly used for feature vectors, with String categories.
+    The 'dimensionDomain' is abstract.
+    @author Andrew McCallum */
 abstract class CategoricalDimensionTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalDimensionTensorVar[C] {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }
 
+/** The standard variable for holding binary feature vectors.
+    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    @author Andrew McCallum */
 abstract class BinaryFeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
   override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
 }
 
+/** The standard variable for holding feature vectors with non-binary values.
+    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    @author Andrew McCallum */
 abstract class FeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)

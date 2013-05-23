@@ -230,10 +230,9 @@ object AssignmentIterator {
   def assignments1[N1 <: Var](f1: Factor1[N1], varying: Set[Var]): Iterator[Assignment] = assignments1(f1._1, varying)
 
   def assignments1[N1 <: Var](v1:N1, varying: Set[Var]): Iterator[Assignment] = {
-    if (varying(v1))
-        v1.domain match {
-          case d: DiscreteDomain => d.iterator.map(value => new Assignment1(v1, value.asInstanceOf[v1.Value]))
-        }
+    if (varying(v1)) 
+      //v1.domain.iterator.map(value => new Assignment1(v1, value.asInstanceOf[v1.Value]))
+      v1.domain match { case d: DiscreteDomain => d.iterator.map(value => new Assignment1(v1, value.asInstanceOf[v1.Value])) }
     else Iterator.empty
   }
 

@@ -1,21 +1,21 @@
 Pre 1.0 release:
 
+Substitute alternative lapack library [Alex]
 Implement sparse iteration through values for BP [McCallum, Singh]
-Look at Model, Tensor, Domain serialization [Vilnis?]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]
-Employ DoubleSeqIterator to replace foreachActiveElement if it is faster?  No, I don't think so. [McCallum]
+Make Tensor.foreachActiveElement faster with a macro [Luke]
+Use implicit classes and value classes [Luke]
 Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
 Remove VarAndValueGenericDomain
-Remove old Domain and Model serialization
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 In BP, when running on chains, verify that we don't need to walk to create a tree.
+Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
+Make Assignment inherit from Summary [Passos] 
 
-
-Rename DiscreteTensorVar to TensorDiscreteVar for clarity; similarly for Categorical. [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]
-Wrap-up and clean up NER and POS  [Anzaroot]
+Wrap-up and clean up Parser, NER and POS  [Belanger]
 Consider changes to generative.Collapse infrastructure  [McCallum]
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [McCallum]
 Look at app.nlp.relation  [McCallum]
@@ -26,7 +26,7 @@ Package documentation  [All]
 Fix copyright year [McCallum]
 Write JUnit tests for cc.factorie.la [Vilnis?]
 No holes in Tensor dot products [Passos]
-Remove unused classes from cc.factorie.util [McCallum]
+Remove unused classes from cc.factorie.util [Luke]
 
 More examples:
 Tutorial examples [McCallum]
@@ -37,6 +37,7 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
+Look at Model, Tensor, Domain serialization [Vilnis?]
 Liblinear-like L1 SVM... [Martin]
 Polish Piece and OptimizationDriver (Renamed Example and Trainer) [Passos, Vilnis, McCallum]
 Consider Model[Context].  (Decided on ModelWithContext[Context] instead.) [McCallum]

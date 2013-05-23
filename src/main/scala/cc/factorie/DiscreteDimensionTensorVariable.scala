@@ -27,16 +27,15 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
 trait DiscreteDimensionTensorDomain extends TensorDomain {
   def dimensionDomain: DiscreteDomain
-  /** The maximum size to which this domain will be allowed to grow.  
-      The 'dimensionDomain.size' method may return values smaller than this, however.
-      This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
-  // TODO But actually, I don't think this is used any more.
+  /** A convenience method to get the size of the dimensionDomain.
+      This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
   def dimensionSize: Int = dimensionDomain.size
-  //def size: Int = dimensionDomain.size // TODO Should we keep this convenience, or is it too confusing?  Is isn't really the number of possible values in the Domain.
   def dimensionName(i:Int): String = i.toString
   def freeze(): Unit = dimensionDomain.freeze()
 }
 
+/** A Cubbie for serializing a DiscreteDimensionTensorDomain.
+    It only saves the dimensionDomain.size. */
 class DiscreteDimensionTensorDomainCubbie extends Cubbie {
   val size = IntSlot("size")
   def store(d: DiscreteDimensionTensorDomain): Unit = size := d.dimensionDomain.size
@@ -46,26 +45,13 @@ class DiscreteDimensionTensorDomainCubbie extends Cubbie {
   }
 }
 
+/** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
 trait DiscreteDimensionTensorVar extends TensorVar {
   def domain: DiscreteDimensionTensorDomain
   def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
-/** A vector with dimensions corresponding to a DiscreteDomain, and with Double weightsSet for each dimension, represented by a sparse vector. */
+/** A concrete variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
 abstract class DiscreteDimensionTensorVariable extends MutableTensorVar[Tensor] with DiscreteDimensionTensorVar {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
-  //thisVariable =>
-  //_set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
-  def freeze(): Unit = throw new Error("Is this still really necessary? -akm")
 }
-
-
-//object DocumentDomain extends DiscreteTensorDomain { val dimensionDomain = new DiscreteDomain(100) }
-//class Document extends DiscreteTensorVariable(new DenseTensor1(DocumentDomain.dimensionDomain.size)) {
-//  def domain = DocumentDomain
-//}
-//object DocumentTest {
-//  val doc = new Document
-//  for (i <- 0 until DocumentDomain.dimensionDomain.size) 
-//    doc.tensor(i) = i
-//}

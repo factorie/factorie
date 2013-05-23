@@ -23,7 +23,6 @@ import util.ClassPathUtils
 /** The "domain" of a variable---a representation of all of its values, each having type 'ValueType'.
     This most generic superclass of all Domains does not provide much functionality.
     Key functionality of subclasses:
-    VectorDomain provides the maximum dimensionality of its vectors.
     DiscreteVectorDomain have a dimensionDomain:DiscreteDomain,
      providing a size and DiscreteValue objects.
     DiscreteDomain extends DiscreteVectorDomain, having single value members: DiscreteValue;
@@ -36,10 +35,10 @@ trait Domain[+VT] extends ValueBound[VT] {
   //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" insetad?
 }
 
-// TODO Or should this extend Iterable[VT] directly?  Yes, I think so.  DiscreteDomain does. -akm
-/** A domain that provides an Iterable[] over its values. */
-trait IterableDomain[+VT] extends Domain[VT] {
-  def values: Iterable[VT]
+/** A domain that provides (and is itself) an Iterable[] over its values.
+    @author Andrew McCallum */
+trait IterableDomain[+A] extends Domain[A] with Iterable[A] {
+  def values: Iterable[A]
 }
 
 
@@ -54,19 +53,3 @@ trait VarAndValueGenericDomain[+This<:Var,+VT] extends ValueBound[VT] {
   //type ValueType = VT
   def domain = GenericDomain.asInstanceOf[Domain[VT]]
 }
-
-// TODO Implement "with DomainFromClass"
-
-
-//// Notes for possible future optional default association between variable classes and domains
-//
-//object DomainFromClass {
-//  val class2Domain = new HashMap[Class[_],Domain[Any]]
-//  def apply[A<:DomainFromClass](implicit m:Manifest[A]): A#DomainType = class2Domain(m.erasure).asInstanceOf[A#DomainType]
-//  def apply[A<:DomainFromClass](c:Class[A]): A#DomainType = class2Domain(c).asInstanceOf[A#DomainType]
-//}
-//
-//trait DomainFromClass { this: Variable =>
-//  type DomainType <: Domain[Any]
-//  def domain: DomainType = DomainFromClass(this.getClass).asInstanceOf[DomainType]
-//}

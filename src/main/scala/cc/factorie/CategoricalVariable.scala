@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la._
 
 
-/** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
+/** A DiscreteVar whose integers 0...N are associated with an categorical objects of type C.
     Concrete implementations include CategoricalVariable and BooleanVariable. 
     @author Andrew McCallum */
 trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with CategoricalDimensionTensorVar[C] with ValueBound[CategoricalValue[C]] {
@@ -27,28 +27,34 @@ trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with Categori
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + ")"
 }
 
+/** An abstract variable whose values are CategoricalValues, 
+    each corresponding to an integer 0...domain.size, and each associated with a category of type C (usually a String).
+    @author Andrew McCallum */
 trait MutableCategoricalVar[V<:CategoricalValue[C],C] extends CategoricalVar[V,C] with MutableDiscreteVar[V] {
-  def setCategory(newCategory:C)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
-  override def value: V = domain.apply(_value).asInstanceOf[V] // TODO A little sad not to have access to DiscreteVariable.__value here for efficiency, but we need a new return type
+  def setCategory(newCategory:C)(implicit d: DiffList): Unit = {
+    val i = domain.index(newCategory)
+    if (i >= 0) set(i)(d)
+    else throw new Error("Category not in domain: "+newCategory.toString)
+  }
+  override def value: V = domain.apply(_value).asInstanceOf[V]
 }
 
-/** A MutableDiscreteVar whose integers 0...N are associated with an object of type A. 
+/** A MutableDiscreteVar whose integers 0...N are associated with a category of type C (usually a String). 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValue[A]] with MutableCategoricalVar[CategoricalValue[A],A] {
-  def this(initialCategory:A) = {
+abstract class CategoricalVariable[C] extends MutableDiscreteVar[CategoricalValue[C]] with MutableCategoricalVar[CategoricalValue[C],C] {
+  def this(initialCategory:C) = {
     this()
     val idx = domain.index(initialCategory)
-    if (idx < 0) throw new Error("Initial value not in domain: "+initialCategory.toString)
+    if (idx < 0) throw new Error("Initial category not in domain: "+initialCategory.toString)
     _set(idx)
   }
-  //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
 
 
 
 
 
-// TODO Replace this with Catalog?
+// TODO Replace this with Catalog? -akm
 // But then we couldn't use syntax like:  PersonDomain.size
 // But this doesn't matter any more.
 

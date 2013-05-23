@@ -157,7 +157,6 @@ object POS {
     import opts._
 
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelFile.wasInvoked) {
-      Template.enableCachedStatistics = false // for contention free parallelism
       val labelMaker = (t: Token, l: String) => new PTBPosLabel(t, l)
       def load(file: String) = LoadOWPL.fromFilename(file, labelMaker, takeOnly.value.toInt)
 

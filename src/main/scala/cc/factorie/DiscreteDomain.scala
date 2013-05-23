@@ -19,16 +19,18 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 // For variables that hold a single discrete value, which is represented as a one-hot Tensor1.
 
-/** A value in a DiscreteDomain. */
+/** A value in a DiscreteDomain.
+    @author Andrew McCallum */
 trait DiscreteValue extends SingletonBinaryTensorLike1 {
-  //def domain: DiscreteDomain // TODO Strongly consider removing this so that anyone can create a DiscreteValue to pass into Factor.statistics() without knowing the domain.
+  // def dim1: Int remains abstract
   @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
   @inline final def booleanValue = if (intValue == 0) false else true
-  //@inline final def dim1 = domain.size
   override def toString: String = singleIndex.toString
 }
 
 // Because DiscreteDomain is an IndexedSeq it can be passed as a sizeProxy
+/** The domain of a DiscreteVar.  It has a finite size and provides a DiscreteValue for each integer from 0 to size-1.
+    @author Andrew McCallum */
 class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteDimensionTensorDomain with Domain[DiscreteValue] {
   thisDomain =>
   def this(size:Int) = { this(null.asInstanceOf[Iterable[Any]]); _size = size }
@@ -39,7 +41,6 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
   def unfreeze(): Unit = _frozen = false
   /** Can new category values be added to this Domain? */
   def frozen = _frozen
-  def allocSize = size // TODO Remove this?
   var maxRequestedInt: Int = 0
 
   /** Maps from integer index to the DiscreteValue objects */
@@ -70,13 +71,16 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
 
   protected class DiscreteValue(val singleIndex:Int) extends cc.factorie.DiscreteValue {
     def domain = thisDomain
-    def dim1 = thisDomain.size // Do this rather than constant, so that it will grow dynamically if necessary.
+    def dim1 = thisDomain.size // Do this rather than use a constant, so that it will grow dynamically if necessary.
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.singleIndex == other.singleIndex; case _ => false }
-    // TODO Above we shouldn't be also insisting that the Domain objects match?
+    // Note that we aren't also insisting that the Domain objects match, although it might be nice to do so. -akm
   }
 }
 
+/** A Cubbie for serializing a DiscreteDomain.
+    Note that this Cubbie can only serialize DiscreteDomains with a fixed size, not with a growable sizeProxy.
+    @author Andrew McCallum */
 class DiscreteDomainCubbie extends Cubbie {
   val size = IntSlot("size")
   def store(d: DiscreteDomain): Unit = size := d.size

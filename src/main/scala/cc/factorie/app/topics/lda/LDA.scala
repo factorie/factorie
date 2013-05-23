@@ -57,7 +57,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 0)  // was > 1
     if (doc.theta eq null) doc.theta = ProportionsVariable.sortedSparseCounts(numTopics)
-    else require (doc.theta.length == numTopics)
+    else require (doc.theta.value.length == numTopics)
     doc.theta.~(Dirichlet(alphas))(m)
     if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
     else {
@@ -163,7 +163,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas(topicIndex))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas.value(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
@@ -182,7 +182,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   @deprecated("Will be removed eventually")
   def printTopics : Unit = {
-    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => wordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => wordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas.value(phis.indexOf(t))))
     println
   }
 

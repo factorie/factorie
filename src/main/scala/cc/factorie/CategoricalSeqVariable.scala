@@ -19,10 +19,15 @@ import scala.math
 import java.util.Arrays
 import collection.mutable
 
+/** A Domain for sequences of CategoricalValues.
+    @author Andrew McCallum */
 class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
   lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
 
+/** A Cubbie for serializing a CategoricalSeqDomain.
+    It saves the elementDomain containing the sequence of categories.
+    @author Luke Vilnis */
 class CategoricalSeqDomainCubbie[T](val csd: CategoricalSeqDomain[T]) extends Cubbie {
   val elementDomainCubbie = new CategoricalDomainCubbie[T](csd.elementDomain)
   setMap(new mutable.Map[String, Any] {
@@ -32,6 +37,7 @@ class CategoricalSeqDomainCubbie[T](val csd: CategoricalSeqDomain[T]) extends Cu
         for((k,v) <- map) elementDomainCubbie._map(k) = v
       } else sys.error("Unknown cubbie slot key: \"%s\"" format key)
     }
+    // TODO We should be using CategoricalDomain.stringToCategory somewhere here. -akm
     def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
     def -= (key: String): this.type = sys.error("Can't remove slots from cubbie map!")
     def get(key: String): Option[Any] =
@@ -41,6 +47,9 @@ class CategoricalSeqDomainCubbie[T](val csd: CategoricalSeqDomain[T]) extends Cu
   })
 }
 
+/** A variable whose values are sequences of CategoricalValues.
+    The method 'domain' is abstract.
+    @author Andrew McCallum */
 abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[CategoricalValue[C]] with IndexedSeqVar[CategoricalValue[C]] /*VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]]*/ {
   def this(initialValue:Seq[C]) = {
     this()
@@ -49,11 +58,11 @@ abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[Categoric
     initialValue.foreach(c => this += d.value(c))
   }
   def domain: CategoricalSeqDomain[C]
+  def skipNonCategories = false
   def appendCategory(x:C): Unit = {
-    //this += domain.elementDomain.value(x)
     val index = domain.elementDomain.index(x)
     if (index >= 0) _append(index)
-    // TODO Should we throw an error if that domain returns -1 (indicating it is locked, and can't add this category)?
+    else if (!skipNonCategories) throw new Error("appendCategory "+x+" not found in domain.")
   }
   def appendCategories(xs:Iterable[C]): Unit = xs.foreach(appendCategory(_)) //_appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
   def categoryValue(seqIndex:Int): C = domain.elementDomain.category(_apply(seqIndex))

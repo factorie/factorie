@@ -23,19 +23,16 @@ trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
 class BooleanDomain extends CategoricalDomain[Boolean] with ValueBound[BooleanValue] with Domain[BooleanValue] {
-  thisDomain =>
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
   freeze
   class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
-    override def domain = thisDomain
+    override def domain = BooleanDomain.this
   }
   override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
   // but the methods below will do most of the real work
   override def size = 2
-  override def allocSize = 2
-  //override def apply(index:Int) = index == 1
   override def category(index:Int) = index == 1
   override def index(bool:Boolean) = if (bool) 1 else 0
   override def value(bool:Boolean) = if (bool) trueValue else falseValue

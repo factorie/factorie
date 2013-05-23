@@ -2363,7 +2363,7 @@ class ChildParentBagsFeatureVector[B<:BagOfWordsVariable with EntityAttr](name:S
 /*
         new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
       //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
-      lazy val weightsSet = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize)
+      lazy val weightsSet = new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionDomain.size)
       def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
       def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     },

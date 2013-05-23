@@ -19,7 +19,10 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 // For single categorical values
 
-/** A value in a CategoricalDomain */
+/** A value in a CategoricalDomain.  
+    Each value is assigned an intValue in the range 0...size-1.
+    Each value has a category of type C.
+    These are the values used to map from words to integer parameter indices, etc. */
 trait CategoricalValue[C] extends DiscreteValue {
   def domain: CategoricalDomain[C]
   def category: C
@@ -29,23 +32,22 @@ trait CategoricalValue[C] extends DiscreteValue {
 /** A domain for categorical variables.  It stores not only a size,
     but also the mapping from category values (of type T = this.CategoryType)
     to densely packed integers suitable for indices into parameter
-    vectors.
+    vectors.  For example, a common use case is mapping words (from
+    NLP or document classification) into indices, and back. 
 
     Furthermore if domain.gatherCounts = true, this domain will count
     the number of calls to 'index'.  Then you can reduce the size of
     the Domain by calling 'trimBelowCount' or 'trimBelowSize', which
     will recreate the new mapping from categories to densely-packed
-    non-negative integers.  In typical usage you would (1) read in the
-    data, (2) trim the domain, (3) re-read the data with the new
+    non-negative integers (making the old mapping no longer valid).  
+    Thus, in typical usage you would (1) read in the data, 
+    (2) trim the domain, (3) re-read the data with the new
     mapping, creating variables.
 
     @author Andrew McCallum
     */
 class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalDimensionTensorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
-  thisDomain =>
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
-  //def this(values:C*) = { this(); values.foreach(value(_)) }
-  //private val _elements = new ArrayBuffer[ValueType]
   private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
   def _indices = __indices
   private val lock = new util.RWLock
@@ -57,7 +59,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   var growPastMaxSize: Boolean = true
   def value(category:C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
-    if (_frozen) _indices.getOrElse(category, null.asInstanceOf[Value])
+    if (_frozen) _indices.apply(category) // null.asInstanceOf[Value])
     else {
       lock.withReadLock {
         if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
@@ -104,7 +106,10 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
   /** Like index, but throw an exception if the category is not already there. */
   def getIndex(category:C): Int = lock.withReadLock({ _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue})
-  
+  override def freeze(): Unit = {
+    _frozen = true
+  }
+
   def +=(x:C) : Unit = this.value(x)
   def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
   /** Wipe the domain and its indices clean */
@@ -121,17 +126,16 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   protected def newCategoricalValue(i:Int, e:C) = new CategoricalValue(i, e)
   protected class CategoricalValue(val singleIndex:Int, val category:C) extends cc.factorie.CategoricalValue[C] {
     override def copy = this
-    def domain = thisDomain
-    def dim1 = thisDomain.size
+    def domain = CategoricalDomain.this
+    def dim1 = CategoricalDomain.this.size
   }
 
-  //@deprecated("Use stringToCategory instead.")
-  //var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
-  // TODO Use this instead: -akm
   /** If type T is not string, this should be overridden to provide deserialization */
   override def stringToCategory(s:String): C = s.asInstanceOf[C]
 
   // Code for managing occurrence counts
+  /** If true, then each call to CategoricalDomain.index will increment a count associated with value in the domain.
+      This count can then later be used to trim the set of domain values by various thresholds. */
   var gatherCounts = false
   def count(i:Int): Int = _apply(i)
   def count(category:C): Int = _apply(indexOnly(category))
@@ -145,7 +149,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     assert(!frozen)
     if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
     val origEntries = _elements.clone()
-    clear() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
+    clear()
     gatherCounts = false
     for (i <- 0 until origEntries.size)
       if (_apply(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
@@ -153,10 +157,14 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     freeze()
     origEntries.size - size
   }
-  override def freeze(): Unit = {
-    _frozen = true
+  /** Returns the count threshold below which entries were discarded. */
+  def trimBelowSize(target:Int): Int = {
+    assert(!frozen)
+    var threshold = 2
+    while (sizeAtOrAboveCount(threshold) >= target) threshold += 1
+    trimBelowCount(threshold)
+    threshold
   }
-
   /** Return the number of unique entries with count equal to 'c'. */
   def sizeAtCount(c:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
@@ -176,14 +184,6 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
   /** Return the number of unique entries with count below 'threshold'. */
   def sizeBelowCount(threshold:Int): Int = size - sizeAtOrAboveCount(threshold)  
-  /** Returns the count threshold below which entries were discarded. */
-  def trimBelowSize(target:Int): Int = {
-    assert(!frozen)
-    var threshold = 2
-    while (sizeAtOrAboveCount(threshold) >= target) threshold += 1
-    trimBelowCount(threshold)
-    threshold
-  }
 }
 
 

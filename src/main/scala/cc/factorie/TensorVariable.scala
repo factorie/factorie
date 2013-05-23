@@ -22,8 +22,8 @@ trait TensorVar extends Var with ValueBound[Tensor] {
   def domain: TensorDomain
   def value: Tensor
   def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
-  def length: Int = tensor.length // TODO Consider removing this?
-  def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
+  //def length: Int = tensor.length // TODO Consider removing this?
+  //def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
 }
 
 // TODO Consider also, just in case needed:
@@ -36,8 +36,8 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
   def value: A = _value // TODO Should this make a copy?
   @inline final def tensor: A = _value // This method will definitely not make a copy
   // Some methods for direct access
-  @inline final override def length: Int = _value.length
-  @inline final override def apply(i:Int): Double = _value.apply(i)
+  //@inline final override def length: Int = _value.length
+  //@inline final override def apply(i:Int): Double = _value.apply(i)
   // Why is this necessary?  Why not use set()(null)?  I think there was a reason... -akm
   //@inline protected final def _set(newValue:A): Unit = _value = newValue 
   // Methods that track modifications on a DiffList

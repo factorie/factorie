@@ -17,8 +17,7 @@ import cc.factorie.generative._
 import cc.factorie.la.Outer1Tensor2
 
 /** The result of inference: a collection of Marginal objects. */
-trait
-Summary[+M<:Marginal] {
+trait Summary[+M<:Marginal] {
   def marginals: Iterable[M]
   def marginal(vs:Var*): M // TODO Think carefully about how order of arguments should not matter.
   def getMarginal(vs:Var*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) }

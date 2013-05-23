@@ -14,14 +14,17 @@
 
 package cc.factorie
 
+/** The type of the domain of DoubleVariables. */
 trait DoubleDomain extends Domain[Double] {
   def minValue = Double.MinValue
   def maxValue = Double.MaxValue
 }
+/** The domain of DoubleVariables. */
 object DoubleDomain extends DoubleDomain { type Value = Double }
 
-// Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
-/** A Variable with a real (double) value. */
+/** A Variable with a real (double) value. 
+    If you want a variable that holds a single double but also has a value that inherits from Tensor, then consider RealVar. 
+    @author Andrew McCallum */
 trait DoubleVar extends ScalarVar with VarWithValue[Double] {
   def domain: DoubleDomain = DoubleDomain
   @inline final def value: Double = doubleValue
@@ -32,7 +35,8 @@ trait DoubleVar extends ScalarVar with VarWithValue[Double] {
 
 trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar[Double]
 
-/** A Variable with a mutable Double value. */
+/** A Variable with a mutable Double value.
+    @author Andrew McCallum */
 class DoubleVariable(initialValue: Double) extends MutableDoubleVar {
   def this() = this(0.0)
   private var _value: Double = initialValue
@@ -46,11 +50,10 @@ class DoubleVariable(initialValue: Double) extends MutableDoubleVar {
     _value = newValue
   }
   final def set(newValue:Int)(implicit d:DiffList): Unit = set(newValue.toDouble)
+  //override def :=(newValue:Double): Unit = set(newValue)(null) // To avoid wrapping the Double when calling the generic method in MutableVar
   case class DoubleDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: DoubleVariable = DoubleVariable.this
     def redo = _value = newValue
     def undo = _value = oldValue
   }
 }
-
-// TODO Consider making an implicit conversion from RealVar to RealSingletonVectorVar 

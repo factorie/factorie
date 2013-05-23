@@ -51,7 +51,7 @@ trait Model {
   /** Append to "result" all Factors in this Model that are affected by the given DiffList.  This method must not append duplicates. */
   def addFactors(dl:DiffList, result:Set[Factor]): Unit = if (dl.size > 0) addFactors(dl.foldLeft(List[Var]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs), result)
   /** The "factors" methods need a new collection to return; this method is used by them to construct this collection. */
-  protected def newFactorsCollection: Set[Factor] = new collection.mutable.LinkedHashSet[Factor]
+  def newFactorsCollection: Set[Factor] = new collection.mutable.LinkedHashSet[Factor]
 
   def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
   def factorsOfClass[F<:Factor](variable:Var, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(variable), fclass)
@@ -120,17 +120,11 @@ trait ModelWithContext[-C] extends Model {
   def factorsWithContext(contexts:Iterable[C]): Iterable[Factor] = { val result = newFactorsCollection; contexts.foreach(c => addFactorsWithContext(c, result)); result }
   def variablesWithContext(context:C): Iterable[Var] = factorsWithContext(context).flatMap(_.variables).toSeq.distinct
   def addFactorsWithContext(context:C, result:Set[Factor]): Unit = result ++= factorsWithContext(context)
-  //def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= factors(context); result } 
-  //def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
   def factorsWithContextOfClass[F<:Factor](context:C, fclass:Class[F]): Iterable[F] = filterByFactorClass(factorsWithContext(context), fclass)
-  //def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] = factors.filter(f => f match { case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass); case _ => false }).asInstanceOf[Iterable[F#Factor]]
   def factorsWithContextOfFamilyClass[F<:Family](context:C, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factorsWithContext(context), fclass)
-  //def filterByFamily[F<:Family](factors:Iterable[Factor], family:F): Iterable[F#Factor] = factors.filter(f => f match { case f:Family#Factor => f.family.equals(family); case _ => false }).asInstanceOf[Iterable[F#Factor]]
   def factorsWithContextOfFamily[F<:Family](context:C, family:F): Iterable[F#Factor] = filterByFamily(factorsWithContext(context), family)
-  //def filterByFamilies[F<:Family](factors:Iterable[Factor], families:Seq[F]): Iterable[F#Factor] = factors.filter(f => f match { case f:Family#Factor => families.contains(f.family); case _ => false }).asInstanceOf[Iterable[F#Factor]]
   def factorsWithContextOfFamilies[F<:Family](context:C, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factorsWithContext(context), families)
   def itemizedModelWithContext(context:C): ItemizedModel = new ItemizedModel(factorsWithContext(context))
-  
   // Getting sums of scores from all neighboring factors
   def currentScore(context:C): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.currentScore; sum }
   def assignmentScore(context:C, assignment:Assignment): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.assignmentScore(assignment); sum }
@@ -168,11 +162,8 @@ class ItemizedModel(initialFactors:Factor*) extends Model {
     override def default(v:Var) = ListSet.empty[Factor]
   }
   this ++= initialFactors
-  // TODO The next method needs to handle ContainerVariables.
   override def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= _factors(variable)
   def factors(variable:Var): Iterable[Factor] = _factors(variable)
-  //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](variable:Variable, result:A): A = result ++= _factors(variable)
-  //override def addFactors(variable:Variable, result:Set[Factor]): Unit = result ++= _factors(variable)
   def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) match {
     case h:ListSet[Factor] => 
@@ -197,33 +188,20 @@ class CombinedModel(theSubModels:Model*) extends Model {
   def +=(model:Model): Unit = subModels += model
   def ++=(models:Iterable[Model]): Unit = subModels ++= models
   def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-  //override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
-  override def addFactors(variable:Var, result:Set[Factor]): Unit = {
-    //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = 
-    val len = subModels.length; var s = 0
-    while (s < len) { subModels(s).addFactors(variable, result); s += 1 }
-    result
-  }
+  override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
 }
 
 // TODO templates don't need to have parameters - strongly consider removing "with Parameters" -akm
 class TemplateModel(theTemplates:Template*) extends Model with Parameters {
-  val templates = new ArrayBuffer[Template] //++= theSubModels
+  val templates = new ArrayBuffer[Template] ++= theTemplates
   def +=[T<:Template](template:T): T = { templates += template; template }
   def ++=[T<:Template](templates:Iterable[T]): Iterable[T] = { this.templates ++= templates; templates }
   def addTemplates(models: Template*) = this ++= models // TODO I don't like this method -akm
   def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-  override def addFactors(variable:Var, result:Set[Factor]): Unit = { templates.foreach(_.addFactors(variable, result)); result }
+  override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result))
   def families: Seq[Template] = templates
   def familiesOfClass[F<:Template](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
 }
-
-//class SingleTemplateModel(val template:Template) extends Model {
-//  def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-//  override def addFactors(variable:Var, result:Set[Factor]): Unit = template.addFactors(variable, result)
-//  def families: Seq[Family] = Seq(template)
-//  def familiesOfClass[F<:AnyRef](fclass:Class[F]): Iterable[F] = if (fclass.isAssignableFrom(template.getClass)) Seq(template).asInstanceOf[Iterable[F]] else Nil //families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
-//}
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {
   def model: ModelWithContext[C1]

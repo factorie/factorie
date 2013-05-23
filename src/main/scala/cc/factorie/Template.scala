@@ -17,29 +17,6 @@ package cc.factorie
 import collection.mutable.HashSet
 import scala.collection.mutable.Set
 
-/** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
-// TODO No need for this.  Just use ModelWithFactorType
-//trait Template[C,F<:Factor] {
-//  //type FactorType <: Factor
-//  def addFactorsOfContext(c:C, result:Set[F]): Unit 
-//  def factorsOfContext(c:C): Iterable[F] = { val result = newContextFactorsCollection; addFactorsOfContext(c, result); result }
-//  // TODO Move this to Model
-//  //def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factorsOfContext(c))
-//  protected def newContextFactorsCollection: Set[F] = new collection.mutable.LinkedHashSet[F]
-//}
-
-// Future, discussed with Sebastian:
-// class SymbolicTemplate extends NeighborAwareTemplate[SymbolicPredicate] 
-// Term (e.g. real-valued term), tree-based expression, sub-expressions
-//  depends on notion of state: each template/term takes a state and maps to double-valued score
-// SymbolicPredicate, SymbolicConstant, LogicalGroundAtom extends BooleanVariable with Seq[SymbolicConstant]
-
-
-
-object Template {
-  var enableCachedStatistics: Boolean = true
-}
-
 // Factor Templates are able to create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies:
 // (1) a description of the arbitrary relationship among its variable neighbors
@@ -50,46 +27,35 @@ object Template {
 //     (alternatively the score may be calculated using parameter stored externally to the Template,
 //      or in some fixed way without learned parameters).
 
-/** Superclass of Template1, Template2, Template3, Template4.
+// Future, discussed with Sebastian:
+// class SymbolicTemplate extends NeighborAwareTemplate[SymbolicPredicate] 
+// Term (e.g. real-valued term), tree-based expression, sub-expressions
+//  depends on notion of state: each template/term takes a state and maps to double-valued score
+// SymbolicPredicate, SymbolicConstant, LogicalGroundAtom extends BooleanVariable with Seq[SymbolicConstant]
+
+
+
+/** A template for creating Factors.  The creation of Factors is keyed by neighboring variables. 
+    Superclass of Template1, Template2, Template3, Template4.
     They are templates that are also Model's with Variable context.
     Its subclasses use "unroll*" methods, which given on of the Factor's variables, finding the other neighboring variables.
+    The "unroll(Var)" method here can be used (or overridden in subclasses) to return Factors keyed by non-neighbor variables.
     @author Andrew McCallum
 */
-trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses with Model { thisTemplate =>
+trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses with Model {
   type FactorType <: cc.factorie.Factor
+  def unroll(v:Var): Iterable[FactorType]
   // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
     unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
   }
-  def unroll(v:Var): Iterable[FactorType]
   final def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]
   }
-
-//  /** Called in implementations of factors(Variable) to give the variable a chance
-//      to specify additional dependent variables on which factors(Variable) should also be called. */
-//  def unrollCascade(v:Var): Iterable[Var] = v.unrollCascade
-//  def tryCascade: Boolean = true //hasContainerNeighbors
-//  def hasContainerNeighbors: Boolean = {
-//    println("TemplateModel hasContainerNeighbors neighborClasses: "+neighborClasses.mkString(","))
-////    this match {
-////      case t:Template1[_] => {
-////        println("TemplateModel Template1 neighborClass1 = "+t.neighborClass1)
-////        //println("TemplateModel Template1 nm1.erasure = "+t.nm1.erasure)
-////      }
-////      case _ => {}
-////    }
-//    //neighborClasses.exists(classOf[ContainerVariable[_]].isAssignableFrom(_))
-//    throw new Error("Not yet implemented.  Why am I getting nulls in neighborClasses?")
-//    false // TODO Fix the above line
-//  }
-  
-  /** Causes future calls to factor.valuesIterator to limit the returned values to 
-      those value combinations seen in the current values of the variables in factors touching "vars". */
-  def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
+    
   def families: Seq[Family] = Seq(Template.this)
 }
 

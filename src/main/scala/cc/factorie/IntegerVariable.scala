@@ -17,7 +17,7 @@ package cc.factorie
 trait IntegerDomain extends Domain[Int]
 object IntegerDomain extends IntegerDomain
 
-/** A Variable with one Int value.  
+/** An abstract variable with one Int value.  
     @author Andrew McCallum */
 trait IntegerVar extends ScalarVar with VarWithValue[Int] {
   def value: Int
@@ -29,9 +29,11 @@ trait IntegerVar extends ScalarVar with VarWithValue[Int] {
   override def toString = printName + "(" + intValue + ")"
 }
 
+/** An abstract variable with one Int value, which can be modified.
+    This trait makes no commitment about how the value is stored. */
 trait MutableIntegerVar extends IntegerVar with MutableVar[Int]
 
-/** A Variable with a mutable Int value.
+/** A concrete variable with a mutable Int value.
     @author Andrew McCallum */ 
 class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with MutableIntScalarVar {
   private var _value: Int = initialValue
@@ -41,6 +43,7 @@ class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with Mutab
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
     _value = newValue
   }
+  //override def :=(newValue:Int): Unit = set(newValue)(null) // To avoid wrapping the Int when calling the generic method in MutableVar
   def +=(x:Int) = set(_value + x)(null) // Should we allow non-null DiffLists?
   def -=(x:Int) = set(_value - x)(null)
   def *=(x:Int) = set(_value * x)(null)

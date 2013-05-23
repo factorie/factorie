@@ -39,6 +39,10 @@ trait Family {
   }
   def valuesScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
   def statisticsScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  
+  /** Causes future calls to factor.valuesIterator to limit the returned values to 
+      those value combinations seen in the current values of the variables in factors touching "vars". */
+  def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
 }
 
 trait FamilyWithNeighborDomains extends Family {

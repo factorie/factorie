@@ -165,7 +165,7 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   // For implementing sparsity in belief propagation
 
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
-  protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteDimensionTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
+  protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteDimensionTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionDomain.size); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
 }
 

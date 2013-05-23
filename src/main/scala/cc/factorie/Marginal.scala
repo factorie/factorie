@@ -214,8 +214,8 @@ class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends MarginalWithoutTenso
 class MultivariateGaussianMarginal1[V1 <: MutableTensorVar[Tensor1]](val _1: V1) extends MarginalWithoutTensorStatistics {
   def variables = Seq(_1)
   // TODO Set this up better for incremental estimation
-  var mean = new DenseTensor1(_1.length, 0.0)
-  var variance = new DenseTensor2(Array.tabulate(_1.length, _1.length)((i, j) => if (i == j) 1.0 else 0.0))
+  var mean = new DenseTensor1(_1.value.length, 0.0)
+  var variance = new DenseTensor2(Array.tabulate(_1.value.length, _1.value.length)((i, j) => if (i == j) 1.0 else 0.0))
   def pr(x: Tensor1): Double = cc.factorie.generative.MultivariateGaussian.pr(x, mean, variance)
   def setToMaximize(implicit d: DiffList): Unit = _1.set(mean)
 }

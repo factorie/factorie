@@ -20,7 +20,8 @@ import scala.collection.mutable.ArrayBuffer
     A Template that neighbors a ContainerVariable subclass, will also unroll a Factor
     for changes to any Variables of type ContainedVariableType.
     This mechanism is used for implementing var-args in Template arguments; 
-    for example see Template2.factors. */
+    for example see Template2.factors.
+    @author Andrew McCallum */
 trait ContainerVariable[A<:Var] extends Var {
   type ContainedVariableType = A
   def containedVariableManifest(implicit m:Manifest[A]) = m
@@ -28,12 +29,17 @@ trait ContainerVariable[A<:Var] extends Var {
 
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
 // So this is the exception to the "rule" that Variable must have equals and hashCode based on unique memory address.
+/** A more concrete ContainerVariable, that is also a scala.collection.Seq.
+    Used for 
+    @author Andrew McCallum */
 trait Vars[A<:Var] extends scala.collection.Seq[A] with ContainerVariable[A] with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]] {
   type Value = scala.collection.Seq[A#Value]
   def value: scala.collection.Seq[A#Value] = this.map(_.value.asInstanceOf[A#Value])
   override def toString = mkString("Vars(", ",",")")
 }
 
+/** A Vars with array-based storage of the value.
+    @author Andrew McCallum */
 class ArrayVars[V<:Var](val toArray:Array[V]) extends Vars[V] {
   //def this(vs:Seq[V]) = this(vs.toArray)
   def length = toArray.length
@@ -41,6 +47,8 @@ class ArrayVars[V<:Var](val toArray:Array[V]) extends Vars[V] {
   def iterator = toArray.iterator
 }
 
+/** A Vars with Seq-based storage of the value.
+    @author Andrew McCallum */
 class SeqVars[V<:Var](override val toSeq:Seq[V]) extends Vars[V] {
   def length = toSeq.length
   def apply(index:Int) = toSeq(index)
@@ -48,8 +56,12 @@ class SeqVars[V<:Var](override val toSeq:Seq[V]) extends Vars[V] {
 
 }
 
+/** A Vars with ArrayBuffer-based storage of the value.
+    @author Andrew McCallum */
 class ArrayBufferVars[V<:Var] extends ArrayBuffer[V] with Vars[V]
 
+/** Convenient methods for creating Vars objects.
+    @author Andrew McCallum */
 object Vars {
   def from[V<:Var](vs:V*): Vars[V] = new SeqVars(vs)
   def fromSeq[V<:Var](vs:Seq[V]) = new SeqVars(vs)
