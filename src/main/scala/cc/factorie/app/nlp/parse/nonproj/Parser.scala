@@ -27,29 +27,29 @@ trait ParserImpl {
   def generateDecisions(ss: Seq[Sentence], p: ParserAlgorithm): Seq[ParseDecisionVariable] = {
 
     var i = 0
-    val vs = ss.par.flatMap { s => 
+    val vs = ss.flatMap { s =>
       i += 1
-	  if (i % 1000 == 0)
-	    println("Parsed: " + i)
+      if (i % 1000 == 0)
+        println("Parsed: " + i)
       val parser = new ParserAlgorithm(mode = p.mode); parser.predict = p.predict;
-	  parser.clear()
+      parser.clear()
       parser.parse(s)
-	  parser.instances
-    } seq
+      parser.instances
+    }
 
     vs
   }
   
   def train[A <: Sentence](ss: Seq[A])(implicit s: DummyImplicit): ParserClassifier = { 
-    var p = new ParserAlgorithm(mode = 0)
+    val p = new ParserAlgorithm(mode = 0)
     val vs = generateDecisions(ss, p)
     train(vs)
   }
   
   def boosting(existingClassifier: ParserClassifier, ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]): ParserClassifier = {
-    var p = new ParserAlgorithm(mode = 2)
+    val p = new ParserAlgorithm(mode = 2)
     p.predict = (v: ParseDecisionVariable) => { existingClassifier.classify(v) }
-    var newVs = generateDecisions(ss, p)
+    val newVs = generateDecisions(ss, p)
     train(addlVs ++ newVs)
   }
   
@@ -59,7 +59,7 @@ trait ParserImpl {
     
     val parsers = new ThreadLocal[ParserAlgorithm] { override def initialValue = { val _p = new ParserAlgorithm(mode = p.mode); _p.predict = p.predict; _p }}
     
-    val (gold, pred) = ss.par.zipWithIndex.map({ case (s, i) => 
+    val (gold, pred) = ss.zipWithIndex.map({ case (s, i) =>
     	  if (i % 1000 == 0)
     	    println("Parsed: " + i)
     	    
@@ -151,33 +151,33 @@ trait ParserImpl {
     
     // Do training if we weren't told to load a model
     if (!loadModel.wasInvoked) {
-	  modelFolder.mkdir()
-	  
+      modelFolder.mkdir()
+
       var trainingVs = generateDecisions(sentences, new ParserAlgorithm(0)) 
       NonProjParserFeaturesDomain.freeze()
-	  println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
+      println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
+
+      var c = train(trainingVs)
+
+      // save the initial model
+      println("Saving the model...")
+      save(c, modelFolder, gzip = true)
+      println("...DONE")
+
+      testAll(c)
+
+      println("Loading it back for serialization testing...")
+      c = load(modelFolder, gzip = true)
 	  
-	  var c = train(trainingVs)
-	  
-	  // save the initial model
-	  println("Saving the model...")
-	  save(c, modelFolder, gzip = true)
-	  println("...DONE")
-	  
-	  testAll(c)
-	  
-	  println("Loading it back for serialization testing...")
-	  c = load(modelFolder, gzip = true)
-	  
-	  testAll(c)
-	  
+      testAll(c)
+
       trainingVs = null // GC the old training labels
       
       for (i <- 0 until numBootstrappingIterations) {
         val cNew = boosting(c, sentences)
-      
+
         testAll(cNew, "Boosting" + i)
-      
+
         // save the model
         modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
         modelFolder.mkdir()
@@ -185,7 +185,7 @@ trait ParserImpl {
         
         c = cNew
       }
-	  
+
     }
     else {
       val c = load(modelFolder, gzip = true)
@@ -193,5 +193,5 @@ trait ParserImpl {
     }
     
   }
-  
+
 }
