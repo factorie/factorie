@@ -30,7 +30,7 @@ trait AbstractTokenizer extends DocumentAnnotator {
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
   def process1(d: Document): Document = { TokenizerHelper.addTokensToDoc(getTokenList(d.string), d); d }
   def prereqAttrs: Iterable[Class[_]] = Nil
-  def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
+  def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token])
 }
 
 class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegmenter {
