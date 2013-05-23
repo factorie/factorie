@@ -422,129 +422,144 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
 //  
 //}
 
-object Outer1Tensor2 {
-  var hasWarned = false
-}
+trait Outer2Tensor extends ReadOnlyTensor {
+  def tensor1: Tensor
+  def tensor2: Tensor
 
-/** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
-class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 with ReadOnlyTensor {
-  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
-  def dim1 = tensor1.dim1
-  def dim2 = tensor2.dim1
-  def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i))
-  def isDense = tensor2.isDense
-  def activeDomain1 = tensor1.activeDomain1
-  def activeDomain2 = tensor2.activeDomain1
-  def activeDomain = new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
-  override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
-  override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
+// TODO TensorN likes to extend all this stuff so we can't provide good defaults if we want TensorNs that are outers (which we do) -luke
+//  def length: Int = tensor1.length * tensor2.length
+//  def activeDomain: IntSeq = sys.error("No efficient implementation of activeDomain for Outer2Tensor yet")
+//  def numDimensions: Int = tensor1.numDimensions + tensor2.numDimensions
+//  def dimensions: Array[Int] = tensor1.dimensions ++ tensor2.dimensions
+//  def activeDomains: Array[IntSeq] = tensor1.activeDomains ++ tensor2.activeDomains
+
+  def activeDomain = new Outer2IntSeq(tensor1.length, tensor2.length, tensor1.activeDomain, tensor2.activeDomain)
+  def isDense: Boolean = false
+  def apply(i: Int): Double = tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
+  def dot(t: DoubleSeq): Double = t match {
+   case t: Outer2Tensor => (tensor1 dot t.tensor1) * (tensor2 dot t.tensor2)
+   case _ => sys.error("No efficient dot for " + this.getClass.getName)
+ }
+  override def twoNormSquared = tensor1.twoNormSquared * tensor2.twoNormSquared
   override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
+    // note that this is different from the singleIndex in Tensor2, as these are not dimensions but lengths of the whole tensors
+    @inline def singleIndex(i: Int, j: Int): Int = i * tensor2.length + j
     if (offset != 0) super.=+(a, offset, v)
     else (tensor1, tensor2) match {
-          case (t1: UniformTensor1, _) if t1(0) == 0.0 => return
-          case (_, t2: UniformTensor1) if t2(0) == 0.0 => return
-          case (t1: DenseTensor1, t2: DenseTensor1) =>
-            val t2Size = t2.size
-            val t1Size = t1.size
-            val t1Values = t1.asArray
-            val t2Values = t2.asArray
-            var idx1 = 0
-            while (idx1 < t1Size) {
-              val v1 = t1Values(idx1) * v
-              val offset = t2Size * idx1
-              var idx2 = 0
-              while (idx2 < t2Size) {
-                val v2 = t2Values(idx2)
-                a(offset + idx2) += (v1 * v2)
-                idx2 += 1
-              }
-              idx1 += 1
-            }
-          case (t1: DenseTensor1, t2: SparseTensor) =>
-            val t2Size = t2.size
-            val t1Size = t1.size
-            val t1Values = t1.asArray
-            val t2ActiveDomainSize = t2.activeDomainSize
-            val t2Indices = t2._indices
-            val t2Values = t2._valuesSeq
-            var idx1 = 0
-            while (idx1 < t1Size) {
-              val v1 = t1Values(idx1) * v
-              val offset = t2Size * idx1
-              var t2i = 0
-              while (t2i < t2ActiveDomainSize) {
-                val idx2 = t2Indices(t2i)
-                val v2 = t2Values(t2i)
-                a(offset + idx2) += (v1 * v2)
-                t2i += 1
-              }
-              idx1 += 1
-            }
-          case (t1: SparseTensor, t2: DenseTensor) =>
-            val t1Size = t1.activeDomainSize
-            val t1Values = t1._valuesSeq
-            val t1Indices = t1._indices
-            val t2ActiveDomainSize = t2.length
-            val t2Arr = t2.asArray
-            var i = 0
-            while (i < t1Size) {
-              var j = 0
-              while (j < t2ActiveDomainSize) {
-                a(singleIndex(t1Indices(i),j)) += (t1Values(i) * t2Arr(j))*v
-                j += 1
-              }
-              i += 1
-            }
-          case (t1: NormalizedTensorProportions1, t2: Tensor) =>
-            new Outer1Tensor2(t1.tensor, t2).=+(a, v/t1.tensor.sum)
-          case (t1: Tensor, t2: NormalizedTensorProportions1) =>
-            new Outer1Tensor2(t1, t2.tensor).=+(a, v/t2.tensor.sum)
-          case (t1: SingletonTensor, t2: SparseTensor) =>
-            val t2Size = t2.activeDomainSize
-            val t2IndexSeq = t2._indices
-            val t2Values = t2._valuesSeq
-            var idx1 = 0
-            var i = 0
-            while (i < t2Size) {
-              a(singleIndex(t1.singleIndex,t2IndexSeq(i))) += v*t1.singleValue*t2Values(i)
-              i += 1
-            }
-          case (t1: SparseTensor, t2: SparseTensor) =>
-            val t1Size = t1.activeDomainSize
-            val t1Indices = t1._indices
-            val t1Values = t2._valuesSeq
-            val t2Size = t2.activeDomainSize
-            val t2IndexSeq = t2._indices
-            val t2Values = t2._valuesSeq
-            var idx1 = 0
-            var i = 0
-            while (i < t1Size) {
-              var j = 0
-              while (j < t2Size) {
-                a(singleIndex(t1Indices(i),t2IndexSeq(j))) += v*t1Values(i)*t2Values(j)
-                j += 1
-              }
-              i += 1
-            }
-          case (t1, t2) =>
-            if (!Outer1Tensor2.hasWarned) {
-              Outer1Tensor2.hasWarned = true
-              println("Unrecognized types in Outer1Tensor2 =+: " + t1.getClass.getName + " " + t2.getClass.getName)
-            }
-            val t2Size = t2.size
-            val t1Iter = t1.activeElements
-            while (t1Iter.hasNext) {
-              val (idx1, v1p) = t1Iter.next()
-              val v1 = v1p * v
-              val offset = t2Size * idx1
-              val t2Iter = t2.activeElements
-              while (t2Iter.hasNext) {
-                val (idx2, v2) = t2Iter.next()
-                a(offset + idx2) += (v1 * v2)
-              }
-            }
+      case (t1: DenseTensor, t2: DenseTensor) =>
+        val t2Size = t2.size
+        val t1Size = t1.size
+        val t1Values = t1.asArray
+        val t2Values = t2.asArray
+        var idx1 = 0
+        while (idx1 < t1Size) {
+          val v1 = t1Values(idx1) * v
+          val offset = t2Size * idx1
+          var idx2 = 0
+          while (idx2 < t2Size) {
+            val v2 = t2Values(idx2)
+            a(offset + idx2) += (v1 * v2)
+            idx2 += 1
+          }
+          idx1 += 1
+        }
+      case (t1: DenseTensor, t2: SparseTensor) =>
+        val t2Size = t2.size
+        val t1Size = t1.size
+        val t1Values = t1.asArray
+        val t2ActiveDomainSize = t2.activeDomainSize
+        val t2Indices = t2._indices
+        val t2Values = t2._valuesSeq
+        var idx1 = 0
+        while (idx1 < t1Size) {
+          val v1 = t1Values(idx1) * v
+          val offset = t2Size * idx1
+          var t2i = 0
+          while (t2i < t2ActiveDomainSize) {
+            a(offset + t2Indices(t2i)) += (v1 * t2Values(t2i))
+            t2i += 1
+          }
+          idx1 += 1
+        }
+      case (t1: SparseTensor, t2: DenseTensor) =>
+        val t1Size = t1.activeDomainSize
+        val t1Values = t1._valuesSeq
+        val t1Indices = t1._indices
+        val t2ActiveDomainSize = t2.length
+        val t2Arr = t2.asArray
+        var i = 0
+        while (i < t1Size) {
+          var j = 0
+          while (j < t2ActiveDomainSize) {
+            a(singleIndex(t1Indices(i),j)) += (t1Values(i) * t2Arr(j))*v
+            j += 1
+          }
+          i += 1
+        }
+      case (t1: NormalizedTensorProportions1, t2: Tensor1) =>
+        new Outer1Tensor2(t1.tensor, t2).=+(a, v/t1.tensor.sum)
+      case (t1: Tensor1, t2: NormalizedTensorProportions1) =>
+        new Outer1Tensor2(t1, t2.tensor).=+(a, v/t2.tensor.sum)
+      case (t1: SingletonTensor, t2: SparseTensor) =>
+        val t2Size = t2.activeDomainSize
+        val t2IndexSeq = t2._indices
+        val t2Values = t2._valuesSeq
+        var i = 0
+        while (i < t2Size) {
+          a(singleIndex(t1.singleIndex,t2IndexSeq(i))) += v*t1.singleValue*t2Values(i)
+          i += 1
+        }
+      case (t1: SparseTensor, t2: SparseTensor) =>
+        val t1Size = t1.activeDomainSize
+        val t1Indices = t1._indices
+        val t1Values = t2._valuesSeq
+        val t2Size = t2.activeDomainSize
+        val t2IndexSeq = t2._indices
+        val t2Values = t2._valuesSeq
+        var i = 0
+        while (i < t1Size) {
+          var j = 0
+          while (j < t2Size) {
+            a(singleIndex(t1Indices(i),t2IndexSeq(j))) += v*t1Values(i)*t2Values(j)
+            j += 1
+          }
+          i += 1
+        }
+      case (t1, t2) =>
+        if (!Outer2Tensor.hasWarned) {
+          Outer2Tensor.hasWarned = true
+          println("Unrecognized types in Outer2Tensor =+: " + t1.getClass.getName + " " + t2.getClass.getName)
+        }
+        val t2Size = t2.size
+        val t1Iter = t1.activeElements
+        while (t1Iter.hasNext) {
+          val (idx1, v1p) = t1Iter.next()
+          val v1 = v1p * v
+          val offset = t2Size * idx1
+          val t2Iter = t2.activeElements
+          while (t2Iter.hasNext) {
+            val (idx2, v2) = t2Iter.next()
+            a(offset + idx2) += (v1 * v2)
+          }
+        }
     }
   }
+}
+
+
+/** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
+class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tensor with Tensor2 {
+  // we can dot against other outer tensors here efficiently i think
+  def dim1 = tensor1.dim1
+  def dim2 = tensor2.dim1
+  def activeDomain1 = tensor1.activeDomain1
+  def activeDomain2 = tensor2.activeDomain1
+  override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
+  override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
+}
+
+object Outer2Tensor {
+  var hasWarned = false
 }
 
 class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {
