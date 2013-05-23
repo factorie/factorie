@@ -14,6 +14,7 @@ object LoadOWPL {
   def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document
     doc.annotators(classOf[Token]) = null // register that we have token boundaries
+    doc.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
     var sentence = new Sentence(doc)
     var numSentences = 1
     for (line <- io.Source.fromFile(file).getLines) {

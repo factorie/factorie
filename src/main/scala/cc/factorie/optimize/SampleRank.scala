@@ -61,14 +61,16 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
   }
 }
 
-class SampleRankTrainer[C](weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad)
-  extends OnlineTrainer(weightsSet, optimizer = optimizer, maxIterations = Int.MaxValue) {
+class SampleRankTrainer[C](weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad, logEveryN: Int = Int.MaxValue)
+ extends optimize.OnlineTrainer(weightsSet,optimizer,maxIterations=10000, logEveryN=logEveryN) {
   def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, optimizer)
   def this(sampler: ProposalSampler[C]) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, new optimize.AdaGrad)
-  def processContext(context: C): Unit = processExamples(Seq(new SampleRankExample(context, sampler)))
-  def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) processExamples(Seq(new SampleRankExample(context, sampler)))
-  def processContexts(contexts: Iterable[C]): Unit = contexts.map(new SampleRankExample(_, sampler))
+  def processContext(context: C): Unit = process(new SampleRankExample(context, sampler))
+  def processContext(context: C, iterations: Int): Unit = for (i <- 0 until iterations) process(new SampleRankExample(context, sampler))
+  def processContexts(contexts: Iterable[C]): Unit = processExamples(contexts.map(c => new SampleRankExample(c, sampler)))
   def processContexts(contexts: Iterable[C], iterations: Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
+  def process(example: Example): Unit = processExamples(Seq(example))
+  def processExamples(examples: Iterable[Example], iterations: Int): Unit = for (i <- 0 until iterations) processExamples(examples)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

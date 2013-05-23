@@ -250,12 +250,12 @@ class GraphProjectiveParser extends DocumentAnnotator {
   }
   def deserialize(file: String) = cc.factorie.util.BinarySerializer.deserialize(DependencyModel, new File(file))
 
-  def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], file: String, nThreads: Int) {
+  def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], file: String, nThreads: Int, nIters: Int = 10) {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.0001, 0.0001)
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
-    for (iteration <- 0 until 10) {
+    for (iteration <- 0 until nIters) {
       trainer.processExamples(rng.shuffle(examples))
       import DepParser1.uas
       val t0 = System.currentTimeMillis()
@@ -266,7 +266,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       println(" Testing UAS = "+ uas(testSentences.toSeq))
       println()
       println("Saving model...")
-      serialize(file + "-iter-"+iteration)
+      if (file != "") serialize(file + "-iter-"+iteration)
     }
     println("Finished training.")
     opt.setToDense(DependencyModel.parameters)

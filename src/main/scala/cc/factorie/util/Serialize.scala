@@ -8,7 +8,6 @@ import java.nio.ByteBuffer
 import cc.factorie._
 import cc.factorie.la._
 
-// TODO I think Serialize should be moved to cc.factorie.util, along side Cubbie.  I try to put only factor-graph-related classes in cc.factorie. -akm
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
 

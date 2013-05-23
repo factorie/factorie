@@ -255,7 +255,7 @@ class SpanNER {
   val predictor = new SpanNerPredictor(model)
 
   def train(trainFiles:Seq[String], testFile:String): Unit = {
-    predictor.verbose = true
+    // predictor.verbose = true
     // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
     val trainDocuments = trainFiles.flatMap(LoadConll2003.fromFilename(_))
     val testDocuments = LoadConll2003.fromFilename(testFile)
@@ -288,7 +288,7 @@ class SpanNER {
         super.proposalsHook(proposals)
       }
     }
-    val learner = new SampleRankTrainer(sampler, new MIRA)
+    val learner = new SampleRankTrainer(sampler, new AdaGrad)
     
     
     // Train!
@@ -465,7 +465,7 @@ object SpanNER extends SpanNER {
       val modelFile =  new CmdOption("model", "spanner.factorie", "FILE", "File for saving or loading model.")
       val runXmlDir = new CmdOption("run", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val lexiconDir =new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER.this.verbose = true }
+      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER.this.verbose = false }
       val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
     opts.parse(args)

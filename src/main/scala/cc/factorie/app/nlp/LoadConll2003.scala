@@ -23,6 +23,8 @@ class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerL
 }
 
 object LoadConll2003 {
+  val conllToPTBMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
+
   def fromFilename(filename:String, BILOU:Boolean = false): Seq[Document] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
@@ -58,7 +60,7 @@ object LoadConll2003 {
         //println(fields.mkString(","))
         assert(fields.length == 4)
         val word = fields(0)
-        val partOfSpeech = fields(1)
+        val partOfSpeech = conllToPTBMap.getOrElse(fields(1), fields(1))
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
