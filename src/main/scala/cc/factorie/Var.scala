@@ -67,7 +67,8 @@ trait Var extends ValueBound[Any] {
   /** Value comparisons (as distinct from variable pointer equality) */
   def ===(other: Var) = value == other.value
   def !==(other: Var) = value != other.value
-        
+  
+  // TODO Is there a more standard way of getting this short name? -akm
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
     if (fields.length == 1)

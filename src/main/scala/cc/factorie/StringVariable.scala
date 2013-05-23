@@ -14,15 +14,25 @@
 
 package cc.factorie
 
+/** The domain of StringVar.
+    This domain doesn't have special functionality; it exists simply as a marker.
+    @author Andrew McCallum */
 object StringDomain extends Domain[String]
+
+/** An abstract variable with String value.
+    @author Andrew McCallum */
 trait StringVar extends Var with VarWithValue[String] {
   def domain = StringDomain
   def maxToStringLength = 10
   override def toString = printName + "(" + (if (value.toString.length < maxToStringLength) value else value.toString.take(maxToStringLength)+"...") + ")"
 }
 
+/** An abstract variable with mutable String value.
+    @author Andrew McCallum */
 trait MutableStringVar extends StringVar with MutableVar[String]
 
+/** A variable with mutable String value.
+    @author Andrew McCallum */
 class StringVariable(initialValue:String) extends MutableStringVar {
   private var _value: String = initialValue
   def value: String = _value

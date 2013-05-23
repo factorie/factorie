@@ -117,13 +117,14 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
 
 /** A chain of elements, each of which has methods "next", "prev", etc.
     @author Andrew McCallum */
-trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with ElementType[E] {
+trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with IndexedSeqSimilar[E] {
   this: This =>
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
   private var _frozen = false
-  def apply(i:Int): E = _chainseq(i)
-  def length = _chainseq.length
-  @inline final def links: IndexedSeq[E] = _chainseq
+  def value: IndexedSeq[E] = _chainseq
+  override def apply(i:Int): E = _chainseq(i)
+  override def length = _chainseq.length
+  @inline final def links: IndexedSeq[E] = _chainseq // TODO Remove this?
   def +=(e:E): this.type = {
     if (_frozen) throw new Error("Cannot append to frozen chain "+getClass)
     e._setChainPosition(this, _chainseq.length)
@@ -136,13 +137,15 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   def chainFreeze: Unit = _frozen = true
 }
 
+// TODO Use this in ChainVar instead of VarAndValueGenericDomain -akm
+/** The domain of a ChainVar */
 object ChainDomain extends Domain[IndexedSeq[ChainLink[_,_]]]
 
 /** An abstract variable that is a Chain, with value IndexedSeq[ElementType].
     @author Andrew McCallum */
 trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
   this: This =>
-  def value: IndexedSeq[E] = links // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
+  //def value: IndexedSeq[E] = links // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
 }
 
 /** A variable that is a Chain, with value IndexedSeq[ElementType].

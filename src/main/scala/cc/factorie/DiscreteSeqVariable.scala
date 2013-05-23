@@ -45,8 +45,8 @@ trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
     The method 'domain' is abstract.
     @author Andrew McCallum */
 trait MutableDiscreteSeqVar[A<:DiscreteValue] extends MutableVar[IndexedSeq[A]] with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
-  def length = _length
-  def apply(index: Int): A = domain.elementDomain.apply(_apply(index)).asInstanceOf[A]
+  override def length = _length
+  override def apply(index: Int): A = domain.elementDomain.apply(_apply(index)).asInstanceOf[A]
   def domain: DiscreteSeqDomain
   def discreteValues: IndexedSeq[DiscreteValue] = new IndexedSeq[A] {
     def length = _length

@@ -32,13 +32,13 @@ import util.ClassPathUtils
     @since 0.8 */
 trait Domain[+VT] extends ValueBound[VT] {
   // TODO Resolve issue below.
-  //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" insetad?
+  //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" instead?
 }
 
 /** A domain that provides (and is itself) an Iterable[] over its values.
     @author Andrew McCallum */
 trait IterableDomain[+A] extends Domain[A] with Iterable[A] {
-  def values: Iterable[A]
+  def values: Iterable[A] // remove this because the class itself is Iterable? -akm
 }
 
 
@@ -48,6 +48,7 @@ object GenericDomain extends Domain[Any]
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
 // TODO Consider removing [This] self type argument.
 // TODO Get rid of this?  Yes, I think so. -akm
+// Yes, and get rid of Var.domain; create instead trait VarWithDomain
 trait VarAndValueGenericDomain[+This<:Var,+VT] extends ValueBound[VT] {
   this: This =>
   //type ValueType = VT

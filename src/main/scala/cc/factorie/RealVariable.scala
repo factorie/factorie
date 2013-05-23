@@ -16,15 +16,23 @@ package cc.factorie
 import cc.factorie.la._
 
 
-/** A DiscreteDomain for holding a singleton Tensor holding a single real (Double) value. */
+/** A DiscreteDomain that provides the dimensionDomain for RealDomain,
+    which is a DiscreteDimensionDomain for 
+    holding a singleton Tensor holding a single real (Double) value.
+    @author Andrew McCallum */
 object RealDiscreteDomain extends DiscreteDomain(1)
+
+/** Domain type for RealVar, which holds a single real (double) value in a SingletonTensor. */
 trait RealDomain extends DiscreteDimensionTensorDomain with Domain[RealValue] {
   def dimensionDomain = RealDiscreteDomain
 }
+/** The domain object used by RealVar. */
 object RealDomain extends RealDomain
 
-/** A Tensor holding a single real (Double) value. */
-// In Scala 2.10 make this an implicit class.
+// TODO In Scala 2.10 make this an implicit class.
+// TODO Why was math.Numeric commented out?  I think it should be re-added. -akm
+/** A Tensor holding a single real (Double) value. 
+    @author Andrew McCallum */
 final class RealValue(val singleValue:Double) extends Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
   def domain = RealDomain
   @inline final def dim1 = 1
@@ -38,20 +46,11 @@ final class RealValue(val singleValue:Double) extends Tensor1 with SingletonInde
   def *(r:RealValue) = new RealValue(r.doubleValue * singleValue)
   def /(r:RealValue) = new RealValue(r.doubleValue / singleValue)
   def unary_- = new RealValue(-singleValue)
-//  type T = RealValue
-//  def plus(x: T, y: T): T = x + y
-//  def minus(x: T, y: T): T = x - y
-//  def times(x: T, y: T): T = x * y
-//  def negate(x: T): T = new RealValue(- x.doubleValue)
-//  def fromInt(x: Int): T = new RealValue(x.toDouble)
-//  def toInt(x: T): Int = singleValue.toInt
-//  def toLong(x: T): Long = singleValue.toLong
-//  def toFloat(x: T): Float = singleValue.toFloat
-//  def toDouble(x: T): Double = singleValue
 }
 
-/** A variable with Tensor value which holds a single real (Double) value.
-    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. */
+/** An abstract variable with Tensor value which holds a single real (Double) value.
+    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. 
+    @author Andrew McCallum */
 trait RealVar extends DiscreteDimensionTensorVar with ScalarVar with VarWithValue[RealValue] {
   def doubleValue: Double
   def domain = RealDomain
@@ -61,9 +60,14 @@ trait RealVar extends DiscreteDimensionTensorVar with ScalarVar with VarWithValu
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
+/** An abstract mutable variable with Tensor value which holds a single real (Double) value.
+    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. 
+    @author Andrew McCallum */
 trait MutableRealVar extends RealVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar[RealValue]
 
-/** A Variable with a mutable real (double) value. */
+/** A mutable variable with Tensor value which holds a single real (Double) value.
+    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. 
+    @author Andrew McCallum */
 class RealVariable(initialValue: Double) extends MutableRealVar {
   def this() = this(0.0)
   def this(rv:RealValue) = this(rv.singleValue)
