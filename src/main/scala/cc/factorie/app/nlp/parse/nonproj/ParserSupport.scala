@@ -32,20 +32,18 @@ object ParserSupport {
     }
     
     object DepToken {
-      def apply(token: Token) = new DepToken(token, form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue)
+      def apply(token: Token, idx: Int, state: ParseState) = new DepToken(token, form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
       // eclipse didn't like "lazy" here
-      val root = new DepToken(new Token(new Document, "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p")
-      val nullToken = new DepToken(new Token(new Document, "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p")
+      val root = new DepToken(new Token(new Document, "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0)
+      val nullToken = new DepToken(new Token(new Document, "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1)
     }
     class DepToken(
-        var token: Token,
+        val token: Token,
         val form: String,
         val lemma: String,
         val pos: String,
+        val thisIdx: Int,
         var head: DepArc = null,
-        var lmDepIdx: Int = Int.MaxValue,
-        var rmDepIdx: Int = Int.MinValue,
-        var thisIdx: Int = null.asInstanceOf[Int],
         var state: ParseState = null) {
     
       def setHead(headToken: DepToken, label: String) {
