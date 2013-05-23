@@ -106,7 +106,7 @@ class ParserAlgorithm(var mode: Int = 0) {
   def getDepTokens(s: Sentence): Array[DepToken] = {
     val a = Array.ofDim[DepToken](s.length + 1)
     a(0) = DepToken.root
-    for ((t, i) <- s.links.map(DepToken(_)).zipWithIndex) {
+    for ((t, i) <- s.value.map(DepToken(_)).zipWithIndex) {
       a(i+1) = t
       a(i+1).state = state
       a(i+1).thisIdx = i + 1

@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable,DoubleLinkedList}
@@ -21,15 +19,11 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.util.Sorting
 
-// Variables for dealing with spans of sequences
-trait SpanType[+S<:AnyRef] {
-  type SpanType = S
-}
-
-/** The value of a SpanVar */
+/** A subsequence of a Chain, and the value of a SpanVar.
+    @author Andrew McCallum */
 trait SpanValue[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeq[E] {
   def apply(i:Int) = chain.links(start + i)
-  def chain: C // Chain[Chain[_,T],T] // ChainWithSpans[_,_,T] //IndexedSeq[T]
+  def chain: C
   def start: Int
   def length: Int
   def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
@@ -38,34 +32,39 @@ trait SpanValue[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeq[E] {
   def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
 }
 
-/** A Span that is not necessarily a Variable. */
-trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends ThisType[This] with ElementType[E] {
+/** A Span is a subsequence of ChainLink elements within a Chain.
+    This trait does not inherit from Var, but SpanVar does.
+    @see cc.factorie.app.nlp.TokenSpan
+    @author Andrew McCallum */   
+trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends ThisType[This] with IndexedSeqSimilar[E] {
   this: This =>
   protected var _start = 0
   protected var _length = 0
-  var _chain: C = null.asInstanceOf[C] //ChainWithSpans[C,This,E] = null // Set automatically in ChainWithSpans.+= and -=
-  var _present = true
+  var _chain: C = null.asInstanceOf[C] // This var is set automatically in ChainWithSpans.+= and -=
+  var _present = true // Indicating if this span should be considered to be in effect; used in diffs representing temporary deletion.
   /** True if this span is currently present in a ChainWithSpans.  Used by Diff objects to handle deleted spans. */
   def present = _present
+  /** The position within the Chain at which this Span starts. */
   def start: Int = _start
-  def length: Int = _length
+  /** The number of elements in this Span. */
+  override def length: Int = _length
+  /** The position within the Chain at which this Span is over.  The last element of this Span is at 'end-1'. */
   def end = start + length - 1
-  val links: SpanValue[C,E] = new SpanValue[C,E] {
+  // TODO Have this create and return a new immutable SpanValue
+  /** The current start/length of this Span as a SpanValue. */
+  val value: SpanValue[C,E] = new SpanValue[C,E] {
     def chain: C = _chain
     def start = _start
     def length = _length
   }
+  /** The Chain of which this Span is a subsequence. */
   def chain: C = _chain
   def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
   def hasPredecessor(i: Int) = (start - i) >= 0
   def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
   def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
-  /*def iterator = new Iterator[E] {
-    var i = start
-    def hasNext = i < start + _length
-    def next: ElementType = { i += 1; Span.this.chain.apply(i - 1) }
-  }*/
-  def apply(i: Int) = _chain(i + _start)
+  override def apply(i: Int): E = _chain(i + _start)
+  // Other Seq-related methods, such as "head" and "iterator" are provided by IndexedSeqVar inherited in SpanVar.
   def isAtStart = start == 0
   def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]) = {
     assert(this.chain eq that.chain)
@@ -73,10 +72,6 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
     (this.start <= that.start && this.end >= that.start)
   }
   def isAtEnd = start + length == chain.length
-  //def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
-  //def hasPredecessor(i: Int) = (start - i) >= 0
-  //def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
-  //def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
   def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
   def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(chain.length-1,end+n)) yield chain(i)
   def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n)) yield chain(i)
@@ -89,10 +84,11 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   def prev(elt:E): E = if (hasPrev(elt)) elt.prev else null.asInstanceOf[E]
 }
 
-
-trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]] {
+/** An abstract variable whose value is a subsequence of a Chain.
+    These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
+    @author Andrew McCallum */
+trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]] with VarWithValue[SpanValue[C,E]] {
   this: This =>
-  def value: SpanValue[C,E] = links
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}
@@ -155,28 +151,34 @@ trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLin
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
     def redo = {assert(canPrepend(n)); _start -= n; _length += n}
     def undo = {_start += n; _length -= n}
+    override def toString = "Prepend("+n+","+SpanVar.this+")"
   }
   case class Append(n: Int)(implicit d: DiffList) extends AutoDiff {
     //if (!canAppend(n)) { println("Append n="+n+" start="+variable.start+" length="+variable.length+" parent.length="+variable.parent.length) }
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
     def redo = {assert(canAppend(n)); _length += n}
     def undo = _length -= n
-    //override def toString = "Append("+n+","+(how do I reliably get the appended token)+")"
+    override def toString = "Append("+n+","+SpanVar.this+")"
   }  
 }
 
+/** A variable whose value is a subsequence of a Chain.
+    These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
+    @author Andrew McCallum */
 class SpanVariable[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]](theChain:C, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVar[This,C,E] {
   this: This =>
   _start = initialStart
   _length = initialLength
   _chain = theChain
-  _chain.addSpan(this)(d)  // TODO Remove this.  There can be a span that the document doesn't know about.
+  _chain.addSpan(this)(d)  // TODO Remove this.  There can be a span that the document doesn't know about.  But exactly when would it get registered in the ChainWithSpans? -akm
   //if (d ne null) NewSpan // Add NewSpan diff to the DiffList
 }
 
-trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLink[E,This]] extends Chain[This,E] with SpanType[S] {
+/** A Chain that maintains a list of Spans within it.
+    It provides various methods for querying the set of Spans by position, relative position, overlaps, etc. 
+    @author Andrew McCallum */
+trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLink[E,This]] extends Chain[This,E] {
   this: This =>
-  //type Span = ThisType#SpanType
   private val _spans = new scala.collection.mutable.ListBuffer[S];
   def spans: Seq[S] = _spans
   def spansOfClass[A<:S](c:Class[A]): Seq[A] = _spans.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
@@ -238,12 +240,15 @@ trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLi
   }
 }
 
+/** A ChainVar that maintains a list of Spans within it.
+    It provides various methods for querying the set of Spans by position, relative position, overlaps, etc. 
+    @author Andrew McCallum */
 trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] with ChainWithSpans[This,S,E] with IndexedSeqVar[E] /*with VarAndElementType[ChainWithSpansVar[This,S,E],E]*/ {
   this: This =>
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
-    //require(s.chain == this, "VariableSeqWithSpans.addSpan: span.chain="+s.chain+" != this="+this)
+    require(s.chain == null, "VariableSeqWithSpans.addSpan: span.chain="+s.chain+" already belongs to another Chain.") // This check was commented out before 23 May 2013 -akm
     AddSpanVariable(s)
   }
   /** Remove the span from the list of spans maintained by this ChainWithSpans.

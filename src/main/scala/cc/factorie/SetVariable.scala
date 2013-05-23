@@ -15,6 +15,8 @@
 package cc.factorie
 import scala.collection.mutable.HashSet
 
+/** An abstract variable whose value is a set of elements of type A.
+    @author Andrew McCallum */
 trait SetVar[A] extends Var with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
   def value: scala.collection.Set[A]
   def iterator: Iterator[A] = value.iterator
@@ -25,16 +27,19 @@ trait SetVar[A] extends Var with VarAndValueGenericDomain[SetVar[A],scala.collec
   def size: Int
 }
 
+/** A SetVar whose value is always empty. */
 class EmptySetVar[A] extends SetVar[A] {
   override def iterator = Iterator.empty
   def size = 0
   def value = Set.empty[A]
 }
 
-/**A variable whose value is a set of other variables */
+/** A variable whose value is a set elements of type A.
+    Internally the values are stored in a scala.collection.mutable.HashSet.
+    @author Andrew McCallum */
 class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
   type Value = scala.collection.Set[A]
-  // Note that the returned value is not immutable.
+  // Note that the returned value is not immutable.  Somewhat dangerous.
   def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
@@ -54,14 +59,12 @@ class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariab
   final def ++=(xs:Iterable[A]): Unit = xs.foreach(add(_)(null))
   final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
   case class SetVariableAddDiff(added: A) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
     def variable: SetVariable[A] = SetVariable.this
     def redo = _members += added //if (_members.contains(added)) throw new Error else
     def undo = _members -= added
     override def toString = "SetVariableAddDiff of " + added + " to " + SetVariable.this
   }
   case class SetVariableRemoveDiff(removed: A) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
     def variable: SetVariable[A] = SetVariable.this
     def redo = _members -= removed
     def undo = _members += removed //if (_members.contains(removed)) throw new Error else
@@ -69,11 +72,17 @@ class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariab
   }
 }
 
+/** A variable whose value is a set of elements of type A, 
+    but here we keep only weak references to the elements,
+    so that if no external references are kept, the element may be 
+    garbage collected.  This class has no "size" method because
+    the size is unreliably dependent on garbage collection.
+    @author Andrew McCallum */
 class WeakSetVariable[A<:{def present:Boolean}] extends Var with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
   private val _members = new cc.factorie.util.WeakHashSet[A];
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)
-  //def size = _members.size
+  //def size = _members.size // No, don't define this because the size is unreliably dependent on garbage collection. 
   def contains(x: A) = _members.contains(x) && x.present
   def add(x: A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
     if (d != null) d += new WeakSetVariableAddDiff(x)
@@ -84,13 +93,11 @@ class WeakSetVariable[A<:{def present:Boolean}] extends Var with VarAndValueGene
     _members -= x
   }
   case class WeakSetVariableAddDiff(added: A) extends Diff {
-    // Console.println ("new WeakSetVariableAddDiff added="+added)
     def variable: WeakSetVariable[A] = WeakSetVariable.this
     def redo = _members += added //if (_members.contains(added)) throw new Error else
     def undo = _members -= added
   }
   case class WeakSetVariableRemoveDiff(removed: A) extends Diff {
-    //        Console.println ("new WeakSetVariableRemoveDiff removed="+removed)
     def variable: WeakSetVariable[A] = WeakSetVariable.this
     def redo = _members -= removed
     def undo = _members += removed //if (_members.contains(removed)) throw new Error else

@@ -18,7 +18,7 @@ import cc.factorie._
 /** A sub-sequence of Tokens within a Document. */
 class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
   @inline final def document = chain // Just a convenient alias
-  @inline final def tokens = links
+  @inline final def tokens = value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
   def phrase: String = if (length == 1) tokens.head.string else doc.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
