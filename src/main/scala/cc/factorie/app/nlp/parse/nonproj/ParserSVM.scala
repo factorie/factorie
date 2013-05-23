@@ -79,8 +79,8 @@ object ParserSVM {
       val c = new ParserSVM
 
       var trainingVs = c.generateDecisions(sentences, new ParserAlgorithm(0))
-      NonProjParserFeaturesDomain.freeze()
-      println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
+      c.featuresDomain.freeze()
+      println("# features " + c.featuresDomain.dimensionDomain.size)
 
       c.trainFromVariables(trainingVs)
 
@@ -121,16 +121,19 @@ object ParserSVM {
 }
 
 class ParserSVM extends DocumentAnnotator {
-  val parserClassifier = new ModelBasedClassifier[ParseDecisionVariable, TemplateModel](new TemplateModel {
-      addTemplates(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](this, lTof, DecisionDomain, NonProjParserFeaturesDomain))
-  }, DecisionDomain)
-  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(DecisionDomain, NonProjParserFeaturesDomain, parserClassifier.model, file, gzip=gzip)
-  def load(file: File, gzip: Boolean) = { BinarySerializer.deserialize(DecisionDomain, NonProjParserFeaturesDomain, parserClassifier.model, file, gzip=gzip); this }
-  def classify(v: ParseDecisionVariable): ParseDecision = new ParseDecision(DecisionDomain.category(parserClassifier.classify(v).bestLabelIndex))
-
-
+  object labelDomain extends CategoricalDomain[String]
+  labelDomain += ParserSupport.defaultCategory
+  object featuresDomain extends CategoricalDimensionTensorDomain[String]
 
   def lTof(l: ParseDecisionVariable) = l.features
+  val parserClassifier = new ModelBasedClassifier[ParseDecisionVariable, TemplateModel](new TemplateModel {
+      addTemplates(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](this, lTof, labelDomain, featuresDomain))
+  }, labelDomain)
+
+  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(labelDomain, featuresDomain, parserClassifier.model, file, gzip=gzip)
+  def load(file: File, gzip: Boolean) = BinarySerializer.deserialize(labelDomain, featuresDomain, parserClassifier.model, file, gzip=gzip)
+  def classify(v: ParseDecisionVariable): ParseDecision = new ParseDecision(labelDomain.category(parserClassifier.classify(v).bestLabelIndex))
+
   def generateDecisions(ss: Seq[Sentence], p: ParserAlgorithm): Seq[ParseDecisionVariable] = {
     var i = 0
     val vs = ss.flatMap { s =>
@@ -139,7 +142,7 @@ class ParserSVM extends DocumentAnnotator {
         println("Parsed: " + i)
       val parser = new ParserAlgorithm(mode = p.mode); parser.predict = p.predict;
       parser.clear()
-      parser.parse(s)
+      parser.parse(s, labelDomain, featuresDomain)
       parser.instances
     }
     vs
@@ -163,7 +166,7 @@ class ParserSVM extends DocumentAnnotator {
       parser.clear()
       val gold = parser.getSimpleDepArcs(s)
       parser.clear()
-      val dts = parser.parse(s)
+      val dts = parser.parse(s, labelDomain, featuresDomain)
       p.clear()
       val pred = (dts.drop(1).map { dt =>
         if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
@@ -205,7 +208,7 @@ class ParserSVM extends DocumentAnnotator {
     val p = new ParserAlgorithm(mode = PREDICTING)
     p.predict = classify
     val parse = new ParseTree(s)
-    p.parse(s).drop(1).filter(_.hasHead).map { dt => 
+    p.parse(s, labelDomain, featuresDomain).drop(1).filter(_.hasHead).map { dt =>
       parse.setParent(dt.thisIdx - 1, dt.head.depToken.thisIdx - 1)
       // TODO: why is this necessary? Shouldn't I be able to do set(s: String)?
       parse.label(dt.thisIdx - 1).set(ParseTreeLabelDomain.index(dt.head.label))(null)

@@ -46,7 +46,7 @@ class ParserAlgorithm(var mode: Int = 0) {
     instances.clear()
   }
 
-  def parse(s: Sentence): Array[DepToken] = {
+  def parse(s: Sentence, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): Array[DepToken] = {
     
     val depTokens = getDepTokens(s)
     
@@ -64,7 +64,7 @@ class ParserAlgorithm(var mode: Int = 0) {
       if (state.stack < 0)
         noShift()
       else {
-        val label = getDecision()
+        val label = getDecision(domain, featureDomain)
         
         //if(debug)
         //  println(instances.last.features.activeCategories.mkString("\n"))
@@ -173,20 +173,20 @@ class ParserAlgorithm(var mode: Int = 0) {
   private def rightShift(label: String) { debugPrint("RightShift"); rightArc(label); shift()  }
   private def rightPass(label: String)  { debugPrint("RightPass");  rightArc(label); pass()   }
 
-  private def getDecision(): ParseDecision = {
+  private def getDecision(domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): ParseDecision = {
     mode match {
       case TRAINING => {
 	    val decision = getGoldDecision()
-	    instances += new ParseDecisionVariable(decision, state)
+	    instances += new ParseDecisionVariable(decision, state, domain, featureDomain)
 	    decision
 	  }
       case BOOSTING => {
-	    val label = new ParseDecisionVariable(getGoldDecision(), state)
+	    val label = new ParseDecisionVariable(getGoldDecision(), state, domain, featureDomain)
 	    instances += label
 	    predict(label)
 	  }
       case PREDICTING => {
-        predict(new ParseDecisionVariable(state))
+        predict(new ParseDecisionVariable(state, domain, featureDomain))
       }
     }
   }

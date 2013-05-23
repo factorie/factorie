@@ -14,21 +14,19 @@ object ParserSupport {
     }
     
     object ParserConstants {
-      
       val SHIFT  = 0
       val REDUCE = 1
       val PASS   = 2
-    
+
       val LEFT  = 0
       val RIGHT = 1
       val NO    = 2
       
       val ROOT_ID = 0
-  
+
       val TRAINING   = 0
       val PREDICTING = 1
       val BOOSTING   = 2
-      
     }
     
     object DepToken {
@@ -85,118 +83,107 @@ object ParserSupport {
       override def toString = "(f: %s, l: %s, p: %s)".format(form, lemma, pos)
     
     }
+
+  case class DepArc(depToken: DepToken, label: String)
+
+  class ParseState(var stack: Int,
+                   var input: Int,
+                   val reducedIds: HashSet[Int],
+                   val sentenceTokens: Array[DepToken]) {
+
+    sentenceTokens.foreach(_.state = this)
+
+    def this(tokens: Array[DepToken]) = this(0, 1, HashSet[Int](), tokens)
+
+    val leftmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
+    val rightmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
     
-    case class DepArc(depToken: DepToken, label: String)
-    
-    class ParseState(
-        var stack: Int,
-        var input: Int,
-        val reducedIds: HashSet[Int],
-        val sentenceTokens: Array[DepToken]) {
-      
-      sentenceTokens.foreach(_.state = this)
-      
-      def this(tokens: Array[DepToken]) = this(0, 1, HashSet[Int](), tokens)
-      
-      val leftmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
-      val rightmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
-    
-      def inputToken(offset: Int): DepToken = {
-        val i = input + offset
-        if (i < 0 || sentenceTokens.size - 1 < i)
-          return DepToken.nullToken
-        else
-          sentenceTokens(i)
-      }
-      
-      def lambdaToken(offset: Int): DepToken = {
-        val i = stack + offset
-        if (i < 0 || sentenceTokens.size - 1 < i)
-          return DepToken.nullToken
-        else
-          sentenceTokens(i)
-      }
-      
-      def stackToken(offset: Int): DepToken = {
-    
-        // TODO: check for correctness (wait on Jinho)
-        if (offset == 0)
-          return sentenceTokens(stack)
-    
-        var off = math.abs(offset)
-        var dir = if (offset < 0) -1 else 1
-    
-        var i = stack + dir
-        while (0 < i && i < input) {
-    
-          if (!reducedIds.contains(i)) {
-            off -= 1
-            if (off == 0)
-              return sentenceTokens(i)
-          }
-    
-          i += dir
-        }
-    
+    def inputToken(offset: Int): DepToken = {
+      val i = input + offset
+      if (i < 0 || sentenceTokens.size - 1 < i)
         return DepToken.nullToken
-      }
-      
-      override def toString = "[ParseState: %d, %d]" format (stack, input)
-    
-    }
-    
-    class ParseDecision(val action: String) {
-      val Array(lrnS, srpS, label) = action.split(" ")
-      val leftOrRightOrNo = lrnS.toInt
-      val shiftOrReduceOrPass = srpS.toInt
-      import ParserConstants._
-      def shift_?  = shiftOrReduceOrPass == SHIFT
-      def reduce_? = shiftOrReduceOrPass == REDUCE
-      def pass_?   = shiftOrReduceOrPass == PASS
-      def left_?   = leftOrRightOrNo == LEFT
-      def right_?  = leftOrRightOrNo == RIGHT
-      override def toString = {
-        val s = new StringBuffer
-        s append "["
-        s append "Decision: "
-        s append (leftOrRightOrNo match {
-          case LEFT  => "left"
-          case RIGHT => "right"
-          case NO    => "no"
-          case -1    => "TEST"
-        })
-        s append "-"
-        s append (shiftOrReduceOrPass match {
-          case SHIFT  => "shift"
-          case REDUCE => "reduce"
-          case PASS   => "pass"
-          case -1     => "TEST"
-        })
-        s append (" label: " + label)
-        s append "]"
-        s.toString
-      }
+      else
+        sentenceTokens(i)
     }
 
-  // define variables and domains
-  object DecisionDomain extends CategoricalDomain[String] {
-    this += "-1 -1 N"
-    lazy val defaultCategory = this.head.category
+    def lambdaToken(offset: Int): DepToken = {
+      val i = stack + offset
+      if (i < 0 || sentenceTokens.size - 1 < i)
+        return DepToken.nullToken
+      else
+        sentenceTokens(i)
+    }
+
+    def stackToken(offset: Int): DepToken = {
+
+      // TODO: check for correctness (wait on Jinho)
+      if (offset == 0)
+        return sentenceTokens(stack)
+
+      var off = math.abs(offset)
+      var dir = if (offset < 0) -1 else 1
+
+      var i = stack + dir
+      while (0 < i && i < input) {
+
+        if (!reducedIds.contains(i)) {
+          off -= 1
+          if (off == 0)
+            return sentenceTokens(i)
+        }
+
+        i += dir
+      }
+
+      return DepToken.nullToken
+    }
+
+    override def toString = "[ParseState: %d, %d]" format (stack, input)
+    
   }
 
-  class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabeledCategoricalVariable(targetDecision.action) {
-    def this(state: ParseState) = this(new ParseDecision(DecisionDomain.defaultCategory), state)
-    def domain = DecisionDomain
-    val features = new NonProjDependencyParserFeatures(this)
+  class ParseDecision(val action: String) {
+    val Array(lrnS, srpS, label) = action.split(" ")
+    val leftOrRightOrNo = lrnS.toInt
+    val shiftOrReduceOrPass = srpS.toInt
+    import ParserConstants._
+    def shift_?  = shiftOrReduceOrPass == SHIFT
+    def reduce_? = shiftOrReduceOrPass == REDUCE
+    def pass_?   = shiftOrReduceOrPass == PASS
+    def left_?   = leftOrRightOrNo == LEFT
+    def right_?  = leftOrRightOrNo == RIGHT
+    override def toString = {
+      val s = new StringBuffer
+      s append "["
+      s append "Decision: "
+      s append (leftOrRightOrNo match {
+        case LEFT  => "left"
+        case RIGHT => "right"
+        case NO    => "no"
+        case -1    => "TEST"
+      })
+      s append "-"
+      s append (shiftOrReduceOrPass match {
+        case SHIFT  => "shift"
+        case REDUCE => "reduce"
+        case PASS   => "pass"
+        case -1     => "TEST"
+      })
+      s append (" label: " + label)
+      s append "]"
+      s.toString
+    }
+  }
+
+  val defaultCategory = "-1 -1 N"
+  class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState, val domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]) extends LabeledCategoricalVariable(targetDecision.action) {
+    def this(state: ParseState, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]) = this(new ParseDecision(defaultCategory), state, domain, featureDomain)
+    val features = new NonProjDependencyParserFeatures(this, featureDomain)
     features ++= ParserUtils.featureGenerators.map(_.apply(state))
   }
 
-    object NonProjParserFeaturesDomain extends CategoricalDimensionTensorDomain[String] //StringHashDomain(6000000)
-//    object NonProjParserFeaturesDomain extends StringHashDomain(6000000)
-    class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
-    //class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends HashingBinaryFeatureVectorVariable[String] {
-      override def domain = NonProjParserFeaturesDomain
-      override def skipNonCategories = domain.dimensionDomain.frozen
-    }
+  class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable, val domain: CategoricalDimensionTensorDomain[String]) extends BinaryFeatureVectorVariable[String] {
+    override def skipNonCategories = domain.dimensionDomain.frozen
+  }
     
 }
