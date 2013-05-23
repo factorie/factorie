@@ -14,8 +14,7 @@
 
 package cc.factorie
 
-import la._
-
+// Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
 // The "target" is a container for the true, correct value.
 // The "aimer" is the variable that is supposed to have the true value; it is aiming to have the target value, 
@@ -24,35 +23,41 @@ import la._
 // The "aimer" is a variable that should have the target value.  
 // The "target" is the container for that target value, which also has a pointer back to its aimer. 
 
-/** Sets the TargetType, which is the type of the container of another variable's target value,
-    doing so in a way that the type is both concrete and can be overridden in subclasses. */
+/** Sets the TargetType, which is the type of the object containing an "aimer" variable's target value,
+    doing so in a way that the type is both concrete and can be overridden in subclasses.
+    @author Andrew McCallum */
 trait TargetType[+T<:Var with AimerType[Var]] {
   type TargetType = T
 }
 /** Sets the AimerType, which is the type of the variable that aims to have this target value,
-    doing so in a way that the type is both concrete and can be overridden in subclasses. */
+    doing so in a way that the type is both concrete and can be overridden in subclasses.
+    @author Andrew McCallum */
 trait AimerType[+A<:Var] {
   type AimerType = A
 }
 
 /** A trait for all variables that are containers of target values.  
     Having this trait allows ZeroOneLossTemplate to use this type as a neighbor,
-    and, for example, avoid trying to unroll for all DiscreteVectorVar. */
+    and, for example, to avoid trying to unroll for all DiscreteVectorVar.
+    @author Andrew McCallum */
 trait TargetVar extends Var with AimerType[Var] {
   /** Returns the variable that "aims" to have to have its value match this variable's as its target */
   def aimer: AimerType
 }
 
-/** A Variable that has a desired correct "target" value, but not a method to directly obtain that value. */
+/** A Variable that has a desired correct "target" value, 
+    but not a method to directly obtain the "target" object that holds value.
+    @author Andrew McCallum */
 trait LabeledVar extends Var {
   def targetValue: Value
   def valueIsTarget: Boolean = value == targetValue
 }
 
-/** A Variable that has a desired correct target value,
-    and also a "target" method returning the Variable that holds this target value. 
+/** An abstract variable that has a desired correct target value,
+    and also a "target" method returning the variable that holds this target value. 
     This "target" variable is of type TargetVar, and should have a "aimer" method that 
-    returns a pointer back to this Variable. */
+    returns a pointer back to this Variable.
+    @author Andrew McCallum */
 trait LabeledVarWithTarget extends LabeledVar with TargetType[TargetVar] {
   self =>
   /** Stores the intended true "target" value for this variable. */
@@ -61,30 +66,41 @@ trait LabeledVarWithTarget extends LabeledVar with TargetType[TargetVar] {
   def targetValue = target.value.asInstanceOf[Value]
 }
 
+/** An abstract mutable variable that has a desired correct "target" value.
+    @author Andrew McCallum  */
 trait LabeledMutableVar[A] extends MutableVar[A] with LabeledVar {
   def setToTarget(implicit d:DiffList = null): Unit = set(targetValue)
 }
+
+/** An abstract mutable variable that has a desired correct target value,
+    and also a "target" method returning the variable that holds this target value. 
+    @author Andrew McCallum */
 trait LabeledMutableVarWithTarget[A] extends LabeledVarWithTarget with LabeledMutableVar[A] 
 
 
 
 // Discrete variables with targets.
 
-/** A container of a target value for discrete variables.  */
+/** A container of a target value for discrete variables.
+    @author Andrew McCallum  */
 trait DiscreteTargetVar[V<:DiscreteValue] extends MutableDiscreteVar[V] with TargetVar with AimerType[LabeledMutableDiscreteVarWithTarget[V]] //with AimerType[DiscreteVariable]
 
+/** An abstract discrete variable that has a desired correct "target" value.
+    author Andrew McCallum */
 trait LabeledDiscreteVar extends DiscreteVar with LabeledVar {
   def targetIntValue: Int  
   override def valueIsTarget: Boolean = targetIntValue == intValue
   //def targetValue: A = domain(targetIntValue).asInstanceOf[A]
 }
 
-/** These variables have a target value, but it may not necessarily be stored in a separate TargetVar variable. */
+/** An abstract mutable discrete variable that has a desired correct "target" value.
+    This variable has a target value, but it may not necessarily be stored in a separate TargetVar variable.
+    @author Andrew McCallum */
 trait LabeledMutableDiscreteVar[A<:DiscreteValue] extends LabeledDiscreteVar with MutableDiscreteVar[A] with LabeledMutableVar[A] {
   override def setToTarget(implicit d:DiffList = null): Unit = set(targetIntValue)
 }
 
-/** A discrete variable that has a true, target "labeled" value, 
+/** An abstract discrete variable that has a true, target "labeled" value, 
     separate from its current value. 
     @author Andrew McCallum */
 trait LabeledMutableDiscreteVarWithTarget[A<:DiscreteValue] extends LabeledVarWithTarget with LabeledMutableDiscreteVar[A] with TargetType[DiscreteTargetVar[A]] {
@@ -97,6 +113,9 @@ trait LabeledMutableDiscreteVarWithTarget[A<:DiscreteValue] extends LabeledVarWi
   def relabel = if (targetIntValue < 0) targetIntValue = -(targetIntValue+1) else throw new Error("Already labeled.")
 }
 
+/** A mutable discrete variable that has a true, target "labeled" value, separate from its current value.
+    The only abstract method is "domain".    
+    @author Andrew McCallum */
 abstract class LabeledDiscreteVariable(targetValue:Int) extends DiscreteVariable(targetValue) with LabeledMutableDiscreteVarWithTarget[DiscreteValue] {
   self =>
   val target = new DiscreteTarget(targetValue).asInstanceOf[TargetType]
@@ -109,22 +128,30 @@ abstract class LabeledDiscreteVariable(targetValue:Int) extends DiscreteVariable
 
 // Categorical variables with targets
 
+/** A container of a target value for categorical variables.
+    @author Andrew McCallum  */
 trait CategoricalTargetVar[V<:CategoricalValue[C],C] extends MutableCategoricalVar[V,C] with DiscreteTargetVar[V] with AimerType[LabeledMutableCategoricalVarWithTarget[V,C]] /*with AimerType[CategoricalVariable[C]]*/
 
+/** An abstract mutable categorical variable that has a desired correct "target" value.
+    This variable has a target value, but it may not necessarily be stored in a separate TargetVar variable.
+    @author Andrew McCallum */
 trait LabeledMutableCategoricalVar[V<:CategoricalValue[C],C] extends MutableCategoricalVar[V,C] with LabeledMutableDiscreteVar[V] {
   def targetCategory: C = targetValue.category
 } 
 
+/** An abstract categorical variable that has a true, target "labeled" value, 
+    separate from its current value. 
+    @author Andrew McCallum */
 trait LabeledMutableCategoricalVarWithTarget[V<:CategoricalValue[C],C] extends LabeledMutableCategoricalVar[V,C] with LabeledMutableDiscreteVarWithTarget[V] with TargetType[CategoricalTargetVar[V,C]]
 
 
-/** A CategoricalVariable with a single value and a target value.
-    @author Andrew McCallum
- */
+/** A mutable categorical variable that has a true, target "labeled" value, separate from its current value.
+    The only abstract method is "domain".    
+    @author Andrew McCallum */
 abstract class LabeledCategoricalVariable[C](theTargetCategory:C) extends CategoricalVariable[C](theTargetCategory) with LabeledMutableCategoricalVarWithTarget[CategoricalValue[C],C] with TargetType[CategoricalVariable[C] with CategoricalTargetVar[CategoricalValue[C],C]] {
   self =>
   val target = new CategoricalTarget(theTargetCategory).asInstanceOf[TargetType]
-  class CategoricalTarget(targetVal:C) extends CategoricalVariable(targetVal) with CategoricalTargetVar[CategoricalValue[C],C] /*with AimerType[CoordinatedLabeledCategoricalVariable[C]]*/ {
+  class CategoricalTarget(targetVal:C) extends CategoricalVariable(targetVal) with CategoricalTargetVar[CategoricalValue[C],C] {
     def domain = self.domain
     def aimer = self
   }
@@ -137,16 +164,28 @@ trait LabeledBooleanVar extends LabeledMutableCategoricalVarWithTarget[BooleanVa
 class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVal) with LabeledBooleanVar {
   self =>
   val target = new LabeledBooleanTarget(targetVal).asInstanceOf[TargetType] // new BooleanLabelTarget(targetVal, this)
-  class LabeledBooleanTarget(targetVal:Boolean) extends BooleanVariable(targetVal) with CategoricalTargetVar[BooleanValue, Boolean] /*with AimerType[CoordinatedLabeledBooleanVariable]*/ {
+  class LabeledBooleanTarget(targetVal:Boolean) extends BooleanVariable(targetVal) with CategoricalTargetVar[BooleanValue, Boolean] {
     def aimer = self
   }
 } 
 
-
 // For Integers
-
 trait LabeledIntegerVar extends IntegerVar with LabeledVar
 class LabeledIntegerVariable(val targetValue:Int) extends IntegerVariable(targetValue) with LabeledIntegerVar
+
+// For Doubles
+trait LabeledDoubleVar extends DoubleVar with LabeledVar
+class LabeledDoubleVariable(val targetValue:Double) extends DoubleVariable(targetValue) with LabeledDoubleVar
+
+// For Reals
+trait LabeledRealVar extends RealVar with LabeledVar
+class LabeledRealVariable(val targetDouble:Double) extends RealVariable(targetDouble) with LabeledRealVar {
+  def targetValue = new RealValue(targetDouble)
+}
+
+// For Strings
+trait LabeledStringVar extends StringVar with LabeledVar
+class LabeledStringVariable(val targetValue:String) extends StringVariable(targetValue) with LabeledStringVar
 
 
 // Templates
@@ -160,6 +199,7 @@ class HammingTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Man
 object HammingObjective extends HammingTemplate[LabeledVarWithTarget]
 
 class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+  import cc.factorie.la._
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
@@ -174,6 +214,7 @@ class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm
   }
 }
 object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]
+
 
 // Evaluation
 

@@ -228,3 +228,8 @@ class CategoricalDomainCubbie[T](val cd: CategoricalDomain[T]) extends Cubbie {
    data.readIndexAndCreateVariables // again
    </pre>
    */
+
+// TODO Consider categorical remapping interface in the future.
+///** To be used to avoid re-reading the data after CategoricalDomain trimming, 
+//    but not yet implemented. */
+//trait CategoricalRemapping { def remapCategories(fn:(Int)=>Int) }

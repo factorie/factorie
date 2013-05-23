@@ -34,13 +34,17 @@ abstract class AutoDiff(implicit d:DiffList) extends Diff {
   redo
 }
 
+/** A Diff that makes no change.
+    @author Andrew McCallum */
 case class NoopDiff(variable:Var) extends Diff {
   def redo: Unit = {}
   def undo: Unit = {}
 }
  
-/** A collection of changes to variables; the common representation for the result of a proposed change in configuration.
-    Tracks whether the change is in its done or undone state and throws an error if repeated undo or redo is attempted.
+/** A collection of changes to variables.  
+    This is the common representation for the result of a proposed change in configuration.
+
+    Instances check whether the change is in its done or undone state and throws an error if repeated undo or redo is attempted.
     A DiffList can be scored according to a model (or two models) with scoreAndUndo methods.
     @author Andrew McCallum
  */

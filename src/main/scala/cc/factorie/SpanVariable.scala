@@ -169,7 +169,7 @@ class SpanVariable[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:Cha
   this: This =>
   _start = initialStart
   _length = initialLength
-  _chain = theChain
+  _chain = theChain //null.asInstanceOf[C] // It will get set in _chain.addSpan below.
   _chain.addSpan(this)(d)  // TODO Remove this.  There can be a span that the document doesn't know about.  But exactly when would it get registered in the ChainWithSpans? -akm
   //if (d ne null) NewSpan // Add NewSpan diff to the DiffList
 }
@@ -183,7 +183,7 @@ trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLi
   def spans: Seq[S] = _spans
   def spansOfClass[A<:S](c:Class[A]): Seq[A] = _spans.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.erasure.asInstanceOf[Class[A]])
-  def +=(s:S): Unit = { _spans.prepend(s); s._chain = this; s._present = true }
+  def +=(s:S): Unit = { require((s._chain eq this) || (s._chain eq null)); _spans.prepend(s); s._chain = this; s._present = true }
   def -=(s:S): Unit = { _spans -= s; s._present = false }
   // Spans sorted by their start position
   def orderedSpans: Seq[S] = spans.toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
@@ -248,7 +248,8 @@ trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
-    require(s.chain == null, "VariableSeqWithSpans.addSpan: span.chain="+s.chain+" already belongs to another Chain.") // This check was commented out before 23 May 2013 -akm
+    // This check is now done in ChainWithSpans.+=
+    //require(s.chain == null, "VariableSeqWithSpans.addSpan: span.chain="+s.chain+" already belongs to another Chain. equal="+(s.chain eq this)) // This check was commented out before 23 May 2013 -akm
     AddSpanVariable(s)
   }
   /** Remove the span from the list of spans maintained by this ChainWithSpans.

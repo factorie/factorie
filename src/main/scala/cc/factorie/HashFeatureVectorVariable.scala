@@ -6,40 +6,31 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.SynchronizedMap
 import cc.factorie.la._
 
-/*
- * A Domain which does not preserve the mapping from Category to Value,
- * instead using the hash of C to index.
- * 
- * @author Brian Martin
- * @date 10/7/2012
- * @since 1.0
- */
-
-
-object HashHelper {
-  def hash(s: String) = MurmurHash.stringHash(s)
-  def hash(c: Any) = c.hashCode()
-  def index(s: String, size: Int) = math.abs(MurmurHash.stringHash(s) % size)
-  def index(c: Any, size: Int) = math.abs(c.hashCode() % size)
+/** Functions used inside HashFeatureVectorVariable,
+    also available here for outside use. */
+object HashFeatureVectorVariable {
+  def hash(c: Any): Int = c match {
+    case s:String => MurmurHash.stringHash(s)
+    case _ => c.hashCode()
+  }
+  def index(c: Any, size: Int): Int = hash(c) % size
+  def sign(c: Any): Int = hash(c) >> 31
 }
 
-
-abstract class ObjectHashFeatureVectorVariable[C] extends DiscreteDimensionTensorVariable {
+/** A variable whose value is a SparseTensor1 whose length matches the size of a DiscreteDomain,
+    and whose dimensions each correspond to the result of running a hash function on elements
+    added to the vector using +=.
+    These can be used as feature vectors where one wants to avoid a large or growing CategoricalDomain.
+    The 'dimensionDomain' is abstract.
+    @author Andrew McCallum */
+abstract class HashFeatureVectorVariable extends DiscreteDimensionTensorVariable {
   override def domain: DiscreteDomain
-  def ++=(cs: Iterable[C]) = cs.map(this.+= _)
-  def +=(c: C) = {
-    val hash = HashHelper.hash(c)
+  def this(initVals:Iterable[Any]) = { this(); initVals.map(this.+=_) }
+  def ++=(cs: Iterable[Any]): Unit = cs.foreach(this.+= _)
+  def +=(c: Any): Unit = {
+    val hash = HashFeatureVectorVariable.hash(c)
     val sign = math.signum(hash >> 31)
     tensor.update(math.abs(hash % domain.size), sign)
   }
-  def this(initVals:Iterable[C]) = { this(); initVals.map(this.+=_) }
   set(new SparseIndexedTensor1(domain.size))(null)
-}
-
-abstract class HashFeatureVectorVariable extends ObjectHashFeatureVectorVariable[String] {
-  override def +=(c: String) {
-    val hash = HashHelper.hash(c)
-    val sign = math.signum(hash >> 31)
-    tensor.update(math.abs(hash % domain.size), sign)
-  }
 }
