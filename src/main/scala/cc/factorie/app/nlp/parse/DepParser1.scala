@@ -249,7 +249,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int,options: TrainOptions): Unit = {
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
@@ -274,7 +274,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
 
 
-    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = 10, nThreads = nThreads)
+    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = numIteration, nThreads = nThreads)
     var iter = 0
     while(!trainer.isConverged) {
       iter += 1
@@ -298,7 +298,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println(" Testing LAS = "+ las(testSentences.toSeq))
       println()
       println("Saving model...")
-      serialize(name + "-iter-"+iter)
+      if (name != "") serialize(name + "-iter-"+iter)
 
       //opt.unSetWeightsToAverage(model.weightsSet)
     }
