@@ -41,7 +41,7 @@ object LoadOntonotes5 {
   var loadNer = true
 
   def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document().setName("Ontonotes499" + filename)
+    val document: Document = new Document().setName("Ontonotes499" + filename)
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -63,14 +63,15 @@ object LoadOntonotes5 {
         val parentIdx = fields(8).toInt - 1
         val depLabel = fields(10)
         var ner = fields(13); if (ner == "_") ner = "O"
-        if (partOfSpeech != "XX") { // Skip words marked with part-of-speech "XX"
+        // Alex: we can't ignore XX tokens or the parser trees end up malformed.
+        // if (partOfSpeech != "XX") { // Skip words marked with part-of-speech "XX"
           document.appendString(" ")
           val token = new Token(sentence, word)
-          if (loadPos) token.attr += new PTBPosLabel(token, partOfSpeech)
+          if (loadPos) token.attr += new PTBPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
           if (loadNer) token.attr += new BioOntonotesNerLabel(token, ner)
           if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
           depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
-        }
+        // }
       }
     }
     if (sentence ne null)
