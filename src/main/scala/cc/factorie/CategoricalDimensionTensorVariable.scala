@@ -75,6 +75,8 @@ trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
   def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
 
+// TODO we should maybe refactor this to not set the Value type to "Tensor", as this makes things require casting down the road when using this for eg classifiers on tensor1 features -luke
+
 /** An abstract variable whose value is a Tensor whose length matches the size of a CategoricalDomain,
     and whose dimensions each correspond to a category.
     These are commonly used for feature vectors, with String categories.

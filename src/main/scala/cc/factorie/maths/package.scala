@@ -224,7 +224,7 @@ object FactorialCache {
 // LogGamma
 
 object LogGamma {
-  val d1 = -5.772156649015328605195174e-1;
+  val d1 = -5.772156649015328605195174e-1
   val p1 = Array( 
     4.945235359296727046734888e0, 2.018112620856775083915565e2, 
     2.290838373831346393026739e3, 1.131967205903380828685045e4, 
@@ -250,7 +250,7 @@ object LogGamma {
     5.267964117437946917577538e6, 1.346701454311101692290052e7, 
     1.782736530353274213975932e7, 9.533095591844353613395747e6
   )
-  val d4 = 1.791759469228055000094023e0;
+  val d4 = 1.791759469228055000094023e0
   val p4 = Array(
     1.474502166059939948905062e4, 2.426813369486704502836312e6, 
     1.214755574045093227939592e8, 2.663432449630976949898078e9, 
@@ -278,45 +278,43 @@ object LogGamma {
     var x = xa
     var result = 0.0; var y = 0.0; var xnum = 0.0; var xden = 0.0
     var i = 0
-    val a = 0.6796875;
+    val a = 0.6796875
 
-    if((x <= 0.5) || ((x > a) && (x <= 1.5))) {
-      if(x <= 0.5) {
-        result = -math.log(x);
+    if ((x <= 0.5) || ((x > a) && (x <= 1.5))) {
+      if (x <= 0.5) {
+        result = -math.log(x)
         /*  Test whether X < machine epsilon. */
-        if(x+1 == 1) {
-          return result;
+        if (x + 1 == 1) {
+          return result
         }
+      } else {
+        result = 0
+        x = (x - 0.5) - 0.5 // is this right? -luke
       }
-        else {
-          result = 0;
-          x = (x - 0.5) - 0.5;
-        }
-      xnum = 0;
-      xden = 1;
+      xnum = 0
+      xden = 1
+      for (i <- 0 until 8) {
+        xnum = xnum * x + p1(i)
+        xden = xden * x + q1(i)
+      }
+      result += x*(d1 + x*(xnum/xden))
+    } else if ((x <= a) || ((x > 1.5) && (x <= 4))) {
+      if(x <= a) {
+        result = -math.log(x)
+        x = (x - 0.5) - 0.5
+      }
+      else {
+        result = 0
+        x -= 2
+      }
+      xnum = 0
+      xden = 1
       for(i <- 0 until 8) {
-        xnum = xnum * x + p1(i);
-        xden = xden * x + q1(i);
+        xnum = xnum * x + p2(i)
+        xden = xden * x + q2(i)
       }
-      result += x*(d1 + x*(xnum/xden));
+      result += x*(d2 + x*(xnum/xden))
     }
-        else if((x <= a) || ((x > 1.5) && (x <= 4))) {
-          if(x <= a) {
-            result = -math.log(x);
-            x = (x - 0.5) - 0.5;
-          }
-          else {
-            result = 0;
-            x -= 2;
-          }
-          xnum = 0;
-          xden = 1;
-          for(i <- 0 until 8) {
-            xnum = xnum * x + p2(i);
-            xden = xden * x + q2(i);
-          }
-          result += x*(d2 + x*(xnum/xden));
-        }
           else if(x <= 12) {
             x -= 4;
             xnum = 0;
@@ -338,7 +336,7 @@ object LogGamma {
             xnum *= x;
             result += xnum;
           }
-    return result;
+    result
   }
   
   def logBeta(a:Double , b:Double) = logGamma(a)+logGamma(b)-logGamma(a+b)
@@ -424,6 +422,9 @@ object LogGamma {
       b + math.log1p(math.exp(a-b))
   }
 
+
+
+
   // Below adapted from Stanford NLP package, SloppyMath.java
   /**
    * Sums an array of numbers log(x1)...log(xn).  This saves some of
@@ -470,110 +471,91 @@ object LogGamma {
       max
   }
 
-  /**
-   *  Returns the difference of two doubles expressed in log space,
-   *   that is,
-   * <pre>
-   *    sumLogProb = log (e^a - e^b)
-   *               = log e^a(1 - e^(b-a))
-   *               = a + log (1 - e^(b-a))
-   * </pre>
-   *
-   * By exponentiating <tt>b-a</tt>, we obtain better numerical precision than
-   *  we would if we calculated <tt>e^a</tt> or <tt>e^b</tt> directly.
-   * <p>
-   * Returns <tt>NaN</tt> if b > a (so that log(e^a - e^b) is undefined).
-   */
-  def subtractLogProb (a:Double, b:Double) = 
+  def subtractLogProb (a:Double, b:Double) =
     if (b == Double.NegativeInfinity) a else a + math.log (1 - math.exp(b-a))
-
-    
-    
 
 
 // Poly
 
   def poly(coeff: Array[Double], x: Double): Double = {
-    var result: Double = 0;
-    var i: Int = coeff.length - 1;
+    var result: Double = 0
+    var i: Int = coeff.length - 1
     while (i >= 0) {
-      result = result * x + coeff(i);
-      i -= 1;
+      result = result * x + coeff(i)
+      i -= 1
     }
-    result;
+    result
   }
-
-
 
 
 // Probit
 
-object Probit {
-  val a = Array(
-    3.3871328727963666080,
-    133.14166789178437745,
-    1971.5909503065514427,
-    13731.693765509461125,
-    45921.953931549871457,
-    67265.770927008700853,
-    33430.575583588128105,
-    2509.0809287301226727
-  )
-  val b = Array(
-    1.0,
-    42.313330701600911252,
-    687.18700749205790830,
-    5394.1960214247511077,
-    21213.794301586595867,
-    39307.895800092710610,
-    28729.085735721942674,
-    5226.4952788528545610
-  )
-  val c = Array(
-    1.42343711074968357734,
-    4.63033784615654529590,
-    5.76949722146069140550,
-    3.64784832476320460504,
-    1.27045825245236838258,
-    0.241780725177450611770,
-    0.0227238449892691845833,
-    0.00077454501427834140764
-  )
-  val const1 = 0.180625;
-  val const2 = 1.6;
-  val d = Array(
-    1.0E+00,
-    2.05319162663775882187E+00,
-    1.67638483018380384940E+00,
-    6.89767334985100004550E-01,
-    1.48103976427480074590E-01,
-    1.51986665636164571966E-02,
-    5.47593808499534494600E-04,
-    1.05075007164441684324E-09
-  )
-  val e = Array(
-    6.65790464350110377720E+00,
-    5.46378491116411436990E+00,
-    1.78482653991729133580E+00,
-    2.96560571828504891230E-01,
-    2.65321895265761230930E-02,
-    1.24266094738807843860E-03,
-    2.71155556874348757815E-05,
-    2.01033439929228813265E-07
-  )
-  val f = Array(
-    1.0E+00,
-    5.99832206555887937690E-01,
-    1.36929880922735805310E-01,
-    1.48753612908506148525E-02,
-    7.86869131145613259100E-04,
-    1.84631831751005468180E-05,
-    1.42151175831644588870E-07,
-    2.04426310338993978564E-15
-  )
-  val split1 = 0.425;
-  val split2 = 5.0;
-}
+  object Probit {
+    val a = Array(
+      3.3871328727963666080,
+      133.14166789178437745,
+      1971.5909503065514427,
+      13731.693765509461125,
+      45921.953931549871457,
+      67265.770927008700853,
+      33430.575583588128105,
+      2509.0809287301226727
+    )
+    val b = Array(
+      1.0,
+      42.313330701600911252,
+      687.18700749205790830,
+      5394.1960214247511077,
+      21213.794301586595867,
+      39307.895800092710610,
+      28729.085735721942674,
+      5226.4952788528545610
+    )
+    val c = Array(
+      1.42343711074968357734,
+      4.63033784615654529590,
+      5.76949722146069140550,
+      3.64784832476320460504,
+      1.27045825245236838258,
+      0.241780725177450611770,
+      0.0227238449892691845833,
+      0.00077454501427834140764
+    )
+    val const1 = 0.180625
+    val const2 = 1.6
+    val d = Array(
+      1.0E+00,
+      2.05319162663775882187E+00,
+      1.67638483018380384940E+00,
+      6.89767334985100004550E-01,
+      1.48103976427480074590E-01,
+      1.51986665636164571966E-02,
+      5.47593808499534494600E-04,
+      1.05075007164441684324E-09
+    )
+    val e = Array(
+      6.65790464350110377720E+00,
+      5.46378491116411436990E+00,
+      1.78482653991729133580E+00,
+      2.96560571828504891230E-01,
+      2.65321895265761230930E-02,
+      1.24266094738807843860E-03,
+      2.71155556874348757815E-05,
+      2.01033439929228813265E-07
+    )
+    val f = Array(
+      1.0E+00,
+      5.99832206555887937690E-01,
+      1.36929880922735805310E-01,
+      1.48753612908506148525E-02,
+      7.86869131145613259100E-04,
+      1.84631831751005468180E-05,
+      1.42151175831644588870E-07,
+      2.04426310338993978564E-15
+    )
+    val split1 = 0.425
+    val split2 = 5.0
+  }
 
   def probit(p: Double): Double = {
     import Probit._
