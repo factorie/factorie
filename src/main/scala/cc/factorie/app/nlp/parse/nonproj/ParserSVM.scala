@@ -140,7 +140,7 @@ class ParserSVM extends DocumentAnnotator {
       i += 1
       if (i % 1000 == 0)
         println("Parsed: " + i)
-      val parser = new ParserAlgorithm(mode = p.mode); parser.predict = p.predict;
+      val parser = new ParserAlgorithm(mode = p.mode, p.predict)
       parser.clear()
       parser.parse(s, labelDomain, featuresDomain)
       parser.instances
@@ -149,16 +149,14 @@ class ParserSVM extends DocumentAnnotator {
   }
 
   def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]) {
-    val p = new ParserAlgorithm(mode = 2)
-    p.predict = (v: ParseDecisionVariable) => { classify(v) }
+    val p = new ParserAlgorithm(mode = 2, (v: ParseDecisionVariable) => { classify(v) })
     val newVs = generateDecisions(ss, p)
     trainFromVariables(addlVs ++ newVs)
   }
 
   def predict(ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-    val p = new ParserAlgorithm(mode = 1)
-    p.predict = (v: ParseDecisionVariable) => { classify(v) }
-    val parsers = new ThreadLocal[ParserAlgorithm] { override def initialValue = { val _p = new ParserAlgorithm(mode = p.mode); _p.predict = p.predict; _p }}
+    val p = new ParserAlgorithm(mode = 1, predict = (v: ParseDecisionVariable) => { classify(v) })
+    val parsers = new ThreadLocal[ParserAlgorithm] { override def initialValue = { new ParserAlgorithm(mode = p.mode, predict = p.predict) }}
     val (gold, pred) = ss.zipWithIndex.map({ case (s, i) =>
       if (i % 1000 == 0)
         println("Parsed: " + i)
@@ -205,8 +203,7 @@ class ParserSVM extends DocumentAnnotator {
   def postAttrs = Seq(classOf[ParseTree])
 
   def process(s: Sentence): Sentence = {
-    val p = new ParserAlgorithm(mode = PREDICTING)
-    p.predict = classify
+    val p = new ParserAlgorithm(mode = PREDICTING, predict = classify)
     val parse = new ParseTree(s)
     p.parse(s, labelDomain, featuresDomain).drop(1).filter(_.hasHead).map { dt =>
       parse.setParent(dt.thisIdx - 1, dt.head.depToken.thisIdx - 1)

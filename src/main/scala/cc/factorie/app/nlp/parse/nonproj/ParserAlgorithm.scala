@@ -24,11 +24,8 @@ import collection.GenSeq
  * @author Brian Martin
  */
 
-class ParserAlgorithm(var mode: Int = 0) {
-  
+class ParserAlgorithm(val mode: Int = 0, val predict: ParseDecisionVariable => ParseDecision = null) {
   import ParserConstants._
-  
-  var predict: ParseDecisionVariable => ParseDecision = null
   
   var goldHeads: Seq[DepArc] = null
   var state: ParseState = null
@@ -40,36 +37,24 @@ class ParserAlgorithm(var mode: Int = 0) {
   def predicting = mode == PREDICTING
   def boosting   = mode == BOOSTING
 
-  def clear(): Unit = {
+  def clear() = {
     goldHeads = null
     state = null
     instances.clear()
   }
 
   def parse(s: Sentence, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): Array[DepToken] = {
-    
     val depTokens = getDepTokens(s)
-    
-    state = new ParseState(0, 1, new HashSet[Int], depTokens)
+    state = new ParseState(0, 1, HashSet[Int](), depTokens)
     
     if (training || boosting)
       goldHeads = getDepArcs(depTokens, s)
       
-    var lastAction = null
-
     while(state.input < depTokens.length) {
-      //if (debug)
-	    //  println()
-      
       if (state.stack < 0)
         noShift()
       else {
         val label = getDecision(domain, featureDomain)
-        
-        //if(debug)
-        //  println(instances.last.features.activeCategories.mkString("\n"))
-        //  println(label, label.shift_?, label.reduce_?, label.pass_?)
-
         if (label.left_?) {
           if (state.stack == ROOT_ID)
             noShift()
@@ -96,11 +81,9 @@ class ParserAlgorithm(var mode: Int = 0) {
             else
                 noPass()
         }
-
       }
     }
-    
-    return depTokens
+    depTokens
   }
 
   def getDepTokens(s: Sentence): Array[DepToken] = {
@@ -110,9 +93,6 @@ class ParserAlgorithm(var mode: Int = 0) {
     a
   }
 
-  def setTokenHeads(ts: Array[DepToken], as: Seq[DepArc]): Unit =
-    ts.zip(as).foreach { case (t: DepToken, a: DepArc) => t.head = a }
-  
   def getSimpleDepArcs(s: Sentence): Seq[(Int, String)] = {
     s.parse.parents.map(_ + 1).zip(s.parse.labels.map(_.value.category))
   }
@@ -128,7 +108,7 @@ class ParserAlgorithm(var mode: Int = 0) {
   private def noReduce() = reduce()
   private def noPass() = pass()
 
-  private def leftArc(label: String) = {
+  private def leftArc(label: String) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     lambda.setHead(beta, label)
@@ -140,13 +120,13 @@ class ParserAlgorithm(var mode: Int = 0) {
     beta.setHead(lambda, label)
   }
 
-  private def shift() = {
+  private def shift() {
     debugPrint("Shift")
     state.stack = state.input
     state.input += 1
   }
 
-  private def reduce() = {
+  private def reduce() {
     debugPrint("Reduce")
     state.reducedIds.add(state.stack)
     passAux()
@@ -176,12 +156,12 @@ class ParserAlgorithm(var mode: Int = 0) {
   private def getDecision(domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): ParseDecision = {
     mode match {
       case TRAINING => {
-	    val decision = getGoldDecision()
+	    val decision = getGoldDecision
 	    instances += new ParseDecisionVariable(decision, state, domain, featureDomain)
 	    decision
 	  }
       case BOOSTING => {
-	    val label = new ParseDecisionVariable(getGoldDecision(), state, domain, featureDomain)
+	    val label = new ParseDecisionVariable(getGoldDecision, state, domain, featureDomain)
 	    instances += label
 	    predict(label)
 	  }
@@ -191,42 +171,35 @@ class ParserAlgorithm(var mode: Int = 0) {
     }
   }
 
-  def getGoldDecision(): ParseDecision = {
-
-    val label: ParseDecision = getGoldLabelArc()
-
+  def getGoldDecision: ParseDecision = {
+    val label: ParseDecision = getGoldLabelArc
     val shiftOrReduceOrPass =
       label.leftOrRightOrNo match {
-        case LEFT  => if (shouldGoldReduce(true)) REDUCE else PASS
+        case LEFT  => if (shouldGoldReduce(hasHead=true)) REDUCE else PASS
         case RIGHT => if (shouldGoldShift)        SHIFT  else PASS
         case _ => {
           if (shouldGoldShift) SHIFT
-          else if (shouldGoldReduce(false)) REDUCE
+          else if (shouldGoldReduce(hasHead=false)) REDUCE
           else PASS
         }
       }
-
     new ParseDecision(label.leftOrRightOrNo + " " + shiftOrReduceOrPass + " " + label.label)
   }
 
-  def getGoldLabelArc(): ParseDecision = {
-
+  def getGoldLabelArc: ParseDecision = {
     val headIdx   = goldHeads(state.stack).depToken.thisIdx
     val headLabel = goldHeads(state.stack).label
-
-    // if beta is the head of lambda
-    if (headIdx == state.input)
-      return new ParseDecision(LEFT + " " + (-1) + " " + headLabel)
-
     val inputHeadIdx   = goldHeads(state.input).depToken.thisIdx
     val inputHeadLabel = goldHeads(state.input).label
-
-    // if lambda is the head of beta
-    if (inputHeadIdx == state.stack)
-      return new ParseDecision(RIGHT + " " + (-1) + " " + inputHeadLabel)
-
-    // lambda doesn't have a head
-    return new ParseDecision(NO + " " + (-1) + " N")
+    // if beta is the head of lambda
+    if (headIdx == state.input) {
+       new ParseDecision(LEFT + " " + (-1) + " " + headLabel)
+    } else if (inputHeadIdx == state.stack) {
+      new ParseDecision(RIGHT + " " + (-1) + " " + inputHeadLabel)
+    } else {
+      // lambda doesn't have a head
+      new ParseDecision(NO + " " + (-1) + " N")
+    }
   }
 
   def shouldGoldShift: Boolean = {
@@ -245,7 +218,6 @@ class ParserAlgorithm(var mode: Int = 0) {
   }
 
   def shouldGoldReduce(hasHead: Boolean): Boolean = {
-
     if (!hasHead && !state.stackToken(0).hasHead)
       return false
 

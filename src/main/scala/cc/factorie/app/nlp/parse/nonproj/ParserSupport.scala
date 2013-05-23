@@ -7,9 +7,7 @@ import collection.mutable.HashSet
 
 object ParserSupport {
     object ParserUtils {
-
       lazy val testFeatureSpec = io.Source.fromURL(this.getClass.getResource("/parser-features.json")).getLines().mkString("\n")
-      
       lazy val featureGenerators: Seq[DependencyFeatureGenerator] = LoadParserFeatureSpec.fromJSON(testFeatureSpec)
     }
     
@@ -115,26 +113,21 @@ object ParserSupport {
     }
 
     def stackToken(offset: Int): DepToken = {
-
       // TODO: check for correctness (wait on Jinho)
       if (offset == 0)
         return sentenceTokens(stack)
 
       var off = math.abs(offset)
       var dir = if (offset < 0) -1 else 1
-
       var i = stack + dir
       while (0 < i && i < input) {
-
         if (!reducedIds.contains(i)) {
           off -= 1
           if (off == 0)
             return sentenceTokens(i)
         }
-
         i += dir
       }
-
       return DepToken.nullToken
     }
 
