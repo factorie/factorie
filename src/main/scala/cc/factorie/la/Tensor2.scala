@@ -130,7 +130,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
     val newT = new DenseTensor1(dim1)
     val newArray = newT.asArray
     t match {
-      case t: DenseTensor1 =>
+      case t: DenseTensor =>
         val tArr = t.asArray
         var col = 0
         while (col < tArr.length) {
@@ -143,10 +143,24 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           }
           col += 1
         }
-      case t: SparseTensor =>
+      case t: SparseBinaryTensor =>
         val tActiveDomainSize = t.activeDomainSize
         val tIndices = t._indices
-        val tValues = t._valuesSeq
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val col = tIndices(ti)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (_values(offset + col))
+            row += 1
+          }
+          ti += 1
+        }
+      case t: SparseIndexedTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        val tValues = t._values
         var ti = 0
         while (ti < tActiveDomainSize) {
           val col = tIndices(ti)
@@ -191,10 +205,22 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           }
           i += 1
         }
-      case t: SparseTensor =>
+      case t: SparseBinaryTensor =>
         val len = t.activeDomainSize
         val indices = t._indices
-        val values = t._valuesSeq
+        var i = 0
+        while (i < len) {
+          var j = 0
+          while (j < dim2) {
+            res(j) += this(indices(i), j)
+            j += 1
+          }
+          i += 1
+        }
+      case t: SparseIndexedTensor =>
+        val len = t.activeDomainSize
+        val indices = t._indices
+        val values = t._values
         var i = 0
         while (i < len) {
           var j = 0
@@ -541,7 +567,9 @@ trait Outer2Tensor extends ReadOnlyTensor {
           }
           dot
       }
-      case t: Outer2Tensor => (tensor1 dot t.tensor1) * (tensor2 dot t.tensor2)
+      case t: Outer2Tensor =>
+        val firstDot = tensor1 dot t.tensor1
+        if (firstDot == 0.0) 0.0 else firstDot * (tensor2 dot t.tensor2)
       // this obviously won't work if tensor1 and tensor2 aren't rank-1, still neat
       case t: Tensor2 => tensor1 dot (t * tensor2.asInstanceOf[Tensor1])
     }
