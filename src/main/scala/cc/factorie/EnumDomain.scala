@@ -14,11 +14,6 @@
 
 package cc.factorie
 
-/** To be used to avoid re-reading the data after CategoricalDomain trimming, 
-    but not yet implemented. */
-//trait CategoricalRemapping { def remapCategories(fn:(Int)=>Int) }
-
-
 /** A Categorical domain with enumerated values.  Provides convenient initialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value }
@@ -28,9 +23,9 @@ class EnumDomain extends CategoricalDomain[String] {
   /* For all member variables, if its type is Int, set its value to its name, 
      and intern in the Domain.  Usage: 
      object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /* println("stringFields "+f); */  f.getType == classOf[Int] })
+  private def stringFields = this.getClass.getDeclaredFields.filter(f => { f.getType == classOf[Int] })
   private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
-  // TODO Should this return Int or ValueType?
+  // TODO Should this return Int or ValueType? -akm
   def Value: Int = {
     if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
     assert(stringFieldsIterator.hasNext)
@@ -42,9 +37,9 @@ class EnumDomain extends CategoricalDomain[String] {
   private def checkFields: Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
-      println("StringDomain.checkFields "+field+" fieldName="+fieldName)
+      //println("StringDomain.checkFields "+field+" fieldName="+fieldName)
       //getClass.getMethods.foreach(m => println(m.toString))
-      val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
+      val fieldMethod = getClass.getMethod(fieldName)
       val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]
       //println("Field "+fieldName+" has value "+fieldValue)
       if (fieldValue != 0 && this.category(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.category(fieldValue)+").")
@@ -52,4 +47,5 @@ class EnumDomain extends CategoricalDomain[String] {
   }
 }
 
-// TODO Create a TensorEnumDomain
+// TODO Create a TensorEnumDomain? -akm
+

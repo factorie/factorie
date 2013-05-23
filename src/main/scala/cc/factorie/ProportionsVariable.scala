@@ -21,29 +21,16 @@ import scala.util.Random
 
 // Proportions Values
 
-/** A Tensor containing non-negative numbers summing to 1.0.  The parameter of a Discrete or Multinomial distribution. 
+/** A Tensor containing non-negative numbers summing to 1.0.  It is the parameter of a Discrete or Multinomial distribution. 
     Proportions contain Masses, which may not sum to 1.0;
     some Proportions subclasses can have their value changed by incrementing these inner masses.
-    All Proportions also inherit directly from Masses, but, naturally, these Masses always sum to 1.0, and generally are not directly mutable. */
+    All Proportions also inherit directly from Masses, but, naturally, these Masses always sum to 1.0, and generally are not directly mutable.
+    @author Andrew McCallum */
 trait Proportions extends Masses with ReadOnlyTensor {
   def masses: Masses
-  //final def massTotal = 1.0
   @inline final override def pr(i:Int): Double = apply(i)
-  // TODO Should we have the following instead?  It would be slower... :-(
-  //abstract override def apply(i:Int): Double = if (massTotal == 0.0) 1.0/length else super.apply(i) / massTotal
-//  override def pr(index:Int): Double = {
-//    val mt = massTotal
-//    if (mt == 0.0) 1.0 / length else super.apply(index) / mt
-//  }
-//  override def sampleIndex(implicit r:Random): Int = {
-//    var b = 0.0; val s = r.nextDouble; var i = 0
-//    while (b <= s && i < length) { assert (pr(i) >= 0.0, "p="+pr(i)+" mt="+massTotal); b += pr(i); i += 1 }
-//    assert(i > 0)
-//    i - 1
-//  } 
-  //def sampleIndex: Int = sampleIndex(cc.factorie.random)
   override def stringPrefix = "Proportions"
-  override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
+  override def toString = this.asSeq.take(maxToStringLength).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
 object Proportions {
@@ -98,6 +85,7 @@ trait DenseProportions extends Proportions {
     if (mt == 0.0) 1.0 / length else masses.apply(index) / mt
   }
   // Should this method be here? it's a really good way to get bugs when you're looking for masses.massTotal -luke
+  // I understand, but Proportions is itself a Masses, and its massTotal is indeed 1.0, so I don't see a way around it.
   def massTotal = 1.0
   def isDense = true
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
