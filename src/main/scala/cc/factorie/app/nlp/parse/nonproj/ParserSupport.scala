@@ -89,9 +89,7 @@ object ParserSupport {
     
     }
     
-    class DepArc(var depToken: DepToken, var label: String) {
-      override def toString = (depToken.thisIdx, label).toString
-    }
+    case class DepArc(depToken: DepToken, label: String)
     
     class ParseState(
         var stack: Int,
