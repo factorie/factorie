@@ -140,7 +140,7 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
 }
 
 /** An immutable Proportions from a pre-normalized Tensor. */
-abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
+abstract class NormalizedTensorProportions(val tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
   protected def _tensor: Tensor
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
@@ -148,13 +148,13 @@ abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boo
   def massTotal = 1.0
   def isDense = _tensor.isDense
 }
-class NormalizedTensorProportions1(val tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
+class NormalizedTensorProportions1(override val tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def activeDomain = _tensor.activeDomain
   def masses = this
 }
-class NormalizedTensorProportions2(val tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
+class NormalizedTensorProportions2(override val tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def dim2 = _tensor.dim2
@@ -163,7 +163,7 @@ class NormalizedTensorProportions2(val tensor:Tensor2, checkNormalization:Boolea
   def activeDomain2 = _tensor.activeDomain2
   def masses = this
 }
-class NormalizedTensorProportions3(tensor:Tensor3, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions3 {
+class NormalizedTensorProportions3(override val tensor:Tensor3, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions3 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def dim2 = _tensor.dim2
@@ -174,7 +174,7 @@ class NormalizedTensorProportions3(tensor:Tensor3, checkNormalization:Boolean = 
   def activeDomain3 = _tensor.activeDomain3
   def masses = this
 }
-class NormalizedTensorProportions4(tensor:Tensor4, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions4 {
+class NormalizedTensorProportions4(override val tensor:Tensor4, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions4 {
   protected val _tensor = tensor
   def dim1 = _tensor.dim1
   def dim2 = _tensor.dim2

@@ -171,6 +171,9 @@ class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
   override def blankCopy = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, newTensor1)
 }
 
+
+
+// singletonindexed3, tensor1
 trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def singleIndex2: Int

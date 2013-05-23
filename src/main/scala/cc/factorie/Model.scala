@@ -130,28 +130,6 @@ trait ModelWithContext[-C] extends Model {
   def assignmentScore(context:C, assignment:Assignment): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.assignmentScore(assignment); sum }
 }
 
-
-
-
-// TODO Is this used?
-/** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait ModelWithFactorType /*extends Model*/ {
-  //trait FactorType <: Factor
-  //type FactorType <: Factor
-
-  /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
-  //override def factors(context:C): Iterable[FactorType] // = super.factors(context).asInstanceOf[FactorType] 
-  //{ val result = newFactorsCollection; addFactors(context, newFactorsCollection).asInstanceOf[Iterable[FactorType]] }
-  //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= super.factors(context); result } 
-//  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-//  override def factors(variable:Variable): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variable, set); set.asInstanceOf[Iterable[FactorType]] }
-//  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
-//  override def factors(d:Diff): Iterable[FactorType] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set.asInstanceOf[Iterable[FactorType]] }
-//  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
-//  override def factors(dl:DiffList): Iterable[FactorType] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set.asInstanceOf[Iterable[FactorType]] }
-}
-
-
 /** A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.
     @author Andrew McCallum
     @since 0.11

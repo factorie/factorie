@@ -109,7 +109,6 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
   override def blankCopy: GrowableDenseTensor3 = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
 } 
 
-
 /** A Tensor3 representing the outer product of a Tensor2 (e.g. DenseTensor2) and a Tensor1 (e.g. a SparseBinaryTensor1). */
 class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Outer2Tensor with Tensor3 {
   def dim1 = tensor1.dim1
@@ -199,6 +198,7 @@ class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Ten
   override def copy: SparseIndexedTensor3 = { val t = new SparseIndexedTensor3(dim1, dim2, dim3); this.copyInto(t); t }
 }
 
+// singleton2, tensor1
 
 trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
@@ -341,6 +341,7 @@ class Dense2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val newTens
 
 }
 
+// singletonindexed2, tensor1
 trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def singleIndex2: Int

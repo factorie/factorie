@@ -38,16 +38,20 @@ trait Tensor2 extends Tensor {
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
   def *(t: Tensor1): Tensor1 = {
-    assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
+    assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
     val newT = new DenseTensor1(dim1)
     activeDomain1.foreach(i => t.activeDomain1.foreach(j => newT(i) += this(i,j)*t(j)))
     newT
   }
   def leftMultiply(t: Tensor1): Tensor1 = {
-    assert(dim1 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim1 + " " + t.dimensions)
+    assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
     val newT = new DenseTensor1(dim2)
     t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(i)))
     newT
+  }
+  def trace: Double = {
+    assert(dim1 == dim2, "Dimensions don't match: " + dim1 + " " + dim2)
+    (0 until dim1).map(n => apply(n, n)).sum
   }
   @inline final def length = dim1 * dim2
   @inline final def singleIndex(i:Int, j:Int): Int = i*dim2 + j
@@ -69,112 +73,9 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     //case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     //case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
     //case t:DenseTensorLike2 => Tensor.dot(this, t)
-    case t:SingletonBinaryLayeredTensorLike2 => t dot this
-    case t:SingletonLayeredTensorLike2 => t dot this
-    case t:Outer1Tensor2 => {
-      val dim2 = t.dim2
-      @inline def singleIndex(i1: Int, i2: Int) = dim2 * i1 + i2
-      (t.tensor1,t.tensor2) match {
-        case (t1: SingletonBinaryTensorLike1, t2: SingletonBinaryTensorLike1) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))
-        case (t1: SingletonBinaryTensorLike1, t2: SingletonTensor) => this(t.singleIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
-        case (t1: SingletonTensor, t2: SparseTensor) =>
-          val len = t2.activeDomainSize
-          val indices = t2._indices
-          val values = t2._valuesSeq
-          var i = 0
-          var dot = 0.0
-          val arr = this.asArray
-          while (i < len) {
-            dot += arr(singleIndex(t1.singleIndex, indices(i)))*values(i)
-            i += 1
-          }
-          dot*t1.singleValue
-        case (t1: SparseTensor, t2: SingletonTensor) =>
-          val len = t1.activeDomainSize
-          val indices = t1._indices
-          val values = t1._valuesSeq
-          var i = 0
-          var dot = 0.0
-          while (i < len) {
-            dot += this(singleIndex(indices(i), t2.singleIndex))*values(i)
-            i += 1
-          }
-          dot*t2.singleValue
-        case (t1: DenseTensor, t2: SparseTensor) =>
-          val len = t2.activeDomainSize
-          val indices = t2._indices
-          val values = t2._valuesSeq
-          var i = 0
-          var dot = 0.0
-          val t1Arr = t1.asArray
-          while (i < t1Arr.length) {
-            var j = 0
-            while (j < len) {
-              dot += this(singleIndex(i, indices(j)))*t1(i)*values(j)
-              j += 1
-            }
-            i += 1
-          }
-          dot
-        case (t1: SparseTensor, t2: DenseTensor) =>
-          val len = t1.activeDomainSize
-          val indices = t1._indices
-          val values = t1._valuesSeq
-          var i = 0
-          var dot = 0.0
-          val t2Arr = t2.asArray
-          while (i < len) {
-            var j = 0
-            while (j < t2Arr.length) {
-              dot += this(singleIndex(indices(i), j))*values(i)*t2Arr(j)
-              j += 1
-            }
-            i += 1
-          }
-          dot
-        case (t1: SparseTensor, t2: SparseTensor) =>
-          var dot = 0.0
-          val len1 = t1.activeDomainSize
-          val indices1 = t1._indices
-          val values1 = t2._valuesSeq
-          val len2 = t2.activeDomainSize
-          val indices2 = t2._indices
-          val values2 = t2._valuesSeq
-          var i = 0
-          while (i < len1) {
-            var j = 0
-            while (j < len2) {
-              dot += this(singleIndex(indices1(i), indices2(j)))*values1(i)*values2(j)
-              j += 1
-            }
-            i += 1
-          }
-          dot
-        case (t1: DenseTensor, t2: DenseTensor) =>
-          var dot = 0.0
-          var i = 0
-          val arr1 = t1.asArray
-          val len1 = t1.length
-          val arr2 = t2.asArray
-          val len2 = t2.length
-          while (i < len1) {
-            var j = 0
-            while (j < len2) {
-              dot += this(i,j)*arr1(i)*arr2(j)
-              j += 1
-            }
-            i += 1
-          }
-          dot
-        case _ =>
-          if (!haveWarned) {
-            haveWarned = true
-            println("DenseTensorLike2 dot unsupported types: " + t.tensor1.getClass.getName + " "  + t.tensor2.getClass.getName)
-          }
-          super.dot(t)
-      }
-    }
-    case t:DoubleSeq => super.dot(t)
+    case t: SingletonBinaryLayeredTensorLike2 => t dot this
+    case t: SingletonLayeredTensorLike2 => t dot this
+    case t: DoubleSeq => super.dot(t)
   }
   /*
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
@@ -428,18 +329,18 @@ trait Outer2Tensor extends ReadOnlyTensor {
 
 // TODO TensorN likes to extend all this stuff so we can't provide good defaults if we want TensorNs that are outers (which we do) -luke
 //  def length: Int = tensor1.length * tensor2.length
-//  def activeDomain: IntSeq = sys.error("No efficient implementation of activeDomain for Outer2Tensor yet")
 //  def numDimensions: Int = tensor1.numDimensions + tensor2.numDimensions
 //  def dimensions: Array[Int] = tensor1.dimensions ++ tensor2.dimensions
 //  def activeDomains: Array[IntSeq] = tensor1.activeDomains ++ tensor2.activeDomains
+//  def trace: Double = {
+//    assert(tensor1.length == tensor2.length)
+//    tensor1 dot tensor2
+//  }
 
+  @inline final def singleFlatIndex(i:Int, j:Int): Int = i*tensor2.length + j
   def activeDomain = new Outer2IntSeq(tensor1.length, tensor2.length, tensor1.activeDomain, tensor2.activeDomain)
   def isDense: Boolean = false
   def apply(i: Int): Double = tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
-  def dot(t: DoubleSeq): Double = t match {
-   case t: Outer2Tensor => (tensor1 dot t.tensor1) * (tensor2 dot t.tensor2)
-   case _ => sys.error("No efficient dot for " + this.getClass.getName)
- }
   override def twoNormSquared = tensor1.twoNormSquared * tensor2.twoNormSquared
   override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
     // note that this is different from the singleIndex in Tensor2, as these are not dimensions but lengths of the whole tensors
@@ -496,10 +397,10 @@ trait Outer2Tensor extends ReadOnlyTensor {
           }
           i += 1
         }
-      case (t1: NormalizedTensorProportions1, t2: Tensor1) =>
-        new Outer1Tensor2(t1.tensor, t2).=+(a, v/t1.tensor.sum)
-      case (t1: Tensor1, t2: NormalizedTensorProportions1) =>
-        new Outer1Tensor2(t1, t2.tensor).=+(a, v/t2.tensor.sum)
+      case (t1: NormalizedTensorProportions, t2: Tensor) =>
+        (t1.tensor outer t2).=+(a, v/t1.tensor.sum)
+      case (t1: Tensor, t2: NormalizedTensorProportions) =>
+        (t1 outer t2.tensor).=+(a, v/t2.tensor.sum)
       case (t1: SingletonTensor, t2: SparseTensor) =>
         val t2Size = t2.activeDomainSize
         val t2IndexSeq = t2._indices
@@ -544,6 +445,106 @@ trait Outer2Tensor extends ReadOnlyTensor {
         }
     }
   }
+  def dot(ds: DoubleSeq): Double = ds match {
+    case dt: DenseTensor =>
+      (tensor1, tensor2) match {
+        // NOTE if we added singletontensor/dense, this would cover all the singleton layered tensor stuff if we made those outer2tensors
+        case (t1: SingletonBinaryTensor, t2: SingletonBinaryTensor) => dt(singleFlatIndex(t1.singleIndex,t2.singleIndex))
+        case (t1: SingletonBinaryTensor, t2: SingletonIndexedTensor) => dt(singleFlatIndex(t1.singleIndex,t2.singleIndex))*t2.singleValue
+        case (t1: SingletonTensor, t2: SparseTensor) =>
+          val len = t2.activeDomainSize
+          val indices = t2._indices
+          val values = t2._valuesSeq
+          var i = 0
+          var dot = 0.0
+          val arr = dt.asArray
+          while (i < len) {
+            dot += arr(singleFlatIndex(t1.singleIndex, indices(i)))*values(i)
+            i += 1
+          }
+          dot*t1.singleValue
+        case (t1: SparseTensor, t2: SingletonTensor) =>
+          val len = t1.activeDomainSize
+          val indices = t1._indices
+          val values = t1._valuesSeq
+          var i = 0
+          var dot = 0.0
+          while (i < len) {
+            dot += dt(singleFlatIndex(indices(i), t2.singleIndex))*values(i)
+            i += 1
+          }
+          dot*t2.singleValue
+        case (t1: DenseTensor, t2: SparseTensor) =>
+          val len = t2.activeDomainSize
+          val indices = t2._indices
+          val values = t2._valuesSeq
+          var i = 0
+          var dot = 0.0
+          val t1Arr = t1.asArray
+          while (i < t1Arr.length) {
+            var j = 0
+            while (j < len) {
+              dot += dt(singleFlatIndex(i, indices(j)))*t1(i)*values(j)
+              j += 1
+            }
+            i += 1
+          }
+          dot
+        case (t1: SparseTensor, t2: DenseTensor) =>
+          val len = t1.activeDomainSize
+          val indices = t1._indices
+          val values = t1._valuesSeq
+          var i = 0
+          var dot = 0.0
+          val t2Arr = t2.asArray
+          while (i < len) {
+            var j = 0
+            while (j < t2Arr.length) {
+              dot += dt(singleFlatIndex(indices(i), j))*values(i)*t2Arr(j)
+              j += 1
+            }
+            i += 1
+          }
+          dot
+        case (t1: SparseTensor, t2: SparseTensor) =>
+          var dot = 0.0
+          val len1 = t1.activeDomainSize
+          val indices1 = t1._indices
+          val values1 = t2._valuesSeq
+          val len2 = t2.activeDomainSize
+          val indices2 = t2._indices
+          val values2 = t2._valuesSeq
+          var i = 0
+          while (i < len1) {
+            var j = 0
+            while (j < len2) {
+              dot += dt(singleFlatIndex(indices1(i), indices2(j)))*values1(i)*values2(j)
+              j += 1
+            }
+            i += 1
+          }
+          dot
+        case (t1: DenseTensor, t2: DenseTensor) =>
+          var dot = 0.0
+          var i = 0
+          val arr1 = t1.asArray
+          val len1 = t1.length
+          val arr2 = t2.asArray
+          val len2 = t2.length
+          while (i < len1) {
+            var j = 0
+            while (j < len2) {
+              dot += dt(singleFlatIndex(i,j))*arr1(i)*arr2(j)
+              j += 1
+            }
+            i += 1
+          }
+          dot
+      }
+      case t: Outer2Tensor => (tensor1 dot t.tensor1) * (tensor2 dot t.tensor2)
+      // this obviously won't work if tensor1 and tensor2 aren't rank-1, still neat
+      case t: Tensor2 => tensor1 dot (t * tensor2.asInstanceOf[Tensor1])
+    }
 }
 
 
