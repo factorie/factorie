@@ -32,13 +32,12 @@ object ParserSupport {
     }
     
     object DepToken {
-      def apply(token: Token, idx: Int, state: ParseState) = new DepToken(token, form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
+      def apply(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
       // eclipse didn't like "lazy" here
-      val root = new DepToken(new Token(new Document, "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0)
-      val nullToken = new DepToken(new Token(new Document, "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1)
+      val root = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0)
+      val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1)
     }
     class DepToken(
-        val token: Token,
         val form: String,
         val lemma: String,
         val pos: String,
@@ -83,7 +82,7 @@ object ParserSupport {
         return false
       }
       
-      override def toString = "(%s, f: %s, l: %s, p: %s)".format(token.string, form, lemma, pos)
+      override def toString = "(f: %s, l: %s, p: %s)".format(form, lemma, pos)
     
     }
     
@@ -92,8 +91,8 @@ object ParserSupport {
     class ParseState(
         var stack: Int,
         var input: Int,
-        var reducedIds: HashSet[Int],
-        var sentenceTokens: Array[DepToken]) {
+        val reducedIds: HashSet[Int],
+        val sentenceTokens: Array[DepToken]) {
       
       sentenceTokens.foreach(_.state = this)
       
@@ -146,17 +145,16 @@ object ParserSupport {
     
     }
     
-    case class ParseDecision(var leftOrRightOrNo: Int, var shiftOrReduceOrPass: Int, var label: String) {
-    
+    class ParseDecision(val action: String) {
+      val Array(lrnS, srpS, label) = action.split(" ")
+      val leftOrRightOrNo = lrnS.toInt
+      val shiftOrReduceOrPass = srpS.toInt
       import ParserConstants._
-    
       def shift_?  = shiftOrReduceOrPass == SHIFT
       def reduce_? = shiftOrReduceOrPass == REDUCE
       def pass_?   = shiftOrReduceOrPass == PASS
-    
       def left_?   = leftOrRightOrNo == LEFT
       def right_?  = leftOrRightOrNo == RIGHT
-      
       override def toString = {
         val s = new StringBuffer
         s append "["
@@ -165,34 +163,34 @@ object ParserSupport {
           case LEFT  => "left"
           case RIGHT => "right"
           case NO    => "no"
+          case -1    => "TEST"
         })
         s append "-"
         s append (shiftOrReduceOrPass match {
           case SHIFT  => "shift"
           case REDUCE => "reduce"
           case PASS   => "pass"
+          case -1     => "TEST"
         })
-        
         s append (" label: " + label)
         s append "]"
-        
-        s.toString()
+        s.toString
       }
-    
     }
-    
-    // define variables and domains
-    object DecisionDomain extends CategoricalDomain[ParseDecision] {
-      this += new ParseDecision(-1, -1, "")
-      lazy val defaultCategory = this.head.category
-    }
-    class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabeledCategoricalVariable(targetDecision) {
-      def this(state: ParseState) = this(DecisionDomain.defaultCategory, state)
-      def domain = DecisionDomain
-      val features = new NonProjDependencyParserFeatures(this)
-      features ++= ParserUtils.featureGenerators.map(_.apply(state))
-    }
-    
+
+  // define variables and domains
+  object DecisionDomain extends CategoricalDomain[String] {
+    this += "-1 -1 N"
+    lazy val defaultCategory = this.head.category
+  }
+
+  class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabeledCategoricalVariable(targetDecision.action) {
+    def this(state: ParseState) = this(new ParseDecision(DecisionDomain.defaultCategory), state)
+    def domain = DecisionDomain
+    val features = new NonProjDependencyParserFeatures(this)
+    features ++= ParserUtils.featureGenerators.map(_.apply(state))
+  }
+
     object NonProjParserFeaturesDomain extends CategoricalDimensionTensorDomain[String] //StringHashDomain(6000000)
 //    object NonProjParserFeaturesDomain extends StringHashDomain(6000000)
     class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {

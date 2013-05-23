@@ -195,7 +195,7 @@ class ParserAlgorithm(var mode: Int = 0) {
 
     val label: ParseDecision = getGoldLabelArc()
 
-    label.shiftOrReduceOrPass =
+    val shiftOrReduceOrPass =
       label.leftOrRightOrNo match {
         case LEFT  => if (shouldGoldReduce(true)) REDUCE else PASS
         case RIGHT => if (shouldGoldShift)        SHIFT  else PASS
@@ -206,7 +206,7 @@ class ParserAlgorithm(var mode: Int = 0) {
         }
       }
 
-    label
+    new ParseDecision(label.leftOrRightOrNo + " " + shiftOrReduceOrPass + " " + label.label)
   }
 
   def getGoldLabelArc(): ParseDecision = {
@@ -216,17 +216,17 @@ class ParserAlgorithm(var mode: Int = 0) {
 
     // if beta is the head of lambda
     if (headIdx == state.input)
-      return new ParseDecision(LEFT, -1, headLabel)
+      return new ParseDecision(LEFT + " " + (-1) + " " + headLabel)
 
     val inputHeadIdx   = goldHeads(state.input).depToken.thisIdx
     val inputHeadLabel = goldHeads(state.input).label
 
     // if lambda is the head of beta
     if (inputHeadIdx == state.stack)
-      return new ParseDecision(RIGHT, -1, inputHeadLabel)
+      return new ParseDecision(RIGHT + " " + (-1) + " " + inputHeadLabel)
 
     // lambda doesn't have a head
-    return new ParseDecision(NO, -1, "")
+    return new ParseDecision(NO + " " + (-1) + " N")
   }
 
   def shouldGoldShift: Boolean = {
