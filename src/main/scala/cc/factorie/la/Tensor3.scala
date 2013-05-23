@@ -111,37 +111,28 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
 
 
 /** A Tensor3 representing the outer product of a Tensor2 (e.g. DenseTensor2) and a Tensor1 (e.g. a SparseBinaryTensor1). */
-class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Tensor3 with ReadOnlyTensor {
-  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
+class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Outer2Tensor with Tensor3 {
   def dim1 = tensor1.dim1
   def dim2 = tensor1.dim2
   def dim3 = tensor2.dim1
-  def apply(i:Int): Double = tensor1(index1(i), index2(i)) * tensor2(index3(i))
-  def isDense = tensor2.isDense
   def activeDomain1 = tensor1.activeDomain1
   def activeDomain2 = tensor1.activeDomain2
   def activeDomain3 = tensor2.activeDomain1
-  def activeDomain = throw new Error("Not yet implemented.") // new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
   override def copy = new Outer2Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer2Tensor3(tensor1.blankCopy, tensor2.blankCopy)
 }
 
 /** A Tensor3 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor2 (e.g. a SparseBinaryTensor2). */
-class Outer1Tensor3(val tensor1:Tensor1, val tensor2:Tensor2) extends Tensor3 with ReadOnlyTensor {
-  def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
+class Outer1Tensor3(val tensor1:Tensor1, val tensor2:Tensor2) extends Outer2Tensor with Tensor3 {
   def dim1 = tensor1.dim1
   def dim2 = tensor2.dim1
   def dim3 = tensor2.dim2
-  def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i), index3(i))
-  def isDense = tensor1.isDense && tensor2.isDense
   def activeDomain1 = tensor1.activeDomain1
   def activeDomain2 = tensor2.activeDomain1
   def activeDomain3 = tensor2.activeDomain2
-  def activeDomain = throw new Error("Not yet implemented.") // new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
   override def copy = new Outer1Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor3(tensor1.blankCopy, tensor2.blankCopy)
 }
-
 
 class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
