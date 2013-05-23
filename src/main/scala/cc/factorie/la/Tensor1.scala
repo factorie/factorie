@@ -28,7 +28,7 @@ trait Tensor1 extends Tensor {
     case t:Tensor1 => t.dim1 == dim1
     case _ => false
   } 
-  def ensureDimenionsMatch(t:Tensor): Unit = t match {
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
     case t:Tensor1 => require(t.dim1 == dim1)
     case _ => throw new Error("Tensor ranks do not match.")
   }
@@ -52,7 +52,9 @@ trait Tensor1 extends Tensor {
   def +(t: Tensor1): Tensor1 = super.+(t).asInstanceOf[Tensor1]
   def -(t: Tensor1): Tensor1 = super.-(t).asInstanceOf[Tensor1]
   // TODO: * could be either dot or outer.  Resolve 1xN vs Nx1 status of Tensor1
+  // I think it should mean * since that is consistent with matrix-vector being "*" -luke
   // def *(t: Tensor1): Double = this dot t
+  def *(t: Tensor2): Tensor1 = t.leftMultiply(this)
   @inline final def length: Int = dim1
   override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def blankCopy: Tensor1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
@@ -97,9 +99,9 @@ class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
 class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initialSize } with DenseTensorLike1 {
   def dim1: Int = _dim1
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
-  override def ensureDimenionsMatch(t:Tensor): Unit = t match {
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
     case t:Tensor1 => ensureDimensions(t.dim1)
-    case _ => super.ensureDimenionsMatch(t)
+    case _ => super.ensureDimensionsMatch(t)
   }
   def ensureDimensions(d1:Int): Unit = {
     if (d1 > _dim1) {

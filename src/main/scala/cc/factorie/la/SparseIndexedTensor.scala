@@ -130,7 +130,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   override def dot(v:DoubleSeq): Double = {
     makeReadable
     v match {
-      // TODO add fast implementations for Dense here! -luke
+      // TODO add fast implementations for Dense here! it's better to keep things off of dense since it's easy to dot against -luke
       case v:SingletonBinaryTensor => apply(v.singleIndex)
       case v:SingletonIndexedTensor => apply(v.singleIndex) * v.singleValue
       case v:ArraySparseIndexedTensor => {
@@ -257,19 +257,13 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
   override def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
-    case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
-    case t:SparseBinaryTensorLike1 => { val len = t.activeDomainSize; val a = t._indices; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
+    case t:SingletonBinaryTensor => +=(t.singleIndex, f)
+    case t:SingletonIndexedTensor => +=(t.singleIndex, f * t.singleValue)
+    case t:SparseBinaryTensor => { val len = t.activeDomainSize; val a = t._indices; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val as = t._indices; val vs = t._values; var i = 0; while (i < len) { +=(as(i), f * vs(i)); i += 1 }}
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this += (i, arr(i)*f)  ; i += 1} }
-    case t:DenseLayeredTensor2 => { t.activeElements.foreach(e => this += (e._1, e._2 * f) )}
-    case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this +=  (e._1, e._2 * f) )}
-    case t:SingletonBinaryLayeredTensor2 => { t.foreachActiveElement((i, _) => this += (i, f) ) }
-    case t:SingletonLayeredTensor2 => { t.foreachActiveElement((i, v) => this += (i, f*v) ) }
-    case t:SingletonBinaryTensor => this += (t.singleIndex, f)
-    case t:SparseBinaryTensor => { t.foreachActiveElement((i, _) => this += (i, f) ) }
-    case t:Outer1Tensor2 => {
-      (t.tensor1,t.tensor2) match {
+    case t:Outer2Tensor => {
+      (t.tensor1, t.tensor2) match {
         case (t1: DenseTensor, t2: SparseBinaryTensor) =>
           var i = 0
           val arr = t1.asArray
@@ -277,17 +271,14 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             val indices = t2._indices
             var j = 0
             while (j < t2.activeDomainSize) {
-              this += (t.singleIndex(i, indices(j)), f*t1(i))
+              this += (t.singleFlatIndex(i, indices(j)), f*t1(i))
               j += 1
             }
             i += 1
           }
-        case (t1: NormalizedTensorProportions1, t2: Tensor) =>
-          val inner = t1.tensor
-          val sum = t1.sum
-          val ff = f/sum
-          this += (new Outer1Tensor2(inner, t2),ff)
-        case (t1: DenseTensor1, t2: SparseTensor) =>
+        case (t1: NormalizedTensorProportions, t2) =>
+          this += (t1.tensor outer t2, f / t1.sum)
+        case (t1: DenseTensor, t2: SparseTensor) =>
           var i = 0
           val arr = t1.asArray
           while (i < arr.length) {
@@ -296,7 +287,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             val values = t2._valuesSeq
             var j = 0
             while (j < len) {
-              this += (t.singleIndex(i, indices(j)), f*t1(i)*values(j))
+              this += (t.singleFlatIndex(i, indices(j)), f*t1(i)*values(j))
               j += 1
             }
             i += 1
@@ -308,7 +299,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           val len = t2.activeDomainSize
           var i = 0
           while (i < len) {
-            val singleidx = t.singleIndex(i0, arr(i))
+            val singleidx = t.singleFlatIndex(i0, arr(i))
             this += (singleidx, f*t1.singleValue*values(i))
             i += 1
           }
@@ -324,29 +315,29 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           while (i < len1) {
             var j = 0
             while (j < len2) {
-              this += (t.singleIndex(indices1(i), indices2(j)), f*values1(i)*values2(j))
+              this += (t.singleFlatIndex(indices1(i), indices2(j)), f*values1(i)*values2(j))
               j += 1
             }
             i += 1
           }
         }
-        case (t1: SingletonBinaryTensorLike1, t2: DenseTensorLike1) => {
+        case (t1: SingletonBinaryTensor, t2: DenseTensor) => {
           val i0 = t1.singleIndex
           val arr = t2.asArray
           var i = 0
           while (i < arr.length) {
-            this += (t.singleIndex(i0, i), f*arr(i))
+            this += (t.singleFlatIndex(i0, i), f*arr(i))
             i += 1
           }
         }
-        case (t1: DenseTensor1, t2: DenseTensor1) => {
+        case (t1: DenseTensor, t2: DenseTensor) => {
           val arr1 = t1.asArray
           val arr2 = t2.asArray
           var i = 0
           while (i < arr1.length) {
             var j = 0
             while (j < arr2.length) {
-              this += (t.singleIndex(i, j), arr1(i)*arr2(j)*f)
+              this += (t.singleFlatIndex(i, j), arr1(i)*arr2(j)*f)
               j += 1
             }
             i += 1
@@ -354,15 +345,15 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
-    case t:NormalizedTensorProportions2 => this += (t.tensor, f)
-    case _ => assert(false, t.getClass.getName + " doesn't have a match")
+    case t:NormalizedTensorProportions => this += (t.tensor, f / t.sum)
+    case t:Tensor => t.foreachActiveElement((i, v) => this += (i, v * f))
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < __npos) { a(__indices(i)+offset) += f * __values(i); i += 1 }}
   
   override def expNormalize(): Double = {
     var max = Double.MinValue
-    var i = 0; 
+    var i = 0
     while (i < __npos) { if (max < __values(i)) max = __values(i); i += 1 }
     var sum = 0.0
     i = 0
@@ -408,7 +399,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
 
   override def *=(other: Double) {
-    _makeReadable
+    _makeReadable()
     var i = 0
     val len = activeDomainSize
     while (i < len) {

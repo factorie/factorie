@@ -21,7 +21,7 @@ object TensorDomain extends TensorDomain
 trait TensorVar extends Var with ValueBound[Tensor] {
   def domain: TensorDomain
   def value: Tensor
-  def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
+  @deprecated("Use 'value' instead.", "M4") def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
   //def length: Int = tensor.length // TODO Consider removing this?
   //def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
 }
@@ -35,11 +35,6 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
   private var _value: A = null.asInstanceOf[A]
   def value: A = _value // TODO Should this make a copy?
   @inline final def tensor: A = _value // This method will definitely not make a copy
-  // Some methods for direct access
-  //@inline final override def length: Int = _value.length
-  //@inline final override def apply(i:Int): Double = _value.apply(i)
-  // Why is this necessary?  Why not use set()(null)?  I think there was a reason... -akm
-  //@inline protected final def _set(newValue:A): Unit = _value = newValue 
   // Methods that track modifications on a DiffList
   def set(newValue:A)(implicit d:DiffList): Unit = {
     if (d ne null) d += SetTensorDiff(_value, newValue)
@@ -90,15 +85,21 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
   }}
 
 /** A variable whose value is a cc.factorie.la.Tensor.
+
     The zero-arg constructor should only be used by subclasses
     (e.g. so that CategoricalVariable can use its domain for value lookup),
-    and should never be called by users. */
+    and should never be called by users; otherwise the value will be null. 
+    @author Andrew McCallum */
 class TensorVariable[T <: Tensor] extends MutableTensorVar[T] {
   def this(initialValue: T) = { this(); set(initialValue)(null) }
-  //def init(initialValue:Value) = { _set(initialValue) }
-  def domain: TensorDomain = TensorDomain // TODO Really?  What about future DiscreteVariable and CategoricalVariable?
+  def domain: TensorDomain = TensorDomain
 }
 
+/** Convenience methods for constructing TensorVariables with a Tensor1 of various types.
+    @author Andrew McCallum */
 object TensorVariable {
-  def apply(dim1:Int) = new TensorVariable(new DenseTensor1(dim1)) // { def domain = TensorDomain }
+  def apply(dim1:Int) = new TensorVariable(new DenseTensor1(dim1))
+  def dense(dim1:Int) = new TensorVariable(new DenseTensor1(dim1))
+  def sparse(dim1:Int) = new TensorVariable(new SparseTensor1(dim1))
+  def sparseBinary(dim1:Int) = new TensorVariable(new SparseBinaryTensor1(dim1))
 }

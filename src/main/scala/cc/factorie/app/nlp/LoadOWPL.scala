@@ -10,6 +10,10 @@ import cc.factorie._
  * Sentences are separated by blank lines.
  * Returns all data in a single document.
  */
+
+// TODO I want to change this so that the expected format is:
+// word label1 label2 label3...
+
 object LoadOWPL {
   def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document

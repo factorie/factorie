@@ -31,21 +31,17 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "-RRB-",
       ".",
       ":",
-      "ADD", // in Ontonotes, but not WSJ
-      "AFX", // in Ontonotes, but not WSJ
       "CC",
       "CD",
       "DT",
       "EX",
       "FW",
-      "HYPH", // in Ontonotes, but not WSJ
       "IN",
       "JJ",
       "JJR",
       "JJS",
       "LS",
       "MD",
-      "NFP", // in Ontonotes, but not WSJ
       "NN",
       "NNP",
       "NNPS",
@@ -73,6 +69,10 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "WP$",
       "WRB",
       "``",
+      "ADD", // in Ontonotes, but not WSJ
+      "AFX", // in Ontonotes, but not WSJ
+      "HYPH", // in Ontonotes, but not WSJ
+      "NFP", // in Ontonotes, but not WSJ
       "XX" // in Ontonotes, but not WSJ
   )
       

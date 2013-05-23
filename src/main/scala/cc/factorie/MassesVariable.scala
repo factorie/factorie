@@ -12,14 +12,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
 package cc.factorie
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.util.{DoubleSeq,IntSeq}
 import scala.util.Random
 
-/** A Tensor containing only non-negative entries.  These are also the basis for Proportions. */
+/** A Tensor containing only non-negative entries.  These are also the basis for Proportions.
+    @author Andrew McCallum */
 trait Masses extends Tensor {
   def massTotal: Double
   override def sum = massTotal
@@ -31,7 +31,8 @@ trait Masses extends Tensor {
   def logpr(index:Int) = math.log(pr(index))
   override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r)
   override def stringPrefix = "Masses"
-  override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
+  def maxToStringLength = 10
+  override def toString = this.asSeq.take(maxToStringLength).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
 // TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm
@@ -40,15 +41,17 @@ trait Masses2 extends Tensor2 with Masses
 trait Masses3 extends Tensor3 with Masses
 trait Masses4 extends Tensor4 with Masses
 
-/** Provides a protected var for holding the massTotal */
+/** A Masses that provides a protected var for holding the massTotal.
+    @author Andrew McCallum */
 trait MassesWithTotal extends Masses {
   protected var _massTotal: Double = 0.0
-  //def resetMassTotal: Unit = _massTotal = super.sum
   def massTotal = _massTotal
   final override def sum = _massTotal
-  override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by udpate; use += instead.")
+  override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by update; use += instead.")
 }
 
+/** A DenseTensor Masses that provides a protected var for holding the massTotal.
+    @author Andrew McCallum */
 trait DenseMassesWithTotal extends DenseTensor with MassesWithTotal {
   final override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
   final override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
@@ -131,25 +134,37 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
   }
 }
 
+
 // Masses Variables 
 
-//trait MassesVar extends TensorVar[Masses] with VarAndValueType[MassesVar,Masses] 
-//class MassesVariable extends TensorVariable[Masses] with MassesVar {
-
+/** The domain type for MassesVar.  No real functionality, just used as a marker.
+    @author Andrew McCallum */
 trait MassesDomain extends TensorDomain with Domain[Masses]
+
+/** The domain for MassesVar.  No real functionality, just used as a marker.
+    @author Andrew McCallum */
 object MassesDomain extends MassesDomain
 
+/** An abstract variable with value Masses.
+    @author Andrew McCallum */
 trait MassesVar extends TensorVar with ValueBound[Masses] {
   def value: Masses
   def domain: MassesDomain
 }
+
+/** An abstract variable with value Masses.
+    @author Andrew McCallum */
 trait MutableMassesVar[A<:Masses] extends MutableTensorVar[A] with MassesVar
+
+/** A variable with value Masses.
+    @author Andrew McCallum */
 class MassesVariable extends MutableMassesVar[Masses] {
-  def domain = MassesDomain //.asInstanceOf[MassesDomain with Domain[A]]
+  def domain = MassesDomain
   def this(initialValue:Masses) = { this(); set(initialValue)(null) }
-  //def domain = TensorDomain
 }
 
+/** Convenience methods for constructing MassesVariables with a Masses1 of various types.
+    @author Andrew McCallum */
 object MassesVariable {
   def dense(dim1:Int) = new MassesVariable(new DenseMasses1(dim1))
   def dense(dim1:Int, uniformValue:Double) = new MassesVariable(new DenseMasses1(dim1, uniformValue))
