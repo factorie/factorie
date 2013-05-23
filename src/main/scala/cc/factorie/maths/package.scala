@@ -15,24 +15,8 @@
 package cc.factorie
 import java.util.BitSet
 import scala.util.Random
+import cc.factorie.util.DoubleSeq
 
-//package object maths 
-//extends maths.Probit with 
-//maths.LogGamma with 
-//maths.Poly with 
-//maths.Factorial with 
-//maths.Binomial with
-//maths.Combinatorics with
-//maths.LogProb with 
-//maths.Trig with 
-//maths.Close with
-//maths.RandomDistributions with
-//maths.ArrayOps with
-//maths.ArrayImplicits with
-//maths.IndexedSeqOps with
-//maths.IndexedSeqImplicits
-
-// TODO Once cc.factorie.optimze uses la.Tensor, then remove "extends ArrayOps"
 // Consider also implicit class DenseTensor1(a:Array[Double])
 package object maths {
   
@@ -71,82 +55,76 @@ package object maths {
 
   //implicit def array2ArrayOps(toWrap: Array[Double]): ArrayWrapper = new ArrayWrapper { val s = toWrap }
 
-
-  
-  
 // ArrayOps
   
-trait ArrayOps {
-  type A = Array[Double]
-  def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
-  def twoNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; math.sqrt(result) }
-  def twoNormSquared(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; result }
-  def infinityNorm(s:A): Double = { var result = s(0); var i = 0; while (i < s.length) { if (math.abs(s(i)) > result) result = math.abs(s(i)); i += 1 }; result }
-  def +=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) + d; i += 1 } }
-  def -=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) - d; i += 1 } }
-  def *=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) * d; i += 1 } }
-  def /=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) / d; i += 1 } }
-  def incr(s:A, t:A): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i); i += 1 } }
-  def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i) * factor; i += 1 } }
-  def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; return false }
-  def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * t(i); i += 1 }; result }
-  /** Divide each element of the array by the sum of the elements. */
-  def normalize(s:A): Double = { val sum = oneNorm(s); var i = 0; while (i < s.length) { s(i) /= sum; i += 1 }; sum }
-  def oneNormalize(s:A): Double = normalize(s)
-  def twoNormalize(s:A): Double = { val norm = twoNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
-  def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
-  def contains(s:A, d:Double): Boolean = { var i = 0; while (i < s.length) { if (s(i) == d) return true; i += 1 }; false }
-  def maxIndex(a:Array[Double]): Int = { var i = 0; var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
-  def isNaN(s:A): Boolean = contains(s, Double.NaN)
-  def substitute(s:A, oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < s.length) { if (s(i) == oldValue) s(i) = newValue; i += 1 } }
-  def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
-  def set(s:A, t:A): Unit = { require(s.length == t.length); System.arraycopy(t, 0, s, 0, s.length) }
-  def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {
-    val result = Array.fill(as(0).size)(0.0)
-    var i = 0
-    while (i < as.size) {
-      val a = as(i)
-      var j = 0
-      while (j < a.size) {
-        result(j) += a(j)
-        j += 1
+  trait ArrayOps {
+    type A = Array[Double]
+    def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
+    def twoNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; math.sqrt(result) }
+    def twoNormSquared(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; result }
+    def infinityNorm(s:A): Double = { var result = s(0); var i = 0; while (i < s.length) { if (math.abs(s(i)) > result) result = math.abs(s(i)); i += 1 }; result }
+    def +=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) + d; i += 1 } }
+    def -=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) - d; i += 1 } }
+    def *=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) * d; i += 1 } }
+    def /=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) / d; i += 1 } }
+    def incr(s:A, t:A): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i); i += 1 } }
+    def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i) * factor; i += 1 } }
+    def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; return false }
+    def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * t(i); i += 1 }; result }
+    /** Divide each element of the array by the sum of the elements. */
+    def normalize(s:A): Double = { val sum = oneNorm(s); var i = 0; while (i < s.length) { s(i) /= sum; i += 1 }; sum }
+    def oneNormalize(s:A): Double = normalize(s)
+    def twoNormalize(s:A): Double = { val norm = twoNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
+    def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
+    def contains(s:A, d:Double): Boolean = { var i = 0; while (i < s.length) { if (s(i) == d) return true; i += 1 }; false }
+    def maxIndex(a:Array[Double]): Int = { var i = 0; var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
+    def isNaN(s:A): Boolean = contains(s, Double.NaN)
+    def substitute(s:A, oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < s.length) { if (s(i) == oldValue) s(i) = newValue; i += 1 } }
+    def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
+    def set(s:A, t:A): Unit = { require(s.length == t.length); System.arraycopy(t, 0, s, 0, s.length) }
+    def elementwiseSum(as: Array[Array[Double]]): Array[Double] = {
+      val result = Array.fill(as(0).size)(0.0)
+      var i = 0
+      while (i < as.size) {
+        val a = as(i)
+        var j = 0
+        while (j < a.size) {
+          result(j) += a(j)
+          j += 1
+        }
+        i += 1
       }
-      i += 1
+      result
     }
-    result
-  }
-  /** Exponentiate the elements of the array, and then normalize them to sum to one. */
-  def expNormalize(a:Array[Double]): Double = {
-    var max = Double.MinValue
-    var i = 0
-    while (i < a.length) { if (max < a(i)) max = a(i); i += 1 }
-    var sum = 0.0
-    i = 0
-    while (i < a.length) {
-      a(i) = math.exp(a(i) - max)
-      sum += a(i)
-      i += 1
+    /** Exponentiate the elements of the array, and then normalize them to sum to one. */
+    def expNormalize(a:Array[Double]): Double = {
+      var max = Double.MinValue
+      var i = 0
+      while (i < a.length) { if (max < a(i)) max = a(i); i += 1 }
+      var sum = 0.0
+      i = 0
+      while (i < a.length) {
+        a(i) = math.exp(a(i) - max)
+        sum += a(i)
+        i += 1
+      }
+      i = 0
+      while (i < a.length) { a(i) /= sum; i += 1 }
+      sum
     }
-    i = 0
-    while (i < a.length) { a(i) /= sum; i += 1 }
-    sum
+
+    /** expNormalize, then put back into log-space. */
+    def normalizeLogProb(a:Array[Double]): Double = {
+      // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
+      // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
+      val n = expNormalize(a)
+      for (i <- 0 until a.length) a(i) = math.log(a(i))
+      n
+    }
+
   }
 
-  /** expNormalize, then put back into log-space. */
-  def normalizeLogProb(a:Array[Double]): Double = {
-    // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
-    // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
-    val n = expNormalize(a)
-    for (i <- 0 until a.length) a(i) = math.log(a(i))
-    n
-  }
-
-}
-
-object ArrayOps extends ArrayOps
-  
-  
-  
+  object ArrayOps extends ArrayOps
 
 // Binomial
 
@@ -154,126 +132,94 @@ object ArrayOps extends ArrayOps
   // Copied as the "classic" method from Catherine Loader.
   //  Fast and Accurate Computation of Binomial Probabilities.
   //   2001.  (This is not the fast and accurate version.)
-  def logBinom(x:Int, n:Int, p:Double): Double = {
+  def logBinom(x: Int, n: Int, p: Double): Double = {
     logFactorial (n) - logFactorial (x) - logFactorial (n - x)
       + (x*math.log (p)) + ((n-x)*math.log (1-p))
    }
 
   /** Vastly inefficient O(x) method to compute cdf of B(n,p)  */
-  def pbinom (x:Int, n:Int, p:Double): Double = {
+  def pbinom(x: Int, n: Int, p: Double): Double = {
     var sum: Double = Double.NegativeInfinity
     for (i <- 0 to x) sum = sumLogProb(sum, logBinom(i, n, p))
     math.exp(sum)
   }
 
-
-
 // Close
 
   /** Numbers that are closer than this are considered equal */
-  def almostEquals (d1:Double, d2:Double, epsilon:Double = 0.000001) : Boolean = math.abs (d1 - d2) < epsilon
-
-  //@deprecated("Use DoubleSeq.different instead")
-  //def almostEquals (d1:Array[Double], d2:Array[Double], eps:Double) : Boolean = {
-  //  for (i <- 0 until d1.length) if (!almostEquals(d1(i), d2(i))) return false
-  //  true
-  //}
-
-  /* given two DoubleSeq calculate the L2 distance */
-  //@deprecated("Use DoubleSeq.l2Similarity instead")
-  //def L2(a:DoubleSeq[Double], b:Seq[Double]): Double = {
-  //  assert(a.size == b.size)
-  //  var sum = 0.0
-  //  for (i <- 0 until a.size) sum += (a(i)-b(i))*(a(i)-b(i))
-  //  math.sqrt(sum)
-  //}
-
-  // gsc
-  /** Checks if <tt>min &lt;= value &lt;= max</tt>. */
-  //def isWithinRange(value:Double, min:Double, max:Double, epsilon: Double = 0.000001) =
-  //  (value > min || almostEquals(value, min, epsilon)) &&
-  //  (value < max || almostEquals(value, max, epsilon));
-
-
-
-
+  def almostEquals(d1: Double, d2: Double, epsilon: Double = 0.000001): Boolean = math.abs(d1 - d2) < epsilon
 
 // Combinatorics
 
-  def numCombinations(n:Int, r:Int) = math.exp (logFactorial(n)-logFactorial(r)-logFactorial(n-r))
-  def numPermutations (n:Int, r:Int) = math.exp (logFactorial(n)-logFactorial(r))
-
-
-
+  def numCombinations(n: Int, r: Int) = math.exp(logFactorial(n)-logFactorial(r)-logFactorial(n-r))
+  def numPermutations(n: Int, r: Int) = math.exp(logFactorial(n)-logFactorial(r))
 
 // Factorial
 
-object FactorialCache {
-  val size = 13 // 12! = 479 001 600, 13! = 6 227 020 800, java.Integer.MAX_INT = (2^31) - 1 = 2 147 483 647
-  private val cache = new Array[Int](size)
-  cache(0) = 1; for (i <- 1 until size) cache(i) = i * cache(i-1)
-  def factorial(n:Int): Int = cache(n)
-}
+  object FactorialCache {
+    val size = 13 // 12! = 479 001 600, 13! = 6 227 020 800, java.Integer.MAX_INT = (2^31) - 1 = 2 147 483 647
+    private val cache = new Array[Int](size)
+    cache(0) = 1; for (i <- 1 until size) cache(i) = i * cache(i-1)
+    def factorial(n: Int): Int = cache(n)
+  }
 
-  def factorial(n:Int): Double = if (n < FactorialCache.size) FactorialCache.factorial(n) else math.exp(logGamma(n+1.0))
-  def logFactorial(n:Int): Double = logGamma(n+1.0)
-
-
-
+  def factorial(n: Int): Double = if (n < FactorialCache.size) FactorialCache.factorial(n) else math.exp(logGamma(n+1.0))
+  def logFactorial(n: Int): Double = logGamma(n+1.0)
 
 // LogGamma
 
-object LogGamma {
-  val d1 = -5.772156649015328605195174e-1
-  val p1 = Array( 
-    4.945235359296727046734888e0, 2.018112620856775083915565e2, 
-    2.290838373831346393026739e3, 1.131967205903380828685045e4, 
-    2.855724635671635335736389e4, 3.848496228443793359990269e4, 
-    2.637748787624195437963534e4, 7.225813979700288197698961e3 
-  )
-  val q1 = Array(
-    6.748212550303777196073036e1, 1.113332393857199323513008e3, 
-    7.738757056935398733233834e3, 2.763987074403340708898585e4, 
-    5.499310206226157329794414e4, 6.161122180066002127833352e4, 
-    3.635127591501940507276287e4, 8.785536302431013170870835e3
-  )
-  val d2 = 4.227843350984671393993777e-1
-  val p2 = Array(
-    4.974607845568932035012064e0, 5.424138599891070494101986e2, 
-    1.550693864978364947665077e4, 1.847932904445632425417223e5, 
-    1.088204769468828767498470e6, 3.338152967987029735917223e6, 
-    5.106661678927352456275255e6, 3.074109054850539556250927e6
-  )
-  val q2 = Array(
-    1.830328399370592604055942e2, 7.765049321445005871323047e3, 
-    1.331903827966074194402448e5, 1.136705821321969608938755e6, 
-    5.267964117437946917577538e6, 1.346701454311101692290052e7, 
-    1.782736530353274213975932e7, 9.533095591844353613395747e6
-  )
-  val d4 = 1.791759469228055000094023e0
-  val p4 = Array(
-    1.474502166059939948905062e4, 2.426813369486704502836312e6, 
-    1.214755574045093227939592e8, 2.663432449630976949898078e9, 
-    2.940378956634553899906876e10, 1.702665737765398868392998e11, 
-    4.926125793377430887588120e11, 5.606251856223951465078242e11
-  )
-  val q4 = Array(
-    2.690530175870899333379843e3, 6.393885654300092398984238e5, 
-    4.135599930241388052042842e7, 1.120872109616147941376570e9, 
-    1.488613728678813811542398e10, 1.016803586272438228077304e11, 
-    3.417476345507377132798597e11, 4.463158187419713286462081e11
-  )
-  val c = Array(
-    -1.910444077728e-03, 8.4171387781295e-04, 
-    -5.952379913043012e-04, 7.93650793500350248e-04, 
-    -2.777777777777681622553e-03, 8.333333333333333331554247e-02, 
-    5.7083835261e-03
-  )
-}
+  object LogGamma {
+    val d1 = -5.772156649015328605195174e-1
+    val p1 = Array(
+      4.945235359296727046734888e0, 2.018112620856775083915565e2,
+      2.290838373831346393026739e3, 1.131967205903380828685045e4,
+      2.855724635671635335736389e4, 3.848496228443793359990269e4,
+      2.637748787624195437963534e4, 7.225813979700288197698961e3
+    )
+    val q1 = Array(
+      6.748212550303777196073036e1, 1.113332393857199323513008e3,
+      7.738757056935398733233834e3, 2.763987074403340708898585e4,
+      5.499310206226157329794414e4, 6.161122180066002127833352e4,
+      3.635127591501940507276287e4, 8.785536302431013170870835e3
+    )
+    val d2 = 4.227843350984671393993777e-1
+    val p2 = Array(
+      4.974607845568932035012064e0, 5.424138599891070494101986e2,
+      1.550693864978364947665077e4, 1.847932904445632425417223e5,
+      1.088204769468828767498470e6, 3.338152967987029735917223e6,
+      5.106661678927352456275255e6, 3.074109054850539556250927e6
+    )
+    val q2 = Array(
+      1.830328399370592604055942e2, 7.765049321445005871323047e3,
+      1.331903827966074194402448e5, 1.136705821321969608938755e6,
+      5.267964117437946917577538e6, 1.346701454311101692290052e7,
+      1.782736530353274213975932e7, 9.533095591844353613395747e6
+    )
+    val d4 = 1.791759469228055000094023e0
+    val p4 = Array(
+      1.474502166059939948905062e4, 2.426813369486704502836312e6,
+      1.214755574045093227939592e8, 2.663432449630976949898078e9,
+      2.940378956634553899906876e10, 1.702665737765398868392998e11,
+      4.926125793377430887588120e11, 5.606251856223951465078242e11
+    )
+    val q4 = Array(
+      2.690530175870899333379843e3, 6.393885654300092398984238e5,
+      4.135599930241388052042842e7, 1.120872109616147941376570e9,
+      1.488613728678813811542398e10, 1.016803586272438228077304e11,
+      3.417476345507377132798597e11, 4.463158187419713286462081e11
+    )
+    val c = Array(
+      -1.910444077728e-03, 8.4171387781295e-04,
+      -5.952379913043012e-04, 7.93650793500350248e-04,
+      -2.777777777777681622553e-03, 8.333333333333333331554247e-02,
+      5.7083835261e-03
+    )
+  }
 
+  // TODO need to replace this with properly licensed equivalent! numpy? -luke
   // From libbow, dirichlet.c
   // Written by Tom Minka <minka@stat.cmu.edu>
-  def logGamma (xa:Double) : Double = {
+  def logGamma(xa: Double): Double = {
     import LogGamma._
     var x = xa
     var result = 0.0; var y = 0.0; var xnum = 0.0; var xden = 0.0
@@ -299,61 +245,53 @@ object LogGamma {
       }
       result += x*(d1 + x*(xnum/xden))
     } else if ((x <= a) || ((x > 1.5) && (x <= 4))) {
-      if(x <= a) {
+      if (x <= a) {
         result = -math.log(x)
         x = (x - 0.5) - 0.5
-      }
-      else {
+      } else {
         result = 0
         x -= 2
       }
       xnum = 0
       xden = 1
-      for(i <- 0 until 8) {
+      for (i <- 0 until 8) {
         xnum = xnum * x + p2(i)
         xden = xden * x + q2(i)
       }
       result += x*(d2 + x*(xnum/xden))
+    } else if (x <= 12) {
+      x -= 4
+      xnum = 0
+      xden = -1
+      for (i <- 0 until 8) {
+        xnum = xnum * x + p4(i)
+        xden = xden * x + q4(i)
+      }
+      result = d4 + x*(xnum/xden)
+    } else /*  X > 12  */ {
+      y = math.log(x)
+      result = x*(y - 1) - y*0.5 + .9189385332046727417803297
+      x = 1/x
+      y = x*x
+      xnum = c(6)
+      for (i <- 0 until 6) xnum = xnum * y + c(i)
+      xnum *= x
+      result += xnum
     }
-          else if(x <= 12) {
-            x -= 4;
-            xnum = 0;
-            xden = -1;
-            for(i <- 0 until 8) {
-              xnum = xnum * x + p4(i);
-              xden = xden * x + q4(i);
-            }
-            result = d4 + x*(xnum/xden);
-          }
-    /*  X > 12  */
-          else {
-            y = math.log(x);
-            result = x*(y - 1) - y*0.5 + .9189385332046727417803297;
-            x = 1/x;
-            y = x*x;
-            xnum = c(6);
-            for(i <- 0 until 6) xnum = xnum * y + c(i);
-            xnum *= x;
-            result += xnum;
-          }
     result
   }
   
-  def logBeta(a:Double , b:Double) = logGamma(a)+logGamma(b)-logGamma(a+b)
-  def beta(a:Double, b:Double) = math.exp(logBeta(a,b))
-  def gamma (x:Double) = math.exp(logGamma(x))
-
-  
-  
+  def logBeta(a: Double, b: Double) = logGamma(a)+logGamma(b)-logGamma(a+b)
+  def beta(a: Double, b: Double) = math.exp(logBeta(a,b))
+  def gamma(x: Double) = math.exp(logGamma(x))
 
 // Log Prob
   
-  val log2 = math.log(2);
+  val log2 = math.log(2)
 
   /** Return the entropy of the normalized distribution p.
       The log is w.r.t. base 2.  */
-  @deprecated("Will be removed because uses inefficient Seq[Double]")  
-  def entropy(p:Seq[Double]): Double = {
+  def entropy(p: Array[Double]): Double = {
     var result = 0.0
     var i = p.length - 1
     var pv = 0.0
@@ -374,10 +312,9 @@ object LogGamma {
    * *Note*: If any value in <tt>p2</tt> is <tt>0.0</tt> then the KL-divergence
    * is <tt>infinite</tt>. 
    */
-  @deprecated("Will be removed because uses inefficient Seq[Double]")    
-  def klDivergence(p1:Seq[Double], p2:Seq[Double]) = {
-    assert(p1.length == p2.length);
-    var klDiv = 0.0;
+  def klDivergence(p1: Array[Double], p2: Array[Double]) = {
+    assert(p1.length == p2.length)
+    var klDiv = 0.0
     for (i <- 0 until p1.length) {
       if (p1(i) != 0.0)
         klDiv += p1(i) * math.log(p1(i) / p2(i))
@@ -386,10 +323,9 @@ object LogGamma {
   }
 
   /** Returns the Jensen-Shannon divergence. */
-  @deprecated("Will be removed because uses inefficient Seq[Double]")    
-  def jensenShannonDivergence(p1:Seq[Double], p2:Seq[Double]) = {
-    assert(p1.length == p2.length);
-    val average = new Array[Double](p1.length);
+  def jensenShannonDivergence(p1: Array[Double], p2: Array[Double]) = {
+    assert(p1.length == p2.length)
+    val average = new Array[Double](p1.length)
     for (i <- 0 until p1.length) average(i) += (p1(i) + p2(i)) / 2.0
     (klDivergence(p1, average) + klDivergence(p2, average)) / 2.0
   }
@@ -405,13 +341,8 @@ object LogGamma {
    *
    * By exponentiating <tt>b-a</tt>, we obtain better numerical precision than
    *  we would if we calculated <tt>e^a</tt> or <tt>e^b</tt> directly.
-   * <P>
-   * Note: This function is just like 
-   *  {@link cc.mallet.fst.Transducer#sumNegLogProb sumNegLogProb}
-   *   in <TT>Transducer</TT>,
-   *   except that the logs aren't negated.
    */
-  def sumLogProb (a:Double, b:Double) =   {
+  def sumLogProb(a: Double, b: Double) =   {
     if (a == Double.NegativeInfinity) 
       b
     else if (b == Double.NegativeInfinity)
@@ -422,24 +353,7 @@ object LogGamma {
       b + math.log1p(math.exp(a-b))
   }
 
-
-
-
-  // Below adapted from Stanford NLP package, SloppyMath.java
-  /**
-   * Sums an array of numbers log(x1)...log(xn).  This saves some of
-   *  the unnecessary calls to Math.log in the two-argument version.
-   * <p>
-   * Note that this implementation IGNORES elements of the input
-   *  array that are more than LOGTOLERANCE (currently 30.0) less
-   *  than the maximum element.
-   * <p>
-   * Cursory testing makes me wonder if this is actually much faster than
-   *  repeated use of the 2-argument version, however -cas.
-   * @param vals An array log(x1), log(x2), ..., log(xn)
-   * @return log(x1+x2+...+xn)
-   */
-  def sumLogProbs (vals:cc.factorie.util.DoubleSeq): Double = {
+  def sumLogProbs(vals: DoubleSeq): Double = {
     val LOGTOLERANCE = 30.0
 
     val len = vals.length
@@ -471,9 +385,8 @@ object LogGamma {
       max
   }
 
-  def subtractLogProb (a:Double, b:Double) =
+  def subtractLogProb(a: Double, b: Double) =
     if (b == Double.NegativeInfinity) a else a + math.log (1 - math.exp(b-a))
-
 
 // Poly
 
@@ -486,7 +399,6 @@ object LogGamma {
     }
     result
   }
-
 
 // Probit
 
@@ -563,21 +475,21 @@ object LogGamma {
       return Double.NegativeInfinity
     if (p >= 1)
       return Double.PositiveInfinity
-    val q = p - 0.5;
-    var r: Double = 0;
-    var g: Double = 0;
+    val q = p - 0.5
+    var r: Double = 0
+    var g: Double = 0
     if (math.abs(q) <= split1) {
       //System.out.println("CASE 1" );
-      r = const1 - q * q;
-      g = q * poly(a, r) / poly(b, r);
+      r = const1 - q * q
+      g = q * poly(a, r) / poly(b, r)
     } else {
       //System.out.println("CASE 2" );
       if (q < 0) r = p
       else r = 1 - p
-      if (r <= 0) g = -1;
+      if (r <= 0) g = -1
       else {
         //System.out.println("  (b)");
-        r = math.sqrt(-math.log(r));
+        r = math.sqrt(-math.log(r))
         if (r <= split2) {
           //System.out.println("   (i)");
           r = r - const2
@@ -594,49 +506,45 @@ object LogGamma {
     g
   }
 
-  def sigmod(beta:Double) = 1.0/(1.0+math.exp(-beta))
-  def sigmod_rev(sig:Double) = math.log(sig/(1-sig))
-  def logit(p:Double) = math.log (p / (1 - p))
+  def sigmoid(beta: Double) = 1.0/(1.0+math.exp(-beta))
+  def sigmoid_rev(sig: Double) = logit(sig)
+  def logit(p: Double) = math.log (p / (1 - p))
 
+  // Random Distributions
 
-
-
-// Random Distributions
-
-  implicit val implicitRandom:Random = cc.factorie.random
+//  implicit val implicitRandom:Random = cc.factorie.random
  
   /** Return random integer from Poission with parameter lambda.  
    * The mean of this distribution is lambda.  The variance is lambda. */
-  def nextPoisson(lambda:Double)(implicit r:Random) : Double = {
+  def nextPoisson(lambda: Double)(implicit r: Random): Double = {
     var v = -1
     val l=math.exp(-lambda)
-    var p=1.0;
+    var p=1.0
     while (p>=l) { p *= nextUniform(r); v += 1 }
     v
   }
 
   /** Return nextPoisson(1). */
-  def nextPoisson(implicit r:Random) : Double = nextPoisson(1)(r)
+  def nextPoisson(implicit r: Random): Double = nextPoisson(1)(r)
 
   /** Return a random boolean, equally likely to be true or false. */
-  def nextBoolean(implicit r:Random) = r.nextBoolean
+  def nextBoolean(implicit r: Random) = r.nextBoolean()
   // TODO  Is this good enough?  Code used to be:
   // return (next(32) & 1 << 15) != 0;
 
-
   /** Return a random boolean, with probability p of being true. */
-  def nextBoolean(p:Double)(implicit r:Random) = nextUniform(r) < p
+  def nextBoolean(p: Double)(implicit r: Random) = nextUniform(r) < p
 
   /** Return a random BitSet with "size" bits, each having probability p of being true. */
-  def nextBitSet (size:Int, p:Double)(implicit r:Random) : BitSet = {
-    val bs = new BitSet (size)
+  def nextBitSet(size: Int, p: Double)(implicit r: Random): BitSet = {
+    val bs = new BitSet(size)
     for (i <- 0 until size) if (nextBoolean(p)(r)) bs.set(i)
     bs
   }
 
   /** Return a random double in the range 0 to 1, inclusive, uniformly sampled from that range. 
    * The mean of this distribution is 0.5.  The variance is 1/12. */
-  @inline final def nextUniform(implicit r:Random) : Double = r.nextDouble
+  @inline final def nextUniform(implicit r: Random): Double = r.nextDouble()
   // Is this good enough?  Code used to be:
   // val l = ((r.self.next(26)).asInstanceOf[Long] << 27) + next(27);
   // l / (1L << 53).asInstanceOf[Double]
@@ -646,7 +554,7 @@ object LogGamma {
   //def nextUniform(a:Double, b:Double)(implicit r:Random) : Double = a + (b-a)*nextUniform(r)
 
   /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
-  def nextDiscrete (a:Array[Double])(implicit r:Random): Int = {
+  def nextDiscrete(a: Array[Double])(implicit r: Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { assert (a(i) >= 0.0); b += a(i); i += 1 }
     assert(i > 0)
@@ -662,7 +570,7 @@ object LogGamma {
   //}
 
   /** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
-  def nextDiscrete (a:Array[Double], sum:Double)(implicit r:Random): Int = {
+  def nextDiscrete(a: Array[Double], sum: Double)(implicit r: Random): Int = {
     assert(sum > 0.0, "sum = "+sum)
     var b = 0.0; val s = nextUniform(r) * sum; var i = 0
     while (b <= s && i < a.length) { assert(a(i) >= 0.0); b += a(i); i += 1 }
@@ -682,49 +590,49 @@ object LogGamma {
   private var haveNextGaussianValue = false
 
   /** Return a random double drawn from a Gaussian distribution with mean 0 and variance 1. */
-  def nextGaussian(implicit r:Random) : Double = {
+  def nextGaussian(implicit r: Random): Double = {
     if (!haveNextGaussianValue) {
       val v1 = nextUniform(r); val v2 = nextUniform(r)
-      val x1 = math.sqrt(-2*math.log(v1))*math.cos(2*math.Pi*v2);
-      val x2 = math.sqrt(-2*math.log(v1))*math.sin(2*math.Pi*v2);
-      nextGaussianValue = x2;
-      haveNextGaussianValue = true;
+      val x1 = math.sqrt(-2*math.log(v1))*math.cos(2*math.Pi*v2)
+      val x2 = math.sqrt(-2*math.log(v1))*math.sin(2*math.Pi*v2)
+      nextGaussianValue = x2
+      haveNextGaussianValue = true
       x1
     } else {
-      haveNextGaussianValue = false;
-      nextGaussian(r);
+      haveNextGaussianValue = false
+      nextGaussian(r)
     }
   }
 
   /** Return a random double drawn from a Gaussian distribution with mean m and variance s2. */
-  def nextGaussian(mean:Double, s2:Double)(implicit r:Random) :Double = nextGaussian(r) * math.sqrt(s2)+mean
+  def nextGaussian(mean: Double, s2: Double)(implicit r: Random): Double = nextGaussian(r) * math.sqrt(s2)+mean
 
   // generate Gamma(1,1)
   // E(X)=1 ; Var(X)=1
   /** Return a random double drawn from a Gamma distribution with mean 1.0 and variance 1.0. */
-  def nextGamma(implicit r:Random) : Double = nextGamma(1,1,0)(r)
+  def nextGamma(implicit r: Random): Double = nextGamma(1,1,0)(r)
 
   /** Return a random double drawn from a Gamma distribution with mean alpha and variance 1.0. */
-  def nextGamma(alpha:Double)(implicit r:Random) : Double = nextGamma(alpha,1,0)(r)
+  def nextGamma(alpha: Double)(implicit r: Random): Double = nextGamma(alpha,1,0)(r)
 
   /** Return a random double drawn from a Gamma distribution with mean alpha*beta and variance alpha*beta^2. */
-  def nextGamma(alpha:Double, beta:Double)(implicit r:Random) : Double = nextGamma(alpha,beta,0)(r)
+  def nextGamma(alpha: Double, beta: Double)(implicit r: Random): Double = nextGamma(alpha,beta,0)(r)
 
   /** Return a random double drawn from a Gamma distribution with mean alpha*beta+lamba and variance alpha*beta^2. */
-  def nextGamma(alpha:Double, beta:Double, lambda:Double)(implicit r:Random) : Double = {
+  def nextGamma(alpha: Double, beta: Double, lambda: Double)(implicit r: Random): Double = {
     var gamma = 0.0
     if (alpha <= 0.0 || beta <= 0.0) throw new IllegalArgumentException ("alpha and beta must be strictly positive.");
     if (alpha < 1.0) {
       var p = 0.0
-      var flag = false;
+      var flag = false
       val b = 1+alpha*math.exp(-1)
       while (!flag) {
         p = b*nextUniform(r)
         if (p>1) {
-          gamma = -math.log((b-p)/alpha);
+          gamma = -math.log((b-p)/alpha)
           if (nextUniform(r) <= math.pow(gamma,alpha-1)) flag = true
         } else {
-          gamma = math.pow(p,1/alpha);
+          gamma = math.pow(p,1/alpha)
           if (nextUniform(r) <= math.exp(-gamma)) flag = true
         }
       }
@@ -736,33 +644,33 @@ object LogGamma {
         y = -math.log (nextUniform(r))
       gamma = alpha * y
     }
-    beta * gamma + lambda;
+    beta * gamma + lambda
   }
 
   /** Return a random double drawn from an Exponential distribution with mean 1 and variance 1. */
-  def nextExp(implicit r:Random) = nextGamma(1,1,0)(r)
+  def nextExp(implicit r: Random) = nextGamma(1,1,0)(r)
 
   /** Return a random double drawn from an Exponential distribution with mean beta and variance beta^2. */
-  def nextExp(beta:Double)(implicit r:Random) = nextGamma(1,beta,0)(r)
+  def nextExp(beta: Double)(implicit r: Random) = nextGamma(1,beta,0)(r)
 
   /** Return a random double drawn from an Exponential distribution with mean beta+lambda and variance beta^2. */
-  def nextExp(beta:Double, lambda:Double)(implicit r:Random) = nextGamma(1,beta,lambda)(r)
+  def nextExp(beta: Double, lambda: Double)(implicit r: Random) = nextGamma(1,beta,lambda)(r)
 
   /** Return a random double drawn from an Chi-squarted distribution with mean 1 and variance 2. 
    * Equivalent to nextChiSq(1) */
-  def nextChiSq(implicit r:Random) : Double = nextGamma(0.5,2,0)(r)
+  def nextChiSq(implicit r: Random): Double = nextGamma(0.5,2,0)(r)
 
   /** Return a random double drawn from an Chi-squared distribution with mean df and variance 2*df.  */
-  def nextChiSq(df:Int)(implicit r:Random) = nextGamma(0.5*df, 2, 0)(r)
+  def nextChiSq(df: Int)(implicit r: Random) = nextGamma(0.5*df, 2, 0)(r)
 
   /** Return a random double drawn from an Chi-squared distribution with mean df+lambda and variance 2*df.  */
-  def nextChiSq(df:Int, lambda:Double)(implicit r:Random) = nextGamma(0.5*df,2,lambda)(r)
+  def nextChiSq(df: Int, lambda: Double)(implicit r: Random) = nextGamma(0.5*df,2,lambda)(r)
 
   /** Return a random double drawn from a Beta distribution with mean a/(a+b) and variance ab/((a+b+1)(a+b)^2).  */
-  def nextBeta(alpha:Double, beta:Double)(implicit r:Random) : Double = {
+  def nextBeta(alpha: Double, beta: Double)(implicit r: Random): Double = {
     if (alpha <= 0 || beta <= 0) throw new IllegalArgumentException ("alpha and beta must be strictly positive.")
     if (alpha == 1 && beta == 1) {
-      return nextUniform(r)
+      nextUniform(r)
     } else if (alpha >= 1 && beta >= 1) {
       val A = alpha - 1
       val B = beta - 1
@@ -780,7 +688,7 @@ object LogGamma {
         while (x < 0 || x > 1) { y = nextGaussian(r); x = sigma * y + mu }
         u = nextUniform(r)
       }
-      return x
+      x
     } else {
       var v1 = math.pow (nextUniform(r), 1 / alpha)
       var v2 = math.pow (nextUniform(r), 1 / beta)
@@ -788,18 +696,16 @@ object LogGamma {
         v1 = math.pow (nextUniform(r), 1 / alpha)
         v2 = math.pow (nextUniform(r), 1 / beta)
       }
-      return v1 / (v1 + v2)
+      v1 / (v1 + v2)
     }
   }
 
-  
-  
 // Sample statistics
   
-  def sampleMean(ds:cc.factorie.util.DoubleSeq): Double = ds.sum / ds.length
-  def sampleVariance(ds:cc.factorie.util.DoubleSeq): Double = sampleVariance(ds, sampleMean(ds))
+  def sampleMean(ds: DoubleSeq): Double = ds.sum / ds.length
+  def sampleVariance(ds: DoubleSeq): Double = sampleVariance(ds, sampleMean(ds))
   /** Returns the unbiased sample variance.  See http://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance */
-  def sampleVariance(ds:cc.factorie.util.DoubleSeq, mean:Double): Double = {
+  def sampleVariance(ds: DoubleSeq, mean: Double): Double = {
     val len = ds.length; var i = 0
     var v = 0.0
     while (i < len) {
@@ -811,14 +717,8 @@ object LogGamma {
     v / (len - 1)
   }
 
-
-
 // Trig
 
-  def cosh (a:Double) = if (a < 0) 0.5 * (math.exp(-a) + math.exp(a)) else 0.5 * (math.exp(a) + math.exp(-a))
-  def tanh (a:Double) = (math.exp(a) - math.exp(-a)) / (math.exp(a) + math.exp(-a))
-
-
-
-
+  def cosh(a: Double) = if (a < 0) 0.5 * (math.exp(-a) + math.exp(a)) else 0.5 * (math.exp(a) + math.exp(-a))
+  def tanh(a: Double) = (math.exp(a) - math.exp(-a)) / (math.exp(a) + math.exp(-a))
 }
