@@ -73,9 +73,6 @@ object BinarySerializer {
   def deserialize[T](filename: String)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, filename); cc.fetch() }
   def deserialize[T](file: File)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file); cc.fetch() }
   def deserialize[T](file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file, gzip); cc.fetch() }
-//  def serializeC[T](toSerialize: T, filename: String)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); serialize(cc, filename) }
-//  def serializeC[T](toSerialize: T, file: File)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file) }
-//  def serializeC[T](toSerialize: T, file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file, gzip) }
 
   def serialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
     val stream = writeFile(file, gzip)
@@ -119,11 +116,7 @@ object BinarySerializer {
   private val NULL: Byte = 0x08
   private val SPARSE_INDEXED_TENSOR: Byte = 0x09
   private val SPARSE_BINARY_TENSOR: Byte = 0x10
-  private val DENSE_TENSOR: Byte = 0x12
-
-  // add sparseindexedtensor, sparsebinarytensor, densetensor
-  // next field is order/rank
-  // then dims (write as a list of dim lengths
+  private val DENSE_TENSOR: Byte = 0x11
 
   private def deserializeInner(preexisting: Any, tag: Byte, s: DataInputStream): Any = tag match {
     case DOUBLE => s.readDouble()
@@ -145,13 +138,19 @@ object BinarySerializer {
         case (DENSE_TENSOR, 2) => new DenseTensor2(dims(0), dims(1))
         case (DENSE_TENSOR, 3) => new DenseTensor3(dims(0), dims(1), dims(2))
       }
-      // TODO to make this fast I think we need to store the length in bytes, not entries, and not interleave the sparse ones, but copy directly into the arrays
-      // this is not that bad but apparently java nio bytebuffer stuff is good for this
       newBlank match {
-        case nb: SparseIndexedTensor => repeat(activeDomainSize)(nb += (s.readInt(), s.readDouble()))
-        case nb: SparseBinaryTensor => repeat(activeDomainSize)(nb += (s.readInt(), 1.0))
-        case nb: DenseTensor => for (i <- 0 until activeDomainSize) nb(i) = s.readDouble()
+        case nb: ArraySparseIndexedTensor =>
+          nb.sizeHint(activeDomainSize)
+          val idxArr = readIntArray(s)
+          val valArr = readDoubleArray(s)
+          for ((i, v) <- idxArr.zip(valArr)) nb += (i, v)
+        case nb: ArraySparseBinaryTensor =>
+          nb.sizeHint(activeDomainSize)
+          nb ++= readIntArray(s)
+        case nb: DenseTensor =>
+          readDoubleArray(s, nb.asArray)
       }
+      // just get rid of all this pre-existing stuff? what's the best way to handle this?
       if (preexisting != null) {preexisting.asInstanceOf[Tensor] := newBlank; preexisting} else newBlank
     case TENSOR =>
       if (preexisting == null) sys.error("Require pre-existing tensor value in cubbie for general \"TENSOR\" slot.")
@@ -186,15 +185,14 @@ object BinarySerializer {
       s.readByte()
       null
   }
-  private def readIntArray(s: DataInputStream): Array[Int] = {
-    val arr = new Array[Int](s.readInt())
-    for (i <- 0 until arr.length) arr(i) = s.readInt()
-    arr
-  }
-  private def writeIntArray(s: DataOutputStream, arr: Array[Int]): Unit = {
-    s.writeInt(arr.length)
-    arr.foreach(s.writeInt(_))
-  }
+  private def readDoubleArray(s: DataInputStream, arr: Array[Double]): Array[Double] = { val length = s.readInt(); var i = 0; while (i < length) { arr(i) = s.readDouble(); i += 1 }; arr }
+  private def readDoubleArray(s: DataInputStream): Array[Double] = { val arr = new Array[Double](s.readInt()); var i = 0; while (i < arr.length) { arr(i) = s.readDouble(); i += 1 }; arr }
+  private def writeDoubleArray(s: DataOutputStream, arr: Array[Double]): Unit = writeDoubleArray(s, arr, arr.length)
+  private def writeDoubleArray(s: DataOutputStream, arr: Array[Double], length: Int): Unit = { s.writeInt(length); var i = 0; while (i < length) { s.writeDouble(arr(i)); i += 1 } }
+  private def readIntArray(s: DataInputStream, arr: Array[Int]): Array[Int] = { val length = readInt(); var i = 0; while (i < length) { arr(i) = s.readInt(); i += 1 }; arr }
+  private def readIntArray(s: DataInputStream): Array[Int] = { val arr = new Array[Int](s.readInt()); var i = 0; while (i < arr.length) { arr(i) = s.readInt(); i += 1 }; arr }
+  private def writeIntArray(s: DataOutputStream, arr: Array[Int]): Unit = writeIntArray(s, arr, arr.length)
+  private def writeIntArray(s: DataOutputStream, arr: Array[Int], length: Int): Unit = { s.writeInt(length); var i = 0; while (i < length) { s.writeInt(arr(i)); i += 1 } }
   private def readString(s: DataInputStream): String = {
     val bldr = new StringBuilder
     repeat(s.readInt())(bldr += s.readChar())
@@ -232,14 +230,16 @@ object BinarySerializer {
       case d: Double => s.writeDouble(d)
       case str: String => writeString(str, s)
       case t: Tensor if t.isInstanceOf[SparseIndexedTensor] || t.isInstanceOf[SparseBinaryTensor] || t.isInstanceOf[DenseTensor] =>
-        s.writeInt(t.activeDomainSize)
+        val activeDomainSize = t.activeDomainSize
+        s.writeInt(activeDomainSize)
         writeIntArray(s, t.dimensions)
-        // TODO to make this fast I think we need to store the length in bytes, not entries, and not interleave the sparse ones, but copy directly into the arrays
-        // this is not that bad but apparently java nio bytebuffer stuff is good for this
         t match {
-          case nb: SparseIndexedTensor => nb.foreachActiveElement((i, v) => {s.writeInt(i); s.writeDouble(v)})
-          case nb: SparseBinaryTensor => nb.foreachActiveElement((i, _) => s.writeInt(i))
-          case nb: DenseTensor => nb.foreachElement((_, v) => s.writeDouble(v))
+          case nb: SparseIndexedTensor =>
+            writeIntArray(s, nb._indices, activeDomainSize)
+            writeDoubleArray(s, nb._values, activeDomainSize)
+          case nb: SparseBinaryTensor =>
+            writeIntArray(s, nb._indices, activeDomainSize)
+          case nb: DenseTensor => writeDoubleArray(s, nb.asArray, activeDomainSize)
         }
       case t: Tensor =>
         s.writeInt(t.activeDomainSize)

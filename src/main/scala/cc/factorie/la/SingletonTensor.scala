@@ -23,6 +23,7 @@ trait SingletonTensor extends SparseTensor with ReadOnlyTensor {
   def singleIndex: Int
   def singleValue: Double
 
+  def sizeHint(size: Int): Unit = { }
   def _makeReadable(): Unit = { }
   def _unsafeActiveDomainSize: Int = 1
   def _indices: Array[Int] = Array(singleIndex)
