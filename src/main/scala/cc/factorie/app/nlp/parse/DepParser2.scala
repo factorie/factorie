@@ -1,15 +1,20 @@
-package cc.factorie.app.nlp.parse.nonproj
+package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
+import java.io.File
+import cc.factorie.util.BinarySerializer
+import cc.factorie.la.{DenseTensor2, Tensor1}
+import cc.factorie.app.classify.{SVMTrainer, MultiClassModel}
+import scala._
+import scala.Some
+import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
 
-trait Parser extends DocumentAnnotator {
+class DepParser2 extends DocumentAnnotator {
   case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
     val leftOrRightOrNo = lrnS.toInt
@@ -29,8 +34,17 @@ trait Parser extends DocumentAnnotator {
     override def skipNonCategories = domain.dimensionDomain.frozen
   }
 
-  def trainFromVariables(vs: Seq[ParseDecisionVariable])
-  def classify(v: ParseDecisionVariable): ParseDecision
+  import cc.factorie.util.CubbieConversions._
+  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  def load(file: File, gzip: Boolean) = BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
+  val model = new MultiClassModel {
+    val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
+  }
+
+  def trainFromVariables(vs: Seq[ParseDecisionVariable], trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteDimensionTensorVar)], MultiClassModel) => Unit) {
+    trainFn(vs.map(v => (v.asInstanceOf[LabeledCategoricalVariable[String]],v.features)), model)
+  }
 
   lazy val testFeatureSpec = io.Source.fromURL(this.getClass.getResource("/parser-features.json")).getLines().mkString("\n")
   lazy val featureGenerators: Seq[DependencyFeatures.DependencyFeatureGenerator] = DependencyFeatures.fromJSON(testFeatureSpec)
@@ -61,7 +75,8 @@ trait Parser extends DocumentAnnotator {
       oracle.instances
     })
   }
-  def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]) = trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING))
+  def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]=Seq(), trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteDimensionTensorVar)], MultiClassModel) => Unit) =
+    trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING), trainFn)
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PTBPosLabel])
   def postAttrs = Seq(classOf[ParseTree])
@@ -347,3 +362,116 @@ trait Parser extends DocumentAnnotator {
     }
   }
 }
+
+object DepParser2 {
+  def main(args: Array[String]) = {
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val trainFiles =  new CmdOption("train", List(""), "FILE...", "")
+      val testFiles =  new CmdOption("test", List(""), "FILE...", "")
+      val devFiles =   new CmdOption("dev", List(""), "FILE", "")
+      val ontonotes = new CmdOption("onto", "", "", "")
+      val cutoff    = new CmdOption("cutoff", "0", "", "")
+      val loadModel = new CmdOption("load", "", "", "")
+      val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
+      val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
+      val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
+    }
+    opts.parse(args)
+    import opts._
+
+    // Load the sentences
+    var loader = LoadConll2008.fromFilename(_)
+    if (ontonotes.wasInvoked)
+      loader = LoadOntonotes5.fromFilename(_)
+
+    def loadSentences(o: CmdOption[List[String]]): Seq[Sentence] = {
+      if (o.wasInvoked) o.value.flatMap(f => loader(f).head.sentences)
+      else Seq.empty[Sentence]
+    }
+
+    val sentences = loadSentences(trainFiles)
+    val devSentences = loadSentences(devFiles)
+    val testSentences = loadSentences(testFiles)
+
+    println("Total train sentences: " + sentences.size)
+    println("Total test sentences: " + testSentences.size)
+
+
+    def testSingle(c: DepParser2, ss: Seq[Sentence], extraText: String = ""): Unit = {
+      if (ss.nonEmpty) {
+        println(extraText)
+        println("------------")
+        ss.foreach(c.process)
+        val pred = ss.map(_.attr[ParseTree])
+        println("LAS: " + ParserEval.calcLas(pred))
+        println("UAS: " + ParserEval.calcUas(pred))
+        println("\n")
+      }
+    }
+
+    def testAll(c: DepParser2, extraText: String = ""): Unit = {
+      println("\n")
+      testSingle(c, sentences,     "Train " + extraText)
+      testSingle(c, devSentences,  "Dev "   + extraText)
+      testSingle(c, testSentences, "Test "  + extraText)
+    }
+
+    // Load other parameters
+    val numBootstrappingIterations = bootstrapping.value.toInt
+
+    val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString() + ".parser"
+    var modelFolder: File = new File(modelUrl)
+    val c = new DepParser2()
+
+    def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteDimensionTensorVar)], model: MultiClassModel) {
+      if (useSVM.value) {
+        val labelSize = examples.head._1.domain.size
+        val featuresSize = examples.head._2.domain.dimensionSize
+        SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq)
+      } else {
+        val optimizer = new AdaGradRDA(1.0, 0.1, 0.00001, 0.000001)
+        val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=10)
+        val ex = examples.map(e => new LinearMultiClassExample(model.evidence,
+          e._2.value.asInstanceOf[Tensor1],
+          e._1.targetIntValue,
+          LinearObjectives.sparseLogMultiClass))
+        while (!trainer.isConverged) {
+          trainer.processExamples(ex.shuffle)
+          testAll(c, "iteration " + trainer.iteration)
+        }
+      }
+    }
+    // Do training if we weren't told to load a model
+    if (!loadModel.wasInvoked) {
+
+      var trainingVs = c.generateDecisions(sentences, 0)
+      c.featuresDomain.freeze()
+      println("# features " + c.featuresDomain.dimensionDomain.size)
+      c.trainFromVariables(trainingVs, trainFn)
+      // save the initial model
+      println("Saving the model...")
+      c.save(modelFolder, gzip = true)
+      println("...DONE")
+      testAll(c)
+
+      println("Loading it back for serialization testing...")
+      val d = new DepParser2
+      d.load(modelFolder, gzip = true)
+      testAll(d)
+      trainingVs = null // GC the old training labels
+      for (i <- 0 until numBootstrappingIterations) {
+        c.boosting(sentences, trainFn=trainFn)
+        testAll(c, "Boosting" + i)
+        // save the model
+        modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
+        modelFolder.mkdir()
+        c.save(modelFolder, gzip = true)
+      }
+    }
+    else {
+      c.load(modelFolder, gzip = true)
+      testAll(c)
+    }
+  }
+}
+

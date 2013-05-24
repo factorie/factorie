@@ -6,8 +6,8 @@ import cc.factorie.la.{DenseTensor2, Tensor2, Tensor1}
 
 object SVMTrainer {
 
-  def train[L<: LabeledMutableDiscreteVar[_],F<:DiscreteDimensionTensorVar](model: Parameters, numLabels: Int, numFeatures: Int, ll: Seq[L], lToF: L => F, parallel: Boolean = true) {
-    val xs = ll.map(lToF(_).value.asInstanceOf[Tensor1]).toArray
+  def train[L<: LabeledMutableDiscreteVar[_],F<:DiscreteDimensionTensorVar](model: Parameters, numLabels: Int, numFeatures: Int, ll: Seq[L], ff: Seq[F], parallel: Boolean = true) {
+    val xs = ff.map(_.value.asInstanceOf[Tensor1])
     val ys = ll.map(_.targetIntValue).toArray
     val weightTensor = {
       if (parallel) (0 until numLabels).par.map { label => (new LinearL2SVM).train(xs, ys, label) }
@@ -24,7 +24,7 @@ class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](ll: LabelList[L, F]): Classifier[L] = {
     val model = new TemplateModel()
     model += new LogLinearTemplate2[L,F](model, ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
-    SVMTrainer.train(model, ll.labelDomain.length, ll.featureDomain.dimensionSize, ll.toSeq, ll.labelToFeatures, parallel)
+    SVMTrainer.train(model, ll.labelDomain.length, ll.featureDomain.dimensionSize, ll.toSeq, ll.toSeq.map(ll.labelToFeatures), parallel)
     new ModelBasedClassifier(model, ll.head.domain)
   }
 }
