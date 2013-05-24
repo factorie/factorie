@@ -78,7 +78,7 @@ object ParserWithTrainer {
     val loss = LinearObjectives.sparseLogMultiClass
 
     val c = new ParserWithTrainer(trainer, loss)
-    var trainingVs = c.generateDecisions(sentences, new NonProjectiveShiftReduce(0))
+    var trainingVs = c.generateDecisions(sentences, 0)
     c.featuresDomain.freeze()
     println("# features " + c.featuresDomain.dimensionDomain.size)
     c.trainFromVariables(trainingVs)

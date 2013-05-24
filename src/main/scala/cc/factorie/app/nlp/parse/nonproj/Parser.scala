@@ -28,38 +28,38 @@ trait Parser extends DocumentAnnotator {
   labelDomain += ParserSupport.defaultCategory
   object featuresDomain extends CategoricalDimensionTensorDomain[String]
 
-  def generateDecisions(ss: Seq[Sentence], p: NonProjectiveShiftReduce): Seq[ParseDecisionVariable] = {
+  def generateDecisions(ss: Seq[Sentence], mode: Int): Seq[ParseDecisionVariable] = {
     var i = 0
-    val vs = ss.flatMap { s =>
+    val vs = ss.flatMap(s => {
       i += 1
       if (i % 1000 == 0)
         println("Parsed: " + i)
-      val parser = new NonProjectiveShiftReduce(mode = p.mode, p.predict)
-      parser.clear()
+      val oracle: NonProjectiveOracle = {
+        if (mode == TRAINING) new NonprojectiveGoldOracle(s, labelDomain, featuresDomain)
+        else new NonprojectiveBoostingOracle(s, classify, labelDomain, featuresDomain)
+      }
+      val parser = new NonProjectiveShiftReduce(oracle.predict)
       parser.parse(s, labelDomain, featuresDomain)
-      parser.instances
-    }
+      oracle.instances
+    })
     vs
   }
 
   def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]) {
-    val p = new NonProjectiveShiftReduce(mode = 2, (v: ParseDecisionVariable) => { classify(v) })
-    val newVs = generateDecisions(ss, p)
+    val p = new NonProjectiveShiftReduce((v: ParseDecisionVariable) => { classify(v) })
+    val newVs = generateDecisions(ss, 2)
     trainFromVariables(addlVs ++ newVs)
   }
 
   def predict(ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-    val p = new NonProjectiveShiftReduce(mode = 1, predict = (v: ParseDecisionVariable) => { classify(v) })
-    val parsers = new ThreadLocal[NonProjectiveShiftReduce] { override def initialValue = { new NonProjectiveShiftReduce(mode = p.mode, predict = p.predict) }}
+    val p = new NonProjectiveShiftReduce(predict = (v: ParseDecisionVariable) => { classify(v) })
+    val parsers = new ThreadLocal[NonProjectiveShiftReduce] { override def initialValue = { new NonProjectiveShiftReduce(predict = p.predict) }}
     val (gold, pred) = ss.zipWithIndex.map({ case (s, i) =>
       if (i % 1000 == 0)
         println("Parsed: " + i)
       val parser = parsers.get
-      parser.clear()
       val gold = parser.getSimpleDepArcs(s)
-      parser.clear()
       val dts = parser.parse(s, labelDomain, featuresDomain)
-      p.clear()
       val pred = (dts.drop(1).map { dt =>
         if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
         else -1 -> null.asInstanceOf[String]
@@ -77,8 +77,7 @@ trait Parser extends DocumentAnnotator {
   }
 
   def trainFromSentences(ss: Seq[Sentence]) {
-    val p = new NonProjectiveShiftReduce(mode = 0)
-    val vs = generateDecisions(ss, p)
+    val vs = generateDecisions(ss, 0)
     trainFromVariables(vs)
   }
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
@@ -86,7 +85,7 @@ trait Parser extends DocumentAnnotator {
   def postAttrs = Seq(classOf[ParseTree])
 
   def process(s: Sentence): Sentence = {
-    val p = new NonProjectiveShiftReduce(mode = PREDICTING, predict = classify)
+    val p = new NonProjectiveShiftReduce(predict = classify)
     val parse = new ParseTree(s)
     p.parse(s, labelDomain, featuresDomain).drop(1).filter(_.hasHead).map { dt =>
       parse.setParent(dt.thisIdx - 1, dt.head.depToken.thisIdx - 1)

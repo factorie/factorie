@@ -118,7 +118,7 @@ object ParserSupport {
   }
 
   val defaultCategory = "-1 -1 N"
-  class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState, val domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]) extends LabeledCategoricalVariable(targetDecision.action) {
+  class ParseDecisionVariable(targetDecision: ParseDecision, val state: ParseState, val domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]) extends LabeledCategoricalVariable(targetDecision.action) {
     def this(state: ParseState, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]) = this(new ParseDecision(defaultCategory), state, domain, featureDomain)
     val features = new NonProjDependencyParserFeatures(this, featureDomain)
     features ++= ParserUtils.featureGenerators.map(_.apply(state))

@@ -17,6 +17,9 @@ import java.io.BufferedReader
 import java.io.FileReader
 
 import collection.GenSeq
+import cc.factorie.app.nlp.parse.nonproj.ParserSupport.ParserConstants._
+import cc.factorie.app.nlp.parse.nonproj.ParserSupport.ParseDecision
+import cc.factorie.app.nlp.parse.nonproj.ParserSupport.DepArc
 
 /**
  * A non-projective shift-reduce dependency parser based on Jinho Choi's thesis work and ClearNLP.
@@ -24,29 +27,18 @@ import collection.GenSeq
  * @author Brian Martin
  */
 
-class NonProjectiveShiftReduce(val mode: Int = 0, val predict: ParseDecisionVariable => ParseDecision = null) {
+class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecision) {
   import ParserConstants._
   
-  var instances = new ArrayBuffer[ParseDecisionVariable] { override val initialSize = 100 }
-  
-  def training   = mode == TRAINING
-  def predicting = mode == PREDICTING
-  def boosting   = mode == BOOSTING
-
-  def clear() = {
-    instances.clear()
-  }
-
   def parse(s: Sentence, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): Array[DepToken] = {
     val state = new ParseState(0, 1, HashSet[Int](), s)
     val depTokens = state.sentenceTokens
-    val goldHeads = if (training || boosting) getDepArcs(depTokens, s) else null.asInstanceOf[Seq[DepArc]]
-      
+
     while(state.input < depTokens.length) {
       if (state.stack < 0)
         noShift(state)
       else {
-        val label = getDecision(domain, featureDomain, goldHeads, state)
+        val label = predict(new ParseDecisionVariable(state, domain, featureDomain))
         if (label.leftOrRightOrNo == LEFT) {
           if (state.stack == ROOT_ID) noShift(state)
           else if (state.inputToken(0).isDescendentOf(state.stackToken(0))) noPass(state)
@@ -68,9 +60,7 @@ class NonProjectiveShiftReduce(val mode: Int = 0, val predict: ParseDecisionVari
     depTokens
   }
 
-  def getSimpleDepArcs(s: Sentence): Seq[(Int, String)] = {
-    s.parse.parents.map(_ + 1).zip(s.parse.labels.map(_.value.category))
-  }
+  def getSimpleDepArcs(s: Sentence) = s.parse.parents.map(_ + 1).zip(s.parse.labels.map(_.value.category))
   
   def getDepArcs(ts: Array[DepToken], s: Sentence): Seq[DepArc] = {
     Seq(new DepArc(ts(0), "<ROOT-ROOT>")) ++
@@ -79,33 +69,16 @@ class NonProjectiveShiftReduce(val mode: Int = 0, val predict: ParseDecisionVari
 	    }
   }
 
-  private def noShift(state: ParseState) = shift(state)
-  private def noReduce(state: ParseState) = reduce(state)
-  private def noPass(state: ParseState) = pass(state)
+  private def noShift(state: ParseState)  { shift(state) }
+  private def noReduce(state: ParseState) { reduce(state) }
+  private def noPass(state: ParseState)   { pass(state) }
 
-  private def leftArc(label: String, state: ParseState) {
-    val lambda = state.stackToken(0)
-    val beta = state.inputToken(0)
-    lambda.setHead(beta, label)
-  }
+  private def leftArc(label: String, state: ParseState)  { state.stackToken(0).setHead(state.inputToken(0), label) }
+  private def rightArc(label: String, state: ParseState) { state.inputToken(0).setHead(state.stackToken(0), label) }
 
-  private def rightArc(label: String, state: ParseState) {
-    val lambda = state.stackToken(0)
-    val beta = state.inputToken(0)
-    beta.setHead(lambda, label)
-  }
-
-  private def shift(state: ParseState) {
-    state.stack = state.input
-    state.input += 1
-  }
-
-  private def reduce(state: ParseState) {
-    state.reducedIds.add(state.stack)
-    passAux(state)
-  }
-
-  private def pass(state: ParseState) = passAux(state: ParseState)
+  private def shift(state: ParseState)  { state.stack = state.input; state.input += 1 }
+  private def reduce(state: ParseState) { state.reducedIds.add(state.stack); passAux(state) }
+  private def pass(state: ParseState)   { passAux(state: ParseState) }
 
   private def passAux(state: ParseState): Unit = {
     var i = state.stack - 1
@@ -124,79 +97,4 @@ class NonProjectiveShiftReduce(val mode: Int = 0, val predict: ParseDecisionVari
   private def leftPass(label: String, state: ParseState)   { leftArc(label, state);  pass(state)   }
   private def rightShift(label: String, state: ParseState) { rightArc(label, state); shift(state)  }
   private def rightPass(label: String, state: ParseState)  { rightArc(label, state); pass(state)   }
-
-  private def getDecision(domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String], goldHeads: Seq[DepArc], state: ParseState): ParseDecision = {
-    mode match {
-      case TRAINING => {
-	    val decision = getGoldDecision(goldHeads, state)
-	    instances += new ParseDecisionVariable(decision, state, domain, featureDomain)
-	    decision
-	  }
-      case BOOSTING => {
-	    val label = new ParseDecisionVariable(getGoldDecision(goldHeads, state), state, domain, featureDomain)
-	    instances += label
-	    predict(label)
-	  }
-      case PREDICTING => {
-        predict(new ParseDecisionVariable(state, domain, featureDomain))
-      }
-    }
-  }
-
-  def getGoldDecision(goldHeads: Seq[DepArc], state: ParseState): ParseDecision = {
-    val label: ParseDecision = getGoldLabelArc(goldHeads, state)
-    val shiftOrReduceOrPass =
-      label.leftOrRightOrNo match {
-        case LEFT  => if (shouldGoldReduce(hasHead=true, goldHeads=goldHeads, state=state)) REDUCE else PASS
-        case RIGHT => if (shouldGoldShift(goldHeads, state=state)) SHIFT else PASS
-        case _ => {
-          if (shouldGoldShift(goldHeads, state=state)) SHIFT
-          else if (shouldGoldReduce(hasHead=false, goldHeads=goldHeads, state=state)) REDUCE
-          else PASS
-        }
-      }
-    new ParseDecision(label.leftOrRightOrNo + " " + shiftOrReduceOrPass + " " + label.label)
-  }
-
-  def getGoldLabelArc(goldHeads: Seq[DepArc], state: ParseState): ParseDecision = {
-    val headIdx   = goldHeads(state.stack).depToken.thisIdx
-    val headLabel = goldHeads(state.stack).label
-    val inputHeadIdx   = goldHeads(state.input).depToken.thisIdx
-    val inputHeadLabel = goldHeads(state.input).label
-    // if beta is the head of lambda
-    if (headIdx == state.input) {
-       new ParseDecision(LEFT + " " + (-1) + " " + headLabel)
-    } else if (inputHeadIdx == state.stack) {
-      new ParseDecision(RIGHT + " " + (-1) + " " + inputHeadLabel)
-    } else {
-      // lambda doesn't have a head
-      new ParseDecision(NO + " " + (-1) + " N")
-    }
-  }
-
-  def shouldGoldShift(goldHeads: Seq[DepArc], state: ParseState): Boolean = {
-    // if the head of the input is to the left of the stack: don't shift
-    if (goldHeads(state.input).depToken.thisIdx < state.stack)
-      return false
-    // if the head of any token in the stack is the input: don't shift
-    else
-      for (i <- (state.stack - 1) until 0 by -1) if (!state.reducedIds.contains(i)) {
-        if (goldHeads(i).depToken.thisIdx == state.input)
-          return false
-      }
-
-    // else shift
-    true
-  }
-
-  def shouldGoldReduce(hasHead: Boolean, goldHeads: Seq[DepArc], state: ParseState): Boolean = {
-    if (!hasHead && !state.stackToken(0).hasHead)
-      return false
-
-    for (i <- (state.input + 1) until state.sentenceTokens.length)
-      if (goldHeads(i).depToken.thisIdx == state.stack)
-        return false
-
-    true
-  }
 }
