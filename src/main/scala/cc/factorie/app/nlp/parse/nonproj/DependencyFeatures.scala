@@ -55,7 +55,7 @@ object DependencyFeatures {
     "p"   -> ((t: DepToken) => t.pos),
     "d"   -> ((t: DepToken) => if (!t.hasHead) "null" else t.head.label),
     "b0"  -> ((t: DepToken) => {
-      if (t == DepToken.nullToken)
+      if (t.pos == -2)
         "null"
       else {
 	    val s = t.state

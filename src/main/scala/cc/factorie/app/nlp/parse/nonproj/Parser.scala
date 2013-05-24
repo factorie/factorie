@@ -28,13 +28,13 @@ trait Parser extends DocumentAnnotator {
   labelDomain += ParserSupport.defaultCategory
   object featuresDomain extends CategoricalDimensionTensorDomain[String]
 
-  def generateDecisions(ss: Seq[Sentence], p: ParserAlgorithm): Seq[ParseDecisionVariable] = {
+  def generateDecisions(ss: Seq[Sentence], p: NonProjectiveShiftReduce): Seq[ParseDecisionVariable] = {
     var i = 0
     val vs = ss.flatMap { s =>
       i += 1
       if (i % 1000 == 0)
         println("Parsed: " + i)
-      val parser = new ParserAlgorithm(mode = p.mode, p.predict)
+      val parser = new NonProjectiveShiftReduce(mode = p.mode, p.predict)
       parser.clear()
       parser.parse(s, labelDomain, featuresDomain)
       parser.instances
@@ -43,14 +43,14 @@ trait Parser extends DocumentAnnotator {
   }
 
   def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]) {
-    val p = new ParserAlgorithm(mode = 2, (v: ParseDecisionVariable) => { classify(v) })
+    val p = new NonProjectiveShiftReduce(mode = 2, (v: ParseDecisionVariable) => { classify(v) })
     val newVs = generateDecisions(ss, p)
     trainFromVariables(addlVs ++ newVs)
   }
 
   def predict(ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-    val p = new ParserAlgorithm(mode = 1, predict = (v: ParseDecisionVariable) => { classify(v) })
-    val parsers = new ThreadLocal[ParserAlgorithm] { override def initialValue = { new ParserAlgorithm(mode = p.mode, predict = p.predict) }}
+    val p = new NonProjectiveShiftReduce(mode = 1, predict = (v: ParseDecisionVariable) => { classify(v) })
+    val parsers = new ThreadLocal[NonProjectiveShiftReduce] { override def initialValue = { new NonProjectiveShiftReduce(mode = p.mode, predict = p.predict) }}
     val (gold, pred) = ss.zipWithIndex.map({ case (s, i) =>
       if (i % 1000 == 0)
         println("Parsed: " + i)
@@ -77,7 +77,7 @@ trait Parser extends DocumentAnnotator {
   }
 
   def trainFromSentences(ss: Seq[Sentence]) {
-    val p = new ParserAlgorithm(mode = 0)
+    val p = new NonProjectiveShiftReduce(mode = 0)
     val vs = generateDecisions(ss, p)
     trainFromVariables(vs)
   }
@@ -86,7 +86,7 @@ trait Parser extends DocumentAnnotator {
   def postAttrs = Seq(classOf[ParseTree])
 
   def process(s: Sentence): Sentence = {
-    val p = new ParserAlgorithm(mode = PREDICTING, predict = classify)
+    val p = new NonProjectiveShiftReduce(mode = PREDICTING, predict = classify)
     val parse = new ParseTree(s)
     p.parse(s, labelDomain, featuresDomain).drop(1).filter(_.hasHead).map { dt =>
       parse.setParent(dt.thisIdx - 1, dt.head.depToken.thisIdx - 1)

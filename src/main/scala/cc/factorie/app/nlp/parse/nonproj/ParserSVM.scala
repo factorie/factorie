@@ -91,7 +91,7 @@ object ParserSVM {
     // Do training if we weren't told to load a model
     if (!loadModel.wasInvoked) {
       val c = new ParserSVM
-      var trainingVs = c.generateDecisions(sentences, new ParserAlgorithm(0))
+      var trainingVs = c.generateDecisions(sentences, new NonProjectiveShiftReduce(0))
       c.featuresDomain.freeze()
       println("# features " + c.featuresDomain.dimensionDomain.size)
       c.trainFromVariables(trainingVs)

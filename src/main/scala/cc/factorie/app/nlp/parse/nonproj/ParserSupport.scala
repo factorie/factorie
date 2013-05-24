@@ -27,19 +27,13 @@ object ParserSupport {
       val BOOSTING   = 2
     }
     
-    object DepToken {
-      def apply(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
-      // eclipse didn't like "lazy" here
-      val root = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0)
-      val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1)
-    }
     class DepToken(
         val form: String,
         val lemma: String,
         val pos: String,
         val thisIdx: Int,
-        var head: DepArc = null,
-        var state: ParseState = null) {
+        val state: ParseState,
+        var head: DepArc = null) {
     
       def setHead(headToken: DepToken, label: String) {
         head = new DepArc(headToken, label)
@@ -52,7 +46,7 @@ object ParserSupport {
       def leftmostDependent(): DepToken = {
         val i = state.leftmostDeps(thisIdx)
         if (i == -1)
-          DepToken.nullToken
+          state.nullToken
         else
           state.sentenceTokens(i)
       }
@@ -60,7 +54,7 @@ object ParserSupport {
       def rightmostDependent(): DepToken = {
         val i = state.rightmostDeps(thisIdx)
         if (i == -1)
-          DepToken.nullToken
+          state.nullToken
         else
           state.sentenceTokens(i)
       }
@@ -70,7 +64,7 @@ object ParserSupport {
       def isDescendentOf(that: DepToken): Boolean = {
         assert(that ne null)
         var ptr = this
-        while (ptr.head != null && ptr != DepToken.root) {
+        while (ptr.head != null && ptr != state.rootToken) {
           ptr = ptr.head.depToken
           if (ptr == that)
             return true
@@ -87,11 +81,12 @@ object ParserSupport {
   class ParseState(var stack: Int,
                    var input: Int,
                    val reducedIds: HashSet[Int],
-                   val sentenceTokens: Array[DepToken]) {
+                   sentence: Sentence) {
 
-    sentenceTokens.foreach(_.state = this)
-
-    def this(tokens: Array[DepToken]) = this(0, 1, HashSet[Int](), tokens)
+    def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
+    val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
+    val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
+    val sentenceTokens = (Seq(rootToken) ++ sentence.tokens.zipWithIndex.map(t => depToken(t._1, t._2+1, this))).toArray
 
     val leftmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
     val rightmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
@@ -99,7 +94,7 @@ object ParserSupport {
     def inputToken(offset: Int): DepToken = {
       val i = input + offset
       if (i < 0 || sentenceTokens.size - 1 < i)
-        return DepToken.nullToken
+        return nullToken
       else
         sentenceTokens(i)
     }
@@ -107,7 +102,7 @@ object ParserSupport {
     def lambdaToken(offset: Int): DepToken = {
       val i = stack + offset
       if (i < 0 || sentenceTokens.size - 1 < i)
-        return DepToken.nullToken
+        return nullToken
       else
         sentenceTokens(i)
     }
@@ -128,7 +123,7 @@ object ParserSupport {
         }
         i += dir
       }
-      return DepToken.nullToken
+      return nullToken
     }
 
     override def toString = "[ParseState: %d, %d]" format (stack, input)
