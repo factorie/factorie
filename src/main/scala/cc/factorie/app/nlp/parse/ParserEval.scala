@@ -1,7 +1,5 @@
 package cc.factorie.app.nlp.parse
 
-import cc.factorie.app.nlp.parse.ParseTree
-
 object ParserEval {
   def calcUas(trees: Seq[ParseTree]): Double = {
     var correct = 0.0

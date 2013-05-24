@@ -2,7 +2,6 @@ package cc.factorie.app.nlp.parse.nonproj
 
 import cc.factorie.WeightsSet
 import cc.factorie.optimize._
-import cc.factorie.app.nlp.parse.nonproj.ParserSupport.{ParseDecision, NonProjDependencyParserFeatures, ParseDecisionVariable}
 import cc.factorie.app.classify.{MultiClassModel, LabelList, SVMTrainer}
 import cc.factorie.la.{Tensor1, DenseTensor2}
 import cc.factorie.app.nlp.{Sentence, LoadOntonotes5, LoadConll2008}

@@ -53,7 +53,7 @@ class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bia
     i = 0
     while (i < N) {
       index(i) = i
-      aY   (i) = if (ys(i) == currLabel) 1 else -1
+      aY   (i) = (if (ys(i) == currLabel) 1 else -1).toByte
       QD   (i) = diag(GETI(aY, i))
 
       if (bias > 0)    QD(i) += bias * bias
@@ -121,14 +121,14 @@ class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bia
 
         if (!continu) {
 
-          PGmax_new = Math.max(PGmax_new, PG)
-          PGmin_new = Math.min(PGmin_new, PG)
+          PGmax_new = math.max(PGmax_new, PG)
+          PGmin_new = math.min(PGmin_new, PG)
 
           if (Math.abs(PG) > 1.0e-12) {
 
             alpha_old = alpha(i)
-            alpha(i) = Math.min(Math.max(alpha(i) - G / QD(i), 0.0), U)
-            d = (alpha(i) - alpha_old) * yi;
+            alpha(i) = math.min(math.max(alpha(i) - G / QD(i), 0.0), U)
+            d = (alpha(i) - alpha_old) * yi
 
             if (bias > 0) weight(0) += d * bias
 

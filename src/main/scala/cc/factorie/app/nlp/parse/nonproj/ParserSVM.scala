@@ -2,11 +2,11 @@ package cc.factorie.app.nlp.parse.nonproj
 
 import cc.factorie.app.nlp.{Sentence, LoadOntonotes5, LoadConll2008}
 import java.io.File
-import cc.factorie.app.nlp.parse.nonproj.ParserSupport.{ParseDecision, NonProjDependencyParserFeatures, ParseDecisionVariable}
-import cc.factorie.app.classify.{LogLinearTemplate2, ModelBasedClassifier, LabelList, SVMTrainer}
+import cc.factorie.app.classify._
 import cc.factorie.TemplateModel
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.parse.{ParserEval, ParseTree}
+import cc.factorie.la.{Tensor1, DenseTensor2}
 
 /**
  * User: apassos
@@ -16,18 +16,17 @@ import cc.factorie.app.nlp.parse.{ParserEval, ParseTree}
 
 
 class ParserSVM extends Parser {
-  val parserClassifier = new ModelBasedClassifier[ParseDecisionVariable, TemplateModel](new TemplateModel {
-      addTemplates(new LogLinearTemplate2[ParseDecisionVariable, NonProjDependencyParserFeatures](this, lTof, labelDomain, featuresDomain))
-  }, labelDomain)
-
   def lTof(l: ParseDecisionVariable) = l.features
   import cc.factorie.util.CubbieConversions._
-  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(labelDomain, featuresDomain, parserClassifier.model, file, gzip=gzip)
-  def load(file: File, gzip: Boolean) = BinarySerializer.deserialize(labelDomain, featuresDomain, parserClassifier.model, file, gzip=gzip)
-  def classify(v: ParseDecisionVariable): ParseDecision = new ParseDecision(labelDomain.category(parserClassifier.classify(v).bestLabelIndex))
+  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  def load(file: File, gzip: Boolean) = BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
+  val model = new MultiClassModel {
+    val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
+  }
+
   def trainFromVariables(vs: Seq[ParseDecisionVariable]) {
-    SVMTrainer.train(parserClassifier.model, parallel = true,
-      new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof))
+    SVMTrainer.train(model, labelDomain.size, featuresDomain.dimensionSize, vs, lTof, parallel=true)
   }
 }
 
