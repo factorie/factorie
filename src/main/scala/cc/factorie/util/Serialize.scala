@@ -14,10 +14,10 @@ import cc.factorie.la._
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
 //  implicit def cct2alt[T, C[_]](m: C[T])(implicit cc: CopyingCubbie[C[T]]) = { cc.store(m); cc }
-  implicit def m2cc[T](m: T)(implicit cc: CopyingCubbie[T]) = { cc.store(m); cc }
-  implicit def ccts[T <: Seq[Tensor]] = new TensorListCubbie[T]
+  implicit def m2cc[T](m: T)(implicit cc: CopyingCubbie[T]): Cubbie = { cc.store(m); cc }
+  implicit def ccts[T <: Seq[Tensor]]: CopyingCubbie[T] = new TensorListCubbie[T]
   implicit def cct[T <: Tensor]: CopyingCubbie[T] = new TensorCubbie[T]
-  implicit def modm(m: Parameters): Cubbie = new WeightsCubbie(m)
+  implicit def modm(m: Parameters): Cubbie = new WeightsSetCubbie(m.parameters)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
   implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)
@@ -127,17 +127,20 @@ object BinarySerializer {
       val activeDomainSize = s.readInt()
       val dims = readIntArray(s)
       val order = dims.length
-      val newBlank = (tag, order) match {
-        case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))
-        case (SPARSE_INDEXED_TENSOR, 2) => new SparseIndexedTensor2(dims(0), dims(1))
-        case (SPARSE_INDEXED_TENSOR, 3) => new SparseIndexedTensor3(dims(0), dims(1), dims(2))
-        case (SPARSE_BINARY_TENSOR, 1) => new SparseBinaryTensor1(dims(0))
-        case (SPARSE_BINARY_TENSOR, 2) => new SparseBinaryTensor2(dims(0), dims(1))
-        case (SPARSE_BINARY_TENSOR, 3) => new SparseBinaryTensor3(dims(0), dims(1), dims(2))
-        case (DENSE_TENSOR, 1) => new DenseTensor1(dims(0))
-        case (DENSE_TENSOR, 2) => new DenseTensor2(dims(0), dims(1))
-        case (DENSE_TENSOR, 3) => new DenseTensor3(dims(0), dims(1), dims(2))
-      }
+      // use pre-existing if there is one
+      val newBlank =
+        if (preexisting != null) preexisting.asInstanceOf[Tensor]
+        else (tag, order) match {
+          case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))
+          case (SPARSE_INDEXED_TENSOR, 2) => new SparseIndexedTensor2(dims(0), dims(1))
+          case (SPARSE_INDEXED_TENSOR, 3) => new SparseIndexedTensor3(dims(0), dims(1), dims(2))
+          case (SPARSE_BINARY_TENSOR, 1) => new SparseBinaryTensor1(dims(0))
+          case (SPARSE_BINARY_TENSOR, 2) => new SparseBinaryTensor2(dims(0), dims(1))
+          case (SPARSE_BINARY_TENSOR, 3) => new SparseBinaryTensor3(dims(0), dims(1), dims(2))
+          case (DENSE_TENSOR, 1) => new DenseTensor1(dims(0))
+          case (DENSE_TENSOR, 2) => new DenseTensor2(dims(0), dims(1))
+          case (DENSE_TENSOR, 3) => new DenseTensor3(dims(0), dims(1), dims(2))
+        }
       newBlank match {
         case nb: ArraySparseIndexedTensor =>
           nb.sizeHint(activeDomainSize)
@@ -150,8 +153,7 @@ object BinarySerializer {
         case nb: DenseTensor =>
           readDoubleArray(s, nb.asArray)
       }
-      // just get rid of all this pre-existing stuff? what's the best way to handle this?
-      if (preexisting != null) {preexisting.asInstanceOf[Tensor] := newBlank; preexisting} else newBlank
+      newBlank
     case TENSOR =>
       if (preexisting == null) sys.error("Require pre-existing tensor value in cubbie for general \"TENSOR\" slot.")
       val tensor = preexisting.asInstanceOf[Tensor]
@@ -303,15 +305,15 @@ class TensorListCubbie[T <: Seq[Tensor]] extends CopyingCubbie[T] {
   def fetch(): T = tensors.value.asInstanceOf[T]
 }
 
-class ParametersCubbie[T <: Parameters](ctor: => T = null /*can still store without constructing*/) extends CopyingCubbie[T] {
-  val weightsTensors = new TensorListSlot("tensors")
-  // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
-  weightsTensors := Seq[Tensor]()
-  def store(t: T): Unit = weightsTensors := t.parameters.tensors
-  def fetch(): T = {
-    val newParams = ctor
-    for ((newTensor, storedTensor) <- newParams.parameters.tensors.zip(weightsTensors.value))
-      newTensor := storedTensor
-    newParams
-  }
-}
+//class ParametersCopyingCubbie[T <: Parameters](ctor: => T = null /*can still store without constructing*/) extends CopyingCubbie[T] {
+//  val weightsTensors = new TensorListSlot("tensors")
+//  // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
+//  weightsTensors := Seq[Tensor]()
+//  def store(t: T): Unit = weightsTensors := t.parameters.tensors
+//  def fetch(): T = {
+//    val newParams = ctor
+//    for ((newTensor, storedTensor) <- newParams.parameters.tensors.zip(weightsTensors.value))
+//      newTensor := storedTensor
+//    newParams
+//  }
+//}

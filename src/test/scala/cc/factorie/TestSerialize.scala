@@ -118,7 +118,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    val fileName2 = java.io.File.createTempFile("foo", "model")
    val modelFile = new File(fileName2.getAbsolutePath)
-   val modelCubbie = new WeightsCubbie(model)
+   val modelCubbie = new WeightsSetCubbie(model.parameters)
    BinarySerializer.serialize(modelCubbie, modelFile)
 
    object domain2 extends CategoricalDomain[String]
@@ -129,7 +129,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    BinarySerializer.deserialize(domainCubbie2, domainFile2)
 
    val modelFile2 = new File(fileName2.getAbsolutePath)
-   val modelCubbie2 = new WeightsCubbie(model2)
+   val modelCubbie2 = new WeightsSetCubbie(model2.parameters)
    BinarySerializer.deserialize(modelCubbie2, modelFile2)
 
    assertSameWeights(model, model2)
@@ -227,10 +227,10 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    val modelFile = new File(fileName)
 
-   BinarySerializer.serialize(new WeightsCubbie(model), modelFile)
+   BinarySerializer.serialize(new WeightsSetCubbie(model.parameters), modelFile)
 
    val deserializedModel = new SegmenterModel
-   BinarySerializer.deserialize(new WeightsCubbie(deserializedModel), modelFile)
+   BinarySerializer.deserialize(new WeightsSetCubbie(deserializedModel.parameters), modelFile)
 
    val domainFile = new File(fileName2)
 

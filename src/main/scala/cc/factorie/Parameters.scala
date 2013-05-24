@@ -50,6 +50,7 @@ class WeightsSet extends TensorSet {
     _keys.append(this)
     var _actualWeights: Value = null.asInstanceOf[Value]
     def value = { if (_actualWeights eq null) { _actualWeights = newBlankTensor }; _actualWeights }
+    def set(t: Tensor): Unit = _actualWeights = t.asInstanceOf[Value]
   }
 }
 
@@ -108,6 +109,7 @@ trait TensorSet {
 trait Weights extends TensorVar {
   def newBlankTensor: Value
   def value: Value
+  def set(t: Tensor): Unit
   def tensor = value
   def domain = TensorDomain
 }
@@ -117,11 +119,22 @@ trait Weights2 extends Weights with VarWithValue[Tensor2]
 trait Weights3 extends Weights with VarWithValue[Tensor3]
 trait Weights4 extends Weights with VarWithValue[Tensor4]
 
-@deprecated("Use WeightsSetCubbie.")
-class WeightsCubbie(val model: Parameters) extends Cubbie {
-  val tensors = new TensorListSlot("tensors")
-  tensors := model.parameters.tensors.toSeq // This relies on WeightsMap storing its contents in a LinkedHashMap which preserves order
-}
+//class WeightsSetCubbie2(val ws: WeightsSet) extends Cubbie {
+//  setMap(new mutable.Map[String, Any] {
+//    override def update(key: String, value: Any): Unit = {
+//      if (!value.isInstanceOf[Tensor])
+//        sys.error("Can't set non-tensor value into weights set cubbie.")
+//      key.toIntSafe.flatMap(i => ws.keys.indexSafe(i)) match {
+//        case Some(weights) => weights.set(value.asInstanceOf[Tensor])
+//        case None => sys.error("unknown key for weights set: " + key)
+//      }
+//    }
+//    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+//    def -= (key: String): this.type = sys.error("Can't remove slots from weights set cubbie!")
+//    def get(key: String): Option[Any] = key.toIntSafe.flatMap(i => ws.tensors.indexSafe(i))
+//    def iterator: Iterator[(String, Any)] = ws.tensors.zipWithIndex.map({case (t, i) => i.toString -> t}).iterator
+//  })
+//}
 
 class WeightsSetCubbie(val model: WeightsSet) extends Cubbie {
   val tensors = new TensorListSlot("tensors")

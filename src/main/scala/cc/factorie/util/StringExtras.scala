@@ -20,6 +20,9 @@ package cc.factorie.util;
 trait StringExtras {
   val s: String
 
+  def toIntSafe: Option[Int] = try { Some(s.toInt) } catch { case _: Throwable => None }
+  def toDoubleSafe: Option[Double] = try { Some(s.toDouble) } catch { case _: Throwable => None }
+
   def skipUntil(r:scala.util.matching.Regex): String = {
     r.findFirstMatchIn(s) match {
       case Some(m:scala.util.matching.Regex.Match) => s.substring(m.start)

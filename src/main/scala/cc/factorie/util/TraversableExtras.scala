@@ -22,6 +22,8 @@ trait TraversableExtras[A] {
   val t: Traversable[A]
   implicit val defaultRandom = cc.factorie.random
 
+  def indexSafe(i: Int): Option[A] = if (i < t.size && i >= 0) Some(t.toSeq(i)) else None
+
   def sumDoubles(extractor: A => Double): Double = t.foldLeft(0.0)((sum, x) => sum + extractor(x))
   def sumInts(extractor: A => Int): Int = t.foldLeft(0)((sum, x) => sum + extractor(x))
 
