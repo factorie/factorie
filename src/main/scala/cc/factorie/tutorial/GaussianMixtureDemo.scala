@@ -58,6 +58,7 @@ object GaussianMixtureDemo {
   }
 }  
 
+// TODO: this is a really slow test, I should profile this -luke
 object MultivariateGaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 2

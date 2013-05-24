@@ -40,15 +40,15 @@ object WSabie {
       val posEmbeddings = weights * positive
       val negEmbeddings = weights * negative
 
-      val queryPos = queryEmbeddings.dot(posEmbeddings)
-      val queryNeg = queryEmbeddings.dot(negEmbeddings)
+      val queryPos = queryEmbeddings dot posEmbeddings
+      val queryNeg = queryEmbeddings dot negEmbeddings
       if (queryPos < queryNeg + 1) {
         if (value ne null) value.accumulate(queryPos - queryNeg - 1)
         if (gradient ne null) {
-          gradient.accumulate(model.weights, posEmbeddings.outer(query))
-          gradient.accumulate(model.weights, negEmbeddings.outer(query), -1)
-          gradient.accumulate(model.weights, queryEmbeddings.outer(positive))
-          gradient.accumulate(model.weights, queryEmbeddings.outer(negative), -1)
+          gradient.accumulate(model.weights, posEmbeddings outer query)
+          gradient.accumulate(model.weights, negEmbeddings outer query, -1)
+          gradient.accumulate(model.weights, queryEmbeddings outer positive)
+          gradient.accumulate(model.weights, queryEmbeddings outer negative, -1)
         }
       }
     }

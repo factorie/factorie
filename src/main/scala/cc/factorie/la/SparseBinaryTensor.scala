@@ -46,7 +46,8 @@ trait ArraySparseBinaryTensor extends SparseBinaryTensor with cc.factorie.util.P
   override def containsNaN: Boolean = false
   //def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
-  // FIX: this will never be called since overloading will pick the +=(double) method that adds a double uniformly to the whole DoubleSeq
+  // FIX: this will never be called since overloading will pick the +=(double) method that adds a double uniformly to the whole DoubleSeq -luke
+  // BUG this bit me again, need to figure this out
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }

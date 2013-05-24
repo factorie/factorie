@@ -2,12 +2,12 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.ner.ChainNerLabel
-import cc.factorie.la.{Tensor, DenseTensor1, UniformTensor1}
+import cc.factorie.la._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import java.io._
 import cc.factorie.app.nlp
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{TensorCubbie, BinarySerializer}
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
@@ -19,6 +19,15 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  class OntoNerLabel(t: nlp.Token, ta: String, override val domain: CategoricalDomain[String]) extends ChainNerLabel(t, ta) {
    type ContainedVariableType = this.type
  }
+
+  @Test def testTensorSerialization(): Unit = {
+    val tensorFile = java.io.File.createTempFile("FactorieTestFile", "serialize-tensor").getAbsolutePath
+    val tensor = new SparseIndexedTensor2(100, 20)
+    for (i <- 0 until tensor.length) tensor(i) = random.nextDouble()
+    BinarySerializer.serializeC(tensor, tensorFile)
+    val newTensor  = BinarySerializer.deserialize[SparseIndexedTensor2](tensorFile)
+    assert(tensor.toSeq.sameElements(newTensor.toSeq))
+  }
 
  @Test def testChainModelSerialization(): Unit = {
 
