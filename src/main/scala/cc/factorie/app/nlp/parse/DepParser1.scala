@@ -249,7 +249,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], devSentences:Iterable[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
@@ -285,17 +285,16 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       })
       println("Train action accuracy = "+HammingObjective.accuracy(trainActions))
       //opt.setWeightsToAverage(model.weightsSet)
-      import DepParser1.{uas,las}
       val t0 = System.currentTimeMillis()
 
       println("Predicting train set..."); trainSentences.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.foreach { s => parse(s) } // Was par
       println("Processed in " + (trainSentences.toSeq.length+testSentences.toSeq.length)*1000.0/(System.currentTimeMillis()-t0) + " sentences per second")
-      println("Training UAS = "+ uas(trainSentences.toSeq))
-      println(" Testing UAS = "+ uas(testSentences.toSeq))
+      println("Training UAS = "+ ParserEval.calcUas(trainSentences.map(_.attr[ParseTree])))
+      println(" Testing UAS = "+ ParserEval.calcUas(testSentences.map(_.attr[ParseTree])))
       println()
-      println("Training LAS = "+ las(trainSentences.toSeq))
-      println(" Testing LAS = "+ las(testSentences.toSeq))
+      println("Training LAS = "+ ParserEval.calcLas(trainSentences.map(_.attr[ParseTree])))
+      println(" Testing LAS = "+ ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
       println()
       println("Saving model...")
       if (name != "") serialize(name + "-iter-"+iter)
@@ -322,25 +321,6 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
 
 // Driver for training
 object DepParser1 {
-  def uas(sentences: Seq[Sentence]) = {
-    var tokens = 0.0
-    var correct = 0.0
-    for (s <- sentences; t <- s.tokens){//.filter(!_.isPunctuation)) {
-      tokens += 1
-      if (s.parse._parents(t.positionInSentence) == s.parse._targetParents(t.positionInSentence)) correct += 1
-    }
-    correct/tokens
-  }
-  def las(sentences: Seq[Sentence]) = {
-    var tokens = 0.0
-    var correct = 0.0
-    for (s <- sentences; t <- s.tokens.filter(!_.isPunctuation)) {
-      tokens += 1
-      if (s.parse._parents(t.positionInSentence) == s.parse._targetParents(t.positionInSentence) && s.parse._labels(t.positionInSentence).valueIsTarget) correct += 1
-    }
-    correct/tokens
-  }
-
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
@@ -380,11 +360,11 @@ object DepParser1 {
     // Print accuracy diagnostics
     println("Predicting train set..."); trainDoc.sentences.foreach { s => parser.parse(s) } // Was par
     println("Predicting test set...");  testDoc.sentences.foreach { s => parser.parse(s) } // Was par
-    println("Training UAS = "+ uas(trainDoc.sentences))
-    println(" Testing UAS = "+ uas(testDoc.sentences))
+    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.map(_.attr[ParseTree])))
+    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.map(_.attr[ParseTree])))
     println()
-    println("Training LAS = "+ las(trainDoc.sentences))
-    println(" Testing LAS = "+ las(testDoc.sentences))
+    println("Training LAS = "+ ParserEval.calcLas(trainDoc.sentences.map(_.attr[ParseTree])))
+    println(" Testing LAS = "+ ParserEval.calcLas(testDoc.sentences.map(_.attr[ParseTree])))
 
     //parser.model.skipNonCategories = false
     // Write results
@@ -404,6 +384,4 @@ object DepParser1 {
 }
 
 
-case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String){
-
-}
+case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)

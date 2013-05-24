@@ -6,6 +6,7 @@ import cc.factorie.app.nlp.parse.nonproj.ParserSupport.{ParseDecision, NonProjDe
 import cc.factorie.app.classify.{LogLinearTemplate2, ModelBasedClassifier, LabelList, SVMTrainer}
 import cc.factorie.TemplateModel
 import cc.factorie.util.BinarySerializer
+import cc.factorie.app.nlp.parse.{ParserEval, ParseTree}
 
 /**
  * User: apassos
@@ -68,10 +69,10 @@ object ParserSVM {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        val pred = c.predict(ss)
-        val gold = ss.map(s => new NonprojectiveGoldOracle(s, c.labelDomain, c.featuresDomain).getSimpleDepArcs.toSeq)
-        println("LAS: " + ParserEval.calcLas(gold, pred))
-        println("UAS: " + ParserEval.calcUas(gold, pred))
+        ss.foreach(c.process)
+        val pred = ss.map(_.attr[ParseTree])
+        println("LAS: " + ParserEval.calcLas(pred))
+        println("UAS: " + ParserEval.calcUas(pred))
         println("\n")
       }
     }

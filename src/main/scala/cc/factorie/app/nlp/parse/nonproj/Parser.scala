@@ -37,33 +37,17 @@ trait Parser extends DocumentAnnotator {
       oracle.instances
     })
   }
-
   def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]) = trainFromVariables(addlVs ++ generateDecisions(ss, BOOSTING))
-
-  def predict(ss: Seq[Sentence], parallel: Boolean = true): Seq[Seq[(Int, String)]] = {
-    val parsers = new ThreadLocal[NonProjectiveShiftReduce] { override def initialValue = { new NonProjectiveShiftReduce(predict = classify) }}
-    ss.zipWithIndex.map({ case (s, i) =>
-      if (i % 1000 == 0)
-        println("Parsed: " + i)
-      parsers.get.parse(s, labelDomain, featuresDomain).drop(1).map(dt => {
-        if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
-        else -1 -> null.asInstanceOf[String]
-      }).toSeq
-    })
-  }
-
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PTBPosLabel])
   def postAttrs = Seq(classOf[ParseTree])
-
   def process(s: Sentence): Sentence = {
     val p = new NonProjectiveShiftReduce(predict = classify)
-    val parse = new ParseTree(s)
+    val parse = s.attr.getOrElseUpdate(new ParseTree(s))
     p.parse(s, labelDomain, featuresDomain).drop(1).filter(_.hasHead).map { dt =>
       parse.setParent(dt.thisIdx - 1, dt.head.depToken.thisIdx - 1)
       parse.label(dt.thisIdx - 1).set(ParseTreeLabelDomain.index(dt.head.label))(null)
     }
-    s.attr += parse
     s
   }
 

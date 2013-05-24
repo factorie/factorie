@@ -8,6 +8,7 @@ import cc.factorie.la.{Tensor1, DenseTensor2}
 import cc.factorie.app.nlp.{Sentence, LoadOntonotes5, LoadConll2008}
 import java.io.File
 import cc.factorie.util.BinarySerializer
+import cc.factorie.app.nlp.parse.{ParserEval, ParseTree}
 
 /**
  * User: apassos
@@ -55,10 +56,10 @@ object ParserWithTrainer {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        val pred = c.predict(ss)
-        val gold = ss.map(s => new NonprojectiveGoldOracle(s, c.labelDomain, c.featuresDomain).getSimpleDepArcs.toSeq)
-        println("LAS: " + ParserEval.calcLas(gold, pred))
-        println("UAS: " + ParserEval.calcUas(gold, pred))
+        ss.foreach(c.process)
+        val pred = ss.map(_.attr[ParseTree])
+        println("LAS: " + ParserEval.calcLas(pred))
+        println("UAS: " + ParserEval.calcUas(pred))
         println("\n")
       }
     }

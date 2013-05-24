@@ -32,9 +32,7 @@ class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecisi
   
   def parse(s: Sentence, domain: CategoricalDomain[String], featureDomain: CategoricalDimensionTensorDomain[String]): Array[DepToken] = {
     val state = new ParseState(0, 1, HashSet[Int](), s)
-    val depTokens = state.sentenceTokens
-
-    while(state.input < depTokens.length) {
+    while(state.input < state.sentenceTokens.length) {
       if (state.stack < 0)
         noShift(state)
       else {
@@ -57,28 +55,8 @@ class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecisi
         }
       }
     }
-    depTokens
+    state.sentenceTokens
   }
-
-  def getSimpleDepArcs(s: Sentence) = s.parse.parents.map(_ + 1).zip(s.parse.labels.map(_.value.category))
-  
-  def getDepArcs(ts: Array[DepToken], s: Sentence): Seq[DepArc] = {
-    Seq(new DepArc(ts(0), "<ROOT-ROOT>")) ++
-	    getSimpleDepArcs(s).map { 
-	      case (i: Int, l: String) => new DepArc(ts(i), l)
-	    }
-  }
-
-  private def noShift(state: ParseState)  { shift(state) }
-  private def noReduce(state: ParseState) { reduce(state) }
-  private def noPass(state: ParseState)   { pass(state) }
-
-  private def leftArc(label: String, state: ParseState)  { state.stackToken(0).setHead(state.inputToken(0), label) }
-  private def rightArc(label: String, state: ParseState) { state.inputToken(0).setHead(state.stackToken(0), label) }
-
-  private def shift(state: ParseState)  { state.stack = state.input; state.input += 1 }
-  private def reduce(state: ParseState) { state.reducedIds.add(state.stack); passAux(state) }
-  private def pass(state: ParseState)   { passAux(state: ParseState) }
 
   private def passAux(state: ParseState): Unit = {
     var i = state.stack - 1
@@ -93,6 +71,16 @@ class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecisi
     state.stack = i
   }
 
+  private def leftArc(label: String, state: ParseState)  { state.stackToken(0).setHead(state.inputToken(0), label) }
+  private def rightArc(label: String, state: ParseState) { state.inputToken(0).setHead(state.stackToken(0), label) }
+
+  private def shift(state: ParseState)  { state.stack = state.input; state.input += 1 }
+  private def reduce(state: ParseState) { state.reducedIds.add(state.stack); passAux(state) }
+  private def pass(state: ParseState)   { passAux(state: ParseState) }
+
+  private def noShift(state: ParseState)  { shift(state) }
+  private def noReduce(state: ParseState) { reduce(state) }
+  private def noPass(state: ParseState)   { pass(state) }
   private def leftReduce(label: String, state: ParseState) { leftArc(label, state);  reduce(state) }
   private def leftPass(label: String, state: ParseState)   { leftArc(label, state);  pass(state)   }
   private def rightShift(label: String, state: ParseState) { rightArc(label, state); shift(state)  }
