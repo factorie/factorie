@@ -28,6 +28,7 @@ trait SparseTensor extends SparseDoubleSeq with Tensor {
   // unsafe - call makeReadable first
   // this has to be a DoubleSeq and not an Array[Int] so we can efficiently return a UniformTensor for binary tensor values
   def _valuesSeq: DoubleSeq
+  def sizeHint(size: Int): Unit
 }
 
 trait SparseIndexedTensor extends SparseTensor {
@@ -407,6 +408,9 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       i += 1
     }
   }
+
+  def sizeHint(size: Int): Unit = ensureCapacity(size)
+
 //
 //  // TODO Use copyInto instead?
 //  def cloneFrom(t:SparseIndexedTensor): Unit = t match {
