@@ -4,7 +4,7 @@ import cc.factorie.la._
 import scala.collection.mutable
 
 /** And object containing a WeightsSet member, which is an extensible WeightsMap for holding weights, with factories for dense and sparse copying.
-    The most common use-case is "MyModel extends Model with Parameters". For efficiency the weights are stored in the TensorSetKeys themselves,*/
+    The most common use-case is "MyModel extends Model with Parameters". For efficiency the weights are stored in the Weights keys themselves,*/
 
 trait Parameters {
   val parameters: WeightsSet = new WeightsSet
@@ -25,16 +25,13 @@ class WeightsSet extends TensorSet {
   def keys: Seq[Weights] = _keys
   def tensors: Seq[Tensor] = keys.map(_.value)
 
-  def update(key:Weights, value:Tensor) = {
-    val actualKey = key.asInstanceOf[InnerKey] // Avoid this casting by allowing Weight.set directly.
-    actualKey._actualWeights = value.asInstanceOf[actualKey.Value]
-  }
+  def update(key:Weights, value:Tensor) = key.set(value)
   def apply(key: Weights): Tensor = key.value
 
   // TODO But these aren't really "copies", they are WeightsMaps.  Rename to blankDenseMap and blankSparseMap
-  def copy: WeightsMap = { val copyTensor = blankDenseCopy; copyTensor += self; copyTensor } // TODO Why doesn't this preserve sparse/denseness?
-  def blankDenseCopy: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
-  def blankSparseCopy: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
+  def copy: WeightsMap = { val copyTensor = newBlankDense; copyTensor += self; copyTensor } // TODO Why doesn't this preserve sparse/denseness?
+  def newBlankDense: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
+  def newBlankSparse: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
 
   // TODO Why not create Weights separately, and then add Weights to the WeightsSet?  This would enable "new TemplateModel(MyTemplate1, MyTemplate2)".
   // TODO Would it be a problem for one Weights to belong to more than one WeightsSet?  I don't think so.
@@ -119,24 +116,21 @@ trait Weights2 extends Weights with VarWithValue[Tensor2]
 trait Weights3 extends Weights with VarWithValue[Tensor3]
 trait Weights4 extends Weights with VarWithValue[Tensor4]
 
-//class WeightsSetCubbie2(val ws: WeightsSet) extends Cubbie {
-//  setMap(new mutable.Map[String, Any] {
-//    override def update(key: String, value: Any): Unit = {
-//      if (!value.isInstanceOf[Tensor])
-//        sys.error("Can't set non-tensor value into weights set cubbie.")
-//      key.toIntSafe.flatMap(i => ws.keys.indexSafe(i)) match {
-//        case Some(weights) => weights.set(value.asInstanceOf[Tensor])
-//        case None => sys.error("unknown key for weights set: " + key)
-//      }
-//    }
-//    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
-//    def -= (key: String): this.type = sys.error("Can't remove slots from weights set cubbie!")
-//    def get(key: String): Option[Any] = key.toIntSafe.flatMap(i => ws.tensors.indexSafe(i))
-//    def iterator: Iterator[(String, Any)] = ws.tensors.zipWithIndex.map({case (t, i) => i.toString -> t}).iterator
-//  })
-//}
-
-class WeightsSetCubbie(val model: WeightsSet) extends Cubbie {
-  val tensors = new TensorListSlot("tensors")
-  tensors := model.tensors.toSeq // This relies on WeightsMap storing its contents in a LinkedHashMap which preserves order
+class WeightsSetCubbie(val ws: WeightsSet) extends Cubbie {
+  // we write directly into the WeightsSet so that if we deserialize the weights before the domains, we can give everything the right size from the file
+  // This uses indices as keys and so relies on WeightsSet storing its contents in a LinkedHashMap which preserves order
+  setMap(new mutable.Map[String, Any] {
+    override def update(key: String, value: Any): Unit = {
+      if (!value.isInstanceOf[Tensor])
+        sys.error("Can't set non-tensor value into weights set cubbie.")
+      key.toIntSafe.flatMap(i => ws.keys.indexSafe(i)) match {
+        case Some(weights) => weights.set(value.asInstanceOf[Tensor])
+        case None => sys.error("unknown key for weights set: " + key)
+      }
+    }
+    def += (kv: (String, Any)): this.type = { update(kv._1, kv._2); this }
+    def -= (key: String): this.type = sys.error("Can't remove slots from weights set cubbie!")
+    def get(key: String): Option[Any] = key.toIntSafe.flatMap(i => ws.tensors.indexSafe(i))
+    def iterator: Iterator[(String, Any)] = ws.tensors.zipWithIndex.map({case (t, i) => i.toString -> t}).iterator
+  })
 }

@@ -136,7 +136,15 @@ package object factorie extends CubbieConversions {
     while (i < n) { result(i) = f(i); i += 1 }
     result
   }
-  
+
+  trait AnyExtras[T] {
+    val a: T
+    def cast[U](implicit m: Manifest[U]): Option[U] =
+      if (m >:> ClassManifest.fromClass(a.getClass)) Some(a.asInstanceOf[U]) else None
+    def toNotNull: Option[T] = if (a != null) Some(a) else None
+  }
+
+  implicit def any2wrapped[T](x: T) = new AnyExtras[T] { val a = x }
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
   implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)

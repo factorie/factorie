@@ -35,12 +35,36 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     assert(tensors.zip(newTensors).forall({case (t1, t2) => t1.toSeq.sameElements(t2.toSeq)}))
   }
 
+  @Test def testOutOfOrderDomainSerialization(): Unit = {
+    val file = java.io.File.createTempFile("foo", "multi")
+      object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+      MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
+
+      object OntoNerLabelDomain extends CategoricalDomain[String]
+      OntoNerLabelDomain ++= Seq("Hello","GoodBye")
+
+      val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
+      model.bias.weights.value := (Array.fill[Double](model.bias.weights.value.length)(random.nextDouble()))
+      model.obs.weights.value := (Array.fill[Double](model.obs.weights.value.length)(random.nextDouble()))
+      model.markov.weights.value := (Array.fill[Double](model.markov.weights.value.length)(random.nextDouble()))
+
+      BinarySerializer.serialize(model, MyChainNerFeaturesDomain, OntoNerLabelDomain, file)
+
+      object featDomain2 extends CategoricalDimensionTensorDomain[String]
+      object labelDomain2 extends CategoricalDomain[String]
+      val model2 = makeModel(featDomain2, labelDomain2)
+
+      BinarySerializer.deserialize(model2, featDomain2, labelDomain2, file)
+
+      assertSameWeights(model2, model)
+  }
+
 
  @Test def testChainModelSerialization(): Unit = {
 
    val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
 
-   logger.debug("creating toy model with random weightsSet")
+   logger.debug("creating toy model with random weights")
 
    object MyChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")

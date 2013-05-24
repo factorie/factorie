@@ -86,7 +86,7 @@ with Parameters
       if (labels.length > 1) new DenseTensor1(ArrayOps.elementwiseSum(edgeMargs))
       else new SparseTensor1(labels(0).domain.size * labels(0).domain.size)
 
-    val result = parameters.blankSparseCopy
+    val result = parameters.newBlankSparse
     result(bias.weights) = biasStats
     result(obs.weights) = obsStats
     result(markov.weights) = markovStats
@@ -113,7 +113,7 @@ with Parameters
       }
     }
 
-    val result = parameters.blankSparseCopy
+    val result = parameters.newBlankSparse
     result(bias.weights) = biasStats
     result(obs.weights) = obsStats
     result(markov.weights) = markovStats

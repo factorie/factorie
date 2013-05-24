@@ -37,7 +37,7 @@ trait GradientStep extends GradientOptimizer {
 trait ParameterAveraging extends GradientStep {
   var wTmp: WeightsMap = null
   override def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = {
-    if (wTmp eq null) wTmp = weights.blankDenseCopy
+    if (wTmp eq null) wTmp = weights.newBlankDense
     super.doGradStep(weights, gradient, rate)
     wTmp += (gradient, rate*it)
   }
@@ -58,7 +58,7 @@ trait AdaptiveLearningRate extends GradientStep {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weightsSet, -l2)
-    if (HSq == null) { HSq = weights.blankDenseCopy }
+    if (HSq == null) { HSq = weights.newBlankDense }
     for (template <- gradient.keys)
       (gradient(template), HSq(template)) match {
         case (g: DenseTensor, hSq: DenseTensor) =>

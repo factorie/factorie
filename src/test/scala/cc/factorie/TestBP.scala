@@ -187,8 +187,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val ex1 = new ChainModel.ChainExample(model, Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
       val optimizer = new ConstantLearningRate {}
       for (i <- 0 until 10) {
-        val gradientAccumulator0 = new LocalWeightsMapAccumulator(model.parameters.blankSparseCopy)
-        val gradientAccumulator1 = new LocalWeightsMapAccumulator(model.parameters.blankSparseCopy)
+        val gradientAccumulator0 = new LocalWeightsMapAccumulator(model.parameters.newBlankSparse)
+        val gradientAccumulator1 = new LocalWeightsMapAccumulator(model.parameters.newBlankSparse)
         val valueAccumulator0 = new LocalDoubleAccumulator
         val valueAccumulator1 = new LocalDoubleAccumulator
         ex.accumulateExampleInto(/*model, */gradientAccumulator0, valueAccumulator0)

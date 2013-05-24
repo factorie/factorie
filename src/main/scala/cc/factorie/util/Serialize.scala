@@ -3,8 +3,6 @@ package cc.factorie.util
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import collection.mutable
-import java.nio.channels.{ReadableByteChannel, WritableByteChannel, Channels}
-import java.nio.ByteBuffer
 import cc.factorie._
 import cc.factorie.la._
 
@@ -14,9 +12,9 @@ import cc.factorie.la._
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
 //  implicit def cct2alt[T, C[_]](m: C[T])(implicit cc: CopyingCubbie[C[T]]) = { cc.store(m); cc }
-  implicit def m2cc[T](m: T)(implicit cc: CopyingCubbie[T]): Cubbie = { cc.store(m); cc }
-  implicit def ccts[T <: Seq[Tensor]]: CopyingCubbie[T] = new TensorListCubbie[T]
-  implicit def cct[T <: Tensor]: CopyingCubbie[T] = new TensorCubbie[T]
+  implicit def m2cc[T](m: T)(implicit cc: StoreFetchCubbie[T]): Cubbie = { cc.store(m); cc }
+  implicit def ccts[T <: Seq[Tensor]]: StoreFetchCubbie[T] = new TensorListCubbie[T]
+  implicit def cct[T <: Tensor]: StoreFetchCubbie[T] = new TensorCubbie[T]
   implicit def modm(m: Parameters): Cubbie = new WeightsSetCubbie(m.parameters)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
@@ -70,9 +68,9 @@ object BinarySerializer {
   def deserialize(c1: => Cubbie, c2: => Cubbie, c3: => Cubbie, c4: => Cubbie, file: File): Unit =
     deserialize(getLazyCubbieSeq(Seq(() => c1, () => c2, () => c3, () => c4)), file, gzip = false)
 
-  def deserialize[T](filename: String)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, filename); cc.fetch() }
-  def deserialize[T](file: File)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file); cc.fetch() }
-  def deserialize[T](file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file, gzip); cc.fetch() }
+  def deserialize[T](filename: String)(implicit cc: StoreFetchCubbie[T]): T = { deserialize(cc, filename); cc.fetch() }
+  def deserialize[T](file: File)(implicit cc: StoreFetchCubbie[T]): T = { deserialize(cc, file); cc.fetch() }
+  def deserialize[T](file: File, gzip: Boolean)(implicit cc: StoreFetchCubbie[T]): T = { deserialize(cc, file, gzip); cc.fetch() }
 
   def serialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
     val stream = writeFile(file, gzip)
@@ -127,9 +125,11 @@ object BinarySerializer {
       val activeDomainSize = s.readInt()
       val dims = readIntArray(s)
       val order = dims.length
-      // use pre-existing if there is one
+      // use pre-existing if there is one, and it has the right dimensions
+      val preexistingTensor = preexisting.toNotNull.flatMap(_.cast[Tensor])
       val newBlank =
-        if (preexisting != null) preexisting.asInstanceOf[Tensor]
+        if (preexistingTensor.exists(_.dimensions.sameElements(dims)))
+          preexistingTensor.get
         else (tag, order) match {
           case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))
           case (SPARSE_INDEXED_TENSOR, 2) => new SparseIndexedTensor2(dims(0), dims(1))
@@ -155,10 +155,8 @@ object BinarySerializer {
       }
       newBlank
     case TENSOR =>
-      if (preexisting == null) sys.error("Require pre-existing tensor value in cubbie for general \"TENSOR\" slot.")
-      val tensor = preexisting.asInstanceOf[Tensor]
-//      def dump[T](x: T, title: String): T = { println(title + ": " + x); x }
-//      repeat(dump(s.readInt(), "tensor length"))(tensor(dump(s.readInt(), "idx")) = dump(s.readDouble(), "value"))
+      val tensor = preexisting.toNotNull.flatMap(_.cast[Tensor])
+        .getOrElse(sys.error("Require pre-existing tensor value in cubbie for general \"TENSOR\" slot."))
       repeat(s.readInt())(tensor(s.readInt()) = s.readDouble())
       tensor
     case MAP =>
@@ -283,13 +281,13 @@ class StringMapCubbie[T](val m: mutable.Map[String,T]) extends Cubbie {
   })
 }
 
-abstract class CopyingCubbie[T] extends Cubbie {
+abstract class StoreFetchCubbie[T] extends Cubbie {
   type StoredType = T
   def store(t: T): Unit
   def fetch(): T
 }
 
-class TensorCubbie[T <: Tensor] extends CopyingCubbie[T] {
+class TensorCubbie[T <: Tensor] extends StoreFetchCubbie[T] {
   val tensor = new TensorSlot("tensor")
   // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
   tensor := (null: Tensor)
@@ -297,7 +295,7 @@ class TensorCubbie[T <: Tensor] extends CopyingCubbie[T] {
   def fetch(): T = tensor.value.asInstanceOf[T]
 }
 
-class TensorListCubbie[T <: Seq[Tensor]] extends CopyingCubbie[T] {
+class TensorListCubbie[T <: Seq[Tensor]] extends StoreFetchCubbie[T] {
   val tensors = new TensorListSlot("tensors")
   // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
   tensors := (null: Seq[Tensor])

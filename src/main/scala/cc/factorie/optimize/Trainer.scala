@@ -32,7 +32,7 @@ trait Trainer {
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
 class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
-  val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankDenseCopy)
+  val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.newBlankDense)
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   // TODO This is sad:  The optimizer determines which of gradient/value/margin it needs, but we don't know here
   // so we create them all, possibly causing the Example to do more work.
@@ -52,7 +52,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
 // Learns the parameters of a model by computing the gradient and calling the
 // optimizer one example at a time.
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
-  var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseCopy)
+  var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.newBlankSparse)
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -97,7 +97,7 @@ class TwoStageTrainer(firstTrainer: Trainer, secondTrainer: Trainer) {
 // If it performs slowly then minibatches should help, or the ThreadLocalBatchTrainer.
 class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors())
   extends Trainer with FastLogging {
-  val gradientAccumulator = new SynchronizedWeightsMapAccumulator(weightsSet.blankDenseCopy)
+  val gradientAccumulator = new SynchronizedWeightsMapAccumulator(weightsSet.newBlankDense)
   val valueAccumulator = new SynchronizedDoubleAccumulator
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
@@ -118,7 +118,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
 class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
-    val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseCopy))
+    val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.newBlankDense))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
     examples.par.foreach(example => example.accumulateExampleInto(gradientAccumulator.get, valueAccumulator.get))
@@ -145,7 +145,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
   var t0 = 0L
 
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseCopy
+    val gradient = weightsSet.newBlankSparse
     val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
     val value = new LocalDoubleAccumulator()
     e.accumulateExampleInto(gradientAccumulator, value)
@@ -242,7 +242,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   var accumulatedValue = 0.0
   var t0 = System.currentTimeMillis()
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseCopy
+    val gradient = weightsSet.newBlankSparse
     val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
     val value = new LocalDoubleAccumulator()
     e.accumulateExampleInto(gradientAccumulator, value)
