@@ -257,13 +257,12 @@ class GraphProjectiveParser extends DocumentAnnotator {
     val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
     for (iteration <- 0 until nIters) {
       trainer.processExamples(rng.shuffle(examples))
-      import DepParser1.uas
       val t0 = System.currentTimeMillis()
       println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
       println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
       println("Processed in " + (trainSentences.length+testSentences.length)*1000.0/(System.currentTimeMillis()-t0) + " sentences per second")
-      println("Training UAS = "+ uas(trainSentences.toSeq))
-      println(" Testing UAS = "+ uas(testSentences.toSeq))
+      println("Training UAS = "+ ParserEval.calcUas(trainSentences.map(_.attr[ParseTree])))
+      println(" Testing UAS = "+ ParserEval.calcUas(testSentences.map(_.attr[ParseTree])))
       println()
       println("Saving model...")
       if (file != "") serialize(file + "-iter-"+iteration)
@@ -288,7 +287,6 @@ class GraphProjectiveParser extends DocumentAnnotator {
 }
 
 object GraphProjectiveParser {
-  import DepParser1.uas
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
@@ -311,8 +309,8 @@ object GraphProjectiveParser {
     // Print accuracy diagnostics
     println("Predicting train set..."); parser.process1(trainDoc)
     println("Predicting test set...");  parser.process1(testDoc)
-    println("Training UAS = "+ uas(trainDoc.sentences))
-    println(" Testing UAS = "+ uas(testDoc.sentences))
+    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.map(_.attr[ParseTree])))
+    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.map(_.attr[ParseTree])))
     println()
     println("Done.")
   }
