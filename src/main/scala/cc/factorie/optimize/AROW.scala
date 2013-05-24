@@ -79,12 +79,11 @@ class ConfidenceWeighting(val model:Parameters) extends GradientOptimizer {
             i += 1
           }
         case _ =>
-          val gradIter = templateGradient.activeElements
-          while (gradIter.hasNext) {
-            val (index, value) = gradIter.next()
+          templateGradient.foreachActiveElement((index, value) => {
             templateLearningRates(index) = 1.0/((1.0/templateLearningRates(index))
               + 2*learningRate*gaussDeviate*value*value)
-          }
+
+          })
       }
     }
   }
@@ -129,8 +128,8 @@ class ConfidenceWeighting(val model:Parameters) extends GradientOptimizer {
                     k += 1
                   }
                 case g: SparseTensor1 =>
-                  g.activeElements.foreach(x => {
-                    res += x._2 * x._2 * tlr(i, j, x._1)
+                  g.foreachActiveElement((index, value) => {
+                    res += value * value * tlr(i, j, index)
                   })
               }
               j += 1

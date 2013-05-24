@@ -37,8 +37,8 @@ trait Tensor extends MutableDoubleSeq {
   // this method lets us aggregate without boxing -luke
   // (idx, value, acc)
   def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
-    val iter = activeElements; var acc = seed
-    while (iter.hasNext) { val (i, v) = iter.next(); acc = f(i, v, acc) }
+    var acc = seed
+    foreachActiveElement((i, v) => acc = f(i, v, acc))
     acc
   }
   // TODO!! Change this to use TensorElementIterator instead

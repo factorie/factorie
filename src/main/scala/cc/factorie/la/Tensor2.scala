@@ -178,16 +178,14 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           haveWarned = true
           println("Warning: unknown tensor type for *: " + t.getClass.getName)
         }
-        val vecIter = t.activeElements
-        while (vecIter.hasNext) {
-          val (col, v) = vecIter.next()
+        t.foreachActiveElement((col, v) => {
           var row = 0
           while (row < dim1) {
             val offset = row * dim2
             newArray(row) += (_values(offset + col) * v)
             row += 1
           }
-        }
+        })
     }
     newT
   }
@@ -458,17 +456,13 @@ trait Outer2Tensor extends ReadOnlyTensor {
           println("Unrecognized types in Outer2Tensor =+: " + t1.getClass.getName + " " + t2.getClass.getName)
         }
         val t2Size = t2.size
-        val t1Iter = t1.activeElements
-        while (t1Iter.hasNext) {
-          val (idx1, v1p) = t1Iter.next()
+        t1.foreachActiveElement((idx1, v1p) => {
           val v1 = v1p * v
           val offset = t2Size * idx1
-          val t2Iter = t2.activeElements
-          while (t2Iter.hasNext) {
-            val (idx2, v2) = t2Iter.next()
+          t2.foreachActiveElement((idx2, v2) => {
             a(offset + idx2) += (v1 * v2)
-          }
-        }
+          })
+        })
     }
   }
   def dot(ds: DoubleSeq): Double = ds match {
@@ -644,7 +638,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:TensorTimesScalar => this += (t.tensor, f * t.scalar)
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while(i < arr.length) {this(i) += arr(i)*f ; i += 1}}
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var i = 0; while (i < len) { this(indices(i)) += values(i)*f ; i += 1}  }
-    case t:Dense2LayeredTensor3 => { t.activeElements.foreach(e => this(e._1) += e._2*f) }
+    case t:Dense2LayeredTensor3 => { t.foreachActiveElement((i, v) => this(i) += v*f) }
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
     //case t:DoubleSeq => super.+=(ds)
   }
@@ -656,7 +650,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DenseTensor => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
     case t:DenseLayeredTensorLike2 => { var s = 0.0; for((inner1,inner2) <- _inners zip t._inners; if (inner1 ne null); if(inner2 ne null)) s += inner1.dot(inner2); s }
     case t:SparseIndexedTensor => {val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var res = 0.0; var i = 0; while (i < len) { res += this(indices(i))*values(i) ; i += 1}; res}
-    case t:Dense2LayeredTensor3 => {t.activeElements.toSeq.sumDoubles(e => this(e._1)*e._2)}
+    case t:Dense2LayeredTensor3 => { var sum = 0.0; t.foreachActiveElement((i, v) => sum += this(i)*v); sum}
     case _ => assert(false, t.getClass.getName + " doesn't have a match"); 0.0
   }
 }

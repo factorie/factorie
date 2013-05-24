@@ -93,9 +93,9 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
           }
         }
         case inner:SparseIndexedTensor => {
-          for ((i,v) <- inner.activeElements) {
+          inner.foreachActiveElement((i, v) => {
             this(t.singleIndex(i0, i)) += v * f
-          }
+          })
         }
         case _ => assert(false, t.inner.getClass.getName + " doesn't match")
       }

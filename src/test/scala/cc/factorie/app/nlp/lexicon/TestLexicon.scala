@@ -2,7 +2,6 @@ package cc.factorie.app.nlp.lexicon
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import cc.factorie.app.nlp.lexicon.Lexicon
 import cc.factorie.app.nlp._
 
 class TestLexicon extends JUnitSuite {

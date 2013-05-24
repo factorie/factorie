@@ -35,11 +35,9 @@ class NaiveBayesTrainer extends ClassifierTrainer {
       val targetIndex = label.intValue
       bias.masses += (targetIndex, 1.0)
       val features = il.labelToFeatures(label)
-      val activeElements = features.tensor.activeElements
-      while (activeElements.hasNext) {
-        val (featureIndex, featureValue) = activeElements.next()
+      features.value.foreachActiveElement((featureIndex, featureValue) => {
         evid(targetIndex).masses += (featureIndex, featureValue)
-      }
+      })
     }
     // Put results into the model templates
     forIndex(numLabels)(i => cmodel.biasTemplate.weights.value(i) = math.log(bias(i)))

@@ -201,16 +201,14 @@ object MutableScalableWeights {
             ti += 1
           }
         case _ =>
-          val vecIter = t.activeElements
-          while (vecIter.hasNext) {
-            val (col, v) = vecIter.next()
+          t.foreachActiveElement((col, v) => {
             var row = 0
             while (row < dim1) {
               val offset = row * dim2
               newArray(row) += (apply(offset + col) * v)
               row += 1
             }
-          }
+          })
       }
       newT
     }
