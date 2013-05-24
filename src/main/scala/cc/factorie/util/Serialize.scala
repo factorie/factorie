@@ -13,6 +13,9 @@ import cc.factorie.la._
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
+//  implicit def cct2alt[T, C[_]](m: C[T])(implicit cc: CopyingCubbie[C[T]]) = { cc.store(m); cc }
+  implicit def m2cc[T](m: T)(implicit cc: CopyingCubbie[T]) = { cc.store(m); cc }
+  implicit def ccts[T <: Seq[Tensor]] = new TensorListCubbie[T]
   implicit def cct[T <: Tensor]: CopyingCubbie[T] = new TensorCubbie[T]
   implicit def modm(m: Parameters): Cubbie = new WeightsCubbie(m)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
@@ -70,9 +73,9 @@ object BinarySerializer {
   def deserialize[T](filename: String)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, filename); cc.fetch() }
   def deserialize[T](file: File)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file); cc.fetch() }
   def deserialize[T](file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): T = { deserialize(cc, file, gzip); cc.fetch() }
-  def serializeC[T](toSerialize: T, filename: String)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); serialize(cc, filename) }
-  def serializeC[T](toSerialize: T, file: File)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file) }
-  def serializeC[T](toSerialize: T, file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file, gzip) }
+//  def serializeC[T](toSerialize: T, filename: String)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); serialize(cc, filename) }
+//  def serializeC[T](toSerialize: T, file: File)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file) }
+//  def serializeC[T](toSerialize: T, file: File, gzip: Boolean)(implicit cc: CopyingCubbie[T]): Unit = { cc.store(toSerialize); deserialize(cc, file, gzip) }
 
   def serialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
     val stream = writeFile(file, gzip)
@@ -116,7 +119,7 @@ object BinarySerializer {
   private val NULL: Byte = 0x08
   private val SPARSE_INDEXED_TENSOR: Byte = 0x09
   private val SPARSE_BINARY_TENSOR: Byte = 0x10
-  private val DENSE_TENSOR: Byte = 0x11
+  private val DENSE_TENSOR: Byte = 0x12
 
   // add sparseindexedtensor, sparsebinarytensor, densetensor
   // next field is order/rank
@@ -174,8 +177,9 @@ object BinarySerializer {
       val iter = (if (preexisting == null) Seq[Any]() else preexisting.asInstanceOf[Traversable[Any]]).toIterator
       repeat(len) {
         val pre = if (iter.hasNext) iter.next() else null
-        if (!isPrimitiveTag(innerTag)) s.readByte() // read and ignore the type tag
-        buff += deserializeInner(pre, innerTag, s)
+        // if it's not primitive, we need to read the inner type tag because we could have heterogeneous tensor list, etc
+        val nextTag = if (isPrimitiveTag(innerTag)) innerTag else s.readByte() // read and ignore the type tag
+        buff += deserializeInner(pre, nextTag, s)
       }
       buff
     case NULL =>
@@ -299,7 +303,7 @@ class TensorListCubbie[T <: Seq[Tensor]] extends CopyingCubbie[T] {
   def fetch(): T = tensors.value.asInstanceOf[T]
 }
 
-class ParametersCubbie[T <: Parameters](ctor: => T = null /*can still write without constructing*/) extends CopyingCubbie[T] {
+class ParametersCubbie[T <: Parameters](ctor: => T = null /*can still store without constructing*/) extends CopyingCubbie[T] {
   val weightsTensors = new TensorListSlot("tensors")
   // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
   weightsTensors := Seq[Tensor]()

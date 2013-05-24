@@ -24,9 +24,15 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
     val tensorFile = java.io.File.createTempFile("FactorieTestFile", "serialize-tensor").getAbsolutePath
     val tensor = new SparseIndexedTensor2(100, 20)
     for (i <- 0 until tensor.length) tensor(i) = random.nextDouble()
-    BinarySerializer.serializeC(tensor, tensorFile)
+    BinarySerializer.serialize(tensor, tensorFile)
     val newTensor  = BinarySerializer.deserialize[SparseIndexedTensor2](tensorFile)
     assert(tensor.toSeq.sameElements(newTensor.toSeq))
+
+    val tensors = Seq(new SparseIndexedTensor2(100, 20), new DenseTensor3(100,1,4) )
+    for (t <- tensors; i <- 0 until t.length) t(i) = random.nextDouble()
+    BinarySerializer.serialize(tensors, tensorFile)
+    val newTensors = BinarySerializer.deserialize[Seq[Tensor]](tensorFile)
+    assert(tensors.zip(newTensors).forall({case (t1, t2) => t1.toSeq.sameElements(t2.toSeq)}))
   }
 
  @Test def testChainModelSerialization(): Unit = {
