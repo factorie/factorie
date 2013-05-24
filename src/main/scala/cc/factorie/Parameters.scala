@@ -28,10 +28,9 @@ class WeightsSet extends TensorSet {
   def update(key:Weights, value:Tensor) = key.set(value)
   def apply(key: Weights): Tensor = key.value
 
-  // TODO But these aren't really "copies", they are WeightsMaps.  Rename to blankDenseMap and blankSparseMap
-  def copy: WeightsMap = { val copyTensor = newBlankDense; copyTensor += self; copyTensor } // TODO Why doesn't this preserve sparse/denseness?
-  def newBlankDense: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
-  def newBlankSparse: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
+  def copy: WeightsMap = { val copyTensor = new WeightsMap(key => key.newBlankTensor); copyTensor += self; copyTensor }
+  def blankDenseMap: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
+  def blankSparseMap: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
 
   // TODO Why not create Weights separately, and then add Weights to the WeightsSet?  This would enable "new TemplateModel(MyTemplate1, MyTemplate2)".
   // TODO Would it be a problem for one Weights to belong to more than one WeightsSet?  I don't think so.
