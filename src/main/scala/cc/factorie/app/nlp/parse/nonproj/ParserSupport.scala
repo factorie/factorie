@@ -4,6 +4,7 @@ import cc.factorie._
 import app.nlp._
 
 import collection.mutable.HashSet
+import scala.annotation.tailrec
 
 object ParserSupport {
     object ParserUtils {
@@ -32,44 +33,32 @@ object ParserSupport {
         val lemma: String,
         val pos: String,
         val thisIdx: Int,
-        val state: ParseState,
-        var head: DepArc = null) {
-    
+        val state: ParseState) {
+      var head: DepArc = null
+      def hasHead: Boolean = head ne null
+
       def setHead(headToken: DepToken, label: String) {
         head = new DepArc(headToken, label)
-        if (thisIdx < head.depToken.thisIdx)
-          state.leftmostDeps(head.depToken.thisIdx) = thisIdx
-        else
-          state.rightmostDeps(head.depToken.thisIdx) = thisIdx
+        if (thisIdx < head.depToken.thisIdx) state.leftmostDeps(head.depToken.thisIdx) = thisIdx
+        else state.rightmostDeps(head.depToken.thisIdx) = thisIdx
       }
       
       def leftmostDependent(): DepToken = {
         val i = state.leftmostDeps(thisIdx)
-        if (i == -1)
-          state.nullToken
-        else
-          state.sentenceTokens(i)
+        if (i == -1) state.nullToken
+        else state.sentenceTokens(i)
       }
       
       def rightmostDependent(): DepToken = {
         val i = state.rightmostDeps(thisIdx)
-        if (i == -1)
-          state.nullToken
-        else
-          state.sentenceTokens(i)
+        if (i == -1) state.nullToken
+        else state.sentenceTokens(i)
       }
     
-      def hasHead: Boolean = head ne null
-    
-      def isDescendentOf(that: DepToken): Boolean = {
-        assert(that ne null)
-        var ptr = this
-        while (ptr.head != null && ptr != state.rootToken) {
-          ptr = ptr.head.depToken
-          if (ptr == that)
-            return true
-        }
-        return false
+      @tailrec final def isDescendentOf(that: DepToken): Boolean = {
+        if (!hasHead) false
+        else if (this.head.depToken == that) true
+        else this.head.depToken.isDescendentOf(that)
       }
       
       override def toString = "(f: %s, l: %s, p: %s)".format(form, lemma, pos)
@@ -83,7 +72,7 @@ object ParserSupport {
                    val reducedIds: HashSet[Int],
                    sentence: Sentence) {
 
-    def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
+    private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
     val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
     val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
     val sentenceTokens = (Seq(rootToken) ++ sentence.tokens.zipWithIndex.map(t => depToken(t._1, t._2+1, this))).toArray
@@ -93,22 +82,17 @@ object ParserSupport {
     
     def inputToken(offset: Int): DepToken = {
       val i = input + offset
-      if (i < 0 || sentenceTokens.size - 1 < i)
-        return nullToken
-      else
-        sentenceTokens(i)
+      if (i < 0 || sentenceTokens.size - 1 < i) nullToken
+      else sentenceTokens(i)
     }
 
     def lambdaToken(offset: Int): DepToken = {
       val i = stack + offset
-      if (i < 0 || sentenceTokens.size - 1 < i)
-        return nullToken
-      else
-        sentenceTokens(i)
+      if (i < 0 || sentenceTokens.size - 1 < i) nullToken
+      else sentenceTokens(i)
     }
 
     def stackToken(offset: Int): DepToken = {
-      // TODO: check for correctness (wait on Jinho)
       if (offset == 0)
         return sentenceTokens(stack)
 
@@ -123,44 +107,14 @@ object ParserSupport {
         }
         i += dir
       }
-      return nullToken
+      nullToken
     }
-
-    override def toString = "[ParseState: %d, %d]" format (stack, input)
-    
   }
 
-  class ParseDecision(val action: String) {
+  case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
     val leftOrRightOrNo = lrnS.toInt
     val shiftOrReduceOrPass = srpS.toInt
-    import ParserConstants._
-    def shift_?  = shiftOrReduceOrPass == SHIFT
-    def reduce_? = shiftOrReduceOrPass == REDUCE
-    def pass_?   = shiftOrReduceOrPass == PASS
-    def left_?   = leftOrRightOrNo == LEFT
-    def right_?  = leftOrRightOrNo == RIGHT
-    override def toString = {
-      val s = new StringBuffer
-      s append "["
-      s append "Decision: "
-      s append (leftOrRightOrNo match {
-        case LEFT  => "left"
-        case RIGHT => "right"
-        case NO    => "no"
-        case -1    => "TEST"
-      })
-      s append "-"
-      s append (shiftOrReduceOrPass match {
-        case SHIFT  => "shift"
-        case REDUCE => "reduce"
-        case PASS   => "pass"
-        case -1     => "TEST"
-      })
-      s append (" label: " + label)
-      s append "]"
-      s.toString
-    }
   }
 
   val defaultCategory = "-1 -1 N"

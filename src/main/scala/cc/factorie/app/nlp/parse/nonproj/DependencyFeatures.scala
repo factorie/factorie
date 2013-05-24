@@ -58,8 +58,8 @@ object DependencyFeatures {
       if (t.pos == -2)
         "null"
       else {
-	    val s = t.state
-	    (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString()
+        val s = t.state
+        (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString()
       }
     }),
     "b1"  -> ((t: DepToken) => (t.state.stackToken(0) eq t.state.sentenceTokens.last).toString()),

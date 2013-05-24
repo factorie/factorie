@@ -47,20 +47,20 @@ class NonProjectiveShiftReduce(val mode: Int = 0, val predict: ParseDecisionVari
         noShift(state)
       else {
         val label = getDecision(domain, featureDomain, goldHeads, state)
-        if (label.left_?) {
+        if (label.leftOrRightOrNo == LEFT) {
           if (state.stack == ROOT_ID) noShift(state)
           else if (state.inputToken(0).isDescendentOf(state.stackToken(0))) noPass(state)
-          else if (label.reduce_?) leftReduce(label.label, state)
+          else if (label.shiftOrReduceOrPass == REDUCE) leftReduce(label.label, state)
           else leftPass(label.label, state)
         }
-        else if (label.right_?) {
+        else if (label.leftOrRightOrNo == RIGHT) {
             if (state.stackToken(0).isDescendentOf(state.inputToken(0))) noPass(state)
-            else if (label.shift_?) rightShift(label.label, state)
+            else if (label.shiftOrReduceOrPass == SHIFT) rightShift(label.label, state)
             else rightPass(label.label, state)
         }
         else {
-            if (label.shift_?) noShift(state)
-            else if (label.reduce_? && state.stackToken(0).hasHead) noReduce(state)
+            if (label.shiftOrReduceOrPass == SHIFT) noShift(state)
+            else if (label.shiftOrReduceOrPass == REDUCE && state.stackToken(0).hasHead) noReduce(state)
             else noPass(state)
         }
       }
