@@ -55,7 +55,8 @@ object ParserWithTrainer {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        val (gold, pred) = c.predict(ss)
+        val pred = c.predict(ss)
+        val gold = ss.map(s => new NonprojectiveGoldOracle(s, c.labelDomain, c.featuresDomain).getSimpleDepArcs.toSeq)
         println("LAS: " + ParserEval.calcLas(gold, pred))
         println("UAS: " + ParserEval.calcUas(gold, pred))
         println("\n")

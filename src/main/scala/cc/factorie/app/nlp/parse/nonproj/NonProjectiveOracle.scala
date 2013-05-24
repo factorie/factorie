@@ -21,14 +21,14 @@ trait NonProjectiveOracle {
 
   var instances = new ArrayBuffer[ParseDecisionVariable] { override val initialSize = 100 }
 
-  def getSimpleDepArcs(s: Sentence) = s.parse.parents.map(_ + 1).zip(s.parse.labels.map(_.value.category))
-  def getDepArcs(s: Sentence) = {
+  def getSimpleDepArcs = sentence.parse.parents.map(_ + 1).zip(sentence.parse.labels.map(_.value.category))
+  def getDepArcs = {
     Seq((-1, "<ROOT-ROOT>")) ++
-	    getSimpleDepArcs(s).map {
+	    getSimpleDepArcs.map {
 	      case (i: Int, l: String) => (i, l)
 	    }
   }
-  val goldHeads = getDepArcs(sentence)
+  val goldHeads = getDepArcs
 
   def getGoldDecision(state: ParseState): ParseDecision = {
     val label: ParseDecision = getGoldLabelArc(state)
