@@ -57,16 +57,20 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   override def dimensionDomain: CategoricalDomain[C] = this
   @inline final override def length = _elements.length
   var growPastMaxSize: Boolean = true
-  def value(category:C): Value = {
+  def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
-    if (_frozen) _indices.getOrElse(category, null.asInstanceOf[Value])
+    if (_frozen)_indices.getOrElse(category, null.asInstanceOf[Value])
     else {
       lock.withReadLock {
+        var thisIndex = null: Value
         if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
           try {
-            if (_indices.get(category).isEmpty) {
+            val indexOpt = _indices.get(category)
+            if (!indexOpt.isEmpty)
+              thisIndex = indexOpt.get
+            else {
               val m = _elements.size
               if (maxSize > 0 && m >= maxSize) {
                 if (growPastMaxSize)
@@ -87,7 +91,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
           }
         }
         //_indices.getOrElse(category, null)
-        _indices(category)
+        if (thisIndex != null) thisIndex else _indices(category)
       }
     }
   }
