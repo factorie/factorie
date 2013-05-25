@@ -62,7 +62,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     if (_frozen)_indices.getOrElse(category, null.asInstanceOf[Value])
     else {
       lock.withReadLock {
-        var thisIndex = null: Value
+        var thisIndex = null.asInstanceOf[Value]
         if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
