@@ -72,6 +72,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
                 if (growPastMaxSize)
                   throw new Error("Index size exceeded maxSize")
                 else {
+                  println("Warning - max domain size %d exceeded! Freezing." format maxSize)
                   freeze()
                   return null.asInstanceOf[Value]
                 }
