@@ -153,7 +153,7 @@ class DepParser2 extends DocumentAnnotator {
     def predict(state: ParseDecisionVariable): ParseDecision
 
     var instances = new ArrayBuffer[ParseDecisionVariable] { override val initialSize = 100 }
-    def getSimpleDepArcs = sentence.parse.parents.map(_ + 1).zip(sentence.parse.labels.map(_.value.category))
+    def getSimpleDepArcs = sentence.parse.targetParents.map(_ + 1).zip(sentence.parse.labels.map(_.target.value.category))
     def getDepArcs = { Seq((-1, "<ROOT-ROOT>")) ++ getSimpleDepArcs.map { case (i: Int, l: String) => (i, l) } }
     val goldHeads = getDepArcs
 
@@ -423,14 +423,14 @@ object DepParser2 {
     var modelFolder: File = new File(modelUrl)
     val c = new DepParser2()
 
+    val optimizer = new AdaGradRDA(1.0, 0.1, 0.00001, 0.000001)
     def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteDimensionTensorVar)], model: MultiClassModel) {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
         val featuresSize = examples.head._2.domain.dimensionSize
         SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq)
       } else {
-        val optimizer = new AdaGradRDA(1.0, 0.1, 0.00001, 0.000001)
-        val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=10)
+        val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
         val ex = examples.map(e => new LinearMultiClassExample(model.evidence,
           e._2.value.asInstanceOf[Tensor1],
           e._1.targetIntValue,
@@ -464,7 +464,6 @@ object DepParser2 {
         testAll(c, "Boosting" + i)
         // save the model
         modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
-        modelFolder.mkdir()
         c.save(modelFolder, gzip = true)
       }
     }
