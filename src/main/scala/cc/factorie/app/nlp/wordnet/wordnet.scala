@@ -92,7 +92,7 @@ class WordNet(wordNetDir: String) {
       val synPtrs = ptrMap.map(kv => (kv._1, kv._2.toSet)).toMap  // make sets immutable
 
       val hypernyms = (synPtrs(HYPERNYM) ++ synPtrs(HYPERNYM_INSTANCE)).filter(!ignoredSynsets.contains(_))
-      synsetsBuilder += (id -> new Synset(id, hypernyms, synPtrs(ANTONYM)))
+      synsetsBuilder += (id -> new Synset(id, hypernyms, synPtrs(ANTONYM), allSynsets))
     }
   }
 
@@ -167,24 +167,25 @@ class WordNet(wordNetDir: String) {
   /* tests if w1 is a hyponym of w2 */
   def isHyponymOf(w1: String, w2: String): Boolean = isHypernymOf(w2, w1)
 
-  class Synset(val id: String, val hyps: Set[String], val ants: Set[String]) {
-    def antonyms(): Set[Synset] = this.ants.map(x => allSynsets(x))
+}
 
-    /* get the parent synsets (hypernyms) of this synset */
-    def hypernyms(): Set[Synset] = this.hyps.map(x => allSynsets(x))
+class Synset(val id: String, val hyps: Set[String], val ants: Set[String], allSynsets: HashMap[String,Synset]) {
+  def antonyms(): Set[Synset] = this.ants.map(x => allSynsets(x))
 
-    /* recursively get all parent synsets (hypernyms) of this synset */
-    def allHypernyms(): Set[Synset] = {
-      val result = mutable.Set[Synset]()
-      def visit(s: Synset) {
-        if (!result.contains(s)) {
-          result.add(s)
-          s.hypernyms().foreach(visit)
-        }
+  /* get the parent synsets (hypernyms) of this synset */
+  def hypernyms(): Set[Synset] = this.hyps.map(x => allSynsets(x))
+
+  /* recursively get all parent synsets (hypernyms) of this synset */
+  def allHypernyms(): Set[Synset] = {
+    val result = mutable.Set[Synset]()
+    def visit(s: Synset) {
+      if (!result.contains(s)) {
+        result.add(s)
+        s.hypernyms().foreach(visit)
       }
-      visit(this)
-      result.toSet
     }
+    visit(this)
+    result.toSet
   }
 }
 
