@@ -169,11 +169,11 @@ class WordNet(wordNetDir: String) {
 
 }
 
-class Synset(val id: String, val hyps: Set[String], val ants: Set[String], allSynsets: HashMap[String,Synset]) {
-  def antonyms(): Set[Synset] = this.ants.map(x => allSynsets(x))
+class Synset(val id: String, val hyps: Set[String], val ants: Set[String], wn: WordNet) {
+  def antonyms(): Set[Synset] = this.ants.map(x => wn.allSynsets(x))
 
   /* get the parent synsets (hypernyms) of this synset */
-  def hypernyms(): Set[Synset] = this.hyps.map(x => allSynsets(x))
+  def hypernyms(): Set[Synset] = this.hyps.map(x => wn.allSynsets(x))
 
   /* recursively get all parent synsets (hypernyms) of this synset */
   def allHypernyms(): Set[Synset] = {
