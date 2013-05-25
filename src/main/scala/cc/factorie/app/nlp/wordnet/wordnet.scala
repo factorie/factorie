@@ -92,7 +92,7 @@ class WordNet(wordNetDir: String) {
       val synPtrs = ptrMap.map(kv => (kv._1, kv._2.toSet)).toMap  // make sets immutable
 
       val hypernyms = (synPtrs(HYPERNYM) ++ synPtrs(HYPERNYM_INSTANCE)).filter(!ignoredSynsets.contains(_))
-      synsetsBuilder += (id -> new Synset(id, hypernyms, synPtrs(ANTONYM), allSynsets))
+      synsetsBuilder += (id -> new Synset(id, hypernyms, synPtrs(ANTONYM), this))
     }
   }
 
