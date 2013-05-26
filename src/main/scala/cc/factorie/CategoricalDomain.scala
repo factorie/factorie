@@ -63,12 +63,15 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     else {
       lock.withReadLock {
         var thisIndex = null.asInstanceOf[Value]
-        if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
+        val indexOpt = _indices.get(category)
+        if (indexOpt.isDefined)
+          thisIndex = indexOpt.get
+        else { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
           try {
             val indexOpt = _indices.get(category)
-            if (!indexOpt.isEmpty)
+            if (indexOpt.isDefined)
               thisIndex = indexOpt.get
             else {
               val m = _elements.size
@@ -84,6 +87,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
               val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
               _elements += e
               _indices(category) = e
+              thisIndex = e
             }
           } finally {
             lock.readLock()
@@ -91,7 +95,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
           }
         }
         //_indices.getOrElse(category, null)
-        if (thisIndex != null) thisIndex else _indices(category)
+        thisIndex
       }
     }
   }
