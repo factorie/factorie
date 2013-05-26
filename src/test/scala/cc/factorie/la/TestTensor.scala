@@ -5,9 +5,18 @@ import cc.factorie.la._
 import scala.util.Random
 import org.junit._
 import org.junit.Assert._
+import cc.factorie.util.FastSorting
 
 class TestTensor extends cc.factorie.util.FastLogging {
-  @Test def runTest {
+
+  @Test def testSorting(): Unit = {
+    val arr1 = Array(1, 2, 5, 3, 9, 7, 8, 4)
+    val arr2 = Array(1, 2, 3, 4, 5, 6, 7, 8)
+    FastSorting.quickSort(arr1, arr2)
+    assert(arr2.sameElements(Array(1, 2, 4, 8, 3, 6, 7, 5)))
+  }
+
+  @Test def runTest(): Unit = {
     val dim = 20
     val ts = Seq(new DenseTensor1(dim), new SparseTensor1(dim))
     val r = new Random

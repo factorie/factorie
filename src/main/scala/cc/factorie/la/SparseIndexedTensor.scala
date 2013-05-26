@@ -175,31 +175,39 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   
   def _makeReadable(): Unit = makeReadable
 
-  final private def doTheSort() = (0 to __npos-1).sortBy(i => __indices(i))
+  final private def doTheSort(): Array[Int] = {
+    val newIndices = Array.ofDim[Int](__npos)
+    val len = __npos; var i = 0
+    while (i < len) { newIndices(i) = i; i += 1}
+    val __indicesCopy = Array.ofDim[Int](__npos)
+    Array.copy(__indices, 0, __indicesCopy, 0, __npos)
+    FastSorting.quickSort(keys = __indicesCopy, values = newIndices)
+    newIndices
+  }
 
   final private def makeReadableEmpty(): Unit = {
-          // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
-      val sortedIndices = doTheSort()
-      val newIndices = Array.ofDim[Int](__indices.length)
-      val newValues = Array.ofDim[Double](__indices.length)
-      var prevIndex = __indices(sortedIndices(0))
-      newIndices(0) = prevIndex
-      newValues(0) = __values(sortedIndices(0))
-      var i = 1
-      var j = 0
-      while (i < __npos) {
-        val idx = sortedIndices(i)
-        if (prevIndex != __indices(idx)) {
-          j += 1
-          newIndices(j) = __indices(idx)
-          prevIndex = __indices(idx)
-        }
-        newValues(j) += __values(idx)
-        i += 1
+    // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
+    val sortedIndices = doTheSort()
+    val newIndices = Array.ofDim[Int](__indices.length)
+    val newValues = Array.ofDim[Double](__indices.length)
+    var prevIndex = __indices(sortedIndices(0))
+    newIndices(0) = prevIndex
+    newValues(0) = __values(sortedIndices(0))
+    var i = 1
+    var j = 0
+    while (i < __npos) {
+      val idx = sortedIndices(i)
+      if (prevIndex != __indices(idx)) {
+        j += 1
+        newIndices(j) = __indices(idx)
+        prevIndex = __indices(idx)
       }
-      _sorted = j+1
-      __indices = newIndices
-      __values = newValues
+      newValues(j) += __values(idx)
+      i += 1
+    }
+    _sorted = j+1
+    __indices = newIndices
+    __values = newValues
   }
 
   final private def makeReadableIncremental(): Unit = {

@@ -15,6 +15,7 @@ import cc.factorie.la._
 
 trait Example {
   // gradient or value can be null if they don't need to be computed.
+  // TODO should this be called (compute|accumulate)ValueAndGradient or something? -luke
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit
 }
 
