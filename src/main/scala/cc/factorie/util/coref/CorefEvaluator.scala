@@ -130,6 +130,58 @@ object CorefEvaluator {
     }
   }
 
+    /*
+  This tries to match the logic in the conll evaluation script. It takes a list of mentions and clusters
+  with no singletons and does the following (copied from perl and cleaned up):
+      foreach document {
+           foreach cluster in returned answer {
+                   foreach mention in cluster {
+                           val truth = trueCluster(mention);
+                           val ci = overlap(truth, cluster)
+                           val ri = size(cluster);
+                           val ki = size(truth);
+
+                           Prec += ci / ri;
+                           Rec += ci / ki;
+                   }
+           }
+      }
+
+      the denominator for precision is the number of mentions returned while for
+      recall the number of true mentions
+   }
+   The source script is in http://conll.bbn.com/download/scorer.v4.tar.gz
+  */
+  object BCubedNoSingletons extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m = new Metric
+      val predNonSingletons = pred.getMentionIds.filter(m => pred.getMentions(pred.getEntity(m)).size > 1)
+      val goldNonSingletons = truth.getMentionIds.filter(m => truth.getMentions(truth.getEntity(m)).size > 1)
+      val denom = predNonSingletons.union(goldNonSingletons).size
+      m.precDenominator = denom
+      m.recallDenominator = denom
+      // go through each mention
+      for (mid: M <- pred.getMentionIds) {
+        // get pred and true clusters
+        val predId = pred.getEntity(mid)
+        val predCluster: collection.Set[M] = pred.getMentions(predId)
+        val trueId = truth.getEntity(mid)
+        val trueCluster: collection.Set[M] = truth.getMentions(trueId)
+        if (predCluster.size > 1 || trueCluster.size > 1) {
+          // calculate overlap between the two
+          val clusterOverlap: Int = overlap(predCluster, trueCluster)
+          // add to metric
+          // prec = overlap / pred.size
+          m.precNumerator += clusterOverlap.doubleValue / predCluster.size.doubleValue
+          // rec = overlap / truth.size
+          m.recallNumerator += clusterOverlap.doubleValue / trueCluster.size.doubleValue
+        }
+      }
+      m
+    }
+  }
+
+
   object MUC extends MetricEvaluator {
     override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m: Metric = new Metric
