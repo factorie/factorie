@@ -12,7 +12,7 @@ class GenericEntityMap[M] {
   val entities: Map[Long, MSet[M]] = new LinkedHashMap
   // eId -> Set[mention]
   // eId -> [mentions]
-  private val reverseMap: Map[M, Long] = new LinkedHashMap // mention -> eId
+  val reverseMap: Map[M, Long] = new LinkedHashMap // mention -> eId
 
   def getEntities: Iterable[Set[M]] = {
     entities.values
