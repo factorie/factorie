@@ -375,6 +375,10 @@ object DepParser2 {
       val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
       val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
       val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
+      val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
+      val l1 = new CmdOption("l1","1.0","FLOAT","l1 regularization weight")
+      val l2 = new CmdOption("l2","1.0","FLOAT","l2 regularization weight")
+
     }
     opts.parse(args)
     import opts._
@@ -423,7 +427,11 @@ object DepParser2 {
     var modelFolder: File = new File(modelUrl)
     val c = new DepParser2()
 
-    val optimizer = new AdaGradRDA(1.0, 0.1, 0.00001, 0.000001)
+    val l1 = 2*opts.l1.value.toDouble / sentences.length //basically, we're assuming that there are around 20 training transition examples per sentence, but then I don't want to make the penalty too small, so we multiply by 10
+    val l2 = 2*opts.l2.value.toDouble / sentences.length
+
+    val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
+
     def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteDimensionTensorVar)], model: MultiClassModel) {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
@@ -449,22 +457,27 @@ object DepParser2 {
       println("# features " + c.featuresDomain.dimensionDomain.size)
       c.trainFromVariables(trainingVs, trainFn)
       // save the initial model
-      println("Saving the model...")
-      c.save(modelFolder, gzip = true)
-      println("...DONE")
-      testAll(c)
-
-      println("Loading it back for serialization testing...")
-      val d = new DepParser2
-      d.load(modelFolder, gzip = true)
-      testAll(d)
+      if(saveModel.value){
+        println("Saving the model...")
+        c.save(modelFolder, gzip = true)
+        println("...DONE")
+        testAll(c)
+        println("Loading it back for serialization testing...")
+        val d = new DepParser2
+        d.load(modelFolder, gzip = true)
+        testAll(d)
+      }else{
+        testAll(c)
+      }
       trainingVs = null // GC the old training labels
       for (i <- 0 until numBootstrappingIterations) {
         c.boosting(sentences, trainFn=trainFn)
         testAll(c, "Boosting" + i)
         // save the model
-        modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
-        c.save(modelFolder, gzip = true)
+        if(saveModel.value) {
+          modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
+          c.save(modelFolder, gzip = true)
+        }
       }
     }
     else {
