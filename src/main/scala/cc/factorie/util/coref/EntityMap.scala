@@ -9,7 +9,7 @@ import io.Source
  * @author sameer
  */
 class GenericEntityMap[M] {
-  private val entities: Map[Long, MSet[M]] = new LinkedHashMap
+  val entities: Map[Long, MSet[M]] = new LinkedHashMap
   // eId -> Set[mention]
   // eId -> [mentions]
   private val reverseMap: Map[M, Long] = new LinkedHashMap // mention -> eId
