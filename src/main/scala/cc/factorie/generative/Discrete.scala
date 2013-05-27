@@ -56,7 +56,7 @@ object MaximizeGeneratedDiscrete extends Maximize {
     val dFactors = model.factors(varying)
     require(dFactors.size == 1)
     dFactors.head match {
-      case factor:Discrete.Factor => Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)) with MarginalWithoutTensorStatistics)
+      case factor:Discrete.Factor => Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))
       case _ => None
     }
   }

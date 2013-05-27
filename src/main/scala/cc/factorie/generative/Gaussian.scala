@@ -53,7 +53,7 @@ object MaximizeGaussianMean extends Maximize {
       	case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
       	case gm:GaussianMixture.Factor if (gm._2.contains(meanVar)) => {
           val gate = gm._4
-          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
           val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.  And we are doing it twice because of "contains" above
           if (gateMarginal eq null) {
             if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
@@ -100,7 +100,7 @@ object MaximizeGaussianVariance extends Maximize {
       case g:Gaussian.Factor if (g._3 == varianceVar) => { mean += g._1.doubleValue; sum += 1.0 }
       case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
         val gate = gm._4
-        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
         if (gateMarginal eq null) {
           if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
@@ -121,7 +121,7 @@ object MaximizeGaussianVariance extends Maximize {
       case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff; sum += 1 }
       case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
         val gate = gm._4
-        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
         if (gateMarginal eq null) {
           if (gm._4.intValue == mixtureIndex) { val diff = mean - gm._1.doubleValue; v += diff * diff; sum += 1 }

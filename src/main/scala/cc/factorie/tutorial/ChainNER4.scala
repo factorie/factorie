@@ -82,7 +82,7 @@ object ChainNER4 {
       if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
 
-    // println("Using "+TokenDomain.dimensionSize+" observable features.")
+    println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Print some significant features
     //println("Most predictive features:")
@@ -106,12 +106,12 @@ object ChainNER4 {
       // println("Iteration "+i)
       learner.processContexts(trainLabels)
       predictor.processAll(testLabels); predictor.processAll(trainLabels)
-      // trainLabels.take(20).foreach(printLabel _); println; println
-      // printDiagnostic(trainLabels.take(400))
+      trainLabels.take(20).foreach(printLabel _); println; println
+      printDiagnostic(trainLabels.take(400))
       //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
       //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
-      // println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      // println ("Test  accuracy = "+ objective.accuracy(testLabels))
+      //println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     if (false) {
       // Use BP Viterbi for prediction
@@ -173,7 +173,7 @@ object ChainNER4 {
   def printDiagnostic(labels:Seq[Label]) : Unit = {
     for (label <- labels; if (label.intValue != label.domain.index("O"))) {
       if (!label.hasPrev || label.value != label.prev.value) 
-        print("%-7s %-7s ".format((if (label.value != label.target.value) label.target.value.category else " "), label.value.category))
+        print("%-7s %-7s ".format((if (label.value != label.target.value) label.target.value.category.drop(2) else " "), label.value.category.drop(2)))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }

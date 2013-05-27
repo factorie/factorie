@@ -15,34 +15,43 @@
 package cc.factorie
 import cc.factorie.la._
 
-//import scala.actors.Actor
-//import scala.actors.Actor._
-
 /** Stores a marginal distribution containing a joint distribution over a set of variables.
-    See also Summary, which stores a collection of Marginals. */
+    See also Summary, which stores a collection of Marginals.
+    @author Andrew McCallum */
 trait Marginal {
   def variables: Iterable[Var]
   def setToMaximize(implicit d:DiffList): Unit
+}
+
+/** A Marginal associated with a Factor. 
+    The marginal distribution may be over all the neighboring variables of the factor, 
+    or, in the case in which inference varied some but not all of the neighbors,
+    the marginal distribution will be over a subset of the neighboring variables of the factor.
+    The tensorStatistics always covers all the neighboring variables of the factor.  */
+trait FactorMarginal extends Marginal {
+  def factor: Factor
   def tensorStatistics: Tensor
 }
 
+//trait MarginalWithoutTensorStatistics extends Marginal {
+//  def tensorStatistics = throw new Error("No tensor statistics defined for marginal " + this.getClass.getName)
+//}
+
 // Marginals over discrete variables
 
+/** A Marginal in which all the variables are discrete (either singleton or tensors).
+    @author Andrew McCallum */
 trait DiscreteMarginal extends Marginal {
   def _1: DiscreteDimensionTensorVar // TODO Consider removing this.
   def variables: Iterable[DiscreteDimensionTensorVar]
   def proportions: Proportions
 }
 
-trait MarginalWithoutTensorStatistics extends Marginal {
-  def tensorStatistics = throw new Error("No tensor statistics defined for marginal " + this.getClass.getName)
-}
-
 // TODO Do we need a trait version of these? -akm
 //trait DiscreteMar1[V1<:DiscreteVectorVar] extends DiscreteMar { def _1: V1; def proportions: Proportions1 }
-abstract class DiscreteMarginal1[V1<:DiscreteDimensionTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal with AbstractAssignment1[V1] {
+class DiscreteMarginal1[V1<:DiscreteDimensionTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal with AbstractAssignment1[V1] {
   def this(f:Factor1[V1]) = this (f._1, null)
-  //def variables = Seq(_1)
+  //def variables = Seq(_1) // This is already inherited from AbstractAssignment1
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
   protected var _proportions = if (proportions1 == null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1
   def proportions: Proportions1 = _proportions
@@ -50,16 +59,16 @@ abstract class DiscreteMarginal1[V1<:DiscreteDimensionTensorVar](val _1:V1, prop
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
 }
 
-trait DiscreteMarginal1Factor1[V <: DiscreteDimensionTensorVar] {
+trait DiscreteMarginal1Factor1[V <: DiscreteDimensionTensorVar] extends DiscreteMarginal1[V] with FactorMarginal { 
   def proportions: Proportions1
-  val factor: Factor1[V]
+  override val factor: Factor1[V]
   def tensorStatistics = proportions
 }
 
-trait DiscreteMarginal1Factor2[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar] {
+trait DiscreteMarginal1Factor2[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar] extends FactorMarginal {
   def proportions: Proportions1
   def _1: DiscreteDimensionTensorVar
-  val factor: Factor2[V,W]
+  override val factor: Factor2[V,W]
   def tensorStatistics = {
     if (_1 eq factor._1)
       proportions outer factor._2.asInstanceOf[TensorVar].value
@@ -68,10 +77,10 @@ trait DiscreteMarginal1Factor2[V <: DiscreteDimensionTensorVar,W<:DiscreteDimens
   }
 }
 
-trait DiscreteMarginal1Factor3[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar,WW<:DiscreteDimensionTensorVar] {
+trait DiscreteMarginal1Factor3[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar,WW<:DiscreteDimensionTensorVar] extends FactorMarginal {
   def proportions: Proportions1
   def _1: DiscreteDimensionTensorVar
-  val factor: Factor3[V,W,WW]
+  override val factor: Factor3[V,W,WW]
   def tensorStatistics = {
     if (_1 eq factor._1)
       proportions outer (factor._2.asInstanceOf[TensorVar].value outer factor._3.asInstanceOf[TensorVar].value)
@@ -83,22 +92,22 @@ trait DiscreteMarginal1Factor3[V <: DiscreteDimensionTensorVar,W<:DiscreteDimens
 }
 
 
-abstract class DiscreteMarginal2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal {
+class DiscreteMarginal2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal {
   def this(f:Factor2[V1,V2]) = this (f._1, f._2, null)
   def variables = Seq(_1, _2)
-  protected var _proportions = if (proportions2 eq null) new DenseProportions2(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size) else proportions2 // must do this here because no access to _1 in default argument values
+  protected var _proportions: Proportions2 = if (proportions2 eq null) new DenseProportions2(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size) else proportions2 // must do this here because no access to _1 in default argument values
   def proportions: Proportions2 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2) match { case (d1:DiscreteVar,d2:DiscreteVar) => proportions.masses.+=(d1.intValue, d2.intValue, w); case d:DiscreteDimensionTensorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
 
-trait DiscreteMarginal2Factor2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar] {
-  val factor: Factor2[V1,V2]
+trait DiscreteMarginal2Factor2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar] extends DiscreteMarginal2[V1,V2] with FactorMarginal {
+  override val factor: Factor2[V1,V2]
   def proportions: Proportions2
   def tensorStatistics = proportions
 }
 
-trait DiscreteMarginal2Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] {
+trait DiscreteMarginal2Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] extends FactorMarginal {
   val factor: Factor3[V1,V2,V3]
   def _1: DiscreteDimensionTensorVar
   def _2: DiscreteDimensionTensorVar
@@ -112,7 +121,7 @@ trait DiscreteMarginal2Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimens
   }
 }
 
-abstract class DiscreteMarginal3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, val _3:V3, proportions3:Proportions3 = null) extends DiscreteMarginal {
+class DiscreteMarginal3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, val _3:V3, proportions3:Proportions3 = null) extends DiscreteMarginal {
   def this(f:Factor3[V1,V2,V3]) = this (f._1, f._2, f._3, null)
   def variables = Seq(_1, _2, _3)
   protected var _proportions: Proportions3 = if (proportions3 eq null) new DenseProportions3(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size) else proportions3 // must do this here because no access to _1 in default argument values
@@ -121,13 +130,13 @@ abstract class DiscreteMarginal3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDime
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
 
-trait DiscreteMarginal3Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] {
-  val factor: Factor3[V1,V2,V3]
+trait DiscreteMarginal3Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] extends FactorMarginal {
+  override val factor: Factor3[V1,V2,V3]
   def proportions: Proportions3
   def tensorStatistics = proportions
 }
 
-abstract class DiscreteMarginal4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, val _3:V3, val _4:V4, proportions4:Proportions4 = null) extends DiscreteMarginal {
+class DiscreteMarginal4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, val _3:V3, val _4:V4, proportions4:Proportions4 = null) extends DiscreteMarginal {
   def this(f:Factor4[V1,V2,V3,V4]) = this (f._1, f._2, f._3, f._4, null)
   def variables = Seq(_1, _2, _3, _4)
   protected var _proportions: Proportions4 = if (proportions4 eq null) new DenseProportions4(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size, _4.domain.dimensionDomain.size) else proportions4 // must do this here because no access to _1 in default argument values
@@ -136,8 +145,8 @@ abstract class DiscreteMarginal4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDime
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
 
-trait DiscreteMarginal4Factor4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar] {
-  val factor: Factor4[V1,V2,V3,V4]
+trait DiscreteMarginal4Factor4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar] extends FactorMarginal {
+  override val factor: Factor4[V1,V2,V3,V4]
   def proportions: Proportions4
   def tensorStatistics = proportions
 }
@@ -162,7 +171,7 @@ object DiscreteMarginal {
   }
 }
 
-class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends MarginalWithoutTensorStatistics {
+class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends Marginal {
   def variables = Seq(_1)
   def setToMaximize(implicit d:DiffList): Unit = {
     var i = 0
@@ -176,7 +185,7 @@ class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:S
 
 // Marginals over Proportions
 
-class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1) extends MarginalWithoutTensorStatistics {
+class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1) extends Marginal {
   def variables = Seq(_1)
   def setToMaximize(implicit d:DiffList): Unit = {
     if (d ne null) throw new Error("Handling of DiffList here not yet implemented.")
@@ -188,13 +197,13 @@ class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1)
 // Marginals over Reals
 // TODO Should there also be a Marginal over DoubleVar?  Should they be unified?  e.g. ScalarMarginal?
 
-trait RealMarginal1[V1<:RealVar] extends MarginalWithoutTensorStatistics {
+trait RealMarginal1[V1<:RealVar] extends Marginal {
   val _1:V1
   def mean:Double
   def pr(x:Double): Double
 }
 
-class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] {
+class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] with Marginal {
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
   final def value1: V1#Value = mean.asInstanceOf[V1#Value] // For AbstractAssignment1
@@ -202,7 +211,7 @@ class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends Abstra
 
 // Gaussian Marginal
 
-class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends MarginalWithoutTensorStatistics {
+class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
   def variables = Seq(_1)
   // TODO Set this up better for incremental estimation
   var mean = 0.0
@@ -211,7 +220,7 @@ class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends MarginalWithoutTenso
   def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
 }
 
-class MultivariateGaussianMarginal1[V1 <: MutableTensorVar[Tensor1]](val _1: V1) extends MarginalWithoutTensorStatistics {
+class MultivariateGaussianMarginal1[V1 <: MutableTensorVar[Tensor1]](val _1: V1) extends Marginal {
   def variables = Seq(_1)
   // TODO Set this up better for incremental estimation
   var mean = new DenseTensor1(_1.value.length, 0.0)

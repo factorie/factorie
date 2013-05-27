@@ -281,7 +281,7 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal with MarginalWithoutTensorStatistics {
+class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   def mean = throw new Error // TODO!!! Should be this instead: value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
@@ -328,7 +328,7 @@ object MaximizeProportions extends Maximize {
     }
     // Incorporate children
     @inline def incrementForDiscreteVar(dv:DiscreteVar, incr:Double): Unit = {
-      val marginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(dv) 
+      val marginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(dv) 
       if (marginal eq null) e.masses.+=(dv.intValue, incr) else e.masses.+=(marginal.proportions, incr)
     }
     for (factor <- model.extendedChildFactors(p)) factor match {
@@ -340,7 +340,7 @@ object MaximizeProportions extends Maximize {
       // A DiscreteVar child of a Mixture[Proportions]
       case dm:CategoricalMixture[A]#Factor => {
         val gate = dm._3
-        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         //val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(gate))
         val mixtureIndex = dm._2.indexOf(p) // Yipes!  Linear search.
         if (gateMarginal eq null) {

@@ -99,7 +99,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
           count += 1
         case f@MultivariateGaussianMixture.Factor(fvalue, fmeans, _, gate) if pred2(f) != -1 =>
           if (sum == null) sum = new DenseTensor1(fvalue.value.length, 0.0)
-          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate)
+          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate)
            val mixtureIndex = pred2(f)
            if (gateMarginal eq null) {
              if (gate.intValue == mixtureIndex) { sum += fvalue.value; count += 1.0 }
@@ -133,7 +133,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize {
           sum += new Outer1Tensor2(centered, centered)
           count += 1.0
         case MultivariateGaussianMixture.Factor(fvalue, _, fcovariances, gate) if fcovariances.contains(covarianceVar) =>
-          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate)
+          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate)
           val mixtureIndex = fcovariances.indexOf(covarianceVar)
           if (gateMarginal eq null) {
             if (gate.intValue == mixtureIndex) {
