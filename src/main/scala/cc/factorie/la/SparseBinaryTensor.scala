@@ -67,6 +67,14 @@ trait ArraySparseBinaryTensor extends SparseBinaryTensor with cc.factorie.util.P
     case t: SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
     case t: SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
     // TODO Any other special cases here?
+    case ds: DenseTensor => {
+      val len = activeDomainSize
+      val indices = _indices
+      val arr = ds.asArray
+      var result = 0.0; var i = 0
+      while (i < len) { result += arr(indices(i)); i += 1 }
+      result
+    }
     case ds: DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
 //  def asIntArray = _asArray
