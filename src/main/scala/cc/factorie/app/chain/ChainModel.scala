@@ -191,7 +191,7 @@ with Parameters
       private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
       private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
       private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m)) with MarginalWithoutTensorStatistics })
+        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m)) })
       private val _edgeMarginals =
         labels.zip(labels.drop(1)).zip(__edgeMarginals).map({ case ((l1, l2), m) =>
           // m is label X label
@@ -206,7 +206,7 @@ with Parameters
             }
 	          d1 += 1
           }
-          new DiscreteMarginal2(l1, l2, t) with MarginalWithoutTensorStatistics
+          new DiscreteMarginal2(l1, l2, t)
         }).toArray
       def expectations = _expectations
       override def logZ = _logZ
@@ -232,7 +232,7 @@ with Parameters
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
       lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t)) with MarginalWithoutTensorStatistics})
+        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
       def marginal(v: Var): DiscreteMarginal = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {

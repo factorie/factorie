@@ -38,13 +38,13 @@ class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Paramete
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    val factors = summary.usedFactors.getOrElse(model.factors(labels))
+    val factors = summary.factors.getOrElse(model.factors(labels))
     for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
       val aStat = factor.assignmentStatistics(TargetAssignment)
       if (value != null) value.accumulate(factor.statisticsScore(aStat))
       if (gradient != null) {
         gradient.accumulate(factor.family.weights, aStat)
-        gradient.accumulate(factor.family.weights, summary.marginalTensorStatistics(factor), -1.0)
+        gradient.accumulate(factor.family.weights, summary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
       }
     }
     if (value != null) // add in the score from non-DotFamilies
@@ -251,11 +251,11 @@ class SemiSupervisedLikelihoodExample(labels: Iterable[LabeledVar], model: Model
     val unconstrainedSummary = inferUnconstrained.infer(labels, model).get
     if (value != null)
       value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
-    val factors = unconstrainedSummary.usedFactors.getOrElse(model.factors(labels))
+    val factors = unconstrainedSummary.factors.getOrElse(model.factors(labels))
     if (gradient != null) {
       for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
-        gradient.accumulate(factor.family.weights, constrainedSummary.marginalTensorStatistics(factor), 1.0)
-        gradient.accumulate(factor.family.weights, unconstrainedSummary.marginalTensorStatistics(factor), -1.0)
+        gradient.accumulate(factor.family.weights, constrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, 1.0)
+        gradient.accumulate(factor.family.weights, unconstrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0)
       }
     }
   }

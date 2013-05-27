@@ -92,7 +92,7 @@ trait BPVariable {
   }
   def calculateMarginal: Tensor
 }
-abstract class BPVariable1(val variable: DiscreteVar) extends BPVariable {
+abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal with BPVariable {
   private var _edges: List[BPEdge] = Nil
   def addEdge(e:BPEdge): Unit = _edges = e :: _edges
   final def edges: List[BPEdge] = _edges
@@ -109,6 +109,8 @@ abstract class BPVariable1(val variable: DiscreteVar) extends BPVariable {
   def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
   def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
+  def _1 = variable
+  def variables = Seq(variable)
 }
 
 trait BPVariableMaxProduct { self: BPVariable =>
@@ -121,7 +123,7 @@ trait BPVariableSumProduct { self: BPVariable =>
 }
 // TODO class BPVariable{2,3,4} would be used for cluster graphs
 
-trait BPFactor extends DiscreteMarginal {
+trait BPFactor extends DiscreteMarginal with FactorMarginal {
   def factor: Factor
   def edges: Seq[BPEdge]
   def summary: BPSummary
@@ -466,7 +468,7 @@ object LoopyBPSummaryMaxProduct {
 // TODO Consider removing this
 trait AbstractBPSummary extends Summary[DiscreteMarginal] {
   def ring: BPRing
-  def factors: Iterable[Factor]
+  //def factors: Iterable[Factor]
   def bpVariable(v:DiscreteVar): BPVariable1
   def bpFactors: Iterable[BPFactor]
   def bpVariables: Iterable[BPVariable1]
@@ -482,11 +484,13 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   protected val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
-  override def usedFactors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
-  def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
+  override def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
+  //def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals: Iterable[DiscreteMarginal] = _bpFactors.values // ++ _bpVariables.values
-  def marginal(vs: Var*): DiscreteMarginal = {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
+  override def marginal(v:Var): BPVariable1 = v match { case v:DiscreteVar => _bpVariables(v); case _ => null }
+  //def marginal(f:Factor): DiscreteMarginal = { val vset = f.variables.toSet; val factors = _bpFactors.values.filter(bpf => bpf.variables.toSet == vset); require(factors.size == 1); factors.head } // Need to actually combine if more than one
+  //def marginal(vs: Var*): DiscreteMarginal = {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.

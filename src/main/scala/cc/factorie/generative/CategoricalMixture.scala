@@ -123,7 +123,7 @@ object MaximizeGate extends Maximize {
   // For generic inference engines
   def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
     val maxi = maxIndex(varying, model)
-    if (maxi >= 0) Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)) with MarginalWithoutTensorStatistics)
+    if (maxi >= 0) Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)))
     else None
   }
   override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {

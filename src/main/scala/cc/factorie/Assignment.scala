@@ -20,7 +20,7 @@ import cc.factorie
     Alternatively, variable values can be stored in an Assignment: a
     mapping from variables to their values.
     
-    An Assignment is also a Marginal, with all its probability on one set of values.
+    An Assignment is also a Summary, able to give , with all its probability on one set of values.
 
     Alex: an Assignment shouldn't be a Marginal, it should be able to give you marginals
     of some of its variables. I imagine Assignments as "global" things and Marginals as "local". Let's talk.
@@ -44,7 +44,7 @@ trait Assignment {
   // TODO Rename this to "set" or "setVariables" -akm
   def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
-      case v:MutableVar[Any] => v.set(this.apply(v))
+      case v:MutableVar[Any] => v.set(this.apply(v))(d)
       case _ => throw new Error
     }
   }
@@ -52,9 +52,6 @@ trait Assignment {
   // TODO Now that Assignment is no longer a Marginal, remove this.
   final def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
-
-//trait Assignment extends TypedAssignment[Variable]
-
 
 /** An Assignment in which variable-value mappings can be changed.
     @author Andrew McCallum */
@@ -80,15 +77,12 @@ class HashMapAssignment extends MutableAssignment {
   private val map = new scala.collection.mutable.HashMap[Var, Any]
   def this(variables:Var*) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def this(variables:Iterable[Var]) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
-  //val _variables = map.keys.toSeq
-  def variables = map.keys //_variables
+  def variables = map.keys
   def apply[V<:Var](v:V): V#Value = { val a = map(v); if (null != a) a.asInstanceOf[V#Value] else throw new Error("Variable not present: "+v) }
   def get[V<:Var](v:V): Option[V#Value] = map.get(v).map(_.asInstanceOf[V#Value])
   def update[V<:Var, U <: V#Value](variable:V, value:U): Unit = map(variable) = value
   def contains(v:Var) = map.contains(v)
 }
-
-// TODO Decide what the naming scheme will be here:  _1 or _1; _value1 or value1.  I think perhaps it should be var1 and value1 for clarity. -akm
 
 /** An efficient abstract Assignment of one variable.
     Values for variables not in this assigment are taken from those variables themselves (the "global" assignment).
@@ -96,7 +90,7 @@ class HashMapAssignment extends MutableAssignment {
 trait AbstractAssignment1[A<:Var] extends Assignment {
   def _1: A
   def value1: A#Value
-  def variables = List(_1)
+  def variables = Seq(_1) // TODO Consider making this a Set.
   def apply[B<:Var](v:B): B#Value = if (v eq _1) value1.asInstanceOf[B#Value] else v.value.asInstanceOf[B#Value] // throw new Error("Variable not present: "+v)
   def get[B<:Var](v:B): Option[B#Value] = if (v eq _1) Some(value1.asInstanceOf[B#Value]) else None
   def contains(v:Var): Boolean = if (v eq _1) true else false
@@ -126,7 +120,7 @@ trait AbstractAssignment2[A<:Var,B<:Var] extends Assignment {
   def _2: B
   def value1: A#Value
   def value2: B#Value
-  def variables = List(_1, _2)
+  def variables = Seq(_1, _2)
   def apply[C<:Var](v:C): C#Value = if (v eq _1) value1.asInstanceOf[C#Value] else if (v eq _2) value2.asInstanceOf[C#Value] else v.value.asInstanceOf[C#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2)) true else false
@@ -148,7 +142,7 @@ trait AbstractAssignment3[A<:Var,B<:Var,C<:Var] extends Assignment {
   def value1: A#Value
   def value2: B#Value
   def value3: C#Value
-  def variables = List(_1, _2, _3)
+  def variables = Seq(_1, _2, _3)
   def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3)) true else false
@@ -173,7 +167,7 @@ trait AbstractAssignment4[A<:Var,B<:Var,C<:Var,D<:Var] extends Assignment {
   def value2: B#Value
   def value3: C#Value
   def value4: D#Value
-  def variables = List(_1, _2, _3, _4)
+  def variables = Seq(_1, _2, _3, _4)
   def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else if (v eq _4) value4.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else if (v eq _4) Some(value4.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3) || (v eq _4)) true else false
