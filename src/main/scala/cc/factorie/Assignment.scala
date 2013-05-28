@@ -85,7 +85,7 @@ class HashMapAssignment extends MutableAssignment {
 }
 
 /** An efficient abstract Assignment of one variable.
-    Values for variables not in this assigment are taken from those variables themselves (the "global" assignment).
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 trait AbstractAssignment1[A<:Var] extends Assignment {
   def _1: A

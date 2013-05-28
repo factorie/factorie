@@ -59,28 +59,29 @@ class DiscreteMarginal1[V1<:DiscreteDimensionTensorVar](val _1:V1, proportions1:
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
 }
 
-trait DiscreteMarginal1Factor1[V <: DiscreteDimensionTensorVar] extends DiscreteMarginal1[V] with FactorMarginal { 
-  def proportions: Proportions1
-  override val factor: Factor1[V]
+// This can't be a class because different Factor arity versions of this need to be mixed into BPFactor1.
+trait DiscreteMarginal1Factor1[V1<:DiscreteDimensionTensorVar] extends FactorMarginal { 
+  this: DiscreteMarginal1[V1] =>
+  override def factor: Factor1[V1]
   def tensorStatistics = proportions
 }
 
-trait DiscreteMarginal1Factor2[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar] extends FactorMarginal {
-  def proportions: Proportions1
-  def _1: DiscreteDimensionTensorVar
-  override val factor: Factor2[V,W]
+trait DiscreteMarginal1Factor2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar] extends FactorMarginal {
+  this: DiscreteMarginal1[V1] =>
+  def _1: V1
+  override def factor: Factor2[V1,V2]
   def tensorStatistics = {
     if (_1 eq factor._1)
-      proportions outer factor._2.asInstanceOf[TensorVar].value
+      proportions outer factor._2.value
     else
-      factor._1.asInstanceOf[TensorVar].value outer proportions
+      factor._1.value outer proportions
   }
 }
 
-trait DiscreteMarginal1Factor3[V <: DiscreteDimensionTensorVar,W<:DiscreteDimensionTensorVar,WW<:DiscreteDimensionTensorVar] extends FactorMarginal {
-  def proportions: Proportions1
-  def _1: DiscreteDimensionTensorVar
-  override val factor: Factor3[V,W,WW]
+trait DiscreteMarginal1Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] extends FactorMarginal {
+  this: DiscreteMarginal1[V1] =>
+  def _1: V1
+  override def factor: Factor3[V1,V2,V3]
   def tensorStatistics = {
     if (_1 eq factor._1)
       proportions outer (factor._2.asInstanceOf[TensorVar].value outer factor._3.asInstanceOf[TensorVar].value)
@@ -102,16 +103,15 @@ class DiscreteMarginal2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTens
 }
 
 trait DiscreteMarginal2Factor2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar] extends DiscreteMarginal2[V1,V2] with FactorMarginal {
-  override val factor: Factor2[V1,V2]
-  def proportions: Proportions2
+  override def factor: Factor2[V1,V2]
   def tensorStatistics = proportions
 }
 
 trait DiscreteMarginal2Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] extends FactorMarginal {
+  this: DiscreteMarginal2[V1,V2] =>
   val factor: Factor3[V1,V2,V3]
-  def _1: DiscreteDimensionTensorVar
-  def _2: DiscreteDimensionTensorVar
-  def proportions: Proportions2
+  def _1: V1
+  def _2: V2
   def tensorStatistics = {
     if ((factor._1 eq _1) && (factor._2 eq _2))
       proportions outer factor._3.asInstanceOf[TensorVar].value
@@ -131,13 +131,13 @@ class DiscreteMarginal3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTens
 }
 
 trait DiscreteMarginal3Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar] extends FactorMarginal {
-  override val factor: Factor3[V1,V2,V3]
-  def proportions: Proportions3
+  this: DiscreteMarginal3[V1,V2,V3] =>
+  override def factor: Factor3[V1,V2,V3]
   def tensorStatistics = proportions
 }
 
 class DiscreteMarginal4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, val _3:V3, val _4:V4, proportions4:Proportions4 = null) extends DiscreteMarginal {
-  def this(f:Factor4[V1,V2,V3,V4]) = this (f._1, f._2, f._3, f._4, null)
+  def this(f:Factor4[V1,V2,V3,V4]) = this(f._1, f._2, f._3, f._4, null)
   def variables = Seq(_1, _2, _3, _4)
   protected var _proportions: Proportions4 = if (proportions4 eq null) new DenseProportions4(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size, _4.domain.dimensionDomain.size) else proportions4 // must do this here because no access to _1 in default argument values
   def proportions: Proportions4 = _proportions
@@ -146,8 +146,8 @@ class DiscreteMarginal4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTens
 }
 
 trait DiscreteMarginal4Factor4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar] extends FactorMarginal {
-  override val factor: Factor4[V1,V2,V3,V4]
-  def proportions: Proportions4
+  this: DiscreteMarginal4[V1,V2,V3,V4] =>
+  override def factor: Factor4[V1,V2,V3,V4]
   def tensorStatistics = proportions
 }
 

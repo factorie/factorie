@@ -66,9 +66,11 @@ class Summary1[V<:Var,M<:Marginal] {
 /** A Summary containing only one Marginal. */
 class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
   def marginals = Seq(marginal)
-  // TODO In the conditional below, order shouldn't matter!
   def marginal(v:Var): M = if (Seq(v) == marginal.variables) marginal else null.asInstanceOf[M]
-  def marginal(f:Factor): M = null.asInstanceOf[M]
+  def marginal(f:Factor): M = marginal match {
+    case m:FactorMarginal if m.factor == f => marginal 
+    case _ => null.asInstanceOf[M]
+  }
 }
 
 /** A Summary with all its probability on one variable-value Assignment.  Note that Assignment inherits from Marginal. */
