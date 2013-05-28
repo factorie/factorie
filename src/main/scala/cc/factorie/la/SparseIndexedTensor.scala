@@ -176,11 +176,12 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   def _makeReadable(): Unit = makeReadable
 
   final private def doTheSort(): Array[Int] = {
-    val newIndices = Array.ofDim[Int](__npos)
+
+    val newIndices = new Array[Int](__npos)
     val len = __npos; var i = 0
     while (i < len) { newIndices(i) = i; i += 1}
-    val __indicesCopy = Array.ofDim[Int](__npos)
-    Array.copy(__indices, 0, __indicesCopy, 0, __npos)
+    val __indicesCopy = new Array[Int](__npos)
+    System.arraycopy(__indices, 0, __indicesCopy, 0, __npos)
     FastSorting.quickSort(keys = __indicesCopy, values = newIndices)
     newIndices
   }
@@ -188,8 +189,8 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   final private def makeReadableEmpty(): Unit = {
     // We can assume that the "readable" part of the vector is empty, and hence we can just sort everything
     val sortedIndices = doTheSort()
-    val newIndices = Array.ofDim[Int](__indices.length)
-    val newValues = Array.ofDim[Double](__indices.length)
+    val newIndices = new Array[Int](__indices.length)
+    val newValues = new Array[Double](__indices.length)
     var prevIndex = __indices(sortedIndices(0))
     newIndices(0) = prevIndex
     newValues(0) = __values(sortedIndices(0))
