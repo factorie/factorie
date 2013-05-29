@@ -17,13 +17,16 @@ New in version 1.0.0-M4:
 * Model and Templates
   - The way parameters are created and stored has been centralized.  
     New trait Weight is a TensorVar with Tensor value.  New traits TensorSet and 
-    WeightsSet store a collection of Tensors (usually one Tensor per factor family)
+    WeightsSet store a collection of Weights (usually one Tensor per factor family)
     used to store parameters.  New trait WeightsMap stores a set of Tensors
-    separate from the Weights' Tensors, but which are looked up by Weights as keys.
-    These are typically used to store sufficient statistics and gradients.      
+    separate from the Weights' Tensor values, but which are looked up by Weights as 
+    keys.  These are typically used to store sufficient statistics and gradients.      
   - Models no longer have weights by default.  Inherit from Parameters
     to provide "def parameters: WeightsSet".  For example, many places you
     previously had "TemplateModel" will now need "TemplateModel with Parameters".
+  - The syntax for creating weights inside a DotFamily or DotTemplate has changed.
+    Rather than "lazy val weights = new DenseTensor1(mydomain.size)" instead
+    "val weights = Weights(DenseTensor1(mydomain.size))" 
     
 * Inference
   - There is no more optional Summary argument to Infer.infer: if
@@ -42,7 +45,8 @@ New in version 1.0.0-M4:
     way of storing weights. Now Example.accumulateExampleInto no longer
     gets passed a model. The Trainers also no longer need models, but just
     their weightsSets, which can be obtained from model.parameters if the
-    model has Parameters.
+    model has Parameters.  Hence previous calls to "BatchTrainer(model, new AdaGrad)"
+    must be changed to "BatchTrainer(model.parameters, new AdaGrad)"
   - The trainers have been renamed for clarity. We now have two parallel
     batch trainers: ParallelBatchTrainer, which locks the accumulator, and
     works better with examples which take a long time to compute (things
@@ -63,7 +67,7 @@ New in version 1.0.0-M4:
 
 * NLP
   - New DocumentAnnotator infrastructure; automatically invokes prerequisites.
-  - New documentAnnotators for tokenization, lemmatization, part-of-speech tagging, 
+  - New DocumentAnnotators for tokenization, lemmatization, part-of-speech tagging, 
     mention chunking, dependency parsing.
   - Various label domains now constant, e.g., PTBPosDomain, ConllNerDomain.
     PosLabel removed and replaced by PTBPosLabel.
