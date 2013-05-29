@@ -38,7 +38,7 @@ object ChainNER4 {
   class Sentence extends Chain[Sentence,Token]
   
   // The model
-  val model = new TemplateModel {
+  val model = new TemplateModel with Parameters {
     // Bias term on each individual label
     object bias extends DotTemplateWithStatistics1[Label] {
       val weights = Weights(new la.DenseTensor1(LabelDomain.size))

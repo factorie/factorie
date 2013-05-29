@@ -59,7 +59,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
       def unroll1(data: Data) = Factor(data, data.score)
       def unroll2(prob: Prob) = Nil
     }
-    val model = new TemplateModel { addTemplates(new SimpleTemplate(this)) }
+    val model = new TemplateModel with Parameters { addTemplates(new SimpleTemplate(this)) }
     val objective = new HammingTemplate[Data]
 
     val pieces = new ArrayBuffer[LikelihoodExample]
@@ -136,7 +136,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
       bools(bools.length - 1).next = bools(0)
       logger.debug("NUM BOOL VARS: " + bools.size)
 
-      model = new TemplateModel {
+      model = new TemplateModel with Parameters {
         this += new DotTemplateWithStatistics2[MyBool, MyBool] {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))
           val weights = Weights(new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size))

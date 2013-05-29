@@ -36,7 +36,7 @@ class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[Str
   override def skipNonCategories = true
 } 
 
-class ChainNer21Model extends TemplateModel {
+class ChainNer21Model extends TemplateModel with Parameters {
   
   // Bias term on each individual label 
   val biasTemplate = new DotTemplateWithStatistics1[ChainNerLabel] {
@@ -62,7 +62,7 @@ class ChainNer21Model extends TemplateModel {
   this += transitionTemplate
 }
 
-class ChainNer2Model extends TemplateModel {
+class ChainNer2Model extends TemplateModel with Parameters {
   // Bias term on each individual label 
   val bias = new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"

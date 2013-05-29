@@ -18,7 +18,7 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](val model
 }
 
 // TODO Consider renaming this DotModel, like DotMaximumLikelihood
-class LogLinearModel[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel {
+class LogLinearModel[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel with Parameters {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteDimensionTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   val biasTemplate = new LogLinearTemplate1[L](this, labelStatisticsDomain)
   val evidenceTemplate = new LogLinearTemplate2[L,F](this, lf, fl, labelStatisticsDomain, featureStatisticsDomain)

@@ -42,7 +42,7 @@ object ChainNER2 {
   
   // The model
   val excludeSkipEdges = true
-  val model = new TemplateModel {
+  val model = new TemplateModel with Parameters {
     addTemplates(
       // Bias term on each individual label
       new DotTemplateWithStatistics1[Label] {

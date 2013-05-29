@@ -46,7 +46,7 @@ abstract class SpanNerTemplate(val model: Parameters) extends DotTemplate2[NerSp
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
 
-class SpanNerModel extends TemplateModel{
+class SpanNerModel extends TemplateModel with Parameters {
   self =>
   addTemplates(
     // Bias term on each individual label 

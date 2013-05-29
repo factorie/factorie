@@ -37,7 +37,7 @@ object WordSegmenterDemo {
   class Sentence extends Chain[Sentence,Token]
 
     // The factor templates that define the model
-  val model = new TemplateModel
+  val model = new TemplateModel with Parameters
   /** Bias term just on labels */
   model += new DotTemplateWithStatistics1[Label] {
     val weights = model.Weights(new la.DenseTensor1(BooleanDomain.size))

@@ -38,7 +38,7 @@ object DocumentClassifier3 {
     def domain = LabelDomain
   }
 
-  val model = new TemplateModel {
+  val model = new TemplateModel with Parameters {
     addTemplates(
       /** Bias term just on labels */
       new DotTemplateWithStatistics1[Label] {
