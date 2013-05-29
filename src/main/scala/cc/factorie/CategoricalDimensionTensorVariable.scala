@@ -86,27 +86,3 @@ abstract class CategoricalDimensionTensorVariable[C] extends MutableTensorVar[Te
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }
 
-/** The standard variable for holding binary feature vectors.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
-    @author Andrew McCallum */
-abstract class BinaryFeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
-  def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
-  set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
-  override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
-}
-
-/** The standard variable for holding feature vectors with non-binary values.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
-    @author Andrew McCallum */
-abstract class FeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
-  def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
-  set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
-  override def toString: String = {
-    val b = new StringBuilder; b append printName; b append "("
-    tensor.foreachActiveElement((i,v) => {
-      b append domain.dimensionDomain.category(i)
-      b append "="; b append v; b append ","
-    })
-    b.dropRight(1); b.append(")"); b.toString
-  } 
-}
