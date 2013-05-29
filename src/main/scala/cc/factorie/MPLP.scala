@@ -8,18 +8,14 @@ import scala.collection.mutable.ArrayBuffer
  * Date: 5/29/13
  * Time: 8:46 AM
  */
-class MPLP(variables: Seq[DiscreteVar], model: Model) extends cc.factorie.util.GlobalLogging {
+class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) extends cc.factorie.util.GlobalLogging {
   val varying = variables.toSet
 
   class MPLPFactor(val factor: Factor) {
     val thisVariables = factor.variables.toSet
     val varyingVariables = thisVariables.filter(v => v.isInstanceOf[DiscreteVar]).map(_.asInstanceOf[DiscreteVar]).filter(varying.contains).toSet
     val lambdas = varyingVariables.map(v => (v -> new DenseTensor1(v.domain.size))).toMap
-
-    def mapScore: Double = {
-      getMaxMarginals(varyingVariables.head.asInstanceOf[DiscreteVar]).max
-    }
-
+    def mapScore: Double = getMaxMarginals(varyingVariables.head).max
     def getMaxMarginals(v: DiscreteVar): DenseTensor1 = {
       assert(varyingVariables.contains(v))
       val marginals = new DenseTensor1(v.domain.size)
@@ -46,12 +42,13 @@ class MPLP(variables: Seq[DiscreteVar], model: Model) extends cc.factorie.util.G
             }
             marginals(value) = maxScore
           }
+        case _ => throw new Error("There is no efficient way to marginalize over an arbitrary number of neighbors")
       }
       marginals += lambdas(v)
       marginals
     }
   }
-  def near(a: Double, b: Double, eps: Double = 0.000001): Boolean = math.abs(a - b) < (math.max(a,b)*eps + eps)
+  @inline final def near(a: Double, b: Double, eps: Double = 0.000001): Boolean = math.abs(a - b) < (math.abs(a)*eps + eps)
 
   def isConverged(maxMarginals: Seq[DenseTensor1]): Boolean = {
     val maxIndex0 = maxMarginals.head.maxIndex
@@ -72,7 +69,9 @@ class MPLP(variables: Seq[DiscreteVar], model: Model) extends cc.factorie.util.G
       maxMarginals.foreach(sumMarginals += _)
       sumMarginals *= 1.0/(maxMarginals.length)
       for (i <- 0 until factors.length) {
-        factors(i).lambdas(v) += (maxMarginals(i)-sumMarginals,-1)
+        val lambda = factors(i).lambdas(v)
+        for (j <- 0 until lambda.length)
+          lambda(j) += sumMarginals(j) - maxMarginals(i)(j)
       }
       assert(isConverged(factors.map(_.getMaxMarginals(v))))
     }
@@ -89,11 +88,13 @@ class MPLP(variables: Seq[DiscreteVar], model: Model) extends cc.factorie.util.G
       }
     }
     var converged = true
+    var i = 0
     do {
       converged = true
       for (v <- variables) converged = converged && updateMessages(v.asInstanceOf[DiscreteVar], variableFactors(v))
       logger.debug("Dual is: " + factors.map(_.mapScore).sum)
-    } while (!converged)
+      i += 1
+    } while (!converged && i < maxIterations)
     val assignment = new HashMapAssignment()
     for (v <- variables) {
       assignment.update(v, v.domain(variableFactors(v).head.getMaxMarginals(v).maxIndex).asInstanceOf[DiscreteVar#Value])
