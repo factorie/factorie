@@ -64,6 +64,8 @@ New in version 1.0.0-M4:
     l1/l2 regularized adagrad dual averaging, Pegasos, and
     L2RegularizedConstantRate, which do l2 regularization.
   - SampleRankTrainer moved to cc.factorie.optimize.
+  - New framework for linear objective functions, along with Examples
+    for multiclass/binary classification and multi/univariate regression.
 
 * NLP
   - New DocumentAnnotator infrastructure; automatically invokes prerequisites.
@@ -88,16 +90,15 @@ New in version 1.0.0-M4:
     DepParser2 is a state-of-the-art non-projective shift-reduce dependency parser.
     GraphProjectiveParser is a first-order projective dependency parser.
   
-  
-   
-Luke
-  Linear classifiers 
-  la package, SparseTensor
-  Big serialization changes
-  Domains now have locking
-  HashFeatureVector
-  
+* Serialization
+  - Domains and models can be serialized and deserialized in an order-independent manner.
+  - Serialization support for many different types of tensors.
 
+* Linear algebra
+  - Tensor trait hierarchy refactoring: explicit trait SparseTensor, singleton tensors
+    now implement the appropriate binary/indexed sparse tensor trait, added parent trait
+    Outer2Tensor to share efficient operations for outer products.
+  - Performance improvements to sparse tensors.
 
 
 New in version 1.0.0-M3:
