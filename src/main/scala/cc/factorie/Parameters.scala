@@ -3,9 +3,9 @@ package cc.factorie
 import cc.factorie.la._
 import scala.collection.mutable
 
-/** And object containing a WeightsSet member, which is an extensible WeightsMap for holding weights, with factories for dense and sparse copying.
-    The most common use-case is "MyModel extends Model with Parameters". For efficiency the weights are stored in the Weights keys themselves,*/
-
+/** An object with a "parameters" method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.
+    This trait also provides methods called "Weights" which create new Weights objects that are automatically added to the parameters WeightsSet.
+    The most common use-case is "MyModel extends Model with Parameters". */
 trait Parameters {
   val parameters: WeightsSet = new WeightsSet
 
@@ -15,9 +15,8 @@ trait Parameters {
   def Weights(t4: => Tensor4): Weights4 = parameters.newWeights(t4)
 }
 
-/* This implementation actually stores the weights in the Weights themselves instead
- * of storing them in the map itself. This is just for efficiency, as the API remains the same.
- */
+/** A TensorSet used for holding parameters.
+    Here the actually Tensors are the ones stored in the Weights key themselves. */
 class WeightsSet extends TensorSet {
   self =>
   private val _keys = mutable.ArrayBuffer[Weights]()
@@ -31,25 +30,25 @@ class WeightsSet extends TensorSet {
   def copy: WeightsMap = { val copyTensor = new WeightsMap(key => key.newBlankTensor); copyTensor += self; copyTensor }
   def blankDenseMap: WeightsMap = new WeightsMap(key => Tensor.newDense(key.value))
   def blankSparseMap: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
+  
+  // Weights are created here to ensure that they are immediately associate with one and only one WeightsSet.
+  def newWeights(ctor: => Tensor): Weights = new Weights with ConcreteWeights with VarWithValue[Tensor] { def newBlankTensor = ctor }
+  def newWeights(ctor: => Tensor1): Weights1 = new Weights1 with ConcreteWeights { def newBlankTensor = ctor }
+  def newWeights(ctor: => Tensor2): Weights2 = new Weights2 with ConcreteWeights { def newBlankTensor = ctor }
+  def newWeights(ctor: => Tensor3): Weights3 = new Weights3 with ConcreteWeights { def newBlankTensor = ctor }
+  def newWeights(ctor: => Tensor4): Weights4 = new Weights4 with ConcreteWeights { def newBlankTensor = ctor }
 
-  // TODO Why not create Weights separately, and then add Weights to the WeightsSet?  This would enable "new TemplateModel(MyTemplate1, MyTemplate2)".
-  // TODO Would it be a problem for one Weights to belong to more than one WeightsSet?  I don't think so.
-  def newWeights(ctor: => Tensor): Weights = new Weights with InnerKey with VarWithValue[Tensor] { def newBlankTensor = ctor }
-  def newWeights(ctor: => Tensor1): Weights1 = new Weights1 with InnerKey { def newBlankTensor = ctor }
-  def newWeights(ctor: => Tensor2): Weights2 = new Weights2 with InnerKey { def newBlankTensor = ctor }
-  def newWeights(ctor: => Tensor3): Weights3 = new Weights3 with InnerKey { def newBlankTensor = ctor }
-  def newWeights(ctor: => Tensor4): Weights4 = new Weights4 with InnerKey { def newBlankTensor = ctor }
+  override def -(other: TensorSet): WeightsMap = { val newT = copy; newT += (other, -1); newT }
 
-  override def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
-
-  private trait InnerKey extends Weights {
+  private trait ConcreteWeights extends Weights {
     _keys.append(this)
-    var _actualWeights: Value = null.asInstanceOf[Value]
-    def value = { if (_actualWeights eq null) { _actualWeights = newBlankTensor }; _actualWeights }
-    def set(t: Tensor): Unit = _actualWeights = t.asInstanceOf[Value]
+    private var _value: Value = null.asInstanceOf[Value]
+    def value = { if (_value eq null) { _value = newBlankTensor }; _value }
+    def set(t: Tensor): Unit = _value = t.asInstanceOf[Value] // TODO I'd love to be able to avoid this cast. -akm
   }
 }
 
+/** A TensorSet in which the Tensors themselves are stored in a map inside this object. */
 class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
   private val _map = new mutable.LinkedHashMap[Weights, Tensor]
   // Note that for sparse tensor hash sets, "keys" only gives you the keys that have been added thus far
@@ -65,6 +64,7 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
   override def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
 }
 
+/** A collection of Tensors each associated with a Weights key. */
 trait TensorSet {
   def keys: Seq[Weights]
   def tensors: Seq[Tensor]
@@ -102,6 +102,7 @@ trait TensorSet {
   }
 }
 
+/** A TensorVar that is also used as a key in a TensorSet. */
 trait Weights extends TensorVar {
   def newBlankTensor: Value
   def value: Value
@@ -115,6 +116,7 @@ trait Weights2 extends Weights with VarWithValue[Tensor2]
 trait Weights3 extends Weights with VarWithValue[Tensor3]
 trait Weights4 extends Weights with VarWithValue[Tensor4]
 
+/** A Cubbie for serializing a WeightsSet.  Typically used for saving parameters to disk. */
 class WeightsSetCubbie(val ws: WeightsSet) extends Cubbie {
   // we write directly into the WeightsSet so that if we deserialize the weights before the domains, we can give everything the right size from the file
   // This uses indices as keys and so relies on WeightsSet storing its contents in a LinkedHashMap which preserves order

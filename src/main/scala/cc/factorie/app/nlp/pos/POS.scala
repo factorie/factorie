@@ -28,7 +28,7 @@ import util._
 object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
-object PosModel extends TemplateModel {
+object PosModel extends TemplateModel with Parameters {
   // Bias term on each individual label
   val bias = new DotTemplateWithStatistics1[PTBPosLabel] {
     //override def statisticsDomains = Tuple1(PosDomain)

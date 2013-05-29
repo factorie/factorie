@@ -744,7 +744,7 @@ class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterW
   }
 }
 
-class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends TemplateModel {
+class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends TemplateModel with Parameters {
   /*
     this += new ChildParentTemplateWithStatistics[FullName] {
     def score(s:Statistics): Double = {

@@ -27,7 +27,7 @@ object Coref4{
     def bow = attr[Bow]
     for(keyword <- keywords)bow += keyword
   }
-  class SimpleHierModel extends TemplateModel {
+  class SimpleHierModel extends TemplateModel with Parameters {
     addTemplates(
       new ChildParentTemplateWithStatistics[Name]{
         override def score(er:EntityRef#Value, childName:Name#Value, parentName:Name#Value):Double = { -childName.editDistance(parentName).toDouble }

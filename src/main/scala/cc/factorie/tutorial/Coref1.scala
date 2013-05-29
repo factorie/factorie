@@ -29,7 +29,7 @@ object Coref1 {
     def domain = CorefAffinityDomain
   }
 
-  class EntityMentionModel extends TemplateModel {
+  class EntityMentionModel extends TemplateModel with Parameters {
     this += new DotTemplate1[EntityRef] {
       val weights = Weights(new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize))
       //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
@@ -64,7 +64,7 @@ object Coref1 {
     }
   }
 
-  class PairwiseModel extends TemplateModel {
+  class PairwiseModel extends TemplateModel with Parameters {
     addTemplates(
       new DotTemplate1[EntityRef] {
         val weights = Weights(new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize))

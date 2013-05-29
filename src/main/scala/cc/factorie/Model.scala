@@ -169,12 +169,17 @@ class CombinedModel(theSubModels:Model*) extends Model {
   override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
 }
 
-// TODO templates don't need to have parameters - strongly consider removing "with Parameters" -akm
-class TemplateModel(theTemplates:Template*) extends Model with Parameters {
+/** A Model whose Factors come from Templates.
+    If you want your TemplateModel to have learnable parameters, then also extend Parameters.
+    @author Andrew McCallum */
+class TemplateModel(theTemplates:Template*) extends Model {
   val templates = new ArrayBuffer[Template] ++= theTemplates
   def +=[T<:Template](template:T): T = { templates += template; template }
   def ++=[T<:Template](templates:Iterable[T]): Iterable[T] = { this.templates ++= templates; templates }
-  def addTemplates(models: Template*) = this ++= models // TODO I don't like this method -akm
+  // Just a method name aliase, aiming to make use inside the TemplateModel subclass prettier.
+  def addTemplate[T<:Template](template:T): T = { templates += template; template }
+  // Just a method name aliase, aiming to make use inside the TemplateModel subclass prettier.
+  def addTemplates[T<:Template](templates:T*): Iterable[T] = { this.templates ++= templates; templates }
   def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
   override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result))
   def families: Seq[Template] = templates

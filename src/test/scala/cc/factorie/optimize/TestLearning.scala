@@ -37,8 +37,8 @@ class TestLearning {
     })
   }
 
-  def createModel(): TemplateModel =
-    new TemplateModel {
+  def createModel(): TemplateModel with Parameters =
+    new TemplateModel with Parameters {
       this += new DotTemplateWithStatistics1[Label] {
         val weights = Weights(new DenseTensor1(LabelDomain.size))
 

@@ -40,7 +40,7 @@ object ChainNER2b {
   class Sentence extends Chain[Sentence,Label]
   
   // The model
-  val model = new TemplateModel {
+  val model = new TemplateModel with Parameters {
     addTemplates(
       // Bias term on each individual label
       new DotTemplateWithStatistics1[Label] {

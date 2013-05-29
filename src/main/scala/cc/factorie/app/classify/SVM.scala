@@ -22,7 +22,7 @@ object SVMTrainer {
 
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](ll: LabelList[L, F]): Classifier[L] = {
-    val model = new TemplateModel()
+    val model = new TemplateModel with Parameters
     model += new LogLinearTemplate2[L,F](model, ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
     SVMTrainer.train(model, ll.labelDomain.length, ll.featureDomain.dimensionSize, ll.toSeq, ll.toSeq.map(ll.labelToFeatures), parallel)
     new ModelBasedClassifier(model, ll.head.domain)
