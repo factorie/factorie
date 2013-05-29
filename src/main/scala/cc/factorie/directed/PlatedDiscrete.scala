@@ -12,19 +12,20 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import cc.factorie.util.DoubleSeq
 import scala.collection.mutable.ArrayBuffer
 
 /*
-trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
+trait PlatedDiscreteGeneratingFactor extends DirectedFactor {
   def prValue(s:StatisticsType, value:Int, index:Int): Double
   def prValue(value:Int, index:Int): Double = prValue(statistics, value, index)
 }
 */
 
-object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,ProportionsVariable] {
+object PlatedDiscrete extends DirectedFamily2[DiscreteSeqVariable,ProportionsVariable] {
   self =>
   //def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def pr(ds:DiscreteSeqVariable#Value, p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes
@@ -44,7 +45,7 @@ object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,ProportionsV
   def newFactor(a:DiscreteSeqVariable, b:ProportionsVariable) = Factor(a, b)
 }
 
-object PlatedCategorical extends GenerativeFamily2[CategoricalSeqVariable[String],ProportionsVariable] {
+object PlatedCategorical extends DirectedFamily2[CategoricalSeqVariable[String],ProportionsVariable] {
   self =>
   //def pr(ds:Seq[CategoricalValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def pr(ds:IndexedSeq[CategoricalValue[String]], p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes

@@ -12,18 +12,16 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp.coref
-import cc.factorie._
-import cc.factorie.app.nlp._
-import scala.collection.mutable.{ArrayBuffer,ListBuffer}
+package cc.factorie.directed
 
-class PairwiseLabel(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends LabeledBooleanVariable(b) {
-  def other(m:PairwiseMention): Option[PairwiseMention] = if(m == m1) Some(m2) else if (m == m2) Some(m1) else None
-}
-trait PairwiseMention extends TokenSpan with Entity {
-  val edges = new ArrayBuffer[PairwiseLabel]
-  var _head: Token = null
-  def headToken: Token = _head
-  // this is done for cases where the mention is split across multiple sentence in error (e.g. in reACE: george w. | bush)
-  override def sentence = if (_head ne null) headToken.sentence else super.sentence
+import cc.factorie._
+
+object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
+  case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {
+    def pr(k:Int, mean:Double): Double = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
+    //def pr(s:Statistics): Double = pr(s._1, s._2)
+    def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+    //def sampledValue(s:Statistics): Int = sampledValue(s._2)
+  }
+  def newFactor(a:IntegerVar, b:DoubleVar) = Factor(a, b)
 }

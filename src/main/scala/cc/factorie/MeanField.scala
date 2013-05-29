@@ -13,7 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.generative._
+import cc.factorie.directed._
 import scala.collection.mutable.HashMap
 
 /** An inferencer for mean field inference.

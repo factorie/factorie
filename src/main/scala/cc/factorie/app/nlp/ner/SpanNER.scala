@@ -25,7 +25,8 @@ class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLa
   def domain = ConllNerDomain
 }
 
-class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.coref.TokenSpanMention {
+// TODO this shouldn't extend hcoref Mention
+class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
   val label = new Conll2003SpanNerLabel(this, labelString)
   def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
     (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 

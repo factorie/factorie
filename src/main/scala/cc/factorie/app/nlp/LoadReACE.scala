@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp
 
-import coref._
+import hcoref._
 import ner.NerSpan
 import pos.PTBPosLabel
 import relation.RelationVariables.{RelationMention, RelationMentions}

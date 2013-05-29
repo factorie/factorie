@@ -14,16 +14,17 @@
 
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
+import cc.factorie.directed._
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
-           val burnIn: Int = 100)(implicit val model:MutableGenerativeModel) {
-  def this(numTopics:Int, alpha1:Double, beta1:Double, burnIn:Int) = this(new CategoricalSeqDomain[String], numTopics, alpha1, beta1, burnIn)(GenerativeModel())
+           val burnIn: Int = 100)(implicit val model:MutableDirectedModel) {
+  def this(numTopics:Int, alpha1:Double, beta1:Double, burnIn:Int) = this(new CategoricalSeqDomain[String], numTopics, alpha1, beta1, burnIn)(DirectedModel())
   var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain(numTopics)
@@ -53,7 +54,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain) ~ Dirichlet(betas))
   
-  protected def setupDocument(doc:Doc, m:MutableGenerativeModel): Unit = {
+  protected def setupDocument(doc:Doc, m:MutableDirectedModel): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 0)  // was > 1
     if (doc.theta eq null) doc.theta = ProportionsVariable.sortedSparseCounts(numTopics)
@@ -89,7 +90,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
       for (i <- 1 to iterations) sampler.process(doc.zs)
     } else {
-      val m = GenerativeModel()
+      val m = DirectedModel()
       setupDocument(doc, m)
       //println("LDA.inferDocumentTheta: model factors = "+m.allFactors)
       //println("LDA.inferDocumentTheta: zs factors = "+m.factors(Seq(doc.zs)))
@@ -300,7 +301,7 @@ class LDACmd {
     opts.parse(args)
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    val model = GenerativeModel()
+    val model = DirectedModel()
     val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
@@ -460,7 +461,7 @@ class LDACmd {
 
     println("loading model with " + numTopics + " topics")
 
-    val lda = new LDA(wordSeqDomain, numTopics)(GenerativeModel()) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
+    val lda = new LDA(wordSeqDomain, numTopics)(DirectedModel()) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
     while(lines.hasNext) {
       line = lines.next()
       var tokens = new ArrayBuffer[String]

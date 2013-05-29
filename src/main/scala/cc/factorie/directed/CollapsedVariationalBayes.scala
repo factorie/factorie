@@ -12,12 +12,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
+
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var], model:GenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var], model:DirectedModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
@@ -63,7 +65,7 @@ trait CollapsedVariationalBayesHandler {
 
 
 // Collapses LDA's theta, but not phi; gets marginals for Zs
-class PlatedGateCollapsedVariationalBayes(val model:GenerativeModel, val summary:Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]] = new Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]]) {
+class PlatedGateCollapsedVariationalBayes(val model:DirectedModel, val summary:Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]] = new Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]]) {
   
   def infer(gates:DiscreteSeqVariable, iterations:Int): Unit = {
     val factors = model.factors(gates)

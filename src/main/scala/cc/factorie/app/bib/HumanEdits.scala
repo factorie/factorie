@@ -4,7 +4,7 @@ import _root_.cc.factorie.app.bib.HumanEditExperiments.ExpAttributeEdit
 import _root_.cc.factorie.app.bib.HumanEditExperiments.ExpSplitEdit
 import cc.factorie.util.Attr
 import cc.factorie._
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 import experiments.DebugDiffList
 import java.io.{PrintWriter, File, BufferedWriter}
 import collection.mutable.{HashMap,HashSet, ArrayBuffer}

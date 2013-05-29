@@ -12,14 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import cc.factorie.util.SortedSparseCounts
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class CategoricalMixture[A] extends GenerativeFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
+class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
   case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {
     def gate = _3
     def pr(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], z:DiscreteValue): Double = mixture(z.intValue).apply(child.intValue)

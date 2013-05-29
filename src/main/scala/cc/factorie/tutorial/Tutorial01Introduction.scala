@@ -19,7 +19,7 @@ Its key features include the following:
 - It is embedded into a general purpose programming language, providing model authors with familiar and extensive resources for implementing the procedural aspects of their solution, including the ability to beneficially mix data pre-processing, diagnostics, evaluation, and other book-keeping code in the same files as the probabilistic model specification.
 - It allows the use of imperative (procedural) constructs to define the factor graph---an unusual and powerful facet that enables significant efficiencies and also supports the injection of both declarative and procedural domain knowledge into model design.
 - The structure of generative models can be expressed as a program that describes the generative storyline by creating variables and specifying their parents.  
-  The structure undirected graphical models can be specified similarly by explicitly creating factors and specifying their neighboring variables.
+  The structure of undirected graphical models can be specified similarly by explicitly creating factors and specifying their neighboring variables.
   However, most commonly the creation of factors for relational data is defined in templates which contain functions that create the necessary factors in a Turing-complete imperative style.  
   This usage of imperative programming to define various aspects of factor graph construction and operation is an innovation originated in FACTORIE; we term this approach imperatively-defined factor graphs.  The above three methods for specifying relational factor graph structure can be mixed in the same model.
 

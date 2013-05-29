@@ -12,12 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[Var], val model:GenerativeModel) extends Sampler[Iterable[MutableVar[_]]] {
+class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel) extends Sampler[Iterable[MutableVar[_]]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -92,13 +93,13 @@ trait CollapsedGibbsSamplerClosure {
 object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.size != 1) return null
-    val pFactor = factors.collectFirst({case f:GenerativeFactor => f}) // TODO Yipes!  Clean up these tests!
+    val pFactor = factors.collectFirst({case f:DirectedFactor => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
     // Make sure all parents are collapsed?
     //if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
     new Closure(pFactor.get)
   }
-  class Closure(val factor:GenerativeFactor) extends CollapsedGibbsSamplerClosure {
+  class Closure(val factor:DirectedFactor) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       factor.updateCollapsedParents(-1.0)
       val variable = factor.child.asInstanceOf[MutableVar[_]]

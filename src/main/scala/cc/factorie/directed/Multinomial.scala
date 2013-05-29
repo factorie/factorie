@@ -14,7 +14,7 @@
 
 
 
-package cc.factorie.generative
+package cc.factorie.directed
 import cc.factorie._
 
 /** A collection of discrete counts generated according a multinomial distribution. */

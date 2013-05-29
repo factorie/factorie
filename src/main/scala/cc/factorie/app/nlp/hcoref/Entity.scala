@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.hcoref
 import cc.factorie._
 import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer,LinkedList}

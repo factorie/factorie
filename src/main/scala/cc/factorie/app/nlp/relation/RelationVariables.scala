@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.relation
 
 import cc.factorie._
-import app.nlp.coref.PairwiseMention
+import app.nlp.hcoref.PairwiseMention
 import app.nlp.{Token, Document}
 import collection.mutable.ArrayBuffer
 
