@@ -21,7 +21,7 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
     By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
     this convention differs from other Infer instances, which do not typically change variable values.  */
 trait Maximize extends Infer {
-  def maximize(vs:Iterable[Var], model:Model, summary:Summary[Marginal] = null) = infer(vs, model, summary).get.setToMaximize(null)
+  def maximize(vs:Iterable[Var], model:Model, summary:Summary = null) = infer(vs, model, summary).get.setToMaximize(null)
   // TODO Consider adding the following
   //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
 }
@@ -41,17 +41,17 @@ class MaximizeSuite extends Maximize {
   val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
   suite ++= defaultSuite
   //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
-  override def infer(varying:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
+  override def infer(varying:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
-    var option: Option[Summary[Marginal]] = None
+    var option: Option[Summary] = None
     val iterator = suite.iterator
     while (option == None && iterator.hasNext) {
       option = iterator.next().infer(varying, model, summary)
     }
     option
   }
-  def apply(varying:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Summary[Marginal] = {
+  def apply(varying:Iterable[Var], model:Model, summary:Summary = null): Summary = {
     val option = infer(varying, model, summary)
     if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass.getName; case f:Factor => f.getClass.getName }).mkString(" "))
     option.get.setToMaximize(null)

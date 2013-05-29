@@ -184,7 +184,7 @@ trait BPFactorMaxProduct extends BPFactor {
 }
 
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
-abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
+abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends SimpleDiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
   override def scores: Tensor1
   def hasLimitedDiscreteValues1: Boolean
   def limitedDiscreteValues1: SparseBinaryTensor1
@@ -201,7 +201,7 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Disc
 
 
 // A BPFactor1 with underlying model Factor1, with the one neighbor varying
-abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1Factor1[DiscreteVar] {
+abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1[DiscreteVar] with DiscreteMarginal1Factor1[DiscreteVar] {
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
@@ -220,7 +220,7 @@ abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, 
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
-abstract class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteDimensionTensorVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1Factor2[DiscreteVar,DiscreteDimensionTensorVar] {
+abstract class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteDimensionTensorVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1[DiscreteVar] with DiscreteMarginal1Factor2[DiscreteVar,DiscreteDimensionTensorVar] {
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = {
@@ -466,7 +466,7 @@ object LoopyBPSummaryMaxProduct {
 
 // Just in case we want to create different BPSummary implementations
 // TODO Consider removing this
-trait AbstractBPSummary extends Summary[DiscreteMarginal] {
+trait AbstractBPSummary extends Summary {
   def ring: BPRing
   //def factors: Iterable[Factor]
   def bpVariable(v:DiscreteVar): BPVariable1
@@ -484,7 +484,8 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   protected val _bpVariables = new LinkedHashMap[DiscreteDimensionTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
-  override def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
+  def factorMarginals = factors.head.map(marginal)
+  def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
   //def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals: Iterable[DiscreteMarginal] = _bpFactors.values // ++ _bpVariables.values
@@ -492,7 +493,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   //def marginal(f:Factor): DiscreteMarginal = { val vset = f.variables.toSet; val factors = _bpFactors.values.filter(bpf => bpf.variables.toSet == vset); require(factors.size == 1); factors.head } // Need to actually combine if more than one
   //def marginal(vs: Var*): DiscreteMarginal = {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
-  override def marginal(f: Factor): BPFactor = _bpFactors(f)
+  def marginal(f: Factor): BPFactor = _bpFactors(f)
   // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
   var _logZ = Double.NaN
   override def logZ: Double = {
@@ -715,18 +716,18 @@ object BP {
 }
 
 trait InferByBP extends Infer {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = None
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = None
 }
 
 object InferByBPTreeSum extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
@@ -737,7 +738,7 @@ object InferByBPLoopy extends InferByBP {
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
@@ -746,7 +747,7 @@ object InferByBPLoopyTreewise extends InferByBP {
 }
 
 object MaximizeByBPLoopy extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
@@ -757,7 +758,7 @@ object MaximizeByBPLoopy extends Maximize with InferByBP {
 }
 
 object InferByBPChainSum extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
     case _ => None
   }
@@ -765,7 +766,7 @@ object InferByBPChainSum extends InferByBP {
 }
 
 object MaximizeByBPChain extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
     case _ => None
   }
@@ -773,7 +774,7 @@ object MaximizeByBPChain extends Maximize with InferByBP {
 }
 
 object MaximizeByBPTree extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[BPSummary] = variables match {
     case variables:Iterable[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeMarginalMax(varying, model)

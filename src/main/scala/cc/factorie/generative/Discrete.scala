@@ -52,15 +52,15 @@ object MaximizeGeneratedDiscrete extends Maximize {
     }
   }
   def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = for (d <- varying) apply(d, model)
-  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
+  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[SimpleDiscreteMarginal1[V]] = {
     val dFactors = model.factors(varying)
     require(dFactors.size == 1)
     dFactors.head match {
-      case factor:Discrete.Factor => Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))
+      case factor:Discrete.Factor => Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))
       case _ => None
     }
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     val result = new DiscreteSummary1[DiscreteVariable]

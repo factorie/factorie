@@ -18,7 +18,7 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 // TODO Should we also store the input features here? -akm
 /** The result of applying a Classifier to a Label. */
-class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classifier[L], theProportions:Proportions1) extends DiscreteMarginal1(theLabel, theProportions) {
+class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classifier[L], theProportions:Proportions1) extends SimpleDiscreteMarginal1(theLabel, theProportions) {
   final def label = _1
   val bestLabelIndex = proportions.maxIndex
   def bestLabelValue = label.domain.apply(bestLabelIndex)

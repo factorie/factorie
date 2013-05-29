@@ -21,7 +21,7 @@ import scala.collection.mutable.HashMap
     It is also the procedure for updating the Q. */
 trait MeanField {
   def updateQ: Unit
-  def summary: Summary[Marginal]
+  def summary: Summary
 }
 
 /** Performs naive mean field inference with a Q Summary that is a set of independent Discrete distributions */
@@ -66,5 +66,5 @@ object InferByMeanField extends Infer {
     for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
 }
