@@ -15,14 +15,15 @@
 package cc.factorie.tutorial
 
 import cc.factorie._
-import cc.factorie.generative._
-import la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
+import cc.factorie.directed._
+import cc.factorie.la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
+import cc.factorie.directed._
 
 
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 2
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture(numComponents)(new DoubleVariable(random.nextDouble * 10))
@@ -62,7 +63,7 @@ object GaussianMixtureDemo {
 object MultivariateGaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 2
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture[MutableTensorVar[Tensor1]](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
@@ -71,7 +72,7 @@ object MultivariateGaussianMixtureDemo {
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
     // Generate some data
     val data = for (i <- 1 to 1000) yield {
-      val z = new Z :~ Discrete(mixtureProportions)
+      val z = new Z :~ directed.Discrete(mixtureProportions)
       new TensorVariable[Tensor1] :~ MultivariateGaussianMixture(meanComponents, varianceComponents, z)
     }
     // A convenience function for getting the Z for a particular DoubleVar data variable x

@@ -5,11 +5,10 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.la._
-import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
-import cc.factorie.util.DoubleSeq
+import cc.factorie.directed._
 
 // A fast approximation to Topics-over-Time that leverages SparseLDAInferencer.
 // Estimate a per-topic Beta distribution over normalized time stamps.
@@ -36,7 +35,7 @@ object LDA5 {
   val timeAlphas = new Array[Double](numTopics)
   val timeBetas  = new Array[Double](numTopics)
   val timeMeans = new DenseTensor1(numTopics)
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   
   def estimateTopicTimes(documents:Seq[Document]): Unit = {
     val topic2times = Array.tabulate(numTopics)(i => new cc.factorie.util.DoubleArrayBuffer)
@@ -58,8 +57,8 @@ object LDA5 {
     val topic2variance = Array.tabulate(numTopics)(i => if (topic2times(i).length > 1) maths.sampleVariance(topic2times(i), topic2mean(i)) else 0.25)
     timeMeans := topic2mean
     for (i <- 0 until numTopics) {
-      timeAlphas(i) = cc.factorie.generative.MaximizeBetaByMomentMatching.maxAlpha(topic2mean(i), topic2variance(i))
-      timeBetas(i) =  cc.factorie.generative.MaximizeBetaByMomentMatching.maxBeta(topic2mean(i), topic2variance(i))
+      timeAlphas(i) = MaximizeBetaByMomentMatching.maxAlpha(topic2mean(i), topic2variance(i))
+      timeBetas(i) =  MaximizeBetaByMomentMatching.maxBeta(topic2mean(i), topic2variance(i))
     }
     // println("alphas "+timeAlphas.toSeq)
     // println("betas  "+timeBetas.toSeq)

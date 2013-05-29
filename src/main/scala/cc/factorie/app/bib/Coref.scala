@@ -3,7 +3,7 @@ import cc.factorie.app.bib.parser._
 import cc.factorie._
 import cc.factorie.app.bib.experiments._
 import cc.factorie.util.DefaultCmdOptions
-import app.nlp.coref._
+import app.nlp.hcoref._
 import db.mongo._
 import com.mongodb.{DB, Mongo}
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}
@@ -2328,7 +2328,7 @@ class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](m
   extends WeightedChildParentTemplate[B](model){
   def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }
-object ChildParentFeatureDomain extends CategoricalDimensionTensorDomain[String]{dimensionDomain.maxSize=10000}
+object ChildParentFeatureDomain extends CategoricalTensorDomain[String]{dimensionDomain.maxSize=10000}
 class ChildParentFeatureVector[A<:EntityAttr](child:A#Value,parent:A#Value) extends FeatureVectorVariable[String]{
   def domain = ChildParentFeatureDomain
 }

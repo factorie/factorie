@@ -12,11 +12,11 @@ import org.junit.Assert._
 
 class POS3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
-  object FeatureDomain extends CategoricalDimensionTensorDomain[String]
+  object FeatureDomain extends CategoricalTensorDomain[String]
   class ClassifierModel extends MultiClassModel {
     val evidence = Weights(new la.DenseTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize))
   }
-  val model = new ClassifierModel //LogLinearModel[CategoricalVariable[String], CategoricalDimensionTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
+  val model = new ClassifierModel //LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
   
   /** Local lemmatizer used for POS features. */
   protected def lemmatize(string:String): String = cc.factorie.app.strings.collapseDigits(string) // .toLowerCase?

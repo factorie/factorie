@@ -5,11 +5,12 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
-import app.topics.lda.TopicsOverTime.Word
-import cc.factorie.generative._
+import cc.factorie.app.topics.lda.TopicsOverTime.Word
+import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import java.util.Date
+import cc.factorie.directed._
 
 // An implementation of Topics-over-Time [Wang, McCallum, KDD 2006]
 // TODO Not yet finished; needs the appropriate CollapsedGibbsSampler handler
@@ -18,7 +19,7 @@ class TimeStampedDocument(domain:CategoricalSeqDomain[String], name:String, toke
 
 object TopicsOverTime {
   val numTopics = 10
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
@@ -45,7 +46,7 @@ object TopicsOverTime {
         doc.date = file.lastModified
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z :~ Discrete(doc.theta)
+          val z = new Z :~ directed.Discrete(doc.theta)
           val w = new Word(word)
           CategoricalMixture.newFactor(w, phis, z)
           doc += w

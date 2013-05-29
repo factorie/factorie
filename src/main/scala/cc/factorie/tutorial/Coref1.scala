@@ -1,7 +1,7 @@
 package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 
 object Coref1 {
 
@@ -22,7 +22,7 @@ object Coref1 {
   object CorefAffinityDimensionDomain extends EnumDomain {
     val Bias, ExactMatch, SuffixMatch, EntityContainsMention, EditDistance2, EditDistance4, NormalizedEditDistance9, NormalizedEditDistance5, Singleton = Value
   }
-  object CorefAffinityDomain extends CategoricalDimensionTensorDomain[String] {
+  object CorefAffinityDomain extends CategoricalTensorDomain[String] {
     override lazy val dimensionDomain = CorefAffinityDimensionDomain
   }
   class CorefAffinity extends BinaryFeatureVectorVariable[String] {

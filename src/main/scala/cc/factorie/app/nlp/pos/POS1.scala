@@ -23,7 +23,7 @@
 //class POS1 {
 //  def this(savedModelFile:String) = { this(); BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(savedModelFile)) }
 //  
-//  object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+//  object PosFeaturesDomain extends CategoricalTensorDomain[String]
 //  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
 //    def domain = PosFeaturesDomain
 //    //override def skipNonCategories = true

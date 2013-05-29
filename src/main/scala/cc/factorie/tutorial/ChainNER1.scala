@@ -25,7 +25,7 @@ import java.io.File
     See ChainNER3 for a related example with better features. 
     @author Andrew McCallum */
 object ChainNER1a {
-  object TokenFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }

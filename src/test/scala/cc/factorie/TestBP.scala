@@ -165,7 +165,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
   @Test def testChainModelBP {
     for ((bpInfer, chainInfer) <- Seq((InferByBPChainSum, ChainModel.MarginalInference), (MaximizeByBPChain, ChainModel.MAPInference))) {
-      object cdomain extends CategoricalDimensionTensorDomain[String]()
+      object cdomain extends CategoricalTensorDomain[String]()
       val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
       features += "asd"
       val ldomain = new CategoricalDomain[String]()
@@ -208,7 +208,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
   }
 
   @Test def testLoopyLogZ {
-    object cdomain extends CategoricalDimensionTensorDomain[String]()
+    object cdomain extends CategoricalTensorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
     features += "asd"
     val ldomain = new CategoricalDomain[String]()

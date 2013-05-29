@@ -28,7 +28,7 @@ class DepParser2 extends DocumentAnnotator {
     val features = new NonProjDependencyParserFeatures(this)
     features ++= featureGenerators.map(_.apply(state))
   }
-  object featuresDomain extends CategoricalDimensionTensorDomain[String]
+  object featuresDomain extends CategoricalTensorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
@@ -42,7 +42,7 @@ class DepParser2 extends DocumentAnnotator {
     val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
   }
 
-  def trainFromVariables(vs: Seq[ParseDecisionVariable], trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteDimensionTensorVar)], MultiClassModel) => Unit) {
+  def trainFromVariables(vs: Seq[ParseDecisionVariable], trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
     trainFn(vs.map(v => (v.asInstanceOf[LabeledCategoricalVariable[String]],v.features)), model)
   }
 
@@ -75,7 +75,7 @@ class DepParser2 extends DocumentAnnotator {
       oracle.instances
     })
   }
-  def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]=Seq(), trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteDimensionTensorVar)], MultiClassModel) => Unit) =
+  def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]=Seq(), trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) =
     trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING), trainFn)
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PTBPosLabel])
@@ -432,7 +432,7 @@ object DepParser2 {
 
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
 
-    def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteDimensionTensorVar)], model: MultiClassModel) {
+    def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
         val featuresSize = examples.head._2.domain.dimensionSize

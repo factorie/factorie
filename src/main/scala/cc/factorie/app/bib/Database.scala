@@ -1,6 +1,6 @@
 package cc.factorie.app.bib
 
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import cc.factorie.db.mongo.{LazyCubbieConverter, MutableCubbieCollection, AbstractCubbieCollection, MongoCubbieCollection}
 import cc.factorie.util.Cubbie

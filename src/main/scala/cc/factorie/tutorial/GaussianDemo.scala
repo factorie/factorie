@@ -1,12 +1,13 @@
 package cc.factorie.tutorial
 
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
+import cc.factorie.directed.{MaximizeMultivariateGaussianCovariance, MaximizeMultivariateGaussianMean, MultivariateGaussian, Gaussian}
 
 object GaussianDemo {
   def main(args: Array[String]): Unit = {
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     val mean = new DoubleVariable(10)
     val variance = new DoubleVariable(1.0)
 
@@ -33,7 +34,7 @@ object GaussianDemo {
 
 object MultivariateGaussianDemo {
   def main(args:Array[String]): Unit = {
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     val mean = new TensorVariable[Tensor1](new DenseTensor1(10, 0.0))
     val variance = new TensorVariable[Tensor2](new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 1.0 else 0.0)))
 

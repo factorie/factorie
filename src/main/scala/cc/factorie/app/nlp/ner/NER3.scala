@@ -7,7 +7,7 @@ import cc.factorie.util.{BinarySerializer, CubbieConversions}
 class NER3 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
 
-  object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
+  object FeaturesDomain extends CategoricalTensorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
     override def skipNonCategories = true

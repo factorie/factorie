@@ -52,7 +52,7 @@ class ModelBasedClassifier[L <: MutableDiscreteVar[_], M <: Model](val model: M,
 
 /** An object that can train a Classifier given a LabelList. */
 trait ClassifierTrainer {
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L]
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L]
 }
 
 /** An object that can gather evaluation data for a Classifier, and convert it to a printable form. */

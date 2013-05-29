@@ -46,7 +46,7 @@ trait CategoricalValue[C] extends DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalDimensionTensorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
+class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalTensorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
   def _indices = __indices

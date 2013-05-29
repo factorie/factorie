@@ -15,7 +15,7 @@ class ModelBasedClassifierCubbie(cls: Classifier[Label]) extends Cubbie {
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require
 // preexisting tensors to be passed in.. Currently this is quite slow. -luke
 class LabelListCubbie(
-  featuresDomain: CategoricalDimensionTensorDomain[String],
+  featuresDomain: CategoricalTensorDomain[String],
   labelDomain: CategoricalDomain[String],
   isBinary: Boolean)
   extends Cubbie {
@@ -74,7 +74,7 @@ object Serialize {
       out.append(labelStr)
     }
   }
-  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalDimensionTensorDomain[String], labelDomain: CategoricalDomain[String]): LabelList[Label, Features] = {
+  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalTensorDomain[String], labelDomain: CategoricalDomain[String]): LabelList[Label, Features] = {
     val instances = new LabelList[Label, Features](_.features)
     var i = 0
     for (rawInstStr <- instancesString.split("(\r\n)|\n")) {

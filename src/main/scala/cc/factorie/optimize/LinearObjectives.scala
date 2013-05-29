@@ -176,7 +176,7 @@ class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, 
 }
 
 object LinearObjectivesTest {
-  object DocumentDomain extends CategoricalDimensionTensorDomain[String]
+  object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)

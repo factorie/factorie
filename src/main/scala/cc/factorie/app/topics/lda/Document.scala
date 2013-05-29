@@ -14,7 +14,7 @@
 
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import scala.collection.mutable.ArrayBuffer
 import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
 

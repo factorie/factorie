@@ -15,7 +15,7 @@
 package cc.factorie.app.bib
 import cc.factorie.util.Cubbie
 import collection.mutable.HashMap
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 
 class FieldsCubbie extends Cubbie
 /*

@@ -55,7 +55,7 @@ object Chain {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
+    object FeaturesDomain extends CategoricalTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
   }
 }

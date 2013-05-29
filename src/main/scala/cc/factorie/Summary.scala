@@ -13,7 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.la.{Tensor, Outer1Tensor2}
 import cc.factorie
 

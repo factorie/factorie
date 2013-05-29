@@ -20,7 +20,7 @@ import cc.factorie.app.chain._
 import java.io.File
 import cc.factorie.util.BinarySerializer
 
-object ChainNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNerFeaturesDomain
   override def skipNonCategories = true
