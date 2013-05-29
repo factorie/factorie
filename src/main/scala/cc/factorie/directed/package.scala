@@ -15,11 +15,12 @@
 
 
 package cc.factorie
+
 import cc.factorie._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-package object generative {
+package object directed {
 
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */

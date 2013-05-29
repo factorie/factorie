@@ -7,12 +7,11 @@ import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
 import cc.factorie.app.topics.lda.{Document, LDA,SparseLDAInferencer}
 import cc.factorie.{CategoricalSeqDomain, DiffList}
-import cc.factorie.generative.GenerativeModel._
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
-import cc.factorie.generative.{DiscreteMixtureCounts, GenerativeModel}
 import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 import collection.mutable
+import cc.factorie.directed.GenerativeModel
 
 object Utils{
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={

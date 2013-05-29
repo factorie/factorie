@@ -12,8 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
+import cc.factorie.directed.DoubleSum2
 
 trait DeterministicFunction extends VarWithDeterministicValue {
   //overrride var parentFactor: GenerativeFactor = null

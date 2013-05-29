@@ -3,7 +3,7 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.topics.lda._
 
 // For FUSE research abstracts in XML

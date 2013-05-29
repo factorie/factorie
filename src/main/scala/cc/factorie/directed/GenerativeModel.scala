@@ -1,7 +1,9 @@
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+
+import cc.factorie.{DiffList, MutableVar, Var, Model}
 
 trait GenerativeModel extends Model {
   def getParentFactor(v:Var): Option[GenerativeFactor]
@@ -21,12 +23,10 @@ trait MutableGenerativeModel extends GenerativeModel {
   def +=(f:GenerativeFactor): Unit
   def -=(f:GenerativeFactor): Unit
 }
-
 object GenerativeModel {
   /** Constructor for a default GenerativeModel */
   def apply(): ItemizedGenerativeModel = new ItemizedGenerativeModel
 }
-
 class ItemizedGenerativeModel extends MutableGenerativeModel {
   private val _parentFactor = new HashMap[Var,GenerativeFactor]
   private val _childFactors = new HashMap[Var,ArrayBuffer[GenerativeFactor]]
@@ -110,4 +110,3 @@ class ItemizedGenerativeModel extends MutableGenerativeModel {
   def ++=(fs:Iterable[GenerativeFactor]): Unit = fs.foreach(f => this.+=(f))
   def --=(fs:Iterable[GenerativeFactor]): Unit = fs.foreach(f => this.-=(f))
 }
-  

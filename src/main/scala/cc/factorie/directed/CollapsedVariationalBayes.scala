@@ -12,9 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
+
 //import cc.factorie.la.ArrayLA.Implicits._
 
 class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var], model:GenerativeModel) {

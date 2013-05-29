@@ -18,6 +18,8 @@ import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.util.{DoubleSeq,IntSeq}
 import scala.util.Random
+import cc.factorie.directed._
+import scala.Some
 
 // Proportions Values
 
@@ -290,7 +292,6 @@ class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions)
 
 
 object MaximizeProportions extends Maximize {
-  import cc.factorie.generative.{GenerativeModel,Dirichlet,Discrete,Mixture,CategoricalMixture,PlatedDiscreteMixture}
   /*override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal]): Option[Summary[ProportionsAssignment]] = {
     if (variables.size != 1) return None
     variables.head match {

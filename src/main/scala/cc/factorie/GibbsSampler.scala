@@ -1,6 +1,6 @@
 package cc.factorie
-import cc.factorie.generative.{GenerativeFactor,GenerativeModel}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
+import cc.factorie.directed.{GenerativeModel, GenerativeFactor}
 
 /** Sample a value for a single variable.  This sampler works in one of two ways:  
     If the model is a GenerativeModel, then sampling is performed based on a suite a handlers

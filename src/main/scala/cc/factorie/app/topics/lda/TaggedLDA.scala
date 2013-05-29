@@ -1,7 +1,7 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.directed._
 
 // Unfinished model similar to Labeled-LDA.
 

@@ -1,4 +1,4 @@
-package cc.factorie.generative
+package cc.factorie.directed
 
 import cc.factorie._
 import cc.factorie.DiscreteValue

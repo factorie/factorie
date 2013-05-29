@@ -13,8 +13,9 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.generative._
+import cc.factorie.directed._
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
+import cc.factorie.directed.{MaximizeGaussianVariance, MaximizeGaussianMean, MaximizeGeneratedDiscrete, MaximizeGate}
 
 /** An inference engine that finds score-maximizing values.  
     The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.
@@ -34,7 +35,7 @@ trait Maximize extends Infer {
 class MaximizeSuite extends Maximize {
   def defaultSuite = Seq(
     MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions,
-    cc.factorie.generative.MaximizeGaussianMean, cc.factorie.generative.MaximizeGaussianVariance, MaximizeByBPChain
+    MaximizeGaussianMean, MaximizeGaussianVariance, MaximizeByBPChain
 //    ,    cc.factorie.generative.MaximizeMultivariateGaussianMean,
 //    cc.factorie.generative.MaximizeMultivariateGaussianCovariance
   )

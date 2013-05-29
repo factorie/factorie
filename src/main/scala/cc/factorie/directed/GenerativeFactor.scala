@@ -12,7 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 
 trait GenerativeFactor extends Factor {
@@ -37,7 +38,7 @@ trait GenerativeFactor extends Factor {
 class GeneratedVarWrapper[V<:Var](val v:V) {
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */
-  def ~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+  def ~[V2<:Var](partialFactor: V2 => GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
     model += partialFactor(v.asInstanceOf[V2])
     v
   }
@@ -47,7 +48,7 @@ class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+  def :~[V2<:Var](partialFactor: V2 => GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
     model += partialFactor(v.asInstanceOf[V2])
     v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
     v

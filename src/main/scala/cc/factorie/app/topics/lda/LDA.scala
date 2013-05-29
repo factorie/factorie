@@ -14,11 +14,12 @@
 
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
+import cc.factorie.directed._
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,

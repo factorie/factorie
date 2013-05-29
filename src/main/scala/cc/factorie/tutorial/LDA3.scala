@@ -4,11 +4,12 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.util.DoubleSeq
+import cc.factorie.directed._
 
 object LDA3 {
   val numTopics = 15

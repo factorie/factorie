@@ -16,7 +16,9 @@
 
 package cc.factorie.tutorial
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
+import cc.factorie.directed.Discrete
+
 // Next two lines to get the implicit Estimator objects
 //import cc.factorie.generative.DenseProportions._
 //import cc.factorie.generative.DenseCountsProportions._

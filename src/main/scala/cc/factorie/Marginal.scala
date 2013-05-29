@@ -14,6 +14,7 @@
 
 package cc.factorie
 import cc.factorie.la._
+import cc.factorie.directed.{MultivariateGaussian, Gaussian}
 
 /** Stores a marginal distribution containing a joint distribution over a set of variables.
     See also Summary, which stores a collection of Marginals.
@@ -227,7 +228,7 @@ class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
   // TODO Set this up better for incremental estimation
   var mean = 0.0
   var variance = 1.0
-  def pr(x:Double): Double = cc.factorie.generative.Gaussian.pr(x, mean, variance)
+  def pr(x:Double): Double = Gaussian.pr(x, mean, variance)
   def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
 }
 
@@ -236,6 +237,6 @@ class MultivariateGaussianMarginal1[V1 <: MutableTensorVar[Tensor1]](val _1: V1)
   // TODO Set this up better for incremental estimation
   var mean = new DenseTensor1(_1.value.length, 0.0)
   var variance = new DenseTensor2(Array.tabulate(_1.value.length, _1.value.length)((i, j) => if (i == j) 1.0 else 0.0))
-  def pr(x: Tensor1): Double = cc.factorie.generative.MultivariateGaussian.pr(x, mean, variance)
+  def pr(x: Tensor1): Double = MultivariateGaussian.pr(x, mean, variance)
   def setToMaximize(implicit d: DiffList): Unit = _1.set(mean)
 }

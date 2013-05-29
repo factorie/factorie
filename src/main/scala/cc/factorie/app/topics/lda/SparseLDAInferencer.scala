@@ -1,8 +1,9 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.util.DoubleSeq
 import scala.Array
+import cc.factorie.directed.{GenerativeModel, PlatedCategoricalMixture, DiscreteMixtureCounts}
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,

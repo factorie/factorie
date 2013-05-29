@@ -15,8 +15,9 @@
 package cc.factorie.tutorial
 
 import cc.factorie._
-import cc.factorie.generative._
-import la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
+import cc.factorie.directed._
+import cc.factorie.la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
+import cc.factorie.directed._
 
 
 object GaussianMixtureDemo {
@@ -71,7 +72,7 @@ object MultivariateGaussianMixtureDemo {
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
     // Generate some data
     val data = for (i <- 1 to 1000) yield {
-      val z = new Z :~ Discrete(mixtureProportions)
+      val z = new Z :~ directed.Discrete(mixtureProportions)
       new TensorVariable[Tensor1] :~ MultivariateGaussianMixture(meanComponents, varianceComponents, z)
     }
     // A convenience function for getting the Z for a particular DoubleVar data variable x
