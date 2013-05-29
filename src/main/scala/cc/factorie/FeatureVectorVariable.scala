@@ -56,12 +56,18 @@ abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] wit
 /** Functions used inside HashFeatureVectorVariable,
     also available here for outside use. */
 object HashFeatureVectorVariable {
-  def hash(c: Any): Int = c match {
-    case s:String => MurmurHash.stringHash(s)
+  val prime1 = 2113985147
+  val prime2 = 1476131401
+  @inline def getBits(c: Any) = c match {
+    case s: String => MurmurHash.stringHash(s)
     case _ => c.hashCode()
   }
-  def index(c: Any, size: Int): Int = hash(c) % size
-  def sign(c: Any): Int = hash(c) >> 31
+  @inline def hash(x: Int): Int = (x * prime1) % prime2
+  @inline def index(c: Any, size: Int): Int = {
+    val idx = hash(getBits(c)) % size
+    if (idx < 0) size + idx else idx
+  }
+  @inline def sign(c: Any): Int = 1 - 2 * (getBits(c) & 1)
 }
 
 /** A variable whose value is a SparseTensor1 whose length matches the size of a DiscreteDomain,
@@ -74,15 +80,11 @@ abstract class HashFeatureVectorVariable extends DiscreteTensorVariable with Fea
   override def domain: DiscreteDomain
   def this(initVals:Iterable[Any]) = { this(); initVals.map(this.+=_) }
   def +=(c:Any, incr:Double): Unit = {
-    val hash = HashFeatureVectorVariable.hash(c)
-    val sign = math.signum(hash >> 31)
-    tensor.update(math.abs(hash % domain.size), sign * incr)
+    tensor.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c) * incr)
   } 
   def ++=(cs: Iterable[Any]): Unit = cs.foreach(this.+= _)
   def +=(c: Any): Unit = {
-    val hash = HashFeatureVectorVariable.hash(c)
-    val sign = math.signum(hash >> 31)
-    tensor.update(math.abs(hash % domain.size), sign)
+    tensor.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c))
   }
   set(new SparseIndexedTensor1(domain.size))(null)
 }
