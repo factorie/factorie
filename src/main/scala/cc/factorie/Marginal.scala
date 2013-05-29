@@ -104,9 +104,9 @@ trait DiscreteMarginal1Factor3[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimens
 }
 
 
-class DiscreteMarginal2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal {
+class DiscreteMarginal2[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal with Marginal2 {
   def this(f:Factor2[V1,V2]) = this (f._1, f._2, null)
-  def variables = Seq(_1, _2)
+  override def variables = Seq(_1, _2)
   protected var _proportions: Proportions2 = if (proportions2 eq null) new DenseProportions2(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size) else proportions2 // must do this here because no access to _1 in default argument values
   def proportions: Proportions2 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2) match { case (d1:DiscreteVar,d2:DiscreteVar) => proportions.masses.+=(d1.intValue, d2.intValue, w); case d:DiscreteDimensionTensorVar => throw new Error("Not yet implemented") }

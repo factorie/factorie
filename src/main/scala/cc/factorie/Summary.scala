@@ -76,11 +76,12 @@ class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
 
 /** A Summary with all its probability on one variable-value Assignment. */
 class AssignmentSummary(val assignment:Assignment) extends Summary {
-  def marginals = assignment.variables.map(v=> new Marginal {
-    def variables = Seq(v)
+  val _marginals = assignment.variables.map(v=> (v -> new Marginal1 {
+    val _1 = v
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
-  })
-  def marginal(v:Var): Marginal1 = null
+  })).toMap
+  def marginals = _marginals.values
+  def marginal(v:Var): Marginal1 = _marginals(v)
   def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
   def logZ = throw new Error("AssignmentSummary does not define logZ")
