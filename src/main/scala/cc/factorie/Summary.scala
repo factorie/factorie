@@ -14,7 +14,8 @@
 
 package cc.factorie
 import cc.factorie.generative._
-import cc.factorie.la.Outer1Tensor2
+import cc.factorie.la.{Tensor, Outer1Tensor2}
+import cc.factorie
 
 /** The result of inference: a collection of Marginal objects.
     @author Andrew McCallum */
@@ -73,7 +74,7 @@ class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
   }
 }
 
-/** A Summary with all its probability on one variable-value Assignment.  Note that Assignment inherits from Marginal. */
+/** A Summary with all its probability on one variable-value Assignment. */
 class AssignmentSummary(val assignment:Assignment) extends Summary[Marginal] {
   def marginals = assignment.variables.map(v=> new Marginal {
     def variables = Seq(v)
@@ -83,6 +84,29 @@ class AssignmentSummary(val assignment:Assignment) extends Summary[Marginal] {
   def marginal(f:Factor): Marginal = null.asInstanceOf[Marginal]
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
 }
+
+// An AssignmentSummary that can be used as a result of inference.
+class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary[Marginal] {
+  /** The collection of all Marginals available in this Summary */
+  class SingletonMarginal(v: Var) extends Marginal {
+    def variables = Seq(v)
+    def setToMaximize(implicit d: DiffList) { v match { case v: MutableVar[Any @unchecked] => v.set(mapAssignment(v)) } }
+  }
+  val marginals = mapAssignment.variables.map(new SingletonMarginal(_))
+  def marginal(v: Var) = mapAssignment.get(v) match {
+    case Some(_) => new SingletonMarginal(v)
+    case None => null
+  }
+  class SingletonFactorMarginal(val factor: Factor) extends FactorMarginal {
+    override val tensorStatistics = factor.assignmentStatistics(mapAssignment).asInstanceOf[Tensor]
+    def variables = factor.variables
+    def setToMaximize(implicit d: DiffList) { throw new Error("Can't maximize a factor marginal") }
+    def score: Double = factor.assignmentScore(mapAssignment)
+  }
+  def marginal(factor: Factor) = new SingletonFactorMarginal(factor)
+  override def logZ = factors.map(marginal(_).score).sum
+}
+
 
 /** A summary with a separate Proportions distribution for each of its DiscreteVars */
 // TODO Consider renaming FullyFactorizedDiscreteSummary or IndependentDiscreteSummary or PerVariableDiscreteSummary

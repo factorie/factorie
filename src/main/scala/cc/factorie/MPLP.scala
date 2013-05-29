@@ -1,0 +1,107 @@
+package cc.factorie
+
+import cc.factorie.la.DenseTensor1
+import scala.collection.mutable.ArrayBuffer
+
+/**
+ * User: apassos
+ * Date: 5/29/13
+ * Time: 8:46 AM
+ */
+class MPLP(variables: Seq[DiscreteVar], model: Model) extends cc.factorie.util.GlobalLogging {
+  val varying = variables.toSet
+
+  class MPLPFactor(val factor: Factor) {
+    val thisVariables = factor.variables.toSet
+    val varyingVariables = thisVariables.filter(v => v.isInstanceOf[DiscreteVar]).map(_.asInstanceOf[DiscreteVar]).filter(varying.contains).toSet
+    val lambdas = varyingVariables.map(v => (v -> new DenseTensor1(v.domain.size))).toMap
+
+    def mapScore: Double = {
+      getMaxMarginals(varyingVariables.head.asInstanceOf[DiscreteVar]).max
+    }
+
+    def getMaxMarginals(v: DiscreteVar): DenseTensor1 = {
+      assert(varyingVariables.contains(v))
+      val marginals = new DenseTensor1(v.domain.size)
+      varyingVariables.size match {
+        case 1 =>
+          // we're the only varying neighbor, get the score
+          val assignment = new Assignment1(v, v.domain(0).asInstanceOf[DiscreteVar#Value])
+          for (i <- 0 until v.domain.size) {
+            assignment.value1 = v.domain(i).asInstanceOf[DiscreteVar#Value]
+            marginals(i) = factor.assignmentScore(assignment)
+          }
+        case 2 =>
+          // there is one other varying neighbor we have to max over
+          val other = (if (varyingVariables.head eq v) varyingVariables.drop(1).head else varyingVariables.head).asInstanceOf[DiscreteVar]
+          val otherLambda = lambdas(other)
+          val assignment = new Assignment2(v, v.domain(0).asInstanceOf[DiscreteVar#Value], other, other.domain(0).asInstanceOf[DiscreteVar#Value])
+          for (value <- 0 until v.domain.size) {
+            assignment.value1 = v.domain(value).asInstanceOf[DiscreteVar#Value]
+            var maxScore = Double.NegativeInfinity
+            for (otherValue <- 0 until other.domain.size) {
+              assignment.value2 = other.domain(otherValue).asInstanceOf[DiscreteVar#Value]
+              val s = factor.assignmentScore(assignment) + otherLambda(otherValue)
+              if (s > maxScore) maxScore = s
+            }
+            marginals(value) = maxScore
+          }
+      }
+      marginals += lambdas(v)
+      marginals
+    }
+  }
+  def near(a: Double, b: Double, eps: Double = 0.000001): Boolean = math.abs(a - b) < (math.max(a,b)*eps + eps)
+
+  def isConverged(maxMarginals: Seq[DenseTensor1]): Boolean = {
+    val maxIndex0 = maxMarginals.head.maxIndex
+    for (i <- 1 until maxMarginals.length) {
+      val maxIndex = maxMarginals(i).maxIndex
+      if (maxIndex0 != maxIndex && !near(maxMarginals(i)(maxIndex), maxMarginals(i)(maxIndex0))) {
+        return false
+      }
+    }
+    true
+  }
+
+  def updateMessages(v: DiscreteVar, factors: Seq[MPLPFactor]): Boolean = {
+    val maxMarginals = factors.map(_.getMaxMarginals(v))
+    val converged = isConverged(maxMarginals)
+    if (!converged) {
+      val sumMarginals = new DenseTensor1(maxMarginals.head.length)
+      maxMarginals.foreach(sumMarginals += _)
+      sumMarginals *= 1.0/(maxMarginals.length)
+      for (i <- 0 until factors.length) {
+        factors(i).lambdas(v) += (maxMarginals(i)-sumMarginals,-1)
+      }
+      assert(isConverged(factors.map(_.getMaxMarginals(v))))
+    }
+    converged
+  }
+
+  def infer: MAPSummary = {
+    val factors = model.factors(variables).map(new MPLPFactor(_))
+    val variableFactors = collection.mutable.LinkedHashMap[Var,ArrayBuffer[MPLPFactor]]()
+    for (f <- factors) {
+      for (v <- f.varyingVariables) {
+        val list = variableFactors.getOrElseUpdate(v, ArrayBuffer[MPLPFactor]())
+        list += f
+      }
+    }
+    var converged = true
+    do {
+      converged = true
+      for (v <- variables) converged = converged && updateMessages(v.asInstanceOf[DiscreteVar], variableFactors(v))
+      logger.debug("Dual is: " + factors.map(_.mapScore).sum)
+    } while (!converged)
+    val assignment = new HashMapAssignment()
+    for (v <- variables) {
+      assignment.update(v, v.domain(variableFactors(v).head.getMaxMarginals(v).maxIndex).asInstanceOf[DiscreteVar#Value])
+    }
+    new MAPSummary(assignment, factors.map(_.factor).toSeq)
+  }
+}
+
+object InferByMPLP extends Infer {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model).infer)
+}

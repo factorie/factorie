@@ -239,6 +239,15 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
         assertEquals(mfm.proportions(i), bpm.proportions(i), 0.1)
       }
     }
+
+    // Testing MPLP
+    val mplpSummary = InferByMPLP.infer(Seq(l0, l1, l2, l3), model).head
+    val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model).head
+    for (v <- Seq(l0, l1, l2, l3)) {
+      val mfm = mplpSummary.mapAssignment(v)
+      val bpm = mapSummary.marginal(v)
+      assertEquals(bpm.proportions.maxIndex, mfm.intValue)
+    }
   }
 
   @Test def v2f1VaryingOne {
