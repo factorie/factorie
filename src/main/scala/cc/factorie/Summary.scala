@@ -77,11 +77,11 @@ class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
 /** A Summary with all its probability on one variable-value Assignment. */
 class AssignmentSummary(val assignment:Assignment) extends Summary {
   val _marginals = assignment.variables.map(v=> (v -> new Marginal1 {
-    val _1 = v
+    def _1 = v
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
   })).toMap
   def marginals = _marginals.values
-  def marginal(v:Var): Marginal1 = _marginals(v)
+  def marginal(v:Var): Marginal1 = _marginals.getOrElse(v, null)
   def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
   def logZ = throw new Error("AssignmentSummary does not define logZ")
@@ -120,7 +120,7 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary {
   def marginals = _marginals1.values
   def variables = _marginals1.keys
   lazy val variableSet = variables.toSet
-  def marginal(v1:Var): SimpleDiscreteMarginal1[V] = _marginals1(v1.asInstanceOf[V])
+  def marginal(v1:Var): SimpleDiscreteMarginal1[V] = _marginals1.getOrElse(v1.asInstanceOf[V], null)
   def marginal2(vs:Var*): DiscreteMarginal = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
     case Seq(v:V, w:V) => new DiscreteMarginal2[V,V](v, w, new NormalizedTensorProportions2(new Outer1Tensor2(_marginals1(v).proportions,_marginals1(w).proportions), false))

@@ -104,5 +104,5 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
 }
 
 object InferByMPLP extends Infer {
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model).infer)
+  def infer(variables:Iterable[Var], model:Model) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model).infer)
 }

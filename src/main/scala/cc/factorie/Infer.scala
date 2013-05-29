@@ -39,11 +39,11 @@ trait Infer {
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
       If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
       and return Some Summary on success, or None on failure. */
-  def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = None
+  def infer(variables:Iterable[Var], model:Model): Option[Summary]
 }
 
 trait InferWithContext[C] {
-  def infer(context:C, model:Model, summary:Summary = null): Option[Summary] = None
+  def infer(context:C, model:Model): Option[Summary]
 }
 
 // TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 => DiscretesSummary also. -akm
@@ -73,8 +73,7 @@ object InferDiscrete1 extends Infer {
     summary += new SimpleDiscreteMarginal1(varying, proportions(varying, model))
     summary
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[DiscreteSummary1[DiscreteVariable]] = {
-    if (summary ne null) return None // We don't handle a provided Summary
+  def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     Some(apply(variables.asInstanceOf[Iterable[DiscreteVariable]], model))
   }

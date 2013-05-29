@@ -66,5 +66,5 @@ object InferByMeanField extends Infer {
     for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
+  def infer(variables:Iterable[Var], model:Model): Option[Summary] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
 }

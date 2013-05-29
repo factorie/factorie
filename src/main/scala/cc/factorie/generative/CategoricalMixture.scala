@@ -126,8 +126,7 @@ object MaximizeGate extends Maximize {
     if (maxi >= 0) Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)))
     else None
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[DiscreteSummary1[DiscreteVariable]] = {
-    if (summary ne null) return None
+  override def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     val result = new DiscreteSummary1[DiscreteVariable]
     for (v <- variables.asInstanceOf[Iterable[DiscreteVariable]]) infer(v, model) match {

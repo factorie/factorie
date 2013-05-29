@@ -53,7 +53,7 @@ object MaximizeGaussianMean extends Maximize {
       	case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
       	case gm:GaussianMixture.Factor if (gm._2.contains(meanVar)) => {
           val gate = gm._4
-          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
+          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary.getMarginal(gate).isEmpty) null else summary.marginal(gate)
           val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.  And we are doing it twice because of "contains" above
           if (gateMarginal eq null) {
             if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
@@ -75,9 +75,9 @@ object MaximizeGaussianMean extends Maximize {
   def apply(meanVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[AssignmentSummary] = {
+  override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
-    val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
+    val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       case r:MutableDoubleVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, m) }
@@ -139,9 +139,9 @@ object MaximizeGaussianVariance extends Maximize {
   def apply(varianceVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[AssignmentSummary] = {
+  override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
-    val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
+    val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       case r:MutableDoubleVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, va) }
@@ -152,7 +152,7 @@ object MaximizeGaussianVariance extends Maximize {
 }
 
 // More efficient to maximize them all at once.
-object MaximizeGaussianMixture extends Maximize {
+object MaximizeGaussianMixture {
   def minSamplesForVarianceEstimate = 5
   def maxMeanMixture(mixture:Mixture[MutableDoubleVar], model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     throw new Error("Not yet implemented")

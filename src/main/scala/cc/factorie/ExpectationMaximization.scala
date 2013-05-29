@@ -23,7 +23,7 @@ class EMInferencer[V<:Var,W<:DiscreteVar](val maximizing:Iterable[V], val margin
   var summary: Summary = null
   def eStep: Unit = summary = infer.infer(marginalizing, model).head
   // The "foreach and Seq(v)" below reflect the fact that in EM we maximize the variables independently of each other 
-  def mStep: Unit = maximizing.foreach(v => maximizer.infer(Seq(v), model, summary).get.setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
+  def mStep: Unit = maximizing.foreach(v => maximizer.infer(Seq(v), model).get.setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
   def process(iterations:Int): Unit = for (i <- 0 until iterations) { eStep; mStep } // TODO Which should come first?  mStep or eStep?
   def process: Unit = process(100) // TODO Make a reasonable convergence criteria
 }
@@ -32,20 +32,18 @@ object EMInferencer {
     new EMInferencer(maximizing, varying, infer, model, maximizer)
 }
 
-object InferByEM extends Infer {
+object InferByEM {
   def apply(maximize:Iterable[Var], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize): Summary = {
     val inferencer = new EMInferencer(maximize, varying, InferByBPTreeSum, model, maximizer)
     inferencer.process
     inferencer.summary
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = {
-    summary match {
-      case ds:DiscreteSummary1[DiscreteVariable] => {
-        val inferencer = new EMInferencer(variables, ds.variables, InferByBPTreeSum, model, Maximize)
-        try { inferencer.process } catch { case e:Error => return None } // Because the maximizer might fail
-        Some(inferencer.summary)
-      }
-      case _ => None
-    }
+}
+
+class InferByEM(varying: Iterable[DiscreteVariable]) extends Infer {
+  def infer(variables:Iterable[Var], model:Model): Option[Summary] = {
+    val inferencer = new EMInferencer(variables, varying, InferByBPTreeSum, model, Maximize)
+    try { inferencer.process } catch { case e:Error => return None } // Because the maximizer might fail
+    Some(inferencer.summary)
   }
 }
