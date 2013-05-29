@@ -1,8 +1,9 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.util.DoubleSeq
 import scala.Array
+import cc.factorie.directed.{DirectedModel, PlatedCategoricalMixture, DiscreteMixtureCounts}
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,
@@ -10,7 +11,7 @@ class SparseLDAInferencer(
     var phiCounts:DiscreteMixtureCounts[String],
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
-    model:GenerativeModel)
+    model:DirectedModel)
 {
   var verbosity = 0
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
@@ -326,7 +327,7 @@ object SparseLDAInferencer {
     docs:Iterable[Doc],
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
-    model:GenerativeModel) : SparseLDAInferencer = {
+    model:DirectedModel) : SparseLDAInferencer = {
 
     // Create and populate the (word,topic) counts
     val phiCounts = new DiscreteMixtureCounts(wordDomain, zDomain)

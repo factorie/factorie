@@ -12,30 +12,16 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 
-
-// A collection of abstract Variables (and a generic Family) for generative models (directed Bayesian networks, 
-// as opposed to undirected in which there is not a DAG-shaped generative storyline).
-
-
-// TODO Are these still necessary?  Consider deleting.  Yes!
-/*
-trait RealGenerating {
-  def sampleDouble: Double
-  def pr(x:Double): Double
-  def logpr(x:Double): Double
+object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
+  case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {
+    def pr(k:Int, mean:Double): Double = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
+    //def pr(s:Statistics): Double = pr(s._1, s._2)
+    def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+    //def sampledValue(s:Statistics): Int = sampledValue(s._2)
+  }
+  def newFactor(a:IntegerVar, b:DoubleVar) = Factor(a, b)
 }
-trait DiscreteGenerating {
-  def length: Int
-  def sampleInt: Int
-  def pr(index:Int): Double
-  def logpr(index:Int): Double
-}
-trait ProportionGenerating {
-  def sampleProportions: Proportions
-  def pr(p:Proportions): Double
-  def logpr(p:Proportions): Double
-}
-*/

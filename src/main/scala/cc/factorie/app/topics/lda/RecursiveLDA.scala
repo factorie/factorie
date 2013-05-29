@@ -1,9 +1,9 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
+import cc.factorie.directed._
 
 // Name here must match superDoc exactly, in order to enable stitching back together again at the end 
 class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name, Nil)
@@ -29,7 +29,7 @@ class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(super
 // --read-docs recursive-lda-docs.txt --read-docs-topic-index 5 --num-layers 1 --num-iterations=30 --fit-alpha-interval=10  --diagnostic-phrases --print-topics-phrases --write-docs recursive-lda-docs5.txt
 
 
-class RecursiveLDA(wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, beta1:Double = 0.01)(implicit model:MutableGenerativeModel)
+class RecursiveLDA(wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, beta1:Double = 0.01)(implicit model:MutableDirectedModel)
 extends LDA(wordSeqDomain, numTopics, alpha1, beta1)(model)
 
 
@@ -69,8 +69,8 @@ object RecursiveLDA {
     val numTopics = opts.numTopics.value
     println("numTopics="+numTopics)
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    //implicit val model = GenerativeModel() 
-    var lda = new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
+    //implicit val model = DirectedModel()
+    var lda = new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel())
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {
@@ -179,12 +179,12 @@ object RecursiveLDA {
     for (doc <- documents1) doc.theta = null
     System.gc()
     
-    // Create next-level LDA models, each with its own GenerativeModel, in chunks of size opts.numThreads
+    // Create next-level LDA models, each with its own DirectedModel, in chunks of size opts.numThreads
     if (opts.numLayers.value > 1) {
       var documents2 = new ArrayBuffer[RecursiveDocument]
       for (topicRange <- Range(0, numTopics).grouped(opts.numThreads.value)) {
         val topicRangeStart: Int = topicRange.head
-        var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
+        var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel()))
         for (i <- topicRange) lda2(i-topicRangeStart).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
         for (doc <- documents1) {
           for (ti <- doc.zs.uniqueIntValues) if (topicRange.contains(ti)) {

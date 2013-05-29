@@ -3,7 +3,7 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.xml._
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.topics.lda._
 
 // For FUSE research abstracts in XML
@@ -17,7 +17,7 @@ object LDA4 {
     val numIterations = 50
     val tokenizer = cc.factorie.app.strings.alphaSegmenter
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     val lda = new LDA(WordSeqDomain, numTopics, 0.1, 0.1)
     var minYear = 9999
     var maxYear = 0000

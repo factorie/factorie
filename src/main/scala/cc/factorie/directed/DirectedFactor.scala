@@ -12,10 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 
-trait GenerativeFactor extends Factor {
+trait DirectedFactor extends Factor {
   type ChildType <: Var
   def child: ChildType
   def parents: Seq[Var]
@@ -35,19 +36,19 @@ trait GenerativeFactor extends Factor {
 }
 
 class GeneratedVarWrapper[V<:Var](val v:V) {
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+  /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       and add this new factor to the given model. */
-  def ~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+  def ~[V2<:Var](partialFactor: V2 => DirectedFactor)(implicit model:MutableDirectedModel): V = {
     model += partialFactor(v.asInstanceOf[V2])
     v
   }
 }
 
 class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
+  /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V2<:Var](partialFactor: V2 => cc.factorie.generative.GenerativeFactor)(implicit model:MutableGenerativeModel): V = {
+  def :~[V2<:Var](partialFactor: V2 => DirectedFactor)(implicit model:MutableDirectedModel): V = {
     model += partialFactor(v.asInstanceOf[V2])
     v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
     v
@@ -56,19 +57,19 @@ class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
 
 
 
-trait RealGeneratingFactor extends GenerativeFactor {
+trait RealGeneratingFactor extends DirectedFactor {
   def sampleDouble: Double
   def pr(x:Double): Double
   def logpr(x:Double): Double
 }
 
-trait IntGeneratingFactor extends GenerativeFactor {
+trait IntGeneratingFactor extends DirectedFactor {
   def sampleInt: Int
   def pr(x:Int): Double
   def logpr(x:Int): Double
 }
 
-abstract class GenerativeFactorWithStatistics1[C<:Var](override val _1:C) extends FactorWithStatistics1[C](_1) with GenerativeFactor {
+abstract class DirectedFactorWithStatistics1[C<:Var](override val _1:C) extends FactorWithStatistics1[C](_1) with DirectedFactor {
   type ChildType = C
   def child = _1
   def parents: Seq[Var] = Nil
@@ -79,7 +80,7 @@ abstract class GenerativeFactorWithStatistics1[C<:Var](override val _1:C) extend
   override def sampledValue: C#Value
 }
 
-abstract class GenerativeFactorWithStatistics2[C<:Var,P1<:Var](override val _1:C, override val _2:P1) extends TupleFactorWithStatistics2[C,P1](_1, _2) with GenerativeFactor {
+abstract class DirectedFactorWithStatistics2[C<:Var,P1<:Var](override val _1:C, override val _2:P1) extends TupleFactorWithStatistics2[C,P1](_1, _2) with DirectedFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
@@ -93,7 +94,7 @@ abstract class GenerativeFactorWithStatistics2[C<:Var,P1<:Var](override val _1:C
   //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
 }
 
-abstract class GenerativeFactorWithStatistics3[C<:Var,P1<:Var,P2<:Var](override val _1:C, override val _2:P1, override val _3:P2) extends TupleFactorWithStatistics3[C,P1,P2](_1, _2, _3) with GenerativeFactor {
+abstract class DirectedFactorWithStatistics3[C<:Var,P1<:Var,P2<:Var](override val _1:C, override val _2:P1, override val _3:P2) extends TupleFactorWithStatistics3[C,P1,P2](_1, _2, _3) with DirectedFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3)
@@ -105,7 +106,7 @@ abstract class GenerativeFactorWithStatistics3[C<:Var,P1<:Var,P2<:Var](override 
   def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
 }
 
-abstract class GenerativeFactorWithStatistics4[C<:Var,P1<:Var,P2<:Var,P3<:Var](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends TupleFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) with GenerativeFactor {
+abstract class DirectedFactorWithStatistics4[C<:Var,P1<:Var,P2<:Var,P3<:Var](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends TupleFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) with DirectedFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3, _4)
@@ -117,36 +118,36 @@ abstract class GenerativeFactorWithStatistics4[C<:Var,P1<:Var,P2<:Var,P3<:Var](o
   def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
 }
 
-trait GenerativeFamily1[Child<:Var] {
+trait DirectedFamily1[Child<:Var] {
   type C = Child
-  abstract class Factor(override val _1:Child) extends GenerativeFactorWithStatistics1[C](_1) 
+  abstract class Factor(override val _1:Child) extends DirectedFactorWithStatistics1[C](_1)
   def newFactor(c:C): Factor
   def apply(): C => Factor = newFactor(_)
 }
 
-trait GenerativeFamily2[Child<:Var,Parent1<:Var] {
+trait DirectedFamily2[Child<:Var,Parent1<:Var] {
   type C = Child
   type P1 = Parent1
-  abstract class Factor(override val _1:Child, override val _2:Parent1) extends GenerativeFactorWithStatistics2[C,P1](_1, _2) 
+  abstract class Factor(override val _1:Child, override val _2:Parent1) extends DirectedFactorWithStatistics2[C,P1](_1, _2)
   def newFactor(c:C, p1:P1): Factor
   def apply(p1: P1): C => Factor = newFactor(_, p1)
 }
 
-trait GenerativeFamily3[Child<:Var,Parent1<:Var,Parent2<:Var] {
+trait DirectedFamily3[Child<:Var,Parent1<:Var,Parent2<:Var] {
   type C = Child
   type P1 = Parent1
   type P2 = Parent2
-  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2) extends GenerativeFactorWithStatistics3[C,P1,P2](_1, _2, _3) 
+  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2) extends DirectedFactorWithStatistics3[C,P1,P2](_1, _2, _3)
   def newFactor(c:C, p1:P1, p2:P2): Factor
   def apply(p1: P1, p2: P2): C => Factor = newFactor(_, p1, p2)
 }
 
-trait GenerativeFamily4[Child<:Var,Parent1<:Var,Parent2<:Var,Parent3<:Var] {
+trait DirectedFamily4[Child<:Var,Parent1<:Var,Parent2<:Var,Parent3<:Var] {
   type C = Child
   type P1 = Parent1
   type P2 = Parent2
   type P3 = Parent3
-  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2, override val _4:Parent3) extends GenerativeFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) 
+  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2, override val _4:Parent3) extends DirectedFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4)
   def newFactor(c:C, p1:P1, p2:P2, p3:P3): Factor
   def apply(p1: P1, p2: P2, p3: P3): C => Factor = newFactor(_, p1, p2, p3)
 }

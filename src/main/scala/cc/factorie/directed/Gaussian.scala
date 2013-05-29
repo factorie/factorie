@@ -12,11 +12,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import cc.factorie.util.DoubleSeq
 
-object Gaussian extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] {
+object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
       val diff = value - mean
@@ -36,13 +37,13 @@ object Gaussian extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] {
 }
 
 // TODO Complete something like this
-//object PlatedGaussian extends GenerativeFamilyWithStatistics3[DoubleSeqVar,DoubleVar,DoubleVar] 
+//object PlatedGaussian extends DirectedFamilyWithStatistics3[DoubleSeqVar,DoubleVar,DoubleVar]
 
 
 
 object MaximizeGaussianMean extends Maximize {
   var debug = false
-  def maxMean(meanVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+  def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
     var sum = 0.0
     //println("MaximizeGaussianMean var="+meanVar)
@@ -72,11 +73,11 @@ object MaximizeGaussianMean extends Maximize {
     //println("MaximizeGaussianMean mean="+(mean/sum))
     mean / sum
   }
-  def apply(meanVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
+  def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
   override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
+    val gModel = model match { case m:DirectedModel => m ; case _ => return None }
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
@@ -91,7 +92,7 @@ object MaximizeGaussianMean extends Maximize {
 object MaximizeGaussianVariance extends Maximize {
   var debug = false
   def minSamplesForVarianceEstimate = 5
-  def maxVariance(varianceVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+  def maxVariance(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
     var sum = 0.0
     val factors = model.extendedChildFactors(varianceVar)
@@ -136,11 +137,11 @@ object MaximizeGaussianVariance extends Maximize {
     // TODO Does this work for weighted children?
     math.sqrt(v / (sum - 1))
   }
-  def apply(varianceVar:MutableDoubleVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
+  def apply(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
   override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
+    val gModel = model match { case m:DirectedModel => m ; case _ => return None }
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
@@ -154,7 +155,7 @@ object MaximizeGaussianVariance extends Maximize {
 // More efficient to maximize them all at once.
 object MaximizeGaussianMixture {
   def minSamplesForVarianceEstimate = 5
-  def maxMeanMixture(mixture:Mixture[MutableDoubleVar], model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+  def maxMeanMixture(mixture:Mixture[MutableDoubleVar], model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     throw new Error("Not yet implemented")
     0.0
   }

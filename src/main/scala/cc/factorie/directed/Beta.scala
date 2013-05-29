@@ -12,12 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */
-object Beta extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
+object Beta extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
   def mode(alpha:Double, beta:Double): Double = 
     if (alpha > 1 && beta > 1) (alpha - 1) / (alpha + beta - 2)
     else Double.NaN
@@ -45,7 +46,7 @@ object Beta extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
 }
 
 
-object BetaMixture extends GenerativeFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {
+object BetaMixture extends DirectedFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {
   type Seq[+A] = scala.collection.Seq[A]
   case class Factor(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:Mixture[DoubleVariable], override val _4:DiscreteVariable) extends super.Factor(_1, _2, _3, _4) {
     def gate = _4
@@ -73,7 +74,7 @@ object MaximizeBetaByMomentMatching {
     require(result >= 0.0, "mean="+mean+" variance="+variance)
     result
   }
-  def apply(alpha:DoubleVariable, beta:DoubleVariable, model:GenerativeModel): Unit = {
+  def apply(alpha:DoubleVariable, beta:DoubleVariable, model:DirectedModel): Unit = {
     val childFactors = model.extendedChildFactors(alpha) // Assume that beta has all the same children
     val ds = new cc.factorie.util.ArrayDoubleSeq(childFactors.size)
     var i = 0

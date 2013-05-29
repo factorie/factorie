@@ -12,14 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
+package cc.factorie.directed
+
 import cc.factorie._
 import cc.factorie.util.DoubleSeq
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object PlatedDiscreteMixture extends GenerativeFamily3[DiscreteSeqVariable,Mixture[ProportionsVariable],DiscreteSeqVariable] {
+object PlatedDiscreteMixture extends DirectedFamily3[DiscreteSeqVariable,Mixture[ProportionsVariable],DiscreteSeqVariable] {
   self =>
   //type Seq[+A] = scala.collection.Seq[A]
   def pr(ds:IndexedSeq[DiscreteValue], mixture:scala.collection.Seq[Proportions], gates:IndexedSeq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product // Make product more efficient
@@ -40,7 +41,7 @@ object PlatedDiscreteMixture extends GenerativeFamily3[DiscreteSeqVariable,Mixtu
   def newFactor(a:DiscreteSeqVariable, b:Mixture[ProportionsVariable], c:DiscreteSeqVariable) = Factor(a, b, c)
 }
 
-object PlatedCategoricalMixture extends GenerativeFamily3[CategoricalSeqVariable[String],Mixture[ProportionsVariable],DiscreteSeqVariable] {
+object PlatedCategoricalMixture extends DirectedFamily3[CategoricalSeqVariable[String],Mixture[ProportionsVariable],DiscreteSeqVariable] {
   self =>
   //type Seq[+A] = scala.collection.Seq[A]
   def pr(ds:IndexedSeq[CategoricalValue[String]], mixture:scala.collection.Seq[Proportions], gates:IndexedSeq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product // Make product more efficient

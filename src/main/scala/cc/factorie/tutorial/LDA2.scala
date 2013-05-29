@@ -19,14 +19,15 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
-import cc.factorie.generative._
+import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
+import cc.factorie.directed._
 
 object LDA2 {
   
   val numTopics = 10
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }

@@ -1,7 +1,7 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
-import cc.factorie.generative._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.directed._
 
 // Unfinished model similar to Labeled-LDA.
 
@@ -31,7 +31,7 @@ object TaggedLDA {
   val WordSeqDomain = new CategoricalSeqDomain[String] // { override val elementDomain = wordDomain }
   val WordDomain = WordSeqDomain.elementDomain
   val tokenizer = cc.factorie.app.strings.alphaSegmenter
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   val lda = new LDA(WordSeqDomain, numTopics, alpha1)
   
   def main(args:Array[String]): Unit = {
