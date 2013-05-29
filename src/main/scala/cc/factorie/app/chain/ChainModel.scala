@@ -191,8 +191,8 @@ with Parameters
     val summary = new ChainSummary {
       private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
       private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
-      private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(__nodeMarginals).map({case (l, m) => l -> new SimpleDiscreteMarginal1(l, new DenseProportions1(m)) })
+      private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal1[DiscreteVar]] ++=
+        labels.zip(__nodeMarginals).map({case (l, m) => l -> new SimpleDiscreteMarginal1[DiscreteVar](l, new DenseProportions1(m)) })
       private val _edgeMarginals =
         labels.zip(labels.drop(1)).zip(__edgeMarginals).map({ case ((l1, l2), m) =>
           // m is label X label
@@ -212,7 +212,7 @@ with Parameters
       def expectations = _expectations
       override def logZ = _logZ
       def marginals: Iterable[DiscreteMarginal] = _nodeMarginals.values
-      def marginal(v: Var): DiscreteMarginal = _nodeMarginals(v)
+      def marginal(v: Var): DiscreteMarginal1[DiscreteVar] = _nodeMarginals(v)
       lazy val factors: Iterable[Factor] = self.factors(labels)
       override def marginal(_f: Factor): FactorMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
@@ -233,11 +233,11 @@ with Parameters
       private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
-      lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(targetInts).map({case (l, t) => l -> new SimpleDiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
+      lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal1[DiscreteVar]] ++=
+        labels.zip(targetInts).map({case (l, t) => l -> new SimpleDiscreteMarginal1[DiscreteVar](l, new SingletonProportions1(labelDomain.size, t))})
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
       lazy val factors: Iterable[Factor] = self.factors(labels)
-      def marginal(v: Var): DiscreteMarginal = _marginals(v)
+      def marginal(v: Var): DiscreteMarginal1[DiscreteVar] = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {
         var i = 0
         while (i < variables.length) {
@@ -268,7 +268,7 @@ with Parameters
 trait ChainSummary extends Summary {
   // Do we actually want the marginal of arbitrary sets of variables? -brian
   def marginal(vs:Var*): DiscreteMarginal = null
-  def marginal(v:Var): DiscreteMarginal
+  override def marginal(v:Var): DiscreteMarginal1[DiscreteVar]
   def expectations: WeightsMap // TODO this should be 1-hot tensors for Viterbi -luke
   def factors: Iterable[Factor]
   def factorMarginals = factors.map(marginal)

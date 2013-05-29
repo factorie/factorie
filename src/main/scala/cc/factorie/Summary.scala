@@ -23,7 +23,7 @@ trait Summary {
   /** The collection of all Marginals available in this Summary */
   def marginals: Iterable[Marginal]
   /** If this Summary has a univariate Marginal for variable v, return it; otherwise return null. */
-  def marginal(v:Var): Marginal
+  def marginal(v:Var): Marginal1
   /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
       return the Marginal with the maximally-available subset. */
   def marginal(factor:Factor): FactorMarginal
@@ -42,7 +42,7 @@ trait IncrementableSummary extends Summary {
 }
 
 /** A Summary that contains multiple Marginals of type M, each a marginal distribution over a single variable. */
-class Summary1[V<:Var,M<:Marginal] extends Summary {
+class Summary1[V<:Var,M<:Marginal1] extends Summary {
   protected val _marginals = new scala.collection.mutable.HashMap[V,M]
   protected val _factorMarginals = new scala.collection.mutable.HashMap[Factor,FactorMarginal]
   def marginals = _marginals.values
@@ -64,7 +64,7 @@ class Summary1[V<:Var,M<:Marginal] extends Summary {
 }
 
 /** A Summary containing only one Marginal. */
-class SingletonSummary[M<:Marginal](val marginal:M) extends Summary {
+class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
   def marginals = Seq(marginal)
   def marginal(v:Var): M = if (Seq(v) == marginal.variables) marginal else null.asInstanceOf[M]
   def marginal(f:Factor) = null
@@ -80,7 +80,7 @@ class AssignmentSummary(val assignment:Assignment) extends Summary {
     def variables = Seq(v)
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
   })
-  def marginal(v:Var): Marginal = null
+  def marginal(v:Var): Marginal1 = null
   def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
   def logZ = throw new Error("AssignmentSummary does not define logZ")
@@ -90,9 +90,8 @@ class AssignmentSummary(val assignment:Assignment) extends Summary {
 // An AssignmentSummary that can be used as a result of inference.
 class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary {
   /** The collection of all Marginals available in this Summary */
-  class SingletonMarginal(v: Var) extends Marginal {
-    def variables = Seq(v)
-    def setToMaximize(implicit d: DiffList) { v match { case v: MutableVar[Any @unchecked] => v.set(mapAssignment(v)) } }
+  class SingletonMarginal(val _1: Var) extends Marginal1 {
+    def setToMaximize(implicit d: DiffList) { _1 match { case v: MutableVar[Any @unchecked] => v.set(mapAssignment(v)) } }
   }
   val marginals = mapAssignment.variables.map(new SingletonMarginal(_))
   def marginal(v: Var) = mapAssignment.get(v) match {

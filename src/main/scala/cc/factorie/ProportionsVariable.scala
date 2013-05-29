@@ -281,8 +281,9 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal {
+class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with Marginal1 with ProportionsMarginal {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
+  override def variables = Seq(p)
   def mean = throw new Error // TODO!!! Should be this instead: value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
 }

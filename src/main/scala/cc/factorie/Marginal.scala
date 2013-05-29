@@ -23,14 +23,14 @@ trait Marginal {
   def setToMaximize(implicit d:DiffList): Unit
 }
 
-trait Marginal1[V1<:Var] extends Marginal {
-  val variables = Seq(_1)
-  def _1:V1
+trait Marginal1 extends Marginal {
+  def variables: Iterable[Var] = Seq(_1)
+  def _1:Var
 }
-trait Marginal2[V1<:Var,V2<:Var] extends Marginal {
-  val variables = Seq(_1, _2)
-  def _1:V1
-  def _2:V2
+trait Marginal2 extends Marginal {
+  def variables: Iterable[Var] = Seq(_1, _2)
+  def _1:Var
+  def _2:Var
 }
 
 /** A Marginal associated with a Factor.
@@ -55,7 +55,9 @@ trait DiscreteMarginal extends Marginal {
 
 // TODO Do we need a trait version of these? -akm
 //trait DiscreteMar1[V1<:DiscreteVectorVar] extends DiscreteMar { def _1: V1; def proportions: Proportions1 }
-trait DiscreteMarginal1[V1<:DiscreteDimensionTensorVar] extends DiscreteMarginal with Marginal1[V1] {
+trait DiscreteMarginal1[V1<:DiscreteDimensionTensorVar] extends Marginal1 with DiscreteMarginal {
+  override def _1: V1
+  override def variables = Seq(_1)
   def proportions: Proportions1
   //def variables = Seq(_1) // This is already inherited from AbstractAssignment1
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
@@ -180,8 +182,8 @@ object DiscreteMarginal {
   }
 }
 
-class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends Marginal {
-  def variables = Seq(_1)
+class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends Marginal1 {
+  override def variables = Seq(_1)
   def setToMaximize(implicit d:DiffList): Unit = {
     var i = 0
     while (i < _1.length) {

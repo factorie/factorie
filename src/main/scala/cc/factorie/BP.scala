@@ -92,7 +92,8 @@ trait BPVariable {
   }
   def calculateMarginal: Tensor
 }
-abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal with BPVariable {
+abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[DiscreteVar] with BPVariable {
+  val variable = _1
   private var _edges: List[BPEdge] = Nil
   def addEdge(e:BPEdge): Unit = _edges = e :: _edges
   final def edges: List[BPEdge] = _edges
@@ -106,11 +107,9 @@ abstract class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal w
   }
   def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO Make this more efficient for cases of 1, 2, 3 edges.
   def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal.asInstanceOf[Tensor1], false)  // TODO Think about avoiding re-calc every time
-  def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
+  override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
-  def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
-  def _1 = variable
-  def variables = Seq(variable)
+  override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
 }
 
 trait BPVariableMaxProduct { self: BPVariable =>
