@@ -31,7 +31,7 @@ object TaggedLDA {
   val WordSeqDomain = new CategoricalSeqDomain[String] // { override val elementDomain = wordDomain }
   val WordDomain = WordSeqDomain.elementDomain
   val tokenizer = cc.factorie.app.strings.alphaSegmenter
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   val lda = new LDA(WordSeqDomain, numTopics, alpha1)
   
   def main(args:Array[String]): Unit = {

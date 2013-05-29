@@ -98,11 +98,11 @@ trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithValue[This]
 trait VarWithConstantValue extends Var 
 
 /** Used as a marker for variables whose value is a deterministic (non-stochastic) function of some other state,
-    for example, a deterministic function of its GenerativeModel parents.
+    for example, a deterministic function of its DirectedModel parents.
     Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
     variable's value changes automatically with changes to the parent variables' values.  How the automatic
     values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
-    This function is used in cc.factorie.directed.GenerativeModel.extendedParents and extendedChildren. */
+    This function is used in cc.factorie.directed.DirectedModel.extendedParents and extendedChildren. */
 trait VarWithDeterministicValue extends Var
 
 /** A Variable with a value that can be changed.

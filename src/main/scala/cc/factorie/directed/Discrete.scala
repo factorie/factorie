@@ -19,13 +19,13 @@ import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 
-trait DiscreteGeneratingFactor extends GenerativeFactor {
+trait DiscreteGeneratingFactor extends DirectedFactor {
   //type ChildType <: GeneratedDiscreteVar
   def prValue(value:Int): Double
   //def prValue(s:StatisticsType, value:Int): Double
 }
 
-object Discrete extends GenerativeFamily2[DiscreteVariable,ProportionsVariable] {
+object Discrete extends DirectedFamily2[DiscreteVariable,ProportionsVariable] {
   case class Factor(override val _1:DiscreteVariable, override val _2:ProportionsVariable) extends super.Factor(_1, _2) with DiscreteGeneratingFactor {
     //def proportions: Proportions = _2 // Just an alias
     def pr(child:DiscreteValue, proportions:Proportions) = proportions(child.intValue)

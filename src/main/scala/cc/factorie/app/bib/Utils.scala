@@ -11,7 +11,7 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 import collection.mutable
-import cc.factorie.directed.GenerativeModel
+import cc.factorie.directed.DirectedModel
 
 object Utils{
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
@@ -911,7 +911,7 @@ object EntityUtils{
 
 object LDAUtils{
   object WordSeqDomain extends CategoricalSeqDomain[String]
-  val model = GenerativeModel()
+  val model = DirectedModel()
 //cc.factorie.app.strings.StringSegmenter
   def inferTopicsForPapers(papers:Iterable[PaperEntity],lda:LDA,mySegmenter:cc.factorie.app.strings.RegexSegmenter=new cc.factorie.app.strings.RegexSegmenter("\\p{Alpha}+".r)):Unit ={
     var count = 0

@@ -20,7 +20,7 @@ import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 import cc.factorie.directed.Gaussian
 
-object GaussianMixture extends GenerativeFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {
+object GaussianMixture extends DirectedFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {
   case class Factor(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:Mixture[DoubleVariable], override val _4:DiscreteVariable) extends super.Factor(_1, _2, _3, _4) {
     def gate = _4
     override def logpr(child:Double, means:Seq[Double], variances:Seq[Double], z:DiscreteValue) = Gaussian.logpr(child, means(z.intValue), variances(z.intValue)) 
@@ -32,7 +32,7 @@ object GaussianMixture extends GenerativeFamily4[DoubleVariable,Mixture[DoubleVa
   def newFactor(a:DoubleVariable, b:Mixture[DoubleVariable], c:Mixture[DoubleVariable], d:DiscreteVariable) = Factor(a, b, c, d)
   
   // A different version in which all the components share the same variance
-  case class FactorSharedVariance(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:DoubleVariable, override val _4:DiscreteVariable) extends GenerativeFactorWithStatistics4[DoubleVariable,Mixture[DoubleVariable],DoubleVariable,DiscreteVariable](_1, _2, _3, _4)  {
+  case class FactorSharedVariance(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:DoubleVariable, override val _4:DiscreteVariable) extends DirectedFactorWithStatistics4[DoubleVariable,Mixture[DoubleVariable],DoubleVariable,DiscreteVariable](_1, _2, _3, _4)  {
     def gate = _4
     override def logpr(child:Double, means:Seq[Double], variance:Double, z:DiscreteValue) = Gaussian.logpr(child, means(z.intValue), variance) 
     def pr(child:Double, means:Seq[Double], variance:Double, z:DiscreteValue) = Gaussian.pr(child, means(z.intValue), variance) 

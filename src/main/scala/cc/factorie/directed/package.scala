@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 package object directed {
 
-  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+  /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       and add this new factor to the given model. */
   implicit def generatedVarExtras[V<:Var](v:V) = new GeneratedVarWrapper(v)
   implicit def generatedMutableVarExtras[V<:MutableVar[_]](v:V) = new GeneratedMutableVarWrapper(v)
@@ -30,13 +30,13 @@ package object directed {
 
 
   /*@deprecated
-  object GenerativeModel extends Model {
+  object DirectedModel extends Model {
     /** Only works on Iterable[GeneratedVar] */
     def factors(variables:Iterable[Variable]): Seq[Factor] = {
       val result = new scala.collection.mutable.ArrayBuffer[Factor];
       variables.foreach(v => v match {
         // TODO Also handle ContainerVariables!!!  Consider also interaction with handling of GeneratedVar.isDeterministic
-        case cv: ContainerVariable[_] => throw new Error("ContainerVariables not yet handled in GenerativeModel.")
+        case cv: ContainerVariable[_] => throw new Error("ContainerVariables not yet handled in DirectedModel.")
         case gv:GeneratedVar => {
           if (gv.parentFactor != null) result += gv.parentFactor
           if (gv.childFactors ne Nil) {

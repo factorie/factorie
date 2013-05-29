@@ -19,7 +19,7 @@ class TimeStampedDocument(domain:CategoricalSeqDomain[String], name:String, toke
 
 object TopicsOverTime {
   val numTopics = 10
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]

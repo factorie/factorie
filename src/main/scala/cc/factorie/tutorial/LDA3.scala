@@ -18,7 +18,7 @@ object LDA3 {
   val fitDirichlet = false
   cc.factorie.random.setSeed(0)
   
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { 

@@ -27,7 +27,7 @@ import cc.factorie.directed._
 object LDA2 {
   
   val numTopics = 10
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }

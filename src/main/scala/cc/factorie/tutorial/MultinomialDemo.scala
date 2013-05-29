@@ -19,15 +19,11 @@ import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.directed.Discrete
 
-// Next two lines to get the implicit Estimator objects
-//import cc.factorie.generative.DenseProportions._
-//import cc.factorie.generative.DenseCountsProportions._
-
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain(numSides)
   class Roll extends DiscreteVariable { def domain = RollDomain }
-  implicit val model = GenerativeModel() // ItemizedGenerativeModel
+  implicit val model = DirectedModel() // ItemizedDirectedModel
 
   def main(args:Array[String]) : Unit = {
     val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .15, .05)))

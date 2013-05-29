@@ -16,7 +16,7 @@ package cc.factorie.directed
 
 import cc.factorie._
 
-object Poisson extends GenerativeFamily2[IntegerVar,DoubleVar] {
+object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
   case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {
     def pr(k:Int, mean:Double): Double = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
     //def pr(s:Statistics): Double = pr(s._1, s._2)

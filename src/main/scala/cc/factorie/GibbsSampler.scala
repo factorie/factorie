@@ -1,11 +1,11 @@
 package cc.factorie
 import scala.collection.mutable.{ArrayBuffer,HashMap}
-import cc.factorie.directed.{GenerativeModel, GenerativeFactor}
+import cc.factorie.directed.{DirectedModel, DirectedFactor}
 
 /** Sample a value for a single variable.  This sampler works in one of two ways:  
-    If the model is a GenerativeModel, then sampling is performed based on a suite a handlers
+    If the model is a DirectedModel, then sampling is performed based on a suite a handlers
     selected according to the variable type and its neighboring factors.
-    If the model is not a GenerativeModel, then the variable should inherit from IterableSettings
+    If the model is not a DirectedModel, then the variable should inherit from IterableSettings
     which is used to create a list of Proposals with alternative values. */
 class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Var] {
   type V = Var
@@ -15,7 +15,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
   def handlers: Iterable[GibbsSamplerHandler] = if (_handlers eq null) defaultHandlers else _handlers
   val cacheClosures = true
   def closures = new HashMap[V, GibbsSamplerClosure]
-  val doProcessByHandlers = model.isInstanceOf[GenerativeModel]
+  val doProcessByHandlers = model.isInstanceOf[DirectedModel]
   override def process1(v:V): DiffList = if (doProcessByHandlers) processByHandlers(v) else processProposals(proposals(v))
   def processByHandlers(v:V): DiffList = {
     val d = newDiffList
@@ -38,7 +38,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
   }
 
   def proposals(v:V): Seq[Proposal] = model match {
-    case m:GenerativeModel => throw new Error("Not yet implemented")
+    case m:DirectedModel => throw new Error("Not yet implemented")
     case m:Model => v match {
       case v:DiscreteVariable => proposals(v)
       case v:Var with IterableSettings => proposals(v.settings)
@@ -85,12 +85,12 @@ trait GibbsSamplerClosure {
 
 
 object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
-  class Closure(val variable:MutableVar[_], val factor:GenerativeFactor) extends GibbsSamplerClosure {
+  class Closure(val variable:MutableVar[_], val factor:DirectedFactor) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
   def sampler(v:Var, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
-      case List(factor:GenerativeFactor) => {
+      case List(factor:DirectedFactor) => {
         v match {
           case v:MutableVar[_] => new Closure(v, factor)
         }

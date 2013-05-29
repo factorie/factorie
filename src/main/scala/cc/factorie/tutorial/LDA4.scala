@@ -17,7 +17,7 @@ object LDA4 {
     val numIterations = 50
     val tokenizer = cc.factorie.app.strings.alphaSegmenter
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     val lda = new LDA(WordSeqDomain, numTopics, 0.1, 0.1)
     var minYear = 9999
     var maxYear = 0000

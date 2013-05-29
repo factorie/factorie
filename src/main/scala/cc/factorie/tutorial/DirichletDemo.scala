@@ -23,7 +23,7 @@ object DirichletDemo {
   def main(args:Array[String]): Unit = {
     object WordDomain extends EnumDomain { val a, b, c, d, e, f = Value }
     class Word extends DiscreteVariable { def domain = WordDomain }
-    implicit val model = GenerativeModel()
+    implicit val model = DirectedModel()
     
     val masses = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))
     val p1 = new ProportionsVariable(new DenseProportions1(WordDomain.size))

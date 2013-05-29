@@ -297,7 +297,7 @@ object MaximizeProportions extends Maximize {
     variables.head match {
       case mp: ProportionsVariable => {
         model match {
-          case model:GenerativeModel => Some(new SingleSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
+          case model:DirectedModel => Some(new SingleSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
           case _ => return None
         }
       }
@@ -308,15 +308,15 @@ object MaximizeProportions extends Maximize {
     // override def infer(variables:Iterable[Variable], model:Model): Option[Summary[ProportionsAssignment]] = 
     if (variables.size != 1) return None
     (variables.head, model) match {
-      case (mp:ProportionsVariable, model:GenerativeModel) => {
+      case (mp:ProportionsVariable, model:DirectedModel) => {
         Some(new SingletonSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
       }
       case _ => None
     }
   }
-  def apply(p:ProportionsVariable, model:GenerativeModel): Unit = apply(p, model, null)
-  def apply(p:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)
-  def maxProportions[A](p:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
+  def apply(p:ProportionsVariable, model:DirectedModel): Unit = apply(p, model, null)
+  def apply(p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)
+  def maxProportions[A](p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
     // Zero an accumulator
     var e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
     // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
@@ -331,7 +331,7 @@ object MaximizeProportions extends Maximize {
       if (marginal eq null) e.masses.+=(dv.intValue, incr) else e.masses.+=(marginal.proportions, incr)
     }
     for (factor <- model.extendedChildFactors(p)) factor match {
-      //case parent:GenerativeFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
+      //case parent:DirectedFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
       // The array holding the mixture components; the individual components (CategoricalMixture.Factors) will also be among the extendedChildFactors
       case m:Mixture.Factor => {}
       // A simple DiscreteVar child of the Proportions

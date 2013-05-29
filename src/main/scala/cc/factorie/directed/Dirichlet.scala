@@ -19,7 +19,7 @@ import cc.factorie._
 // Proportions ~ Dirichlet(Masses)
 // Proportions ~ Dirichlet(Proportions, Precision)
 
-object Dirichlet extends GenerativeFamily2[ProportionsVariable,MassesVariable] {
+object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
   self =>
   def pr(value:Proportions, alpha:Masses): Double = {
     require(value.length == alpha.length)
@@ -55,7 +55,7 @@ object Dirichlet extends GenerativeFamily2[ProportionsVariable,MassesVariable] {
 }
 
 object MaximizeDirichletByMomentMatching {
-  def apply(masses:MassesVariable, model:GenerativeModel): Unit = {
+  def apply(masses:MassesVariable, model:DirectedModel): Unit = {
     // Calculate and set the mean
     val m = new cc.factorie.DenseMasses1(masses.tensor.length)
     val childFactors = model.childFactors(masses)
@@ -180,7 +180,7 @@ object LearnDirichletUsingFrequencyHistograms {
 }
 
 /** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
-object Dirichlet2 extends GenerativeFamily3[ProportionsVar,ProportionsVar,RealVar] {
+object Dirichlet2 extends DirectedFamily3[ProportionsVar,ProportionsVar,RealVar] {
   def newFactor(a:ProportionsVar, b:ProportionsVar, c:RealVar) = throw new Error("Not yet implemented")
 }
   

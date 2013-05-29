@@ -35,7 +35,7 @@ object LDA5 {
   val timeAlphas = new Array[Double](numTopics)
   val timeBetas  = new Array[Double](numTopics)
   val timeMeans = new DenseTensor1(numTopics)
-  implicit val model = GenerativeModel()
+  implicit val model = DirectedModel()
   
   def estimateTopicTimes(documents:Seq[Document]): Unit = {
     val topic2times = Array.tabulate(numTopics)(i => new cc.factorie.util.DoubleArrayBuffer)

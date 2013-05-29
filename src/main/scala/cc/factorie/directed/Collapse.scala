@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
    that allows CollapsedGibbsSampler or CollapsedVariationalBayes to treat
    them as collapsed for their inference.
    @author Andrew McCallum */
-class Collapse(val model:GenerativeModel) {
+class Collapse(val model:DirectedModel) {
   val collapsers = new ArrayBuffer[Collapser] ++= Seq(DenseCountsProportionsCollapser, DenseCountsProportionsMixtureCollapser)
   def apply(variables:Seq[Var]): Unit = {
     val factors = model.factors(variables)
@@ -31,15 +31,14 @@ class Collapse(val model:GenerativeModel) {
     if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString(" "))
   }
 }
-//object Collapse extends Collapse(defaultGenerativeModel) 
 
 trait Collapser {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:DirectedModel): Boolean
 }
 
 object DenseCountsProportionsCollapser extends Collapser {
-  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:DirectedModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case p:ProportionsVar => {
@@ -64,7 +63,7 @@ object DenseCountsProportionsCollapser extends Collapser {
 }
 
 object DenseCountsProportionsMixtureCollapser extends Collapser {
-  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Var], factors:Iterable[Factor], model:DirectedModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case m:Mixture[ProportionsVar] => {
@@ -76,7 +75,7 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
           }
         })
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
-        //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
+        //  and DirectedModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
           //case f:MixtureComponent.Factor => {}

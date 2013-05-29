@@ -15,11 +15,11 @@
 package cc.factorie.directed
 
 import cc.factorie._
-import cc.factorie.directed.GenerativeFamily3
+import cc.factorie.directed.DirectedFamily3
 
 // TODO Consider creating PostiveDouble, and then Gamma extends 
 
-object Gamma extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] {
+object Gamma extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
     val diff = value - mean

@@ -36,8 +36,6 @@ class MaximizeSuite extends Maximize {
   def defaultSuite = Seq(
     MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions,
     MaximizeGaussianMean, MaximizeGaussianVariance, MaximizeByBPChain
-//    ,    cc.factorie.generative.MaximizeMultivariateGaussianMean,
-//    cc.factorie.generative.MaximizeMultivariateGaussianCovariance
   )
   val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
   suite ++= defaultSuite

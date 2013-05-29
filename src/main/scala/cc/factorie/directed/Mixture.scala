@@ -23,7 +23,7 @@ import scala.collection.mutable.{ArrayBuffer,Stack}
 //abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter { }
 
 // For factors between a Mixture and the child generated from that Mixture
-trait MixtureFactor extends GenerativeFactor {
+trait MixtureFactor extends DirectedFactor {
   //type ChildType <: MixtureGeneratedVar
   def gate: DiscreteVariable
   //def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
@@ -43,10 +43,10 @@ trait MixtureFactor extends GenerativeFactor {
 class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
 object MixtureDomain extends MixtureDomain[Any]
 // NOTE Was Mixture[+P...]
-class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
+class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirectedModel) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
 {
   /* A Mixture is a deterministic function of its parents.  
-     This fact is examined in GenerativeModel.factors, causing factors(mixtureComponent) 
+     This fact is examined in DirectedModel.factors, causing factors(mixtureComponent)
      to return not only this Mixture but also all the children of this Mixture. */
   //type Value <: scala.collection.Seq[P#Value]
   this ~ Mixture() // This will make this a child of each of the mixture components.
@@ -85,8 +85,8 @@ class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableGenerati
   }*/
 }
 
-object Mixture extends GenerativeFamily1[Mixture[Var]] {
-  def apply[P<:Var](n:Int)(constructor: =>P)(implicit model: MutableGenerativeModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead
+object Mixture extends DirectedFamily1[Mixture[Var]] {
+  def apply[P<:Var](n:Int)(constructor: =>P)(implicit model: MutableDirectedModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead
   case class Factor(override val _1:Mixture[Var]) extends super.Factor(_1) {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Var] = _1.components

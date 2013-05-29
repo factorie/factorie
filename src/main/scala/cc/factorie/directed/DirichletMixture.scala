@@ -16,7 +16,7 @@ package cc.factorie.directed
 
 import cc.factorie._
 
-object DirichletMixture extends GenerativeFamily3[ProportionsVariable,Mixture[MassesVariable],DiscreteVariable] {
+object DirichletMixture extends DirectedFamily3[ProportionsVariable,Mixture[MassesVariable],DiscreteVariable] {
   case class Factor(override val _1:ProportionsVariable, override val _2:Mixture[MassesVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with MixtureFactor {
     def gate = _3
     def pr(child:Proportions,  mixture:Seq[Masses], z:DiscreteValue) = Dirichlet.pr(child, mixture(z.intValue))

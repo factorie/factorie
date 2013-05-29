@@ -11,7 +11,7 @@ import cern.colt.matrix.tdouble.algo.decomposition._
 import scala.util.Random
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D
 
-object MultivariateGaussian extends GenerativeFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
+object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
   self =>
   def logpr(value: Tensor1, mean: Tensor1, variance: Tensor2): Double = {
     val k = mean.length
@@ -43,7 +43,7 @@ object MultivariateGaussian extends GenerativeFamily3[MutableTensorVar[Tensor1],
 }
 
 object MultivariateGaussianMixture
-  extends GenerativeFamily4[MutableTensorVar[Tensor1], Mixture[MutableTensorVar[Tensor1]], Mixture[MutableTensorVar[Tensor2]], DiscreteVariable] {
+  extends DirectedFamily4[MutableTensorVar[Tensor1], Mixture[MutableTensorVar[Tensor1]], Mixture[MutableTensorVar[Tensor2]], DiscreteVariable] {
   case class Factor(
     override val _1: MutableTensorVar[Tensor1],
     override val _2: Mixture[MutableTensorVar[Tensor1]],
@@ -66,12 +66,12 @@ object MultivariateGaussianMixture
 }
 
 object MaximizeMultivariateGaussianMean extends Maximize {
-  def maxMean(meanVar: MutableTensorVar[Tensor1], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] =
+  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
-  def apply(meanVar: MutableTensorVar[Tensor1], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
+  def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
   override def infer(variables: Iterable[Var], model: Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m: GenerativeModel => m; case _ => return None }
+    val gModel = model match { case m: DirectedModel => m; case _ => return None }
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
@@ -85,7 +85,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
     Some(new AssignmentSummary(assignment))
   }
   def getMeanFromFactors(
-    factors: Iterable[GenerativeFactor],
+    factors: Iterable[DirectedFactor],
     pred1: MultivariateGaussian.Factor => Boolean,
     pred2: MultivariateGaussianMixture.Factor => Int,
     summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] = {
@@ -117,7 +117,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
 }
 
 object MaximizeMultivariateGaussianCovariance extends Maximize {
-  def maxCovariance(covarianceVar: MutableTensorVar[Tensor2], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor2] = {
+  def maxCovariance(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor2] = {
     val factorIter = model.extendedChildFactors(covarianceVar).iterator
     val n = covarianceVar.value.dim1
     val meanOpt = MaximizeMultivariateGaussianMean.getMeanFromFactors(
@@ -155,10 +155,10 @@ object MaximizeMultivariateGaussianCovariance extends Maximize {
     sum /= (count - 1.0)
     Some(sum)
   }
-  def apply(covarianceVar: MutableTensorVar[Tensor2], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
+  def apply(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxCovariance(covarianceVar, model, summary).foreach(covarianceVar.set(_)(null))
   override def infer(variables: Iterable[Var], model: Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m: GenerativeModel => m; case _ => return None }
+    val gModel = model match { case m: DirectedModel => m; case _ => return None }
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
