@@ -47,14 +47,12 @@ class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Paramete
           if (value != null) value.accumulate(factor.statisticsScore(aStat))
           if (gradient != null) {
             gradient.accumulate(factor.family.weights, aStat)
-            gradient.accumulate(factor.family.weights, summary.marginal(factor).tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
+            gradient.accumulate(factor.family.weights, factorMarginal.tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
           }
-        case _ =>
+        case factor: Family#Factor if (!factor.family.isInstanceOf[DotFamily]) =>
+          if (value != null) value.accumulate(factor.assignmentScore(TargetAssignment))
       }
     }
-    if (value != null) // add in the score from non-DotFamilies
-      for (factorMarginal <- factorMarginals; factor <- factorMarginal.factor; if (!factor.isInstanceOf[DotFamily#Factor]))
-        value.accumulate(factor.assignmentScore(TargetAssignment))
   }
 }
 
