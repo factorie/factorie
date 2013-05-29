@@ -19,42 +19,37 @@ import cc.factorie
 
 /** The result of inference: a collection of Marginal objects.
     @author Andrew McCallum */
-trait Summary[+M<:Marginal] {
+trait Summary {
   /** The collection of all Marginals available in this Summary */
-  def marginals: Iterable[M]
+  def marginals: Iterable[Marginal]
   /** If this Summary has a univariate Marginal for variable v, return it; otherwise return null. */
-  def marginal(v:Var): M
-  /** If this summary has a univariate Marginal for variable v, return it in an Option; otherwise return None. */
-  def getMarginal(v:Var): Option[M] = { val m = marginal(v); if (m eq null) None else Some(m) }
+  def marginal(v:Var): Marginal
   /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
       return the Marginal with the maximally-available subset. */
-  def marginal(factor:Factor): M
+  def marginal(factor:Factor): FactorMarginal
+  def factorMarginals: Iterable[FactorMarginal]
+  def logZ: Double
+  /** If this summary has a univariate Marginal for variable v, return it in an Option; otherwise return None. */
+  def getMarginal(v:Var): Option[Marginal] = { val m = marginal(v); if (m eq null) None else Some(m) }
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
-  def logZ: Double = throw new Error("Summary class "+getClass+" does not provide logZ: "+getClass.getName)
-  /** The Model factors used to calculate this Summary.  Not all Summary instances provide this, however. */
-  def factors: Option[Iterable[Factor]] = None
-  // /** The variables that are varying in this summary. */
-  // def variables: Iterable[Variable] // TODO Should we also have a method like this?
 }
 
 /** A Summary that can be used to gather weighted samples into its Marginals. */
 // TODO Consider the relationship between this and Accumulator
 // TODO Consider removing this
-trait IncrementableSummary[+M<:Marginal] extends Summary[M] {
+trait IncrementableSummary extends Summary {
   def incrementCurrentValues(weight:Double): Unit
 }
 
 /** A Summary that contains multiple Marginals of type M, each a marginal distribution over a single variable. */
-class Summary1[V<:Var,M<:Marginal] {
+class Summary1[V<:Var,M<:Marginal] extends Summary {
   protected val _marginals = new scala.collection.mutable.HashMap[V,M]
+  protected val _factorMarginals = new scala.collection.mutable.HashMap[Factor,FactorMarginal]
   def marginals = _marginals.values
-  def variables = _marginals.keys
+  def factorMarginals = _factorMarginals.values
+  def logZ = throw new Error("logZ is not defined")
   def marginal(v:Var): M = _marginals(v.asInstanceOf[V]) // We don't actually care that this type check does nothing because only Vs could be added to the HashMap
-  def marginal(f:Factor): M = f match {
-    case f:Factor1[_] => _marginals(f._1.asInstanceOf[V])
-    //case f:Factor2[_,_] => {}
-    case _ => null.asInstanceOf[M]
-  }
+  def marginal(f:Factor): FactorMarginal = _factorMarginals(f)
   def +=(marginal:M) = {
     val vars = marginal.variables
     require(vars.size == 1)
@@ -62,31 +57,38 @@ class Summary1[V<:Var,M<:Marginal] {
     if (_marginals.contains(v)) throw new Error("Marginal already present for variable "+v)
     _marginals(v) = marginal
   }
-}
-
-/** A Summary containing only one Marginal. */
-class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
-  def marginals = Seq(marginal)
-  def marginal(v:Var): M = if (Seq(v) == marginal.variables) marginal else null.asInstanceOf[M]
-  def marginal(f:Factor): M = marginal match {
-    case m:FactorMarginal if m.factor == f => marginal 
-    case _ => null.asInstanceOf[M]
+  def +=(marginal:FactorMarginal) = {
+    if (_factorMarginals.contains(marginal.factor)) throw new Error("Marginal already present for factor "+marginal.factor)
+    _factorMarginals(marginal.factor) = marginal
   }
 }
 
+/** A Summary containing only one Marginal. */
+class SingletonSummary[M<:Marginal](val marginal:M) extends Summary {
+  def marginals = Seq(marginal)
+  def marginal(v:Var): M = if (Seq(v) == marginal.variables) marginal else null.asInstanceOf[M]
+  def marginal(f:Factor) = null
+  def logZ = throw new Error("logZ not definable for SingletonSummary")
+  def factorMarginals = Nil
+}
+
+
+
 /** A Summary with all its probability on one variable-value Assignment. */
-class AssignmentSummary(val assignment:Assignment) extends Summary[Marginal] {
+class AssignmentSummary(val assignment:Assignment) extends Summary {
   def marginals = assignment.variables.map(v=> new Marginal {
     def variables = Seq(v)
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
   })
   def marginal(v:Var): Marginal = null
-  def marginal(f:Factor): Marginal = null.asInstanceOf[Marginal]
+  def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]
   override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
+  def logZ = throw new Error("AssignmentSummary does not define logZ")
+  def factorMarginals = Nil
 }
 
 // An AssignmentSummary that can be used as a result of inference.
-class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary[Marginal] {
+class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary {
   /** The collection of all Marginals available in this Summary */
   class SingletonMarginal(v: Var) extends Marginal {
     def variables = Seq(v)
@@ -98,37 +100,39 @@ class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Su
     case None => null
   }
   class SingletonFactorMarginal(val factor: Factor) extends FactorMarginal {
-    override val tensorStatistics = factor.assignmentStatistics(mapAssignment).asInstanceOf[Tensor]
+    val tensorStatistics = factor.assignmentStatistics(mapAssignment).asInstanceOf[Tensor]
     def variables = factor.variables
-    def setToMaximize(implicit d: DiffList) { throw new Error("Can't maximize a factor marginal") }
-    def score: Double = factor.assignmentScore(mapAssignment)
+    val score = factor.assignmentScore(mapAssignment)
   }
-  def marginal(factor: Factor) = new SingletonFactorMarginal(factor)
-  override def logZ = factors.map(marginal(_).score).sum
+  def marginal(factor: Factor): SingletonFactorMarginal = new SingletonFactorMarginal(factor)
+  def factorMarginals = factors.map(marginal)
+  def logZ = factors.map(marginal(_).score).sum
 }
 
 
 /** A summary with a separate Proportions distribution for each of its DiscreteVars */
 // TODO Consider renaming FullyFactorizedDiscreteSummary or IndependentDiscreteSummary or PerVariableDiscreteSummary
 // TODO Consider making this inherit from Summary1
-class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarginal] {
+class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary {
   def this(vs:Iterable[V]) = { this(); ++=(vs) }
   //val variableClass = m.erasure
-  val _marginals1 = new scala.collection.mutable.HashMap[V,DiscreteMarginal1[V]]
+  val _marginals1 = new scala.collection.mutable.HashMap[V,SimpleDiscreteMarginal1[V]]
   def marginals = _marginals1.values
   def variables = _marginals1.keys
   lazy val variableSet = variables.toSet
-  def marginal(v1:Var) = _marginals1(v1.asInstanceOf[V])
+  def marginal(v1:Var): SimpleDiscreteMarginal1[V] = _marginals1(v1.asInstanceOf[V])
   def marginal2(vs:Var*): DiscreteMarginal = vs match {
     case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
     case Seq(v:V, w:V) => new DiscreteMarginal2[V,V](v, w, new NormalizedTensorProportions2(new Outer1Tensor2(_marginals1(v).proportions,_marginals1(w).proportions), false))
     case _ => null
   }
-  def marginal(f:Factor): DiscreteMarginal = null
-  def +=(m:DiscreteMarginal1[V]): Unit = _marginals1(m._1) = m
-  def +=(v:V): Unit = this += new DiscreteMarginal1(v, null) // but not yet initialized marginal proportions
+  def marginal(f:Factor): FactorMarginal = null
+  def +=(m:SimpleDiscreteMarginal1[V]): Unit = _marginals1(m._1) = m
+  def +=(v:V): Unit = this += new SimpleDiscreteMarginal1(v, null) // but not yet initialized marginal proportions
   def ++=(vs:Iterable[V]): Unit = vs.foreach(+=(_))
   //def ++=(ms:Iterable[DiscreteMarginal1[V]]): Unit = ms.foreach(+=(_))
   def incrementCurrentValues(weight:Double): Unit = for (m <- marginals) m.incrementCurrentValue(weight)
   //def maximize(implicit d:DiffList): Unit = for (m <- marginals) m._1.asInstanceOf[DiscreteVariable].set(m.proportions.maxIndex)
+  def factorMarginals = Nil
+  def logZ = throw new Error("DiscreteSummary1 does not define logZ")
 }

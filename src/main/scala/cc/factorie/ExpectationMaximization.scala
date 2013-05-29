@@ -20,7 +20,7 @@ import cc.factorie._
     meanField contains the variables for which to get expectations.
     You can provide your own Maximizer; other wise an instance of the default MaximizeSuite is provided. */
 class EMInferencer[V<:Var,W<:DiscreteVar](val maximizing:Iterable[V], val marginalizing: Iterable[W], val infer:Infer, val model:Model, val maximizer: Maximize = Maximize) {
-  var summary: Summary[Marginal] = null
+  var summary: Summary = null
   def eStep: Unit = summary = infer.infer(marginalizing, model).head
   // The "foreach and Seq(v)" below reflect the fact that in EM we maximize the variables independently of each other 
   def mStep: Unit = maximizing.foreach(v => maximizer.infer(Seq(v), model, summary).get.setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
@@ -33,12 +33,12 @@ object EMInferencer {
 }
 
 object InferByEM extends Infer {
-  def apply(maximize:Iterable[Var], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize): Summary[Marginal] = {
+  def apply(maximize:Iterable[Var], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize = Maximize): Summary = {
     val inferencer = new EMInferencer(maximize, varying, InferByBPTreeSum, model, maximizer)
     inferencer.process
     inferencer.summary
   }
-  override def infer(variables:Iterable[Var], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
+  override def infer(variables:Iterable[Var], model:Model, summary:Summary = null): Option[Summary] = {
     summary match {
       case ds:DiscreteSummary1[DiscreteVariable] => {
         val inferencer = new EMInferencer(variables, ds.variables, InferByBPTreeSum, model, Maximize)

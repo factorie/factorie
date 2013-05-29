@@ -36,6 +36,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:Catego
 extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
 with Parameters
 {
+  self =>
   val labelClass = lm.erasure
   val featureClass = fm.erasure
   val tokenClass = tm.erasure
@@ -191,7 +192,7 @@ with Parameters
       private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
       private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
       private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(__nodeMarginals).map({case (l, m) => l -> new DiscreteMarginal1(l, new DenseProportions1(m)) })
+        labels.zip(__nodeMarginals).map({case (l, m) => l -> new SimpleDiscreteMarginal1(l, new DenseProportions1(m)) })
       private val _edgeMarginals =
         labels.zip(labels.drop(1)).zip(__edgeMarginals).map({ case ((l1, l2), m) =>
           // m is label X label
@@ -212,12 +213,13 @@ with Parameters
       override def logZ = _logZ
       def marginals: Iterable[DiscreteMarginal] = _nodeMarginals.values
       def marginal(v: Var): DiscreteMarginal = _nodeMarginals(v)
-      override def marginal(_f: Factor): DiscreteMarginal = {
+      lazy val factors: Iterable[Factor] = self.factors(labels)
+      override def marginal(_f: Factor): FactorMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias || f.family == obs)
-          marginal(f.variables.head)
+          marginal(f.variables.head).asInstanceOf[FactorMarginal]
         else if (f.family == markov)
-          _edgeMarginals(labels.indexOf(f.variables.head))
+          _edgeMarginals(labels.indexOf(f.variables.head)).asInstanceOf[FactorMarginal]
         else
           throw new Error("ChainModel marginals can only be returned for ChainModel factors")
       }
@@ -232,8 +234,9 @@ with Parameters
       lazy private val variableTargetMap = labels.zip(targetInts).toMap
       private val variables = labels
       lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal] ++=
-        labels.zip(targetInts).map({case (l, t) => l -> new DiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
+        labels.zip(targetInts).map({case (l, t) => l -> new SimpleDiscreteMarginal1(l, new SingletonProportions1(labelDomain.size, t))})
       def marginals: Iterable[DiscreteMarginal] = _marginals.values
+      lazy val factors: Iterable[Factor] = self.factors(labels)
       def marginal(v: Var): DiscreteMarginal = _marginals(v)
       override def setToMaximize(implicit d:DiffList): Unit = {
         var i = 0
@@ -244,12 +247,12 @@ with Parameters
       }
       val expectations = assignmentStatistics(labels, targetInts)
       override val logZ = expectations.toSeq.map({case (weights, stats) => weights.value dot stats}).sum
-      override def marginal(_f: Factor): DiscreteMarginal = {
+      override def marginal(_f: Factor): FactorMarginal = {
         val f = _f.asInstanceOf[DotFamily#Factor]
         if (f.family == bias)
-          f match { case f: DotFamilyWithStatistics1[Label]#Factor => new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
+          f match { case f: DotFamilyWithStatistics1[Label]#Factor => new SimpleDiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
         else if (f.family == obs)
-          f match { case f:DotFamilyWithStatistics2[Label,Features]#Factor => new DiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor2[Label,Features] { val factor = f } }
+          f match { case f:DotFamilyWithStatistics2[Label,Features]#Factor => new SimpleDiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor2[Label,Features] { val factor = f } }
         else if (f.family == markov) {
           val f2 = _f.asInstanceOf[Factor2[Label, Label]]
           val s = labelDomain.dimensionDomain.size
@@ -262,11 +265,13 @@ with Parameters
   }
 }
 
-trait ChainSummary extends Summary[DiscreteMarginal] {
+trait ChainSummary extends Summary {
   // Do we actually want the marginal of arbitrary sets of variables? -brian
   def marginal(vs:Var*): DiscreteMarginal = null
   def marginal(v:Var): DiscreteMarginal
   def expectations: WeightsMap // TODO this should be 1-hot tensors for Viterbi -luke
+  def factors: Iterable[Factor]
+  def factorMarginals = factors.map(marginal)
 }
 
 object ChainModel {

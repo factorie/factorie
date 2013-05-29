@@ -70,7 +70,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
   def apply(meanVar: MutableTensorVar[Tensor1], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  override def infer(variables: Iterable[Var], model: Model, summary: Summary[Marginal] = null): Option[AssignmentSummary] = {
+  override def infer(variables: Iterable[Var], model: Model, summary: Summary = null): Option[AssignmentSummary] = {
     val gModel = model match { case m: GenerativeModel => m; case _ => return None }
     val dSummary = summary match { case s: DiscreteSummary1[DiscreteVar] => s; case null => null; case _ => return None }
     lazy val assignment = new HashMapAssignment
@@ -157,7 +157,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize {
   }
   def apply(covarianceVar: MutableTensorVar[Tensor2], model: GenerativeModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxCovariance(covarianceVar, model, summary).foreach(covarianceVar.set(_)(null))
-  override def infer(variables: Iterable[Var], model: Model, summary: Summary[Marginal] = null): Option[AssignmentSummary] = {
+  override def infer(variables: Iterable[Var], model: Model, summary: Summary = null): Option[AssignmentSummary] = {
     val gModel = model match { case m: GenerativeModel => m; case _ => return None }
     val dSummary = summary match { case s: DiscreteSummary1[DiscreteVar] => s; case null => null; case _ => return None }
     lazy val assignment = new HashMapAssignment

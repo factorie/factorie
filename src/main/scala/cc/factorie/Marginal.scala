@@ -23,40 +23,49 @@ trait Marginal {
   def setToMaximize(implicit d:DiffList): Unit
 }
 
-/** A Marginal associated with a Factor. 
-    The marginal distribution may be over all the neighboring variables of the factor, 
+trait Marginal1[V1<:Var] extends Marginal {
+  val variables = Seq(_1)
+  def _1:V1
+}
+trait Marginal2[V1<:Var,V2<:Var] extends Marginal {
+  val variables = Seq(_1, _2)
+  def _1:V1
+  def _2:V2
+}
+
+/** A Marginal associated with a Factor.
+    The marginal distribution may be over all the neighboring variables of the factor,
     or, in the case in which inference varied some but not all of the neighbors,
     the marginal distribution will be over a subset of the neighboring variables of the factor.
     The tensorStatistics always covers all the neighboring variables of the factor.  */
-trait FactorMarginal extends Marginal {
+trait FactorMarginal {
   def factor: Factor
   def tensorStatistics: Tensor
 }
 
-//trait MarginalWithoutTensorStatistics extends Marginal {
-//  def tensorStatistics = throw new Error("No tensor statistics defined for marginal " + this.getClass.getName)
-//}
 
 // Marginals over discrete variables
 
 /** A Marginal in which all the variables are discrete (either singleton or tensors).
     @author Andrew McCallum */
 trait DiscreteMarginal extends Marginal {
-  def _1: DiscreteDimensionTensorVar // TODO Consider removing this.
   def variables: Iterable[DiscreteDimensionTensorVar]
   def proportions: Proportions
 }
 
 // TODO Do we need a trait version of these? -akm
 //trait DiscreteMar1[V1<:DiscreteVectorVar] extends DiscreteMar { def _1: V1; def proportions: Proportions1 }
-class DiscreteMarginal1[V1<:DiscreteDimensionTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal with AbstractAssignment1[V1] {
-  def this(f:Factor1[V1]) = this (f._1, null)
+trait DiscreteMarginal1[V1<:DiscreteDimensionTensorVar] extends DiscreteMarginal with Marginal1[V1] {
+  def proportions: Proportions1
   //def variables = Seq(_1) // This is already inherited from AbstractAssignment1
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
-  protected var _proportions = if (proportions1 == null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1
-  def proportions: Proportions1 = _proportions
+  def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
+}
+
+class SimpleDiscreteMarginal1[V1<: DiscreteDimensionTensorVar](val _1: V1, initialProportions1: Proportions1=null) extends DiscreteMarginal1[V1] {
+  private val _proportions = if (initialProportions1 ne null) initialProportions1 else new DenseProportions1(_1.domain.dimensionSize)
+  def proportions = _proportions
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.masses.+=(d.intValue, w); case d:DiscreteDimensionTensorVar => throw new Error("Not yet implemented") }
-  override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
 }
 
 // This can't be a class because different Factor arity versions of this need to be mixed into BPFactor1.
@@ -153,7 +162,7 @@ trait DiscreteMarginal4Factor4[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimens
 
 
 object DiscreteMarginal {
-  def apply[V1<:DiscreteDimensionTensorVar](f:Factor1[V1]): DiscreteMarginal1[V1] = new DiscreteMarginal1(f) with DiscreteMarginal1Factor1[V1] { val factor = f}
+  def apply[V1<:DiscreteDimensionTensorVar](f:Factor1[V1]): DiscreteMarginal1[V1] = new SimpleDiscreteMarginal1(f._1)
   def apply[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar](f:Factor2[V1,V2]): DiscreteMarginal2[V1,V2] = new DiscreteMarginal2(f) with DiscreteMarginal2Factor2[V1,V2] { val factor = f }
   def apply[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar](f:Factor3[V1,V2,V3]): DiscreteMarginal3[V1,V2,V3] = new DiscreteMarginal3(f) with DiscreteMarginal3Factor3[V1,V2,V3] { val factor = f }
   def apply[V1<:DiscreteDimensionTensorVar,V2<:DiscreteDimensionTensorVar,V3<:DiscreteDimensionTensorVar,V4<:DiscreteDimensionTensorVar](f:Factor4[V1,V2,V3,V4]): DiscreteMarginal4[V1,V2,V3,V4] = new DiscreteMarginal4(f) with DiscreteMarginal4Factor4[V1,V2,V3,V4] { val factor = f }
@@ -164,7 +173,7 @@ object DiscreteMarginal {
     case f:Factor4[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] => apply(f)
   }
   def apply(f:Factor, p:Proportions): DiscreteMarginal = f match {
-    case f:Factor1[DiscreteDimensionTensorVar] => new DiscreteMarginal1(f._1, p.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[DiscreteDimensionTensorVar] { val factor = f}
+    case f:Factor1[DiscreteDimensionTensorVar] => new SimpleDiscreteMarginal1(f._1, p.asInstanceOf[Proportions1])
     case f:Factor2[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] => new DiscreteMarginal2(f._1, f._2, p.asInstanceOf[Proportions2]) with DiscreteMarginal2Factor2[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] { val factor = f }
     case f:Factor3[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] => new DiscreteMarginal3(f._1, f._2, f._3, p.asInstanceOf[Proportions3]) with DiscreteMarginal3Factor3[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] { val factor = f }
     case f:Factor4[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] => new DiscreteMarginal4(f._1, f._2, f._3, f._4, p.asInstanceOf[Proportions4]) with DiscreteMarginal4Factor4[DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar,DiscreteDimensionTensorVar] { val factor = f }

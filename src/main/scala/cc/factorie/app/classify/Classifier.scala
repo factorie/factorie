@@ -32,12 +32,12 @@ trait Classifier[L <: MutableDiscreteVar[_]] {
   /** Set the label to classifier-predicted value and return a Classification object summarizing the outcome. */
   def classify(label: L): Classification[L] = {
     val c = classification(label)
-    c.globalize(null)
+    c.setToMaximize(null)
     c
   }
   def classify(labels: Iterable[L]): Seq[Classification[L]] = {
     val c = classifications(labels)
-    c.foreach(_.globalize(null))
+    c.foreach(_.setToMaximize(null))
     c
   }
 }

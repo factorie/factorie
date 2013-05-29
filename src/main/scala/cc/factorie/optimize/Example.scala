@@ -39,17 +39,21 @@ class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Paramete
     val summary = infer.infer(labels, model).get
     if (value != null)
       value.accumulate(-summary.logZ)
-    val factors = summary.factors.getOrElse(model.factors(labels))
-    for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
-      val aStat = factor.assignmentStatistics(TargetAssignment)
-      if (value != null) value.accumulate(factor.statisticsScore(aStat))
-      if (gradient != null) {
-        gradient.accumulate(factor.family.weights, aStat)
-        gradient.accumulate(factor.family.weights, summary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
+    val factorMarginals = summary.factorMarginals
+    for (factorMarginal <- factorMarginals) {
+      factorMarginal.factor match {
+        case factor: DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) =>
+          val aStat = factor.assignmentStatistics(TargetAssignment)
+          if (value != null) value.accumulate(factor.statisticsScore(aStat))
+          if (gradient != null) {
+            gradient.accumulate(factor.family.weights, aStat)
+            gradient.accumulate(factor.family.weights, summary.marginal(factor).tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
+          }
+        case _ =>
       }
     }
     if (value != null) // add in the score from non-DotFamilies
-      for (factor <- model.filterByNotFamilyClass(factors, classOf[DotFamily]))
+      for (factorMarginal <- factorMarginals; factor <- factorMarginal.factor; if (!factor.isInstanceOf[DotFamily#Factor]))
         value.accumulate(factor.assignmentScore(TargetAssignment))
   }
 }
@@ -252,9 +256,9 @@ class SemiSupervisedLikelihoodExample(labels: Iterable[LabeledVar], model: Model
     val unconstrainedSummary = inferUnconstrained.infer(labels, model).get
     if (value != null)
       value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
-    val factors = unconstrainedSummary.factors.getOrElse(model.factors(labels))
+    val factors = unconstrainedSummary.factorMarginals
     if (gradient != null) {
-      for (factor <- model.filterByFamilyClass(factors, classOf[DotFamily])) {
+      for (factorMarginal <- factors; factorU <- factorMarginal.factor; if (factorU.isInstanceOf[DotFamily#Factor]); factor <- factorU.asInstanceOf[DotFamily#Factor]) {
         gradient.accumulate(factor.family.weights, constrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, 1.0)
         gradient.accumulate(factor.family.weights, unconstrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0)
       }
