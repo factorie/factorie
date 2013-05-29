@@ -26,7 +26,7 @@ object Build extends sbt.Build {
   lazy val myProject = Project("factorie", file("."))
     .settings(
       organization  := "cc.factorie",
-      version       := "1.0-SNAPSHOT",
+      version       := "1.0.0-M4",
       scalaVersion  := "2.9.1",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers     ++= Dependencies.resolutionRepos,
