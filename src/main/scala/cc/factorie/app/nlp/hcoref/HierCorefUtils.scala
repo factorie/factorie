@@ -1,4 +1,4 @@
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.hcoref
 import cc.factorie._
 import cc.factorie.DiffList
 import collection.mutable.{HashMap, ArrayBuffer}

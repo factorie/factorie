@@ -2,7 +2,7 @@ package cc.factorie.tutorial
 
 import cc.factorie._
 import app.bib.EntityUtils
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 import cc.factorie.db.mongo._
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCubbieConverter, MongoCubbieImplicits}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}

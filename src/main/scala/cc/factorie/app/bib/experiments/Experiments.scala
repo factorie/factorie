@@ -7,7 +7,7 @@ import java.text.DateFormat
 import cc.factorie.util.{CmdOption, DefaultCmdOptions}
 import com.mongodb.Mongo
 import cc.factorie._
-import app.nlp.coref._
+import app.nlp.hcoref._
 import io.Source
 import scala.util.Random
 

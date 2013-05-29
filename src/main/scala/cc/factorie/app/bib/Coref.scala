@@ -3,7 +3,7 @@ import cc.factorie.app.bib.parser._
 import cc.factorie._
 import cc.factorie.app.bib.experiments._
 import cc.factorie.util.DefaultCmdOptions
-import app.nlp.coref._
+import app.nlp.hcoref._
 import db.mongo._
 import com.mongodb.{DB, Mongo}
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}

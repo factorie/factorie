@@ -1,6 +1,6 @@
 package cc.factorie.app.bib
 import cc.factorie._
-import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.hcoref._
 import org.bson.types.ObjectId
 import collection.mutable.{HashSet, LinkedHashSet,LinkedHashMap,HashMap, ArrayBuffer}
 import java.lang.StringBuffer

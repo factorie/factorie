@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp
 
 import segment._
-import coref._
+import hcoref._
 
 import ner.NerSpan
 import xml.{XML, NodeSeq}
