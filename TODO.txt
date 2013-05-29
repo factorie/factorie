@@ -1,6 +1,5 @@
 Pre 1.0 release:
 
-Substitute alternative lapack library [Alex]
 Implement sparse iteration through values for BP [McCallum, Singh]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]
@@ -10,8 +9,6 @@ Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
 Remove VarAndValueGenericDomain
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 In BP, when running on chains, verify that we don't need to walk to create a tree.
-Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
-Make Assignment inherit from Summary [Passos] 
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]
@@ -26,7 +23,6 @@ Package documentation  [All]
 Fix copyright year [McCallum]
 Write JUnit tests for cc.factorie.la [Vilnis?]
 No holes in Tensor dot products [Passos]
-Remove unused classes from cc.factorie.util [Luke]
 
 More examples:
 Tutorial examples [McCallum]
@@ -37,6 +33,10 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
+Remove unused classes from cc.factorie.util [Luke]
+Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
+Make Assignment inherit from Summary [Passos]  (No, just make a wrapper class.)
+Substitute alternative lapack library [Alex] (Not done.)
 Look at Model, Tensor, Domain serialization [Vilnis?]
 Liblinear-like L1 SVM... [Martin]
 Polish Piece and OptimizationDriver (Renamed Example and Trainer) [Passos, Vilnis, McCallum]
