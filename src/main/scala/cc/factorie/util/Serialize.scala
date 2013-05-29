@@ -19,7 +19,7 @@ trait CubbieConversions {
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
   implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)
-  implicit def cdtdm(m: CategoricalDimensionTensorDomain[_]): Cubbie = new CategoricalDimensionTensorDomainCubbie(m)
+  implicit def cdtdm(m: CategoricalTensorDomain[_]): Cubbie = new CategoricalTensorDomainCubbie(m)
   implicit def simm(m: mutable.HashMap[String,Int]): Cubbie = new StringMapCubbie(m) //StringMapCubbie is parametrized by T, as String -> T, so this knows that it's an Int
 }
 

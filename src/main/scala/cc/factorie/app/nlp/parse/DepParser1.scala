@@ -61,7 +61,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
 
   // The features representing the input and stacks
-  object FeaturesDomain extends CategoricalDimensionTensorDomain[String]
+  object FeaturesDomain extends CategoricalTensorDomain[String]
   val nullLemma = new TokenLemma(null, "null")
   class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain

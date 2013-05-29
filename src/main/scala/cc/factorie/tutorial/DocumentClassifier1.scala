@@ -23,7 +23,7 @@ import cc.factorie.app.classify
 object DocumentClassifier1 {
   
   // Define variable classes
-  object DocumentDomain extends CategoricalDimensionTensorDomain[String];
+  object DocumentDomain extends CategoricalTensorDomain[String];
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     val label = new Label(file.getParentFile.getName, this)

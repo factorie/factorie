@@ -31,7 +31,7 @@ trait DiscreteValue extends SingletonBinaryTensorLike1 {
 // Because DiscreteDomain is an IndexedSeq it can be passed as a sizeProxy
 /** The domain of a DiscreteVar.  It has a finite size and provides a DiscreteValue for each integer from 0 to size-1.
     @author Andrew McCallum */
-class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteDimensionTensorDomain with Domain[DiscreteValue] {
+class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteTensorDomain with Domain[DiscreteValue] {
   thisDomain =>
   def this(size:Int) = { this(null.asInstanceOf[Iterable[Any]]); _size = size }
   def dimensionDomain: DiscreteDomain = this

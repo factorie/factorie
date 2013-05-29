@@ -8,7 +8,7 @@ import classify._
 import la.Tensor
 
 object BookInfoGain {
-  object DocumentDomain extends CategoricalDimensionTensorDomain[String]
+  object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(labelString: String, words:Seq[String]) extends BinaryFeatureVectorVariable[String](words) {
     def domain = DocumentDomain
     var label = new Label(labelString, this)

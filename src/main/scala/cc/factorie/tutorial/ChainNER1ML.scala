@@ -24,7 +24,7 @@ import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}
 
 object ChainNER1ML {
-  object TokenFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }

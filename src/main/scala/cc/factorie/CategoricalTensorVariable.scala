@@ -19,19 +19,19 @@ import collection.mutable
 /** A domain over Tensor values, where the dimensions of the Tensor correspond to a CategoricalDomain.
     This trait is often used for the domain of feature vectors.
     @author Andrew McCallum */
-trait CategoricalDimensionTensorDomain[C] extends DiscreteDimensionTensorDomain { thisDomain =>
+trait CategoricalTensorDomain[C] extends DiscreteTensorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
   def stringToCategory(s:String): C = s.asInstanceOf[C]
   lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] {
-    final override def stringToCategory(s:String): C = CategoricalDimensionTensorDomain.this.stringToCategory(s)
+    final override def stringToCategory(s:String): C = CategoricalTensorDomain.this.stringToCategory(s)
   }
 }
 
-/** A Cubbie for serializing CategoricalDimensionTensorDomain.
+/** A Cubbie for serializing CategoricalTensorDomain.
     It stores the sequence of categories.
     @author Luke Vilnis */
-class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTensorDomain[T]) extends Cubbie {
+class CategoricalTensorDomainCubbie[T](val cdtd: CategoricalTensorDomain[T]) extends Cubbie {
   val dimensionDomainCubbie = new CategoricalDomainCubbie[T](cdtd.dimensionDomain)
   setMap(new mutable.Map[String, Any] {
     override def update(key: String, value: Any): Unit = {
@@ -52,8 +52,8 @@ class CategoricalDimensionTensorDomainCubbie[T](val cdtd: CategoricalDimensionTe
 /** An abstract variable whose value is a Tensor whose length matches the size of a CategoricalDomain,
     and whose dimensions each correspond to a category.
     These are commonly used for feature vectors, with String categories. */
-trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
-  def domain: CategoricalDimensionTensorDomain[C]
+trait CategoricalTensorVar[C] extends DiscreteTensorVar {
+  def domain: CategoricalTensorDomain[C]
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
@@ -82,23 +82,23 @@ trait CategoricalDimensionTensorVar[C] extends DiscreteDimensionTensorVar {
     These are commonly used for feature vectors, with String categories.
     The 'dimensionDomain' is abstract.
     @author Andrew McCallum */
-abstract class CategoricalDimensionTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalDimensionTensorVar[C] {
+abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalTensorVar[C] {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }
 
 /** The standard variable for holding binary feature vectors.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    It is a CategoricalTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
     @author Andrew McCallum */
-abstract class BinaryFeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
+abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
   override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
 }
 
 /** The standard variable for holding feature vectors with non-binary values.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    It is a CategoricalTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
     @author Andrew McCallum */
-abstract class FeatureVectorVariable[C] extends CategoricalDimensionTensorVariable[C] {
+abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
   override def toString: String = {

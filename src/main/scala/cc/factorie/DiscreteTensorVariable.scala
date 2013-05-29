@@ -25,7 +25,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait DiscreteDimensionTensorDomain extends TensorDomain {
+trait DiscreteTensorDomain extends TensorDomain {
   def dimensionDomain: DiscreteDomain
   /** A convenience method to get the size of the dimensionDomain.
       This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
@@ -34,24 +34,24 @@ trait DiscreteDimensionTensorDomain extends TensorDomain {
   def freeze(): Unit = dimensionDomain.freeze()
 }
 
-/** A Cubbie for serializing a DiscreteDimensionTensorDomain.
+/** A Cubbie for serializing a DiscreteTensorDomain.
     It only saves the dimensionDomain.size. */
-class DiscreteDimensionTensorDomainCubbie extends Cubbie {
+class DiscreteTensorDomainCubbie extends Cubbie {
   val size = IntSlot("size")
-  def store(d: DiscreteDimensionTensorDomain): Unit = size := d.dimensionDomain.size
-  def fetch(): DiscreteDimensionTensorDomain = new DiscreteDimensionTensorDomain {
+  def store(d: DiscreteTensorDomain): Unit = size := d.dimensionDomain.size
+  def fetch(): DiscreteTensorDomain = new DiscreteTensorDomain {
     def dimensionDomain = new DiscreteDomain(size.value)
     type Value = Tensor
   }
 }
 
 /** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
-trait DiscreteDimensionTensorVar extends TensorVar {
-  def domain: DiscreteDimensionTensorDomain
+trait DiscreteTensorVar extends TensorVar {
+  def domain: DiscreteTensorDomain
   def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
 /** A concrete variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
-abstract class DiscreteDimensionTensorVariable extends MutableTensorVar[Tensor] with DiscreteDimensionTensorVar {
+abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor] with DiscreteTensorVar {
   def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }

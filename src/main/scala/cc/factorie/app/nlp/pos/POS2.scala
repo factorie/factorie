@@ -24,7 +24,7 @@
 ///** Part-of-speech tagging with training by BP in the linear-chains. */
 //class POS2 extends Infer with util.FastLogging {
 //  
-//  object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+//  object PosFeaturesDomain extends CategoricalTensorDomain[String]
 //  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 //
 //  class PosModel extends ChainModel(

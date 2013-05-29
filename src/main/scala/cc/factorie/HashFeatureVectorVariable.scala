@@ -23,7 +23,7 @@ object HashFeatureVectorVariable {
     These can be used as feature vectors where one wants to avoid a large or growing CategoricalDomain.
     The 'dimensionDomain' is abstract.
     @author Andrew McCallum */
-abstract class HashFeatureVectorVariable extends DiscreteDimensionTensorVariable {
+abstract class HashFeatureVectorVariable extends DiscreteTensorVariable {
   override def domain: DiscreteDomain
   def this(initVals:Iterable[Any]) = { this(); initVals.map(this.+=_) }
   def ++=(cs: Iterable[Any]): Unit = cs.foreach(this.+= _)

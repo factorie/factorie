@@ -34,7 +34,7 @@ class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit 
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
 
-object SpanNerFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+object SpanNerFeaturesDomain extends CategoricalTensorDomain[String]
 class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = SpanNerFeaturesDomain
   override def skipNonCategories = true

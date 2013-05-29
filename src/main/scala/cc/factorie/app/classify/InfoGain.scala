@@ -20,7 +20,7 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DoubleSeq {
+class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DoubleSeq {
   def this(labels:LabelList[L,F]) = this(labels, labels.labelToFeatures)
   def apply(i:Int): Double = infogains(i)
   def length = infogains.length
@@ -42,7 +42,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteDimensionTensorVar](labels:Iterable[L],
     val featureCount = new Array[Double](numFeatures)
     val targetProportions = new DenseProportions1(numLabels)
     for (label <- labels) {
-      val instance: DiscreteDimensionTensorVar = f(label)
+      val instance: DiscreteTensorVar = f(label)
       assert(instance.domain == instanceDomain)
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue

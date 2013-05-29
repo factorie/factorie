@@ -6,7 +6,7 @@ import cc.factorie.la.{DenseTensor2, Tensor2, Tensor1}
 
 object SVMTrainer {
 
-  def train[L<: LabeledMutableDiscreteVar[_],F<:DiscreteDimensionTensorVar](model: Parameters, numLabels: Int, numFeatures: Int, ll: Seq[L], ff: Seq[F], parallel: Boolean = true) {
+  def train[L<: LabeledMutableDiscreteVar[_],F<:DiscreteTensorVar](model: Parameters, numLabels: Int, numFeatures: Int, ll: Seq[L], ff: Seq[F], parallel: Boolean = true) {
     val xs = ff.map(_.value.asInstanceOf[Tensor1])
     val ys = ll.map(_.targetIntValue).toArray
     val weightTensor = {
@@ -21,7 +21,7 @@ object SVMTrainer {
 }
 
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](ll: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](ll: LabelList[L, F]): Classifier[L] = {
     val model = new TemplateModel with Parameters
     model += new LogLinearTemplate2[L,F](model, ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
     SVMTrainer.train(model, ll.labelDomain.length, ll.featureDomain.dimensionSize, ll.toSeq, ll.toSeq.map(ll.labelToFeatures), parallel)

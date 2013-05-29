@@ -25,7 +25,7 @@ import cc.factorie.optimize.AdaGrad
 //import bp.specialized.Viterbi
 import util._
 
-object PosFeaturesDomain extends CategoricalDimensionTensorDomain[String]
+object PosFeaturesDomain extends CategoricalTensorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
 object PosModel extends TemplateModel with Parameters {

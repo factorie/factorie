@@ -24,7 +24,7 @@ import la.{Tensor1, Tensor}
 class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val sampler = new GibbsSampler(cmodel, HammingObjective) {
       override def pickProposal(proposals: Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
@@ -36,7 +36,7 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
 }
 
 class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteDimensionTensorVar](il: LabelList[L, F]): Classifier[L] = {
+  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val pieces = il.map(l => new LinearMultiClassExample(
       cmodel.evidenceTemplate.weights,
@@ -57,7 +57,7 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 // The default trainer
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
-class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteDimensionTensorVar](
+class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteTensorVar](
   val trainerMaker: WeightsSet => Trainer, val objective: LinearObjectives.MultiClass)  {
   def train(il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
