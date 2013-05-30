@@ -1,5 +1,7 @@
 package cc.factorie.app.bib.parser
 
+import languageFeature.postfixOps
+
 /**
  * @author Luke Vilnis
  * @date 5/10/2012
@@ -37,11 +39,12 @@ private[parser] object DocumentParser {
   object Impl extends SharedParsers {
 
     lazy val bibTex =
-      (freeComment ~! anyEntry ~! freeComment).+ ^^
-      (_ flatMap { case x ~ y ~ z => List(x, y, z): List[Entry] })
+      ((freeComment | WS2) ~> anyEntry <~ (freeComment | WS2)).+ ^^
+      (_ flatMap { case x => List(x): List[Entry] })
 
     // FIXME: lines starting with %%% are comments
-    lazy val freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*") ^^ (CommentEntry(_))
+    lazy val freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*").? ^^ (s => CommentEntry(s.getOrElse("")))
+    lazy val WS2 = WS ^^ (CommentEntry(_))
 
     lazy val anyEntry = AT ~> (commentEntry | stringEntry | preambleEntry | regularEntry)
 
@@ -54,7 +57,7 @@ private[parser] object DocumentParser {
     lazy val preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
     lazy val regularEntry =
-      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS ?) } ^^ {
+      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS.?) } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
 

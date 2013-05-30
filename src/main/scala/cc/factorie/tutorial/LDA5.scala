@@ -78,7 +78,7 @@ object LDA5 {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         // print("."); Console.flush
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)
-        val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!stopwords.contains(_)).toSeq
+        val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         val doc = new Document(file.toString, theta, zs, tokens) ~ PlatedCategoricalMixture(phis, zs)
         doc.time = file.lastModified

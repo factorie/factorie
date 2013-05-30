@@ -41,7 +41,7 @@ class TokenSpan(sec:Section, initialStart:Int, initialLength:Int)(implicit d:Dif
   override def toString = "TokenSpan("+start+":"+this.phrase+")"
   /** A short name for this span */
   def name: String = attr.values.head match {
-    case label:LabeledCategoricalVariable[String] => label.categoryValue
+    case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
     case x => x.toString
   }
   

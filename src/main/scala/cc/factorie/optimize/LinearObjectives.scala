@@ -182,8 +182,8 @@ object LinearObjectivesTest {
     var label = new Label(file.getParentFile.getName, this)
     val text = Source.fromFile(file, "ISO-8859-1").mkString
     val text2 = Some(text.indexOf("\n\n"))
-        .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))
-        .filter(-1 !=).map(text.substring(_)).getOrElse(text)
+        .filter((-1).!=).orElse(Some(text.indexOf("\r\n\r\n")))
+        .filter((-1).!=).map(text.substring(_)).getOrElse(text)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     "\\w+".r.findAllIn(text2).foreach(regexMatch => this += regexMatch.toString)
   }

@@ -298,7 +298,7 @@ object HumanEditExperiments{
       if(includeCorruptiveEdits){
         val mentions = author.descendantsOfClass[AuthorEntity].filter(_.isMention.booleanValue)
         val randomCanonical = mentions(random.nextInt(mentions.size))
-        if(!randomCanonical.eq(trueLabel)){
+        if(!randomCanonical.fullName.eq(trueLabel)){
           val contextMention2 = copyForAttributeEditMention(author)
           val payloadMention2 = copyForAttributeEditMention(author)
           contextMention.attr[FullName].setFullName(randomCanonical.attr[FullName])(null)
@@ -1445,7 +1445,7 @@ object ExperimentsEditTracker{
     edit match{
       case e:ExpMergeEdit[T] => updateSLStats(e)
       case e:ExpSplitEdit[T] => updateSNLStats(e)
-      case _ => {"type of exp-edit not recognized"}
+      case _ => {throw new Error("type of exp-edit not recognized")}
     }
   }
   def updateSLStats[T<:HierEntity with HumanEditMention](edit:ExpMergeEdit[T]):Unit ={

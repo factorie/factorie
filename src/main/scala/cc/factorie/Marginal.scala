@@ -170,16 +170,16 @@ object DiscreteMarginal {
   def apply[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar,V3<:DiscreteTensorVar](f:Factor3[V1,V2,V3]): DiscreteMarginal3[V1,V2,V3] = new DiscreteMarginal3(f) with DiscreteMarginal3Factor3[V1,V2,V3] { val factor = f }
   def apply[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar,V3<:DiscreteTensorVar,V4<:DiscreteTensorVar](f:Factor4[V1,V2,V3,V4]): DiscreteMarginal4[V1,V2,V3,V4] = new DiscreteMarginal4(f) with DiscreteMarginal4Factor4[V1,V2,V3,V4] { val factor = f }
   def apply(f:Factor): DiscreteMarginal = f match {
-    case f:Factor1[DiscreteTensorVar] => apply(f)
-    case f:Factor2[DiscreteTensorVar,DiscreteTensorVar] => apply(f)
-    case f:Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] => apply(f)
-    case f:Factor4[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] => apply(f)
+    case f:Factor1[DiscreteTensorVar @unchecked] => apply(f)
+    case f:Factor2[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => apply(f)
+    case f:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => apply(f)
+    case f:Factor4[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => apply(f)
   }
   def apply(f:Factor, p:Proportions): DiscreteMarginal = f match {
-    case f:Factor1[DiscreteTensorVar] => new SimpleDiscreteMarginal1(f._1, p.asInstanceOf[Proportions1])
-    case f:Factor2[DiscreteTensorVar,DiscreteTensorVar] => new DiscreteMarginal2(f._1, f._2, p.asInstanceOf[Proportions2]) with DiscreteMarginal2Factor2[DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
-    case f:Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] => new DiscreteMarginal3(f._1, f._2, f._3, p.asInstanceOf[Proportions3]) with DiscreteMarginal3Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
-    case f:Factor4[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] => new DiscreteMarginal4(f._1, f._2, f._3, f._4, p.asInstanceOf[Proportions4]) with DiscreteMarginal4Factor4[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
+    case f:Factor1[DiscreteTensorVar @unchecked] => new SimpleDiscreteMarginal1(f._1, p.asInstanceOf[Proportions1])
+    case f:Factor2[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => new DiscreteMarginal2(f._1, f._2, p.asInstanceOf[Proportions2]) with DiscreteMarginal2Factor2[DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
+    case f:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => new DiscreteMarginal3(f._1, f._2, f._3, p.asInstanceOf[Proportions3]) with DiscreteMarginal3Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
+    case f:Factor4[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => new DiscreteMarginal4(f._1, f._2, f._3, f._4, p.asInstanceOf[Proportions4]) with DiscreteMarginal4Factor4[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] { val factor = f }
   }
 }
 

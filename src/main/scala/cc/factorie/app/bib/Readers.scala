@@ -279,11 +279,11 @@ object AclAnthologyReader{
   }
   def makePaperEntity(record:String):PaperEntity ={
     val paperEntity = new PaperEntity("",true)
-    val Matcher = """id\s=\s\{.+?\}\s*[\r\n]"""+
+    val Matcher = ("""id\s=\s\{.+?\}\s*[\r\n]"""+
        """author\s=\s\{(.*?)\}\s*[\r\n]"""+
        """title\s=\s\{(.*?)\}\s*[\r\n]"""+
        """venue\s=\s\{(.*?)\}\s*[\r\n]"""+
-       """year\s=\s\{(\d{4}?)\}""" r
+       """year\s=\s\{(\d{4}?)\}""").r
     val Matcher(authorList,title,venue,year) = record
     getAuthors(authorList).foreach(paperEntity.authors+=_)
     if(!title.equals("")) paperEntity.title.set(title)(null)

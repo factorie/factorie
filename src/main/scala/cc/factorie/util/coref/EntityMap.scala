@@ -3,6 +3,7 @@ package cc.factorie.util.coref
 import collection.mutable.{Set => MSet, ArrayBuffer, HashSet, Map, LinkedHashMap, HashMap}
 import scala.collection.Set
 import io.Source
+import scala.language.implicitConversions
 
 /**
  * Class to store a clustering over a subset of mentions.
@@ -95,12 +96,12 @@ class GenericEntityMap[M] {
 
   def checkConsistency: Boolean = {
     var pass: Boolean = true
-    for (mid: M <- reverseMap.keySet) {
+    for (mid <- reverseMap.keySet) {
       val entity: Set[M] = entities(reverseMap(mid))
       pass = pass && entity.contains(mid)
     }
     for (eid: Long <- entities.keys) {
-      for (mid: M <- entities(eid)) {
+      for (mid <- entities(eid)) {
         pass = pass && reverseMap(mid) == eid
       }
     }
@@ -111,7 +112,7 @@ class GenericEntityMap[M] {
     val sb: StringBuffer = new StringBuffer
     for (entityId: Long <- entities.keySet) {
       sb.append("Entity(" + entityId + "): { ")
-      for (mid: M <- entities(entityId)) {
+      for (mid <- entities(entityId)) {
         sb.append(" " + mid + " ")
       }
       sb.append(" }\n")
@@ -145,7 +146,7 @@ object EntityMap {
   def initToSingletons[M](mentions: Iterable[M]): GenericEntityMap[M] = {
     val e: GenericEntityMap[M] = new GenericEntityMap[M]
     var entityIndex: Long = 0
-    for (m: M <- mentions) {
+    for (m <- mentions) {
       e.addMention(m, entityIndex)
       entityIndex += 1
     }

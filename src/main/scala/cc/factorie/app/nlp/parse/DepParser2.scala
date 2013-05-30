@@ -283,7 +283,7 @@ class DepParser2 extends DocumentAnnotator {
     def fromJSON(source: String) = {
       val someJson = JSON.parseFull(stripJSONComments(source))
       val featureSpec = someJson match {
-        case map: Some[Map[String, List[List[String]]]] => map.get("features")
+        case map: Some[Map[String, List[List[String]]] @unchecked] => map.get("features")
         case _ => throw new Error()
       }
       featureSpec.map(fs => {

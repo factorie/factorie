@@ -66,7 +66,7 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
   def collapse(variables:Seq[Var], factors:Iterable[Factor], model:DirectedModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
-      case m:Mixture[ProportionsVar] => {
+      case m:Mixture[ProportionsVar @unchecked] => {
         if (!m(0).isInstanceOf[ProportionsVar]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
         m.foreach(p => {
           p.value.masses.zero()

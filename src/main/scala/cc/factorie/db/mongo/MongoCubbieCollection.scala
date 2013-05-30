@@ -12,6 +12,7 @@ import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMa
 import scala._
 import scala.Predef._
 import scala.Some
+import scala.language.implicitConversions
 
 
 /**

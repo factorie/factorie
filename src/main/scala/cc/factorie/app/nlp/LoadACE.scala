@@ -78,7 +78,7 @@ object LoadACE {
 
   def addMentionsFromApf(apf: NodeSeq, doc: Document): Unit = {
     for (entity <- apf \\ "entity") {
-      val e = new EntityVariable(entity \ "entity_attributes" \ "name" \ "charseq" text)
+      val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
       e.attr += new ACEEntityIdentifiers {
         def eId = getAttr(entity, "ID")
         def eType = getAttr(entity, "TYPE")

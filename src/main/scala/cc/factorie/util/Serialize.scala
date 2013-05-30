@@ -5,6 +5,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import collection.mutable
 import cc.factorie._
 import cc.factorie.la._
+import scala.language.implicitConversions
 
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
@@ -211,7 +212,7 @@ object BinarySerializer {
     case _: SparseBinaryTensor => SPARSE_BINARY_TENSOR
     case _: DenseTensor => DENSE_TENSOR
     case _: Tensor => TENSOR
-    case _: mutable.Map[String, Any] => MAP
+    case _: mutable.Map[String @unchecked, Any @unchecked] => MAP
     case _: Traversable[_] => LIST
     case null => NULL
   }
@@ -244,10 +245,10 @@ object BinarySerializer {
       case t: Tensor =>
         s.writeInt(t.activeDomainSize)
         t.foreachActiveElement((i, v) => {s.writeInt(i); s.writeDouble(v)})
-      case m: mutable.Map[String, Any] =>
+      case m: mutable.Map[String @unchecked, Any @unchecked] =>
         s.writeInt(m.size)
         for ((k, v) <- m) serialize(Some(k), v, s)
-      case t: Traversable[Any] =>
+      case t: Traversable[Any @unchecked] =>
         val tag = t.headOption.map(tagForType).getOrElse(INT)
         s.writeByte(tag)
         s.writeInt(t.size)

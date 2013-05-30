@@ -55,22 +55,21 @@ trait CmdOption[T] {
     </code>
     @author Andrew McCallum
  */
-class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
+class CmdOptions {
   private val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
+  def apply(key: String) = opts(key)
   def get(key:String) = opts.get(key)
-  override def size = opts.size
+  def size = opts.size
   //def iterator = opts.iterator
   var strict = true
-
-  override def +=(c:cc.factorie.util.CmdOption[_]): this.type = {
+  def values = opts.values
+  def +=(c:cc.factorie.util.CmdOption[_]): this.type = {
     if (opts.contains(c.name)) throw new Error("CmdOption "+c.name+" already exists.")
     opts(c.name) = c
-    super.+=(c)
     this
   }
-  override def -=(c:cc.factorie.util.CmdOption[_]): this.type = {
+  def -=(c:cc.factorie.util.CmdOption[_]): this.type = {
   	opts -= c.name
-  	super.-=(c)
   	this
   }
   def error(msg:String): Unit = {
@@ -108,7 +107,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
         index += 1
       } 
     }
-    this.find(o => o.required && o.invokedCount == 0) match {
+    opts.values.find(o => o.required && o.invokedCount == 0) match {
       case Some(o) => error("Required CmdOption --"+o.name+" was not provided.")
       case None =>
     }
@@ -283,7 +282,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "Print this help message.") {
     override def invoke = {
-      DefaultCmdOptions.this.foreach(o => println(o.helpString))
+      DefaultCmdOptions.this.values.foreach(o => println(o.helpString))
       System.exit(0)
     }
   }

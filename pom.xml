@@ -24,8 +24,8 @@ limitations under the License.
   <inceptionYear>2009</inceptionYear>
 
   <properties>
-    <scala.version>2.9.2</scala.version>
-    <scalatest.version>1.7.2</scalatest.version>
+    <scala.version>2.10.1</scala.version>
+    <scalatest.version>1.9.1</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
 
@@ -86,7 +86,7 @@ limitations under the License.
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.version}</artifactId>
+      <artifactId>scalatest_2.10</artifactId>
       <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
@@ -150,6 +150,9 @@ limitations under the License.
           </execution>
         </executions>
         <configuration>
+          <args>
+            <arg>-feature</arg>
+          </args>
           <recompileMode>incremental</recompileMode>
           <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>

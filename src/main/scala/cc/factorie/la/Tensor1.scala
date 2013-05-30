@@ -16,7 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait Tensor1 extends Tensor {
+trait Tensor1 extends Any with Tensor {
   tensor1 =>
   def dim1: Int
   def activeDomain1: IntSeq = activeDomain
@@ -140,7 +140,6 @@ class ProxyGrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends GrowableDen
 }
 
 /** A Tensor representation of a single scalar (Double) value */
-// TODO In Scala 2.10 this could be an implicit class
 class ScalarTensor(var singleValue:Double) extends Tensor1 {
   def dim1 = 1
   def activeDomain = new SingletonIntSeq(0)

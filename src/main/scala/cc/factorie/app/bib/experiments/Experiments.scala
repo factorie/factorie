@@ -1296,7 +1296,7 @@ trait ExperimentOptions extends DefaultCmdOptions{
   }
   def writeOptions(pw:PrintWriter):Unit ={
     //pw.println("Experiment Parameters: "+DateFormat.getDateInstance(DateFormat.SHORT).format(now))
-    this.foreach(o => pw.println("--"+o.name+"="+o.value))
+    this.values.foreach(o => pw.println("--"+o.name+"="+o.value))
     pw.flush()
   }
   def readOptions(file:File):Unit ={

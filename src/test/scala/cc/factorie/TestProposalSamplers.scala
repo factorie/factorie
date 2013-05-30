@@ -27,22 +27,7 @@ class TestProposalSamplers extends TestCase with cc.factorie.util.FastLogging {
     def domain = LabelDomain
   }
 
-  private def newFactor1(n1: BinVar, score0: Double, score1: Double) =
-    new FactorWithStatistics1(n1) {
-      factor =>
-      //def _1 = n1
-        def score(v:BinVar#Value): Double = if (v == LabelDomain(0)) score0 else score1
-
-//      type StatisticsType = Stat
-//      final case class Stat(_1: BinVar#Value) extends Statistics {
-//        lazy val score: Double = factor.score(this)
-//      }
-//      def statistics(v1:BinVar#Value) = Stat(v1)
-//      def score(s: Stat): Double = if (s._1 == LabelDomain(0)) score0 else score1
-
-      override def equalityPrerequisite = this
-    }
-
+  import scala.language.existentials
   private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) =
     new TupleFactorWithStatistics2[BinVar, BinVar](n1, n2) {
       factor =>

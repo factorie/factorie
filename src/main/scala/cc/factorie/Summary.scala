@@ -122,8 +122,8 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary {
   lazy val variableSet = variables.toSet
   def marginal(v1:Var): SimpleDiscreteMarginal1[V] = _marginals1.getOrElse(v1.asInstanceOf[V], null)
   def marginal2(vs:Var*): DiscreteMarginal = vs match {
-    case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
-    case Seq(v:V, w:V) => new DiscreteMarginal2[V,V](v, w, new NormalizedTensorProportions2(new Outer1Tensor2(_marginals1(v).proportions,_marginals1(w).proportions), false))
+    case Seq(v:V @unchecked) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
+    case Seq(v:V @unchecked, w:V @unchecked) => new DiscreteMarginal2[V,V](v, w, new NormalizedTensorProportions2(new Outer1Tensor2(_marginals1(v).proportions,_marginals1(w).proportions), false))
     case _ => null
   }
   def marginal(f:Factor): FactorMarginal = null

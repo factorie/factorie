@@ -4,6 +4,7 @@ import java.util.regex.Pattern
 import java.util.zip.{ZipEntry, ZipInputStream}
 import collection.mutable
 import java.io.{InputStreamReader, BufferedReader}
+import scala.language.reflectiveCalls
 
 trait EnglishTokenizerConfig {
   def M_COMPOUNDS: mutable.HashMap[String, Int]
@@ -149,7 +150,7 @@ object EnglishTokenizerConfig {
     var zEntry: ZipEntry = null
     while ({zEntry = zin.getNextEntry; zEntry != null})
       zEntry.getName match {
-        case F_EMOTICONS => cfg.T_EMOTICONS = getSet(wrapStream(zin))
+        case F_EMOTICONS => cfg.T_EMOTICONS = getSet(wrapStream(zin))  // TODO this triggers reflection
         case F_ABBREVIATIONS => cfg.T_ABBREVIATIONS = getSet(wrapStream(zin))
         case F_HYPHENS => cfg.P_HYPHEN_LIST = getHyphenPatterns(wrapStream(zin))
         case F_COMPOUNDS =>

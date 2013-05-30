@@ -15,6 +15,7 @@
 package cc
 import scala.util.Random
 import cc.factorie.util.CubbieConversions
+import scala.language.implicitConversions
 
 package object factorie extends CubbieConversions {
 
@@ -137,16 +138,14 @@ package object factorie extends CubbieConversions {
     result
   }
 
-  trait AnyExtras[T] {
-    val a: T
+  implicit class AnyExtras[T](val a: T) extends AnyVal {
     def cast[U](implicit m: Manifest[U]): Option[U] =
       if (m >:> ClassManifest.fromClass(a.getClass)) Some(a.asInstanceOf[U]) else None
     def toNotNull: Option[T] = if (a != null) Some(a) else None
   }
 
-  implicit def any2wrapped[T](x: T) = new AnyExtras[T] { val a = x }
-  implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
-  implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
+  implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
+  implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
   implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   // TODO Remove this

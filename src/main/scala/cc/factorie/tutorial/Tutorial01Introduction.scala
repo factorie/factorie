@@ -1,6 +1,6 @@
 package cc.factorie.tutorial
 import cc.factorie._
-
+import scala.language.reflectiveCalls
 
 object TutorialIntroduction {
   def main(args:Array[String]): Unit = { println("TutorialIntroduction") }
@@ -84,7 +84,7 @@ The following code declares data, model, inference and learning for a linear-cha
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
-  println(model.markov.weights)
+  println(model.markov.weights)  // TODO this triggers reflection
   // Print the inferred tags
   labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }

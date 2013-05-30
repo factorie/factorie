@@ -8,6 +8,7 @@ import org.junit.Test
 import java.io._
 import cc.factorie.app.nlp
 import cc.factorie.util.{TensorCubbie, BinarySerializer}
+import scala.language.postfixOps
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 

@@ -15,6 +15,7 @@ import scala.concurrent.ops._
 import java.io._
 import java.text.DecimalFormat
 import scala.Some
+import scala.language.reflectiveCalls
 
 trait BibEntity{
   var dataSource:String=""
@@ -258,13 +259,13 @@ object Coref{
     }
     if(opts.exportAuthorIds.wasInvoked){
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
-      tmpDB.authorColl.export(new File(opts.exportAuthorIds.value))
+      tmpDB.authorColl.export(new File(opts.exportAuthorIds.value))  // TODO this triggers reflection
       println("Done exporting, exiting.")
       System.exit(0)
     }
     if(opts.exportAuthorIdsPretty.wasInvoked){
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
-      tmpDB.authorColl.exportPretty(new File(opts.exportAuthorIdsPretty.value))
+      tmpDB.authorColl.exportPretty(new File(opts.exportAuthorIdsPretty.value))  // TODO this triggers reflection
       println("Done exporting (pretty), exiting.")
       System.exit(0)
     }

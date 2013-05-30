@@ -440,9 +440,9 @@ class Cubbie {
      */
     def value: Seq[A] = _map(name) match {
       case s: Seq[A] => s
-      case al: java.util.ArrayList[A] => al.toSeq
-      case m: java.util.Map[String, A] => Range(0, m.size).map(i => m.get(i.toString))
-      case m: mutable.Map[String, A] => m.map(_._2).toSeq
+      case al: java.util.ArrayList[A @unchecked] => al.toSeq
+      case m: java.util.Map[String @unchecked, A @unchecked] => Range(0, m.size).map(i => m.get(i.toString))
+      case m: mutable.Map[String @unchecked, A @unchecked] => m.map(_._2).toSeq
       case null => null
     }
 
@@ -478,7 +478,7 @@ class Cubbie {
      */
     def value: Seq[A] = _map(name) match {
       case null => null
-      case s: Seq[AnyRef] => if (s.length == 0) Nil
+      case s: Seq[AnyRef @unchecked] => if (s.length == 0) Nil
       else s.map(m => {
         val c = constructor()
         c._map = m.asInstanceOf[MapType]

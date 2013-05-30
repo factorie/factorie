@@ -37,7 +37,7 @@ object LDA4 {
         (file.getCanonicalPath, text, year)
       })
       texts.foreach({case(name, text, year) => {
-        val doc = new Document(WordSeqDomain, name, tokenizer(text).map(_ toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
+        val doc = new Document(WordSeqDomain, name, tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
         doc.year = year.toInt
         if (doc.year > maxYear) maxYear = doc.year
         if (doc.year < minYear) minYear = doc.year

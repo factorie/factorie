@@ -36,7 +36,6 @@ abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[
     if (neighborClass3.isAssignableFrom(v.getClass)) result ++= unroll3(v.asInstanceOf[N3])
     if (neighborClass4.isAssignableFrom(v.getClass)) result ++= unroll4(v.asInstanceOf[N4])
     unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
-    result
   }
   //* Override this method if you want to re-capture old unrollCascade functionality. */ 
   def unroll(v:Var): Iterable[Factor] = Nil

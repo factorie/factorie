@@ -18,9 +18,7 @@ import scala.util.Random
 import scala.util.Sorting
 
 /** New functionality on Traversable instances, available by implicit conversion in the cc.factorie package object in cc/factorie/package.scala. */
-trait TraversableExtras[A] {
-  val t: Traversable[A]
-  implicit val defaultRandom = cc.factorie.random
+final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
 
   def indexSafe(i: Int): Option[A] = if (i < t.size && i >= 0) Some(t.toSeq(i)) else None
 
@@ -124,7 +122,7 @@ trait TraversableExtras[A] {
   def sortReverse(extractor: A => Double): Seq[A] =
     t.toSeq.sortWith((x1:A, x2:A) => extractor(x1) > extractor(x2))
 
-  def shuffle(implicit random: Random = defaultRandom) : Seq[A] = {
+  def shuffle(implicit random: Random = cc.factorie.random) : Seq[A] = {
     val s2 = t.map(x => (x, random.nextInt())).toSeq
     Sorting.stableSort(s2, (t1: (A, Int), t2: (A, Int)) => t1._2 > t2._2).map(t => t._1)
   }
@@ -145,17 +143,17 @@ trait TraversableExtras[A] {
   def filterByClass[C](c: Class[C]): Traversable[C] =
     t.filter(t1 => c.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[C]]
 
-  def subseq(prob:Double)(implicit random: Random = defaultRandom) = {
+  def subseq(prob:Double)(implicit random: Random = cc.factorie.random) = {
     t.flatMap((a:A) => if(random.nextDouble < prob) List(a) else Nil)
   }
 
-  def sampleUniformly(implicit random: Random = defaultRandom): A = {
+  def sampleUniformly(implicit random: Random = cc.factorie.random): A = {
     val s2 = t.toSeq
     if (s2.size == 1) s2.head
     else s2(random.nextInt(s2.size))
   }
 
-  def sampleProportionally(extractor: A => Double)(implicit random:Random = defaultRandom): A = {
+  def sampleProportionally(extractor: A => Double)(implicit random:Random = cc.factorie.random): A = {
     var sum = t.foldLeft(0.0)((total, x) => total + extractor(x))
     val r = random.nextDouble * sum
     sum = 0
@@ -169,7 +167,7 @@ trait TraversableExtras[A] {
     throw new Error("TraversableExtras sample error: r=" + r + " sum=" + sum)
   }
 
-  def sampleExpProportionally(extractor: A => Double)(implicit random:Random  = defaultRandom): A = {
+  def sampleExpProportionally(extractor: A => Double)(implicit random:Random = cc.factorie.random): A = {
     val maxValue : Double = t.foldLeft(Double.NegativeInfinity)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
     if (maxValue == Double.NegativeInfinity) throw new Error("Cannot sample from an empty list.")
     sampleProportionally(t1 => if (extractor(t1) == Double.NegativeInfinity) Double.NegativeInfinity else math.exp(extractor(t1) - maxValue))(random)

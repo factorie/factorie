@@ -13,12 +13,10 @@
    limitations under the License. */
 
 
-
-package cc.factorie.util;
+package cc.factorie.util
 
 /** New functionality on String instances, available by implicit conversion in the cc.factorie.factorie package object. */
-trait StringExtras {
-  val s: String
+class StringExtras(val s: String) extends AnyVal {
 
   def toIntSafe: Option[Int] = try { Some(s.toInt) } catch { case _: Throwable => None }
   def toDoubleSafe: Option[Double] = try { Some(s.toDouble) } catch { case _: Throwable => None }

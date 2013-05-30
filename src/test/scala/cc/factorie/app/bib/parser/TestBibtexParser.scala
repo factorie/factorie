@@ -33,15 +33,15 @@ Success on file: "%s" """ format (name)))
     }
 
     val (failures, successes) = (new ArrayBuffer[String], new ArrayBuffer[String])
-    results.foreach(_.fold(failures +=, successes +=))
+    results.foreach(_.fold(failures.+=, successes.+=))
 
     val failuresCauseNotBibtex = failures.filter(_.contains("`@' expected"))
     val failuresCauseMismatchedQuote = failures.filter(_.contains("`\"' expected but \u001A found"))
     val failuresCauseBadNames = failures.filter(_.contains("fragment between commas"))
 
-    failuresCauseNotBibtex.foreach(failures -=)
-    failuresCauseMismatchedQuote.foreach(failures -=)
-    failuresCauseBadNames.foreach(failures -=)
+    failuresCauseNotBibtex.foreach(failures.-=)
+    failuresCauseMismatchedQuote.foreach(failures.-=)
+    failuresCauseBadNames.foreach(failures.-=)
 
     successes.foreach(logger.debug(_))
     failures.foreach(logger.debug(_))
@@ -60,7 +60,7 @@ Success on file: "%s" """ format (name)))
 
     def assertParse[T](parser: DocumentParser.Impl.Parser[T], str: String): DocumentParser.Impl.ParseResult[T] = {
       val result = DocumentParser.Impl.parseAll(parser, str)
-      assert(result.successful, result)
+      assert(result.successful, result.toString + " " + result.getClass.getName)
       result
     }
 
@@ -129,7 +129,7 @@ Success on file: "%s" """ format (name)))
         z = 123 #  asd,
       }""")
 
-    assertParse((DocumentParser.Impl.WS ~> DocumentParser.Impl.anyEntry) +,
+    assertParse((DocumentParser.Impl.WS ~> DocumentParser.Impl.anyEntry).+,
       """ @florb{  wooooo,
         x = {y},
         fg ="sdf13",

@@ -60,7 +60,7 @@ object CorefEvaluator {
   def overlap[M](ent1: Set[M], ent2: Set[M]): Int = {
     var common = 0
     if (ent1.size > ent2.size) return overlap(ent2, ent1)
-    for (mid: M <- ent1) {
+    for (mid <- ent1) {
       if (ent2.contains(mid)) {
         common += 1
       }
@@ -81,7 +81,7 @@ object CorefEvaluator {
       val total: Double = pred.getMentionIds.size
       var count = 0
       // go through all mentions
-      for (mid: M <- pred.getMentionIds) {
+      for (mid <- pred.getMentionIds) {
         // get the clusters
         val predId = pred.getEntity(mid)
         val predCluster: Set[M] = pred.getMentions(predId)
@@ -112,7 +112,7 @@ object CorefEvaluator {
       m.precDenominator = pred.getMentionIds.size
       m.recallDenominator = pred.getMentionIds.size
       // go through each mention
-      for (mid: M <- pred.getMentionIds) {
+      for (mid <- pred.getMentionIds) {
         // get pred and true clusters
         val predId = pred.getEntity(mid)
         val predCluster: Set[M] = pred.getMentions(predId)
@@ -161,7 +161,7 @@ object CorefEvaluator {
       m.precDenominator = denom
       m.recallDenominator = denom
       // go through each mention
-      for (mid: M <- pred.getMentionIds) {
+      for (mid <- pred.getMentionIds) {
         // get pred and true clusters
         val predId = pred.getEntity(mid)
         val predCluster: collection.Set[M] = pred.getMentions(predId)
@@ -190,7 +190,7 @@ object CorefEvaluator {
       for (trueId: Long <- truth.getEntityIds) {
         // find out how many unique predicted entities the mentions belong to
         val predEntities: MSet[Long] = new HashSet
-        for (mid: M <- truth.getMentions(trueId)) {
+        for (mid <- truth.getMentions(trueId)) {
           predEntities.add(pred.getEntity(mid))
         }
         // set metrics
@@ -203,7 +203,7 @@ object CorefEvaluator {
       for (predId: Long <- pred.getEntityIds) {
         // find out how many unique true entities the mentions belong to
         val trueEntities: MSet[Long] = new HashSet
-        for (mid: M <- pred.getMentions(predId)) {
+        for (mid <- pred.getMentions(predId)) {
           trueEntities.add(truth.getEntity(mid))
         }
         // set metrics
