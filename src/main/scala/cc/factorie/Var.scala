@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-// Notes on class names for Variables:
+// Notes on class names for variables:
 // "*Variable" are classes and mutable.
 // "*Var" are trait counterparts, not yet committing to (im)mutability.
 // Many but not all "*Var" traits do not yet commit to a value-storage mechanism.
@@ -59,7 +59,7 @@ trait VarWithValue[A] extends ValueBound[A] with Var { override type Value = A }
 trait Var extends ValueBound[Any] {
  
   /** Abstract method to return the domain of this variable. */
-  def domain: Domain[Any]
+  //def domain: Domain[Any]
 
   /** Abstract method to return the value of this variable. */
   def value: Any
@@ -84,10 +84,13 @@ trait Var extends ValueBound[Any] {
   override def toString = printName + "(_)"
 }
 
-/** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithValue[This] with VarWithConstantValue {
-  this: This =>
-  final def value: This = this
+
+/** A variable that has a Domain, with value type bound A. 
+    Since this trait also inherits from ValueBound, 
+    we ensure that the Value of the Var matches the Value of the Domain. */
+trait VarWithDomain[+A] extends Var with ValueBound[A] {
+  /** Abstract method to return the domain of this variable. */
+  def domain: Domain[A]
 }
 
 
@@ -119,3 +122,14 @@ trait MutableVar[A] extends VarWithValue[A] {
 trait NoVariableCoordination {
   this: Var =>
 }
+
+
+// Odd simple variable I wasn't sure where else to put. -akm
+
+/** A Variable whose (constant) value is the Variable object itself. */
+trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithValue[This] with VarWithConstantValue {
+  this: This =>
+  final def value: This = this
+}
+
+

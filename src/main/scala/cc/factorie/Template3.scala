@@ -39,9 +39,9 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2
 //          factor._3.asInstanceOf[DiscreteVar].intValue))
 //  }
   final override def addFactors(v:Var, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) result ++= unroll3(v.asInstanceOf[N3])
+    if (neighborClass1.isAssignableFrom(v.getClass)) result ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass)) result ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass)) result ++= unroll3(v.asInstanceOf[N3])
     unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
   }
   //* Override this method if you want to re-capture old unrollCascade functionality. */ 

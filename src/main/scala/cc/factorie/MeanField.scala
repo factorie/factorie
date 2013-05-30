@@ -39,16 +39,16 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
         } else if (vars.length == 1) {
           val v0 = vars.head
           val m0 = summary.marginal(v0)
-          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size) {
-            distribution(value) += m0.proportions(value0) * f.assignmentScore(new Assignment2[V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value]))
+          for (value0 <- 0 until v0.asInstanceOf[DiscreteVar].domain.size) {
+            distribution(value) += m0.proportions(value0) * f.assignmentScore(new Assignment2[V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.asInstanceOf[DiscreteVar].domain(value0).asInstanceOf[V#Value]))
           }
         } else if (vars.length == 2) {
           val v0 = vars.head
           val m0 = summary.marginal(v0)
           val v1 = vars(1)
           val m1 = summary.marginal(v1)
-          for (value0 <- 0 until v0.domain.asInstanceOf[DiscreteDomain].size; value1 <- 0 until v1.domain.asInstanceOf[DiscreteDomain].size) {
-            distribution(value) += m0.proportions(value0) * m1.proportions(value1) * f.assignmentScore(new Assignment3[V,V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.domain.asInstanceOf[DiscreteDomain](value0).asInstanceOf[V#Value], v1.asInstanceOf[V], v1.domain.asInstanceOf[DiscreteDomain](value1).asInstanceOf[V#Value]))
+          for (value0 <- 0 until v0.asInstanceOf[DiscreteVar].domain.size; value1 <- 0 until v1.asInstanceOf[DiscreteVar].domain.size) {
+            distribution(value) += m0.proportions(value0) * m1.proportions(value1) * f.assignmentScore(new Assignment3[V,V,V](d, d.domain(value).asInstanceOf[V#Value], v0.asInstanceOf[V], v0.asInstanceOf[DiscreteVar].domain(value0).asInstanceOf[V#Value], v1.asInstanceOf[V], v1.asInstanceOf[DiscreteVar].domain(value1).asInstanceOf[V#Value]))
           }
         } else throw new Error("Mean field currently doesn't work on factors with 3 or more varying neighbors. " + f.getClass.getName)
       }

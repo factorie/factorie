@@ -18,12 +18,10 @@ import cc.factorie.la._
 trait TensorDomain extends Domain[Tensor]
 object TensorDomain extends TensorDomain
 
-trait TensorVar extends Var with ValueBound[Tensor] {
+trait TensorVar extends VarWithDomain[Tensor] with ValueBound[Tensor] {
   def domain: TensorDomain
   def value: Tensor
   @deprecated("Use 'value' instead.", "M4") def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
-  //def length: Int = tensor.length // TODO Consider removing this?
-  //def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
 }
 
 // TODO Consider also, just in case needed:

@@ -19,7 +19,7 @@ object IntegerDomain extends IntegerDomain
 
 /** An abstract variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends ScalarVar with VarWithValue[Int] {
+trait IntegerVar extends ScalarVar with VarWithValue[Int] with VarWithDomain[Int] {
   def value: Int
   def domain: IntegerDomain = IntegerDomain
   def maxIntValue = Int.MaxValue

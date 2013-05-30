@@ -635,8 +635,8 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
 }
 
 
-trait BagOfWordsVar extends Var with VarAndValueGenericDomain[BagOfWordsVar,SparseBagOfWords] with Iterable[(String,Double)]
-class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords] {
+trait BagOfWordsVar extends Var with ValueBound[SparseBagOfWords] /*VarAndValueGenericDomain[BagOfWordsVar,SparseBagOfWords]*/ with Iterable[(String,Double)]
+class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar /*with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords]*/ {
   // Note that the returned value is not immutable.
   def value = _members
   def clear = _members.clear

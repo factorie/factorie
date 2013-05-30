@@ -217,16 +217,15 @@ class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
 trait ProportionsDomain extends MassesDomain with Domain[Proportions]
 object ProportionsDomain extends ProportionsDomain
 
-trait ProportionsVar extends MassesVar with ValueBound[Proportions] {
-  override def value: Proportions
-  def domain: ProportionsDomain = ProportionsDomain
+trait ProportionsVar extends MassesVar with ValueBound[Proportions] with VarWithDomain[Proportions] {
+  override def value: Proportions // I'm not sure why this is needed. -akm
+  def domain: ProportionsDomain = ProportionsDomain // TODO Consider moving this to ProportionsVariable. -akm
   // TODO What else should go here?
 }
 trait MutableProportionsVar[A<:Proportions] extends MutableMassesVar[A] with ProportionsVar
 
 class ProportionsVariable extends MutableProportionsVar[Proportions] {
   def this(initialValue:Proportions) = { this(); set(initialValue)(null) }
-  //val massesVariable = new MassesVariable(tensor.masses) // TODO Is there a risk that tensor.masses may not have its final value yet here?  Yes!  It could be changed at any time via _set!!!
   
   // Methods that track modifications on a DiffList
   def updateMasses(index:Int, newValue:Double)(implicit d:DiffList): Unit = {

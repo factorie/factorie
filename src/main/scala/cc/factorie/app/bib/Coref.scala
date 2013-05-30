@@ -25,7 +25,7 @@ trait BibEntity{
 
 }
 //class EntityAttributeCollectionVariable(val entity:Entity, collection:Seq[EntityAttr]) extends EntityAttr{}
-class CoAuthorTopicVar(val entity:Entity) extends VarAndValueGenericDomain[CoAuthorTopicVar,(BagOfCoAuthors#Value, BagOfTopics#Value)] with EntityAttr{
+class CoAuthorTopicVar(val entity:Entity) extends ValueBound[(BagOfCoAuthors#Value, BagOfTopics#Value)] /*VarAndValueGenericDomain[CoAuthorTopicVar,(BagOfCoAuthors#Value, BagOfTopics#Value)]*/ with EntityAttr{
   val coauthors=entity.attr[BagOfCoAuthors]
   val topics = entity.attr[BagOfTopics]
   def value = coauthors.value -> topics.value
