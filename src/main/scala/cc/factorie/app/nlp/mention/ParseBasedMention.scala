@@ -41,12 +41,22 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       m.start until (m.start + m.length) // TODO: is the until correct here?
     )
   }
-
+  //this expects as input indices in the **document** not the sentence
+  //note that this never returns the root as the head, it always returns a pointer to an actual token in the sentence
+  //it will either return the root of a parse tree span, or a token that is a child of the root
   def getHead(parse: ParseTree, subtree: Seq[Int]): Int = {
-    var curr = subtree.head - parse.sentence.start
-    while (parse.parentIndex(curr) > 0 && subtree.contains(parse.parentIndex(curr)))
+    val sentenceLevelIndices = subtree.map(i => i - parse.sentence.start)
+    var curr = sentenceLevelIndices.head
+    val leftBoundary = sentenceLevelIndices.head
+    val rightBoundary = sentenceLevelIndices.last
+    while(parse.parentIndex(curr) > 0 && containedInInterval(leftBoundary,rightBoundary,parse.parentIndex(curr))){
       curr = parse.parentIndex(curr)
-    curr + parse.sentence.start
+    }
+    curr + parse.sentence.start  //this shifts it back to have document-level indices
+  }
+
+  private def containedInInterval(left: Int, right: Int, testIndex: Int): Boolean = {
+    testIndex >= left && testIndex <= right
   }
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
