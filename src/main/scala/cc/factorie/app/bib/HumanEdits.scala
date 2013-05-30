@@ -298,7 +298,7 @@ object HumanEditExperiments{
       if(includeCorruptiveEdits){
         val mentions = author.descendantsOfClass[AuthorEntity].filter(_.isMention.booleanValue)
         val randomCanonical = mentions(random.nextInt(mentions.size))
-        if(!randomCanonical.eq(trueLabel)){
+        if(!randomCanonical.fullName.eq(trueLabel)){
           val contextMention2 = copyForAttributeEditMention(author)
           val payloadMention2 = copyForAttributeEditMention(author)
           contextMention.attr[FullName].setFullName(randomCanonical.attr[FullName])(null)
