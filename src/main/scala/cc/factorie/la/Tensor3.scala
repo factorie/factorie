@@ -16,7 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait Tensor3 extends Any with Tensor {
+trait Tensor3 extends Tensor {
   def dim1: Int
   def dim2: Int
   def dim3: Int

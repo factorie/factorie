@@ -22,4 +22,5 @@ case class Mention(span: TokenSpan, headTokenIndex: Int = -1, mentionType: Strin
   def start: Int = span.start
   def length: Int = span.length
   def sentence: Sentence = span.sentence
+  def headToken = document.tokens(headTokenIndex)
 }

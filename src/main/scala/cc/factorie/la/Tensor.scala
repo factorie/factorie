@@ -21,7 +21,7 @@ import cc.factorie.util._
 // Tensor adds capabilities for copying, and more explicit sparsity.
 
 /** An N-dimensional collection of Doubles. */
-trait Tensor extends Any with MutableDoubleSeq {
+trait Tensor extends MutableDoubleSeq {
   def numDimensions: Int
   def dimensions: Array[Int]
   // For handling sparsity
@@ -71,7 +71,7 @@ trait Tensor extends Any with MutableDoubleSeq {
 }
 
 
-trait ReadOnlyTensor extends Any with Tensor {
+trait ReadOnlyTensor extends Tensor {
   // Methods for mutability not implemented in all WeightsMap
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
