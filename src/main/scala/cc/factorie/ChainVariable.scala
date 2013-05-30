@@ -143,7 +143,7 @@ object ChainDomain extends Domain[IndexedSeq[ChainLink[_,_]]]
 
 /** An abstract variable that is a Chain, with value IndexedSeq[ElementType].
     @author Andrew McCallum */
-trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
+trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] {
   this: This =>
   //def value: IndexedSeq[E] = links // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
 }

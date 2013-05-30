@@ -22,7 +22,7 @@ trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
-class BooleanDomain extends CategoricalDomain[Boolean] with ValueBound[BooleanValue] with Domain[BooleanValue] {
+class BooleanDomain extends CategoricalDomain[Boolean] with Domain[BooleanValue] {
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
   freeze
@@ -48,9 +48,10 @@ object BooleanValue {
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[BooleanValue] {
+trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[BooleanValue] with VarWithDomain[BooleanValue] {
   def value: BooleanValue
-  def domain: CategoricalDomain[Boolean] = BooleanDomain
+  //def domain: CategoricalDomain[Boolean] = BooleanDomain
+  def domain: BooleanDomain = BooleanDomain
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
   @inline final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue

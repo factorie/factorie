@@ -1,5 +1,7 @@
 Pre 1.0 release:
 
+Strongly consider removing type argument from Domain.  It isn't needed for anything. [McCallum]
+Add something like Passage to Document, indexed by char offsets [McCallum]
 Implement sparse iteration through values for BP [McCallum, Singh]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]

@@ -87,7 +87,7 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
 /** An abstract variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]] with VarWithValue[SpanValue[C,E]] {
+trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] /*with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]]*/ with VarWithValue[SpanValue[C,E]] {
   this: This =>
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false

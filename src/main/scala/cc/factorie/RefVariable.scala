@@ -14,19 +14,10 @@
 
 package cc.factorie
 
-/** The domain type for RefVar.
-    @author Andrew McCallum */
-trait RefDomain extends Domain[AnyRef]
-
-/** The domain for RefVar.
-    Has no real functionality.  Just used as a marker.
-    @author Andrew McCallum */
-object RefDomain extends RefDomain
-
 /** An abstract variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVar and EdgeVar.
     @author Andrew McCallum */
-trait RefVar[A<:AnyRef] extends Var { def domain = RefDomain }
+trait RefVar[A<:AnyRef] extends Var
 
 /** An abstract mutable variable whose value is a pointer to a Scala object (which may also be a Variable).
     @author Andrew McCallum */

@@ -17,7 +17,7 @@ import scala.collection.mutable.HashSet
 
 /** An abstract variable whose value is a set of elements of type A.
     @author Andrew McCallum */
-trait SetVar[A] extends Var with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
+trait SetVar[A] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]]*/ {
   def value: scala.collection.Set[A]
   def iterator: Iterator[A] = value.iterator
   def foreach[U](f:A=>U): Unit = iterator.foreach(f)
@@ -37,7 +37,7 @@ class EmptySetVar[A] extends SetVar[A] {
 /** A variable whose value is a set elements of type A.
     Internally the values are stored in a scala.collection.mutable.HashSet.
     @author Andrew McCallum */
-class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
+class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]]*/ {
   type Value = scala.collection.Set[A]
   // Note that the returned value is not immutable.  Somewhat dangerous.
   def value = _members
@@ -78,7 +78,7 @@ class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariab
     garbage collected.  This class has no "size" method because
     the size is unreliably dependent on garbage collection.
     @author Andrew McCallum */
-class WeakSetVariable[A<:{def present:Boolean}] extends Var with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
+class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]]*/ {
   private val _members = new cc.factorie.util.WeakHashSet[A];
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)

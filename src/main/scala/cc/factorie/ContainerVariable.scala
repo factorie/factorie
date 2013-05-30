@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
     This mechanism is used for implementing var-args in Template arguments; 
     for example see Template2.factors.
     @author Andrew McCallum */
-trait ContainerVariable[A<:Var] extends Var {
+trait ContainerVariable[A<:Var] extends Var with ValueBound[scala.collection.Seq[A#Value]] {
   type ContainedVariableType = A
   def containedVariableManifest(implicit m:Manifest[A]) = m
 }
@@ -32,7 +32,7 @@ trait ContainerVariable[A<:Var] extends Var {
 /** A more concrete ContainerVariable, that is also a scala.collection.Seq.
     Used for 
     @author Andrew McCallum */
-trait Vars[A<:Var] extends scala.collection.Seq[A] with ContainerVariable[A] with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]] {
+trait Vars[A<:Var] extends scala.collection.Seq[A] with ContainerVariable[A] /*with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]]*/ {
   type Value = scala.collection.Seq[A#Value]
   def value: scala.collection.Seq[A#Value] = this.map(_.value.asInstanceOf[A#Value])
   override def toString = mkString("Vars(", ",",")")

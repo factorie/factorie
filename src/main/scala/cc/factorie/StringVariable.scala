@@ -17,11 +17,12 @@ package cc.factorie
 /** The domain of StringVar.
     This domain doesn't have special functionality; it exists simply as a marker.
     @author Andrew McCallum */
-object StringDomain extends Domain[String]
+class StringDomain extends Domain[String]
+object StringDomain extends StringDomain
 
 /** An abstract variable with String value.
     @author Andrew McCallum */
-trait StringVar extends Var with VarWithValue[String] {
+trait StringVar extends VarWithDomain[String] with VarWithValue[String] {
   def domain = StringDomain
   def maxToStringLength = 10
   override def toString = printName + "(" + (if (value.toString.length < maxToStringLength) value else value.toString.take(maxToStringLength)+"...") + ")"

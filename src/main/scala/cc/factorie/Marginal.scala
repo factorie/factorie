@@ -219,6 +219,7 @@ class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends Abstra
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
   final def value1: V1#Value = mean.asInstanceOf[V1#Value] // For AbstractAssignment1
+  def setToMaximize(implicit d:DiffList): Unit = globalize(d)
 }
 
 // Gaussian Marginal

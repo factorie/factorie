@@ -110,12 +110,8 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   //def update(index:Int, x:Element): Unit = _seq(index) = x // What should this be named, since we already have an update method above? -akm
 }
 
-class SeqDomain[X] extends Domain[Seq[X]]
-object SeqDomain extends SeqDomain[Var]
-
 /** A variable containing a mutable sequence of other variables. */
 class SeqVariable[X] extends MutableSeqVar[X] {
   def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
-  def domain = SeqDomain.asInstanceOf[SeqDomain[X]]
 }
 

@@ -34,6 +34,7 @@ trait Domain[+VT] extends ValueBound[VT] {
   // TODO Resolve issue below.
   //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" instead?
 }
+// TODO Strongly consider removing type argument from Domain.  It isn't needed for anything. -akm
 
 /** A domain that provides (and is itself) an Iterable[] over its values.
     @author Andrew McCallum */
@@ -42,15 +43,15 @@ trait IterableDomain[+A] extends Domain[A] with Iterable[A] {
 }
 
 
-/** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable
-object GenericDomain extends Domain[Any]
-
-/** Add this trait to a Variable to give it a Domain with Value type VT. */
-// TODO Consider removing [This] self type argument.
-// TODO Get rid of this?  Yes, I think so. -akm
-// Yes, and get rid of Var.domain; create instead trait VarWithDomain
-trait VarAndValueGenericDomain[+This<:Var,+VT] extends ValueBound[VT] {
-  this: This =>
-  //type ValueType = VT
-  def domain = GenericDomain.asInstanceOf[Domain[VT]]
-}
+///** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable
+//object GenericDomain extends Domain[Any]
+//
+///** Add this trait to a Variable to give it a Domain with Value type VT. */
+//// TODO Consider removing [This] self type argument.
+//// TODO Get rid of this?  Yes, I think so. -akm
+//// Yes, and get rid of Var.domain; create instead trait VarWithDomain
+//trait VarAndValueGenericDomain[+This<:Var,+VT] extends ValueBound[VT] {
+//  this: This =>
+//  //type ValueType = VT
+//  def domain = GenericDomain.asInstanceOf[Domain[VT]]
+//}
