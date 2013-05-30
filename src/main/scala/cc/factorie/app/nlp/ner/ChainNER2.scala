@@ -484,7 +484,7 @@ class ChainNer2 {
   }
 
   def process(document:Document, useModel2 : Boolean = false): Unit = {
-    if (document.length == 0) return
+    if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
       BP.inferChainMax(vars, if(useModel2) model2 else model)

@@ -45,8 +45,8 @@ object Tutorial40InferenceAndLearning {
     tokenizer.process(document)
     val segmenter = new app.nlp.segment.SentenceSegmenter
     segmenter.process(document)
-    assertStringEquals(document.tokens.length, "10")
-    assertStringEquals(document.sentences.length, "1")
+    assertStringEquals(document.tokenCount, "10")
+    assertStringEquals(document.sentenceCount, "1")
 
     // Let's assign all tokens the same label for the sake of simplicity
     document.tokens.foreach(t => t.attr += new Label(t, "A"))
@@ -76,7 +76,7 @@ object Tutorial40InferenceAndLearning {
      * The most commonly used Infer objects are those in the BP package.
      **/
 
-    val summary = InferByBPChainSum.infer(document.tokens.map(_.attr[Label]), model).head
+    val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model).head
     assertStringEquals(summary.logZ, "6.931471805599453")
     assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Tensor1(0.5,0.5)")
 
@@ -89,7 +89,7 @@ object Tutorial40InferenceAndLearning {
      * more efficient code.
      **/
 
-    val summary1 = model.inferBySumProduct(document.tokens.map(_.attr[Label]))
+    val summary1 = model.inferBySumProduct(document.tokens.map(_.attr[Label]).toIndexedSeq)
     assertStringEquals(summary1.logZ, "6.931471805599453")
     assertStringEquals(summary1.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.5,0.5)")
 
@@ -115,10 +115,10 @@ object Tutorial40InferenceAndLearning {
      * gradient for maximum likelihood training. Here's how to construct one for this sentence
      * using Factorie's BP inferencer.
      **/
-    val example0 = new optimize.LikelihoodExample(document.tokens.map(_.attr[Label]), model, InferByBPChainSum)
+    val example0 = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
 
     // The ChainModel, however, comes with its own more efficient example
-    val example1 = ChainModel.createChainExample(model, document.tokens.map(_.attr[Label]))
+    val example1 = ChainModel.createChainExample(model, document.tokens.map(_.attr[Label]).toIndexedSeq)
 
     /*& In this tutorial let's use the AdaGrad optimizer, which is efficient and has
      * per-coordinate learning rates but is unregularized
@@ -152,7 +152,7 @@ object Tutorial40InferenceAndLearning {
      */
 
     // Now we can run inference and see that we have learned
-    val summary2 = model.inferBySumProduct(document.tokens.map(_.attr[Label]))
+    val summary2 = model.inferBySumProduct(document.tokens.map(_.attr[Label]).toIndexedSeq)
     assertStringEquals(summary2.logZ, "48.605506179720656")
     assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999301965748612,6.980342513888636E-5)")
 
@@ -165,11 +165,11 @@ object Tutorial40InferenceAndLearning {
      * arbitrary loss function.
     **/
     val sampler = new GibbsSampler(model, HammingObjective)
-    val sampleRankExamples = document.tokens.map(t => new optimize.SampleRankExample(t.attr[Label], sampler))
+    val sampleRankExamples = document.tokens.toSeq.map(t => new optimize.SampleRankExample(t.attr[Label], sampler))
     trainer0.processExamples(sampleRankExamples)
     // SampleRank comes with its own trainer, however, for ease of use
     val trainer2 = new SampleRankTrainer(model.parameters, sampler, optimizer0)
-    trainer2.processContexts(document.tokens.map(_.attr[Label]))
+    trainer2.processContexts(document.tokens.toSeq.map(_.attr[Label]))
 
     /*&
      * Finally, there are many other useful examples in factorie. The GLMExample implements generalized

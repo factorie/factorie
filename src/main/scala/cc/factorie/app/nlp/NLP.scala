@@ -50,7 +50,7 @@ object NLP {
       for (processor <- annotators)
         document = processor.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
-      logStream.println("Processed %d tokens.".format(document.length))
+      logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
       out.close();
       in.close();

@@ -12,8 +12,9 @@ class SentenceSegmenter extends DocumentAnnotator {
   def process1(document: Document): Document = {
     val endingIdxs = document.tokens.filter(token => lastTokenRegex.findFirstIn(token.string) != None).map(_.position)
     var prevIdx = 0
-    for (idx <- endingIdxs) {
-      new Sentence(document, prevIdx, idx - prevIdx + 1)
+    for (section <- document.sections; token <- section.tokens) {
+      val idx = token.position
+      new Sentence(section, prevIdx, idx - prevIdx + 1)
       prevIdx = idx + 1
     }
     document

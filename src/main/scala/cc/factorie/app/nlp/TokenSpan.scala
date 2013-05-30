@@ -16,12 +16,13 @@ package cc.factorie.app.nlp
 import cc.factorie._
 
 /** A sub-sequence of Tokens within a Document. */
-class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
-  @inline final def document = chain // Just a convenient alias
-  @inline final def tokens = value
+class TokenSpan(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Section,Token](sec, initialStart, initialLength) with Attr {
+  final def section = chain  // Just a convenient alias
+  final def document = chain.document
+  final def tokens = value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
-  def phrase: String = if (length == 1) tokens.head.string else doc.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
+  def phrase: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
   def string: String = phrase
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
@@ -49,10 +50,10 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
 object TokenSpan {
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.Lexicon, document:Document): Int = {
     var spanCount = 0
-    for (token <- document.tokens) {
+    for (section <- document.sections; token <- section.tokens) {
       val len = lexicon.startsAt(token) 
       if (len > 0) {
-        val span = new TokenSpan(document, token.position, len)(null)
+        val span = new TokenSpan(section, token.position, len)(null)
         span.attr += lexicon
         spanCount += 1
       }
@@ -68,14 +69,14 @@ class TokenSpanCubbie extends Cubbie {
   val start = IntSlot("start")
   val length = IntSlot("length")
   def storeTokenSpan(ts:TokenSpan): this.type = {
-	start := ts.start
-	length := ts.length
-	finishStoreTokenSpan(ts)
-	this
+  	start := ts.start
+  	length := ts.length
+  	finishStoreTokenSpan(ts)
+  	this
   }
   def finishStoreTokenSpan(ts:TokenSpan): Unit = {}
-  def fetchTokenSpan(doc:Document): TokenSpan = {
-    val ts = new TokenSpan(doc, start.value, length.value)(null)
+  def fetchTokenSpan(section:Section): TokenSpan = {
+    val ts = new TokenSpan(section, start.value, length.value)(null)
     finishFetchTokenSpan(ts)
     ts
   }

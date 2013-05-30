@@ -26,7 +26,7 @@ class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLa
 }
 
 // TODO this shouldn't extend hcoref Mention
-class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
+class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(sec, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
   val label = new Conll2003SpanNerLabel(this, labelString)
   def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
     (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
@@ -144,7 +144,7 @@ class SpanNerObjective extends TemplateModel {
 class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
   // The proposer for changes to Spans touching this Token
   def settings(token:Token) = new SettingIterator {
-    private val _seq = token.document
+    private val _seq = token.document.wholeDocumentSection
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
     val existingSpans = token.spansOfClass[NerSpan](classOf[NerSpan])
     //println("existing spans = "+existingSpans)
@@ -265,7 +265,7 @@ class SpanNER {
     trainDocuments.foreach(addFeatures(_))
     testDocuments.foreach(addFeatures(_))
 
-    println("Have "+trainDocuments.map(_.length).sum+" trainTokens "+testDocuments.map(_.length).sum+" testTokens")
+    println("Have "+trainDocuments.map(_.tokenCount).sum+" trainTokens "+testDocuments.map(_.tokenCount).sum+" testTokens")
     println("FeaturesDomain size="+SpanNerFeaturesDomain.dimensionSize)
     println("LabelDomain "+ConllNerDomain.toList)
     
@@ -296,7 +296,7 @@ class SpanNER {
     for (i <- 1 to 11) {
       println("Iteration "+i) 
       // Every third iteration remove all the predictions
-      if (i % 3 == 0) { println("Removing all spans"); (trainDocuments ++ testDocuments).foreach(_.clearSpans(null)) }
+      if (i % 3 == 0) { println("Removing all spans"); for (doc <- (trainDocuments ++ testDocuments); section <- doc.sections) section.clearSpans(null) }
       learner.processContexts(trainDocuments.map(_.tokens).flatten)
       //learner.learningRate *= 0.9
       predictor.processAll(testDocuments.map(_.tokens).flatten)
@@ -317,8 +317,8 @@ class SpanNER {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
         documents += cc.factorie.app.nlp.segment.ClearTokenizer.process(LoadNYTimesXML.fromFile(file))
-        println("  "+documents.last.length)
-        documents.last.foreach(t=> print(t.string+" ")); println
+        println("  "+documents.last.wholeDocumentSection.length)
+        documents.last.wholeDocumentSection.foreach(t=> print(t.string+" ")); println
       }
     }
     documents.foreach(addFeatures(_))
@@ -332,7 +332,7 @@ class SpanNER {
 
   
   def addFeatures(document:Document): Unit = {
-    for (token <- document) {
+    for (token <- document.tokens) {
       val features = token.attr += new SpanNerFeatures(token)
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
@@ -360,14 +360,14 @@ class SpanNER {
     document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[SpanNerFeatures] += "SENTENCEUPPERCASE"))
 
     // Add features for character n-grams between sizes 2 and 5
-    document.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[SpanNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+    document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[SpanNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
 
     // Add features from window of 4 words before and after
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
     
     // Put features of first mention on later mentions
-    document.foreach(t => {
+    document.tokens.foreach(t => {
       if (t.isCapitalized && t.string.length > 1 && !t.attr[SpanNerFeatures].activeCategories.exists(f => f.matches(".*FIRSTMENTION.*"))) {
         //println("Looking for later mentions of "+t.word)
         var t2 = t
@@ -387,9 +387,9 @@ class SpanNER {
     var predictedCount = 0
     var correctCount = 0
     for (document <- documents) {
-      predictedCount += document.spans.length
-      document.spansOfClass[NerSpan].foreach(span => if (span.isCorrect) correctCount += 1)
-      for (token <- document) {
+      predictedCount += document.spanCount
+      document.tokens.foreach(_.spansOfClass[NerSpan].foreach(span => if (span.isCorrect) correctCount += 1))
+      for (token <- document.tokens) {
         val tokenTargetCategory = token.nerLabel.target.categoryValue
         if (tokenTargetCategory != "O" && (!token.hasPrev || token.prev.nerLabel.target.categoryValue != tokenTargetCategory))
            trueCount += 1
@@ -408,14 +408,14 @@ class SpanNER {
 
   
   def printDocument(document:Document): Unit = {
-    for (token <- document) {
+    for (token <- document.tokens) {
       token.startsSpansOfClass[NerSpan].foreach(span => print("<"+span.label.value+">"))
       print(token.string)
       token.endsSpansOfClass[NerSpan].foreach(span => print("</"+span.label.value+">"))
       print(" ")
     }
     println
-    for (span <- document.spansOfClass[NerSpan].sortForward(span => span.start.toDouble)) {
+    for (span <- document.sections.flatMap(_.spansOfClass[NerSpan].sortForward(span => span.start.toDouble))) {
       println("%s len=%-2d %-8s %-15s %-30s %-15s".format(
           if (span.isCorrect) " " else "*",
           span.length,

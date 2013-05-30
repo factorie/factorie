@@ -175,7 +175,7 @@ class ChainNer {
 
   // TODO Change this to use Viterbi! -akm
   def process(document:Document): Unit = {
-    if (document.length == 0) return
+    if (document.tokenCount == 0) return
     if (!hasFeatures(document)) initFeatures(document)
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     if (true) {
@@ -268,8 +268,8 @@ object ChainNer extends ChainNer {
         process(document)
         println()
         println(filename)
-        printEntities(document.tokens)
-        printSGML(document.tokens)
+        printEntities(document.tokens.toIndexedSeq)
+        printSGML(document.tokens.toIndexedSeq)
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))

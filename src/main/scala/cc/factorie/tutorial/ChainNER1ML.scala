@@ -67,8 +67,8 @@ object ChainNER1ML {
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     
     // Get the variables to be inferred
-    val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.tokens.map(_.nerLabel))
-    val  testLabelsSentences: Seq[Seq[NerLabel]] = testDocuments.map(_.tokens.map(_.nerLabel))
+    val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.tokens.toSeq.map(_.nerLabel))
+    val  testLabelsSentences: Seq[Seq[NerLabel]] = testDocuments.map(_.tokens.toSeq.map(_.nerLabel))
     //val trainVariables = trainLabels
     //val testVariables = testLabels
     //val allTestVariables = testVariables.flatMap(l => l)

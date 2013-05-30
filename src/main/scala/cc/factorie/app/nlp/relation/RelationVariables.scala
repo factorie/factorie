@@ -196,7 +196,7 @@ object RelationVariables {
   // add the relation variables that don't appear yet
   def addAllVariables(doc: Document): Unit = {
     val relations = doc.attr.getOrElseUpdate(new RelationMentions)
-    val mentions = doc.spansOfClass[PairwiseMention]
+    val mentions = doc.sections.flatMap(_.spansOfClass[PairwiseMention])
     var total = 0
     var added = 0
     for (m1 <- mentions; m2 <- mentions; if (m1 != m2 && m1.sentence == m2.sentence)) {

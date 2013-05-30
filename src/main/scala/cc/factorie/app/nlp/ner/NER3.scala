@@ -47,7 +47,7 @@ class NER3 extends DocumentAnnotator {
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
   def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
   def process1(document:Document): Document = {
-    if (document.length > 0) {
+    if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
       for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
@@ -71,7 +71,8 @@ class NER3 extends DocumentAnnotator {
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (token.isPunctuation) features += "PUNCTUATION"
     }
-    cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(document.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2), Seq(0,0))
+    for (section <- document.sections)
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2), Seq(0,0))
   }
   
   // Parameter estimation

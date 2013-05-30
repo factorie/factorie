@@ -303,14 +303,14 @@ object GraphProjectiveParser {
     val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
 
     // Train
-    parser.train(trainDoc.sentences, testDoc.sentences, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
     // Test
 
     // Print accuracy diagnostics
     println("Predicting train set..."); parser.process1(trainDoc)
     println("Predicting test set...");  parser.process1(testDoc)
-    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.map(_.attr[ParseTree])))
-    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.map(_.attr[ParseTree])))
+    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
+    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
     println()
     println("Done.")
   }

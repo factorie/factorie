@@ -37,13 +37,14 @@ class TestLexicon extends JUnitSuite {
     val string = "Yesterday I flew from Paris to New York."
     val doc = new Document(string)
     segment.RegexTokenizer.process(doc)
-    assert(doc.tokens(4).string == "Paris")
-    assert(lexicon.contains(doc.tokens(4)))
-    assert(doc.tokens(7).string == "York")
-    assert(lexicon.contains(doc.tokens(7)))
-    assert(lexicon.contains(doc.tokens(6)))
-    assert(doc.tokens(5).string == "to")
-    assert(!lexicon.contains(doc.tokens(5)))
+    val section = doc.wholeDocumentSection
+    assert(section.tokens(4).string == "Paris")
+    assert(lexicon.contains(section.tokens(4)))
+    assert(section.tokens(7).string == "York")
+    assert(lexicon.contains(section.tokens(7)))
+    assert(lexicon.contains(section.tokens(6)))
+    assert(section.tokens(5).string == "to")
+    assert(!lexicon.contains(section.tokens(5)))
     
     //println(lexicon.phrases)
     assert(lexicon.phrases.contains("new york"))

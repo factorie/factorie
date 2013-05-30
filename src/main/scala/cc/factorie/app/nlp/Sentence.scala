@@ -16,9 +16,12 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(doc, initialStart, initialLength)(d) {
-  if (!doc.annotators.contains(classOf[Sentence])) doc.annotators(classOf[Sentence]) = null
-  def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
+class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(sec, initialStart, initialLength)(d) {
+  def this(sec:Section)(implicit d:DiffList = null) = this(sec, sec.length, 0)
+  def this(doc:Document)(implicit d:DiffList = null) = this(doc.wholeDocumentSection)
+
+  if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = null
+
   //def tokens: IndexedSeq[Token] = links
   def tokenAtCharIndex(charOffset:Int): Token = {
     require(charOffset >= tokens.head.stringStart && charOffset <= tokens.last.stringEnd)
@@ -54,8 +57,8 @@ class SentenceCubbie extends TokenSpanCubbie {
     this
   }
   def finishFetchSentence(s:Sentence): Unit = finishFetchTokenSpan(s)
-  def fetchSentence(doc:Document): Sentence = {
-    val s = new Sentence(doc, start.value, length.value)
+  def fetchSentence(section:Section): Sentence = {
+    val s = new Sentence(section, start.value, length.value)
     finishFetchSentence(s)
     s
   }

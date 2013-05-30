@@ -49,7 +49,7 @@ object LoadConll2003 {
         sentence = new Sentence(document)(null)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
-        document.chainFreeze
+        document.wholeDocumentSection.chainFreeze
         document = new Document().setName("CoNLL2003-"+documents.length)
         document.annotators(classOf[Token]) = null // register that we have token boundaries
         document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
@@ -86,7 +86,7 @@ object LoadConll2003 {
 		}
 	}*/
     //sentence.stringLength = document.stringLength - sentence.stringStart
-    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.length).sum+" tokens total from file "+filename)
+    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total from file "+filename)
     documents
   }
   def convertToBILOU(documents : ArrayBuffer[Document]) {

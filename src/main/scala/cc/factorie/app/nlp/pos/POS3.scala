@@ -170,8 +170,9 @@ class POS3 extends DocumentAnnotator {
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
   def predict(document: Document): Unit = {
-    if (document.hasSentences) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
-    else predict(document.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
+    for (section <- document.sections)
+      if (section.hasSentences) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
+      else predict(section.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
   }
 
   def serialize(filename: String) {
@@ -192,8 +193,8 @@ class POS3 extends DocumentAnnotator {
     val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PTBPosLabel(t,s))
     val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PTBPosLabel(t,s))
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
-    println("Read %d training tokens.".format(trainDocs.map(_.length).sum))
-    println("Read %d testing tokens.".format(testDocs.map(_.length).sum))
+    println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
+    println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     for (doc <- (trainDocs ++ testDocs)) {
       cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)

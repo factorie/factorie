@@ -353,18 +353,18 @@ object DepParser1 {
     val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
     
     // Train
-    parser.train(trainDoc.sentences, testDoc.sentences, null, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()),trainOptions)
+    parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, null, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()),trainOptions)
     // Test
     parser.freezeDomains()
     
     // Print accuracy diagnostics
     println("Predicting train set..."); trainDoc.sentences.foreach { s => parser.parse(s) } // Was par
     println("Predicting test set...");  testDoc.sentences.foreach { s => parser.parse(s) } // Was par
-    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.map(_.attr[ParseTree])))
-    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.map(_.attr[ParseTree])))
+    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
+    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
     println()
-    println("Training LAS = "+ ParserEval.calcLas(trainDoc.sentences.map(_.attr[ParseTree])))
-    println(" Testing LAS = "+ ParserEval.calcLas(testDoc.sentences.map(_.attr[ParseTree])))
+    println("Training LAS = "+ ParserEval.calcLas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
+    println(" Testing LAS = "+ ParserEval.calcLas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
 
     //parser.model.skipNonCategories = false
     // Write results

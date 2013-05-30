@@ -21,36 +21,40 @@ import scala.collection.mutable.ArrayBuffer
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
 // TODO Why are stringStart and stringEnd "var" instead of "val"? -akm
 
-class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr {
+class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
-  /** Create a Token and also append it to the list of Tokens in the Document.
-      There must not already be Tokens in the document with higher stringStart indices. */
-  def this(doc:Document, s:Int, e:Int) = {
+  /** Create a Token and also append it to the list of Tokens in the Section.
+      There must not already be Tokens in the document with higher stringStart indices.
+      Note that the start and end indices are character offsets into the Document string, not the Section string. */
+  def this(sec:Section, s:Int, e:Int) = {
     this(s, e)
-    if (!doc.annotators.contains(classOf[Token])) doc.annotators(classOf[Token]) = null
-    doc += this
+    if (!sec.document.annotators.contains(classOf[Token])) sec.document.annotators(classOf[Token]) = null
+    sec += this
   }
+  /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
+  def this(doc:Document, s:Int, e:Int) = this(doc.wholeDocumentSection, s, e)
   def this(sentence:Sentence, s:Int, e:Int) = {
     this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
-    if (sentence.document.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
+    if (sentence.section.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
     if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = null
     _sentence = sentence
     // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
-    this(doc, doc.stringLength, doc.stringLength + tokenString.length)
+    this(doc.wholeDocumentSection, doc.stringLength, doc.stringLength + tokenString.length)
     doc.appendString(tokenString)
     //doc.appendString(" ") // TODO Make this configurable
   }
   def this(s:Sentence, tokenString:String) = {
     this(s.document, tokenString)
-    if (s.document.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
+    if (s.document.wholeDocumentSection.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }
   /** Just an alias for this.chain */
-  def document: Document = chain
+  def section: Section = chain
+  def document: Document = chain.document
   /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
@@ -63,8 +67,6 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
   def lemmaString = { val tl = attr[cc.factorie.app.nlp.lemma.TokenLemma]; if (tl ne null) tl.value else string }
   def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null } // TODO I'd like to get rid of this -akm
-  /** Assign this Token's lemmaString.  A new TokenLemma object will be added to the Token's attr only if the lemmaString is different than the current this.string. */
-  //def setLemmaString(lemmaString:String): Unit = if (string != lemmaString) attr += new TokenLemma(this, lemmaString)
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
@@ -88,9 +90,9 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(sentencePosition, label.intValue)
   
   // Sentence methods
-  private var _sentence: Sentence = null // This must be changeable from outside because often Tokenization comes before Sentence segmentation
+  private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
   def sentence = {
-    if (_sentence eq null) _sentence = document.sentenceContaining(this)
+    if (_sentence eq null) _sentence = document.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
     _sentence
   }
   @deprecated("This method should be removed. use 'positionInSentence'.") def indexInSentence: Int = positionInSentence

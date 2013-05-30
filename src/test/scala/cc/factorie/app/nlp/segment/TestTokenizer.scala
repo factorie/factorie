@@ -271,7 +271,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   def getTokenizedSentences(text: Seq[String], inference: SentenceBoundaryInference = JointlyAcrossDocuments): Seq[Seq[Sentence]] = {
     val docs = text.map(t => new Document(t))
     new PunktTokenizer { override def sentenceBoundaryInference = inference }.process(docs)
-    docs.map(_.sentences)
+    docs.map(_.sentences.toSeq)
   }
   
   

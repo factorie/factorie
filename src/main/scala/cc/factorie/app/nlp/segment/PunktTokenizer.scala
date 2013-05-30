@@ -93,17 +93,27 @@ class PunktTokenizer extends DocumentAnnotator {
 
   private[this] val regex = ruleset.mkString("|").r
 
+//  def apply(s: String): StringSegmentIterator = new StringSegmentIterator {
+//    val doc = new Document(s)
+//    process(doc)
+//    var i = 0
+//    val len = doc.tokens.length
+//    def hasNext = i < len - 1
+//    def next: String = { val result = doc.tokens(i).string; i += 1; result }
+//    def start = doc.tokens(i).stringStart
+//    def end = doc.tokens(i).stringEnd
+//    //doc.tokens.map(_.string).iterator
+//  }
+
   def apply(s: String): StringSegmentIterator = new StringSegmentIterator {
-    val doc = new Document(s)
-    process(doc)
-    var i = 0
-    val len = doc.tokens.length
-    def hasNext = i < len - 1
-    def next: String = { val result = doc.tokens(i).string; i += 1; result }
-    def start = doc.tokens(i).stringStart
-    def end = doc.tokens(i).stringEnd
-    //doc.tokens.map(_.string).iterator
+    val tokenIterator = for (section <- process1(new Document(s)).sections.iterator; token <- section.tokens.iterator) yield token
+    var token: Token = null
+    def hasNext = tokenIterator.hasNext
+    def next: String = { token = tokenIterator.next; token.string }
+    def start = token.stringStart
+    def end = token.stringEnd
   }
+
 
   // TODO Fix this to fit better into the DocumentProcessor framework, e.g. setting postAttrs
   def process(documents: Seq[Document]): Unit = processLogic(documents, sentenceBoundaryInference)
@@ -112,16 +122,17 @@ class PunktTokenizer extends DocumentAnnotator {
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 
+  // TODO Fix to obey document.sections! -akm
   private[this] def processLogic(documents: Seq[Document], inference: SentenceBoundaryInference): Unit = inference match {
     case PerDocument => documents.foreach(d => processLogic(Seq(d), JointlyAcrossDocuments))
     case Non =>
-      for (d <- documents) {
-        val tokenIterator = regex.findAllIn(d.string)
+      for (d <- documents; section <- d.sections) {
+        val tokenIterator = regex.findAllIn(section.string)
         while (tokenIterator.hasNext) {
           tokenIterator.next()
           new Token(d, tokenIterator.start, tokenIterator.end)
         }
-        new Sentence(d, 0, d.tokens.length)
+        new Sentence(section, 0, d.tokenCount)
       }
     case JointlyAcrossDocuments =>
       val docString = documents.map(_.string).mkString(" ")
@@ -151,10 +162,10 @@ class PunktTokenizer extends DocumentAnnotator {
           numTokens += 1
         }
         if (!endIsAbbrev) {
-          new Token(currentDocument, end - docOffset, end + 1 - docOffset)
+          new Token(currentDocument.wholeDocumentSection, end - docOffset, end + 1 - docOffset)
           numTokens += 1
         }
-        new Sentence(currentDocument, tokensSoFar, numTokens) // really?
+        new Sentence(currentDocument.wholeDocumentSection, tokensSoFar, numTokens) // really?
         tokensSoFar += numTokens
       }
   }

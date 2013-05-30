@@ -91,8 +91,8 @@ class Lexicons( val sources : List[(String,BufferedSource)]) {
   def getPhrase(token : Token) : Seq[Token] = {
     val fullPhrase = new ArrayBuffer[Token]()
     val start = if(token.position-7 >= 0) token.position-7 else 0
-    val end = if (token.position+7 < token.document.length) token.position+7 else token.document.length-1
-    for (i <- start to end) fullPhrase += token.document.tokens(i)
+    val end = if (token.position+7 < token.section.length) token.position+7 else token.section.length-1
+    for (i <- start to end) fullPhrase += token.section.tokens(i)
     fullPhrase.toSeq
   }
 

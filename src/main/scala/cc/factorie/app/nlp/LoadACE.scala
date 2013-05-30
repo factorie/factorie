@@ -46,19 +46,17 @@ object LoadACE {
     SentenceSegmenter.process(doc)
 
     // trailing tokens should be in a sentence
-    val end = doc.sentences.last.end
-    if (end != doc.length - 1)
-      new Sentence(doc, end + 1, doc.length - 1 - end)(null)
+    val end = doc.wholeDocumentSection.sentences.last.end
+    if (end != doc.wholeDocumentSection.length - 1)
+      new Sentence(doc.wholeDocumentSection, end + 1, doc.wholeDocumentSection.length - 1 - end)(null)
     doc
   }
 
   private def tokenIndexAtCharIndex(charOffset: Int, doc: Document): Int = {
     require(charOffset >= 0 && charOffset <= doc.string.length)
     var i = 0
-    while (i < doc.tokens.size) {
-      val t = doc.tokens(i)
-      if (t.stringStart <= charOffset && charOffset <= t.stringEnd)
-        return i
+    for (t <- doc.tokens) {
+      if (t.stringStart <= charOffset && charOffset <= t.stringEnd) return i
       i += 1
     }
     return -1
@@ -90,7 +88,7 @@ object LoadACE {
 
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
-        val m = new NerSpan(doc, e.attr[ACEEntityIdentifiers].eType, start, length)(null) with PairwiseMention
+        val m = new NerSpan(doc.wholeDocumentSection, e.attr[ACEEntityIdentifiers].eType, start, length)(null) with PairwiseMention
         if (m.sentence == null)
           println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
         m.attr += new ACEMentionIdentifiers {
@@ -108,7 +106,7 @@ object LoadACE {
       s =>
         val a = s.attr[ACEMentionIdentifiers]
         a != null && a.mId == id
-    }.head.asInstanceOf[PairwiseMention]
+    }.toSeq.head.asInstanceOf[PairwiseMention]
 
   def addRelationsFromApf(apf: NodeSeq, doc: Document): Unit = {
     doc.attr += new RelationMentions
@@ -151,7 +149,7 @@ object LoadACE {
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
     for (d <- docs)
-      d.spansOfClass[TokenSpanMention].foreach(s => println(s))
+      d.sections.foreach(_.spansOfClass[TokenSpanMention].foreach(s => println(s)))
   }
 
 }

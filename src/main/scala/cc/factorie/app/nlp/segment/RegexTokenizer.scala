@@ -32,10 +32,12 @@ class RegexTokenizer extends RegexSegmenter(Seq(
 ).mkString("|").r) with DocumentAnnotator {
 
   def process1(document: Document): Document = {
-    val tokenIterator = RegexTokenizer.this.apply(document.string)
-    while (tokenIterator.hasNext) {
-      tokenIterator.next()
-      new Token(document, tokenIterator.start, tokenIterator.end)
+    for (section <- document.sections) {
+      val tokenIterator = RegexTokenizer.this.apply(section.string)
+      while (tokenIterator.hasNext) {
+        tokenIterator.next()
+        new Token(section, tokenIterator.start, tokenIterator.end)
+      }
     }
     document
   }

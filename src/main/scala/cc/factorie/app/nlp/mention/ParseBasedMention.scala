@@ -21,23 +21,22 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private def isNoun           (t: Token) = ALL_NOUNS         exists(_ == t.posLabel.categoryValue.toUpperCase())
 
   private def nerSpans(doc: Document): Seq[Mention] = {
-    (for (s <- doc.spansOfClass[NerSpan]) yield
-      Mention(doc, s.start, s.length,s.start - s.sentence.start  + s.length - 1) //this sets the head token idx to be the last token in the span  //todo: s.start is offset in document, right?
+    (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
+      Mention(section, span.start, span.length, span.start - span.sentence.start  + span.length - 1) //this sets the head token idx to be the last token in the span  //todo: s.start is offset in document, right?
       ).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
   private def personalPronounSpans(doc: Document): Seq[Mention] = {
-    (
-      for (s <- doc.sentences;
+    (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        Mention(doc, s.start + i, 1,s.start+i)
+        Mention(section, s.start + i, 1,s.start+i)
       ).toSeq
   }
 
   private def getHeadTokenIdx(m: Mention): Int = {
     getHead(
-      m.document(m.start).sentence.parse, // much more efficient than the commented line below
+      m.span.head.sentence.parse, // much more efficient than the commented line below
       //m.document.sentenceContaining(m.document(m.start)).parse,
       m.start until (m.start + m.length) // TODO: is the until correct here?
     )
@@ -54,7 +53,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] = (
 
-    for (s <- doc.sentences;
+    for (section <- doc.sections; s <- section.sentences;
          usedTokens = new HashSet[Token]();
          (t, si) <- s.tokens.zipWithIndex if nounFilter(t)) yield {
 
@@ -80,7 +79,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
           case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
         }
 
-        val res = Some(Mention(doc, start, length,si))
+        val res = Some(Mention(section, start, length,si))
 
         res
       }

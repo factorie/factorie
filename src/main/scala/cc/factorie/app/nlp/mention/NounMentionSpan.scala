@@ -1,7 +1,9 @@
 package cc.factorie.app.nlp.mention
 import cc.factorie.app.nlp._
 
-class NounMentionSpan(doc:Document, initialStart:Int, initialLength:Int) extends TokenSpan(doc, initialStart, initialLength)(null)
+class NounMentionSpan(sec:Section, initialStart:Int, initialLength:Int) extends TokenSpan(sec, initialStart, initialLength)(null) {
+  def this (doc:Document, initialStart:Int, initialLength:Int) = this(doc.wholeDocumentSection, initialStart, initialLength)
+}
 
 /** Find noun mentions merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
 object NounMention1 extends DocumentAnnotator {

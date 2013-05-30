@@ -10,10 +10,10 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
    def testDiffLists:Unit = {
      val doc = LoadPlainText.fromString("testdoc", "aaa bb John Smith eee ff ggg", false)
      //doc.foreach(logger.debug(_))
-     assert(doc.length == 7)
+     assert(doc.tokenCount == 7)
      val d = new DiffList
-     val s1 = new TokenSpan(doc, 1, 1)(d)
-     assert(doc.spans.head.start == 1)
+     val s1 = new TokenSpan(doc.wholeDocumentSection, 1, 1)(d)
+     assert(doc.wholeDocumentSection.spans.head.start == 1)
      //logger.debug("DiffList "+d)
      //logger.debug("new span 1 1")
      //logger.debug(doc.spans.mkString("\n"))
@@ -22,18 +22,18 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      //logger.debug("undo")
      //logger.debug("DiffList "+d)
      //logger.debug(doc.spans.mkString("\n"))
-     assert(doc.spans.length == 0)
-     val s2 = new NerSpan(doc, "PER", 2, 2)(d)
+     assert(doc.wholeDocumentSection.spans.length == 0)
+     val s2 = new NerSpan(doc.wholeDocumentSection, "PER", 2, 2)(d)
      assert(s2.phrase == "John Smith")
-     val s3 = new TokenSpan(doc, 4, 1)(d)
-     assert(doc.spansOfClass[NerSpan].length == 1)
+     val s3 = new TokenSpan(doc.wholeDocumentSection, 4, 1)(d)
+     assert(doc.wholeDocumentSection.spansOfClass[NerSpan].length == 1)
      val d2 = new DiffList
-     doc.removeSpan(s3)(d2)
-     assert(doc.spans.length == 1)
+     doc.wholeDocumentSection.removeSpan(s3)(d2)
+     assert(doc.wholeDocumentSection.spans.length == 1)
      d2.undo
-     assert(doc.spans.length == 2)
-     doc.clearSpans(null)
-     assert(doc.spans.length == 0)
+     assert(doc.wholeDocumentSection.spans.length == 2)
+     doc.wholeDocumentSection.clearSpans(null)
+     assert(doc.wholeDocumentSection.spans.length == 0)
    }
    
 }

@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.segment
 import scala.collection.mutable
 import java.util.regex.Pattern
 import jregex.{Replacer, TextBuffer, MatchResult, Substitution}
-import cc.factorie.app.nlp.{DocumentAnnotator, Document, Token, Sentence}
+import cc.factorie.app.nlp.{DocumentAnnotator, Document, Token, Sentence, Section}
 
 object ClearTokenizer extends EnglishTokenizer(EnglishTokenizerConfig.default)
 
@@ -13,12 +13,14 @@ trait AbstractSegmenter extends DocumentAnnotator {
   def tokenizer: AbstractTokenizer
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]
   def process1(d: Document): Document = {
-    val sentences = getSentences(d.string)
-    TokenizerHelper.addTokensToDoc(sentences.flatten, d)
-    var start = 0
-    for (cs <- sentences; if cs.length > 0) {
-      new Sentence(d, start, cs.length)
-      start = start + cs.length
+    for (section <- d.sections) {
+      val sentences = getSentences(section.string)
+      TokenizerHelper.addTokensToDoc(sentences.flatten, section)
+      var start = 0
+      for (cs <- sentences; if cs.length > 0) {
+        new Sentence(section, start, cs.length)(null)
+        start = start + cs.length
+      }
     }
     d
   }
@@ -28,7 +30,10 @@ trait AbstractSegmenter extends DocumentAnnotator {
 
 trait AbstractTokenizer extends DocumentAnnotator {
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
-  def process1(d: Document): Document = { TokenizerHelper.addTokensToDoc(getTokenList(d.string), d); d }
+  def process1(d: Document): Document = {
+    for (section <- d.sections) TokenizerHelper.addTokensToDoc(getTokenList(section.string), section)
+    d
+  }
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token])
 }
@@ -76,12 +81,12 @@ class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegment
 }
 
 object TokenizerHelper {
-  def addTokensToDoc(tokens: Seq[ClearToken], d: Document): Unit = {
+  def addTokensToDoc(tokens: Seq[ClearToken], section: Section): Unit = {
     var offset = 0
     for (ct <- tokens) {
-      val substrStart = d.string.indexOf(ct.text, offset)
+      val substrStart = section.string.indexOf(ct.text, offset)
       val substrEnd = substrStart + ct.text.length
-      new Token(d, substrStart, substrEnd)
+      new Token(section, substrStart, substrEnd)
       offset = substrEnd
     }
   }

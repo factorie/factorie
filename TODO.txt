@@ -8,7 +8,6 @@ Finish ChainModel [Passos, Belanger]
 Make Tensor.foreachActiveElement faster with a macro [Luke]
 Use implicit classes and value classes [Luke]
 Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
-Remove VarAndValueGenericDomain
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 In BP, when running on chains, verify that we don't need to walk to create a tree.
 
@@ -35,6 +34,7 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
+Remove VarAndValueGenericDomain
 Remove unused classes from cc.factorie.util [Luke]
 Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
 Make Assignment inherit from Summary [Passos]  (No, just make a wrapper class.)
