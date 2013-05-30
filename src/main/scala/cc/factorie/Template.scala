@@ -48,7 +48,7 @@ trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses 
   // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
-    unroll(v) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
+    unroll(v) match { case fs:IterableSingleFactor[_] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
   }
   final def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]

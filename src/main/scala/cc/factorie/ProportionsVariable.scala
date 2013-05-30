@@ -337,7 +337,7 @@ object MaximizeProportions extends Maximize {
       // A simple DiscreteVar child of the Proportions
       case d:Discrete.Factor => incrementForDiscreteVar(d._1, 1.0)
       // A DiscreteVar child of a Mixture[Proportions]
-      case dm:CategoricalMixture[A]#Factor => {
+      case dm:CategoricalMixture[A @unchecked]#Factor => {
         val gate = dm._3
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         //val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(gate))

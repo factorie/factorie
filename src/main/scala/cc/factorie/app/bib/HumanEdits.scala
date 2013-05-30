@@ -1445,7 +1445,7 @@ object ExperimentsEditTracker{
     edit match{
       case e:ExpMergeEdit[T] => updateSLStats(e)
       case e:ExpSplitEdit[T] => updateSNLStats(e)
-      case _ => {"type of exp-edit not recognized"}
+      case _ => {throw new Error("type of exp-edit not recognized")}
     }
   }
   def updateSLStats[T<:HierEntity with HumanEditMention](edit:ExpMergeEdit[T]):Unit ={

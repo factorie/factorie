@@ -76,7 +76,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       // Ugh, erasure makes this not at all type-safe
-      case r: MutableTensorVar[Tensor1] if r.tensor.isInstanceOf[Tensor1] =>
+      case r: MutableTensorVar[Tensor1 @unchecked] if r.tensor.isInstanceOf[Tensor1] =>
         val m = maxMean(r, gModel, dSummary)
         if (m.isEmpty) return None
         else assignment(r) = m.get
@@ -163,7 +163,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize {
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       // Ugh, erasure makes this not at all type-safe
-      case r: MutableTensorVar[Tensor2] if r.tensor.isInstanceOf[Tensor2] =>
+      case r: MutableTensorVar[Tensor2 @unchecked] if r.tensor.isInstanceOf[Tensor2] =>
         val m = maxCovariance(r, gModel, dSummary)
         if (m.isEmpty) return None
         else assignment(r) = m.get

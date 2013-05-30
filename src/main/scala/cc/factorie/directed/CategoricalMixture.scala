@@ -110,8 +110,8 @@ object MaximizeGate extends Maximize {
     val factors = model.factors(gate).toSeq
     if (factors.size != 2) return -1
     (factors(0), factors(1)) match {
-      case (df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor) => maxIndex(gate, df, dmf)
-      case (dmf:CategoricalMixture[A]#Factor, df:Discrete.Factor) => maxIndex(gate, df, dmf)
+      case (df:Discrete.Factor, dmf:CategoricalMixture[A @unchecked]#Factor) => maxIndex(gate, df, dmf)
+      case (dmf:CategoricalMixture[A @unchecked]#Factor, df:Discrete.Factor) => maxIndex(gate, df, dmf)
       case _ => -1
     }
   }

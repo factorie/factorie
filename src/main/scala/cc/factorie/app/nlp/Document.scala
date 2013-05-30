@@ -101,7 +101,7 @@ class Document extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
       for (af <- attributes) {
         buf.append("\t")
         af(token) match {
-          case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue.toString)
+          case cv:CategoricalVar[_,String @unchecked] => buf.append(cv.categoryValue.toString)
           case null => {}
           case v:Any => buf.append(v.toString)
         }
