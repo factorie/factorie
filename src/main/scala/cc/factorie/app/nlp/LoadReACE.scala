@@ -133,7 +133,7 @@ object LoadReACE {
       val nerType = (mention \ "@t").text
       val nerSubType = (mention \ "@st").text
 
-      val m = new NerSpan(doc.wholeDocumentSection, nerType, start, length)(null) with PairwiseMention
+      val m = new NerSpan(doc.asSection, nerType, start, length)(null) with PairwiseMention
 
       m.attr += new ReACEMentionIdentifiers {
         val mId = getAttr(mention, "id")
@@ -146,7 +146,7 @@ object LoadReACE {
       }
 
       // set the head of the mention
-      m.attr[ReACEMentionIdentifiers].headEnd.foreach(he => m._head = doc.wholeDocumentSection(he))
+      m.attr[ReACEMentionIdentifiers].headEnd.foreach(he => m._head = doc.asSection(he))
     }
 
 

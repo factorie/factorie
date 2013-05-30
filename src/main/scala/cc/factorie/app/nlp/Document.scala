@@ -88,8 +88,8 @@ class Document extends DocumentSubstring with Attr {
   def stringEnd: Int = stringLength
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
-  val wholeDocumentSection: Section = new Section { def document: Document = null /* TODO fix this null */; def stringStart = 0; def stringEnd = document.stringEnd }
-  private var _sections: Seq[Section] = List(wholeDocumentSection)
+  val asSection: Section = new Section { def document: Document = null /* TODO fix this null */; def stringStart = 0; def stringEnd = document.stringEnd }
+  private var _sections: Seq[Section] = List(asSection)
   def sections: Seq[Section] = _sections //if (_sections.length == 0) return Seq(this) else _sections
   
   // A few iterators that combine the results from the Sections
@@ -264,7 +264,7 @@ class Document extends DocumentSubstring with Attr {
 //}
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. 
-    Note that it does not yet serialize Sections, and relies on Document.wholeDocumentSection being the only Section. */
+    Note that it does not yet serialize Sections, and relies on Document.asSection being the only Section. */
 class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
   val name = StringSlot("name")
   val string = StringSlot("string")  
@@ -274,17 +274,17 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
   def storeDocument(doc:Document): this.type = {
     name := doc.name
     string := doc.string
-    if (doc.wholeDocumentSection.length > 0) tokens := doc.tokens.toSeq.map(t => tokens.constructor().storeToken(t))
+    if (doc.asSection.length > 0) tokens := doc.tokens.toSeq.map(t => tokens.constructor().storeToken(t))
 //    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
-    if (doc.wholeDocumentSection.sentences.length > 0) sentences := doc.sentences.toSeq.map(s => sentences.constructor().storeSentence(s))
+    if (doc.asSection.sentences.length > 0) sentences := doc.sentences.toSeq.map(s => sentences.constructor().storeSentence(s))
     storeAttr(doc)
     this
   }
   def fetchDocument: Document = {
     val doc = new Document(string.value).setName(name.value)
-    if (tokens.value ne null) tokens.value.foreach(tc => doc.wholeDocumentSection += tc.fetchToken)
+    if (tokens.value ne null) tokens.value.foreach(tc => doc.asSection += tc.fetchToken)
     //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
-    if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc.wholeDocumentSection))
+    if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc.asSection))
     fetchAttr(doc)
     doc
   }

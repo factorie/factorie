@@ -49,7 +49,7 @@ object LoadConll2003 {
         sentence = new Sentence(document)(null)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
-        document.wholeDocumentSection.chainFreeze
+        document.asSection.chainFreeze
         document = new Document().setName("CoNLL2003-"+documents.length)
         document.annotators(classOf[Token]) = null // register that we have token boundaries
         document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries

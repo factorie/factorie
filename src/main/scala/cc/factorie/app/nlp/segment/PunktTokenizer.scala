@@ -162,10 +162,10 @@ class PunktTokenizer extends DocumentAnnotator {
           numTokens += 1
         }
         if (!endIsAbbrev) {
-          new Token(currentDocument.wholeDocumentSection, end - docOffset, end + 1 - docOffset)
+          new Token(currentDocument.asSection, end - docOffset, end + 1 - docOffset)
           numTokens += 1
         }
-        new Sentence(currentDocument.wholeDocumentSection, tokensSoFar, numTokens) // really?
+        new Sentence(currentDocument.asSection, tokensSoFar, numTokens) // really?
         tokensSoFar += numTokens
       }
   }

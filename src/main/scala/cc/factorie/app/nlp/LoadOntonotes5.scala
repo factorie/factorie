@@ -77,7 +77,7 @@ object LoadOntonotes5 {
     if (sentence ne null)
       addDepInfo(sentence, depInfoSeq)
 
-    println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.wholeDocumentSection.length+" tokens total from file "+filename)
+    println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
     Seq(document)
   }
 

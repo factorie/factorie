@@ -46,9 +46,9 @@ object LoadACE {
     SentenceSegmenter.process(doc)
 
     // trailing tokens should be in a sentence
-    val end = doc.wholeDocumentSection.sentences.last.end
-    if (end != doc.wholeDocumentSection.length - 1)
-      new Sentence(doc.wholeDocumentSection, end + 1, doc.wholeDocumentSection.length - 1 - end)(null)
+    val end = doc.asSection.sentences.last.end
+    if (end != doc.asSection.length - 1)
+      new Sentence(doc.asSection, end + 1, doc.asSection.length - 1 - end)(null)
     doc
   }
 
@@ -88,7 +88,7 @@ object LoadACE {
 
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
-        val m = new NerSpan(doc.wholeDocumentSection, e.attr[ACEEntityIdentifiers].eType, start, length)(null) with PairwiseMention
+        val m = new NerSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)(null) with PairwiseMention
         if (m.sentence == null)
           println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
         m.attr += new ACEMentionIdentifiers {

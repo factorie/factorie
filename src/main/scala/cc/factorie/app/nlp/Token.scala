@@ -32,7 +32,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     sec += this
   }
   /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
-  def this(doc:Document, s:Int, e:Int) = this(doc.wholeDocumentSection, s, e)
+  def this(doc:Document, s:Int, e:Int) = this(doc.asSection, s, e)
   def this(sentence:Sentence, s:Int, e:Int) = {
     this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
     if (sentence.section.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
@@ -42,13 +42,13 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
-    this(doc.wholeDocumentSection, doc.stringLength, doc.stringLength + tokenString.length)
+    this(doc.asSection, doc.stringLength, doc.stringLength + tokenString.length)
     doc.appendString(tokenString)
     //doc.appendString(" ") // TODO Make this configurable
   }
   def this(s:Sentence, tokenString:String) = {
     this(s.document, tokenString)
-    if (s.document.wholeDocumentSection.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
+    if (s.document.asSection.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }

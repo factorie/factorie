@@ -102,7 +102,7 @@ object Coref1 {
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {
-    val section = doc.wholeDocumentSection
+    val section = doc.asSection
     for (i <- 0 until section.length) {
       // Make a mention for simple pronouns
       if (section(i).string.matches("[Hh]e|[Ss]he|[Ii]t") && section(i).spans.length == 0) new TokenSpan(section, i, 1)(null) with TokenSpanMention
@@ -123,7 +123,7 @@ object Coref1 {
   def corefInit(doc:Document): Unit = {
     //val entities = new ArrayBuffer[Entity]
     // Make each Mention its own Entity
-    for (mention <- doc.wholeDocumentSection.spansOfClass[TokenSpanMention]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
+    for (mention <- doc.asSection.spansOfClass[TokenSpanMention]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
     // Assign each mention to its closest previous non-pronoun mention
     /*for (mention <- doc.orderedSpansOfClass[Mention]) {
       val prevMention = mention.document.spanOfClassPreceeding[Mention](mention.start)
@@ -139,7 +139,7 @@ object Coref1 {
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
-      for (antecedant <- mention.document.wholeDocumentSection.spansOfClassPreceeding[TokenSpanMention](mention.start))
+      for (antecedant <- mention.document.asSection.spansOfClassPreceeding[TokenSpanMention](mention.start))
         changes += {(d:DiffList) => entityRef.set(antecedant)(d)}
       var i = 0
       def hasNext = i < changes.length
@@ -179,7 +179,7 @@ object Coref1 {
     corefInit(doc)
     coref(doc)
     // Print the results
-    for (mention <- doc.wholeDocumentSection.orderedSpansOfClass[TokenSpanMention]) {
+    for (mention <- doc.asSection.orderedSpansOfClass[TokenSpanMention]) {
       // println(mention+" => "+mention.parentEntity+"\n")
     }
   }

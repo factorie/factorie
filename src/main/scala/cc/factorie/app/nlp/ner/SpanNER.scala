@@ -144,7 +144,7 @@ class SpanNerObjective extends TemplateModel {
 class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
   // The proposer for changes to Spans touching this Token
   def settings(token:Token) = new SettingIterator {
-    private val _seq = token.document.wholeDocumentSection
+    private val _seq = token.document.asSection
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
     val existingSpans = token.spansOfClass[NerSpan](classOf[NerSpan])
     //println("existing spans = "+existingSpans)
@@ -317,8 +317,8 @@ class SpanNER {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
         documents += cc.factorie.app.nlp.segment.ClearTokenizer.process(LoadNYTimesXML.fromFile(file))
-        println("  "+documents.last.wholeDocumentSection.length)
-        documents.last.wholeDocumentSection.foreach(t=> print(t.string+" ")); println
+        println("  "+documents.last.asSection.length)
+        documents.last.asSection.foreach(t=> print(t.string+" ")); println
       }
     }
     documents.foreach(addFeatures(_))

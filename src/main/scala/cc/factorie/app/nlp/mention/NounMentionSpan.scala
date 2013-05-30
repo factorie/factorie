@@ -3,7 +3,7 @@ import cc.factorie.app.nlp._
 import collection.mutable.ArrayBuffer
 
 class NounMentionSpan(sec:Section, initialStart:Int, initialLength:Int) extends TokenSpan(sec, initialStart, initialLength)(null) {
-  def this (doc:Document, initialStart:Int, initialLength:Int) = this(doc.wholeDocumentSection, initialStart, initialLength)
+  def this (doc:Document, initialStart:Int, initialLength:Int) = this(doc.asSection, initialStart, initialLength)
 }
 
 /** Find noun mentions merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
@@ -11,11 +11,11 @@ object NounMention1 extends DocumentAnnotator {
   def process1(document:Document): Document = {
     val spans = ArrayBuffer[TokenSpan]()
     var tempSpan: TokenSpan = null
-    for (token <- document.tokens) {
+    for (section <- document.sections; token <- section.tokens) {
       // Put a span around contiguous sequences of NN or PR part-of-speech prefixes
       val posPrefix = token.attr[pos.PTBPosLabel].categoryValue.take(2)
       if (posPrefix == "NN" || posPrefix == "PR" || (posPrefix == "JJ" && token.hasNext && token.next.attr[pos.PTBPosLabel].categoryValue.take(2) == "NN")) {
-        if (tempSpan eq null) tempSpan = new  TokenSpan(document,token.position,1)
+        if (tempSpan eq null) tempSpan = new  TokenSpan(section, token.position, 1)
         else tempSpan.append(1)(null)
       } else if (tempSpan ne null) {
         if (token.string == "-" && token.hasNext && token.next.attr[pos.PTBPosLabel].categoryValue.take(2) == "NN") tempSpan.append(1)(null) // Handle dashed nouns

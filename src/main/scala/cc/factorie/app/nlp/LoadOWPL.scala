@@ -37,7 +37,7 @@ object LoadOWPL {
         doc.appendString(" ")
       }
     }
-    doc.wholeDocumentSection.chainFreeze
+    doc.asSection.chainFreeze
     //println("LoadOWPL doc.tokens.length="+doc.tokens.length+" last token: "+doc.tokens.last.string+" "+doc.tokens.last.attr)
     Seq(doc)
   }

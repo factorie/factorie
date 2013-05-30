@@ -18,7 +18,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(sec, initialStart, initialLength)(d) {
   def this(sec:Section)(implicit d:DiffList = null) = this(sec, sec.length, 0)
-  def this(doc:Document)(implicit d:DiffList = null) = this(doc.wholeDocumentSection)
+  def this(doc:Document)(implicit d:DiffList = null) = this(doc.asSection)
 
   if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = null
 
