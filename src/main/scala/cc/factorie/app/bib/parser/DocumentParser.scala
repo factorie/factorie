@@ -1,5 +1,7 @@
 package cc.factorie.app.bib.parser
 
+import languageFeature.postfixOps
+
 /**
  * @author Luke Vilnis
  * @date 5/10/2012

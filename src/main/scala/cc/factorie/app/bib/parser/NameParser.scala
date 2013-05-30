@@ -1,5 +1,7 @@
 package cc.factorie.app.bib.parser
 
+import languageFeature.postfixOps
+
 /**
  * @author Luke Vilnis
  * @date 5/10/2012
@@ -21,13 +23,13 @@ private[parser] object NameParser {
 
   private def fragmentsToNames(fragments: List[Token], origName: String): List[Name] =
     try {
-      splitOn(fragments)(AND.==).map(fragmentsToName(_))
+      splitOn(fragments)(AND ==).map(fragmentsToName(_))
     } catch {
       case re: Exception => sys.error("Error parsing name \"%s\": %s" format (origName, re.toString))
     }
 
   private def fragmentsToName(fragments: List[Token]): Name = {
-    val sectionTokens = splitOn(fragments)(COMMA.==)
+    val sectionTokens = splitOn(fragments)(COMMA ==)
     if (sectionTokens.flatten.length == 0)
       sys.error("\"%s\" must have at least one fragment between commas!" format fragments)
     val sections = sectionTokens.map(_ map {
@@ -100,7 +102,7 @@ private[parser] object NameParser {
       WS ~> ((initial | fragment_comma_hyphen_or_ws) <~ WS).? ~
       ((and_ws | initial | hyphen | fragment_comma_hyphen_or_ws) <~ WS).* ~
       (fragment | initial).? ^^ {
-        case pre ~ xs ~ post => flattenTokenLists(pre.toList ++ xs ++ post.toList).filterNot(HYPHEN.==)
+        case pre ~ xs ~ post => flattenTokenLists(pre.toList ++ xs ++ post.toList).filterNot(HYPHEN ==)
       }
 
     lazy val fragment_comma_hyphen_or_ws =

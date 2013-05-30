@@ -19,6 +19,7 @@ import app.classify
 import app.strings.SetBasedStopwords
 import java.io._
 import cc.factorie.util.BinarySerializer
+import languageFeature.postfixOps
 
 // Feature and Label classes
 
@@ -132,7 +133,7 @@ object Classify {
     def readStoplist(fileName: String): SetBasedStopwords = {
       val stopListFile = new File(fileName)
       val stopwords = new SetBasedStopwords
-      fileToString(stopListFile).split("\n").foreach(stopwords.+=)
+      fileToString(stopListFile).split("\n").foreach(stopwords +=)
       stopwords
     }
 
@@ -143,7 +144,7 @@ object Classify {
         readStoplist(opts.readTextStoplist.value)
       } else if (opts.readTextExtraStopwords.wasInvoked) {
         val stopWords = readStoplist(opts.readTextExtraStopwords.value)
-        cc.factorie.app.strings.Stopwords.asArray.foreach(stopWords.+=)
+        cc.factorie.app.strings.Stopwords.asArray.foreach(stopWords +=)
         stopWords
       } else {
         cc.factorie.app.strings.Stopwords
@@ -157,8 +158,8 @@ object Classify {
     def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
       val text2 = if (opts.readTextSkipHeader.value) Some(text.indexOf("\n\n"))
-          .filter((-1).!=).orElse(Some(text.indexOf("\r\n\r\n")))
-          .filter((-1).!=).map(text.substring(_)).getOrElse(text)
+          .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))
+          .filter(-1 !=).map(text.substring(_)).getOrElse(text)
         else text
       val text3 = if (opts.readTextPreserveCase.value) text2 else text2.toLowerCase
       for (gramSize <- opts.readTextGramSizes.value)

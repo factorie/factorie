@@ -6,6 +6,7 @@ import scala.util.Random
 import org.junit._
 import org.junit.Assert._
 import cc.factorie.util.FastSorting
+import languageFeature.postfixOps
 
 class TestTensor extends cc.factorie.util.FastLogging {
 
