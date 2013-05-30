@@ -75,12 +75,9 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
 
       // Truth and prediction both agree that a segment is starting here, let's see if they end in the same place
       if (predictedStart && targetStart) {
-		if(position == labels.length-1)
+        if(position == labels.length-1)
           correctCount += 1 // Both sequences ended at the same position: correct
         else { //Otherwise lets be sure they end at the same place
-        
-        	//print(" pts ")
-        	//print("%s=%s ".format(label.token.word, label.value))
         	var predictedContinue, targetContinue = false
         	var j = position + 1
         	var stopSearchForSegmentEnd = false
@@ -88,18 +85,13 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
           		val label2 = labels(j)
           		predictedContinue = isContinue(label2.categoryValue)
           		targetContinue = isContinue(label2.target.categoryValue)
-          		//print("j="+j+predictedContinue+targetContinue)
-          		//if (predictedContinue) print("pc ")
-          		//if (targetContinue) print("tc ")
-
           		// if true or predicted segment ends (i.e. is not a continue) or we reach the end of our label sequence.
           		if (!predictedContinue || !targetContinue || j == labels.length - 1) {
             		if (predictedContinue == targetContinue) {
               			correctCount += 1 // Both sequences ended at the same position: correct
-              			//print("%s=%s/%s correct".format(label2.token.word, label2.trueValue.toString, label2.value))
-            		} //else print("%s=%s %s=%s/%s @%d wrong".format(if (label2.hasPrev) label2.prev.token.word else "(null)", if (label2.hasPrev) label2.prev.value else "(null)", label2.token.word, label2.trueValue, label2.value, j-position))
+            		}
             		stopSearchForSegmentEnd = true
-          		} //else print("%s=%s ".format(label2.token.word, label2.value))
+          		}
           		j += 1
         	}
 		}
