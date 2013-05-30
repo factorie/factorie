@@ -29,8 +29,8 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   attr += new Dirty(this)
   attr += bagOfTruths
   if(this.isObserved)attr += new MentionCountVariable(this,1) else attr += new MentionCountVariable(this,0)
-  override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
-  override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
+  override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d);dirty.++}
+  override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty.++}
   override def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedParentEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
 }
 abstract class HierEntityCubbie extends EntityCubbie{

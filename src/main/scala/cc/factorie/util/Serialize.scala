@@ -5,6 +5,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import collection.mutable
 import cc.factorie._
 import cc.factorie.la._
+import scala.language.implicitConversions
 
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke

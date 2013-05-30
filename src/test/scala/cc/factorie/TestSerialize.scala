@@ -204,7 +204,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    for (i <- 1 to 100) {
      val labelName = (i % 2).toString
      val features = new BinaryFeatures(labelName, i.toString, featuresDomain, labelDomain)
-     (1 to 100).shuffle.take(50).map(_.toString).foreach(features +=)
+     (1 to 100).shuffle.take(50).map(_.toString).foreach(features.+=)
      ll += new app.classify.Label(labelName, features, labelDomain)
    }
    val llFile = new File(fileName)

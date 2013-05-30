@@ -437,7 +437,7 @@ object PunktSentenceSegmenter {
               loop(rest, output)
             else {
               val typ = if (isAdd) curTokenType.dropRight(1) else curTokenType
-              val numPeriods = typ.count("." ==) + 1
+              val numPeriods = typ.count(".".==) + 1
               val numNonPeriods = typ.length - numPeriods + 1
               val countWithPeriod = typeFreqDist(typ + ".")
               val countWithoutPeriod = typeFreqDist(typ)

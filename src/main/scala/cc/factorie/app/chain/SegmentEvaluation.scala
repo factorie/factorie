@@ -16,6 +16,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.util.matching.Regex
 import scala.collection.mutable.{HashSet,HashMap}
+import scala.language.reflectiveCalls
 
 /** Evaluate in terms of correct entire segments.
     The field start and end boundaries must be perfect to count as correct.  No partial credit.
@@ -27,7 +28,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   var targetCount, predictedCount, correctCount = 0 // per segment
   @deprecated("use targetCount instead.") def trueCount = targetCount 
 
-  def ++=(tokenseqs:Seq[Seq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))
+  def ++=(tokenseqs:Seq[Seq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
 
   /* Find out if we are at the beginning of a segment.
    * This complicated conditional is necessary to make the start pattern "(B|I)-" work

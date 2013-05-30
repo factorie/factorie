@@ -55,7 +55,7 @@ private[parser] object DocumentParser {
     lazy val preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
     lazy val regularEntry =
-      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS ?) } ^^ {
+      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS.?) } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
 

@@ -1,6 +1,7 @@
 package cc.factorie.app.bib.parser
 
 import scala.util.parsing.combinator._
+import scala.language.implicitConversions
 
 /**
  * @author Luke Vilnis

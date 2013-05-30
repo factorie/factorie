@@ -20,7 +20,7 @@ import cc.factorie.util._
     Note that changes in the underlying Tensor will also show up here. 
     @author Andrew McCallum */
 class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor with ReadOnlyTensor {
-  def numDimensions: Int = tensor numDimensions
+  def numDimensions: Int = tensor.numDimensions
   def dimensions: Array[Int] = tensor.dimensions
   // For handling sparsity
   def activeDomain: IntSeq = tensor.activeDomain

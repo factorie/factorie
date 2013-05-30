@@ -14,6 +14,7 @@
 
 package cc.factorie
 import scala.collection.mutable.HashSet
+import scala.language.reflectiveCalls
 
 /** An abstract variable whose value is a set of elements of type A.
     @author Andrew McCallum */
@@ -41,7 +42,7 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
   type Value = scala.collection.Set[A]
   // Note that the returned value is not immutable.  Somewhat dangerous.
   def value = _members
-  private val _members = new HashSet[A];
+  private val _members = new HashSet[A]
   def members: scala.collection.Set[A] = _members
   override def iterator = _members.iterator
   def size = _members.size
@@ -79,11 +80,11 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
     the size is unreliably dependent on garbage collection.
     @author Andrew McCallum */
 class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]]*/ {
-  private val _members = new cc.factorie.util.WeakHashSet[A];
+  private val _members = new cc.factorie.util.WeakHashSet[A]()
   def value: scala.collection.Set[A] = _members
-  def iterator = _members.iterator.filter(_.present)
+  def iterator = _members.iterator.filter(_.present) // TODO this triggers reflection
   //def size = _members.size // No, don't define this because the size is unreliably dependent on garbage collection. 
-  def contains(x: A) = _members.contains(x) && x.present
+  def contains(x: A) = _members.contains(x) && x.present  // TODO this triggers reflection
   def add(x: A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
     if (d != null) d += new WeakSetVariableAddDiff(x)
     _members += x
