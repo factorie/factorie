@@ -6,7 +6,6 @@ Implement sparse iteration through values for BP [McCallum, Singh]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]
 Make Tensor.foreachActiveElement faster with a macro [Luke]
-Use implicit classes and value classes [Luke]
 Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
 Remove VarAndValueGenericDomain
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
@@ -35,6 +34,7 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
+Use implicit classes and value classes [Luke]
 Remove unused classes from cc.factorie.util [Luke]
 Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
 Make Assignment inherit from Summary [Passos]  (No, just make a wrapper class.)

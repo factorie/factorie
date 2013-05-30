@@ -19,7 +19,7 @@ import app.classify
 import app.strings.SetBasedStopwords
 import java.io._
 import cc.factorie.util.BinarySerializer
-import languageFeature.postfixOps
+import scala.language.postfixOps
 
 // Feature and Label classes
 

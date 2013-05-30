@@ -29,17 +29,16 @@ trait RealDomain extends DiscreteTensorDomain with Domain[RealValue] {
 /** The domain object used by RealVar. */
 object RealDomain extends RealDomain
 
-// TODO In Scala 2.10 make this an implicit class.
 // TODO Why was math.Numeric commented out?  I think it should be re-added. -akm
 /** A Tensor holding a single real (Double) value. 
     @author Andrew McCallum */
-final class RealValue(val singleValue:Double) extends Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
+final class RealValue(val singleValue:Double) extends AnyVal with Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
   def domain = RealDomain
-  @inline final def dim1 = 1
-  @inline final def singleIndex = 0
+  @inline def dim1 = 1
+  @inline def singleIndex = 0
   def activeDomain = new cc.factorie.util.SingletonIntSeq(singleIndex)
-  @inline final def doubleValue: Double = singleValue // TODO Consider swapping singleIndex <-> intValue
-  @inline final def intValue: Int = singleValue.toInt // TODO Consider swapping singleIndex <-> intValue
+  @inline def doubleValue: Double = singleValue // TODO Consider swapping singleIndex <-> intValue
+  @inline def intValue: Int = singleValue.toInt // TODO Consider swapping singleIndex <-> intValue
   override def toString: String = singleValue.toString
   def +(r:RealValue) = new RealValue(r.doubleValue + singleValue)
   def -(r:RealValue) = new RealValue(r.doubleValue - singleValue)
@@ -78,6 +77,7 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
   def -=(x:Double) = _value -= x
   def *=(x:Double) = _value *= x
   def /=(x:Double) = _value /= x
+  // NOTE have to get rid of this method since RealValue is a value class and erases to Double
   def set(newValue: Double)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
