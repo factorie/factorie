@@ -1,6 +1,6 @@
 package cc.factorie.app.bib.parser
 
-import languageFeature.postfixOps
+import scala.language.postfixOps
 
 /**
  * @author Luke Vilnis
