@@ -20,16 +20,9 @@ import cc.factorie
     Alternatively, variable values can be stored in an Assignment: a
     mapping from variables to their values.
     
-    An Assignment is also a Summary, able to give , with all its probability on one set of values.
-
-    Alex: an Assignment shouldn't be a Marginal, it should be able to give you marginals
-    of some of its variables. I imagine Assignments as "global" things and Marginals as "local". Let's talk.
-    
-    
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
-// TODO Yes, make Assignment extend Summary. -akm 
 trait Assignment {
   /** All variables with values in this Assignment */
   def variables: Iterable[Var]
@@ -48,9 +41,6 @@ trait Assignment {
       case _ => throw new Error
     }
   }
-  // For Marginal trait
-  // TODO Now that Assignment is no longer a Marginal, remove this.
-  final def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
 
 /** An Assignment in which variable-value mappings can be changed.
