@@ -60,7 +60,7 @@ Success on file: "%s" """ format (name)))
 
     def assertParse[T](parser: DocumentParser.Impl.Parser[T], str: String): DocumentParser.Impl.ParseResult[T] = {
       val result = DocumentParser.Impl.parseAll(parser, str)
-      assert(result.successful, result)
+      assert(result.successful, result.toString + " " + result.getClass.getName)
       result
     }
 
