@@ -32,7 +32,7 @@ object RealDomain extends RealDomain
 // TODO Why was math.Numeric commented out?  I think it should be re-added. -akm
 /** A Tensor holding a single real (Double) value. 
     @author Andrew McCallum */
-final class RealValue(val singleValue:Double) extends AnyVal with Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
+final class RealValue(val singleValue:Double) extends Tensor1 with SingletonIndexedTensor /*with scala.math.Numeric[RealValue]*/ {
   def domain = RealDomain
   @inline def dim1 = 1
   @inline def singleIndex = 0
