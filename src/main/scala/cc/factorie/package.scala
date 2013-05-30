@@ -15,6 +15,7 @@
 package cc
 import scala.util.Random
 import cc.factorie.util.CubbieConversions
+import scala.language.implicitConversions
 
 package object factorie extends CubbieConversions {
 

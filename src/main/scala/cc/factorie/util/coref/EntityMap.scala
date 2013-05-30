@@ -3,6 +3,7 @@ package cc.factorie.util.coref
 import collection.mutable.{Set => MSet, ArrayBuffer, HashSet, Map, LinkedHashMap, HashMap}
 import scala.collection.Set
 import io.Source
+import scala.language.implicitConversions
 
 /**
  * Class to store a clustering over a subset of mentions.

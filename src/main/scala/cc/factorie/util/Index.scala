@@ -193,6 +193,7 @@ object Index extends Index[Any] {
    * Loads a String index, one line per item with line
    * numbers (starting at 0) as the indices.
    */
+  import scala.language.reflectiveCalls
   def load(source: {def getLines: Iterator[String]}): Index[String] = {
     apply(source.getLines.map(_.stripLineEnd));
   }

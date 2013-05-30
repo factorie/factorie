@@ -547,6 +547,7 @@ object BPTestUtils {
     }
   }
 
+  import scala.language.existentials
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
     new TupleFactorWithStatistics3[BinVar, BinVar, BinVar](n1, n2, n3) {
       factor =>

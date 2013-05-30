@@ -150,6 +150,9 @@ limitations under the License.
           </execution>
         </executions>
         <configuration>
+          <args>
+            <arg>-feature</arg>
+          </args>
           <recompileMode>incremental</recompileMode>
           <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>

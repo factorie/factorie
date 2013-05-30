@@ -19,6 +19,7 @@ package cc.factorie
 import cc.factorie._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
 
 package object directed {
 

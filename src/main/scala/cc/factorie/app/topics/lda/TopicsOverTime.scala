@@ -45,7 +45,7 @@ object TopicsOverTime {
         val doc = new Document(file.toString)
         doc.date = file.lastModified
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
-        for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
+        for (word <- alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z :~ directed.Discrete(doc.theta)
           val w = new Word(word)
           CategoricalMixture.newFactor(w, phis, z)
