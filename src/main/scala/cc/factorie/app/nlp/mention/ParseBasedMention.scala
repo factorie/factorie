@@ -37,7 +37,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def getHeadTokenIdx(m: Mention): Int = {
     getHead(
-      m.document.sentenceContaining(m.document(m.start)).parse,
+      m.document(m.start).sentence.parse, // much more efficient than the commented line below
+      //m.document.sentenceContaining(m.document(m.start)).parse,
       m.start until (m.start + m.length) // TODO: is the until correct here?
     )
   }
