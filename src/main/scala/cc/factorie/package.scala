@@ -16,6 +16,7 @@ package cc
 import scala.util.Random
 import cc.factorie.util.CubbieConversions
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 package object factorie extends CubbieConversions {
 
@@ -131,7 +132,7 @@ package object factorie extends CubbieConversions {
     while (i < n) { if (!f(i)) return false; i += 1 }
     true
   }
-  def mapIndex[@specialized A:ClassManifest](n:Int)(f:Int=>A): Array[A] = {
+  def mapIndex[@specialized A:ClassTag](n:Int)(f:Int=>A): Array[A] = {
     val result = new Array[A](n)
     var i = 0
     while (i < n) { result(i) = f(i); i += 1 }
@@ -139,8 +140,7 @@ package object factorie extends CubbieConversions {
   }
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
-    def cast[U](implicit m: Manifest[U]): Option[U] =
-      if (m >:> ClassManifest.fromClass(a.getClass)) Some(a.asInstanceOf[U]) else None
+    def cast[U](implicit m: ClassTag[U]): Option[U] = if (m >:> ClassTag(a.getClass)) Some(a.asInstanceOf[U]) else None
     def toNotNull: Option[T] = if (a != null) Some(a) else None
   }
 
