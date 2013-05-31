@@ -11,31 +11,23 @@ import cc.factorie.app.nlp.mention.Mention
 
 // TODO: make this read from the lexicons jar if possible
 class CorefGazetteers(lexDir: String) {
-  //make a big hashmap from filename to a set of the strings in that file
-  val lexHash = collection.mutable.HashMap[String,Set[String]]()
-  val dirname = lexDir + "/iesl/"
-  val files = (new File(dirname)).list()
   private def load(gaz: File): Set[String] = {
     io.Source.fromFile(gaz).getLines().toSet
   }
-  files.map(f => new File(dirname + f)).foreach(f => {
-    println("reading from " + f.getPath)
-    val name = f.getName.replaceAll(".txt","")
-    lexHash += ((name,load(f).map(_.toLowerCase)))
+
+  //make a big hashmap from filename to a set of the strings in that file
+  val lexHash = collection.mutable.HashMap[String,Set[String]]()
+  val dirname = lexDir + "/iesl/"
+  CorefGazetteers.ieslLexiconsToLoad.foreach(lexName => {
+    val name = lexName.replaceAll(".txt", "").replaceAll("-paren", "")
+    lexHash += (name -> load(new File(dirname+lexName)).map(_.toLowerCase))
   })
 
   val wikiLexHash = collection.mutable.HashMap[String,Set[String]]()
   val dirname2 = lexDir + "/wikipedia/"
-  val wikiFiles = (new File(dirname2)).list()
-  wikiFiles.foreach(f => {
-    println("reading from " + f)
-    //todo: choose which file extensions to use, and strip these off. right now we're not using the redirect ones (by choice)
-    //(the redirect ones may have better coverage, but lower precision. need to evaluate
-    val name = f.replaceAll(".txt","").replaceAll("-paren.txt","")
-    if(!wikiLexHash.contains(name))
-      wikiLexHash += ((name,load(dirname2 + f).map(_.toLowerCase)))
-    else
-      wikiLexHash(name) ++=  load(dirname2 + f).map(_.toLowerCase)
+  CorefGazetteers.wikiLexiconsToLoad.foreach(lexName => {
+    val name = lexName.replaceAll(".txt", "").replaceAll("-paren", "")
+    wikiLexHash += (name -> load(new File(dirname2+lexName)).map(_.toLowerCase()))
   })
 
   //these are things  used elsewhere in the coref code
@@ -43,7 +35,7 @@ class CorefGazetteers(lexDir: String) {
   val cities = lexHash("city")
   val countries = lexHash("country")
   val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest")
-  val maleFirstNames = lexHash("maleFirstNames")
+  val maleFirstNames = lexHash("maleFirstNames") 
   val femaleFirstNames = lexHash("femaleFirstNames")
   val sayWords = lexHash("sayWords")
   val orgClosings = lexHash("org-suffix")
@@ -71,25 +63,13 @@ class CorefGazetteers(lexDir: String) {
     m.document.tokens.slice(from, until).exists(t => sayWords.contains(t.string.trim.toLowerCase))
   }
 
-//  private def load(f: String): Set[String] = {
-//    val stream = this.getClass.getResourceAsStream(f)
-//    println("using " + stream.toString)
-//    scala.io.Source.fromInputStream(stream).getLines().toSet
-//  }
-
-  private def load(f: String): Set[String] = {
-    scala.io.Source.fromFile(f).getLines().toSet
-  }
-
-
   val morph = new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(lexDir + "/morph/en/")
   def isPlural(s: String): Boolean   = morph.isPlural(s)
   def isSingular(s: String): Boolean  = morph.isSingular(s)
-
 }
 
 
-object LexiconInfo{
+object CorefGazetteers {
   val ieslLexiconsToLoad = Seq(
   "city",
   "company",
@@ -114,7 +94,9 @@ object LexiconInfo{
   "pluralNouns.txt",
   "sayWords.txt",
   "singularNouns.txt",
-  "us-state"
+  "us-state",
+  "maleFirstNames.txt",
+  "femaleFirstNames.txt"
   )
 
   val wikiLexiconsToLoad = Seq(
