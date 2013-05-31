@@ -20,7 +20,10 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:Diff
   def this(sec:Section)(implicit d:DiffList = null) = this(sec, sec.length, 0)
   def this(doc:Document)(implicit d:DiffList = null) = this(doc.asSection)
 
-  if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = null
+  if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator
+  // This should only be set once, in Section.addSpan
+  var _indexInSection: Int = -1
+  def indexInSection: Int = _indexInSection
 
   //def tokens: IndexedSeq[Token] = links
   def tokenAtCharIndex(charOffset:Int): Token = {

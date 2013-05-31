@@ -39,14 +39,15 @@ trait Section extends ChainWithSpansVar[Section,TokenSpan,Token] with DocumentSu
   // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
   override def +=(s:TokenSpan): Unit = s match {
     case s:Sentence => {
+      s._chain = this // not already done in += be cause += is not on ChainWithSpans
+      s._indexInSection = _sentences.length
       if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
       else throw new Error("Sentences must be added in order and not overlap.")
-      s._chain = this // not already done in += be cause += is not on ChainWithSpans
     }
     case s:TokenSpan => super.+=(s)
   }
   override def -=(s:TokenSpan): Unit = s match {
-    case s:Sentence => _sentences -= s
+    case s:Sentence => throw new Error("Once added Sentences cannot be removed from a Section.") // _sentences -= s
     case s:TokenSpan => super.-=(s)
   }
 }
