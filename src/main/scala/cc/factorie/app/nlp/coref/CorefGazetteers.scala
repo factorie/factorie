@@ -76,11 +76,11 @@ object CorefGazetteers {
   "continents",
   "country",
   "day",
-  "demonyms.txt",
-  "femaleFirstNames.txt",
+  "demonyms",
+  "femaleFirstNames",
   "improper-person-names",
   "jobtitle",
-  "maleFirstNames.txt",
+  "maleFirstNames",
   "month",
   "org-suffix",
   "person-first-high",
@@ -91,12 +91,11 @@ object CorefGazetteers {
   "person-last-highest",
   "person-last-medium",
   "place-suffix",
-  "pluralNouns.txt",
-  "sayWords.txt",
-  "singularNouns.txt",
-  "us-state",
-  "maleFirstNames.txt",
-  "femaleFirstNames.txt"
+  "pluralNouns",
+  "sayWords",
+  "singularNouns",
+  "us-state"
+
   )
 
   val wikiLexiconsToLoad = Seq(

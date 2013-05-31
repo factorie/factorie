@@ -37,7 +37,6 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:Diff
     }
     return null
   }
-
   def contains(elem: Token) = tokens.contains(elem)
 
   // Parse attributes
