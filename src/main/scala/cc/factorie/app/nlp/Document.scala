@@ -63,13 +63,13 @@ trait DocumentSubstring {
     @author Andrew McCallum */
 class Document extends DocumentSubstring with Attr {
   def this(stringContents:String) = { this(); _string = stringContents }
-  private var _name: String = null
-  def name: String = _name
-  def setName(s:String): this.type = { _name = s; this }
+  def name: String = this.attr[DocumentName].string
+  def setName(s:String): this.type = { this.attr += DocumentName(s); this }
   
   // One of the following two is always null, the other non-null
   private var _string: String = ""
   private var _stringbuf: StringBuffer = null
+  
   /** Append the string 's' to this Document.
       @return the length of the Document's string before string 's' was appended. */
   def appendString(s:String): Int = {
@@ -162,6 +162,10 @@ class Document extends DocumentSubstring with Attr {
 
 }
 
+/** Used as an attribute on Document to hold the document's name. */
+case class DocumentName(string:String) {
+  override def toString: String = string
+}
 
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. 
