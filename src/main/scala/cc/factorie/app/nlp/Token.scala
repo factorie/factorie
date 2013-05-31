@@ -75,6 +75,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
+  def positionInSection: Int = position
   def positionInSentence = if (_sentence eq null) -1 else position - sentence.start
   @deprecated("Use positionInSentence") def sentencePosition = positionInSentence
   
