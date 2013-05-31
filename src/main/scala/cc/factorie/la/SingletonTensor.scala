@@ -19,7 +19,7 @@ import cc.factorie.util._
 //trait SingletonTensor extends SparseTensor with SparseDoubleSeq with ReadOnlyTensor {
 //}
 
-trait SingletonTensor extends Any with SparseTensor with ReadOnlyTensor {
+trait SingletonTensor extends SparseTensor with ReadOnlyTensor {
   def singleIndex: Int
   def singleValue: Double
 
@@ -29,7 +29,7 @@ trait SingletonTensor extends Any with SparseTensor with ReadOnlyTensor {
   def _indices: Array[Int] = Array(singleIndex)
 }
 
-trait SingletonIndexedTensor extends Any with SparseBinaryTensor with SingletonTensor {
+trait SingletonIndexedTensor extends SparseBinaryTensor with SingletonTensor {
 
   def _values: Array[Double] = Array(singleValue)
   def copyInto(t: SparseIndexedTensor): Unit = t(singleIndex) = singleValue

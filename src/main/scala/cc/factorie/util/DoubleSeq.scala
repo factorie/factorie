@@ -17,7 +17,7 @@ import scala.util.Random
 
 /** We are so desperate for efficient @specialized Seq[Double], that we created our own. 
     This could inherit from IndexedSeq[Double] but we would pass on significant risk of inefficiencies hidden to the user. */
-trait DoubleSeq extends Any {
+trait DoubleSeq {
   def apply(i:Int): Double
   def length: Int
   final def size = length // Just an alias // Not final so we can mix Tensor with FlatHashMap in WeightsTensor
@@ -188,7 +188,7 @@ object DoubleSeq {
 
 
 // TODO Find out if it is faster to use "foreachActiveElement" or "activeDomain...while" 
-trait SparseDoubleSeq extends Any with DoubleSeq {
+trait SparseDoubleSeq extends DoubleSeq {
   def activeDomain: IntSeq
   def activeDomainSize: Int
   // TODO Remove this when DoubleSeqIterator is put in place. -akm
@@ -243,7 +243,7 @@ trait SparseDoubleSeq extends Any with DoubleSeq {
 
 }
 
-trait IncrementableDoubleSeq extends Any with DoubleSeq {
+trait IncrementableDoubleSeq extends DoubleSeq {
   def +=(i:Int, incr:Double): Unit
   def zero(): Unit
   def +=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { +=(i, d); i += 1 }}
@@ -273,7 +273,7 @@ trait IncrementableDoubleSeq extends Any with DoubleSeq {
   def -=(ds:DoubleSeq): Unit = +=(ds, -1.0)
 }
 
-trait MutableDoubleSeq extends Any with IncrementableDoubleSeq {
+trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def update(i:Int, v:Double): Unit
   // Although the next two methods could be implemented here, they are usually implemented in a superclass that inherits from IncrementableDoubleSeq
   def +=(i:Int, incr:Double): Unit // = update(i, apply(i)+incr)

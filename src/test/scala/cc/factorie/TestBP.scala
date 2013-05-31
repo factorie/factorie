@@ -515,6 +515,7 @@ object BPTestUtils {
     val family = new DotTemplateWithStatistics1[BinVar] with Parameters {
       val weights = Weights(new la.DenseTensor1(BinDomain.size))
     }
+    assert(family.weights.value ne null)
     family.weights.value(0) = score0
     family.weights.value(1) = score1
     n1.set(0)(null)

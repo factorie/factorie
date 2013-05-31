@@ -18,7 +18,7 @@ import cc.factorie.util._
 
 /** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */
 
-trait SparseTensor extends Any with SparseDoubleSeq with Tensor {
+trait SparseTensor extends SparseDoubleSeq with Tensor {
   def isDense = false
   def _makeReadable(): Unit
   // unsafe - call makeReadable first
