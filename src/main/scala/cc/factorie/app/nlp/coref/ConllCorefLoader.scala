@@ -247,9 +247,8 @@ object ConllCorefLoader {
         prevWord = word
       }
     }
-    // println("hit-rate of exact matches = " + exactTypeMatches.toDouble/totalTypeCounts)
     source.close()
-    docs.filter(d => d.attr[MentionList].length != d.attr[MentionList].map(m => m.parentEntity).distinct.length)
+    docs
   }
 
   //this returns the document-level index of the head token for the span. Since we don't have a dep parse, we just take the final noun in the span

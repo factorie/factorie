@@ -121,12 +121,12 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
     var docMentions = new ArrayBuffer[Mention]
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= nerSpans(doc)                       map { m => m.copy(mentionType = "NAM")}
-    docMentions ++= personalPronounSpans(doc)           map { m => m.copy(mentionType = "PRO")}
-    docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map { m => m.copy(mentionType = "NOM")}
-    docMentions ++= nounPhraseSpans(doc, isProperNoun)  map { m => m.copy(mentionType = "NAM")}
+    docMentions ++= nerSpans(doc)                      map(  m => {m.attr += new MentionType(m,"NAM");m})
+    docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
+    docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
+    docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
 
-    docMentions = docMentions map { m => m.copy(headTokenIndex = getHeadTokenIdx(m)) } //todo: fix this
+    docMentions = docMentions map { m => m.copy(headTokenIndex = getHeadTokenIdx(m)) }
 
     doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).toSeq)
 

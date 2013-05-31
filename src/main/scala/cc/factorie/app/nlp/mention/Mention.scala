@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.mention
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
 import cc.factorie.app.nlp.{Sentence, TokenSpan, Document, Section, Token}
+import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
 
 /**
  * Created with IntelliJ IDEA.
@@ -31,3 +32,20 @@ case class Mention(span: TokenSpan, headTokenIndex: Int = -1) extends Attr{
   def sentence: Sentence = span.sentence
   def headToken: Token = document.asSection.tokens(headTokenIndex) // This is buggy.  If the Document has multiple Sections, this won't work. -akm
 }
+
+//this differs from EntityType. This is about whether a mention is a pronoun, etc., not what it potentially refers to (person, location, etc.)
+class MentionType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = OntonotesMentionTypeDomain
+}
+
+
+object OntonotesMentionTypeDomain extends CategoricalDomain[String] {
+  this ++= Seq(
+    "PRO","NOM","NAM"
+  )
+
+  freeze()
+}
+
+
+
