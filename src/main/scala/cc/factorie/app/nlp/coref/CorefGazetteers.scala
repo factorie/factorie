@@ -90,10 +90,11 @@ object CorefGazetteers {
   "country",
   "day",
   "demonyms",
-  "femaleFirstNames",
+  "census_female",
   "improper-person-names",
   "jobtitle",
-  "maleFirstNames",
+  "census_male",
+  "census_lastNames",
   "month",
   "org-suffix",
   "person-first-high",
@@ -158,3 +159,4 @@ object CorefGazetteers {
   "songs.txt"
   )
 }
+
