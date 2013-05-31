@@ -16,46 +16,51 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
+/** A portion of the string contents of a Document.
+    @author Andrew McCallum */
 trait DocumentSubstring {
+  /** The Document of which this DocumentSubstring is a part. */
   def document: Document
+  /** The character offset into the Document.string at which this DocumentSubstring begins. */
   def stringStart: Int
+  /** The character offset into the Document.string at which this DocumentSubstring is over. 
+      In other words, the last character of the DocumentSubstring is Document.string(this.stringEnd-1). */
   def stringEnd: Int
+  /** The substring of the Document encompassed by this DocumentSubstring. */
   def string: String
 }
 
-trait Section extends ChainWithSpansVar[Section,TokenSpan,Token] with DocumentSubstring with Attr {
-  def string: String = document.string.substring(stringStart, stringEnd)
-  
-  /** Just a clearly-named alias for Chain.links. */
-  def tokens: IndexedSeq[Token] = links
-  
-  // Managing Sentences
-  private var _sentences = new ArrayBuffer[Sentence]
-  def sentences: Seq[Sentence] = _sentences
-  def hasSentences: Boolean = _sentences.length > 0
-  // potentially very slow for large documents. // TODO Why isn't this simply using token.sentence??  Or even better, just remove this method. -akm
-  //def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
-
-  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
-  override def +=(s:TokenSpan): Unit = s match {
-    case s:Sentence => {
-      s._chain = this // not already done in += be cause += is not on ChainWithSpans
-      s._indexInSection = _sentences.length
-      if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
-      else throw new Error("Sentences must be added in order and not overlap.")
-    }
-    case s:TokenSpan => super.+=(s)
-  }
-  override def -=(s:TokenSpan): Unit = s match {
-    case s:Sentence => throw new Error("Once added Sentences cannot be removed from a Section.") // _sentences -= s
-    case s:TokenSpan => super.-=(s)
-  }
-}
-
-/** Concrete implementation */
-class BasicSection(val document:Document, val stringStart:Int, val stringEnd:Int) extends Section
-
-
+/** A Document holds a String containing the original raw string contents
+    of a natural language document to be processed.  The Document also holds
+    a sequence of Sections, each of which is delineated by character offsets 
+    into the Document's string, and each of which contains a sequence of Tokens, 
+    Sentences and other TokenSpans which may be annotated.
+    
+    Documents may be constructed with their full string contents, or they may
+    have their string contents added to by the appendString method.
+    
+    Documents also have an optional "name" which can be set by Document.setName.
+    
+    The Document.stringLength method may be a faster alternative to Document.string.length
+    when you are in the middle of multiple appendString calls.
+    
+    The canonical sequence of Sections in the Document is available through 
+    the Document.sections method.
+    
+    By default the canonical sequence of Sections holds a single Section that covers the
+    entire string contents of the Document (even as the Document grows).  This canonical sequence
+    of Sections may be modified by the user, but this special all-encompassing Section
+    instance will always be available as Document.asSection.
+    
+    Even though Tokens, Sentences and TokenSpans are really stored in the Sections,
+    Document has basic convenience methods for obtaining iterable collections of these
+    by concatenating them from the canonical sequence of Sections.  If, for example,
+    you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
+    more advanced queries for TokenSpan types, you should use methods on a Section,
+    not on the Document.  In this case typical processing looks like:
+    "for (section <- document.sections) ...".  
+    
+    @author Andrew McCallum */
 class Document extends DocumentSubstring with Attr {
   def this(stringContents:String) = { this(); _string = stringContents }
   private var _name: String = null
@@ -101,8 +106,11 @@ class Document extends DocumentSubstring with Attr {
   //def spans: Iterator[TokenSpan] = for (section <- sections.iterator; span <- section.spans.iterator) yield span
   def spans: Iterable[TokenSpan] = if (sections.length == 1) sections.head.spans else new Iterable[TokenSpan] { def iterator = for (section <- sections.iterator; span <- section.spans.iterator) yield span }
   
+  /** An efficient way to get the total number of Tokens in the canonical Sections of this Document. */
   def tokenCount: Int = if (sections.length == 0) sections.head.length else sections.foldLeft(0)((result, section) => result + section.length)
+  /** An efficient way to get the total number of Sentences in the canonical Sections of this Document. */
   def sentenceCount: Int = if (sections.length == 0) sections.head.sentences.length else sections.foldLeft(0)((result, section) => result + section.sentences.length)
+  /** An efficient way to get the total number of Spans (not including Sentences) in the canonical Sections of this Document. */
   def spanCount: Int = if (sections.length == 0) sections.head.spans.length else sections.foldLeft(0)((result, section) => result + section.spans.length)
     
   /** Keeping records of which DocumentAnnotators have been run on this document, producing which annotations.
@@ -116,7 +124,7 @@ class Document extends DocumentSubstring with Attr {
   /** Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If  */
   def annotatorFor(c:Class[_]): Option[DocumentAnnotator] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
   
-  /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
+  /** Return a String containing the Token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {
     val buf = new StringBuffer
     for (section <- sections; token <- section.tokens) {
@@ -130,10 +138,9 @@ class Document extends DocumentSubstring with Attr {
     buf.toString
   }
   
-  /** Return a String containing the token strings in the document, with one-word-per-line 
+  /** Return a String containing the Token strings in the document, with one-word-per-line 
       and various tab-separated attributes appended on each line. */
-  // TODO Remove this default argument -akm
-  def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.posLabel.categoryValue)): String = {
+  def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.lemmaString)): String = {
     val buf = new StringBuffer
     for (section <- sections; token <- section.tokens) {
       if (token.isSentenceStart) buf.append("\n")
@@ -156,113 +163,6 @@ class Document extends DocumentSubstring with Attr {
 }
 
 
-
-
-///** Value is the sequence of tokens */
-//class OldDocument extends ChainWithSpansVar[Document,TokenSpan,Token] with DocumentSubstring with Attr {
-//  def this(stringContents:String) = { this(); _string = stringContents }
-//  private var _name: String = null
-//  def name: String = _name
-//  def setName(s:String): this.type = { _name = s; this }
-//  
-//  // One of the following two is always null, the other non-null
-//  private var _string: String = ""
-//  private var _stringbuf: StringBuffer = null
-//  /** Append the string 's' to this Document.
-//      @return the length of the Document's string before string 's' was appended. */
-//  def appendString(s:String): Int = {
-//    if (_stringbuf eq null) _stringbuf = new StringBuffer(_string)
-//    val result = _stringbuf.length
-//    _stringbuf.append(s)
-//    _string = null
-//    result
-//  }
-//  def string: String = {
-//    this.synchronized {
-//      if (_string eq null) _string = _stringbuf.toString
-//      _stringbuf = null
-//    }
-//    _string
-//  }
-//  def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
-//  
-//  // For DocumentSubstring
-//  def document: Document = this
-//  def stringStart: Int = 0
-//  def stringEnd: Int = stringLength
-//  
-//  /** Just a clearly-named alias for Chain.links. */
-//  def tokens: IndexedSeq[Token] = links
-//  
-//  // Managing Sentences
-//  private var _sentences = new ArrayBuffer[Sentence]
-//  def sentences: Seq[Sentence] = _sentences
-//  def hasSentences: Boolean = _sentences.length > 0
-//  // potentially very slow for large documents. // TODO Why isn't this simply using token.sentence??  Or even better, just remove this method. -akm
-//  //def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
-//
-//  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
-//  override def +=(s:TokenSpan): Unit = s match {
-//    case s:Sentence => {
-//      if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
-//      else throw new Error("Sentences must be added in order and not overlap.")
-//      s._chain = this // not already done in += be cause += is not on ChainWithSpans
-//    }
-//    case s:TokenSpan => super.+=(s)
-//  }
-//  override def -=(s:TokenSpan): Unit = s match {
-//    case s:Sentence => _sentences -= s
-//    case s:TokenSpan => super.-=(s)
-//  }
-//  
-//  /** Keeping records of which DocumentAnnotators have been run on this document, producing which annotations.
-//      The collection of DocumentAnnotators that have been run on this Document.  
-//      A Map from the annotation class to the DocumentAnnotator that produced it.
-//      Note that this map records annotations placed not just on the Document itself, but also its constituents,
-//      such as TokenSpan, Token, Sentence, etc. */
-//  val annotators = new DocumentAnnotatorMap
-//  /** Has an annotation of class 'c' been placed somewhere within this Document? */
-//  def hasAnnotation(c:Class[_]): Boolean = annotators.keys.exists(k => c.isAssignableFrom(k))
-//  /** Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If  */
-//  def annotatorFor(c:Class[_]): Option[DocumentAnnotator] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
-//  
-//  /** Return a String containing the token strings in the document, with sentence and span boundaries indicated with SGML. */
-//  def sgmlString: String = {
-//    val buf = new StringBuffer
-//    for (token <- tokens) {
-//      if (token.isSentenceStart) buf.append("<sentence>")
-//      token.startsSpans.foreach(span => buf.append("<"+span.name+">"))
-//      buf.append(token.string)
-//      token.endsSpans.foreach(span => buf.append("</"+span.name+">"))
-//      if (token.isSentenceEnd) buf.append("</sentence>")
-//      buf.append(" ")
-//    }
-//    buf.toString
-//  }
-//  
-//  /** Return a String containing the token strings in the document, with one-word-per-line 
-//      and various tab-separated attributes appended on each line. */
-//  // TODO Remove this default argument -akm
-//  def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.posLabel.categoryValue)): String = {
-//    val buf = new StringBuffer
-//    for (token <- tokens) {
-//      if (token.isSentenceStart) buf.append("\n")
-//      buf.append("%d\t%d\t%s\t".format(token.position+1, token.positionInSentence+1, token.string))
-//      //buf.append(token.stringStart); buf.append("\t")
-//      //buf.append(token.stringEnd)
-//      for (af <- attributes) {
-//        buf.append("\t")
-//        af(token) match {
-//          case cv:CategoricalVar[_,String] => buf.append(cv.categoryValue.toString)
-//          case null => {}
-//          case v:Any => buf.append(v.toString)
-//        }
-//      }
-//      buf.append("\n")
-//    }
-//    buf.toString
-//  }
-//}
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. 
     Note that it does not yet serialize Sections, and relies on Document.asSection being the only Section. */

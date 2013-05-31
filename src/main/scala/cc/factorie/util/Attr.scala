@@ -17,7 +17,16 @@ package cc.factorie.util
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
 
 /** Provides member "attr" which is a map from a class to an attribute value (instance of that class).
-    For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */
+    This is used to attach arbitrary "attributes" to objects that inherit from this trait.
+    These attributes do not need to be pre-compiled into the object as class members,
+    and yet when fetched they are returned with the correct Scala type known.
+    
+    For example, attributes are used to attach a part-of-speech label to a cc.factorie.app.nlp.Token,
+    to attach a ParseTree to a Sentence, and coreference information to a Document.
+    
+    Basic example usage: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String].
+    
+    @author Andrew McCallum */
 trait Attr {
   /** A collection of attributes, keyed by the attribute class. */
   object attr {

@@ -66,12 +66,12 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
   def string: String = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
-  /** Return the string contents of this Token, either from its speficied attr[C], or if unset, directly as a substring of the Document. */
+  /** Return the string contents of this Token, either from its specified attr[C], or if unset, directly as a substring of the Document. */
   def stringNormalized[C<:TokenString](attrClass:Class[C]): String = { val ts = attr(attrClass); if (ts ne null) ts.value else docSubstring }
-  def stringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.string else null } // TODO I'd like to get rid of this -akm
+  //def stringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.string else null } // TODO I'd like to get rid of this -akm
   /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
   def lemmaString = { val tl = attr[cc.factorie.app.nlp.lemma.TokenLemma]; if (tl ne null) tl.value else string }
-  def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null } // TODO I'd like to get rid of this -akm
+  //def lemmaStringAtOffset(offset:Int): String = { val to = this.next(offset); if (to ne null) to.lemmaString else null } // TODO I'd like to get rid of this -akm
   /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
