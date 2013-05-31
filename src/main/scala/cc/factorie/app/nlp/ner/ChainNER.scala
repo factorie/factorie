@@ -59,7 +59,7 @@ class ChainNer {
 
   val model = new ChainNerModel
   val objective = new ChainNerObjective
-  class Lexicon(filename:String) extends cc.factorie.app.nlp.lexicon.Lexicon(filename) {
+  class Lexicon(filename:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
   }
   val lexicons = new scala.collection.mutable.ArrayBuffer[Lexicon]

@@ -22,11 +22,77 @@ import java.io.File
 import cc.factorie.app.chain.Observation
 import scala.io.Codec.charset2codec
 
-/** A list of words or phrases, with methods to easily check whether a Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
+/** The general interface to a lexicon.  Both WordLexicon and PhraseLexicon are subclasses.
     @author Andrew McCallum */
-class Lexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) {
+trait Lexicon {
+  // For pre-processing of lexicon and query strings
+  /** The string segmenter that breaks a lexicon entries and queries into (potentially) multi-word phrases. */
+  def tokenizer:StringSegmenter
+  /** The string lemmatizer that simplifies lexicon entries and queries before searching for a match.
+      For example, a common lemmatizer is one that lowercases all strings. */
+  def lemmatizer:Lemmatizer
+  // For populating the lexicon
+  /** Tokenize and lemmatize the input String and add it as a single entry to the Lexicon */
+  def +=(phrase:String): Unit
+  /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries */
+  def ++=(source:Source): Unit = for (line <- source.getLines()) yield Lexicon.this.+=(line)
+  /** All a lines from the input String to this lexicon.  String contains multiple newline-separated lexicon entries */
+  def ++=(phrases:String): Unit = ++=(Source.fromString(phrases))
+  /** All a lines from the input File to this lexicon.  File contains multiple newline-separated lexicon entries */
+  def ++=(file:File, enc:String = "UTF-8"): Unit = ++=(Source.fromFile(file, enc))
+  // For querying the lexicon
+  /** Is this single word in the lexicon.  The input String is not processed by tokenizer, but is processed by the lemmatizer. */
+  def containsWord(word:String): Boolean
+  /** Is the pre-tokenized sequence of words in the lexicon.  Each of the input words is processed by the lemmatizer. */
+  def containsWords(words: Seq[String]): Boolean
+  /** Is this Token (or more generally Observation) a member of a phrase in the lexicon (including single-word phrases).
+      For example if query.string is "New" and query.next.string is "York" and the two-word phrase "New York" is in the lexicon, 
+      then this method will return true.  But if query.next.string is "shoes" (and "New shoes" is not in the lexicon) this method will return false. */
+  def contains[T<:Observation[T]](query:T): Boolean
+  /** Is the input String in the lexicon.  The input is tokenized and lemmatized; 
+      if the tokenizer indicates that it is a multi-word phrase, it will be processed by containsWords, otherwise containsWord. */
+  def contains(untokenizedString:String): Boolean = { val words = tokenizer(untokenizedString).toSeq; if (words.length == 1) containsWord(words.head) else containsWords(words) }
+}
+
+/** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
+    @author Andrew McCallum */
+object Lexicon {
+  def fromSource(source:Source, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = {
+    var result: Lexicon = new WordLexicon(tokenizer, lemmatizer)
+    try { result ++= source } catch { case e:MultiWordException => {
+      result = new PhraseLexicon(tokenizer, lemmatizer)
+      result ++= source.reset 
+    } }
+    result
+  }
+  def fromFilename(filename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = 
+    fromSource(Source.fromFile(new File(filename))(scala.io.Codec.UTF8))
+  def fromResource(resourceFilename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon =
+    fromSource(io.Source.fromInputStream(getClass.getResourceAsStream(resourceFilename)))
+}
+
+/** A Lexicon that can only hold single-word lexicon entries, but which is efficient for this case.
+    with methods to check whether a String or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
+    @author Andrew McCallum */
+class WordLexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends Lexicon {
+  val contents = new scala.collection.mutable.HashSet[String]
+  def +=(phrase:String): Unit = {
+    val words: Seq[String] = tokenizer(phrase).toSeq
+    if (words.length == 1) contents += words.head else throw new MultiWordException("Cannot add multi-word phrase to WordLexicon")
+  }
+  final def containsWord(word:String): Boolean = contents.contains(word)
+  def contains[T<:Observation[T]](query:T): Boolean = contents.contains(query.string)
+  def containsWords(words: Seq[String]): Boolean = if (words.length == 1) contains(words.head) else false
+}
+
+/** An exception thrown when someone tries to add a multi-word phrase to a WordLexicon. */
+class MultiWordException(msg:String) extends Exception(msg)
+
+/** A list of words or phrases, with methods to check whether a String, Seq[String], or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
+    @author Andrew McCallum */
+class PhraseLexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends Lexicon {
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
-  def this(filename:String) = { this(); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
+  def this(filename:String) = { this(); PhraseLexicon.this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
   def this(caseSensitive:Boolean) = this(lemmatizer = if (caseSensitive) LowercaseLemmatizer else NoopLemmatizer)
   
   class LexiconToken extends Observation[LexiconToken] {
@@ -71,23 +137,24 @@ class Lexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitesp
   def +=(phrase:String): Unit = {
     val words: Seq[String] = tokenizer(phrase).toSeq
     if (words.length == 1) {
-      val word = words.head
-      val key = lemmatizer.lemmatize(word)
-      val old: List[LexiconToken] = contents.getOrElse(key, Nil)
-      contents(key) = LexiconToken :: old
-    } else {
-      this += newLexiconTokens(words.map(lemmatizer.lemmatize(_)))
+        val word = words.head
+        val key = lemmatizer.lemmatize(word)
+        val old: List[LexiconToken] = contents.getOrElse(key, Nil)
+        contents(key) = LexiconToken :: old
+      } else {
+      PhraseLexicon.this += newLexiconTokens(words.map(lemmatizer.lemmatize(_)))
     }
   }
   private def +=(ts:Seq[LexiconPhraseToken]): Unit = {
     //println("Lexicon adding "+ts.map(_.word))
-    ts.foreach(t => this += t)
+    ts.foreach(t => PhraseLexicon.this += t)
   }
   /** Add a new lexicon entry consisting of a multi-string phrase. */
   //def +=(ws:Seq[String]): Unit = this.+=(newLexiconTokens(ws.map(lemmatizer.lemmatize(_))))
-  def ++=(source:Source): Unit = for (line <- source.getLines()) { this.+=(line); /*println("TokenSeqs.Lexicon adding "+line)*/ }
-  def ++=(phrases:String): Unit = ++=(Source.fromString(phrases))
-  def ++=(file:File, enc:String = "UTF-8"): Unit = ++=(Source.fromFile(file, enc))
+  //def ++=(source:Source): Unit = for (line <- source.getLines()) yield { PhraseLexicon.this.+=(line); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+  /** String contains multiple newline-separated lexicon entries */
+  //def ++=(phrases:String): Unit = ++=(Source.fromString(phrases))
+  //def ++=(file:File, enc:String = "UTF-8"): Unit = ++=(Source.fromFile(file, enc))
   def phrases: Seq[String] = {
     def phrase(entry:LexiconToken): String = if (entry.hasNext) entry.string + " " + phrase(entry.next) else entry.string 
     val result = new ArrayBuffer[String]
@@ -100,7 +167,6 @@ class Lexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitesp
   /** Do any of the Lexicon entries contain the given word string. */
   def containsWord(word:String): Boolean = contents.contains(lemmatizer.lemmatize(word))
   def containsWords(words: Seq[String]): Boolean = contains(newLexiconTokens(words.map(lemmatizer.lemmatize(_))).head.asInstanceOf[Observation[LexiconToken]])
-  def contains(untokenizedString:String): Boolean = { val words = tokenizer(untokenizedString).toSeq; if (words.length == 1) containsWord(words.head) else containsWords(words) }
   /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
   def contains[T<:Observation[T]](query:T): Boolean = {
     //println("contains "+query.word+" "+query.hasPrev+" "+query)
