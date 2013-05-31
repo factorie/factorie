@@ -3,7 +3,7 @@ package cc.factorie.app.nlp
 import scala.io.Source
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PTBPosLabel
-import cc.factorie.app.nlp.ner.BioOntonotesNerLabel
+import cc.factorie.app.nlp.ner.{BioOntonotesNerLabel,BilouOntonotesNerLabel}
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -36,12 +36,8 @@ object LoadOntonotes5 {
     s.attr += tree
   }
 
-  var loadLemma = true
-  var loadPos = true
-  var loadNer = true
-
-  def fromFilename(filename:String): Seq[Document] = {
-    val document: Document = new Document().setName("Ontonotes499" + filename)
+  def fromFilename(filename:String, loadLemma:Boolean = true, loadPos:Boolean = true, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
+    val document: Document = new Document().setName("Ontonotes499/" + filename)
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -63,22 +59,39 @@ object LoadOntonotes5 {
         val parentIdx = fields(8).toInt - 1
         val depLabel = fields(10)
         var ner = fields(13); if (ner == "_") ner = "O"
-        // Alex: we can't ignore XX tokens or the parser trees end up malformed.
-        // if (partOfSpeech != "XX") { // Skip words marked with part-of-speech "XX"
-          document.appendString(" ")
-          val token = new Token(sentence, word)
-          if (loadPos) token.attr += new PTBPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
-          if (loadNer) token.attr += new BioOntonotesNerLabel(token, ner)
-          if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
-          depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
-        // }
+        document.appendString(" ")
+        val token = new Token(sentence, word)
+        if (loadPos) token.attr += new PTBPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
+        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerLabel(token, ner) else new BioOntonotesNerLabel(token, ner))
+        if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
+        depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }
-    if (sentence ne null)
-      addDepInfo(sentence, depInfoSeq)
+    if (sentence ne null) addDepInfo(sentence, depInfoSeq)
+    if (nerBilou) convertBioBilou(document.asSection)
 
     println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
     Seq(document)
+  }
+  
+  def convertBioBilou(section:Section): Unit = {
+    /** Return the string of the NER label, including the two letter (B- or I-) prefix. */
+    def cat(token:Token): String = if (token eq null) "null" else token.attr[BilouOntonotesNerLabel].categoryValue
+    /** Return true if the strings are equal without their two letter (B- or I-) prefix. */
+    def sim(s1:String, s2:String): Boolean = s1.drop(2) == s2.drop(2)
+    def isU(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'B' && (!sim(cat2, cat3) || cat3(0) == 'B')
+    def isB(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'B' && sim(cat2, cat3) && cat3(0) == 'I'
+    def isL(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'I' && sim(cat1, cat2) && (cat3(0) == 'B' || !sim(cat2, cat3))
+    def isI(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'I' && cat3(0) == 'I'
+    for (token <- section.tokens) if (token.attr[BilouOntonotesNerLabel].intValue != 0) {
+      val nerLabel = token.attr[BilouOntonotesNerLabel]
+      val cat1 = cat(token.prev); val cat2 = cat(token); val cat3 = cat(token.next)
+      if (isU(cat1, cat2, cat3)) nerLabel.target.setCategory("U-"+cat2.drop(2))(null)
+      else if (isB(cat1, cat2, cat3)) nerLabel.target.setCategory("B-"+cat2.drop(2))(null)
+      else if (isL(cat1, cat2, cat3)) nerLabel.target.setCategory("L-"+cat2.drop(2))(null)
+      else if (isI(cat1, cat2, cat3)) nerLabel.target.setCategory("I-"+cat2.drop(2))(null)
+      nerLabel.setToTarget(null)
+    }
   }
 
   def printDocument(d: Document) =

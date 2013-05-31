@@ -56,7 +56,6 @@ class BasicSection(val document:Document, val stringStart:Int, val stringEnd:Int
 
 
 class Document extends DocumentSubstring with Attr {
-  doc =>
   def this(stringContents:String) = { this(); _string = stringContents }
   private var _name: String = null
   def name: String = _name
@@ -89,7 +88,7 @@ class Document extends DocumentSubstring with Attr {
   def stringEnd: Int = stringLength
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
-  val asSection: Section = new Section { def document: Document = doc; def stringStart = 0; def stringEnd = document.stringEnd }
+  val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
   private var _sections: Seq[Section] = List(asSection)
   def sections: Seq[Section] = _sections //if (_sections.length == 0) return Seq(this) else _sections
   
