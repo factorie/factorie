@@ -54,6 +54,17 @@ trait Lexicon {
   def contains(untokenizedString:String): Boolean = { val words = tokenizer(untokenizedString).toSeq; if (words.length == 1) containsWord(words.head) else containsWords(words) }
 }
 
+/** A union of multiple lexicons.  Answer "contains" queries with true, if any of the member Lexicons contain the query.
+    @author Andrew McCallum */
+class UnionLexicon(val members:Lexicon*) extends Lexicon {
+  def tokenizer: StringSegmenter = members.head.tokenizer
+  def lemmatizer: Lemmatizer = members.head.lemmatizer
+  def +=(phrase:String): Unit = throw new Error("Cannot add new entries to "+getClass)
+  def containsWord(word:String): Boolean = members.exists(_.containsWord(word))
+  def containsWords(words: Seq[String]): Boolean = members.exists(_.containsWords(words))
+  def contains[T<:Observation[T]](query:T): Boolean = members.exists(_.contains(query))
+}
+
 /** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
     @author Andrew McCallum */
 object Lexicon {
@@ -91,8 +102,9 @@ class MultiWordException(msg:String) extends Exception(msg)
 /** A list of words or phrases, with methods to check whether a String, Seq[String], or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
 class PhraseLexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceClassesSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends Lexicon {
+  // The next two constructors are there just to support legacy usage, and should ultimately be removed.
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
-  def this(filename:String) = { this(); PhraseLexicon.this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
+  def this(filename:String) = { this(); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
   def this(caseSensitive:Boolean) = this(lemmatizer = if (caseSensitive) LowercaseLemmatizer else NoopLemmatizer)
   
   class LexiconToken extends Observation[LexiconToken] {
