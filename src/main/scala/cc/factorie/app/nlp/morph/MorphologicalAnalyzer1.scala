@@ -5,15 +5,16 @@ import collection.mutable
 /** A simple morphological analyzer, simply indicating if a noun is singular or plural.
     Obviously this supports very limited functionality. More will be added as needed.
     @author David Belanger */
-class MorphologicalAnalyzer1(dictPath: String) {
+class MorphologicalAnalyzer1(fmap: String => io.Source) {
+  def this(name: String) = this(s => scala.io.Source.fromFile(name + s))
   val pluralWords = mutable.HashSet[String]()
   val singularWords = mutable.HashSet[String]()
-  scala.io.Source.fromFile(dictPath + "/noun.exc").getLines().foreach(x => {
+  fmap("/noun.exc").getLines().foreach(x => {
     val words = x.split(" ")
     pluralWords += words(0)
     singularWords += words(1)
   })
-  singularWords ++= scala.io.Source.fromFile(dictPath + "/noun.txt").getLines().toSeq
+  singularWords ++= fmap("/noun.txt").getLines().toSeq
 
   //note you can imagine that these following methods would simply be negations of each other.
   //for example, you could have them be precision biased and you could classify things as being in the gray area
