@@ -28,7 +28,12 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
       Note that the start and end indices are character offsets into the Document string, not the Section string. */
   def this(sec:Section, s:Int, e:Int) = {
     this(s, e)
-    if (!sec.document.annotators.contains(classOf[Token])) sec.document.annotators(classOf[Token]) = null
+    assert(sec ne null)
+    assert(sec.document ne null)
+    assert(sec.document.annotators ne null)
+    assert(sec.document.annotators.contains(classOf[Token]) || true)
+    if (!sec.document.annotators.contains(classOf[Token]))
+      sec.document.annotators(classOf[Token]) = null
     sec += this
   }
   /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
