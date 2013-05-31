@@ -89,7 +89,7 @@ object BilouConllNerDomain extends CategoricalDomain[String] {
 class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 
-object BioOntonotesNerDomain extends EnumDomain {
+object BioOntonotesNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
       "O",
       "B-CARDINAL",
@@ -133,7 +133,7 @@ object BioOntonotesNerDomain extends EnumDomain {
 }
 class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
 
-object BilouOntonotesNerDomain extends EnumDomain {
+object BilouOntonotesNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
       "O",
       "B-CARDINAL",

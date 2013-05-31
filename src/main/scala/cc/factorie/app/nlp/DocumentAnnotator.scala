@@ -47,6 +47,13 @@ trait DocumentAnnotator {
   }
 }
 
+/** Used as a stand-in dummy DocumentAnnotator in the DocumentAnnotatorMap when an annotation was added but not by a real DocumentAnnotator. */
+object UnknownDocumentAnnotator extends DocumentAnnotator {
+  def process1(document: Document): Document = document
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = Nil
+}
+
 class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_],DocumentAnnotator]
 
 object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {

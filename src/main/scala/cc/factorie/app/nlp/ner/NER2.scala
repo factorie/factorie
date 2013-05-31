@@ -88,14 +88,13 @@ class NER2 extends DocumentAnnotator {
   def train(trainFilename:String, testFilename:String): Unit = {
     val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
     val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
-    for (token <- trainDocs.head.tokens.drop(100).take(100))
-      println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
+    // Print diagnostics
+    for (token <- trainDocs.head.tokens.drop(100).take(100)) println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
     (trainDocs ++ testDocs).foreach(addFeatures(_))
     train(trainDocs, testDocs)
     FeaturesDomain.freeze()
-    for (token <- trainDocs.head.tokens.drop(100).take(100))
-      println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
-    //println(trainDocs.last.owplString(List(_.attr[BilouOntonotesNerLabel].target.categoryValue, _.attr[BilouOntonotesNerLabel].categoryValue)))
+    // Print diagnostics
+    for (token <- trainDocs.head.tokens.drop(100).take(100)) println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
   }
   
   // Serialization
