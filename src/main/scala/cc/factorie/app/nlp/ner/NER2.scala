@@ -4,9 +4,9 @@ import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 
-/** A simple named entity recognizer, trained on CoNLL 2003 data.
+/** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
-class NER3 extends DocumentAnnotator {
+class NER2 extends DocumentAnnotator {
   def this(filename: String) = { this(); deserialize(filename) }
 
   object FeaturesDomain extends CategoricalTensorDomain[String]
@@ -18,41 +18,41 @@ class NER3 extends DocumentAnnotator {
   // The model
   val model = new TemplateModel with Parameters {
     // Bias term on each individual label
-    this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      val weights = Weights(new la.DenseTensor1(BilouConllNerDomain.size))
+    this += new DotTemplateWithStatistics1[BilouOntonotesNerLabel] {
+      override def neighborDomain1 = BilouOntonotesNerDomain
+      val weights = Weights(new la.DenseTensor1(BilouOntonotesNerDomain.size))
     }
     // Transition factors between two successive labels
-    this += new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = BilouConllNerDomain
-      val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
-      def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouConllNerLabel] ne null); Factor(label.token.prev.attr[BilouConllNerLabel], label) } else Nil
-      def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouConllNerLabel] ne null); Factor(label, label.token.next.attr[BilouConllNerLabel]) } else Nil
+    this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, BilouOntonotesNerLabel] {
+      override def neighborDomain1 = BilouOntonotesNerDomain
+      override def neighborDomain2 = BilouOntonotesNerDomain
+      val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
+      def unroll1(label:BilouOntonotesNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouOntonotesNerLabel] ne null); Factor(label.token.prev.attr[BilouOntonotesNerLabel], label) } else Nil
+      def unroll2(label:BilouOntonotesNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouOntonotesNerLabel] ne null); Factor(label, label.token.next.attr[BilouOntonotesNerLabel]) } else Nil
     }
     // Factor between label and observed token
-    this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
-      override def neighborDomain1 = BilouConllNerDomain
+    this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
+      override def neighborDomain1 = BilouOntonotesNerDomain
       override def neighborDomain2 = FeaturesDomain
-      val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize))
-      def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
+      val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionSize))
+      def unroll1(label:BilouOntonotesNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }
   }
   // The training objective
-  val objective = new HammingTemplate[BilouConllNerLabel]
+  val objective = new HammingTemplate[BilouOntonotesNerLabel]
 
   // Methods of DocumentAnnotator
-  override def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+  override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
-  def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
+  def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
   def process1(document:Document): Document = {
     if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
-      for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
+      for (token <- document.tokens) if (token.attr[BilouOntonotesNerLabel] eq null) token.attr += new BilouOntonotesNerLabel(token, "O")
       for (sentence <- document.sentences if sentence.tokens.size > 0)
-        BP.inferChainMax(sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq, model)
+        BP.inferChainMax(sentence.tokens.map(_.attr[BilouOntonotesNerLabel]).toSeq, model)
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
     }
     document
@@ -77,7 +77,7 @@ class NER3 extends DocumentAnnotator {
   
   // Parameter estimation
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
-    def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
+    def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective), new optimize.AdaGrad)
     for (iteration <- 1 until 3) { 
       learner.processContexts(labels(trainDocs))
@@ -86,13 +86,16 @@ class NER3 extends DocumentAnnotator {
     }
   }
   def train(trainFilename:String, testFilename:String): Unit = {
-    // TODO Make fixLabels no longer necessary by having LoadConll2003 directly create the right label type.
-    def fixLabels(docs:Iterable[Document]): Iterable[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
-    val trainDocs = fixLabels(LoadConll2003.fromFilename(trainFilename, BILOU=true))
-    val testDocs = fixLabels(LoadConll2003.fromFilename(testFilename, BILOU=true))
+    val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
+    val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
+    for (token <- trainDocs.head.tokens.drop(100).take(100))
+      println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
     (trainDocs ++ testDocs).foreach(addFeatures(_))
     train(trainDocs, testDocs)
     FeaturesDomain.freeze()
+    for (token <- trainDocs.head.tokens.drop(100).take(100))
+      println("%20s  %10s %10s".format(token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
+    //println(trainDocs.last.owplString(List(_.attr[BilouOntonotesNerLabel].target.categoryValue, _.attr[BilouOntonotesNerLabel].categoryValue)))
   }
   
   // Serialization
@@ -109,9 +112,9 @@ class NER3 extends DocumentAnnotator {
   }
 }
 
-object NER3 {
+object NER2 {
   def main(args:Array[String]): Unit = {
-    val ner = new NER3
+    val ner = new NER2
     ner.train(args(0), args(1))
     ner.serialize(args(2))
   }

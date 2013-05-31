@@ -1,7 +1,6 @@
 Pre 1.0 release:
 
 Strongly consider removing type argument from Domain.  It isn't needed for anything. [McCallum]
-Add something like Passage to Document, indexed by char offsets [McCallum]
 Implement sparse iteration through values for BP [McCallum, Singh]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]
@@ -33,7 +32,8 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
-Remove VarAndValueGenericDomain
+Add something like Passage to Document, indexed by char offsets [McCallum]
+Remove VarAndValueGenericDomain [McCallum]
 Remove unused classes from cc.factorie.util [Luke]
 Reconsider naming DiscreteDimensionTensorVar and DiscreteDimensionCategoricalVar to something shorter? [McCallum]
 Make Assignment inherit from Summary [Passos]  (No, just make a wrapper class.)
