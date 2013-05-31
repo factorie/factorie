@@ -33,6 +33,9 @@ class CorefGazetteers(lexDir: String) {
   val lexHash = collection.mutable.HashMap[String,Set[String]]()
   loadInto(lexHash, CorefGazetteers.ieslLexiconsToLoad, "iesl/")
 
+  val censusHash = collection.mutable.HashMap[String,Set[String]]()
+  loadInto(censusHash, CorefGazetteers.censusLexiconsToLoad, "uscensus/")
+
   val wikiLexHash = collection.mutable.HashMap[String,Set[String]]()
   loadInto(wikiLexHash, CorefGazetteers.wikiLexiconsToLoad, "wikipedia/")
 
@@ -40,10 +43,11 @@ class CorefGazetteers(lexDir: String) {
   val honors =  lexHash("person-honorific")
   val cities = lexHash("city")
   val countries = lexHash("country")
-  val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest") ++ lexHash("census_lastNames")
-  val maleFirstNames = lexHash("census_male")
-  val femaleFirstNames = lexHash("census_female")
-  val sayWords = lexHash("sayWords")
+  val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")
+  val maleFirstNames = lexHash("person-first-male")
+  val femaleFirstNames = censusHash("person-first-female")
+
+  val sayWords = lexHash("say")
   val orgClosings = lexHash("org-suffix")
   val demonyms = lexHash("demonyms")
   val demonymMap = demonyms.flatMap(d => {
@@ -84,32 +88,30 @@ class CorefGazetteers(lexDir: String) {
 
 object CorefGazetteers {
   val ieslLexiconsToLoad = Seq(
-  "city",
-  "company",
-  "continents",
-  "country",
-  "day",
-  "demonyms",
-  "census_female",
-  "improper-person-names",
-  "jobtitle",
-  "census_male",
-  "census_lastNames",
-  "month",
-  "org-suffix",
-  "person-first-high",
-  "person-first-highest",
-  "person-first-medium",
-  "person-honorific",
-  "person-last-high",
-  "person-last-highest",
-  "person-last-medium",
-  "place-suffix",
-  "pluralNouns",
-  "sayWords",
-  "singularNouns",
-  "us-state"
+    "city.txt",
+    "company.txt",
+    "continents.txt",
+    "country.txt",
+    "day.txt",
+    "demonyms.txt",
+    "jobtitle.txt",
+    "month.txt",
+    "org-suffix.txt",
+    "person-first-high.txt",
+    "person-first-highest.txt",
+    "person-first-medium.txt",
+    "person-honorific.txt",
+    "person-improper.txt",
+    "person-last-high.txt",
+    "person-last-highest.txt",
+    "person-last-medium.txt",
+    "place-suffix.txt",
+    "say.txt",
+    "us-state.txt"
+  )
 
+  val censusLexiconsToLoad = Seq(
+    "person-first-female.txt",	"person-first-male.txt"	,"person-last.txt"
   )
 
   val wikiLexiconsToLoad = Seq(

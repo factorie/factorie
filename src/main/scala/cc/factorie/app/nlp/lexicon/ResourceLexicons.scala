@@ -17,7 +17,7 @@ object Month extends WordLexicon { this ++= io.Source.fromInputStream(getClass.g
 object Day extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/iesl/day.txt")) }
 
 /** A lexicon of honorifics, such as "Mrs." "Senator" and "Dr." */
-object PersonHonorific extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc.factorie.app.nlp.lexicon.iesl.person-honorific.txt")) }
+object PersonHonorific extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/iesl/person-honorific.txt")) }
 
 object PersonFirstHighest extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/iesl/person-first-highest.txt")) }
 object PersonFirstHigh extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/iesl/person-first-high.txt")) }
@@ -32,6 +32,8 @@ object PersonLast extends UnionLexicon(PersonLastHighest, PersonLastHigh, Person
 // TODO Change the names in the .jar to match these
 object PersonFirstFemale extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/uscensus/person-first-female.txt")) }
 object PersonFirstMale extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/uscensus/person-first-male.txt")) }
+object PersonLastFromCensus extends WordLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/uscensus/person-last.txt")) }
+
 
 // TODO Change the names in the .jar to match these
 object Event extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("cc/factorie/app/nlp/lexicon/wiki/event.txt")) }
