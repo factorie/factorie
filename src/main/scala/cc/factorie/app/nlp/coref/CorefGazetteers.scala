@@ -44,7 +44,7 @@ class CorefGazetteers(lexDir: String) {
   val cities = lexHash("city")
   val countries = lexHash("country")
   val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")
-  val maleFirstNames = lexHash("person-first-male")
+  val maleFirstNames = censusHash("person-first-male")
   val femaleFirstNames = censusHash("person-first-female")
 
   val sayWords = lexHash("say")

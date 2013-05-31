@@ -23,7 +23,7 @@ class EntityType(val mention:Mention, targetValue:String) extends LabeledCategor
 
 object OntonotesEntityTypeDomain extends CategoricalDomain[String] {
   this ++= Seq(
-    "PER", "ORG", "GPE", "UKN", "DATE", "CARDINAL", "EVENT", "FAC", "LANGUAGE", "LAW", "LOC", "MONEY", "NORP", "ORDINAL", "PERCENT", "PRODUCT", "QUANTITY", "TIME", "WORK_OF_ART"
+    "PERSON", "ORG", "GPE", "UKN", "DATE", "CARDINAL", "EVENT", "FAC", "LANGUAGE", "LAW", "LOC", "MONEY", "NORP", "ORDINAL", "PERCENT", "PRODUCT", "QUANTITY", "TIME", "WORK_OF_ART"
   )
 
   freeze()

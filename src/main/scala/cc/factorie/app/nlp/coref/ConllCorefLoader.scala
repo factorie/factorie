@@ -251,9 +251,14 @@ object ConllCorefLoader {
     docs
   }
 
-  //this returns the document-level index of the head token for the span. Since we don't have a dep parse, we just take the final noun in the span
+  //this is a span-level offset. Since we don't have a dep parse, we just take the final noun in the span
   def getHeadToken(span: TokenSpan): Int = {
-    span.start + span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+    val toReturn = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+    if(toReturn == -1){
+      return span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
+    }else{
+      return toReturn
+    }
   }
 
 }
