@@ -38,6 +38,10 @@ object LoadOntonotes5 {
 
   def fromFilename(filename:String, loadLemma:Boolean = true, loadPos:Boolean = true, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
     val document: Document = new Document().setName("Ontonotes499/" + filename)
+    document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
+    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
+    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]

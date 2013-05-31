@@ -30,9 +30,9 @@ object LoadConll2003 {
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
       val document = new Document("").setName(name)
-      document.annotators(classOf[Token]) = null // register that we have token boundaries
-      document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
-      document.annotators(classOf[pos.PTBPosLabel]) = null // register that we have POS tags
+      document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
+      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
+      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
       document
     }
 
@@ -51,8 +51,8 @@ object LoadConll2003 {
         // Skip document boundaries
         document.asSection.chainFreeze
         document = new Document().setName("CoNLL2003-"+documents.length)
-        document.annotators(classOf[Token]) = null // register that we have token boundaries
-        document.annotators(classOf[Sentence]) = null // register that we have sentence boundaries
+        document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
+        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
         documents += document
       } else {
         val fields = line.split(' ')
