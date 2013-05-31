@@ -35,13 +35,15 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   }
 
   private def getHeadTokenIdx(m: Mention): Int = {
-    getHead(
-      m.span.head.sentence.parse, // much more efficient than the commented line below
-      //m.document.sentenceContaining(m.document(m.start)).parse,
-      m.start until (m.start + m.length) // TODO: is the until correct here?
+   val tokenIdxInSection =  getHead(
+      m.span.head.sentence.parse,
+      m.start until (m.start + m.length) //these are section-level offsets
     )
+    val tokenIdxInSpan = tokenIdxInSection - m.span.start
+    assert(tokenIdxInSpan >= 0 && tokenIdxInSpan <= m.span.length)
+    tokenIdxInSpan
   }
-  //this expects as input indices in the **document** not the sentence
+  //this expects as input indices in the **document section** not the sentence
   //note that this never returns the root as the head, it always returns a pointer to an actual token in the sentence
   //it will either return the root of a parse tree span, or a token that is a child of the root
   def getHead(parse: ParseTree, subtree: Seq[Int]): Int = {
@@ -52,7 +54,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     while(parse.parentIndex(curr) > 0 && containedInInterval(leftBoundary,rightBoundary,parse.parentIndex(curr))){
       curr = parse.parentIndex(curr)
     }
-    curr + parse.sentence.start  //this shifts it back to have document-level indices
+    curr + parse.sentence.start  //this shifts it back to have section-level indices
   }
 
   private def containedInInterval(left: Int, right: Int, testIndex: Int): Boolean = {
@@ -100,7 +102,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
     mentions
-      .groupBy(_.headTokenIndex)
+      .groupBy( m => m.headTokenIndex + m.span.start)
       .map { case (_, mentions) => mentions.maxBy(_.length) }
       .toSeq
 
@@ -125,8 +127,6 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
-
-    docMentions = docMentions map { m => m.copy(headTokenIndex = getHeadTokenIdx(m)) }
 
     doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).toSeq)
 
