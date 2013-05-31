@@ -11,31 +11,37 @@ import cc.factorie.app.nlp.mention.Mention
 
 // TODO: make this read from the lexicons jar if possible
 class CorefGazetteers(lexDir: String) {
-  private def load(gaz: File): Set[String] = {
-    io.Source.fromFile(gaz).getLines().toSet
+  private def load(name: String): Set[String] = {
+    if (lexDir eq null) {
+      //println("class is " + cc.factorie.app.nlp.Lexicon.getClass.getName + " resource is " + name)
+      val res = cc.factorie.app.nlp.lexicon.Lexicon.getClass.getResource(name)
+      assert(res ne null, "To load from a jar the factorie nlp resources jar must be in the classpath")
+      val src = io.Source.fromURL(res)
+      assert(src ne null)
+      src.getLines().toSet
+    } else
+      io.Source.fromFile(new File(lexDir + name)).getLines().toSet
+  }
+  def loadInto(map: collection.mutable.HashMap[String,Set[String]], names: Seq[String], dir: String) {
+    names.foreach(lexName => {
+      val name = lexName.replaceAll(".txt", "").replaceAll("-paren", "")
+      map += (name -> load(dir+lexName).map(_.toLowerCase))
+    })
   }
 
   //make a big hashmap from filename to a set of the strings in that file
   val lexHash = collection.mutable.HashMap[String,Set[String]]()
-  val dirname = lexDir + "/iesl/"
-  CorefGazetteers.ieslLexiconsToLoad.foreach(lexName => {
-    val name = lexName.replaceAll(".txt", "").replaceAll("-paren", "")
-    lexHash += (name -> load(new File(dirname+lexName)).map(_.toLowerCase))
-  })
+  loadInto(lexHash, CorefGazetteers.ieslLexiconsToLoad, "iesl/")
 
   val wikiLexHash = collection.mutable.HashMap[String,Set[String]]()
-  val dirname2 = lexDir + "/wikipedia/"
-  CorefGazetteers.wikiLexiconsToLoad.foreach(lexName => {
-    val name = lexName.replaceAll(".txt", "").replaceAll("-paren", "")
-    wikiLexHash += (name -> load(new File(dirname2+lexName)).map(_.toLowerCase()))
-  })
+  loadInto(wikiLexHash, CorefGazetteers.wikiLexiconsToLoad, "wikipedia/")
 
   //these are things  used elsewhere in the coref code
   val honors =  lexHash("person-honorific")
   val cities = lexHash("city")
   val countries = lexHash("country")
   val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest")
-  val maleFirstNames = lexHash("maleFirstNames") 
+  val maleFirstNames = lexHash("maleFirstNames")
   val femaleFirstNames = lexHash("femaleFirstNames")
   val sayWords = lexHash("sayWords")
   val orgClosings = lexHash("org-suffix")
@@ -63,7 +69,14 @@ class CorefGazetteers(lexDir: String) {
     m.document.tokens.slice(from, until).exists(t => sayWords.contains(t.string.trim.toLowerCase))
   }
 
-  val morph = new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(lexDir + "/morph/en/")
+  val morph = if (lexDir eq null) {
+    val fmap = (s : String) => {
+      val res = cc.factorie.app.nlp.lexicon.Lexicon.getClass.getResource("morph/en" + s)
+      assert(res ne null, "To load from a jar the factorie nlp resources jar must be in the classpath")
+      io.Source.fromURL(res)
+    }
+    new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(fmap)
+  } else new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(lexDir + "/morph/en/")
   def isPlural(s: String): Boolean   = morph.isPlural(s)
   def isSingular(s: String): Boolean  = morph.isSingular(s)
 }
@@ -76,11 +89,11 @@ object CorefGazetteers {
   "continents",
   "country",
   "day",
-  "demonyms.txt",
-  "femaleFirstNames.txt",
+  "demonyms",
+  "femaleFirstNames",
   "improper-person-names",
   "jobtitle",
-  "maleFirstNames.txt",
+  "maleFirstNames",
   "month",
   "org-suffix",
   "person-first-high",
@@ -91,12 +104,11 @@ object CorefGazetteers {
   "person-last-highest",
   "person-last-medium",
   "place-suffix",
-  "pluralNouns.txt",
-  "sayWords.txt",
-  "singularNouns.txt",
-  "us-state",
-  "maleFirstNames.txt",
-  "femaleFirstNames.txt"
+  "pluralNouns",
+  "sayWords",
+  "singularNouns",
+  "us-state"
+
   )
 
   val wikiLexiconsToLoad = Seq(
