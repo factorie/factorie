@@ -62,6 +62,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     System.arraycopy(__indices, 0, newInd, 0, __npos)
     System.arraycopy(__values, 0, newVal, 0, __npos)
     __indices = newInd; __values = newVal
+    for (i <- __npos until cap) { __indices(i) = Int.MaxValue }
   }
   def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
   def trim(): Unit = setCapacity(__npos)
@@ -78,7 +79,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   //def length: Int = if (_sizeProxy ne null) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; __npos }
   def activeDomain: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(__indices, __npos) } // TODO Consider making more efficient
-  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < __npos) { f(__indices(i), __values(i)); i += 1 } }
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { makeReadable; var i = 0; while (i < __npos) { f(__indices(i), __values(i)); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = {
     makeReadable
     new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
@@ -88,7 +89,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     }
   }
   // TODO need to assert that _sorted < __npos always. Add a "checkInvariants" method?? -luke
-  override def zero(): Unit = { __npos = 0; _sorted = 0 }
+  override def zero(): Unit = { __npos = 0; _sorted = 0; java.util.Arrays.fill(__indices, Int.MaxValue)}
   override def sum: Double = { var s = 0.0; var i = 0; while (i < __npos) { s += __values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
@@ -103,6 +104,8 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     while (i < __npos) { ii = __indices(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
     -1
   }
+
+  override def toArray: Array[Double] = { val arr = new Array[Double](length); foreachActiveElement((i, v) =>arr(i) = v); arr }
 
   def apply(index:Int): Double = {
     // makeReadable is called in this.position
@@ -182,7 +185,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
 //  }
   
   override def toString = "SparseIndexedTensor npos="+__npos+" sorted="+_sorted+" ind="+__indices.mkString(",")+" val="+__values.mkString(",")
-  
+
   def _makeReadable(): Unit = makeReadable
 
   final private def doTheSort(): Array[Int] = {
@@ -219,6 +222,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     _sorted = j+1
     __indices = newIndices
     __values = newValues
+    for (i <- _sorted until __indices.length) { __indices(i) = Int.MaxValue }
   }
 
   final private def makeReadableIncremental(): Unit = {
