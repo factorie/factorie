@@ -29,7 +29,8 @@ class TestTensor extends cc.factorie.util.FastLogging {
     }
     //println(ts.head.toSeq)
     //println(ts.last.toSeq)
-    assert(ts.head.toSeq == ts.last.toSeq)
+    for (i <- 0 until 20) assertEquals(ts.head(i), ts.last(i), 0.001)
+    // assert(ts.head.toSeq == ts.last.toSeq)
   }
 
   @Test def testBinary(): Unit = {
@@ -72,7 +73,7 @@ class TestTensor extends cc.factorie.util.FastLogging {
     testPairwise(fill) { (t1, t2) =>
       t1 += t2
       t1.zero()
-      assert(t1.forall((0.0).==), "Failed zero check at %s, %s" format (t1.getClass, t2.getClass))
+      assert(t1.forall((0.0).==), "Failed zero check at %s, %s" format (t1.getClass.getName, t2.getClass))
       val t3 = t1.blankCopy
       t3 += t1
       t3 += t2
