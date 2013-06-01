@@ -22,7 +22,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def nerSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
-      Mention(section, span.start, span.length, span.start - span.sentence.start  + span.length - 1) //this sets the head token idx to be the last token in the span  //todo: s.start is offset in document, right?
+      Mention(section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
 
@@ -30,7 +30,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private def personalPronounSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        Mention(section, s.start + i, 1,s.start+i)
+        Mention(section, s.start + i, 1,0)
       ).toSeq
   }
 
@@ -90,8 +90,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
           // non-leaf
           case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
         }
-
-        val res = Some(Mention(section, start, length,si))
+        val headTokenIndexInSpan = si - start
+        val res = Some(Mention(section, start, length,headTokenIndexInSpan))
 
         res
       }
