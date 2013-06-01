@@ -72,7 +72,7 @@ object MutableScalableWeights {
       }
       normSq
     }
-    override def update(i: Int, v: Double): Unit = throw new Error("ScaledTensor can't be updated")
+    override def update(i: Int, v: Double): Unit = _values(i) = v / multiplier
     override def apply(i: Int): Double = _values(i) * multiplier
     override def *=(f: Double): Unit = {
       if (math.abs(multiplier) < tolerance) applyMultiplier()
@@ -117,7 +117,7 @@ object MutableScalableWeights {
     }
     def copy: Tensor = throw new Error("Method copy not defined on ScaledTensor")
     def blankCopy: Tensor = throw new Error("Method blankCopy not defined on ScaledTensor")
-    def +=(i: Int, v: Double): Unit = throw new Error("You should add tensors all at once to the ScaledTensor")
+    def +=(i: Int, v: Double): Unit =  update(i, v + apply(i))
     def zero(): Unit = {
       for (i <- 0 until length) { _values(i) = 0 }
       multiplier = 1.0
