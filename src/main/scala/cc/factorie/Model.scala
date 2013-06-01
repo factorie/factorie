@@ -61,6 +61,7 @@ trait Model {
   def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(d), fclass)
   def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
 
+  // TODO: why can't this just take the manifest for F as an implicit and avoid this explicit passing of the "Class" object? -luke
   // TODO maybe these methods should be moved to a model companion object since they do not require anything from the model -luke, akm
   def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
     factors.filter(f => f match {

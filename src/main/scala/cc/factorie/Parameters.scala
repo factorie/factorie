@@ -91,6 +91,7 @@ trait TensorSet {
   def :=(other: TensorSet): Unit = other.keys.foreach(k => this(k) := other(k))
   def *=(other: Double): Unit = keys.foreach(k => this(k) *= other)
   def toSeq: Seq[(Weights, Tensor)] = keys.zip(tensors)
+  def length = tensors.map(_.length).sum
   def toArray: Array[Double] = {
     val arr = new Array[Double](tensors.map(_.length).sum)
     var offset = 0
