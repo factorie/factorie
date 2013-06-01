@@ -94,10 +94,8 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   /** Return the position at which index occurs, or -1 if index does not occur. */
   def position(index:Int): Int = {
     makeReadable
-    var i = 0; var ii = 0
-    while (i < __npos) { ii = __indices(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
-    //while (i < _npos) { if (_indexs(i) == index) return i; i += 1 }
-    -1
+    val pos = java.util.Arrays.binarySearch(__indices, index)
+    if (pos >= 0) pos else -1
   }
   def position(index:Int, start:Int): Int = { // Just linear search for now; consider binary search with memory of last position
     makeReadable
@@ -143,6 +141,18 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         while (i < v1.__npos) {
           j2 = v2.position(v1.__indices(i), j+1)
           if (j2 >= 0) { result += v1.__values(i) * v2.__values(j2); j = j2 }
+          i += 1
+        }
+        result
+      }
+      case v:SparseBinaryTensor => {
+        v._makeReadable()
+        var i = 0
+        val len = v.activeDomainSize
+        val indices = v._indices
+        var result = 0.0
+        while (i < len) {
+          result += apply(indices(i))
           i += 1
         }
         result
@@ -232,13 +242,14 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
 
   final private def makeReadable: Unit = {
+    if (_sorted == __npos) return
     if ((_sorted <= 10) && (__npos > 0)) {
       makeReadableEmpty()
     } else {
       makeReadableIncremental()
     }
     __npos = _sorted
-    if (__npos * 1.5 > __values.length) trim()
+    // if (__npos * 1.5 > __values.length) trim()
   }
   
   // Caller is responsible for making sure there is enough capacity
@@ -254,9 +265,13 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
 
   override def update(index:Int, value:Double): Unit = {
-    val p = position(index)
-    if (p >= 0) __values(p) = value
-    else +=(index, value) 
+    if (_sorted == 0) {
+      +=(index,value)
+    } else {
+      val p = position(index)
+      if (p >= 0) __values(p) = value
+      else +=(index, value)
+    }
   }
   // Efficiently support multiple sequential additions
   override def +=(index:Int, incr:Double): Unit = {

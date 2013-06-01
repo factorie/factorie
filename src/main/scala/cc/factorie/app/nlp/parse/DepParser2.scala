@@ -8,13 +8,14 @@ import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
 import java.io.File
 import cc.factorie.util.BinarySerializer
-import cc.factorie.la.{DenseTensor2, Tensor1}
+import cc.factorie.la._
 import cc.factorie.app.classify.{SVMTrainer, MultiClassModel}
 import scala._
 import scala.Some
 import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
+import scala.Some
 
-class DepParser2 extends DocumentAnnotator {
+class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnotator {
   case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
     val leftOrRightOrNo = lrnS.toInt
@@ -35,11 +36,34 @@ class DepParser2 extends DocumentAnnotator {
   }
 
   import cc.factorie.util.CubbieConversions._
-  def save(file: File, gzip: Boolean) = BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
-  def load(file: File, gzip: Boolean) = BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  def save(file: File, gzip: Boolean) = {
+    if (useSparseTestWeights) {
+      val sparseWeights = new DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new SparseIndexedTensor1(_))
+      val denseWeights = model.evidence.value
+      denseWeights.foreachElement((i, v) => {
+        val s1 = denseWeights.index1(i)
+        val s2 = denseWeights.index2(i)
+        if (v != 0.0) sparseWeights.inner(s1) += (s2,v)
+      })
+      (0 until labelDomain.size).foreach(s => sparseWeights.inner(s).asInstanceOf[SparseIndexedTensor]._makeReadable())
+      model.evidence.set(sparseWeights)
+      BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+      model.evidence.set(denseWeights)
+    } else {
+      BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+
+    }
+  }
+    var deSerializingSparse = false
+  def load(file: File, gzip: Boolean) = {
+    if (useSparseTestWeights) deSerializingSparse = true
+    BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
+  }
   def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
   val model = new MultiClassModel {
-    val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
+    val evidence = Weights(
+      if (deSerializingSparse) new DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new SparseIndexedTensor1(_))
+      else  new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
   }
 
   def trainFromVariables(vs: Seq[ParseDecisionVariable], trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
@@ -376,8 +400,8 @@ object DepParser2 {
       val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
       val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
       val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
-      val l1 = new CmdOption("l1","1.0","FLOAT","l1 regularization weight")
-      val l2 = new CmdOption("l2","1.0","FLOAT","l2 regularization weight")
+      val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
+      val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
 
     }
     opts.parse(args)
@@ -427,8 +451,8 @@ object DepParser2 {
     var modelFolder: File = new File(modelUrl)
     val c = new DepParser2()
 
-    val l1 = 2*opts.l1.value.toDouble / sentences.length //basically, we're assuming that there are around 20 training transition examples per sentence, but then I don't want to make the penalty too small, so we multiply by 10
-    val l2 = 2*opts.l2.value.toDouble / sentences.length
+    val l1 = 2*opts.l1.value / sentences.length //basically, we're assuming that there are around 20 training transition examples per sentence, but then I don't want to make the penalty too small, so we multiply by 10
+    val l2 = 2*opts.l2.value / sentences.length
 
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
 
@@ -436,7 +460,7 @@ object DepParser2 {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
         val featuresSize = examples.head._2.domain.dimensionSize
-        SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq)
+        SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq, parallel=true)
       } else {
         val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
         val ex = examples.map(e => new LinearMultiClassExample(model.evidence,
@@ -445,6 +469,7 @@ object DepParser2 {
           LinearObjectives.sparseLogMultiClass))
         while (!trainer.isConverged) {
           trainer.processExamples(ex.shuffle)
+          println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
           testAll(c, "iteration " + trainer.iteration)
         }
       }
@@ -459,6 +484,7 @@ object DepParser2 {
       // save the initial model
       if(saveModel.value){
         println("Saving the model...")
+        println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
         c.save(modelFolder, gzip = true)
         println("...DONE")
         testAll(c)
