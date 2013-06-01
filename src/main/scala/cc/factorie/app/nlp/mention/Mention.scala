@@ -28,7 +28,7 @@ case class Mention(span: TokenSpan, headTokenIndex: Int = -1) extends Attr{
   def start: Int = span.start
   /** The number of Tokens in the mention's span. */
   def length: Int = span.length
-  assert( headTokenIndex == -1 || headTokenIndex >= 0 && headTokenIndex <= span.length,"if provided, the headTokenIndex passed to the constructure must be an offset w.r.t the start of the mention")
+  assert( headTokenIndex == -1 || headTokenIndex >= 0 && headTokenIndex <= span.length,"if provided, the headTokenIndex passed to the constructor must be an offset w.r.t the start of the mention")
   def sentence: Sentence = span.sentence
   def headToken: Token = document.asSection.tokens(headTokenIndex) // This is buggy.  If the Document has multiple Sections, this won't work. -akm
 }
