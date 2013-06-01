@@ -32,6 +32,8 @@ object MiniBatchExample {
   }
 }
 
+// TODO add EagerMiniBatchExample that accumulates at construction time rather than when accumulate is called, for threading -luke
+
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
 class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Parameters, val infer: Infer) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
@@ -78,6 +80,50 @@ class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Paramete
 //        value.accumulate(factor.assignmentScore(TargetAssignment))
 //  }
 //}
+
+class PseudomaxExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
+  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+    for (label <- labels) {
+      val factors = model.factors(label)
+      val proportions = label.proportions(factors)
+      val predIndex = proportions.maxIndex
+      // TODO: this value is wrong - the loss is not defined in terms of log-normalized proportions, but raw scores (like perceptron/svm)
+      // should we have a "scores" method like "proportions" that just goes through all possible settings and scores each?
+      if (value != null) value.accumulate(math.max(0, proportions(label.targetIntValue) - proportions(predIndex)))
+      if (gradient != null && predIndex != label.targetIntValue) {
+        val predAssignment = new DiscreteAssignment1(label, predIndex)
+        val groundAssignment = new DiscreteAssignment1(label, label.targetIntValue)
+        for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily])) {
+          gradient.accumulate(f.family.weights, f.assignmentStatistics(groundAssignment), 1.0)
+          gradient.accumulate(f.family.weights, f.assignmentStatistics(predAssignment), -1.0)
+        }
+      }
+    }
+  }
+}
+
+// NOTE this doesn't seem to work too well in initial experiments... perhaps a margin is too strong a local requirement?
+class PseudomaxMarginExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
+  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+    for (label <- labels) {
+      val factors = model.factors(label)
+      val proportionsNotAugmented = label.proportions(factors)
+      val proportions = new DenseTensor1(proportionsNotAugmented.length)
+      proportions -= (label.targetIntValue, 1.0)
+      val predIndex = proportions.maxIndex
+      // TODO: this value is wrong - see Pseudomax - luke
+      if (value != null) value.accumulate(math.max(0, proportions(label.targetIntValue) - proportions(predIndex)))
+      if (gradient != null && predIndex != label.targetIntValue) {
+        val predAssignment = new DiscreteAssignment1(label, predIndex)
+        val groundAssignment = new DiscreteAssignment1(label, label.targetIntValue)
+        for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily])) {
+          gradient.accumulate(f.family.weights, f.assignmentStatistics(groundAssignment), 1.0)
+          gradient.accumulate(f.family.weights, f.assignmentStatistics(predAssignment), -1.0)
+        }
+      }
+    }
+  }
+}
 
 // This is just like DiscreteLikelihoodExample but it loops over all variables passed in
 class PseudolikelihoodExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
