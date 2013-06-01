@@ -90,7 +90,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
           // non-leaf
           case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
         }
-        val headTokenIndexInSpan = si - start
+        val headTokenIndexInSpan = t.position - start
         val res = Some(Mention(section, start, length,headTokenIndexInSpan))
 
         res
@@ -123,7 +123,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
     var docMentions = new ArrayBuffer[Mention]
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= nerSpans(doc)                      map(  m => {m.attr += new MentionType(m,"NAM");m})
+    docMentions ++= nerSpans(doc)                      map(   m => {m.attr += new MentionType(m,"NAM");m})
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
