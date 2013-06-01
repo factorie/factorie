@@ -125,7 +125,7 @@ object WordSegmenterDemo2 {
 //    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
     trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model)))
 //    opt.finalizeWeights(model.parameters)
-//    opt.setToDense(model.parameters)
+//    opt.finalizeWeights(model.parameters)
     for (sentence <- sentences) BP.inferChainMax(sentence.asSeq.map(_.label), model)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))

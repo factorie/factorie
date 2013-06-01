@@ -268,7 +268,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       if (file != "") serialize(file + "-iter-"+iteration)
     }
     println("Finished training.")
-    opt.setToDense(DependencyModel.parameters)
+    opt.finalizeWeights(DependencyModel.parameters)
   }
 
   def parse(sent: Sentence) {

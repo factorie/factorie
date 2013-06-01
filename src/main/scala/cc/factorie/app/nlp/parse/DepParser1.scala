@@ -303,7 +303,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     }
     println("Finished training.")
     //opt.setWeightsToAverage(model.weightsSet)
-    //opt.setToDense(model.weightsSet)
+    //opt.finalizeWeights(model.weightsSet)
     // Print accuracy diagnostics
   }
 
