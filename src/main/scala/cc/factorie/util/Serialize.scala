@@ -27,7 +27,7 @@ trait CubbieConversions {
 // You can import this object to gain access to the default cubbie conversions
 object CubbieConversions extends CubbieConversions
 
-object BinarySerializer {
+object BinarySerializer extends GlobalLogging {
   private def getLazyCubbieSeq(vals: Seq[() => Cubbie]): Seq[Cubbie] = vals.view.map(_())
   // We lazily create the cubbies because, for example, model cubbies will force their model's weightsSet lazy vals
   // so we need to control the order of cubbie creation and serialization (domains are deserialized before model cubbies are even created)
@@ -80,8 +80,22 @@ object BinarySerializer {
   }
   def deserialize(cs: Seq[Cubbie], file: File, gzip: Boolean = false): Unit = {
     val stream = readFile(file, gzip)
-    for (c <- cs) deserialize(c, stream)
+    for (c <- cs) {
+      if (logger.level == Logger.DEBUG) {
+        println("Before deserializing cubbie " + c.getClass.getName)
+        System.gc()
+        val runtime = Runtime.getRuntime
+        println("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory())/(1024*1024.0*1025)) + " GB")
+      }
+      deserialize(c, stream)
+    }
     stream.close()
+    if (logger.level == Logger.DEBUG) {
+      println("After deserialization.")
+      System.gc()
+      val runtime = Runtime.getRuntime
+      println("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory())/(1024*1024.0*1025)) + " GB")
+    }
   }
 
   def writeFile(file: File, gzip: Boolean = false): DataOutputStream = {
