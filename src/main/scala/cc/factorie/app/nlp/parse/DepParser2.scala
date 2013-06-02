@@ -402,7 +402,7 @@ object DepParser2 {
       val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
       val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
       val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-
+      val useSparseTestWeights = new  CmdOption("sparse-test-weights", false,"BOOLEAN","whether to use sparse weights at test time")
     }
     opts.parse(args)
     import opts._
@@ -449,7 +449,8 @@ object DepParser2 {
 
     val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString() + ".parser"
     var modelFolder: File = new File(modelUrl)
-    val c = new DepParser2()
+
+    val c = new DepParser2(useSparseTestWeights.value)
 
     val l1 = 2*opts.l1.value / sentences.length //basically, we're assuming that there are around 20 training transition examples per sentence, but then I don't want to make the penalty too small, so we multiply by 10
     val l2 = 2*opts.l2.value / sentences.length
