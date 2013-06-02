@@ -153,6 +153,7 @@ object WithinDocCoref1 {
     val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
     val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
     val iterations = new CmdOption("iterations", 2, "INT", "Number of iterations for training")
+    val batchSize = new CmdOption("batch-size", 30, "INT", "Number of documents to tokenize at a time")
   }
   def main(args: Array[String]) {
     CorefOptions.parse(args)
@@ -168,7 +169,7 @@ object WithinDocCoref1 {
     val gazetteers = new CorefGazetteers(CorefOptions.gazetteers.value)
     println("Training")
     val coref = new WithinDocCoref1(wordnet, gazetteers)
-    coref.train(trainDocs, testDocs, CorefOptions.iterations.value)
+    coref.train(trainDocs, testDocs, CorefOptions.iterations.value, CorefOptions.batchSize.value)
     println("Serializing")
     coref.serialize(CorefOptions.model.value)
   }
@@ -177,7 +178,7 @@ object WithinDocCoref1 {
 
 class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
-  object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 1e6.toInt }
+  object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 5e5.toInt }
   class CorefModel extends Parameters {
     val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize))
   }
@@ -463,43 +464,56 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     result
   }
 
-  private def evaluate(name: String, docs: Seq[Document]) {
+  private def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
+    def docToCallable(doc: Document) = new Callable[Document] { def call() = process1(doc) }
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
+    import collection.JavaConversions._
     val b3Score = new cc.factorie.util.coref.CorefEvaluator.Metric
     val mucScore = new cc.factorie.util.coref.CorefEvaluator.Metric
-    docs.par.foreach(doc => {
-      val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
-      val predMap = process1(doc).attr[GenericEntityMap[Mention]]
-      val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
-      val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      this synchronized {
-        b3Score.microAppend(b3)
-        mucScore.microAppend(muc)
-      }
-    })
+    val batched = docs.grouped(batchSize).toSeq
+    for (batch <- batched) {
+      val docs = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
+      docs.foreach(doc => {
+        val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
+        val predMap = doc.attr[GenericEntityMap[Mention]]
+        val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
+        val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+          b3Score.microAppend(b3)
+          mucScore.microAppend(muc)
+      })
+    }
+    pool.shutdown()
     println("          PRECISION RECALL F1")
     println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
     println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
   }
 
-  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, nThreads: Int = 2) {
-    println("Generating training examples")
-    val examples = generateTrainingExamples(docs, nThreads)
-    domain.freeze()
-    println("Train")
+  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
     val trainer = new OnlineTrainer(model.parameters, opt, maxIterations=trainIterations)
-    while (!trainer.isConverged) {
-      trainer.processExamples(rng.shuffle(examples))
+    for (it <- 0 until trainIterations) {
+      var batch = 0
+      val batches = rng.shuffle(docs).grouped(batchSize).toSeq
+      for (documents <- batches) {
+        println("Generating training examples batch "+ batch + " of " + batches.length)
+        val examples = generateTrainingExamples(documents, nThreads)
+        println("Trainining ")
+        trainer.logEveryN = examples.length-1
+        for (i <- 0 until 2) trainer.processExamples(examples)
+        batch += 1
+      }
+      domain.freeze()
       opt.setWeightsToAverage(model.parameters)
-      println("Iteration " + trainer.iteration)
-      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt))
-      evaluate("TEST  MICRO", testDocs)
+      println("Iteration " + it)
+      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
+      evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
       opt.unSetWeightsToAverage(model.parameters)
     }
     opt.setWeightsToAverage(model.parameters)
     // TODO: calibrate the threshold of the model to balance precision and recall
   }
+
   import cc.factorie.util.CubbieConversions._
   def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
   def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
