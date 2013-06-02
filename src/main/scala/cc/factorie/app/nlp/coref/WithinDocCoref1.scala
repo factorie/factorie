@@ -5,12 +5,12 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Document, Token}
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
-import cc.factorie.la.{WeightsMapAccumulator, DenseTensor1}
+import cc.factorie.la.{Tensor1, WeightsMapAccumulator, DenseTensor1}
 import cc.factorie.app.nlp.pos.PTBPosLabel
-import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
+import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
+import cc.factorie.util.{DefaultCmdOptions, BinarySerializer, DoubleAccumulator}
 import java.util.concurrent.Callable
-import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, ParameterAveraging}
+import cc.factorie.optimize._
 import java.io.File
 
 /**
@@ -133,6 +133,45 @@ object WithinDocCoref1 {
     else
       g2
   }
+
+  def truthEntityMap(mentions: MentionList) = {
+    val map = new GenericEntityMap[Mention]
+    mentions.foreach(m => map.addMention(m, map.numMentions.toLong))
+    val entities = mentions.groupBy(_.attr[Entity])
+    entities.flatMap(_._2.sliding(2)).foreach(p => {
+      if (p.size == 2) map.addCoreferentPair(p(0), p(1))
+    })
+    map
+  }
+
+  object CorefOptions extends DefaultCmdOptions {
+    val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
+    val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
+    val wordnet = new CmdOption("wordnet", "wordnet/", "STRING", "The path to wordnet files")
+    val gazetteers = new CmdOption("gazetteers", "factorie-nlp-resources/src/main/resources/cc/factorie/app/nlp/lexicon/", "STRING", "Path to the gazetteers")
+    val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
+    val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
+    val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
+    val iterations = new CmdOption("iterations", 2, "INT", "Number of iterations for training")
+  }
+  def main(args: Array[String]) {
+    CorefOptions.parse(args)
+    println("Loading data")
+    val allTrain = ConllCorefLoader.loadWithParse(CorefOptions.train.value)
+    val allTest = ConllCorefLoader.loadWithParse(CorefOptions.test.value)
+    val trainDocs = allTrain.take((allTrain.length*CorefOptions.trainPortion.value).toInt)
+    val testDocs = allTest.take((allTest.length*CorefOptions.testPortion.value).toInt)
+    println("Training on " + trainDocs.length + " with " + (trainDocs.map(_.attr[MentionList].length).sum/trainDocs.length.toFloat) + " mentions per document")
+    println("Loading wordnet")
+    val wordnet = new WordNet(CorefOptions.wordnet.value)
+    println("Loading gazetteers")
+    val gazetteers = new CorefGazetteers(CorefOptions.gazetteers.value)
+    println("Training")
+    val coref = new WithinDocCoref1(wordnet, gazetteers)
+    coref.train(trainDocs, testDocs, CorefOptions.iterations.value)
+    println("Serializing")
+    coref.serialize(CorefOptions.model.value)
+  }
 }
 
 
@@ -150,7 +189,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
 
   def process1(document: Document) = {
     val facMents = document.attr[MentionList].toSeq
-    val ments = facMents.map(new LRCorefMention(_, 0, 0, wn, corefGazetteers))
+    val ments = facMents.map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection, wn, corefGazetteers))
     val out = new GenericEntityMap[Mention]
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
@@ -164,7 +203,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     document
   }
 
-  class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.Attr {
+  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.Attr {
     import WithinDocCoref1._
     val _head =  mention.document.asSection.tokens(mention.headTokenIndex)
     def headToken: Token = _head
@@ -198,7 +237,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
 
   }
 
-  class LRFeatureCache(m: LRCorefMention, wordNet: WordNet, corefGazetteers: CorefGazetteers) {
+  private class LRFeatureCache(m: LRCorefMention, wordNet: WordNet, corefGazetteers: CorefGazetteers) {
     lazy val hasSpeakWord = corefGazetteers.hasSpeakWord(m.mention, 2)
     lazy val wnLemma = wordNet.lemma(m.headToken.string, "n")
     lazy val wnSynsets = wordNet.synsets(wnLemma).toSet
@@ -287,10 +326,10 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     }
   }
 
-  class LeftToRightCorefFeatures extends FeatureVectorVariable[String] { def domain = self.domain }
-  def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
+  private class LeftToRightCorefFeatures extends FeatureVectorVariable[String] { def domain = self.domain; override def skipNonCategories = true }
+  private def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
 
-  def getFeatures(mention1: LRCorefMention, mention2: LRCorefMention) = {
+  private def getFeatures(mention1: LRCorefMention, mention2: LRCorefMention) = {
     val f = new LeftToRightCorefFeatures
 
     f += "BIAS"
@@ -363,7 +402,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     f
   }
 
-  def processOneMention(orderedMentions: Seq[LRCorefMention], mentionIndex: Int): Int = {
+  private def processOneMention(orderedMentions: Seq[LRCorefMention], mentionIndex: Int): Int = {
     val m1 = orderedMentions(mentionIndex)
     var bestCand = -1
     var bestScore = Double.MinValue
@@ -392,29 +431,22 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     bestCand
   }
 
-  class HingeClassifierExample(model: CorefModel, val features: LeftToRightCorefFeatures, val label: Int) extends cc.factorie.optimize.Example {
-    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
-      val pred = model.weights.value.dot(features.tensor)
-      if (pred*label < 1.0) {
-        if (gradient ne null) gradient.accumulate(model.weights, features.tensor, label)
-        if (value ne null) value.accumulate(pred*label-1.0)
-      }
-    }
-  }
-
-  def oneDocExample(doc: Document): Seq[HingeClassifierExample] = {
-    val mentions = doc.attr[MentionList].map(new LRCorefMention(_, 0, 0, wn, corefGazetteers))
-    val examplesList = collection.mutable.ListBuffer[HingeClassifierExample]()
+  private def oneDocExample(doc: Document): Seq[Example] = {
+    val mentions = doc.attr[MentionList].map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection, wn, corefGazetteers))
+    val examplesList = collection.mutable.ListBuffer[Example]()
     for (anaphorIndex <- 0 until mentions.length) {
       val m1 = mentions(anaphorIndex)
       var numAntecedent = 0
       var i = anaphorIndex - 1
-      while (i >= 0) {
+      while (i >= 0 && numAntecedent < 2) {
         val m2 = mentions(i)
         val label = m1.parentEntity == m2.parentEntity
-        if (!label) numAntecedent += 1
+        if (label) numAntecedent += 1
         if (!(m2.isPRO && !m1.isPRO) && (label || (numAntecedent < 3))) {
-          examplesList += new HingeClassifierExample(model, getFeatures(m1, m2), if (label) 1 else -1)
+          examplesList += new LinearBinaryExample(model.weights,
+            getFeatures(m1, m2).value.asInstanceOf[Tensor1],
+            if (label) 1 else -1,
+            LinearObjectives.hingeScaledBinary(negSlackRescale=3.0))
         }
         i -= 1
       }
@@ -422,25 +454,54 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     examplesList
   }
 
-  def generateTrainingExamples(docs: Seq[Document], nThreads: Int): Seq[HingeClassifierExample] = {
-    def docToCallable(doc: Document) = new Callable[Seq[HingeClassifierExample]] { def call() = oneDocExample(doc) }
+  private def generateTrainingExamples(docs: Seq[Document], nThreads: Int): Seq[Example] = {
+    def docToCallable(doc: Document) = new Callable[Seq[Example]] { def call() = oneDocExample(doc) }
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     import collection.JavaConversions._
-    pool.invokeAll(docs.map(docToCallable)).flatMap(_.get)
+    val result = pool.invokeAll(docs.map(docToCallable)).flatMap(_.get)
+    pool.shutdown()
+    result
   }
 
-  def train(docs: Seq[Document], nThreads: Int = 2) {
+  private def evaluate(name: String, docs: Seq[Document]) {
+    val b3Score = new cc.factorie.util.coref.CorefEvaluator.Metric
+    val mucScore = new cc.factorie.util.coref.CorefEvaluator.Metric
+    docs.par.foreach(doc => {
+      val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
+      val predMap = process1(doc).attr[GenericEntityMap[Mention]]
+      val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
+      val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+      this synchronized {
+        b3Score.microAppend(b3)
+        mucScore.microAppend(muc)
+      }
+    })
+    println("          PRECISION RECALL F1")
+    println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
+    println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
+  }
+
+  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, nThreads: Int = 2) {
+    println("Generating training examples")
     val examples = generateTrainingExamples(docs, nThreads)
     domain.freeze()
+    println("Train")
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
-    val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, opt)
-    while (!trainer.isConverged) trainer.processExamples(rng.shuffle(examples))
+    val trainer = new OnlineTrainer(model.parameters, opt, maxIterations=trainIterations)
+    while (!trainer.isConverged) {
+      trainer.processExamples(rng.shuffle(examples))
+      opt.setWeightsToAverage(model.parameters)
+      println("Iteration " + trainer.iteration)
+      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt))
+      evaluate("TEST  MICRO", testDocs)
+      opt.unSetWeightsToAverage(model.parameters)
+    }
     opt.setWeightsToAverage(model.parameters)
     // TODO: calibrate the threshold of the model to balance precision and recall
   }
   import cc.factorie.util.CubbieConversions._
-  def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file, "w")) }
+  def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
   def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
 }
 
