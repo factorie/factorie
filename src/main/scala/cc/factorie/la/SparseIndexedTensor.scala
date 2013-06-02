@@ -57,20 +57,16 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
 
   private def setCapacity(cap:Int): Unit = {
     require(cap >= __npos)
-    val newInd = new Array[Int](cap)
-    val newVal = new Array[Double](cap)
-    System.arraycopy(__indices, 0, newInd, 0, __npos)
-    System.arraycopy(__values, 0, newVal, 0, __npos)
-    __indices = newInd; __values = newVal
-    for (i <- __npos until cap) { __indices(i) = Int.MaxValue }
+    __indices = java.util.Arrays.copyOf(__indices, cap)
+    __values = java.util.Arrays.copyOf(__values, cap)
   }
   def ensureCapacity(cap:Int): Unit = if (__indices.length < cap) setCapacity(math.max(cap, __indices.length + __indices.length/2))
   def trim(): Unit = setCapacity(__npos)
 
   // unsafe - call makeReadable first
   // TODO There must already be functions somewhere that do this.
-  private def copyarray(a:Array[Double]): Array[Double] = { if (a eq null) return null; val r = new Array[Double](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
-  private def copyarray(a:Array[Int]): Array[Int] = { if (a eq null) return null; val r = new Array[Int](a.length); System.arraycopy(a, 0, r, 0, a.length); r } 
+  private def copyarray(a:Array[Double]): Array[Double] = { if (a eq null) null else java.util.Arrays.copyOf(a, a.length) }
+  private def copyarray(a:Array[Int]): Array[Int] = { if (a eq null) null else java.util.Arrays.copyOf(a, a.length) }
   def copyInto(t:SparseIndexedTensor): Unit = t match {
     case t: ArraySparseIndexedTensor =>
       t.__values = copyarray(__values); t.__indices = copyarray(__indices); t._positions = copyarray(_positions); t.__npos = __npos; t._sorted = _sorted
@@ -82,20 +78,20 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { makeReadable; var i = 0; while (i < __npos) { f(__indices(i), __values(i)); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = {
     makeReadable
-    new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
+    new Iterator[(Int,Double)] { // Must not change _indices and _values during iteration!
       var i = 0
       def hasNext = i < __npos
       def next() = { i += 1 ; (__indices(i-1), __values(i-1)) }
     }
   }
   // TODO need to assert that _sorted < __npos always. Add a "checkInvariants" method?? -luke
-  override def zero(): Unit = { __npos = 0; _sorted = 0; java.util.Arrays.fill(__indices, Int.MaxValue)}
+  override def zero(): Unit = { __npos = 0; _sorted = 0 }
   override def sum: Double = { var s = 0.0; var i = 0; while (i < __npos) { s += __values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
   def position(index:Int): Int = {
     makeReadable
-    val pos = java.util.Arrays.binarySearch(__indices, index)
+    val pos = java.util.Arrays.binarySearch(__indices, 0, _sorted, index)
     if (pos >= 0) pos else -1
   }
   def position(index:Int, start:Int): Int = { // Just linear search for now; consider binary search with memory of last position
@@ -163,27 +159,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       case v:DoubleSeq => { var result = 0.0; var p = 0; while (p < __npos) { result += v(__indices(p)) * __values(p); p += 1 }; result }
     }
   }
-  
-  // Consider using bit shifting and only one array for this!
-  // How many bits are in the mantissa of a Double?  Enough to also keep the index?
-  
-  // Sort _indexs & _values between start and end; does not modify positions outside that range.
-  // Return the number of duplicate indices.  
-//  @inline private def sort(start:Int, end:Int): Int = {
-//    throw new Error("Not yet implemented")
-//    var cp = start
-//    while (cp < end) {
-//      val ci = __indices(cp)
-//      val cv = __values(cp)
-//      var i = cp - 1
-//      while (i >= 0 && __indices(i) >= ci) {
-//        val tmpi =
-//        i -= 1
-//      }
-//    }
-//    0
-//  }
-  
+
   override def toString = "SparseIndexedTensor npos="+__npos+" sorted="+_sorted+" ind="+__indices.mkString(",")+" val="+__values.mkString(",")
 
   def _makeReadable(): Unit = makeReadable
@@ -193,9 +169,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     val newIndices = new Array[Int](__npos)
     val len = __npos; var i = 0
     while (i < len) { newIndices(i) = i; i += 1}
-    val __indicesCopy = new Array[Int](__npos)
-    System.arraycopy(__indices, 0, __indicesCopy, 0, __npos)
-    FastSorting.quickSort(keys = __indicesCopy, values = newIndices)
+    FastSorting.quickSort(keys = java.util.Arrays.copyOf(__indices, __npos), values = newIndices)
     newIndices
   }
 
@@ -222,7 +196,6 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     _sorted = j+1
     __indices = newIndices
     __values = newValues
-    for (i <- _sorted until __indices.length) { __indices(i) = Int.MaxValue }
   }
 
   final private def makeReadableIncremental(): Unit = {
@@ -438,19 +411,5 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
 
   def sizeHint(size: Int): Unit = ensureCapacity(size)
-
-//
-//  // TODO Use copyInto instead?
-//  def cloneFrom(t:SparseIndexedTensor): Unit = t match {
-//    case t: ArraySparseIndexedTensor =>
-//      makeReadable
-//      //t._length = _length
-//      //t._sizeProxy = _sizeProxy
-//      t.__npos = __npos
-//      t._sorted = _sorted
-//      t.__values = __values.clone
-//      t.__indices = __indices.clone
-//      // TODO Deal with _positions, once is it implemented
-//  }
 }
 
