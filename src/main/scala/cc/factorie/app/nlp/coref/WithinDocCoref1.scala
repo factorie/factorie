@@ -1,16 +1,16 @@
 package cc.factorie.app.nlp.coref
 
+import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
+import cc.factorie.optimize._
+import cc.factorie.la.{Tensor1, DenseTensor1}
+import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.mention.{MentionList, Mention, Entity}
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Document, Token}
-import cc.factorie.app.strings.Stopwords
-import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
-import cc.factorie.la.{Tensor1, WeightsMapAccumulator, DenseTensor1}
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
-import cc.factorie.util.{DefaultCmdOptions, BinarySerializer, DoubleAccumulator}
+import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
 import java.util.concurrent.Callable
-import cc.factorie.optimize._
 import java.io.File
 
 /**
@@ -23,7 +23,7 @@ object WithinDocCoref1 {
   val properSet = Set("NNP", "NNPS")
   val nounSet = Seq("NN", "NNS")
   val posSet = Seq("POS")
-  val posTagsSet = Set("PRP", "PRP$", "WP", "WP$")
+  val proSet = Set("PRP", "PRP$", "WP", "WP$")
   val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
 
   val maleHonors = Set("mr", "mister")
@@ -39,8 +39,7 @@ object WithinDocCoref1 {
   val neuterPron = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
   val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
 
-  val allPronouns = maleHonors ++ femaleHonors ++ neuterWN ++ malePron ++ femalePron ++ neuterPron ++ personPron
-
+  // a guess at the gender of a nominal mention
   def namGender(m: Mention, corefGazetteers: CorefGazetteers): Char = {
     val fullhead = m.span.phrase.trim.toLowerCase
     var g = 'u'
@@ -81,6 +80,7 @@ object WithinDocCoref1 {
     g
   }
 
+  // a guess at a gender of a mention which is a common noun
   def nomGender(m: Mention, wn: WordNet): Char = {
     val fullhead = m.span.phrase.toLowerCase
     if (wn.isHypernymOf("male", fullhead)) 'm'
@@ -90,7 +90,7 @@ object WithinDocCoref1 {
     else 'u'
   }
 
-
+  // a guess at a gender of a pronominal mention
   def proGender(m: Mention): Char = {
     val pronoun = m.span.phrase.toLowerCase
     if (malePron.contains(pronoun)) 'm'
@@ -100,7 +100,7 @@ object WithinDocCoref1 {
     else 'u'
   }
 
-
+  // contructs a ground-truth entity map from a set of Mentions
   def truthEntityMap(mentions: MentionList) = {
     val map = new GenericEntityMap[Mention]
     mentions.foreach(m => map.addMention(m, map.numMentions.toLong))
@@ -146,12 +146,10 @@ object WithinDocCoref1 {
 class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
   object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 5e5.toInt }
-  class CorefModel extends Parameters {
-    val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize))
-  }
-  val model = new CorefModel
+  // We want to start training before reading all features, so we need to depend only on the domain's max size
+  object model extends Parameters { val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize)) }
 
-  def prereqAttrs = Seq(classOf[PTBPosLabel], classOf[MentionList])
+  def prereqAttrs = Seq(classOf[PTBPosLabel], classOf[MentionList]) // how to specify that we need entity types?
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
 
   def process1(document: Document) = {
@@ -169,49 +167,57 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     document
   }
 
-  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.Attr {
-    import WithinDocCoref1._
-    val _head =  mention.document.asSection.tokens(mention.headTokenIndex)
-    def headToken: Token = _head
-    def parentEntity = mention.attr[Entity]
-    def headPos = headToken.posLabel.categoryValue
-    def span = mention.span
-    def document = mention.document
+  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
+    val rng = new scala.util.Random(0)
+    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
+    // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
+    val trainer = new OnlineTrainer(model.parameters, opt, maxIterations=trainIterations)
+    for (it <- 0 until trainIterations) {
+      val batches = rng.shuffle(docs).grouped(batchSize).toSeq
+      for (batch <- 0 until batches.length; documents = batches(batch)) {
+        println("Generating training examples batch "+ batch + " of " + batches.length)
+        val examples = generateTrainingExamples(documents, nThreads)
+        println("Training ")
+        trainer.logEveryN = examples.length-1
+        for (i <- 0 until 2) trainer.processExamples(examples)
+      }
+      domain.freeze()
+      opt.setWeightsToAverage(model.parameters)
+      println("Iteration " + it)
+      // we don't evaluate on the whole training set because it feels wasteful, still it's nice to see some results
+      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
+      evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
+      opt.unSetWeightsToAverage(model.parameters)
+    }
+    opt.setWeightsToAverage(model.parameters)
+  }
 
+  import cc.factorie.util.CubbieConversions._
+  def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
+  def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
+
+  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: CorefGazetteers) {
+    import WithinDocCoref1._
+    def parentEntity = mention.attr[Entity]
+    def headPos = mention.headToken.posLabel.categoryValue
+    def span = mention.span
+
+    // All the code which follows is essentially cached per-mention information used to compute features.
+    // All the pairwise features are simple combinations of these per-mention features, so having them here
+    // removes them from the inner loop.
     def isPossessive = posSet.contains(headPos)
     def isNoun = nounSet.contains(headPos)
     def isProper = properSet.contains(headPos)
-    def isPRO = posTagsSet.contains(headPos)
-    def isRelativeFor(other: LRCorefMention) =
-      (relativizers.contains(lowerCasePhrase) &&
-        ((other.span.head == other.span.last.next) ||
-          ((other.span.head == span.last.next(2) && span.last.next.string.equals(","))
-            || (other.span.head == span.last.next(2) && span.last.next.string.equals(",")))))
-
-
-    def areRelative(m2: LRCorefMention): Boolean = isRelativeFor(m2) || m2.isRelativeFor(this)
-
-    def areAppositive(m2: LRCorefMention): Boolean = {
-        ((m2.isProper || isProper)
-          && ((m2.span.last.next(2) == span.head && m2.span.last.next.string.equals(","))
-              || (span.last.next(2) == m2.span.head && span.last.next.string.equals(","))))
-      }
-
-    def lowerCasePhraseMatch(mention2: LRCorefMention) =
-      lowerCasePhrase.contains(mention2.lowerCasePhrase) || mention2.lowerCasePhrase.contains(lowerCasePhrase)
-
-    def areHyp(mention2: LRCorefMention) =
-      wnSynsets.exists(mention2.wnHypernyms.contains) || mention2.wnSynsets.exists(wnHypernyms.contains)
-
+    def isPRO = proSet.contains(headPos)
     val hasSpeakWord = corefGazetteers.hasSpeakWord(mention, 2)
-    val wnLemma = wordNet.lemma(headToken.string, "n")
+    val wnLemma = wordNet.lemma(mention.headToken.string, "n")
     val wnSynsets = wordNet.synsets(wnLemma).toSet
     val wnHypernyms = wordNet.hypernyms(wnLemma)
     val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
     val nounWords: Set[String] =
         span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
     val lowerCasePhrase: String = span.phrase.toLowerCase
-    val lowerCaseHead: String = headToken.string.toLowerCase
+    val lowerCaseHead: String = mention.headToken.string.toLowerCase
     val lowerCaseFirst: String = span.head.string.toLowerCase
     val headPhraseTrim: String = span.phrase.trim
     val nonDeterminerWords: Seq[String] =
@@ -290,7 +296,27 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
         }
     }
 
+    // These are some actual feature functions. Not sure where else to put them.
+    def isRelativeFor(other: LRCorefMention) =
+      (relativizers.contains(lowerCasePhrase) &&
+        ((other.span.head == other.span.last.next) ||
+          ((other.span.head == span.last.next(2) && span.last.next.string.equals(","))
+            || (other.span.head == span.last.next(2) && span.last.next.string.equals(",")))))
 
+
+    def areRelative(m2: LRCorefMention): Boolean = isRelativeFor(m2) || m2.isRelativeFor(this)
+
+    def areAppositive(m2: LRCorefMention): Boolean = {
+        ((m2.isProper || isProper)
+          && ((m2.span.last.next(2) == span.head && m2.span.last.next.string.equals(","))
+              || (span.last.next(2) == m2.span.head && span.last.next.string.equals(","))))
+      }
+
+    def lowerCasePhraseMatch(mention2: LRCorefMention) =
+      lowerCasePhrase.contains(mention2.lowerCasePhrase) || mention2.lowerCasePhrase.contains(lowerCasePhrase)
+
+    def areHyp(mention2: LRCorefMention) =
+      wnSynsets.exists(mention2.wnHypernyms.contains) || mention2.wnSynsets.exists(wnHypernyms.contains)
   }
 
   private class LeftToRightCorefFeatures extends FeatureVectorVariable[String] { def domain = self.domain; override def skipNonCategories = true }
@@ -314,9 +340,9 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     f += (if (mention1.areAppositive(mention2)) "AreAppositive" else "~AreAppositive")
     f += (if (mention1.hasSpeakWord && mention2.hasSpeakWord) "BothSpeak" else "~BothSpeak")
     f += (if (mention1.areRelative(mention2)) "AreRelative" else "~AreRelative")
-    f += "PosPronoun:" + mention2.headPos + (if (mention2.isPRO) mention1.headToken.string else mention1.headPos)
+    f += "PosPronoun:" + mention2.headPos + (if (mention2.isPRO) mention1.mention.headToken.string else mention1.headPos)
     f += "PredictedEntityTypes:" + mention1.predictEntityType+mention2.predictEntityType
-    f += "HeadWords:" + mention1.headToken.string+mention2.headToken.string
+    f += "HeadWords:" + mention1.mention.headToken.string+mention2.mention.headToken.string
     f += (if (mention1.span.sentence == mention2.span.sentence) "SameSentence" else "~SameSentence")
     f += (if (mention1.lowerCaseFirst == mention2.lowerCaseFirst) "BeginMatchLC" else "~BeginMatchLC")
     f += (if (mention1.lowerCaseHead == mention2.lowerCaseHead) "EndMatchLC" else "~EndMatchLC")
@@ -325,7 +351,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     f += (if (mention1.isPRO) "1IsPronoun" else "~1IsPronoun")
     f += (if (mention1.demonym != "" && mention1.demonym == mention2.demonym) "DemonymMatch" else "~DemonymMatch")
     f += "Capitalizations:" + mention1.capitalization +"_" +  mention2.capitalization
-    f += "HeadPoss:" + mention2.headToken.posLabel.value + "_" + mention1.headToken.posLabel.value
+    f += "HeadPoss:" + mention2.mention.headToken.posLabel.value + "_" + mention1.mention.headToken.posLabel.value
     f += (if (mention1.possibleAcronyms.exists(mention2.possibleAcronyms.contains)) "AcronymMatch" else "~AcronymMatch")
 
     val sdist = bin(mention1.sentenceNum - mention2.sentenceNum, 1 to 10)
@@ -336,6 +362,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     f
   }
 
+  // processing one mention at testing time
   private def processOneMention(orderedMentions: Seq[LRCorefMention], mentionIndex: Int): Int = {
     val m1 = orderedMentions(mentionIndex)
     var bestCand = -1
@@ -344,10 +371,8 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     var numPositivePairs = 0
     while (j >= 0 && (numPositivePairs < 100)) {
       val m2 = orderedMentions(j)
-      val cataphora = m2.isPRO && !m1.isPRO
-      if (!cataphora) {
-        val candFeats = getFeatures(orderedMentions(mentionIndex), orderedMentions(j))
-        val score = model.weights.value dot candFeats.value
+      if (!m2.isPRO || m1.isPRO) { // we try to link if either the later mention is a pronoun or the earlier one isn't
+        val score = model.weights.value dot getFeatures(orderedMentions(mentionIndex), orderedMentions(j)).value
         if (score > 0.0) {
           numPositivePairs += 1
           if (bestScore <= score) {
@@ -361,6 +386,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     bestCand
   }
 
+  // processing one document at training time
   private def oneDocExample(doc: Document): Seq[Example] = {
     val mentions = doc.attr[MentionList].map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection, wn, corefGazetteers))
     val examplesList = collection.mutable.ListBuffer[Example]()
@@ -414,41 +440,12 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
           mucScore.microAppend(muc)
         })
       }
-      println("          PRECISION RECALL F1")
+      println("                 PR   RE   F1")
       println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
       println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
     } finally {
       pool.shutdown()
     }
   }
-
-  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
-    val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
-    val trainer = new OnlineTrainer(model.parameters, opt, maxIterations=trainIterations)
-    for (it <- 0 until trainIterations) {
-      var batch = 0
-      val batches = rng.shuffle(docs).grouped(batchSize).toSeq
-      for (documents <- batches) {
-        println("Generating training examples batch "+ batch + " of " + batches.length)
-        val examples = generateTrainingExamples(documents, nThreads)
-        println("Training ")
-        trainer.logEveryN = examples.length-1
-        for (i <- 0 until 2) trainer.processExamples(examples)
-        batch += 1
-      }
-      domain.freeze()
-      opt.setWeightsToAverage(model.parameters)
-      println("Iteration " + it)
-      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
-      evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
-      opt.unSetWeightsToAverage(model.parameters)
-    }
-    opt.setWeightsToAverage(model.parameters)
-  }
-
-  import cc.factorie.util.CubbieConversions._
-  def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
-  def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
 }
 
