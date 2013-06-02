@@ -54,37 +54,27 @@ object WithinDocCoref1 {
     var honor = ""
     if (corefGazetteers.honors.contains(word0)) {
       honor = word0
-      if (words.length >= 3)
-        firstName = words(1)
-    } else if (words.length >= 2) {
-      firstName = word0
-    } else {
-      firstName = word0
+      if (words.length >= 3) firstName = words(1)
+      else if (words.length >= 2) firstName = word0
+      else firstName = word0
     }
 
     // determine gender using honorifics
-    if (maleHonors.contains(honor))
-      return 'm'
-    else if (femaleHonors.contains(honor))
-      return 'f'
+    if (maleHonors.contains(honor)) return 'm'
+    else if (femaleHonors.contains(honor)) return 'f'
 
     // determine from first name
-    if (corefGazetteers.maleFirstNames.contains(firstName))
-      g = 'm'
-    else if (corefGazetteers.femaleFirstNames.contains(firstName))
-      g = 'f'
-    else if (corefGazetteers.lastNames.contains(lastWord))
-      g = 'p'
+    if (corefGazetteers.maleFirstNames.contains(firstName)) g = 'm'
+    else if (corefGazetteers.femaleFirstNames.contains(firstName)) g = 'f'
+    else if (corefGazetteers.lastNames.contains(lastWord)) g = 'p'
 
     if (corefGazetteers.cities.contains(fullhead) || corefGazetteers.countries.contains(fullhead)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p"))
-        return 'u'
+      if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
 
     if (corefGazetteers.orgClosings.contains(lastWord)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p"))
-        return 'u'
+      if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
 
@@ -93,46 +83,23 @@ object WithinDocCoref1 {
 
   def nomGender(m: Mention, wn: WordNet): Char = {
     val fullhead = m.span.phrase.toLowerCase
-    if (wn.isHypernymOf("male", fullhead))
-      'm'
-    else if (wn.isHypernymOf("female", fullhead))
-      'f'
-    else if (wn.isHypernymOf("person", fullhead))
-      'p'
-    else if (neuterWN.exists(wn.isHypernymOf(_, fullhead)))
-      'n'
-    else
-      'u'
+    if (wn.isHypernymOf("male", fullhead)) 'm'
+    else if (wn.isHypernymOf("female", fullhead)) 'f'
+    else if (wn.isHypernymOf("person", fullhead)) 'p'
+    else if (neuterWN.exists(wn.isHypernymOf(_, fullhead))) 'n'
+    else 'u'
   }
 
 
   def proGender(m: Mention): Char = {
     val pronoun = m.span.phrase.toLowerCase
-    if (malePron.contains(pronoun))
-      'm'
-    else if (femalePron.contains(pronoun))
-      'f'
-    else if (neuterPron.contains(pronoun))
-      'n'
-    else if (personPron.contains(pronoun))
-      'p'
-    else
-      'u'
+    if (malePron.contains(pronoun)) 'm'
+    else if (femalePron.contains(pronoun)) 'f'
+    else if (neuterPron.contains(pronoun)) 'n'
+    else if (personPron.contains(pronoun)) 'p'
+    else 'u'
   }
 
-
-  def strongerOf(g1: Char, g2: Char): Char = {
-    if ((g1 == 'm' || g1 == 'f') && (g2 == 'p' || g2 == 'u'))
-      g1
-    else if ((g2 == 'm' || g2 == 'f') && (g1 == 'p' || g1 == 'u'))
-      g2
-    else if ((g1 == 'n' || g1 == 'p') && g2 == 'u')
-      g1
-    else if ((g2 == 'n' || g2 == 'p') && g1 == 'u')
-      g2
-    else
-      g2
-  }
 
   def truthEntityMap(mentions: MentionList) = {
     val map = new GenericEntityMap[Mention]
@@ -183,7 +150,6 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize))
   }
   val model = new CorefModel
-  var threshold = 0.0
 
   def prereqAttrs = Seq(classOf[PTBPosLabel], classOf[MentionList])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
@@ -194,7 +160,6 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val out = new GenericEntityMap[Mention]
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
-      val m1 = ments(i)
       val bestCand = processOneMention(ments, i)
       if (bestCand > -1) {
         out.addCoreferentPair(ments(i).mention, ments(bestCand).mention)
@@ -211,17 +176,14 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     def parentEntity = mention.attr[Entity]
     def headPos = headToken.posLabel.categoryValue
     def span = mention.span
-
     def document = mention.document
 
-    var cache = new LRFeatureCache(this, wordNet, corefGazetteers)
-    def clearCache() = cache = new LRFeatureCache(this, wordNet, corefGazetteers)
     def isPossessive = posSet.contains(headPos)
     def isNoun = nounSet.contains(headPos)
     def isProper = properSet.contains(headPos)
     def isPRO = posTagsSet.contains(headPos)
     def isRelativeFor(other: LRCorefMention) =
-      (relativizers.contains(cache.lowerCaseHead) &&
+      (relativizers.contains(lowerCasePhrase) &&
         ((other.span.head == other.span.last.next) ||
           ((other.span.head == span.last.next(2) && span.last.next.string.equals(","))
             || (other.span.head == span.last.next(2) && span.last.next.string.equals(",")))))
@@ -235,50 +197,52 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
               || (span.last.next(2) == m2.span.head && span.last.next.string.equals(","))))
       }
 
+    def lowerCasePhraseMatch(mention2: LRCorefMention) =
+      lowerCasePhrase.contains(mention2.lowerCasePhrase) || mention2.lowerCasePhrase.contains(lowerCasePhrase)
 
-  }
+    def areHyp(mention2: LRCorefMention) =
+      wnSynsets.exists(mention2.wnHypernyms.contains) || mention2.wnSynsets.exists(wnHypernyms.contains)
 
-  private class LRFeatureCache(m: LRCorefMention, wordNet: WordNet, corefGazetteers: CorefGazetteers) {
-    lazy val hasSpeakWord = corefGazetteers.hasSpeakWord(m.mention, 2)
-    lazy val wnLemma = wordNet.lemma(m.headToken.string, "n")
-    lazy val wnSynsets = wordNet.synsets(wnLemma).toSet
-    lazy val wnHypernyms = wordNet.hypernyms(wnLemma)
-    lazy val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
-    lazy val nounWords: Set[String] =
-        m.span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
-    lazy val lowerCaseHead: String = m.span.phrase.toLowerCase
-    lazy val headPhraseTrim: String = m.span.phrase.trim
-    lazy val nonDeterminerWords: Seq[String] =
-      m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
-    lazy val initials: String =
-        m.span.tokens.map(_.string).filterNot(corefGazetteers.orgClosings.contains(_)).filter(t => t(0).isUpper).map(_(0)).mkString("")
-    lazy val predictEntityType: String = "" // TODO: have predicted entity type in factorie somehow. m.attr[PredictedEntityType].str
-    lazy val demonym: String = corefGazetteers.demonymMap.getOrElse(headPhraseTrim, "")
+    val hasSpeakWord = corefGazetteers.hasSpeakWord(mention, 2)
+    val wnLemma = wordNet.lemma(headToken.string, "n")
+    val wnSynsets = wordNet.synsets(wnLemma).toSet
+    val wnHypernyms = wordNet.hypernyms(wnLemma)
+    val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
+    val nounWords: Set[String] =
+        span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
+    val lowerCasePhrase: String = span.phrase.toLowerCase
+    val lowerCaseHead: String = headToken.string.toLowerCase
+    val lowerCaseFirst: String = span.head.string.toLowerCase
+    val headPhraseTrim: String = span.phrase.trim
+    val nonDeterminerWords: Seq[String] =
+      span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
+    val predictEntityType: String = mention.attr[EntityType].categoryValue
+    val demonym: String = corefGazetteers.demonymMap.getOrElse(headPhraseTrim, "")
 
-    lazy val capitalization: Char = {
-        if (m.span.length == 1 && m.span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
-            val s = m.span.value.filter(_.posLabel.categoryValue.startsWith("N")).map(_.string.trim)
+    val capitalization: Char = {
+        if (span.length == 1 && span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
+            val s = span.value.filter(_.posLabel.categoryValue.startsWith("N")).map(_.string.trim)
             if (s.forall(_.forall(_.isUpper))) 'a'
             else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
             else 'f'
       }
-    lazy val gender: Char = {
-      if (m.isProper) {
-        WithinDocCoref1.namGender(m.mention, corefGazetteers)
-      } else if (m.isPossessive) {
-        val gnam = WithinDocCoref1.namGender(m.mention, corefGazetteers)
-        val gnom = WithinDocCoref1.nomGender(m.mention, wordNet)
+    val gender: Char = {
+      if (isProper) {
+        WithinDocCoref1.namGender(mention, corefGazetteers)
+      } else if (isPossessive) {
+        val gnam = WithinDocCoref1.namGender(mention, corefGazetteers)
+        val gnom = WithinDocCoref1.nomGender(mention, wordNet)
         if (gnam == 'u' && gnom != 'u') gnom else gnam
-      } else if (m.isNoun) {
-        WithinDocCoref1.nomGender(m.mention, wordNet)
-      } else if (m.isPRO) {
-        WithinDocCoref1.proGender(m.mention)
+      } else if (isNoun) {
+        WithinDocCoref1.nomGender(mention, wordNet)
+      } else if (isPRO) {
+        WithinDocCoref1.proGender(mention)
       } else {
         'u'
       }
     }
-    lazy val number: Char = {
-      val fullhead = lowerCaseHead
+    val number: Char = {
+      val fullhead = lowerCasePhrase
       if (WithinDocCoref1.singPron.contains(fullhead)) {
         's'
       } else if (WithinDocCoref1.pluPron.contains(fullhead)) {
@@ -287,13 +251,13 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
         's'
       } else if (WithinDocCoref1.pluDet.exists(fullhead.startsWith)) {
         'p'
-      } else if (m.isProper) {
+      } else if (isProper) {
         if (!fullhead.contains(" and ")) {
           's'
         } else {
           'u'
         }
-      } else if (m.isNoun || m.isPossessive) {
+      } else if (isNoun || isPossessive) {
           val maybeSing = if (corefGazetteers.isSingular(fullhead)) true else false
           val maybePlural = if (corefGazetteers.isPlural(fullhead)) true else false
 
@@ -301,8 +265,8 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
             's'
           } else if (maybePlural && !maybeSing) {
             'p'
-          } else if (m.headPos.startsWith("N")) {
-            if (m.headPos.endsWith("S")) {
+          } else if (headPos.startsWith("N")) {
+            if (headPos.endsWith("S")) {
               'p'
             } else {
               's'
@@ -314,17 +278,19 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
         'u'
       }
     }
-    lazy val acronym: Set[String] = {
-      if (m.span.length == 1)
+    val possibleAcronyms: Set[String] = {
+      if (span.length == 1)
           Set.empty
         else {
-          val alt1 = m.span.value.map(_.string.trim).filter(_.exists(_.isLetter)) // tokens that have at least one letter character
+          val alt1 = span.value.map(_.string.trim).filter(_.exists(_.isLetter)) // tokens that have at least one letter character
           val alt2 = alt1.filterNot(t => Stopwords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
           val alt3 = alt1.filter(_.head.isUpper) // alt1 tokens that are capitalized
           val alt4 = alt2.filter(_.head.isUpper)
           Seq(alt1, alt2, alt3, alt4).map(_.map(_.head).mkString.toLowerCase).toSet
         }
     }
+
+
   }
 
   private class LeftToRightCorefFeatures extends FeatureVectorVariable[String] { def domain = self.domain; override def skipNonCategories = true }
@@ -334,71 +300,38 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val f = new LeftToRightCorefFeatures
 
     f += "BIAS"
-    f += "gmc" + mention1.cache.gender + "" +  mention2.cache.gender
-    f += "nms" + mention1.cache.number + "" + mention2.cache.number
-    if (mention1.cache.nonDeterminerWords == mention2.cache.nonDeterminerWords) f += "hms"
-    else f += "hmsf"
-    f += "mt1" + mention1.headPos
-    f += "mt2" + mention2.headPos
-    if (!mention1.cache.nounWords.intersect(mention2.cache.nounWords).isEmpty) f += "pmhm"
-    else f += "pmhmf"
-    if (mention1.cache.lowerCaseHead.contains(mention2.cache.lowerCaseHead) || mention2.cache.lowerCaseHead.contains(mention1.cache.lowerCaseHead))
-      f += "sh"
-    else f += "shf"
-    if (mention1.cache.wnSynsets.exists(mention2.cache.wnSynsets.contains))
-      f += "asyn"
-    else f += "asynf"
-    if (mention1.cache.wnSynsets.exists(mention2.cache.wnAntonyms.contains))
-      f += "aan"
-    else f += "aanf"
-    if (mention1.cache.wnSynsets.exists(mention2.cache.wnHypernyms.contains) || mention2.cache.wnSynsets.exists(mention1.cache.wnHypernyms.contains))
-      f += "ahyp"
-    else f += "ahypf"
-    if (mention1.cache.wnHypernyms.exists(mention2.cache.wnHypernyms.contains)) f += "hsh"
-    else f += "hshf"
-    if (mention1.areAppositive(mention2))
-      f += "aA"
-    else f += "aAf"
-    if (mention1.cache.hasSpeakWord && mention2.cache.hasSpeakWord)
-      f += "bs"
-    else f += "bsf"
-    if (mention1.areRelative(mention2))
-      f += "rpf"
-    else f += "rpff"
-    f += "mtpw" + (if (mention2.isPRO) mention2.headPos + mention1.headToken.string else mention2.headPos + mention1.headPos)
-    f += "etm" + mention1.cache.predictEntityType+mention2.cache.predictEntityType
-    f += "lhp" + mention1.headToken.string+mention2.headToken.string
-    if (mention1.span.sentence == mention2.span.sentence)
-      f += "ss"
+    f += "Genders:" + mention1.gender + "" +  mention2.gender
+    f += "Numbers:" + mention1.number + "" + mention2.number
+    f += (if (mention1.nonDeterminerWords == mention2.nonDeterminerWords)  "sameNDwords" else "~sameNDWords")
+    f += "pos1:" + mention1.headPos
+    f += "pos2:" + mention2.headPos
+    f += (if (!mention1.nounWords.intersect(mention2.nounWords).isEmpty) "shareNouns" else "~shareNouns")
+    f += (if (mention1.lowerCasePhraseMatch(mention2)) "phraseMatch" else "~phraseMatch")
+    f += (if (mention1.wnSynsets.exists(mention2.wnSynsets.contains)) "Synonyms" else "~Synonyms")
+    f += (if (mention1.wnSynsets.exists(mention2.wnAntonyms.contains)) "Antonyms" else "~Antonyms")
+    f += (if (mention1.areHyp(mention2)) "AreHypernyms" else "~AreHypernyms")
+    f += (if (mention1.wnHypernyms.exists(mention2.wnHypernyms.contains)) "ShareHypernyms" else "~ShareHypernyms")
+    f += (if (mention1.areAppositive(mention2)) "AreAppositive" else "~AreAppositive")
+    f += (if (mention1.hasSpeakWord && mention2.hasSpeakWord) "BothSpeak" else "~BothSpeak")
+    f += (if (mention1.areRelative(mention2)) "AreRelative" else "~AreRelative")
+    f += "PosPronoun:" + mention2.headPos + (if (mention2.isPRO) mention1.headToken.string else mention1.headPos)
+    f += "PredictedEntityTypes:" + mention1.predictEntityType+mention2.predictEntityType
+    f += "HeadWords:" + mention1.headToken.string+mention2.headToken.string
+    f += (if (mention1.span.sentence == mention2.span.sentence) "SameSentence" else "~SameSentence")
+    f += (if (mention1.lowerCaseFirst == mention2.lowerCaseFirst) "BeginMatchLC" else "~BeginMatchLC")
+    f += (if (mention1.lowerCaseHead == mention2.lowerCaseHead) "EndMatchLC" else "~EndMatchLC")
+    f += (if (mention1.span.head.string == mention2.span.head.string) "BeginMatch" else "~BeginMatch")
+    f += (if (mention1.span.last.string == mention2.span.last.string) "EndMatch" else "~EndMatch")
+    f += (if (mention1.isPRO) "1IsPronoun" else "~1IsPronoun")
+    f += (if (mention1.demonym != "" && mention1.demonym == mention2.demonym) "DemonymMatch" else "~DemonymMatch")
+    f += "Capitalizations:" + mention1.capitalization +"_" +  mention2.capitalization
+    f += "HeadPoss:" + mention2.headToken.posLabel.value + "_" + mention1.headToken.posLabel.value
+    f += (if (mention1.possibleAcronyms.exists(mention2.possibleAcronyms.contains)) "AcronymMatch" else "~AcronymMatch")
 
-    if (mention1.span.head.string.toLowerCase == mention2.span.head.string.toLowerCase)
-      f += "bM"
-    else f += "bMf"
-    if (mention1.span.last.string.toLowerCase == mention2.span.last.string.toLowerCase)
-      f += "eM"
-    else f += "eMf"
-    if (mention1.span.head.string == mention2.span.head.string)
-      f += "bMc"
-    else f += "bMcf"
-    if (mention1.span.last.string == mention2.span.last.string)
-      f += "eMc"
-    else f += "eMcf"
-    if (mention1.isPRO)
-      f += "pa"
-    else f += "paf"
-
-    val binTokenSentenceDistances = false
     val sdist = bin(mention1.sentenceNum - mention2.sentenceNum, 1 to 10)
-    if (binTokenSentenceDistances) for (sd <- 1 to sdist) f += "sd" + sd
-    else f += "sd" + sdist
+    for (sd <- 1 to sdist) { f += "SentenceDistance>=" + sd}
     val tdist = bin(mention1.tokenNum - mention2.tokenNum, Seq(1, 2, 3, 4, 5, 10, 20, 50, 100, 200))
-    if (binTokenSentenceDistances) for (td <- 1 to tdist) f += "td" + td
-    else f += "td" + tdist
-    if (mention1.cache.demonym != "" && mention1.cache.demonym == mention2.cache.demonym) f += "dM"
-    else f += "dMf"
-    f += "cap" + mention1.cache.capitalization +"_" +  mention2.cache.capitalization
-    f += "hpos" + mention2.headToken.posLabel.value + "_" + mention1.headToken.posLabel.value
-    f += "am" + mention1.cache.acronym.exists(mention2.cache.acronym.contains)
+    for (td <- 1 to tdist) f += "TokenDistance>=" + td
 
     f
   }
@@ -407,19 +340,15 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val m1 = orderedMentions(mentionIndex)
     var bestCand = -1
     var bestScore = Double.MinValue
-
     var j = mentionIndex - 1
     var numPositivePairs = 0
     while (j >= 0 && (numPositivePairs < 100)) {
       val m2 = orderedMentions(j)
-
       val cataphora = m2.isPRO && !m1.isPRO
-
       if (!cataphora) {
         val candFeats = getFeatures(orderedMentions(mentionIndex), orderedMentions(j))
-
         val score = model.weights.value dot candFeats.value
-        if (score > threshold) {
+        if (score > 0.0) {
           numPositivePairs += 1
           if (bestScore <= score) {
             bestCand = j
@@ -458,34 +387,39 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
   private def generateTrainingExamples(docs: Seq[Document], nThreads: Int): Seq[Example] = {
     def docToCallable(doc: Document) = new Callable[Seq[Example]] { def call() = oneDocExample(doc) }
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
-    import collection.JavaConversions._
-    val result = pool.invokeAll(docs.map(docToCallable)).flatMap(_.get)
-    pool.shutdown()
-    result
+    try {
+      import collection.JavaConversions._
+      pool.invokeAll(docs.map(docToCallable)).flatMap(_.get)
+    } finally {
+      pool.shutdown()
+    }
   }
 
   private def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
     def docToCallable(doc: Document) = new Callable[Document] { def call() = process1(doc) }
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
-    import collection.JavaConversions._
-    val b3Score = new cc.factorie.util.coref.CorefEvaluator.Metric
-    val mucScore = new cc.factorie.util.coref.CorefEvaluator.Metric
-    val batched = docs.grouped(batchSize).toSeq
-    for (batch <- batched) {
-      val docs = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
-      docs.foreach(doc => {
-        val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
-        val predMap = doc.attr[GenericEntityMap[Mention]]
-        val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
-        val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+    try {
+      import collection.JavaConversions._
+      val b3Score = new cc.factorie.util.coref.CorefEvaluator.Metric
+      val mucScore = new cc.factorie.util.coref.CorefEvaluator.Metric
+      val batched = docs.grouped(batchSize).toSeq
+      for (batch <- batched) {
+        val docs = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
+        docs.foreach(doc => {
+          val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
+          val predMap = doc.attr[GenericEntityMap[Mention]]
+          val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
+          val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
           b3Score.microAppend(b3)
           mucScore.microAppend(muc)
-      })
+        })
+      }
+      println("          PRECISION RECALL F1")
+      println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
+      println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
+    } finally {
+      pool.shutdown()
     }
-    pool.shutdown()
-    println("          PRECISION RECALL F1")
-    println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
-    println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
   }
 
   def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
@@ -498,7 +432,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
       for (documents <- batches) {
         println("Generating training examples batch "+ batch + " of " + batches.length)
         val examples = generateTrainingExamples(documents, nThreads)
-        println("Trainining ")
+        println("Training ")
         trainer.logEveryN = examples.length-1
         for (i <- 0 until 2) trainer.processExamples(examples)
         batch += 1
@@ -511,7 +445,6 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
       opt.unSetWeightsToAverage(model.parameters)
     }
     opt.setWeightsToAverage(model.parameters)
-    // TODO: calibrate the threshold of the model to balance precision and recall
   }
 
   import cc.factorie.util.CubbieConversions._
