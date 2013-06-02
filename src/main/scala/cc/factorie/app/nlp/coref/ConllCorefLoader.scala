@@ -9,9 +9,8 @@ package cc.factorie.app.nlp.coref
  */
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.hcoref._
 import cc.factorie.app.nlp.pos.{PTBPosDomain, PTBPosLabel}
-import mention.{MentionList, Mention}
+import mention.{MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
 
@@ -77,7 +76,7 @@ object ConllCorefLoader {
     var docTokInd: Int = -1
     val mentions = Map[String, Stack[Int]]() // map of (entityId, tokenIndex) of unfinished mentions in a sentence
     var numMentions = 0 // total number mentions in a document
-    val entities = Map[String, NamedEntity]()
+    val entities = Map[String, Entity]()
     val startMap = mutable.HashMap[String,Stack[Int]]()
     var sentenceId: Int = -1
     var tokenId: Int = -1
@@ -204,7 +203,7 @@ object ConllCorefLoader {
                       found = true
                       val key = fields(0) + "-" + number
                       m.attr += new EntityKey(key)
-                      val ent = entities.getOrElseUpdate(key, new NamedEntity(word))
+                      val ent = entities.getOrElseUpdate(key, new Entity(word))
                       m.attr += ent
                       closedEntities(i) = null
                     }
@@ -216,7 +215,7 @@ object ConllCorefLoader {
                 numNegEntities += 1
                 val key = fields(0) + "-" + (-numNegEntities)
                 m.attr += new EntityKey(key)
-                val ent = entities.getOrElseUpdate(key, new NamedEntity(word))
+                val ent = entities.getOrElseUpdate(key, new Entity(word))
                 m.attr += ent
               }
             }
@@ -241,7 +240,7 @@ object ConllCorefLoader {
           numMentions += 1
           val key = fields(0) + "-" + number
           m.attr += new EntityKey(key)
-          val ent = entities.getOrElseUpdate(key, new NamedEntity(word))
+          val ent = entities.getOrElseUpdate(key, new Entity(word))
           m.attr += ent
         }
         prevWord = word

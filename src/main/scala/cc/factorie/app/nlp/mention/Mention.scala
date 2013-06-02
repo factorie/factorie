@@ -38,6 +38,7 @@ class MentionType(val mention:Mention, targetValue:String) extends LabeledCatego
   def domain = OntonotesMentionTypeDomain
 }
 
+class Entity(val name: String = "")
 
 object OntonotesMentionTypeDomain extends CategoricalDomain[String] {
   this ++= Seq(

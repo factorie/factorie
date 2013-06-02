@@ -1,9 +1,8 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.mention.{MentionList, Mention}
+import cc.factorie.app.nlp.mention.{MentionList, Mention, Entity}
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Document, Token}
-import cc.factorie.app.nlp.hcoref.Entity
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
 import cc.factorie.la.{WeightsMapAccumulator, DenseTensor1}
@@ -169,7 +168,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     import WithinDocCoref1._
     val _head =  mention.document.asSection.tokens(mention.headTokenIndex)
     def headToken: Token = _head
-    def parentEntity = attr[Entity]
+    def parentEntity = mention.attr[Entity]
     def headPos = headToken.posLabel.categoryValue
     def span = mention.span
 

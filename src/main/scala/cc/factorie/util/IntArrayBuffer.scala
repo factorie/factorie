@@ -96,7 +96,7 @@ trait ProtectedIntArrayBuffer {
   }
   /** Search the array '_arr' for the index at which value x could be inserted in sorted order.
       @param start the lowest index to consider
-      @parm end one plus the highest index that already contains data
+      @param end one plus the highest index that already contains data
       @return the index into '_arr' such that _arr(index) == x, 
       or ind(index-1) < x < ind(index)
       or index == end.
