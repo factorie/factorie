@@ -2,6 +2,8 @@ package cc.factorie.util.coref
 
 import collection.Set
 import collection.mutable.{Set => MSet, HashSet}
+import cc.factorie.la.DenseTensor2
+import cc.factorie.util.AssignmentSolver
 
 /**
  * @author sameer
@@ -10,10 +12,13 @@ import collection.mutable.{Set => MSet, HashSet}
 object CorefEvaluator {
 
   class Metric {
-    var precNumerator = 0.0;
-    var precDenominator = 0.0;
-    var recallNumerator = 0.0;
-    var recallDenominator = 0.0;
+    var precNumerator = 0.0
+    var precDenominator = 0.0
+    var recallNumerator = 0.0
+    var recallDenominator = 0.0
+    var f1Overridden = false
+    var overrideF1 = 0.0
+    var overrideF1Den = 0.0
 
     def precision: Double = {
       if (precDenominator == 0.0) {
@@ -32,10 +37,13 @@ object CorefEvaluator {
     }
 
     def f1: Double = {
-      val r: Double = recall
-      val p: Double = precision
-      if(p + r == 0.0) 0.0
-      else (2 * p * r) / (p + r)
+      if (f1Overridden) overrideF1/overrideF1Den
+      else {
+        val r: Double = recall
+        val p: Double = precision
+        if(p + r == 0.0) 0.0
+        else (2 * p * r) / (p + r)
+      }
     }
 
     def toString(prefix: String): String = {
@@ -54,6 +62,11 @@ object CorefEvaluator {
       precDenominator += 1.0
       recallNumerator += m.recall
       recallDenominator += 1.0
+      if (m.f1Overridden) {
+        f1Overridden = true
+        overrideF1 += m.overrideF1
+        overrideF1Den += m.overrideF1Den
+      }
     }
   }
 
@@ -211,6 +224,82 @@ object CorefEvaluator {
           pred.getMentions(predId).size - trueEntities.size
         m.precDenominator += pred.getMentions(predId).size - 1
       }
+      m
+    }
+  }
+
+  class CeafE(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m: Metric = new Metric
+      val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
+      val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
+      val weights = new DenseTensor2(predEntities.length, truthEntities.length)
+      for (i <- 0 until predEntities.length; j <- 0 until truthEntities.length) {
+        val ei = pred.entities(predEntities(i))
+        val ej = truth.entities(truthEntities(j))
+        weights(i, j) = 2.0*ei.intersect(ej).size /(ei.size.toDouble + ej.size)
+      }
+      val matching = new AssignmentSolver(weights).solve()
+      val num = matching.map(e => weights(e._1,e._2)).sum
+      m.precNumerator = num
+      m.recallNumerator = num
+      m.precDenominator = predEntities.length
+      m.recallDenominator = truthEntities.length
+      m
+    }
+  }
+
+  class CeafM(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m: Metric = new Metric
+      val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
+      val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
+      val weights = new DenseTensor2(predEntities.length, truthEntities.length)
+      for (i <- 0 until predEntities.length; j <- 0 until truthEntities.length) {
+        val ei = pred.entities(predEntities(i))
+        val ej = truth.entities(truthEntities(j))
+        weights(i, j) = ei.intersect(ej).size
+      }
+      val matching = new AssignmentSolver(weights).solve()
+      val num = matching.map(e => weights(e._1,e._2)).sum
+      m.precNumerator = num
+      m.recallNumerator = num
+      m.precDenominator = predEntities.map(pred.entities(_).size).sum
+      m.recallDenominator = truthEntities.map(truth.entities(_).size).sum
+      m
+    }
+  }
+
+  // Following the specification in http://stel.ub.edu/semeval2010-coref/sites/default/files/blanc-draft3.pdf
+  object Blanc extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m = new Metric
+      var rc = 0.0 // coreferent and reported as such
+      var wc = 0.0 // non-coreferent and reported as coreferent
+      var wn = 0.0 // coreferent and reported as non-coreferent
+      var rn = 0.0 // non-coreferent and reported as such
+      val totalMentions = pred.getMentionIds.union(truth.getMentionIds).toSeq
+      for (i <- 0 until totalMentions.length; j <- 0 until i; mi = totalMentions(i); mj = totalMentions(j)) {
+        val predicted = pred.contains(mi) && pred.contains(mj) && pred.getEntity(mi) == pred.getEntity(mj)
+        val truthed = truth.contains(mi) && truth.contains(mj) && truth.getEntity(mi) == truth.getEntity(mj)
+        if (predicted && truthed) rc += 1
+        else if (predicted && !truthed) wc += 1
+        else if (!predicted && truthed) wn += 1
+        else rn += 1
+      }
+      val Pc = if (rc+wc > 0) rc/(rc+wc) else 0
+      val Rc = if (rc+wn > 0) rc/(rc+wn) else 0
+      val Pn = if (rn+wn > 0) rn/(rn+wn) else 0
+      val Rn = if (rn+wc > 0) rn/(rn+wc) else 0
+      m.precNumerator = 0.5*(Pc+Pn)
+      m.recallNumerator = 0.5*(Rc+Rn)
+      m.precDenominator = 1
+      m.recallDenominator = 1
+      val Fc = 2.0*Pc*Rc/(Pc+Rc)
+      val Fn = 2.0*Pn*Rn/(Pn+Rn)
+      m.f1Overridden = true
+      m.overrideF1 = 0.5*(Fc + Fn)
+      m.overrideF1Den += 1.0
       m
     }
   }
