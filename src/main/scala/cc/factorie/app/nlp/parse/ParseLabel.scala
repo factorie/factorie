@@ -16,6 +16,7 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 import java.lang.StringBuffer
+import collection.mutable.ArrayBuffer
 
 // Representation for a dependency parse
 //
@@ -118,6 +119,10 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
       _parents(child.position - sentence.start) = parent.position - sentence.start
     }
   }
+
+  //TODO: all of the  following methods are inefficient if the parse tree is fixed, and various things
+  //can be precomputed.
+
   /** Return the sentence index of the first token whose parent is 'parentIndex' */
   private def firstChild(parentIndex:Int): Int = {
     var i = 0
@@ -127,16 +132,37 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
     }
     return -1
   }
+
+
   /** Return a list of tokens who are the children of the token at sentence position 'parentIndex' */
   def children(parentIndex:Int): Seq[Token] = {
-    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    getChildrenIndices(parentIndex).map(i => sentence.tokens(i))
+  }
+
+  def getChildrenIndices(parentIndex:Int): Seq[Int] = {
+    val result = new ArrayBuffer[Int]
     var i = 0
     while (i < _parents.length) {
-      if (_parents(i) == parentIndex) result += sentence.tokens(i)
+      if (_parents(i) == parentIndex) result += i
       i += 1
     }
     result
   }
+
+  def subtree(parentIndex:Int): Seq[Token] = {
+    getSubtreeInds(parentIndex).map(sentence.tokens(_))
+  }
+
+  def getSubtreeInds(parentIndex: Int): Seq[Int] = {
+    val result = new ArrayBuffer[Int]()
+    result += parentIndex
+    result ++= getChildrenIndices(parentIndex).flatMap(getSubtreeInds(_)).distinct
+    result
+  }
+
+
+
+
   def leftChildren(parentIndex:Int): Seq[Token] = {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
