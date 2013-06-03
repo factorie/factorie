@@ -55,6 +55,11 @@ object CorefEvaluator {
       precDenominator += m.precDenominator
       recallNumerator += m.recallNumerator
       recallDenominator += m.recallDenominator
+      if (m.f1Overridden) {
+        f1Overridden = true
+        overrideF1 += m.overrideF1
+        overrideF1Den += m.overrideF1Den
+      }
     }
 
     def macroAppend(m: Metric) {
@@ -295,8 +300,8 @@ object CorefEvaluator {
       m.recallNumerator = 0.5*(Rc+Rn)
       m.precDenominator = 1
       m.recallDenominator = 1
-      val Fc = 2.0*Pc*Rc/(Pc+Rc)
-      val Fn = 2.0*Pn*Rn/(Pn+Rn)
+      val Fc = if (Pc+Rc > 0) 2.0*Pc*Rc/(Pc+Rc) else 0.0
+      val Fn = if (Pn+Rn > 0) 2.0*Pn*Rn/(Pn+Rn) else 0.0
       m.f1Overridden = true
       m.overrideF1 = 0.5*(Fc + Fn)
       m.overrideF1Den += 1.0
