@@ -66,8 +66,10 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   def position: Int = _position
   
   def hasNext = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else _chain != null && _position + 1 < _chain.length
+  def hasNext(n:Int) = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else _chain != null && _position + n < _chain.length
   def next: This = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else if (_position + 1 < _chain.length) chain(_position + 1) else null.asInstanceOf[This]
   def hasPrev = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else _chain != null && _position > 0
+  def hasPrev(n:Int) = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else _chain != null && _position - n >= 0
   def prev: This = if (_position == -1) throw new IllegalStateException("ChainLink position not yet set") else if (_position > 0) chain(_position - 1) else null.asInstanceOf[This]
   def getPrev: Option[This] = { val p = prev; if (p eq null) None else Some(p) }
   def getNext: Option[This] = { val n = next; if (n eq null) None else Some(n) }

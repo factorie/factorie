@@ -173,7 +173,7 @@ object Coref1 {
   def main(args:Array[String]): Unit = {
     // println("Entity running...")
     //val doc = LoadPlainText.fromString("USAToday", docString.takeWhile(_ != '\n'), false)
-    val doc = LoadPlainText.fromString("USAToday", docString1.take(800), false)
+    val doc = LoadPlainText.fromString(docString1.take(800)).head
     //for (token <- doc) println(token.string)
     brainDeadMentionExtraction(doc)
     corefInit(doc)

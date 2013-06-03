@@ -214,9 +214,8 @@ class POS3 extends DocumentAnnotator {
     val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations=numIterations)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
-      val examples = sentences.shuffle.flatMap(sentence => {
-        (0 until sentence.length).map(i => new TokensClassifierExample(sentence.tokens, model,
-            if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))})
+      val examples = sentences.shuffle.map(sentence => 
+        new TokensClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
       trainer.processExamples(examples)
       exampleSetsToPrediction = doBootstrap
       var total = 0.0
@@ -226,12 +225,12 @@ class POS3 extends DocumentAnnotator {
         val t0 = System.currentTimeMillis()
         predict(s)
         totalTime += (System.currentTimeMillis()-t0)
-        for (i <- 0 until s.length) {
+        for (token <- s.tokens) {
           total += 1
-          if (s.tokens(i).attr[PTBPosLabel].valueIsTarget) correct += 1.0
+          if (token.attr[PTBPosLabel].valueIsTarget) correct += 1.0
         }
       })
-      println("Accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
+      println("Test accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
     }
     if (saveModel) serialize(modelFile)
   }
@@ -267,7 +266,7 @@ object POS3 {
     } else if (opts.runText.wasInvoked) {
       val pos = new POS3
       pos.deserialize(opts.modelFile.value)
-      val doc = cc.factorie.app.nlp.LoadPlainText.fromFile(new java.io.File(opts.runText.value), segmentSentences=true)
+      val doc = cc.factorie.app.nlp.LoadPlainText(cc.factorie.app.nlp.segment.ClearSegmenter).fromFile(new java.io.File(opts.runText.value)).head
       pos.process(doc)
       println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
     }

@@ -237,7 +237,7 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
       "U-WORK_OF_ART"
   )
   // Convert from an intValue in this domain to an intValue in the OntonotesNerDomain
-  def bilouSuffixIntValue(bilouIntValue:Int): Int = ((bilouIntValue - 1) / 4) + 1 
+  def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
   freeze()
 }
 class BilouOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) {

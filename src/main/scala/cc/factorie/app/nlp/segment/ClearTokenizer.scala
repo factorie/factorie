@@ -114,6 +114,7 @@ class EnglishTokenizer(cfg: EnglishTokenizerConfig) extends AbstractTokenizer {
   private val S_AMPERSAND = "_APSD_"
   private val S_APOSTROPHY = "_AOOR_"
   private val N_PROTECTED = S_PROTECTED.length()
+  private val ALT_APOSTROPHY = "\u2019" // TODO incorporate this, and other alternative quote and dash characters. -akm
 
   private val P_DELIM = Pattern.compile(S_DELIM)
   private val P_HYPHEN = Pattern.compile("-")

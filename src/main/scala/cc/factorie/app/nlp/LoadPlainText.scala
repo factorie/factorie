@@ -16,7 +16,26 @@ package cc.factorie.app.nlp
 import java.io.File
 import cc.factorie.app.strings.StringSegmenter
 
-object LoadPlainText {
+case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null) extends Load with LoadDirectory {
+  def fromSource(source:io.Source): Seq[Document] = Seq(annotator.process(new Document(source.mkString).setName(documentName)))
+  def fromDirectory(dir:File): Seq[Document] = (for (file <- files(dir)) yield fromFile(file)).flatten
+  def files(directory:File): Seq[File] = {
+    if (!directory.exists) throw new Error("File "+directory+" does not exist")
+    if (directory.isFile) return List(directory)
+    val result = new scala.collection.mutable.ArrayBuffer[File]
+    for (entry <- directory.listFiles) {
+      if (entry.isFile) result += entry
+      else if (entry.isDirectory) result ++= files(entry)
+    }
+    result
+  }
+}
+
+object LoadPlainText extends LoadPlainText(annotator = NoopDocumentAnnotator, documentName = null)
+
+
+
+object OldLoadPlainText {
   
   def fromString(name: String, contents: String): Document = new Document(contents).setName(name)
   
