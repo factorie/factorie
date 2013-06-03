@@ -426,12 +426,13 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     try {
       import collection.JavaConversions._
-      val b3Score = new cc.factorie.util.coref.CorefEvaluator.Metric
-      val mucScore = new cc.factorie.util.coref.CorefEvaluator.Metric
-      val ceafE = new cc.factorie.util.coref.CorefEvaluator.Metric
-      val ceafM = new cc.factorie.util.coref.CorefEvaluator.Metric
+      val b3Score = new CorefEvaluator.Metric
+      val mucScore = new CorefEvaluator.Metric
+      val ceafE = new CorefEvaluator.Metric
+      val ceafM = new CorefEvaluator.Metric
       val ceafEEval = new CorefEvaluator.CeafE()
       val ceafMEval = new CorefEvaluator.CeafM()
+      val blanc = new CorefEvaluator.Metric
       val batched = docs.grouped(batchSize).toSeq
       for (batch <- batched) {
         val docs = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
@@ -442,17 +443,20 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
           val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
           val ce = ceafEEval.evaluate(predMap, trueMap)
           val cm = ceafMEval.evaluate(predMap, trueMap)
+          val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
           b3Score.microAppend(b3)
           mucScore.microAppend(muc)
           ceafE.microAppend(ce)
           ceafM.microAppend(cm)
+          blanc.macroAppend(bl)
         })
       }
-      println("                 PR    RE   F1")
-      println(f"$name%s  B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
-      println(f"$name%s MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
-      println(f"$name%s C-E  ${100*ceafE.precision}%2.2f ${100*ceafE.recall}%2.2f ${100*ceafE.f1}%2.2f ")
-      println(f"$name%s C-M  ${100*ceafM.precision}%2.2f ${100*ceafM.recall}%2.2f ${100*ceafM.f1}%2.2f ")
+      println("                   PR    RE   F1")
+      println(f"$name%s    B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
+      println(f"$name%s   MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
+      println(f"$name%s   C-E  ${100*ceafE.precision}%2.2f ${100*ceafE.recall}%2.2f ${100*ceafE.f1}%2.2f ")
+      println(f"$name%s   C-M  ${100*ceafM.precision}%2.2f ${100*ceafM.recall}%2.2f ${100*ceafM.f1}%2.2f ")
+      println(f"$name%s BLANC  ${100*blanc.precision}%2.2f ${100*blanc.recall}%2.2f ${100*blanc.f1}%2.2f ")
     } finally {
       pool.shutdown()
     }
