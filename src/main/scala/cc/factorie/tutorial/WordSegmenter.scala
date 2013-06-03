@@ -131,7 +131,7 @@ object WordSegmenterDemo {
     var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
     //var sampler = new VariableSettingsSampler[Label](model); val predictor = new SamplingMaximizer(sampler)
-    val predictor = new IteratedConditionalModes[Label](model)
+    val predictor = new IteratedConditionalModes(model)
     
     // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")

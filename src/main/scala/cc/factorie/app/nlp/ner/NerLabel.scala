@@ -89,6 +89,33 @@ object BilouConllNerDomain extends CategoricalDomain[String] {
 class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 
+object OntonotesNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+      "O",
+      "CARDINAL",
+      "DATE",
+      "EVENT",
+      "FAC",
+      "GPE",
+      "LANGUAGE",
+      "LAW",
+      "LOC",
+      "MONEY",
+      "NORP",
+      "ORDINAL",
+      "ORG",
+      "PERCENT",
+      "PERSON",
+      "PRODUCT",
+      "QUANTITY",
+      "TIME",
+      "WORK_OF_ART"
+  )
+  freeze()
+}
+class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }
+
+
 object BioOntonotesNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
       "O",
@@ -209,7 +236,12 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
       "L-WORK_OF_ART",
       "U-WORK_OF_ART"
   )
+  // Convert from an intValue in this domain to an intValue in the OntonotesNerDomain
+  def bilouSuffixIntValue(bilouIntValue:Int): Int = ((bilouIntValue - 1) / 4) + 1 
   freeze()
 }
-class BilouOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouOntonotesNerDomain }
+class BilouOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) {
+  def domain = BilouOntonotesNerDomain
+  def baseCategoryValue: String = if (intValue == 0) "O" else categoryValue.drop(2)
+}
 

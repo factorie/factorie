@@ -82,7 +82,7 @@ object DocumentClassifier3 {
     val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(v, model))
     val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AROW(model))
     (1 to 100).foreach(i => trainer.processExamples(examples))
-    val predictor = new IteratedConditionalModes[Label](model)
+    val predictor = new IteratedConditionalModes(model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
     println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))

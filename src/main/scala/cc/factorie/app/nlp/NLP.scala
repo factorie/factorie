@@ -21,7 +21,8 @@ object NLP {
       val pos3 = new CmdOption("pos3", "/Users/mccallum/tmp/pos-model", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS3(value) }
       val wnlemma = new CmdOption("wnlemma", "/Users/mccallum/tmp/dict", "WordNet-DIR", "Annotate lemma") { override def invoke = annotators += new cc.factorie.app.nlp.lemma.WordNetLemmatizer(value) }
       val mention1 = new CmdOption("mention1", null, null, "Annotate noun mention") { override def invoke = annotators += cc.factorie.app.nlp.mention.NounMention1 }
-      val ner3 = new CmdOption("ner3", "/Users/mccallum/tmp/ner-model", "MODELFILE", "Annotate NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER3(value) }
+      val ner2 = new CmdOption("ner2", "/Users/mccallum/tmp/ner-model", "MODELFILE", "Annotate Ontonotes NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER2(value) }
+      val ner3 = new CmdOption("ner3", "/Users/mccallum/tmp/ner-model", "MODELFILE", "Annotate CoNLL 2003 NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER3(value) }
       val parser1 = new CmdOption("parser1", "/Users/mccallum/tmp/parser-model", "MODELFILE", "Annotate dependency parse") { override def invoke = annotators += new cc.factorie.app.nlp.parse.DepParser1(value) }
     }
     opts.parse(args)

@@ -361,7 +361,7 @@ class ChainNer2 {
 	  } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
       val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new AdaGrad)
-      val predictor = new IteratedConditionalModes[ChainNerLabel](model) // {temperature=0.01}
+      val predictor = new IteratedConditionalModes(model) // {temperature=0.01}
       println("Example Token features")
       for (iteration <- 1 until 8) {
         learner.processContexts(trainLabels)
