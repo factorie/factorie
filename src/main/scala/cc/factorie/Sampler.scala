@@ -64,7 +64,7 @@ trait Sampler[C] {
   def newDiffList = if (makeNewDiffList) new DiffList else null
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
       Needs to be defined in subclasses. */
-  def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be... Oh, I see, GenericSampler needs to call this, but perhaps it should be removed.
+  protected def process1(context:C): DiffList
   final def processAll(contexts:Iterable[C], returnDiffs: Boolean = false): DiffList = {
     val diffs = if (returnDiffs) new DiffList else null
     if (returnDiffs) contexts.foreach(diffs ++= process(_))
@@ -126,6 +126,38 @@ trait ProposalSampler[C] extends Sampler[C] {
   def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
   val proposalHooks = new Hooks1[Proposal]
   def proposalHook(proposal:Proposal): Unit = proposalHooks(proposal)
+}
+
+/** A proposal sampler that considers each of the values of a DiscreteVar 
+    and scores them efficiently by unrolling factors from the Model just once.
+    Will not work for case factor diagrams.
+    @author Andrew McCallum */
+class DiscreteProposalSampler(val model:Model, val objective:Model = null) extends ProposalSampler[DiscreteVar] {
+  def proposals(context:DiscreteVar): Seq[Proposal] = {
+    val modelFactors = model.factors(context)
+    val objectiveFactors = if (objective ne null) objective.factors(context) else null
+    val domainSize = context.domain.size
+    val assignment = new DiscreteAssignment1(context, 0)
+    var modelScore = 0.0
+    var objectiveScore = 0.0
+    var i = 0
+    val result = new ArrayBuffer[Proposal](domainSize)
+    while (i < domainSize) {
+      assignment.intValue1 = i
+      modelScore = 0.0; modelFactors.foreach(f => modelScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+      objectiveScore = 0.0; objectiveFactors.foreach(f => objectiveScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+      val d = new DiffList; d.done = false
+      if (context.isInstanceOf[MutableDiscreteVar[DiscreteValue]]) { val v = context.asInstanceOf[MutableDiscreteVar[DiscreteValue]]; d += new v.DiscreteVariableDiff(0, i) }
+      //context match { case context:MutableDiscreteVar[_] => d += new context.DiscreteVariableDiff(0, i); case _ => {} } // This crashes the Scala 2.10.1 compiler
+      result += new Proposal(d, modelScore, objectiveScore, modelScore)
+      i += 1
+    }
+    result
+  }
+}
+
+class DiscreteProposalMaximizer(override val model:Model, override val objective:Model = null) extends DiscreteProposalSampler(model, objective) {
+  override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxBy(_.modelScore)
 }
 
 
@@ -223,9 +255,10 @@ class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, object
   }
 }
 
+// TODO Consider making some version of this that doesn't unroll for each setting. -akm
 /** Besag's Iterated Conditional Modes.  Visit a variable, and set it to its highest scoring value (based on current value of its factors' neighbors). */
-class IteratedConditionalModes[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
-  def settings(v:V): SettingIterator = v.settings
+class IteratedConditionalModes(model:Model, objective:Model = null) extends SettingsMaximizer[Var with IterableSettings](model, objective) {
+  def settings(v:Var with IterableSettings): SettingIterator = v.settings
 }
 
 
