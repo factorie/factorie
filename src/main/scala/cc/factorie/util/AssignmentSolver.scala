@@ -1,0 +1,108 @@
+package cc.factorie.util
+
+import cc.factorie._
+import cc.factorie.la.Tensor2
+import scala.annotation.tailrec
+
+/**
+ * User: apassos
+ * Date: 6/3/13
+ * Time: 11:19 AM
+ */
+
+/**
+ * A solver for weighted bipartite matching, also known as the assignment problem.
+ *
+ * This does not use the hungarian algorithm; instead it uses the augmenting paths
+ * algorithm which works by finding in sequence a best matching with one edge, a
+ * best matching with two edges, etc, until it find a best matching with maximal
+ * size. Then it goes back and returns the best overall matching out of those.
+ *
+ * Transforming the best matching with n nodes into the best matching with n+1 nodes
+ * is done by finding the best augmenting path: define a new graph with a source
+ * connected with zero weight edges to the "left" side of the matching, and likewise
+ * a target connected to the right side. For the bipartite graph, have the edges in
+ * the matching have positive weight equal to their cost and going from right to left,
+ * while edges not in the matching have negative weights equal to their costs and go
+ * from left to right.
+ *
+ * Then a shortest path from the source to target will necessarily add one edge to the
+ * matching for each edge it removes, and add one more edge than that.
+ *
+ * To see a proof of this algorithm see the lecture notes in
+ * http://www.cs.uiuc.edu/~jeffe/teaching/algorithms/notes/18-maxflowext.pdf
+ *
+ * Note that we can't use Dijkstra for shortest-paths because of the negative-weighted
+ * edges. We can't have negatively weighted cycles because the existence of such a
+ * cycle would imply that the current state is not a maximal matching with its size.
+ *
+ * This is useful for implementing the CEAF evaluation metrics in coreference
+ * resolution, which assign scores between pairs of truth and returned entities and
+ * define the precision and recall of a clustering as a function of the best
+ * possible matching between truth and returned clusters.
+ */
+class AssignmentSolver(val weights: Tensor2) {
+  // This is the bellman-ford algorithm applied to the specific graph we
+  // described earlier
+  def shortestPath(currentParents: Array[Int]): collection.mutable.HashSet[(Int,Int)] = {
+    // from the source to the left nodes the cost is zero
+    val leftScores = Array.fill(weights.dim1)(0.0)
+    val leftParents = Array.fill(weights.dim1)(-1)
+    val rightScores = Array.fill(weights.dim2)(Double.PositiveInfinity)
+    val rightParents = Array.fill(weights.dim2)(-1)
+    for (iter <- 0 until 2*(weights.dim1 + weights.dim2)) {
+      for (source <- 0 until weights.dim1) {
+        for (target <- 0 until weights.dim2) {
+          if (currentParents(source) == target) {
+            // edge goes from right to left with positive cost
+            //println("<- left " + source + " " + leftScores(source) + " right " + target + " " + rightScores(target) + " weights " + weights(source, target))
+            if (leftScores(source) > rightScores(target) + weights(source, target)) {
+              //println("relaxing")
+              leftScores(source) = rightScores(target) + weights(source, target)
+              leftParents(source) = target
+            }
+          } else {
+            //println("-> left " + source + " " + leftScores(source) + " right " + target + " " + rightScores(target) + " weights " + weights(source, target))
+            // edge goes from left to right with negative cost
+            if (rightScores(target) > leftScores(source) - weights(source, target)) {
+              //println("relaxing")
+              rightScores(target) = leftScores(source) - weights(source, target)
+              rightParents(target) = source
+            }
+          }
+        }
+      }
+    }
+    val returnSet = collection.mutable.HashSet[(Int,Int)]()
+    @tailrec def addEdges(right: Int) {
+      val left = rightParents(right)
+      returnSet.add((left,right))
+      if (leftParents(left) != -1) {
+        val right2 = leftParents(left)
+        returnSet.add((left, right2))
+        addEdges(right2)
+      }
+    }
+    val rightWinner = (0 until weights.dim2).minBy(rightScores)
+    addEdges(rightWinner)
+    returnSet
+  }
+
+  def solve(): Seq[(Int,Int)] = {
+    val N = math.min(weights.dim1, weights.dim2)
+    val bestMatchings = (0 to N).map(_ => collection.mutable.HashSet[(Int,Int)]())
+    val matchScores = (0 to N).map(_ => 0.0).toArray
+    for (currentSize <- 1 to N) {
+      val parents = Array.fill(weights.dim1)(-1)
+      bestMatchings(currentSize-1).foreach(edge => parents(edge._1) = edge._2)
+      val augmentingPath = shortestPath(parents).toSet
+      //println("augmenting path: " + augmentingPath.mkString(" "))
+      for (edge <- bestMatchings(currentSize-1).diff(augmentingPath)) bestMatchings(currentSize) += edge
+      for (edge <- augmentingPath.diff(bestMatchings(currentSize-1))) bestMatchings(currentSize) += edge
+      for (edge <- bestMatchings(currentSize)) matchScores(currentSize) += weights(edge._1, edge._2)
+    }
+    val i = (0 to N).maxBy(matchScores(_))
+    bestMatchings(i).toSeq
+  }
+}
+
