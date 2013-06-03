@@ -20,11 +20,11 @@ import scala.annotation.tailrec
  *
  * Transforming the best matching with n nodes into the best matching with n+1 nodes
  * is done by finding the best augmenting path: define a new graph with a source
- * connected with zero weight edges to the "left" side of the matching, and likewise
- * a target connected to the right side. For the bipartite graph, have the edges in
- * the matching have positive weight equal to their cost and going from right to left,
- * while edges not in the matching have negative weights equal to their costs and go
- * from left to right.
+ * connected with zero weight edges to the unmatched nodes on the "left" side of the
+ * matching, and likewise a target connected to the unmatched nodes on the right side.
+ * For the bipartite graph, have the edges in the matching have positive weight equal
+ * to their cost and going from right to left, while edges not in the matching have
+ * negative weights equal to their costs and go from left to right.
  *
  * Then a shortest path from the source to target will necessarily add one edge to the
  * matching for each edge it removes, and add one more edge than that.
@@ -44,48 +44,57 @@ import scala.annotation.tailrec
 class AssignmentSolver(val weights: Tensor2) {
   // This is the bellman-ford algorithm applied to the specific graph we
   // described earlier
-  def shortestPath(currentParents: Array[Int]): collection.mutable.HashSet[(Int,Int)] = {
+  def shortestPath(currentParents: Array[Int]): Set[(Int,Int)] = {
     // from the source to the left nodes the cost is zero
-    val leftScores = Array.fill(weights.dim1)(0.0)
+    val leftScores = Array.fill(weights.dim1)(Double.PositiveInfinity)
+    for (i <- 0 until weights.dim1) if (currentParents(i) == -1) leftScores(i) = 0
     val leftParents = Array.fill(weights.dim1)(-1)
     val rightScores = Array.fill(weights.dim2)(Double.PositiveInfinity)
     val rightParents = Array.fill(weights.dim2)(-1)
-    for (iter <- 0 until 2*(weights.dim1 + weights.dim2)) {
-      for (source <- 0 until weights.dim1) {
-        for (target <- 0 until weights.dim2) {
-          if (currentParents(source) == target) {
-            // edge goes from right to left with positive cost
-            //println("<- left " + source + " " + leftScores(source) + " right " + target + " " + rightScores(target) + " weights " + weights(source, target))
-            if (leftScores(source) > rightScores(target) + weights(source, target)) {
-              //println("relaxing")
-              leftScores(source) = rightScores(target) + weights(source, target)
-              leftParents(source) = target
-            }
-          } else {
-            //println("-> left " + source + " " + leftScores(source) + " right " + target + " " + rightScores(target) + " weights " + weights(source, target))
-            // edge goes from left to right with negative cost
-            if (rightScores(target) > leftScores(source) - weights(source, target)) {
-              //println("relaxing")
-              rightScores(target) = leftScores(source) - weights(source, target)
-              rightParents(target) = source
-            }
-          }
+    for (iter <- 0 until 2*(weights.dim1 + weights.dim2);
+         source <- 0 until weights.dim1; target <- 0 until weights.dim2) {
+      if (currentParents(source) == target) {
+        // edge goes from right to left with positive cost
+        if (leftScores(source) > rightScores(target) + weights(source, target)) {
+          leftScores(source) = rightScores(target) + weights(source, target)
+          leftParents(source) = target
+        }
+      } else {
+        // edge goes from left to right with negative cost
+        if (rightScores(target) > leftScores(source) - weights(source, target)) {
+          rightScores(target) = leftScores(source) - weights(source, target)
+          rightParents(target) = source
         }
       }
     }
-    val returnSet = collection.mutable.HashSet[(Int,Int)]()
+    for (source <- 0 until weights.dim1; target <- 0 until weights.dim2) {
+      if (currentParents(source) == target) {
+        if (leftScores(source) > rightScores(target) + weights(source, target)) {
+          assert(false, "This graph contains a negatively-weighted cycle")
+        }
+      } else {
+        if (rightScores(target) > leftScores(source) - weights(source, target)) {
+          assert(false, "This graph contains a negatively-weighted cycle")
+        }
+      }
+    }
+    val returnSet = collection.mutable.ListBuffer[(Int,Int)]()
     @tailrec def addEdges(right: Int) {
       val left = rightParents(right)
-      returnSet.add((left,right))
+      returnSet += ((left,right))
+      if (returnSet.length > weights.dim1)
+        assert(returnSet.length <= weights.dim1)
       if (leftParents(left) != -1) {
         val right2 = leftParents(left)
-        returnSet.add((left, right2))
+        returnSet += ((left, right2))
         addEdges(right2)
       }
     }
-    val rightWinner = (0 until weights.dim2).minBy(rightScores)
+    val currentChildren = Array.fill(weights.dim2)(-1)
+    for (i <- 0 until currentParents.length) if (currentParents(i) != -1) currentChildren(currentParents(i)) = i
+    val rightWinner = (0 until weights.dim2).filter(currentChildren(_) == -1).minBy(rightScores)
     addEdges(rightWinner)
-    returnSet
+    returnSet.toSet
   }
 
   def solve(): Seq[(Int,Int)] = {

@@ -422,7 +422,20 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
   }
 
   private def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
-    def docToCallable(doc: Document) = new Callable[Document] { def call() = process1(doc) }
+    import CorefEvaluator.Metric
+    val ceafEEval = new CorefEvaluator.CeafE()
+    val ceafMEval = new CorefEvaluator.CeafM()
+    def docToCallable(doc: Document) = new Callable[(Metric,Metric,Metric,Metric,Metric)] { def call() = {
+      process1(doc)
+      val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
+      val predMap = doc.attr[GenericEntityMap[Mention]]
+      val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
+      val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+      val ce = ceafEEval.evaluate(predMap, trueMap)
+      val cm = ceafMEval.evaluate(predMap, trueMap)
+      val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
+      (b3,muc,ce,cm,bl)
+    }}
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     try {
       import collection.JavaConversions._
@@ -430,25 +443,16 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
       val mucScore = new CorefEvaluator.Metric
       val ceafE = new CorefEvaluator.Metric
       val ceafM = new CorefEvaluator.Metric
-      val ceafEEval = new CorefEvaluator.CeafE()
-      val ceafMEval = new CorefEvaluator.CeafM()
       val blanc = new CorefEvaluator.Metric
       val batched = docs.grouped(batchSize).toSeq
       for (batch <- batched) {
-        val docs = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
-        docs.foreach(doc => {
-          val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
-          val predMap = doc.attr[GenericEntityMap[Mention]]
-          val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
-          val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-          val ce = ceafEEval.evaluate(predMap, trueMap)
-          val cm = ceafMEval.evaluate(predMap, trueMap)
-          val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
-          b3Score.microAppend(b3)
-          mucScore.microAppend(muc)
-          ceafE.microAppend(ce)
-          ceafM.microAppend(cm)
-          blanc.macroAppend(bl)
+        val results = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
+        results.foreach(eval => {
+          b3Score.microAppend(eval._1)
+          mucScore.microAppend(eval._2)
+          ceafE.microAppend(eval._3)
+          ceafM.microAppend(eval._4)
+          blanc.macroAppend(eval._5)
         })
       }
       println("                   PR    RE   F1")
