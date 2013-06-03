@@ -28,7 +28,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   var targetCount, predictedCount, correctCount = 0 // per segment
   @deprecated("use targetCount instead.") def trueCount = targetCount 
 
-  def ++=(tokenseqs:Seq[Seq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
+  def ++=(tokenseqs:Seq[IndexedSeq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
 
   /* Find out if we are at the beginning of a segment.
    * This complicated conditional is necessary to make the start pattern "(B|I)-" work
@@ -49,7 +49,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
       document ends in a mention and the next document begins with the same
       mention type, they will be counted as only one mention, when they should
       have been counted as two. */
-  def +=(labels: Seq[LabeledCategoricalVariable[String]]): Unit = {
+  def +=(labels: IndexedSeq[LabeledCategoricalVariable[String]]): Unit = {
     //println("PerSegmentEvaluation += "+labels.size)
     var predictedStart, targetStart = false
     for (position <- 0 until labels.length) {
@@ -125,14 +125,14 @@ class SegmentEvaluation[L<:LabeledCategoricalVariable[String]](baseLabelStrings:
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)
   def this(labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)))
   // Grab the domain from the first label in the Seq; assume all the domains are the same
-  def this(labels:Seq[L]) = { this(labels.head.domain); this.+=(labels) }
+  def this(labels:IndexedSeq[L]) = { this(labels.head.domain); this.+=(labels) }
   private val evals = new HashMap[String,PerSegmentEvaluation]
   private var labelCount = 0
   private var labelCorrectCount = 0
   evals ++= baseLabelStrings.map(s => (s, new PerSegmentEvaluation(s, (startPrefix+s).r, (continuePrefix+s).r)))
   /** Return the LabelEvaluation specific to labelString. */
   def apply(labelString:String) = evals(labelString)
-  def +=(labels: Seq[L]): Unit = {
+  def +=(labels: IndexedSeq[L]): Unit = {
     evals.values.foreach(eval => eval += labels)
     labelCount += labels.length
     labels.foreach(label => if (label.valueIsTarget) labelCorrectCount += 1)
