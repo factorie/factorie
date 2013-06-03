@@ -223,7 +223,7 @@ object ChainNerBP extends ChainNerBP {
     if (opts.runPlainFiles.wasInvoked) {
       BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
       for (filename <- opts.runPlainFiles.value) {
-        val document = LoadPlainText.fromFile(new java.io.File(filename), false)
+        val document = LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
         //println(document.map(_.string).mkString(" "))
         process(document)

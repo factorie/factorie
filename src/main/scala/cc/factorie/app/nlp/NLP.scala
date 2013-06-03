@@ -46,7 +46,7 @@ object NLP {
     override def run(): Unit = try {
       val out = new PrintStream(socket.getOutputStream())
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
-      var document = cc.factorie.app.nlp.LoadPlainText.fromString("<stdin>", in.mkString)
+      var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
       for (processor <- annotators)
         document = processor.process(document)

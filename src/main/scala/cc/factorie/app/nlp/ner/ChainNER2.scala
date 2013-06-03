@@ -327,8 +327,8 @@ class ChainNer2 {
 
   def train(trainFilename:String, testFilename:String): Unit = {
     // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(trainFilename, true)
-    val testDocuments = LoadConll2003.fromFilename(testFilename, true)
+    val trainDocuments = LoadConll2003(BILOU=true).fromFilename(trainFilename)
+    val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
 
     // Add features for NER                 \
     println("Initializing training features")
@@ -418,7 +418,7 @@ class ChainNer2 {
 
     setRandomSeed(75839485)
     // Read in the data
-    val testDocuments = LoadConll2003.fromFilename(testFilename, true)
+    val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
     println("Initializing testing features")
 	
 	  (testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNerFeatures(token)))

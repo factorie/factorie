@@ -32,10 +32,18 @@ class NER2 extends DocumentAnnotator {
       val weights = Weights(new la.DenseTensor1(BilouOntonotesNerDomain.size))
     }
     // Transition factors between two successive labels
-    val markov = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, BilouOntonotesNerLabel] {
+//    val markov3 = this += new DotTemplateWithStatistics3[BilouOntonotesNerLabel, BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+//      val weights = Weights(new la.DenseTensor3(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
+//      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+//      def unroll1(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerLabel], label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
+//      def unroll2(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext && label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label, label.token.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
+//      def unroll3(label:BilouOntonotesNerLabel) = if (label.token.hasPrev(2)) Factor(label.token.prev.prev.attr[BilouOntonotesNerLabel], label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
+//    }
+    val markov = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      def unroll1(label:BilouOntonotesNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
-      def unroll2(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext) Factor(label, label.token.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
+      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+      def unroll1(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerLabel], label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
+      def unroll2(label:BilouOntonotesNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
     }
     // Factor between label and observed token
     val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
@@ -75,12 +83,6 @@ class NER2 extends DocumentAnnotator {
   
   // Prediction history
   val predictionHistory = new HashedTokenQueue(200)
-  // Returns null if there is no matching previous token
-//  def previousPrediction(token:Token): BilouOntonotesNerLabel = {
-//    val history: Seq[Token] = predictionHistory.filterByToken(token)
-//    val mostFrequent: Token = history.groupBy(_.attr[BilouOntonotesNerLabel].categoryValue).maxBy(_._2.size)._2.head
-//    if (history.length == 0) null else mostFrequent.attr[BilouOntonotesNerLabel]
-//  }
 
   def forwardPredictToken(token:Token): Unit = {
     val label = token.attr[BilouOntonotesNerLabel]
@@ -97,24 +99,41 @@ class NER2 extends DocumentAnnotator {
   def addFeatures(document:Document): Unit = {
     document.annotators(classOf[FeaturesVariable]) = this
     import cc.factorie.app.strings.simplifyDigits
-    for (token <- document.tokens) {
+    for (section <- document.sections; token <- section.tokens) {
       val features = new FeaturesVariable(token)
       token.attr += features
       val rawWord = token.string
+      val rawWordLength = rawWord.length
       val word = simplifyDigits(rawWord).toLowerCase
+      val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
       features += "W="+word
-      features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "SHAPE="+shape
+      features += "WS="+word+"&"+shape // word conjoined with shape
+      if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.NumberWords.contains(word)) features += "#WORD"
+      if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
+      if (lexicon.Money.containsLemmatizedWord(word)) features += "MONEY"
+      if (lexicon.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+      if (lexicon.Company.contains(token)) features += "COMPANY"
+      if (lexicon.Country.contains(token)) features += "COUNTRY"
+      if (lexicon.City.contains(token)) features += "CITY"
+      if (lexicon.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+      if (lexicon.USState.contains(token)) features += "USSTATE"
+      //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
+      //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }
     for (section <- document.sections)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2), Seq(0,0))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2))
   }
+  def tokenFeaturesString(tokens:Iterable[Token]): String = tokens.map(token => "%-20s  %s".format(token.string, token.attr[FeaturesVariable])).mkString("\n")
   
   def sampleOutputString(tokens:Iterable[Token]): String = {
     val sb = new StringBuffer
-    for (token <- tokens)
-      sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
+    //for (token <- tokens) sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
+    for (token <- tokens) sb.append("%s %20s %10s %10s  %s\n".format(if (token.attr[BilouOntonotesNerLabel].valueIsTarget) " " else "*", token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, token.attr[FeaturesVariable]))
     sb.toString
   }
   
@@ -131,8 +150,8 @@ class NER2 extends DocumentAnnotator {
     for (iter <- 1 until 5) {
       trainer.processExamples(labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1)))
       predict(labels(trainDocs ++ testDocs))
-      println("Some independent training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(200)))
-      println("Some independent testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(200)))
+      println("Some independent training data"); println(sampleOutputString(trainDocs.head.tokens.drop(200).take(200)))
+      println("Some independent testing data"); println(sampleOutputString(testDocs.head.tokens.drop(200).take(200)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
     }
@@ -141,6 +160,13 @@ class NER2 extends DocumentAnnotator {
   // Parameter estimation
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
+    println("Adding training features")
+    trainDocs.foreach(addFeatures(_)) // Initialize all features to get parameters size
+    FeaturesDomain.freeze()
+    println("Applying features to test data")
+    testDocs.foreach(addFeatures(_))
+    println(tokenFeaturesString(trainDocs.head.tokens.take(100)))
+    println("Training with %d features.".format(FeaturesDomain.dimensionSize))
     //trainIndependent(trainDocs, testDocs)
     val predictor = new DiscreteProposalMaximizer(model, objective) {
       override def process1(context:DiscreteVar): DiffList = {
@@ -151,30 +177,23 @@ class NER2 extends DocumentAnnotator {
       }
     }
     val learner = new optimize.SampleRankTrainer(predictor, new optimize.AdaGrad)
-    for (iteration <- 1 until 3) {
+    for (iteration <- 1 until 4) {
       learner.processContexts(labels(trainDocs))
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
-      println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
-      println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
+      println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(iteration*100).take(100)))
+      println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(iteration*100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       println(segmentEvaluationString(labels(trainDocs).toIndexedSeq))
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
+      new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(trainDocs.head.tokens))
     }
   }
   def train(trainFilename:String, testFilename:String): Unit = {
     val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
     val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
-    
-    // Testing Queue
-    trainDocs.flatMap(_.tokens).take(5000).foreach(t => predictionHistory += t)
-    //println("NER2.train"); println(predictionHistory); System.exit(0)
-    
-    (trainDocs ++ testDocs).foreach(addFeatures(_)) // Initialize all features to get parameter
-    println("Training with %d features.".format(FeaturesDomain.dimensionSize))
     train(trainDocs, testDocs)
-    FeaturesDomain.freeze()
   }
   
   // Serialization
@@ -204,8 +223,8 @@ class NER2 extends DocumentAnnotator {
     } else Nil
     def filterByToken(token:Token): Seq[Token] = {
       val tokens = filterByString(token.string)
-      if ((debugPrintCount % 10000 == 0) && tokens.length > 0) println("HashedTokenQueue %20s %20s  %-20s  true=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), token.attr[BilouOntonotesNerLabel].target.categoryValue, mostFrequentLabel(tokens).baseCategoryValue, tokens.map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
-      debugPrintCount += 1
+//      if ((debugPrintCount % 1 == 0) && tokens.length > 0) println("HashedTokenQueue %20s %20s  %-20s  true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(tokens).baseCategoryValue, tokens.map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
+//      debugPrintCount += 1
       tokens
     }
     // A label having the most frequent value of all labels associated with all Tokens having the same string as the given Token, or null if there is no Token with matching string
@@ -218,12 +237,11 @@ class NER2 extends DocumentAnnotator {
     // Add a Token to the Queue and also to the internal hash
     override def +=(token:Token): this.type = {
       val str = token.string
-      assert(lexicon.StopWords.contents.contains("i"))
-      assert(lexicon.StopWords.contains("i"))
-      assert(lexicon.StopWords.contains("The"))
       if (java.lang.Character.isUpperCase(str(0)) && !lexicon.StopWords.containsWord(str.toLowerCase)) { // Only add capitalized, non-stopword Tokens
         super.+=(token)
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
+        if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
+        debugPrintCount += 1
         if (length > maxSize) dequeue
       }
       this

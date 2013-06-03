@@ -8,7 +8,7 @@ import Assert._
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
 
    def testDiffLists:Unit = {
-     val doc = LoadPlainText.fromString("testdoc", "aaa bb John Smith eee ff ggg", false)
+     val doc = LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
      //doc.foreach(logger.debug(_))
      assert(doc.tokenCount == 7)
      val d = new DiffList

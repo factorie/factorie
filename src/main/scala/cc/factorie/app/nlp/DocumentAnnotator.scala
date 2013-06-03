@@ -54,6 +54,12 @@ object UnknownDocumentAnnotator extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = Nil
 }
 
+object NoopDocumentAnnotator extends DocumentAnnotator {
+  def process1(document: Document): Document = document
+  def prereqAttrs: Iterable[Class[_]] = Nil
+  def postAttrs: Iterable[Class[_]] = Nil
+}
+
 class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_],DocumentAnnotator]
 
 object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {

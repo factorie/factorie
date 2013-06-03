@@ -65,6 +65,8 @@ package object strings {
     prefixes ++ suffices
     //for (i <- 0 until w.length; j <- min to max; if (i+j < w.length)) yield w.substring(i,i+j)
   }
+  def prefix(word:String, length:Int): String = word.substring(0, math.min(length, word.length))
+  def suffix(word:String, length:Int): String = { val l = word.length; word.substring(math.max(0, l-length), l) }
   
   // Simplified form of word for feature generation
   val recentYearRegex = "(19|20)\\d\\d".r

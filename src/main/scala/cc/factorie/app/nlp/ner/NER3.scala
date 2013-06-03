@@ -88,8 +88,8 @@ class NER3 extends DocumentAnnotator {
   def train(trainFilename:String, testFilename:String): Unit = {
     // TODO Make fixLabels no longer necessary by having LoadConll2003 directly create the right label type.
     def fixLabels(docs:Iterable[Document]): Iterable[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
-    val trainDocs = fixLabels(LoadConll2003.fromFilename(trainFilename, BILOU=true))
-    val testDocs = fixLabels(LoadConll2003.fromFilename(testFilename, BILOU=true))
+    val trainDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(trainFilename))
+    val testDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(testFilename))
     (trainDocs ++ testDocs).foreach(addFeatures(_))
     train(trainDocs, testDocs)
     FeaturesDomain.freeze()

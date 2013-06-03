@@ -64,7 +64,8 @@ trait DocumentSubstring {
 class Document extends DocumentSubstring with Attr {
   def this(stringContents:String) = { this(); _string = stringContents }
   def name: String = this.attr[DocumentName].string
-  def setName(s:String): this.type = { this.attr += DocumentName(s); this }
+  /** Set DocumentName attr on Document.  If String argument is null, remove DocumentName attr if present. */
+  def setName(s:String): this.type = { if (s ne null) this.attr += DocumentName(s) else this.attr.remove[DocumentName]; this }
   
   // One of the following two is always null, the other non-null
   private var _string: String = ""

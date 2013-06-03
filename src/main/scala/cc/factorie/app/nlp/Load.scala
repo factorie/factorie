@@ -13,19 +13,18 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import java.io.File
-import scala.xml._
 
-object LoadNYTimesXML {
-  def fromFile(file:File): Seq[Document] = {
-    val article = XML.loadFile(file)
-    //println(article \\ "head" \\ "title" text)
-    //println(article \ "head" \ "title" text)
-    //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
-    val content = article \ "head" \ "docdata" \ "identified-content"
-    //print("Reading ***"+(article\"head"\"title").text+"***")
-    // This does not include the headline, perhaps it should -akm
-    LoadPlainText(documentName = file.getCanonicalPath).fromString((article \ "body" \ "body.content").text)
-  }
+/** The interface common to methods that create Documents from a data source,
+    such as plain text files, labeled data from Ontonotes, etc. 
+    @author Andrew McCallum */
+trait Load {
+  def fromSource(source:io.Source): Seq[Document]
+  def fromString(string:String): Seq[Document] = fromSource(io.Source.fromString(string))
+  def fromStream(stream:java.io.InputStream, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromInputStream(stream, encoding))
+  def fromFile(file:java.io.File): Seq[Document] = fromSource(io.Source.fromFile(file))
+  def fromFilename(filename:String): Seq[Document] = fromFile(new java.io.File(filename))
+}
 
+trait LoadDirectory {
+  def fromDirectory(dir:java.io.File): Seq[Document]
 }

@@ -22,10 +22,16 @@ class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerL
   def domain = Conll2003NerDomain
 }
 
-object LoadConll2003 {
+// Usage:
+// Either LoadConll2003.fromFilename("foo")
+// or LoadConll2003(BILOU = true).fromFilename("foo")
+
+object LoadConll2003 extends LoadConll2003(false)
+
+case class LoadConll2003(BILOU:Boolean = false) extends Load {
   val conllToPTBMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
 
-  def fromFilename(filename:String, BILOU:Boolean = false): Seq[Document] = {
+  def fromSource(source:io.Source): Seq[Document] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
@@ -39,7 +45,6 @@ object LoadConll2003 {
     val documents = new ArrayBuffer[Document]
     var document = newDocument("CoNLL2003-"+documents.length)
     documents += document
-    val source = Source.fromFile(new java.io.File(filename))
     var sentence = new Sentence(document)(null)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
@@ -72,21 +77,21 @@ object LoadConll2003 {
           println()
         }
         token.attr += new Conll2003ChainNerLabel(token, ner)
-		    //println("token: " + token + " Ner: " + ner)
-		    token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
+        //println("token: " + token + " Ner: " + ner)
+        token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
       }
     }
     if(BILOU) convertToBILOU(documents)
-	/*for(doc <- documents) {
-		for(token <- doc.tokens) {
-			if(token.attr[ChainNerLabel].categoryValue.trim().length == 0) {
-				println("Something Bad Happened")
-				println(token + " - " + token.attr[ChainNerLabel].categoryValue.trim())
-			}
-		}
-	}*/
+  /*for(doc <- documents) {
+    for(token <- doc.tokens) {
+      if(token.attr[ChainNerLabel].categoryValue.trim().length == 0) {
+        println("Something Bad Happened")
+        println(token + " - " + token.attr[ChainNerLabel].categoryValue.trim())
+      }
+    }
+  }*/
     //sentence.stringLength = document.stringLength - sentence.stringStart
-    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total from file "+filename)
+    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents
   }
   def convertToBILOU(documents : ArrayBuffer[Document]) {
@@ -145,10 +150,10 @@ object LoadConll2003 {
       ns = splitLabel(next)
 
     if(token.nerLabel.categoryValue.contains("B-")) {
-	  if(next == null || ns(1) != ts(1) || ns(0) == "B")
+    if(next == null || ns(1) != ts(1) || ns(0) == "B")
         return "U-" + ts(1)
-	  else
-      	return token.nerLabel.categoryValue
+    else
+        return token.nerLabel.categoryValue
     }
 
     if(prev == null || ps(1) != ts(1)) {
@@ -168,3 +173,5 @@ object LoadConll2003 {
       Array("", "O")
   }
 }
+
+
