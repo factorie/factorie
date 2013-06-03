@@ -184,7 +184,7 @@ class ChainNer {
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.templates(0), model.templates(1))
-      val localPredictor = new IteratedConditionalModes[ChainNerLabel](localModel, null)
+      val localPredictor = new IteratedConditionalModes(localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)

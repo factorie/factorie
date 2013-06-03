@@ -101,7 +101,7 @@ object ChainNER4 {
     //val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective), new cc.factorie.optimize.AdaGrad(rate=1.0))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.ConfidenceWeighting(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
-    val predictor = new IteratedConditionalModes[Label](model, null) //new GibbsSampler(model, objective) { temperature = 0.2 } //new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
+    val predictor = new IteratedConditionalModes(model, null) //new GibbsSampler(model, objective) { temperature = 0.2 } //new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
     for (i <- 1 to 3) {
       // println("Iteration "+i)
       learner.processContexts(trainLabels)

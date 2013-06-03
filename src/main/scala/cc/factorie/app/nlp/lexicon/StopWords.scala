@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.lexicon
 import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
-object StopWords extends PhraseLexicon(nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object StopWords extends WordLexicon(nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++= 
 """a
 able

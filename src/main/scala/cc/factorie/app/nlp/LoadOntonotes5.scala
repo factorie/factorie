@@ -62,7 +62,7 @@ object LoadOntonotes5 {
         val partOfSpeech = fields(4)
         val parentIdx = fields(8).toInt - 1
         val depLabel = fields(10)
-        var ner = fields(13); if (ner == "_") ner = "O"
+        var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)
         if (loadPos) token.attr += new PTBPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)

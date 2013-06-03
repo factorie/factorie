@@ -59,8 +59,11 @@ class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_],Doc
 object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {
   import cc.factorie.app.nlp._
   //this.update(classOf[pos.PTBPosLabel], new pos.POS3) // TODO where should this find its parameters?
-  this.update(classOf[lemma.SimplifyDigitsTokenLemma], lemma.SimplifyDigitsLemmatizer)
   this.update(classOf[segment.SimplifyPTBTokenString], segment.SimplifyPTBTokenNormalizer)
   this.update(classOf[Token], cc.factorie.app.nlp.segment.ClearTokenizer)
   this.update(classOf[Sentence], cc.factorie.app.nlp.segment.ClearSegmenter)
+  this.update(classOf[lemma.SimplifyDigitsTokenLemma], lemma.SimplifyDigitsLemmatizer)
+  this.update(classOf[lemma.CollapseDigitsTokenLemma], lemma.CollapseDigitsLemmatizer)
+  this.update(classOf[lemma.PorterTokenLemma], lemma.PorterLemmatizer)
+  this.update(classOf[lemma.LowercaseTokenLemma], lemma.LowercaseLemmatizer)
 }
