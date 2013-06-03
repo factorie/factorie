@@ -40,6 +40,28 @@ trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] with 
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def proportions(model:Model): Proportions1 = proportions(model.factors(this))
+  
+// TODO Not sure this really belongs here.  Similar functionality in MaximizeDiscrete. -akm
+//  /** Return the integer value of this variable would maximize the model's score, given that all other variables' values are fixed.
+//      The current value of this variable remains unchanged. */
+//  def maximizingIntValue(factors:Iterable[Factor]): Int = {
+//    val l = domain.size 
+//    val assignment = new DiscreteAssignment1(this, 0)
+//    var score = 0.0
+//    var maxScore = Double.NegativeInfinity
+//    var maxIntValue = -1
+//    var i = 0
+//    while (i < l) {
+//      assignment.intValue1 = i
+//      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+//      if (score > maxScore) { maxScore = score; maxIntValue = i }
+//      i += 1
+//    }
+//    maxIntValue
+//  }
+//  /** Return the integer value of this variable would maximize the model's score, given that all other variables' values are fixed.
+//      The current value of this variable remains unchanged. */
+//  def maximizingIntValue(model:Model): Int = maximizingIntValue(model.factors(this))
 
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def caseFactorProportions(model:Model): Proportions1 = {
@@ -110,23 +132,40 @@ abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
 
 
 object MaximizeDiscrete extends Maximize {
-  def maxIndex(d:MutableDiscreteVar[_], model:Model): Int = {
+  def intValue(d:DiscreteVar, factors:Iterable[Factor]): Int = {
+    val l = d.domain.size 
+    val assignment = new DiscreteAssignment1(d, 0)
+    var score = 0.0
+    var maxScore = Double.NegativeInfinity
+    var maxIntValue = -1
+    var i = 0
+    while (i < l) {
+      assignment.intValue1 = i
+      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
+      if (score > maxScore) { maxScore = score; maxIntValue = i }
+      i += 1
+    }
+    maxIntValue
+  }
+  def intValue(d:DiscreteVar, model:Model): Int = intValue(d, model.factors(d))
+  def caseFactorIntValue(d:MutableDiscreteVar[_], model:Model): Int = maxIndex(d, model)
+  @deprecated("Use MaximizeDiscrete.intValue instead") def maxIndex(d:MutableDiscreteVar[_], model:Model): Int = {
     val origI = d.intValue
     var maxScore = Double.MinValue
     var maxI = -1
     for (i <- 0 until d.domain.size) {
-      d := i // Careful!  Doesn't work if d has variable value coordination!
-      val score = model.currentScore(d)
+      d := i // Careful!  Doesn't properly perform "undos" if d has variable value coordination!
+      val score = model.currentScore(d) // TODO This unrolls each time.  Consider a faster alternative.
       if (score > maxScore) { maxScore = score; maxI = i }
     }
     assert(maxI != -1)
     d := origI
     maxI
   }
-  def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := maxIndex(d, model)
+  def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := intValue(d, model)
   def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
-    Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))))
+    Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, intValue(varying, model))))
   override def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVar]] = {
     if (!variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) return None
     val result = new DiscreteSummary1[DiscreteVar]
