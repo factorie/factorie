@@ -35,7 +35,7 @@ trait Lexicon {
   /** Tokenize and lemmatize the input String and add it as a single entry to the Lexicon */
   def +=(phrase:String): Unit
   /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries */
-  def ++=(source:Source): Unit = for (line <- source.getLines()) yield Lexicon.this.+=(line)
+  def ++=(source:Source): Unit = for (line <- source.getLines()) Lexicon.this.+=(line)
   /** All a lines from the input String to this lexicon.  String contains multiple newline-separated lexicon entries */
   def ++=(phrases:String): Unit = ++=(Source.fromString(phrases))
   /** All a lines from the input File to this lexicon.  File contains multiple newline-separated lexicon entries */
@@ -89,11 +89,11 @@ class WordLexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhi
   val contents = new scala.collection.mutable.HashSet[String]
   def +=(phrase:String): Unit = {
     val words: Seq[String] = tokenizer(phrase).toSeq
-    if (words.length == 1) contents += words.head else throw new MultiWordException("Cannot add multi-word phrase to WordLexicon")
+    if (words.length == 1) contents += lemmatizer.lemmatize(words.head) else throw new MultiWordException("Cannot add multi-word phrase to WordLexicon")
   }
-  final def containsWord(word:String): Boolean = contents.contains(word)
+  final def containsWord(word:String): Boolean = contents.contains(lemmatizer.lemmatize(word))
   def contains[T<:Observation[T]](query:T): Boolean = contents.contains(query.string)
-  def containsWords(words: Seq[String]): Boolean = if (words.length == 1) contains(words.head) else false
+  def containsWords(words: Seq[String]): Boolean = if (words.length == 1) containsWord(words.head) else false
 }
 
 /** An exception thrown when someone tries to add a multi-word phrase to a WordLexicon. */
