@@ -82,7 +82,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       // skip tokens that are already added as part of a larger subtree or aren't nouns
       if (copularPhrase || apposition) None
       else {
-        val subtree = (Seq(t) ++ s.parse.children(si)).sortBy(_.position)
+        val subtree = (Seq(t) ++ s.parse.subtree(si)).sortBy(_.position)
         usedTokens ++= subtree
         val (start, length) = subtree.size match {
           // leaf of the parse
