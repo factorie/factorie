@@ -2,6 +2,8 @@ package cc.factorie.util.coref
 
 import collection.Set
 import collection.mutable.{Set => MSet, HashSet}
+import cc.factorie.la.DenseTensor2
+import cc.factorie.util.AssignmentSolver
 
 /**
  * @author sameer
@@ -211,6 +213,48 @@ object CorefEvaluator {
           pred.getMentions(predId).size - trueEntities.size
         m.precDenominator += pred.getMentions(predId).size - 1
       }
+      m
+    }
+  }
+
+  class CeafE(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m: Metric = new Metric
+      val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
+      val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
+      val weights = new DenseTensor2(predEntities.length, truthEntities.length)
+      for (i <- 0 until predEntities.length; j <- 0 until truthEntities.length) {
+        val ei = pred.entities(predEntities(i))
+        val ej = truth.entities(truthEntities(j))
+        weights(i, j) = 2.0*ei.intersect(ej).size /(ei.size.toDouble + ej.size)
+      }
+      val matching = new AssignmentSolver(weights).solve()
+      val num = matching.map(e => weights(e._1,e._2)).sum
+      m.precNumerator = num
+      m.recallNumerator = num
+      m.precDenominator = predEntities.length
+      m.recallDenominator = truthEntities.length
+      m
+    }
+  }
+
+  class CeafM(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
+    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+      val m: Metric = new Metric
+      val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
+      val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
+      val weights = new DenseTensor2(predEntities.length, truthEntities.length)
+      for (i <- 0 until predEntities.length; j <- 0 until truthEntities.length) {
+        val ei = pred.entities(predEntities(i))
+        val ej = truth.entities(truthEntities(j))
+        weights(i, j) = ei.intersect(ej).size
+      }
+      val matching = new AssignmentSolver(weights).solve()
+      val num = matching.map(e => weights(e._1,e._2)).sum
+      m.precNumerator = num
+      m.recallNumerator = num
+      m.precDenominator = predEntities.map(pred.entities(_).size).sum
+      m.recallDenominator = truthEntities.map(truth.entities(_).size).sum
       m
     }
   }
