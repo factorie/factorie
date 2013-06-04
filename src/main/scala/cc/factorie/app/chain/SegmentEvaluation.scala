@@ -94,7 +94,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
           		}
           		j += 1
         	}
-		}
+        }
       }
     }
   }
