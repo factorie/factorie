@@ -279,7 +279,9 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             i += 1
           }
         case (t1: NormalizedTensorProportions, t2) =>
-          this += (t1.tensor outer t2, f / t1.sum)
+          this += (t1.tensor outer t2, f / t1.tensor.sum)
+        case (t1, t2: NormalizedTensorProportions) =>
+          this += (t1 outer t2.tensor, f / t2.tensor.sum)
         case (t1: DenseTensor, t2: SparseTensor) =>
           var i = 0
           val arr = t1.asArray

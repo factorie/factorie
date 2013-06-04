@@ -31,7 +31,6 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     assert(sec ne null)
     assert(sec.document ne null)
     assert(sec.document.annotators ne null)
-    assert(sec.document.annotators.contains(classOf[Token]) || true)
     if (!sec.document.annotators.contains(classOf[Token]))
       sec.document.annotators(classOf[Token]) = null
     sec += this

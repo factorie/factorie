@@ -67,23 +67,11 @@ class AssignmentSolver(val weights: Tensor2) {
         }
       }
     }
-    for (source <- 0 until weights.dim1; target <- 0 until weights.dim2) {
-      if (currentParents(source) == target) {
-        if (leftScores(source) > rightScores(target) + weights(source, target)) {
-          assert(false, "This graph contains a negatively-weighted cycle")
-        }
-      } else {
-        if (rightScores(target) > leftScores(source) - weights(source, target)) {
-          assert(false, "This graph contains a negatively-weighted cycle")
-        }
-      }
-    }
     val returnSet = collection.mutable.ListBuffer[(Int,Int)]()
     @tailrec def addEdges(right: Int) {
       val left = rightParents(right)
       returnSet += ((left,right))
-      if (returnSet.length > weights.dim1)
-        assert(returnSet.length <= weights.dim1)
+      assert(returnSet.length <= weights.dim1)
       if (leftParents(left) != -1) {
         val right2 = leftParents(left)
         returnSet += ((left, right2))
