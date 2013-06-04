@@ -114,7 +114,7 @@ class PhraseLexicon(val tokenizer:StringSegmenter = cc.factorie.app.strings.nonW
   // The next two constructors are there just to support legacy usage, and should ultimately be removed.
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
   def this(filename:String) = { this(); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
-  def this(caseSensitive:Boolean) = this(lemmatizer = if (caseSensitive) LowercaseLemmatizer else NoopLemmatizer)
+  //def this(caseSensitive:Boolean) = this(lemmatizer = if (caseSensitive) LowercaseLemmatizer else NoopLemmatizer)
   
   class LexiconToken extends Observation[LexiconToken] {
     def string: String = throw new Error("string unknown; in key only.")
