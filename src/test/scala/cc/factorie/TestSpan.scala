@@ -4,13 +4,15 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
+import cc.factorie.app.nlp.segment.ClearTokenizer
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
 
    def testDiffLists:Unit = {
      val doc = LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
+     ClearTokenizer.process(doc)
      //doc.foreach(logger.debug(_))
-     assert(doc.tokenCount == 7)
+     assertEquals(7, doc.tokenCount)
      val d = new DiffList
      val s1 = new TokenSpan(doc.asSection, 1, 1)(d)
      assert(doc.asSection.spans.head.start == 1)
