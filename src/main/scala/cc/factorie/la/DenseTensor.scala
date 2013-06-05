@@ -17,7 +17,8 @@ import cc.factorie._
 import cc.factorie.util._
 
 trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
-  private var __values = new Array[Double](length)
+  protected def _initialArray: Array[Double] = new Array[Double](length)
+  private var __values = _initialArray
   if (__default != 0.0) java.util.Arrays.fill(__values, __default)
   private var __default: Double = 0.0
   override def defaultValue: Double = __default

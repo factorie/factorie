@@ -10,7 +10,8 @@ import util._
  * Time: 5:54 PM
  */
 
-// This implements the AdaGrad algorithm with efficient dual averaging updates and support for l1 and l2 regularization
+/** This implements the AdaGrad algorithm with efficient dual averaging updates and support for l1 and l2 regularization.
+    Good default value for l1 is 0.1/#examples, but it might need to be much smaller, like 0.0001/#examples. */
 class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
   var initialized = false
 

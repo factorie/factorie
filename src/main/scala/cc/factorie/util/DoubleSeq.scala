@@ -263,11 +263,11 @@ trait IncrementableDoubleSeq extends DoubleSeq {
     case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i))) }
     case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)); i += 1 }} 
   }
-    /** Increment by the element-wise product of ds, factor. */
-  def +=(ds:DoubleSeq, factor:DoubleSeq,scalar:Double): Unit = ds match {
-    case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i)*scalar)) }
-    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
-  }
+//    /** Increment by the element-wise product of ds, factor. */
+//  def +=(ds:DoubleSeq, factor:DoubleSeq,scalar:Double): Unit = ds match {
+//    case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i)*scalar)) }
+//    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
+//  }
   def -=(i:Int, incr:Double): Unit = +=(i, -incr)
   final def -=(d:Double): Unit = +=(-d)
   def -=(ds:DoubleSeq): Unit = +=(ds, -1.0)

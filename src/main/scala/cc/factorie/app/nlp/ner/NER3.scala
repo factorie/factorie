@@ -16,22 +16,22 @@ class NER3 extends DocumentAnnotator {
   } 
   
   // The model
-  val model = new TemplateModel with Parameters {
+  val model1 = new TemplateModel with Parameters {
     // Bias term on each individual label
-    this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
+    val bias = this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor1(BilouConllNerDomain.size))
     }
     // Transition factors between two successive labels
-    this += new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
+    val markov = this += new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
       override def neighborDomain2 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
-      def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouConllNerLabel], label) else Nil
-      def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouConllNerLabel]) else Nil
+      def unroll1(label:BilouConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.prev.attr[BilouConllNerLabel], label) else Nil
+      def unroll2(label:BilouConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.next.attr[BilouConllNerLabel]) else Nil
     }
     // Factor between label and observed token
-    this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
+    val evidence = this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
       override def neighborDomain1 = BilouConllNerDomain
       override def neighborDomain2 = FeaturesDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize))
@@ -39,6 +39,11 @@ class NER3 extends DocumentAnnotator {
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }
   }
+  
+  val model2 = new cc.factorie.app.chain.ChainModel[BilouConllNerLabel,FeaturesVariable,Token](BilouConllNerDomain, FeaturesDomain, l=>l.token.attr[FeaturesVariable], l=>l.token, t=>t.attr[BilouConllNerLabel])
+  val model = model1
+  
+  
   // The training objective
   val objective = new HammingTemplate[BilouConllNerLabel]
 
@@ -138,9 +143,20 @@ class NER3 extends DocumentAnnotator {
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     //val trainer = new optimize.SampleRankTrainer(new IteratedConditionalModes(model, objective), new optimize.AdaGrad)
-    val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum)))
+    val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
+    
+//    // Make sure we are getting factors in order
+//    for (sentence <- trainDocs.take(5).last.sentences) {
+//      //val markovFactors = model1.markov.factors(sentence.tokens.map(_.attr[BilouConllNerLabel])).toSeq
+//      val markovFactors = model1.factors(sentence.tokens.map(_.attr[BilouConllNerLabel])).filter({case f:Factor2[_,_] => f._1.isInstanceOf[BilouConllNerLabel] && f._2.isInstanceOf[BilouConllNerLabel]; case _  => false }).toSeq
+//      println("Sentence length %d  markovFactors length %d".format(sentence.length, markovFactors.length))
+//      //assert(markovFactors.length > 5, "length="+markovFactors.length)
+//      assert(markovFactors.length < 2 || markovFactors.sliding(2).forall(fs => fs(0).asInstanceOf[Factor2[_,_]]._2 == fs(1).asInstanceOf[Factor2[_,_]]._1))
+//    }
+    
+    //val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.1/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     val trainer = new optimize.OnlineTrainer(model.parameters)
-    for (iteration <- 1 until 10) { 
+    for (iteration <- 1 until 3) { 
       //trainer.processContexts(trainLabels)
       trainer.processExamples(examples)
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
