@@ -129,52 +129,89 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
   def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
+trait DenseTensorProportions extends Proportions with DenseTensor {
+  def masses = this
+  def massTotal = 1.0
+  // These overrides would not be necessary if Tensor were not a MutableDoubleSeq and we had a ImmutableDenseTensor, but I don't think it is worth it.
+  override def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
+  override def +=(t:DoubleSeq, offset:Int, f:Double): Unit = throw new Error("Method +=(DoubleSeq,Int,Double) not defined on class "+getClass.getName)
+  override def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
+  override def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
+  override def *=(d: Double): Unit = throw new Error("Method *=(Double) not defined on class "+getClass.getName)
+  override def :=(ds:DoubleSeq): Unit = throw new Error("Method :=(DoubleSeq) not defined on class "+getClass.getName)
+  override def :=(a:Array[Double]): Unit = throw new Error("Method :=(Array[Double]) not defined on class "+getClass.getName)
+  override def :=(a:Array[Double], offset:Int): Unit = throw new Error("Method :=(Array[Double],Int) not defined on class "+getClass.getName)
+  override def expNormalize(): Double = throw new Error("Method expNormalize() not defined on class "+getClass.getName)
+}
+class DenseTensorProportions1(value:Tensor1, checkNormalization:Boolean = true) extends DenseTensor1(value.dim1) with DenseTensorProportions {
+  if (checkNormalization) require(maths.almostEquals(value.sum, 1.0, 0.0001))
+  this := value
+  override def copy: DenseTensorProportions1 = this // because we should be immutable
+  override def blankCopy: DenseTensorProportions1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+}
+
+class DenseTensorProportions2(value:Tensor2, checkNormalization:Boolean = true) extends DenseTensor2(value.dim1, value.dim2) with DenseTensorProportions {
+  if (checkNormalization) require(maths.almostEquals(value.sum, 1.0, 0.0001))
+  this := value
+  override def copy: DenseTensorProportions2 = this // because we should be immutable
+  override def blankCopy: DenseTensorProportions2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+}
+
+class DenseTensorProportions3(value:Tensor3, checkNormalization:Boolean = true) extends DenseTensor3(value.dim1, value.dim2, value.dim3) with DenseTensorProportions {
+  if (checkNormalization) require(maths.almostEquals(value.sum, 1.0, 0.0001))
+  this := value
+  override def copy: DenseTensorProportions3 = this // because we should be immutable
+  override def blankCopy: DenseTensorProportions3 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+}
+
+class DenseTensorProportions4(value:Tensor4, checkNormalization:Boolean = true) extends DenseTensor4(value.dim1, value.dim2, value.dim3, value.dim4) with DenseTensorProportions {
+  if (checkNormalization) require(maths.almostEquals(value.sum, 1.0, 0.0001))
+  this := value
+  override def copy: DenseTensorProportions4 = this // because we should be immutable
+  override def blankCopy: DenseTensorProportions4 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+}
+
 /** An immutable Proportions from a pre-normalized Tensor. */
 abstract class NormalizedTensorProportions(val tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
-  protected def _tensor: Tensor
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
-  @inline final def apply(i:Int) = _tensor.apply(i)
+  @inline final def apply(i:Int) = tensor.apply(i)
   def massTotal = 1.0
-  def isDense = _tensor.isDense
+  def isDense = tensor.isDense
 }
 class NormalizedTensorProportions1(override val tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
-  protected val _tensor = tensor
-  def dim1 = _tensor.dim1
-  def activeDomain = _tensor.activeDomain
+  def dim1 = tensor.dim1
+  def activeDomain = tensor.activeDomain
   def masses = this
 }
 class NormalizedTensorProportions2(override val tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
-  protected val _tensor = tensor
-  def dim1 = _tensor.dim1
-  def dim2 = _tensor.dim2
-  def activeDomain = _tensor.activeDomain
-  def activeDomain1 = _tensor.activeDomain1
-  def activeDomain2 = _tensor.activeDomain2
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def activeDomain = tensor.activeDomain
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
   def masses = this
 }
 class NormalizedTensorProportions3(override val tensor:Tensor3, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions3 {
-  protected val _tensor = tensor
-  def dim1 = _tensor.dim1
-  def dim2 = _tensor.dim2
-  def dim3 = _tensor.dim3
-  def activeDomain = _tensor.activeDomain
-  def activeDomain1 = _tensor.activeDomain1
-  def activeDomain2 = _tensor.activeDomain2
-  def activeDomain3 = _tensor.activeDomain3
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def dim3 = tensor.dim3
+  def activeDomain = tensor.activeDomain
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
+  def activeDomain3 = tensor.activeDomain3
   def masses = this
 }
 class NormalizedTensorProportions4(override val tensor:Tensor4, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions4 {
-  protected val _tensor = tensor
-  def dim1 = _tensor.dim1
-  def dim2 = _tensor.dim2
-  def dim3 = _tensor.dim3
-  def dim4 = _tensor.dim4
-  def activeDomain = _tensor.activeDomain
-  def activeDomain1 = _tensor.activeDomain1
-  def activeDomain2 = _tensor.activeDomain2
-  def activeDomain3 = _tensor.activeDomain3
-  def activeDomain4 = _tensor.activeDomain4
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def dim3 = tensor.dim3
+  def dim4 = tensor.dim4
+  def activeDomain = tensor.activeDomain
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
+  def activeDomain3 = tensor.activeDomain3
+  def activeDomain4 = tensor.activeDomain4
   def masses = this
 }
 
