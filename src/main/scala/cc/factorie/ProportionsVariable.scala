@@ -67,6 +67,7 @@ class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with 
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends Proportions1 {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
@@ -82,6 +83,7 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
 }
 
 trait DenseProportions extends Proportions {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   def apply(index:Int): Double = {
     val mt = masses.massTotal
     if (mt == 0.0) 1.0 / length else masses.apply(index) / mt
@@ -131,6 +133,7 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
 
 /** An immutable Proportions from a pre-normalized Tensor. */
 abstract class NormalizedTensorProportions(val tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
+  def foreachActiveElement(f: (Int, Double) => Unit) { tensor.foreachActiveElement(f) }
   protected def _tensor: Tensor
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
@@ -180,6 +183,7 @@ class NormalizedTensorProportions4(override val tensor:Tensor4, checkNormalizati
 
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
+  def foreachActiveElement(f: (Int, Double) => Unit) { masses.foreachActiveElement((i, v) => f(i, v/massTotal)) }
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
   def activeDomain = masses.activeDomain  // throw new Error("Not implemented")

@@ -101,6 +101,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
       ds.foreachActiveElement((i, x) => res += apply(i)*x)
       res
     }
+    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
     def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
     def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
     def +=(i: Int, v: Double): Unit = throw new Error("You should add tensors all at once to the AdaGradRDATensor")

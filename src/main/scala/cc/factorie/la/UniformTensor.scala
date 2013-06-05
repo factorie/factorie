@@ -19,6 +19,7 @@ import cc.factorie.util._
 // TODO this should implement DenseTensor - then our cases will catch everything just matching sparse and dense -luke
 trait UniformTensor extends Tensor with ReadOnlyTensor {
   def uniformValue: Double
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f)}
   def apply(i:Int) = uniformValue
   def isDense = true
   //def activeDomain: IntSeq = new RangeIntSeq(0, length) // Can't be both here an Tensor1

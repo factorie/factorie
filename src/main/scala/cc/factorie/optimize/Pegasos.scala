@@ -59,6 +59,7 @@ object MutableScalableWeights {
   // make the l2 regularized thing work with the averaged perceptron -
   // it can certainly work with the MIRA, different LR's etc
   private trait MutableScaledTensor extends Tensor  {
+    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
     def activeDomain = new RangeIntSeq(0, length)
     protected val _values = Array.fill(length)(0.0)
     var multiplier = 1.0
