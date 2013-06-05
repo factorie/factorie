@@ -116,7 +116,7 @@ class NER2 extends DocumentAnnotator {
       mainModel match {
         case model:Model1 => indepedentPredictDocument(document)
         case model:Model2 => forwardPredictDocument(document)
-        case model:Model3 => MaximizeByBPChain(document.tokens.toIndexedSeq.map(_.attr[BilouOntonotesNerLabel]), model)
+        case model:Model3 => bpPredictDocument(document)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
     }
@@ -143,6 +143,9 @@ class NER2 extends DocumentAnnotator {
     indepedentPredictDocument(document)
     for (token <- document.tokens) forwardPredictToken(token)
     //predictionHistory.clear()
+  }
+  def bpPredictDocument(document:Document): Unit = {
+    for (sentence <- document.sentences) MaximizeByBPChain(sentence.tokens.toIndexedSeq.map(_.attr[BilouOntonotesNerLabel]), model3)
   }
  
   
@@ -255,7 +258,7 @@ class NER2 extends DocumentAnnotator {
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
     val examples = labelChains.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
-    val trainer = new optimize.BatchTrainer(model3.parameters) {
+    val trainer = new optimize.OnlineTrainer(model3.parameters) {
       override def processExamples(examples: Iterable[optimize.Example]): Unit = {
         super.processExamples(examples)
         trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))

@@ -37,7 +37,10 @@ object PersonLastFromCensus extends WordLexicon { this ++= io.Source.fromInputSt
 
 
 // TODO Change the names in the .jar to match these
-object Event extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wiki/event.txt")) }
-object Battle extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wiki/battle.txt")) }
-object Competition extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wiki/competition.txt")) }
+object WikipediaPerson extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/person.txt")) }
+object WikipediaOrganization extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/organization.txt")) }
+object WikipediaLocation extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/location.txt")) }
+object WikipediaEvent extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/events.txt")) } // TODO rename this to "event.txt"
+object WikipediaBattle extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/battle.txt")) }
+object WikipediaCompetition extends PhraseLexicon { this ++= io.Source.fromInputStream(getClass.getResourceAsStream("wikipedia/competition.txt")) }
 
