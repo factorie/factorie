@@ -106,7 +106,7 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
     }
   }
   def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO Make this more efficient for cases of 1, 2, 3 edges.
-  def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal.asInstanceOf[Tensor1], false)  // TODO Think about avoiding re-calc every time
+  def proportions: Proportions1 = new DenseTensorProportions1(calculateMarginal.asInstanceOf[Tensor1].asArray)  // TODO Think about avoiding re-calc every time
   override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
   override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
@@ -194,7 +194,7 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Simp
   def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   // TODO See about caching this when possible
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
-  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginalTensor.asInstanceOf[Tensor1], false)
+  override def proportions: Proportions1 = new DenseTensorProportions1(calculateMarginalTensor.asArray, false)
   def calculateOutgoing1: Tensor1 = scores
 }
 
@@ -264,7 +264,7 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
 //      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
     result
   }
-  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginalTensor.asInstanceOf[Tensor2], false)
+  override def proportions: Proportions2 = new DenseTensorProportions2(calculateMarginalTensor.asArray, scores.dim1, scores.dim2, false)
 }
 
 trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
@@ -686,8 +686,8 @@ object BP {
       case 1 => summary.bpFactors.foreach(_.updateOutgoing())
       case _ => {
         // TODO There is a tricky dependency here: "varying" comes in order, and we are relying on the summary.bpFactors returning factors in chain order also!  Make this safer. -akm  
-        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]] // this includes both Factor1[Label], Factor2[Label,Features]
-        val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
+        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]].toArray // this includes both Factor1[Label], Factor2[Label,Features]
+        val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]].toArray
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         assert(markovBPFactors.length < 2 || markovBPFactors.sliding(2).forall(fs => fs(0).edge2.bpVariable == fs(1).edge1.bpVariable)) // Make sure we got the Markov chain factors in order!
         // Send all messages from observations to labels in parallel

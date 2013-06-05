@@ -415,7 +415,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 	    newFactor1(v1, 3, 0),
 	    newFactor1(v2, 0, 3),
 	    newFactor2(v1, v3, 3, 0),
-	    newFactor2(v2, v3, 3, 0)
+	    newFactor2(v3, v2, 3, 0)
 	  )
     
     val fg = BP.inferTreeSum(vars, model, root = v3)

@@ -256,7 +256,7 @@ with Parameters
         else if (f.family == markov) {
           val f2 = _f.asInstanceOf[Factor2[Label, Label]]
           val s = labelDomain.dimensionDomain.size
-          new DiscreteMarginal2(f2._1, f2._2, new NormalizedTensorProportions2(new SingletonBinaryTensor2(s, s, variableTargetMap(f2._1), variableTargetMap(f2._2)))) with DiscreteMarginal2Factor2[Label,Label] { val factor = f2 }
+          new DiscreteMarginal2(f2._1, f2._2, new SingletonProportions2(s, s, variableTargetMap(f2._1), variableTargetMap(f2._2))) with DiscreteMarginal2Factor2[Label,Label] { val factor = f2 }
         }
         else
           throw new Error("ChainModel marginals can only be returned for ChainModel factors")

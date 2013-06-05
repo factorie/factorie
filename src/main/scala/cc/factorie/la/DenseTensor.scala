@@ -17,6 +17,7 @@ import cc.factorie._
 import cc.factorie.util._
 
 trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   protected def _initialArray: Array[Double] = new Array[Double](length)
   private var __values = _initialArray
   if (__default != 0.0) java.util.Arrays.fill(__values, __default)

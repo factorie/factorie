@@ -278,10 +278,6 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             }
             i += 1
           }
-        case (t1: NormalizedTensorProportions, t2) =>
-          this += (t1.tensor outer t2, f / t1.tensor.sum)
-        case (t1, t2: NormalizedTensorProportions) =>
-          this += (t1 outer t2.tensor, f / t2.tensor.sum)
         case (t1: DenseTensor, t2: SparseTensor) =>
           var i = 0
           val arr = t1.asArray
@@ -349,7 +345,6 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
-    case t:NormalizedTensorProportions => this += (t.tensor, f / t.sum)
     case t:Tensor => t.foreachActiveElement((i, v) => this += (i, v * f))
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */

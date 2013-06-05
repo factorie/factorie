@@ -78,7 +78,7 @@ object Tutorial40InferenceAndLearning {
 
     val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model).head
     assertStringEquals(summary.logZ, "6.931471805599453")
-    assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Tensor1(0.5,0.5)")
+    assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.5,0.5)")
 
     /*&
      * Aside from InferByBPChainSum, which knows how to run forward-backward on chain models

@@ -93,6 +93,11 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
 }
 
+class SingletonMasses2(dim1:Int, dim2: Int, singleIndex1:Int, singleIndex2: Int, singleValue:Double) extends SingletonTensor2(dim1, dim2, singleIndex1, singleIndex2, singleValue) with Masses2 {
+  def massTotal = singleValue
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
+}
+
 class GrowableDenseMasses1(sizeProxy:Iterable[Any]) extends ProxyGrowableDenseTensor1(sizeProxy) with Masses1 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; super.+=(i, v); assert(_massTotal >= 0.0, "_masstotal is negative: "+_massTotal); assert(_values(i) >= 0.0, "Negative value " + i + " " + _values(i)) }
 }

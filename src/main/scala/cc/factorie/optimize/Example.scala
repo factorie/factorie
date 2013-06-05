@@ -163,7 +163,7 @@ class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVa
       i += 1
     }
     distribution.expNormalize()
-    (new NormalizedTensorProportions1(distribution, checkNormalization=false), targetIndex)
+    (new DenseTensorProportions1(distribution.asArray, checkNormalization=false), targetIndex)
   }
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     for (component <- components) {

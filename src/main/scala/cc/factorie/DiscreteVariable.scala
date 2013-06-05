@@ -36,7 +36,7 @@ trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] with 
       i += 1
     }
     distribution.expNormalize()
-    new NormalizedTensorProportions1(distribution, checkNormalization=false)
+    new DenseTensorProportions1(distribution.asArray, checkNormalization=false)
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def proportions(model:Model): Proportions1 = proportions(model.factors(this))
@@ -75,7 +75,7 @@ trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] with 
       i += 1
     }
     distribution.expNormalize()
-    new NormalizedTensorProportions1(distribution, checkNormalization=false)
+    new DenseTensorProportions1(distribution.asArray, checkNormalization=false)
   }
   override def toString = printName+"("+intValue+")"
 }

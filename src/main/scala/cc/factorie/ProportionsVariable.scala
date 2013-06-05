@@ -62,6 +62,10 @@ class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(
   def masses = this
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
 }
+class SingletonProportions2(dim1:Int, dim2: Int, singleIndex1:Int, singleIndex2: Int) extends SingletonMasses2(dim1, dim2, singleIndex1, singleIndex2, 1.0) with Proportions2 {
+  def masses = this
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
+}
 class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with Proportions1 {
   def masses = this
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
@@ -132,7 +136,6 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
 }
 
 trait DenseTensorProportions extends Proportions with DenseTensor {
-  def masses = this
   def massTotal = 1.0
   // These overrides would not be necessary if Tensor were not a MutableDoubleSeq and we had a ImmutableDenseTensor, but I don't think it is worth it.
   override def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
@@ -146,23 +149,25 @@ trait DenseTensorProportions extends Proportions with DenseTensor {
   override def expNormalize(): Double = throw new Error("Method expNormalize() not defined on class "+getClass.getName)
 }
 // TODO Make default constructor take Array[Double], and another constructor that takes Tensor and copy
-class DenseTensorProportions1(override protected val _initialArray:Array[Double], checkNormalization:Boolean = true) extends DenseTensor1(_initialArray.length) with DenseTensorProportions {
+class DenseTensorProportions1(override protected val _initialArray:Array[Double], checkNormalization:Boolean = true) extends DenseTensor1(_initialArray.length) with DenseTensorProportions with Proportions1 {
+  def masses = this
   def this(tensor:Tensor1) = this(tensor.toArray)
   if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   override def copy: DenseTensorProportions1 = this // because we should be immutable
   override def blankCopy: DenseTensorProportions1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
-class DenseTensorProportions2(initialArray:Array[Double], dim1:Int, dim2:Int, checkNormalization:Boolean = true) extends DenseTensor2(dim1, dim2) with DenseTensorProportions {
+class DenseTensorProportions2(override protected val _initialArray:Array[Double], dim1:Int, dim2:Int, checkNormalization:Boolean = true) extends DenseTensor2(dim1, dim2) with DenseTensorProportions with Proportions2 {
+  def masses = this
   def this(tensor:Tensor2) = this(tensor.toArray, tensor.dim1, tensor.dim2)
-  override def _initialArray = null
-  if (checkNormalization) require(maths.almostEquals(initialArray.sum, 1.0, 0.0001))
+  if (checkNormalization) require(maths.almostEquals(_initialArray.sum, 1.0, 0.0001))
   _setArray(_initialArray)
   override def copy: DenseTensorProportions2 = this // because we should be immutable
   override def blankCopy: DenseTensorProportions2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
-class DenseTensorProportions3(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, checkNormalization:Boolean = true) extends DenseTensor3(dim1, dim2, dim3) with DenseTensorProportions {
+class DenseTensorProportions3(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, checkNormalization:Boolean = true) extends DenseTensor3(dim1, dim2, dim3) with DenseTensorProportions with Proportions3 {
+  def masses = this
   def this(tensor:Tensor3) = this(tensor.toArray, tensor.dim1, tensor.dim2, tensor.dim3)
   override def _initialArray = null
   if (checkNormalization) require(maths.almostEquals(initialArray.sum, 1.0, 0.0001))
@@ -171,7 +176,8 @@ class DenseTensorProportions3(initialArray:Array[Double], dim1:Int, dim2:Int, di
   override def blankCopy: DenseTensorProportions3 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
-class DenseTensorProportions4(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, dim4:Int, checkNormalization:Boolean = true) extends DenseTensor4(dim1, dim2, dim3, dim4) with DenseTensorProportions {
+class DenseTensorProportions4(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, dim4:Int, checkNormalization:Boolean = true) extends DenseTensor4(dim1, dim2, dim3, dim4) with DenseTensorProportions with Proportions4 {
+  def masses = this
   def this(tensor:Tensor4) = this(tensor.toArray, tensor.dim1, tensor.dim2, tensor.dim3, tensor.dim4)
   override def _initialArray = null
   if (checkNormalization) require(maths.almostEquals(initialArray.sum, 1.0, 0.0001))
@@ -182,7 +188,6 @@ class DenseTensorProportions4(initialArray:Array[Double], dim1:Int, dim2:Int, di
 
 
 trait SparseTensorProportions extends Proportions with SparseIndexedTensor {
-  def masses = this
   def massTotal = 1.0
   protected def tensor: SparseIndexedTensor
   tensor._makeReadable
@@ -208,13 +213,15 @@ trait SparseTensorProportions extends Proportions with SparseIndexedTensor {
   override def expNormalize(): Double = throw new Error("Method expNormalize() not defined on class "+getClass.getName)
 }
 
-class SparseTensorProportions1(val tensor:SparseIndexedTensor1, checkNormalization:Boolean = true) extends Tensor1 with SparseTensorProportions {
+class SparseTensorProportions1(val tensor:SparseIndexedTensor1, checkNormalization:Boolean = true) extends Tensor1 with SparseTensorProportions with Proportions1 {
+  def masses = this
   if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   def dim1 = tensor.dim1
   override def copy: SparseTensorProportions1 = this // because we should be immutable
   override def blankCopy: SparseTensorProportions1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
-class SparseTensorProportions2(val tensor:SparseIndexedTensor2, checkNormalization:Boolean = true) extends Tensor2 with SparseTensorProportions {
+class SparseTensorProportions2(val tensor:SparseIndexedTensor2, checkNormalization:Boolean = true) extends Tensor2 with SparseTensorProportions with Proportions2 {
+  def masses = this
   if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   def dim1 = tensor.dim1
   def dim2 = tensor.dim2
@@ -223,7 +230,8 @@ class SparseTensorProportions2(val tensor:SparseIndexedTensor2, checkNormalizati
   override def copy: SparseTensorProportions2 = this // because we should be immutable
   override def blankCopy: SparseTensorProportions2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
-class SparseTensorProportions3(val tensor:SparseIndexedTensor3, checkNormalization:Boolean = true) extends Tensor3 with SparseTensorProportions {
+class SparseTensorProportions3(val tensor:SparseIndexedTensor3, checkNormalization:Boolean = true) extends Tensor3 with SparseTensorProportions with Proportions3 {
+  def masses = this
   if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   def dim1 = tensor.dim1
   def dim2 = tensor.dim2
@@ -234,7 +242,8 @@ class SparseTensorProportions3(val tensor:SparseIndexedTensor3, checkNormalizati
   override def copy: SparseTensorProportions3 = this // because we should be immutable
   override def blankCopy: SparseTensorProportions3 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
-class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalization:Boolean = true) extends Tensor4 with SparseTensorProportions {
+class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalization:Boolean = true) extends Tensor4 with SparseTensorProportions with Proportions4 {
+  def masses = this
   if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   def dim2 = tensor.dim2
   def dim1 = tensor.dim1

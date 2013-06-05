@@ -87,7 +87,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     case t:DoubleSeq => super.+=(t, f)
   }
   */
-  override def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
+  /*def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
     case (ds: SparseIndexedTensor2, factor: DenseTensor2) =>
       ds._makeReadable
       val indices = ds._indices
@@ -114,7 +114,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
         println("DenseTensorLike2 dot unsupported type: " + ds.getClass.getName + " " + fac.getClass.getName)
       }
       val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
-  }
+  }*/
 }
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
@@ -421,10 +421,6 @@ trait Outer2Tensor extends ReadOnlyTensor {
           }
           i += 1
         }
-      case (t1: NormalizedTensorProportions, t2: Tensor) =>
-        (t1.tensor outer t2).=+(a, v/t1.tensor.sum)
-      case (t1: Tensor, t2: NormalizedTensorProportions) =>
-        (t1 outer t2.tensor).=+(a, v/t2.tensor.sum)
       case (t1: SingletonTensor, t2: SparseTensor) =>
         val t2Size = t2.activeDomainSize
         val t2IndexSeq = t2._indices
