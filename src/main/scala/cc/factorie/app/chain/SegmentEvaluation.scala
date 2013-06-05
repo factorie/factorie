@@ -120,9 +120,14 @@ object SegmentEvaluation {
   }
 }
 
-// for defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
+// For defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
+// For BILOU you should use startPrefix = "(B|U)-" and continuePrefix = "(I|L)-"
 class SegmentEvaluation[L<:LabeledCategoricalVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)
+  def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String], labels:IndexedSeq[L]) = {
+    this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)
+    this += labels
+  }
   def this(labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)))
   // Grab the domain from the first label in the Seq; assume all the domains are the same
   def this(labels:IndexedSeq[L]) = { this(labels.head.domain); this.+=(labels) }
