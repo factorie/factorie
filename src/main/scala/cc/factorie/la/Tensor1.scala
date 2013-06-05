@@ -37,6 +37,7 @@ trait Tensor1 extends Tensor {
     assert(dim.fold(1)((a,b) => a*b) == dim1)
     val self = this
     new Tensor with ReadOnlyTensor {
+      def foreachActiveElement(f: (Int,Double) => Unit) = self.foreachActiveElement(f)
       def dimensions = dim
       def activeDomain = tensor1.activeDomain
       def apply(i: Int) = tensor1(i)
@@ -141,6 +142,7 @@ class ProxyGrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends GrowableDen
 
 /** A Tensor representation of a single scalar (Double) value */
 class ScalarTensor(var singleValue:Double) extends Tensor1 {
+  def foreachActiveElement(f: (Int,Double) => Unit) = f(0, singleValue)
   def dim1 = 1
   def activeDomain = new SingletonIntSeq(0)
   def isDense = false

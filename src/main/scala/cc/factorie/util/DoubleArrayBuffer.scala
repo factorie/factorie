@@ -184,6 +184,7 @@ trait ProtectedDoubleArrayBuffer {
 }
 
 class DoubleArrayBuffer extends ProtectedDoubleArrayBuffer with DoubleSeq {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   def this(initialCapacity:Int) = { this(); _setCapacity(initialCapacity) }
   def apply(index:Int): Double = _apply(index)
   def update(index:Int, value:Double): Unit = _update(index, value)

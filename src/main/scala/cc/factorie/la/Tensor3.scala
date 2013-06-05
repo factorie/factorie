@@ -119,6 +119,7 @@ class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Outer2Tens
   def activeDomain3 = tensor2.activeDomain1
   override def copy = new Outer2Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer2Tensor3(tensor1.blankCopy, tensor2.blankCopy)
+  def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(tensor1.index1(i1), tensor1.index2(i1), i2), v1*v2))) }
 }
 
 /** A Tensor3 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor2 (e.g. a SparseBinaryTensor2). */
@@ -131,6 +132,7 @@ class Outer1Tensor3(val tensor1:Tensor1, val tensor2:Tensor2) extends Outer2Tens
   def activeDomain3 = tensor2.activeDomain2
   override def copy = new Outer1Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor3(tensor1.blankCopy, tensor2.blankCopy)
+  def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1, tensor2.index1(i2), tensor2.index2(i2)), v1*v2))) }
 }
 
 class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {

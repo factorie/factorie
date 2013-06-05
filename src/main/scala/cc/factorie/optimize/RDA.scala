@@ -32,6 +32,7 @@ class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) ex
   def isConverged = false
 
   private trait RDATensor extends Tensor {
+    def foreachActiveElement(f: (Int,Double) => Unit) = foreachElement(f)
     def activeDomain = new RangeIntSeq(0, length)
     val gradients = Array.fill(length)(0.0)
     var t = 0

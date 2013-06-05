@@ -579,6 +579,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tens
   def activeDomain2 = tensor2.activeDomain1
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
+  override def foreachActiveElement(f: (Int,Double) => Unit) = tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), v1*v2)))
 }
 
 object Outer2Tensor {

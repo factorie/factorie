@@ -23,7 +23,7 @@ trait DoubleSeq {
   final def size = length // Just an alias // Not final so we can mix Tensor with FlatHashMap in WeightsTensor
   def foreach(f:(Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(apply(i)); i += 1 } }
   def foreachElement(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
-  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = foreachElement(f) // To be overridden by sparse subclasses
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; true }
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
@@ -170,11 +170,13 @@ class ArrayIndexedSeqDouble(val array:Array[Double]) extends IndexedSeq[Double] 
 
 object DoubleSeq {
   def apply(seqDouble:Seq[Double]): DoubleSeq = new DoubleSeq {
+    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
     private val sd = seqDouble
     def length = sd.length
     def apply(i:Int) = sd(i)
   }
   def apply(array:Array[Double]): MutableDoubleSeq = new MutableDoubleSeq {
+    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
     private val a = array
     def length = a.length
     def apply(i:Int) = a(i)
@@ -362,6 +364,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
 
 // TODO For Scala 2.10 make this implicit final class ArrayDoubleSeq
 final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDoubleSeq {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   def this(contents:Double*) = this(contents.toArray)
   def length: Int = asArray.length
   def apply(i:Int) = asArray(i)
@@ -371,11 +374,13 @@ final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDo
 }
 
 final class TruncatedArrayDoubleSeq(val array:Array[Double], val length:Int) extends DoubleSeq {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   def apply(i:Int): Double = array(i)
   override def toArray = { val a = new Array[Double](length); System.arraycopy(array, 0, a, 0, length); a }
 }
 
 final class SubArrayDoubleSeq(val array:Array[Double], val start:Int, val length:Int) extends DoubleSeq {
+  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
   def apply(i:Int): Double = array(i+start)
   override def toArray = { val a = new Array[Double](length); System.arraycopy(array, start, a, 0, length); a }
 }

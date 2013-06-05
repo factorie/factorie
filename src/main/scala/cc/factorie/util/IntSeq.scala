@@ -49,6 +49,7 @@ trait IntSeq {
     final def apply(i:Int): Int = a(i)
   }
   def asDoubleSeq: DoubleSeq = new DoubleSeq {
+    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
     final def length = IntSeq.this.length
     final def apply(i:Int): Double = IntSeq.this.apply(i)
   }
