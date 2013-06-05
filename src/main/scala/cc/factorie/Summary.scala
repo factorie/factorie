@@ -14,7 +14,7 @@
 
 package cc.factorie
 import cc.factorie.directed._
-import cc.factorie.la.{Tensor, Outer1Tensor2}
+import cc.factorie.la.{DenseTensor1, Tensor, Outer1Tensor2}
 import cc.factorie
 
 /** The result of inference: a collection of Marginal objects.
@@ -99,12 +99,21 @@ class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Su
     case Some(_) => new SingletonMarginal(v)
     case None => null
   }
-  class SingletonFactorMarginal(val factor: Factor) extends FactorMarginal {
+  trait FactorMarginalWithScore extends FactorMarginal { val score: Double }
+  class SingletonFactorMarginal(val factor: Factor) extends FactorMarginalWithScore {
     val tensorStatistics = factor.assignmentStatistics(mapAssignment).asInstanceOf[Tensor]
     def variables = factor.variables
     val score = factor.assignmentScore(mapAssignment)
   }
-  def marginal(factor: Factor): SingletonFactorMarginal = new SingletonFactorMarginal(factor)
+  class NonMarginalFactorMarginal(val factor: Factor) extends FactorMarginalWithScore {
+    val tensorStatistics = new DenseTensor1(1)
+    def variables = factor.variables
+    val score = factor.assignmentScore(mapAssignment)
+  }
+  def marginal(factor: Factor): FactorMarginalWithScore =
+    if (factor.isInstanceOf[Family#Factor] && factor.asInstanceOf[Family#Factor].family.isInstanceOf[DotFamily])
+     new SingletonFactorMarginal(factor)
+    else new NonMarginalFactorMarginal(factor)
   def factorMarginals = factors.map(marginal)
   def logZ = factors.map(marginal(_).score).sum
 }

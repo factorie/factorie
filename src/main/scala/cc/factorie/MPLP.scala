@@ -95,7 +95,7 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
       logger.debug("Dual is: " + factors.map(_.mapScore).sum)
       i += 1
     } while (!converged && i < maxIterations)
-    val assignment = new HashMapAssignment()
+    val assignment = new HashMapAssignment(ignoreNonPresent=false)
     for (v <- variables) {
       assignment.update(v, v.domain(variableFactors(v).head.getMaxMarginals(v).maxIndex).asInstanceOf[DiscreteVar#Value])
     }
@@ -103,10 +103,10 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
   }
 }
 
-object InferByMPLP extends Infer {
+object InferByMPLP extends Maximize {
   def infer(variables:Iterable[Var], model:Model) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model).infer)
 }
 
-class InferByMPLP(maxIterations: Int) extends Infer {
+class InferByMPLP(maxIterations: Int) extends Maximize {
   def infer(variables:Iterable[Var], model:Model) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model, maxIterations=maxIterations).infer)
 }

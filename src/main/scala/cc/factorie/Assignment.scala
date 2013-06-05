@@ -63,13 +63,13 @@ object TargetAssignment extends Assignment {
 
 /** A MutableAssignment backed by a HashMap.
     @author Andrew McCallum */
-class HashMapAssignment extends MutableAssignment {
+class HashMapAssignment(val ignoreNonPresent: Boolean=true) extends MutableAssignment {
   private val map = new scala.collection.mutable.HashMap[Var, Any]
-  def this(variables:Var*) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
-  def this(variables:Iterable[Var]) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
+  def this(variables:Var*) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
+  def this(variables:Iterable[Var]) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def variables = map.keys
-  def apply[V<:Var](v:V): V#Value = { val a = map(v); if (null != a) a.asInstanceOf[V#Value] else throw new Error("Variable not present: "+v) }
-  def get[V<:Var](v:V): Option[V#Value] = map.get(v).map(_.asInstanceOf[V#Value])
+  def apply[V<:Var](v:V): V#Value = { get(v) match { case Some(v) => v; case None => throw new Error("Variable not in assignment: " + v)} }
+  def get[V<:Var](v:V): Option[V#Value] = if (ignoreNonPresent) map.get(v).map(_.asInstanceOf[V#Value]) else Some(map.getOrElse(v, v.value).asInstanceOf[V#Value])
   def update[V<:Var, U <: V#Value](variable:V, value:U): Unit = map(variable) = value
   def contains(v:Var) = map.contains(v)
 }
