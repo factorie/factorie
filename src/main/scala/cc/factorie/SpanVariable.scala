@@ -26,6 +26,7 @@ trait SpanValue[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeq[E] {
   def chain: C
   def start: Int
   def length: Int
+  override def head: E = apply(0)
   def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
   def hasPredecessor(i: Int) = (start - i) >= 0
   def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]

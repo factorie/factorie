@@ -96,11 +96,14 @@ object Observations {
   // even if "observations" contains only the words in the a Sentence.
   // Change the implementation to avoid Observation.next, and instead only use observations.apply(Int).
   
-  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], offsetConjunctions:Seq[Int]*): Unit =
+  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalTensorVar[String], offsetConjunctions:Seq[Int]*): Unit =
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
   /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
-  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalTensorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
+  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalTensorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
     val size = observations.size
+    if (size == 0) return
+    val seqStart = observations.head.position
+    val seqEnd = seqStart + size
     // First gather all the extra features here,...
     val newFeatures = Array.tabulate(size)(i => new ArrayBuffer[String])
     var i = 0
@@ -108,7 +111,7 @@ object Observations {
       val token = observations(i)
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions) 
-        thisTokenNewFeatures ++= appendConjunctions(token, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_"))
+        thisTokenNewFeatures ++= appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_"))
       // TODO "f+o" is doing string concatenation, consider something faster
       i += 1
     }
@@ -124,12 +127,12 @@ object Observations {
   }
   // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
   // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-  private def appendConjunctions[A<:Observation[A]](t:A, vf:A=>CategoricalTensorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
+  private def appendConjunctions[A<:Observation[A]](t:A, seqStart:Int, seqEnd:Int, vf:A=>CategoricalTensorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
     val result = new ArrayBuffer[List[(String,Int)]];
     val offset: Int = offsets.head
-    val t2 = t.next(offset)  // TODO Note: here is where we should be obeying Sentence boundaries.
+    var t2 = t.next(offset); if ((t2 ne null) && (t2.position < seqStart || t2.position >= seqEnd)) t2 = null.asInstanceOf[A]  // Don't add features beyond the boundaries of the Seq given in addNeighboringFeatureConjunctions
     val adding: Seq[String] = 
-      if (t2 == null) { if (/*t.position +*/ offset < 0) List("<START>") else List("<END>") }
+      if (t2 eq null) { if (/*t.position +*/ offset < 0) List("<START>") else List("<END>") }
       else if (regex != null) vf(t2).activeCategories.filter(str => str.matches(regex)) // Only include features that match pattern 
       else vf(t2).activeCategories
     if (existing != null) {
@@ -138,7 +141,7 @@ object Observations {
       for (a <- adding) result += List((a,offset))
     }
     if (offsets.size == 1) result
-    else appendConjunctions(t, vf, regex, result, offsets.drop(1))
+    else appendConjunctions(t, seqStart, seqEnd, vf, regex, result, offsets.drop(1))
   }  
   
   

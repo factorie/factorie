@@ -27,8 +27,8 @@ class NER3 extends DocumentAnnotator {
       override def neighborDomain1 = BilouConllNerDomain
       override def neighborDomain2 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
-      def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) { assert(label.token.prev.attr[BilouConllNerLabel] ne null); Factor(label.token.prev.attr[BilouConllNerLabel], label) } else Nil
-      def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) { assert(label.token.next.attr[BilouConllNerLabel] ne null); Factor(label, label.token.next.attr[BilouConllNerLabel]) } else Nil
+      def unroll1(label:BilouConllNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouConllNerLabel], label) else Nil
+      def unroll2(label:BilouConllNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouConllNerLabel]) else Nil
     }
     // Factor between label and observed token
     this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
@@ -58,6 +58,14 @@ class NER3 extends DocumentAnnotator {
     document
   }
   
+  // For words like Swedish & Swedes but not Sweden
+  object Demonyms extends lexicon.PhraseLexicon { 
+    for (line <- io.Source.fromInputStream(lexicon.WikipediaPerson.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines) {
+      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
+      for (phrase <- fields.drop(1)) this += phrase
+    }
+  }
+  
   // Feature creation
   def addFeatures(document:Document): Unit = {
     document.annotators(classOf[FeaturesVariable]) = this
@@ -83,9 +91,10 @@ class NER3 extends DocumentAnnotator {
       if (lexicon.WikipediaEvent.contains(token)) features += "WIKI-EVENT"
       if (lexicon.WikipediaLocation.contains(token)) features += "WIKI-LOCATION"
       if (lexicon.WikipediaOrganization.contains(token)) features += "WIKI-ORG"
+      if (Demonyms.contains(token)) features += "DEMONYM"
     }
-    for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
+    //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
+    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
 
     for (token <- document.tokens) {
       val word = cc.factorie.app.strings.simplifyDigits(token.string).toLowerCase
@@ -105,7 +114,7 @@ class NER3 extends DocumentAnnotator {
           t2 = t2.next
           if (t2.string == t.string) { 
             //println("Adding FIRSTMENTION to "+t2.word); 
-            t2.attr[FeaturesVariable] ++= t.attr[FeaturesVariable].activeCategories.map(f => "FIRSTMENTION="+f)
+            t2.attr[FeaturesVariable] ++= t.attr[FeaturesVariable].activeCategories.map(f => "FIRSTMENTION="+f) // Only put the @ context features in, not the others.
           }
         }
       }
