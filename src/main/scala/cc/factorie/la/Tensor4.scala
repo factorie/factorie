@@ -151,6 +151,8 @@ class SparseBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int
 
 trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def newTensor1: Int=>Tensor1
+  def foreachActiveElement(f: (Int, Double) => Unit) = throw new Error("not implemented")
+  def activeDomainSize = activeDomain.size
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
@@ -171,13 +173,13 @@ class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
   override def blankCopy = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, newTensor1)
 }
 
-
-
 // singletonindexed3, tensor1
 trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
   def singleIndex2: Int
   def singleIndex3: Int
+  def activeDomainSize = inner.activeDomainSize
+  def foreachActiveElement(f: (Int, Double) => Unit) = inner.foreachActiveElement((i, v) => f(singleIndex(singleIndex1, singleIndex2, singleIndex3, i),v))
   def inner: Tensor1
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
@@ -185,7 +187,6 @@ trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq with Rea
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain4 = inner.activeDomain1
   def activeDomain = { val offset = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4; inner.activeDomain1.map(_ + offset) }
-  override def activeDomainSize = inner.activeDomainSize
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.apply(l) else 0.0
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.update(l, v) else throw new Error("Outer indices out of bounds: "+List(i,j,k))

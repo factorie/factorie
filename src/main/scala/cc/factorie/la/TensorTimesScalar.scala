@@ -19,7 +19,8 @@ import cc.factorie.util._
 /** An lazy product of a Vector and a scalar.
     Note that changes in the underlying Tensor will also show up here. 
     @author Andrew McCallum */
-class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor with ReadOnlyTensor {
+class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor with ReadOnlyTensor with SparseDoubleSeq {
+  def activeDomainSize = tensor.activeDomainSize
   def numDimensions: Int = tensor.numDimensions
   def dimensions: Array[Int] = tensor.dimensions
   // For handling sparsity
@@ -28,7 +29,6 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor wit
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = tensor.activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def isDense: Boolean = tensor.isDense
   def length = tensor.length
-  override def activeDomainSize: Int = tensor.activeDomainSize
   override def dot(t:DoubleSeq): Double = tensor.dot(t) * scalar
   override def *(scalar:Double) = new TensorTimesScalar(tensor, scalar*this.scalar)
   //override def update(i:Int, v:Double): Unit = tensor.update(idx, value/scalar)

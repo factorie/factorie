@@ -41,7 +41,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
   def reset() {}
   def isConverged = false
 
-  private trait AdaGradRDATensor extends Tensor  {
+  private trait AdaGradRDATensor extends Tensor with DenseDoubleSeq {
     def activeDomain = new RangeIntSeq(0, length)
     val gradients = Array.fill(length)(0.0)
     val gradSquares = Array.fill(length)(0.0)
@@ -102,7 +102,8 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
       ds.foreachActiveElement((i, x) => res += apply(i)*x)
       res
     }
-    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+    def activeDomainSize = length
+    def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
     def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
     def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
     def +=(i: Int, v: Double): Unit = throw new Error("You should add tensors all at once to the AdaGradRDATensor")

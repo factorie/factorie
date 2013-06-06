@@ -36,8 +36,9 @@ trait Tensor1 extends Tensor {
   def reshape(dim: Array[Int]) : Tensor = {
     assert(dim.fold(1)((a,b) => a*b) == dim1)
     val self = this
-    new Tensor with ReadOnlyTensor {
-      def foreachActiveElement(f: (Int,Double) => Unit) = self.foreachActiveElement(f)
+    new Tensor with ReadOnlyTensor with SparseDoubleSeq {
+      def foreachActiveElement(f: (Int, Double) => Unit) = self.foreachActiveElement(f)
+      def activeDomainSize = self.activeDomainSize
       def dimensions = dim
       def activeDomain = tensor1.activeDomain
       def apply(i: Int) = tensor1(i)
@@ -141,9 +142,10 @@ class ProxyGrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends GrowableDen
 }
 
 /** A Tensor representation of a single scalar (Double) value */
-class ScalarTensor(var singleValue:Double) extends Tensor1 {
-  def foreachActiveElement(f: (Int,Double) => Unit) = f(0, singleValue)
+class ScalarTensor(var singleValue:Double) extends Tensor1 with DenseDoubleSeq {
+  def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
   def dim1 = 1
+  def activeDomainSize = activeDomain.size
   def activeDomain = new SingletonIntSeq(0)
   def isDense = false
   def update(i: Int, v: Double) = if (i == 0) { singleValue = v} else throw new Error
@@ -215,7 +217,7 @@ class GrowableSparseTensor1(sizeProxy:Iterable[Any]) extends GrowableSparseIndex
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
     @author Andrew McCallum */
-class SparseHashTensor1(val dim1:Int) extends Tensor1 {
+class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {
   def isDense = false
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashTensor1.this.default }

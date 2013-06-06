@@ -2,7 +2,7 @@ package cc.factorie.optimize
 
 import cc.factorie.{WeightsMap, WeightsSet}
 import cc.factorie.la._
-import cc.factorie.util.{DoubleSeq, RangeIntSeq}
+import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 
 // Implements the Regularized Dual Averaging algorithm of Xiao (by way of Nesterov) with support for l1 and l2 regularization
 class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
@@ -31,8 +31,10 @@ class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) ex
   def reset(): Unit = initialized = false
   def isConverged = false
 
-  private trait RDATensor extends Tensor {
-    def foreachActiveElement(f: (Int,Double) => Unit) = foreachElement(f)
+  private trait RDATensor extends Tensor with DenseDoubleSeq {
+    def activeDomainSize = activeDomain.length
+    def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
+
     def activeDomain = new RangeIntSeq(0, length)
     val gradients = Array.fill(length)(0.0)
     var t = 0

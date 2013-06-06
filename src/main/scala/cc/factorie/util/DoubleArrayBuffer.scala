@@ -183,8 +183,7 @@ trait ProtectedDoubleArrayBuffer {
   protected def _remove(index: Int): Unit = _remove(index, 1)
 }
 
-class DoubleArrayBuffer extends ProtectedDoubleArrayBuffer with DoubleSeq {
-  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+class DoubleArrayBuffer extends ProtectedDoubleArrayBuffer with DenseDoubleSeq {
   def this(initialCapacity:Int) = { this(); _setCapacity(initialCapacity) }
   def apply(index:Int): Double = _apply(index)
   def update(index:Int, value:Double): Unit = _update(index, value)

@@ -15,7 +15,7 @@
 package cc.factorie
 import cc.factorie._
 import cc.factorie.la._
-import cc.factorie.util.{DoubleSeq,IntSeq}
+import cc.factorie.util.{SparseDoubleSeq, DoubleSeq, IntSeq}
 import scala.util.Random
 
 /** A Tensor containing only non-negative entries.  These are also the basis for Proportions.
@@ -109,10 +109,12 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
-class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
+class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with SparseDoubleSeq with Masses1 {
+  def activeDomainSize = activeIndices.length
+
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def isDense = false
-  def foreachActiveElement(f: (Int, Double) => Unit) { activeIndices.foreach(i => f(i, this(i))) }
+  override def foreachActiveElement(f: (Int, Double) => Unit) { activeIndices.foreach(i => f(i, this(i))) }
   def activeDomain = activeIndices
   //def activeDomain = activeDomain1
   def apply(index:Int): Double = {

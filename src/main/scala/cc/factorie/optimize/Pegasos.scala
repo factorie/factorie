@@ -2,7 +2,7 @@ package cc.factorie.optimize
 
 import cc.factorie.la._
 import cc.factorie.{WeightsMap, WeightsSet}
-import cc.factorie.util.{TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
+import cc.factorie.util.{DenseDoubleSeq, TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
 
 // This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
 // it won't necessarily work with other losses because of the aggressive projection steps
@@ -58,9 +58,10 @@ object MutableScalableWeights {
   // NOTE use the scaled tensor to build Pegasos and l2 sgd, and then see if we can
   // make the l2 regularized thing work with the averaged perceptron -
   // it can certainly work with the MIRA, different LR's etc
-  private trait MutableScaledTensor extends Tensor  {
-    def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+  private trait MutableScaledTensor extends Tensor with DenseDoubleSeq {
     def activeDomain = new RangeIntSeq(0, length)
+    def activeDomainSize = activeDomain.length
+    def forallActiveElements(f: (Int,Double) => Boolean) = forallElements(f)
     protected val _values = Array.fill(length)(0.0)
     var multiplier = 1.0
     var tolerance = 0.00001

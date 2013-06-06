@@ -30,10 +30,9 @@ trait Tensor extends MutableDoubleSeq {
   def isDense: Boolean
   def dimensionsMatch(t:Tensor): Boolean = dimensions.toSeq equals t.dimensions.toSeq // Inefficient; override in subclasses
   def ensureDimensionsMatch(t:Tensor): Unit = require(dimensions.toSeq == t.dimensions.toSeq) // Inefficient; override in subclasses
-  def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
+  def activeDomainSize: Int
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
-  //def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   // this method lets us aggregate without boxing -luke
   // (idx, value, acc)
   def foldActiveElements(seed: Double, f: (Int, Double, Double) => Double): Double = {
@@ -43,7 +42,7 @@ trait Tensor extends MutableDoubleSeq {
   }
   // TODO!! Change this to use TensorElementIterator instead
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
-  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
+  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean // = forallElements(f) // To be override for efficiency in subclasses
   def exists(f:(Double)=>Boolean): Boolean = !forallActiveElements((i,v) => !f(v))
   def outer(t:Tensor): Tensor = Tensor.outer(this, t)
   def dot(ds:DoubleSeq): Double

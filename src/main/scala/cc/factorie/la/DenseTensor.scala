@@ -16,8 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
-  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDoubleSeq {
   protected def _initialArray: Array[Double] = new Array[Double](length)
   private var __values = _initialArray
   if (__default != 0.0) java.util.Arrays.fill(__values, __default)
@@ -40,6 +39,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   def isDense = true
   def activeDomain: IntSeq = new RangeIntSeq(0, length)
   def apply(i:Int): Double = __values(i)
+  def activeDomainSize = length
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def asArray = __values
@@ -49,6 +49,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
+  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f)
   override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }
   override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, __values, 0, length)
   var hasLogged = false

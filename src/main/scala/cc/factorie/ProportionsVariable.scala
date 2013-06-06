@@ -16,7 +16,7 @@
 package cc.factorie
 import cc.factorie._
 import cc.factorie.la._
-import cc.factorie.util.{DoubleSeq,IntSeq}
+import cc.factorie.util.{SparseDoubleSeq, DenseDoubleSeq, DoubleSeq, IntSeq}
 import scala.util.Random
 import cc.factorie.directed._
 import scala.Some
@@ -70,8 +70,9 @@ class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with 
   def masses = this
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
-class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends Proportions1 {
-  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends DenseDoubleSeq with Proportions1 {
+  def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
+  def activeDomainSize = activeDomain.size
   val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
@@ -86,8 +87,9 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
-trait DenseProportions extends Proportions {
-  def foreachActiveElement(f: (Int, Double) => Unit) { foreachElement(f) }
+trait DenseProportions extends DenseDoubleSeq with Proportions  {
+  def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
+  def activeDomainSize = activeDomain.size
   def apply(index:Int): Double = {
     val mt = masses.massTotal
     if (mt == 0.0) 1.0 / length else masses.apply(index) / mt
@@ -135,7 +137,7 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
   def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
-trait DenseTensorProportions extends Proportions with DenseTensor {
+trait DenseTensorProportions extends DenseTensor with Proportions {
   def massTotal = 1.0
   // These overrides would not be necessary if Tensor were not a MutableDoubleSeq and we had a ImmutableDenseTensor, but I don't think it is worth it.
   override def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
@@ -187,9 +189,10 @@ class DenseTensorProportions4(initialArray:Array[Double], dim1:Int, dim2:Int, di
 }
 
 
-trait SparseTensorProportions extends Proportions with SparseIndexedTensor {
+trait SparseTensorProportions extends SparseIndexedTensor with Proportions {
   def massTotal = 1.0
   protected def tensor: SparseIndexedTensor
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = tensor.foreachActiveElement(f)
   tensor._makeReadable
   def _makeReadable(): Unit = {}
   def _unsafeActiveDomainSize: Int = tensor._unsafeActiveDomainSize
@@ -302,9 +305,10 @@ class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalizati
 //  def masses = this
 //}
 
-class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
+class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1  {
   val masses = new SortedSparseCountsMasses1(dim1)
-  def foreachActiveElement(f: (Int, Double) => Unit) { masses.foreachActiveElement((i, v) => f(i, v/massTotal)) }
+  def activeDomainSize = masses.activeDomainSize
+  override def foreachActiveElement(f: (Int, Double) => Unit) { masses.foreachActiveElement((i, v) => f(i, v/massTotal)) }
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def massTotal = 1.0
   def activeDomain = masses.activeDomain  // throw new Error("Not implemented")

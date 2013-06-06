@@ -22,7 +22,7 @@ import cc.factorie.util._
 trait SingletonTensor extends SparseTensor with ReadOnlyTensor {
   def singleIndex: Int
   def singleValue: Double
-
+  val activeDomainSize = 1
   def sizeHint(size: Int): Unit = { }
   def _makeReadable(): Unit = { }
   def _unsafeActiveDomainSize: Int = 1

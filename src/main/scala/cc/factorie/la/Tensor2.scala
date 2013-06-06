@@ -347,7 +347,9 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
 //  
 //}
 
-trait Outer2Tensor extends ReadOnlyTensor {
+trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
+  def activeDomainSize = tensor1.activeDomainSize * tensor2.activeDomainSize
+
   def tensor1: Tensor
   def tensor2: Tensor
 
@@ -692,7 +694,9 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with Read
     case t:DenseTensorLike2 => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
   }
 }
-class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleValue1:Double, val inner:Tensor1) extends SingletonLayeredTensorLike2
+class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleValue1:Double, val inner:Tensor1) extends SingletonLayeredTensorLike2 {
+  def activeDomainSize = inner.activeDomainSize
+}
 
 trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
@@ -719,6 +723,7 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq wit
   }
 }
 class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var inner:Tensor1) extends SingletonBinaryLayeredTensorLike2 {
+  def activeDomainSize = inner.activeDomainSize
   override def copy = new SingletonBinaryLayeredTensor2(dim1, dim2, singleIndex1, inner)
 }
 

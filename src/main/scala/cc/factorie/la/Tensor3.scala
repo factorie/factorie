@@ -119,7 +119,7 @@ class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Outer2Tens
   def activeDomain3 = tensor2.activeDomain1
   override def copy = new Outer2Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer2Tensor3(tensor1.blankCopy, tensor2.blankCopy)
-  def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(tensor1.index1(i1), tensor1.index2(i1), i2), v1*v2))) }
+  override def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(tensor1.index1(i1), tensor1.index2(i1), i2), v1*v2))) }
 }
 
 /** A Tensor3 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor2 (e.g. a SparseBinaryTensor2). */
@@ -132,7 +132,7 @@ class Outer1Tensor3(val tensor1:Tensor1, val tensor2:Tensor2) extends Outer2Tens
   def activeDomain3 = tensor2.activeDomain2
   override def copy = new Outer1Tensor3(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor3(tensor1.blankCopy, tensor2.blankCopy)
-  def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1, tensor2.index1(i2), tensor2.index2(i2)), v1*v2))) }
+  override def foreachActiveElement(f: (Int, Double) => Unit) { tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1, tensor2.index1(i2), tensor2.index2(i2)), v1*v2))) }
 }
 
 class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {
@@ -203,6 +203,7 @@ class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Ten
 // singleton2, tensor1
 
 trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with ReadOnlyTensor {
+  def activeDomainSize = inner.activeDomainSize
   def singleIndex1: Int
   def singleIndex2: Int
   def inner: Tensor1
@@ -212,6 +213,7 @@ trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 with SparseDoubleSeq wi
   def activeDomain3 = inner.activeDomain1
   def activeDomain = { val offset = singleIndex1*dim2*dim3 + singleIndex2*dim3; inner.activeDomain1.map(_ + offset) }
   override def apply(i:Int, j:Int, k:Int): Double = if (i == singleIndex1 && j == singleIndex2) inner.apply(k) else 0.0
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val offset = singleIndex1*dim2*dim3 + singleIndex2*dim3; inner.foreachActiveElement((i, v) => f(offset+i, v))}
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = if (i == singleIndex1 && j == singleIndex2) inner.update(k, v) else throw new Error("Outer index out of bounds: "+i)
   override def dot(t:DoubleSeq): Double = t match {
@@ -226,6 +228,7 @@ trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 with SparseDoubleSeq wi
 class Singleton2BinaryLayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val inner:Tensor1) extends Singleton2BinaryLayeredTensorLike3
 
 trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
+  def activeDomainSize = activeDomain.size
   def newTensor1: Int=>Tensor1
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
@@ -273,6 +276,18 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
       i += 1
     }
   }
+  def foreachActiveElement(f: (Int, Double) => Unit) {
+    val len = _inners.length
+    var i = 0
+    while (i < len) {
+      val in = _inners(i)
+      if (in ne null) {
+        in.foreachActiveElement((ii, vv) => f(i*dim3+ii, vv))
+      }
+      i += 1
+    }
+  }
+
   override def dot(ds:DoubleSeq): Double = ds match {
     case t:SingletonBinaryTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3)
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
@@ -349,6 +364,8 @@ trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with Rea
   def singleIndex2: Int
   def singleValue1: Double
   def singleValue2: Double
+  def foreachActiveElement(f: (Int, Double) => Unit) = inner.foreachActiveElement((i, v) => f(singleIndex(singleIndex1, singleIndex2, i), v))
+  def activeDomainSize = activeDomain.length
   def inner: Tensor1
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)

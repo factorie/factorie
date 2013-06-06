@@ -188,9 +188,11 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
     initialized = true
   }
 
-  private trait LockingTensor extends Tensor {
+  private trait LockingTensor extends Tensor with SparseDoubleSeq {
     val base: Tensor
-    def foreachActiveElement(f: (Int, Double) => Unit) { lock.withReadLock(base.foreachActiveElement(f)) }
+
+    def activeDomainSize = lock.withReadLock { base.activeDomainSize }
+    override def foreachActiveElement(f: (Int, Double) => Unit) { lock.withReadLock(base.foreachActiveElement(f)) }
     val lock = new util.RWLock
     def activeDomain = base.activeDomain
     def isDense = base.isDense
