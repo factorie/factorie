@@ -10,6 +10,8 @@ Redesign app.classify for better access to underlying optimize goodness. [McCall
 Finish lexicon data loading management. [McCallum]
 Implement dual decomposition. [Passos]
 Improve LDA speed and multi-threading [Vineet]
+Learning-supporting Sampler
+Packaged POS, NER, DepParser, Coref
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]

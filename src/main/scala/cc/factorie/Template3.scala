@@ -56,6 +56,8 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2
         case (true, true, true) => getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
         case (true, true, false) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
         case (true, false, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+        case (false, false, false) => {}
+        case _ => throw new Error("Combination of DiscreteVar not yet implemented.")
       } 
     }
 }

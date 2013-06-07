@@ -99,7 +99,8 @@ class NER3 extends DocumentAnnotator {
       if (Demonyms.contains(token)) features += "DEMONYM"
     }
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
-    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
+    //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
+    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2), List(0,-1), List(0,1))
 
     for (token <- document.tokens) {
       val word = cc.factorie.app.strings.simplifyDigits(token.string).toLowerCase
@@ -144,14 +145,16 @@ class NER3 extends DocumentAnnotator {
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
     val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    //val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.1/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
-    val trainer = new optimize.OnlineTrainer(model.parameters)
-    for (iteration <- 1 until 3) { 
+    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.02/examples.length, l2=0.000001/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
+    //val trainer = new optimize.OnlineTrainer(model.parameters)
+    for (iteration <- 1 until 4) { 
       trainer.processExamples(examples)
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
       testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
+      println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
+    return
     val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
       trainer2.processExamples(examples)
