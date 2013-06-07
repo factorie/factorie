@@ -16,7 +16,10 @@ package cc.factorie.util
 import scala.util.Random
 
 /** We are so desperate for efficient @specialized Seq[Double], that we created our own. 
-    This could inherit from IndexedSeq[Double] but we would pass on significant risk of inefficiencies hidden to the user. */
+    This could inherit from IndexedSeq[Double] but we would pass on significant risk of inefficiencies hidden to the user.
+    cc.factorie.la.Tensor inherits from this; the primary functionalities it adds are Tensor rank, 
+    more explicit handling of activeElements, and ability to copy itself. 
+    @author Andrew McCallum */
 trait DoubleSeq {
   def apply(i:Int): Double
   def length: Int
@@ -128,6 +131,7 @@ trait DoubleSeq {
   
   /** Return the values as an Array[Double].  Guaranteed to be a copy, not just a pointer to an internal array that would change with changes to the DoubleSeq */
   def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < length) { a(i) = apply(i); i += 1 }; a }
+  /** Return the values as an Array[Double].  Not guaranteed to be a copy; in fact if it is possible to return a pointer to an internal array, it will simply return this. */  
   def asArray: Array[Double] = toArray // Can be overridden for further efficiency
   /** With uncopied contents */
   def asSeq: Seq[Double] = new IndexedSeq[Double] {
@@ -149,7 +153,7 @@ trait DoubleSeq {
   }
   def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString
   def mkString(sep:String): String = mkString("", sep, "")
-  def mkString: String = mkString("")
+  def mkString: String = mkString(" ")
 }
 
 /** Used to iterate over the contents of a DoubleSeq, with access to both the index and the value,

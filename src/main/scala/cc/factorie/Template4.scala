@@ -43,6 +43,7 @@ abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[
   def unroll2(v:N2): Iterable[FactorType]
   def unroll3(v:N3): Iterable[FactorType]
   def unroll4(v:N4): Iterable[FactorType]
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = throw new Error("Not yet implemented.") 
 }
 
 abstract class TupleTemplate4[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest,N4<:Var:Manifest] extends Template4[N1,N2,N3,N4] with TupleFamily4[N1,N2,N3,N4]

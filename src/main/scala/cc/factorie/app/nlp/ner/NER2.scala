@@ -151,6 +151,7 @@ class NER2 extends DocumentAnnotator {
   
   // Feature creation
   def addFeatures(document:Document): Unit = {
+    val cow = cc.factorie.app.nlp.lexicon.iesl
     document.annotators(classOf[FeaturesVariable]) = this
     import cc.factorie.app.strings.simplifyDigits
     for (section <- document.sections; token <- section.tokens) {
@@ -166,16 +167,16 @@ class NER2 extends DocumentAnnotator {
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
       if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
-      if (lexicon.Money.containsLemmatizedWord(word)) features += "MONEY"
-      if (lexicon.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.Company.contains(token)) features += "COMPANY"
-      if (lexicon.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.City.contains(token)) features += "CITY"
-      if (lexicon.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.USState.contains(token)) features += "USSTATE"
+      if (lexicon.iesl.Money.containsLemmatizedWord(word)) features += "MONEY"
+      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
+      if (lexicon.iesl.City.contains(token)) features += "CITY"
+      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }

@@ -148,7 +148,12 @@ object Tensor {
   def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {
     case 1 => tensors.head.copy // Because some callers may rely on being able to do mutate-in-place operations on the results
     case 2 => tensors.head + tensors.last
-    case _ => tensors.head + sum(tensors.tail)
+    case _ => {
+      // Was: tensors.head + sum(tensors.tail).  Implementation below avoids lots of copies.
+      var result: Tensor = null
+      for (t <- tensors) if (result eq null) result = t.copy else result += t
+      result
+    }
   }
 
   // Support for dot inner products with dense tensors

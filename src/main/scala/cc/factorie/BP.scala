@@ -380,8 +380,9 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   val hasLimitedDiscreteValues12: Boolean = factor.hasLimitedDiscreteValues12
   def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = factor match {
-    // TODO: this only works if statistics has not been overridden. See TestBP.loop2 for an example where this fails.
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weights.value.isInstanceOf[Tensor2]) => {
+    // This only works if statistics has not been overridden.  Hence factor.statisticsAreValues.  (See TestBP.loop2 for an example where this fails.)
+    // TODO Try to be more efficient even when statisticsAreValues is false. -akm
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.statisticsAreValues && factor.family.weights.value.isInstanceOf[Tensor2]) => {
       factor.family.weights.value.asInstanceOf[Tensor2]
     }
     case _ => {

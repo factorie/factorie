@@ -48,6 +48,15 @@ abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifes
   def unroll(v:Var): Iterable[Factor] = Nil
   def unroll1(v:N1): Iterable[FactorType]
   def unroll2(v:N2): Iterable[FactorType]
+
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = 
+    for (factor <- factors(vars)) factor match { 
+      case factor:Factor2[DiscreteTensorVar,DiscreteTensorVar] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
+        case (true, true) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+        case (true, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+      } 
+    }
+
 }
 
 

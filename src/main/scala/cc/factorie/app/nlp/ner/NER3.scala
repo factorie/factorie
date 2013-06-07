@@ -64,8 +64,8 @@ class NER3 extends DocumentAnnotator {
   }
   
   // For words like Swedish & Swedes but not Sweden
-  object Demonyms extends lexicon.PhraseLexicon { 
-    for (line <- io.Source.fromInputStream(lexicon.WikipediaPerson.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines) {
+  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") { 
+    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines) {
       val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
       for (phrase <- fields.drop(1)) this += phrase
     }
@@ -83,19 +83,19 @@ class NER3 extends DocumentAnnotator {
       features += "W="+word
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.Company.contains(token)) features += "COMPANY"
-      if (lexicon.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.City.contains(token)) features += "CITY"
-      if (lexicon.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.USState.contains(token)) features += "USSTATE"
-      if (lexicon.WikipediaPerson.contains(token)) features += "WIKI-PERSON"
-      if (lexicon.WikipediaEvent.contains(token)) features += "WIKI-EVENT"
-      if (lexicon.WikipediaLocation.contains(token)) features += "WIKI-LOCATION"
-      if (lexicon.WikipediaOrganization.contains(token)) features += "WIKI-ORG"
+      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
+      if (lexicon.iesl.City.contains(token)) features += "CITY"
+      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
+      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
+      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
+      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
+      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
       if (Demonyms.contains(token)) features += "DEMONYM"
     }
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
@@ -142,22 +142,11 @@ class NER3 extends DocumentAnnotator {
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
-    //val trainer = new optimize.SampleRankTrainer(new IteratedConditionalModes(model, objective), new optimize.AdaGrad)
+    model.limitDiscreteValuesAsIn(trainLabels)
     val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    
-//    // Make sure we are getting factors in order
-//    for (sentence <- trainDocs.take(5).last.sentences) {
-//      //val markovFactors = model1.markov.factors(sentence.tokens.map(_.attr[BilouConllNerLabel])).toSeq
-//      val markovFactors = model1.factors(sentence.tokens.map(_.attr[BilouConllNerLabel])).filter({case f:Factor2[_,_] => f._1.isInstanceOf[BilouConllNerLabel] && f._2.isInstanceOf[BilouConllNerLabel]; case _  => false }).toSeq
-//      println("Sentence length %d  markovFactors length %d".format(sentence.length, markovFactors.length))
-//      //assert(markovFactors.length > 5, "length="+markovFactors.length)
-//      assert(markovFactors.length < 2 || markovFactors.sliding(2).forall(fs => fs(0).asInstanceOf[Factor2[_,_]]._2 == fs(1).asInstanceOf[Factor2[_,_]]._1))
-//    }
-    
     //val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.1/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     val trainer = new optimize.OnlineTrainer(model.parameters)
     for (iteration <- 1 until 3) { 
-      //trainer.processContexts(trainLabels)
       trainer.processExamples(examples)
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
       testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))

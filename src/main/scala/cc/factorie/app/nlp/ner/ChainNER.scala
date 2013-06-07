@@ -59,8 +59,8 @@ class ChainNer {
 
   val model = new ChainNerModel
   val objective = new ChainNerObjective
-  class Lexicon(filename:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(filename) {
-    def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
+  class Lexicon(file:File) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(file) {
+    override val name = file.toString.substring(file.toString.lastIndexOf('/')+1).toUpperCase
   }
   val lexicons = new scala.collection.mutable.ArrayBuffer[Lexicon]
 
@@ -255,7 +255,7 @@ object ChainNer extends ChainNer {
     if (opts.lexiconDir.wasInvoked) {
       for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
         println("Reading lexicon "+filename)
-        lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
+        lexicons += new Lexicon(new File(opts.lexiconDir.value+"/"+filename))
       }
     }
     

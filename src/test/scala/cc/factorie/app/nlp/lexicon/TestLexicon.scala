@@ -7,7 +7,7 @@ import cc.factorie.app.nlp._
 class TestLexicon extends JUnitSuite {
   
   @Test def testLexiconSingleWords(): Unit = {
-    val lexicon = new PhraseLexicon
+    val lexicon = new PhraseLexicon("test1")
     lexicon += "one"
     lexicon += "two"
     lexicon += "three"
@@ -17,7 +17,7 @@ class TestLexicon extends JUnitSuite {
   }
   
   @Test def testLexiconPhrases(): Unit = {
-    val lexicon = new PhraseLexicon
+    val lexicon = new PhraseLexicon("test2")
     lexicon += "Paris"
     assert(lexicon.contains("Paris"))
     lexicon += "San Fransisco"

@@ -45,6 +45,7 @@ abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends /*ModelWit
   //* Override this method if you want to re-capture old unrollCascade functionality. */ 
   def unroll(v:Var): Iterable[Factor] = Nil
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = for (v <- vars)  getLimitedDiscreteValues1(v) += v.intValue
 }
 
 abstract class TupleTemplate1[N1<:Var:Manifest] extends Template1[N1] with TupleFamily1[N1]

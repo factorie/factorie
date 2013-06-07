@@ -44,18 +44,37 @@ import scala.collection.mutable.Set
 */
 trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses with Model {
   type FactorType <: cc.factorie.Factor
+
+  /** Implement this method to create and return all Factors of this Template touching the given Var.
+      Users of the Template should not call this method directly, however, because 
+      this method's implementation is permitted to return duplicate Factors.  
+      Instead call factors(Var), which will deduplicate the Factors (using the helper function addFactors).*/
   def unroll(v:Var): Iterable[FactorType]
-  // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
-  //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
+
+  /** Not intended to be called by users. This method calls unroll and efficiently deduplicates the resulting
+      Factors by adding them to the result Set. */
   override def addFactors(v:Var, result:Set[cc.factorie.Factor]): Unit = {
     unroll(v) match { case fs:IterableSingleFactor[_] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
   }
+  // TODO In case we make a Template that inherits from ModelWithContext.  Should this be TemplateWithContext? 
+  //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
+  
+  /** Users should call this method to create and return all Factors of this Template touching the given Var. */
   final def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]
   }
     
+  /** A Factor Template has just one Factor Family: itself. */
   def families: Seq[Family] = Seq(Template.this)
+
+  /** Causes future calls to factor.valuesIterator to limit the returned values to 
+      those value combinations seen in the current values of the variables in factors touching "vars".
+      Note that this will limit the values of all DiscreteVar neighbors of the resulting factors,
+      not just the "vars" argument. */
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit
+  // Alternative name? -akm
+  //def addLimitedDiscreteCurrentValues(vars:Iterable[Var]): Unit
 }
 

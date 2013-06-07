@@ -185,6 +185,7 @@ class TemplateModel(theTemplates:Template*) extends Model {
   override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result))
   def families: Seq[Template] = templates
   def familiesOfClass[F<:Template](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = templates.foreach(_.limitDiscreteValuesAsIn(vars)) 
 }
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {

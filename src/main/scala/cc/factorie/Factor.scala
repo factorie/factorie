@@ -23,26 +23,36 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-/** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
+/** A single factor in a factor graph.  From a Factor you can get its neighboring variables,
+    the factor's score using the neighboring variable's current values,
+    the factor's score using some Assignment to the the neighboring variable's values,
+    sufficient statistics, 
+    
     @author Andrew McCallum */
 trait Factor extends Ordered[Factor] {
   type StatisticsType <: Any
+  
+  // Getting the neighboring variables
+  
   /** Returns the collection of variables neighboring this factor. */
   def variables: Seq[Var]
   /** The number of variables neighboring this factor. */
   def numVariables: Int
+  /** The Nth neighboring variable of this factor. */
   def variable(index: Int): Var
+  /** Does this Factor have the given variable among its neighbors? */
   def touches(variable:Var): Boolean = this.variables.contains(variable)
+  /** Does this Factor have any of the given variables among its neighbors? */
   def touchesAny(variables:Iterable[Var]): Boolean = variables.exists(touches(_))
   
   // Getting the score
   
-  /** This factors contribution to the unnormalized log-probability of the current possible world. */
+  /** This factor's contribution to the unnormalized log-probability of the current possible world. */
   def currentScore: Double
-  /** The ability to score a Values object is now removed, and this is its closest alternative. */
+  /** This factor's score, using the neighbors' values from the given assignment, not necessarily their current values.. */
   def assignmentScore(a:Assignment): Double
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
-      For Factors/Family in which the Statistics are the values, this method simply calls valuesScore(Tensor). */
+      For Factors/Family in which the Statistics are the values, this method simply calls statisticsScore(Tensor). */
   def valuesScore(tensor:Tensor): Double = throw new Error("This Factor class does not implement valuesScore(Tensor).")
   // Do not declare statisticsScore(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
 
@@ -69,12 +79,13 @@ trait Factor extends Ordered[Factor] {
   def currentAssignment: Assignment
 
   /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
+  //def valuesTensorIterator??
+  //def assignmentIterator??
 
-  /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
-  //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.currentScore - this.currentScore; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
-  /** In order to two Factors to satisfy "equals", the value returned by this method for each Factor must by "eq" . */
+  /** In order to two Factors to satisfy "equals", the value returned by this method for each Factor must by "eq".
+      This method is overridden in Family to deal with Factors that are inner classes. */
   def equalityPrerequisite: AnyRef = this.getClass
   // Implement equality based on class assignability and Variable contents equality
   //override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor]; // TODO Consider putting this back in
@@ -106,30 +117,11 @@ trait Factor extends Ordered[Factor] {
 }
 
 /** An iterable collection for efficiently holding a single Factor.
-    Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor. */
+    Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor
+    so that unroll1,2,3,4 methods (which are supposed to return Iterable[Factor] can be written
+    by end users to return a single Factor (which is then implicitly converted to this class). */
 class IterableSingleFactor[F<:Factor](val factor:F) extends Iterable[F] {
   def iterator = Iterator.single(factor)
   override def size = 1
   override def head = factor
 }
-
-
-// This comment mostly discusses an old (removed) version of FACTORIE in which Factors could have "inner" Factors.
-/** A Factor is a Model because it can return a factor (itself) and a score.
-    A Model is not a Factor because Factors *must* be able to list all the variables they touch;
-     (this is part of how they are de-duplicated);
-     yet a model may only generate Factors on the fly in response to query variables.
-    Factors are deduplicated.  Models are not; 
-     multiple models may each contribute Factors, all of which define the factor graph.  
-    Models can have inner Models, which are used to obtain factors from each.
-     Typically all factors from all inner models are summed together.
-     But a "Case" model may exist, which simply will not return factors that are not in effect;
-     that is, factors from an inner model that are not in effect will never be seen; 
-     whereas inner factors may be seen but know to point to the outer factor that knows how to handle them.  
-    Factors can have inner factors, which are used to calculate its score; often not summed.
-     This is a special case of a Model having inner Models.
-    When you ask an inner Factor for its score, it returns the score of the outer Factor to which it contributes.
-     (Is this right?  Perhaps not.)
-    When you ask an inner Model for its score, it returns its score alone.
-    */
-
