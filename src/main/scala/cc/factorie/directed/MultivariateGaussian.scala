@@ -65,24 +65,19 @@ object MultivariateGaussianMixture
     Factor(a, b, c, d)
 }
 
-object MaximizeMultivariateGaussianMean extends Maximize {
+object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],DirectedModel] {
   def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
   def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  override def infer(variables: Iterable[Var], model: Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m: DirectedModel => m; case _ => return None }
+  def infer(variables: Iterable[MutableTensorVar[Tensor1]], model: DirectedModel): AssignmentSummary = {
     val dSummary = new DiscreteSummary1[DiscreteVar]()
-    lazy val assignment = new HashMapAssignment
-    for (v <- variables) v match {
-      // Ugh, erasure makes this not at all type-safe
-      case r: MutableTensorVar[Tensor1 @unchecked] if r.tensor.isInstanceOf[Tensor1] =>
-        val m = maxMean(r, gModel, dSummary)
-        if (m.isEmpty) return None
-        else assignment(r) = m.get
-      case _ => return None
+    val assignment = new HashMapAssignment
+    for (v <- variables) {
+      val m = maxMean(v, model, dSummary)
+      m.foreach(assignment(v) = _)
     }
-    Some(new AssignmentSummary(assignment))
+    new AssignmentSummary(assignment)
   }
   def getMeanFromFactors(
     factors: Iterable[DirectedFactor],
@@ -116,7 +111,7 @@ object MaximizeMultivariateGaussianMean extends Maximize {
   }
 }
 
-object MaximizeMultivariateGaussianCovariance extends Maximize {
+object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableTensorVar[Tensor2]],DirectedModel] {
   def maxCovariance(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor2] = {
     val factorIter = model.extendedChildFactors(covarianceVar).iterator
     val n = covarianceVar.value.dim1
@@ -157,18 +152,13 @@ object MaximizeMultivariateGaussianCovariance extends Maximize {
   }
   def apply(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxCovariance(covarianceVar, model, summary).foreach(covarianceVar.set(_)(null))
-  override def infer(variables: Iterable[Var], model: Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m: DirectedModel => m; case _ => return None }
+  def infer(variables: Iterable[MutableTensorVar[Tensor2]], model: DirectedModel): AssignmentSummary = {
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
-    for (v <- variables) v match {
-      // Ugh, erasure makes this not at all type-safe
-      case r: MutableTensorVar[Tensor2 @unchecked] if r.tensor.isInstanceOf[Tensor2] =>
-        val m = maxCovariance(r, gModel, dSummary)
-        if (m.isEmpty) return None
-        else assignment(r) = m.get
-      case f => println("MaximizeMultivariateGaussianCovariance can't handle factor " + f.getClass.getName + "=" + f); return None
+    for (v <- variables) {
+      val m = maxCovariance(v, model, dSummary)
+      m.foreach(assignment(v) = _)
     }
-    Some(new AssignmentSummary(assignment))
+    new AssignmentSummary(assignment)
   }
 }

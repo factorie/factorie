@@ -76,7 +76,7 @@ object Tutorial40InferenceAndLearning {
      * The most commonly used Infer objects are those in the BP package.
      **/
 
-    val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model).head
+    val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model)
     assertStringEquals(summary.logZ, "6.931471805599453")
     assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.5,0.5)")
 

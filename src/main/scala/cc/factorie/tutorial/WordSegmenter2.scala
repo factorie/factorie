@@ -123,10 +123,10 @@ object WordSegmenterDemo2 {
 
     val trainer = new OnlineTrainer(model.parameters, maxIterations = 15, optimizer = opt)
 //    val trainer = new BatchTrainer(model, new LBFGS with L2Regularization)
-    trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model)))
+    trainer.trainFromExamples(trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model, infer=MaximizeByBPLoopy)))
 //    opt.finalizeWeights(model.parameters)
 //    opt.finalizeWeights(model.parameters)
-    for (sentence <- sentences) InferByMPLP.infer(sentence.asSeq.map(_.label), model).get.mapAssignment.globalize(null)
+    for (sentence <- sentences) InferByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.globalize(null)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
     println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")

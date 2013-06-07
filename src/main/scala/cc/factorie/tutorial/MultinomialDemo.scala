@@ -29,7 +29,7 @@ object MultinomialDemo {
     val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .15, .05)))
     // println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
-    Maximize(Seq(die), model)
+    Maximize(die, model)
     // println("Est  distribution "+die)
 
     /*

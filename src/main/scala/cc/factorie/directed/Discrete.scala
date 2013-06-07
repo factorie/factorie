@@ -43,7 +43,7 @@ object Discrete extends DirectedFamily2[DiscreteVariable,ProportionsVariable] {
   }
 }
 
-object MaximizeGeneratedDiscrete extends Maximize {
+object MaximizeGeneratedDiscrete extends Maximize[Iterable[DiscreteVariable],Model] {
   def apply(d:DiscreteVariable, model:Model): Unit = {
     val dFactors = model.factors(d)
     require(dFactors.size == 1)
@@ -61,16 +61,10 @@ object MaximizeGeneratedDiscrete extends Maximize {
       case _ => None
     }
   }
-  def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVariable]] = {
-    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
+  def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
     val result = new DiscreteSummary1[DiscreteVariable]
-    for (v <- variables) {
-      infer(v.asInstanceOf[DiscreteVariable], model) match {
-        case Some(dm) => result += dm
-        case _ => return None
-      }
-    }
-    Some(result)
+    for (v <- variables) infer(v, model).foreach(result += _)
+    result
   }
 
 }

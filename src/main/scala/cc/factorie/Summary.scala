@@ -33,6 +33,22 @@ trait Summary {
   def getMarginal(v:Var): Option[Marginal] = { val m = marginal(v); if (m eq null) None else Some(m) }
   def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
 }
+/*
+trait IncrementableInfer[-A,-B] extends Infer[A,B] {
+  override def infer(variables: A, model: B): Option[WarmStartSummary]
+}
+
+trait WarmStartSummary {
+  def updateScores(v: DiscreteVar, t: Tensor): Unit
+  def updateSummary(): Unit
+}
+
+case class ModelWithInference[M](model: M, variables: Seq[DiscreteVar], inference: IncrementableInfer[Seq[DiscreteVar], M])
+
+object InferByDualDecomposition extends Infer[Seq[ModelWithInference[_]],Seq[(Any,Any,DiscreteVar,DiscreteVar)]] {
+  def infer(variables: Seq[ModelWithInference[_]], model: Seq[(Any, Any, DiscreteVar, DiscreteVar)]) = null
+}
+*/
 
 /** A Summary that can be used to gather weighted samples into its Marginals. */
 // TODO Consider the relationship between this and Accumulator

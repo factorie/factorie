@@ -14,6 +14,9 @@
 
 package cc.factorie
 import cc.factorie.directed._
+import cc.factorie.la.WeightsMapAccumulator
+import cc.factorie.util.DoubleAccumulator
+import cc.factorie.optimize.Example
 
 // Inference naming conventions:
 
@@ -35,19 +38,14 @@ import cc.factorie.directed._
 // An Inferencer is specific to a model and some variables and may be run incrementally;
 //  it may also hold on to or be initialized with a Summary (which is a container for Marginals)
 
-trait Infer {
+trait Infer[-A,-B] {
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
       If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
       and return Some Summary on success, or None on failure. */
-  def infer(variables:Iterable[Var], model:Model): Option[Summary]
+  def infer(variables: A, model: B): Summary
 }
-
-trait InferWithContext[C] {
-  def infer(context:C, model:Model): Option[Summary]
-}
-
 // TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 => DiscretesSummary also. -akm
-object InferDiscrete1 extends Infer {
+object InferDiscrete1 extends Infer[Iterable[DiscreteVariable],Model] {
   // TODO Consider renaming this "asArray"
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
@@ -73,9 +71,8 @@ object InferDiscrete1 extends Infer {
     summary += new SimpleDiscreteMarginal1(varying, proportions(varying, model))
     summary
   }
-  def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVariable]] = {
-    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
-    Some(apply(variables.asInstanceOf[Iterable[DiscreteVariable]], model))
+  def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+    apply(variables, model)
   }
 }
 
