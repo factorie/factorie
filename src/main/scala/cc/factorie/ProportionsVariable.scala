@@ -163,27 +163,22 @@ class DenseTensorProportions2(override protected val _initialArray:Array[Double]
   def masses = this
   def this(tensor:Tensor2) = this(tensor.toArray, tensor.dim1, tensor.dim2)
   if (checkNormalization) require(maths.almostEquals(_initialArray.sum, 1.0, 0.0001))
-  _setArray(_initialArray)
   override def copy: DenseTensorProportions2 = this // because we should be immutable
   override def blankCopy: DenseTensorProportions2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
-class DenseTensorProportions3(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, checkNormalization:Boolean = true) extends DenseTensor3(dim1, dim2, dim3) with DenseTensorProportions with Proportions3 {
+class DenseTensorProportions3(override protected val _initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, checkNormalization:Boolean = true) extends DenseTensor3(dim1, dim2, dim3) with DenseTensorProportions with Proportions3 {
   def masses = this
   def this(tensor:Tensor3) = this(tensor.toArray, tensor.dim1, tensor.dim2, tensor.dim3)
-  override def _initialArray = null
-  if (checkNormalization) require(maths.almostEquals(initialArray.sum, 1.0, 0.0001))
-  _setArray(_initialArray)
+  if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   override def copy: DenseTensorProportions3 = this // because we should be immutable
   override def blankCopy: DenseTensorProportions3 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
-class DenseTensorProportions4(initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, dim4:Int, checkNormalization:Boolean = true) extends DenseTensor4(dim1, dim2, dim3, dim4) with DenseTensorProportions with Proportions4 {
+class DenseTensorProportions4(override protected val _initialArray:Array[Double], dim1:Int, dim2:Int, dim3:Int, dim4:Int, checkNormalization:Boolean = true) extends DenseTensor4(dim1, dim2, dim3, dim4) with DenseTensorProportions with Proportions4 {
   def masses = this
   def this(tensor:Tensor4) = this(tensor.toArray, tensor.dim1, tensor.dim2, tensor.dim3, tensor.dim4)
-  override def _initialArray = null
-  if (checkNormalization) require(maths.almostEquals(initialArray.sum, 1.0, 0.0001))
-  _setArray(_initialArray)
+  if (checkNormalization) require(maths.almostEquals(this.sum, 1.0, 0.0001))
   override def copy: DenseTensorProportions4 = this // because we should be immutable
   override def blankCopy: DenseTensorProportions4 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }

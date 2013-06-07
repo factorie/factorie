@@ -32,6 +32,8 @@ import scala.collection.generic.Growable
  */
 
 trait Model {
+  // TODO Consider adding "type FactorType <: Factor" here so that Template2.factors can return the right type. -akm
+  
   /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
   def factors(variable:Var): Iterable[Factor] // = { val set = newFactorsCollection; addFactors(variable, set); set }
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
@@ -185,6 +187,7 @@ class TemplateModel(theTemplates:Template*) extends Model {
   override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result))
   def families: Seq[Template] = templates
   def familiesOfClass[F<:Template](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = templates.foreach(_.limitDiscreteValuesAsIn(vars)) 
 }
 
 trait ProxyModel[C1,C2] extends ModelWithContext[C2] {

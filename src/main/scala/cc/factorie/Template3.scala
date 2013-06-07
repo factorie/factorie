@@ -49,6 +49,15 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2
   def unroll1(v:N1): Iterable[FactorType]
   def unroll2(v:N2): Iterable[FactorType]
   def unroll3(v:N3): Iterable[FactorType]
+
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = 
+    for (factor <- factors(vars)) factor match { 
+      case factor:Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
+        case (true, true, true) => getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
+        case (true, true, false) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+        case (true, false, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+      } 
+    }
 }
 
 abstract class TupleTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TupleFamily3[N1,N2,N3]

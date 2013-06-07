@@ -175,6 +175,7 @@ class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleInde
   def dim1 = sizeProxy.size
 }
 
+/** A Tensor1 of arbitrary fixed length whose value at all indices is uniformValue. */
 class UniformTensor1(val dim1:Int, var uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain = new RangeIntSeq(0, dim1)
   override def copy = new UniformTensor1(dim1, uniformValue)
@@ -184,9 +185,11 @@ class UniformTensor1(val dim1:Int, var uniformValue:Double) extends Tensor1 with
   }
   override def *=(d: Double) = uniformValue *= d
 }
+/** A Tensor1 of arbitrary fixed length containing all 1.0. */
 class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
   override def copy = new UnaryTensor1(dim1)
 }
+/** A Tensor1 of mutable increasing length whose value at all indices is uniformValue. */
 class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensor with Tensor1 {
   def activeDomain = new RangeIntSeq(0, dim1)
   //def activeDomain = activeDomain1
@@ -214,7 +217,7 @@ class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBin
 class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1)
 class GrowableSparseTensor1(sizeProxy:Iterable[Any]) extends GrowableSparseIndexedTensor1(sizeProxy)
 
-/** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
+/** A Tensor1 that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
     @author Andrew McCallum */
 class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {

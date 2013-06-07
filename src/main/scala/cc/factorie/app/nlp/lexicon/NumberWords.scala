@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.lexicon
 import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
-object NumberWords extends WordLexicon(nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object NumberWords extends WordLexicon("NumberWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++= 
 """zero
 one
@@ -55,7 +55,8 @@ multibillion
 }
 
 
-object DeterminerWords extends WordLexicon(nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+// TODO Rename this to simply "Determiner"
+object DeterminerWords extends WordLexicon("DeterminerWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++= 
 """the
 a

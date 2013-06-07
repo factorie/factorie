@@ -45,6 +45,14 @@ abstract class Template1[N1<:Var](implicit nm1: Manifest[N1]) extends /*ModelWit
   //* Override this method if you want to re-capture old unrollCascade functionality. */ 
   def unroll(v:Var): Iterable[Factor] = Nil
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
+  def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = {
+    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1)) {
+      for (factor <- factors(vars).asInstanceOf[Iterable[Factor1[DiscreteVar]]]) {
+        if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new la.SparseBinaryTensor1(factor._1.domain.dimensionSize)
+        limitedDiscreteValues1.+=(factor._1.intValue)
+      }
+    }
+  }
 }
 
 abstract class TupleTemplate1[N1<:Var:Manifest] extends Template1[N1] with TupleFamily1[N1]

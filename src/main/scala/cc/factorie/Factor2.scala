@@ -69,18 +69,20 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   def valueScores2(tensor1:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
 
   // For implementing sparsity in belief propagation
-  def hasLimitedDiscreteValues12 = limitedDiscreteValues12.activeDomainSize > 0
-  def limitedDiscreteValues12: SparseBinaryTensor2 = throw new Error("This Factor type does not implement limitedDiscreteValues12: "+getClass)
+  def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
+  def limitedDiscreteValues12: SparseBinaryTensor2 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues12(i:Int, j:Int): Unit = limitedDiscreteValues12.+=(i, j)
   def addLimitedDiscreteCurrentValues12: Unit = addLimitedDiscreteValues12(_1.asInstanceOf[DiscreteVar].intValue, _2.asInstanceOf[DiscreteVar].intValue)
-  def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
-  def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
+  
+  def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
+  def limitedDiscreteValues1: SparseBinaryTensor1 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
   def addLimitedDiscreteCurrentValues1: Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
   
   
-//  def isLimitingValuesIterator = false
-//  def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = Iterator.empty
+  // TODO Consider something like this?
+  // def assignmentIterator(fixed: Assignment): Iterator[Assignment2]
+
 
 //  /** valuesIterator in style of specifying fixed neighbors */
 //  def valuesIterator(fixed: Assignment): Iterator[Values] = {
@@ -222,8 +224,8 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   def neighborDomain1: Domain[N1#Value] = null
   def neighborDomain2: Domain[N2#Value] = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2)
-  type FactorType = Factor
 
+  type FactorType = Factor
   final case class Factor(override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) with super.Factor {
     //type StatisticsType = Family2.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family2.this
@@ -233,17 +235,15 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
     override def valuesScore(tensor:Tensor): Double = Family2.this.valuesScore(tensor) // TODO Consider implementing match here to use available _1 domain
     override def statisticsScore(tensor:Tensor): Double = Family2.this.statisticsScore(tensor)
     override def valuesStatistics(tensor:Tensor): Tensor = Family2.this.valuesStatistics(tensor)
-    //override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
-    //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
-    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.getLimitedDiscreteValues12(this.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteTensorVar]])
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor2[DiscreteTensorVar,N2]])
-    //override def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = Family2.this.addLimitedDiscreteValues(values)
-    //override def addLimitedDiscreteValues(i:Int, j:Int): Unit = Family2.this.addLimitedDiscreteValues(i, j)
+    override def statisticsAreValues: Boolean = Family2.this.statisticsAreValues
+    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.limitedDiscreteValues12 //(this.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteTensorVar]])
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1 //(this.asInstanceOf[Factor2[DiscreteTensorVar,N2]])
   }
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
+  def statisticsAreValues: Boolean = false
   
   override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensorLike2 => {
@@ -270,12 +270,18 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   }
 
   // For implementing sparsity in belief propagation
-  def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize > 0
-  protected def getLimitedDiscreteValues12(factor:Factor2[DiscreteTensorVar,DiscreteTensorVar]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
+  
+  def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
+  //protected def getLimitedDiscreteValues12(factor:Factor2[DiscreteTensorVar,DiscreteTensorVar]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
   var limitedDiscreteValues12: SparseBinaryTensor2 = null
-  def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
-  protected def getLimitedDiscreteValues1(factor:Factor2[DiscreteTensorVar,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
+  
+  def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
+  //protected def getLimitedDiscreteValues1(factor:Factor2[DiscreteTensorVar,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
+
+  def hasLimitedDiscreteValues2 = limitedDiscreteValues2 != null && limitedDiscreteValues2.activeDomainSize < limitedDiscreteValues2.length
+  //protected def getLimitedDiscreteValues2(factor:Factor2[_, DiscreteTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues2 eq null) limitedDiscreteValues2 = new SparseBinaryTensor1(factor._2.domain.dimensionSize); limitedDiscreteValues2 }
+  var limitedDiscreteValues2: SparseBinaryTensor1 = null
 
 //  // Cached Statistics
 //  private var cachedStatisticsArray: Array[StatisticsType] = null
@@ -323,6 +329,7 @@ trait TupleFamily2[N1<:Var,N2<:Var] extends Family2[N1,N2] {
 
 trait TupleFamilyWithStatistics2[N1<:Var,N2<:Var] extends TupleFamily2[N1,N2] {
   final override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = ((v1, v2))
+  final override def statisticsAreValues: Boolean = true
 }
 
 trait TensorFamily2[N1<:Var,N2<:Var] extends Family2[N1,N2] with TensorFamily {
@@ -333,6 +340,7 @@ trait TensorFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFam
   //type StatisticsType = Tensor
   final override def statistics(v1:N1#Value, v2:N2#Value) = v1 outer v2
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
+  final override def statisticsAreValues: Boolean = true
 }
 
 trait DotFamily2[N1<:Var,N2<:Var] extends TensorFamily2[N1,N2] with DotFamily {
