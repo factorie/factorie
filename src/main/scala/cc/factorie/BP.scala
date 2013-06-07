@@ -274,7 +274,7 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
       //throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
       val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12.activeDomainSize; var ii = 0
+      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 limits everything"); var ii = 0
       while (ii < len) {
         val ij = indices(ii)
         val i = scores.index1(ij)
@@ -299,8 +299,9 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
   def calculateOutgoing2: Tensor = {
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
+      //throw new Error("This code path leads to incorrect marginals")
       val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12.activeDomainSize; var ii = 0
+      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 limits everything"); var ii = 0
       while (ii < len) {
         val ij = indices(ii)
         val i = scores.index1(ij)
@@ -382,7 +383,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   val scores: Tensor2 = factor match {
     // This only works if statistics has not been overridden.  Hence factor.statisticsAreValues.  (See TestBP.loop2 for an example where this fails.)
     // TODO Try to be more efficient even when statisticsAreValues is false. -akm
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.statisticsAreValues && factor.family.weights.value.isInstanceOf[Tensor2]) => {
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] /*&& factor.statisticsAreValues*/) => {
+      assert(factor.family.weights.value.isInstanceOf[Tensor2])
       factor.family.weights.value.asInstanceOf[Tensor2]
     }
     case _ => {

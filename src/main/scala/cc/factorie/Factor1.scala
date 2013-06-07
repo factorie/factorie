@@ -155,7 +155,7 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
     override def statistics(v1:N1#Value): StatisticsType = Family1.this.statistics(v1)
     override def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = Family1.this.scoreAndStatistics(v1)
     override def valuesStatistics(tensor:Tensor): Tensor = Family1.this.valuesStatistics(tensor)
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family1.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor1[DiscreteTensorVar]])
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family1.this.limitedDiscreteValues1 //(this.asInstanceOf[Factor1[DiscreteTensorVar]])
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value): Double
@@ -165,8 +165,8 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   // For implementing sparsity in belief propagation
 
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize > 0
-  protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionDomain.size); limitedDiscreteValues1 }
-  protected def getLimitedDiscreteValues1(v:DiscreteTensorVar): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(v.domain.dimensionDomain.size); limitedDiscreteValues1 }
+  //protected def getLimitedDiscreteValues1(factor:Factor1[DiscreteTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionDomain.size); limitedDiscreteValues1 }
+  //protected def getLimitedDiscreteValues1(v:DiscreteTensorVar): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(v.domain.dimensionDomain.size); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
 }
 

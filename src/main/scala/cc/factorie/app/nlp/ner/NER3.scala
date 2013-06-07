@@ -56,7 +56,7 @@ class NER3 extends DocumentAnnotator {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
       for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
-      for (sentence <- document.sentences if sentence.tokens.size > 0)
+      for (sentence <- document.sentences if sentence.length > 0)
         BP.inferChainMax(sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq, model)
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
     }
@@ -152,7 +152,7 @@ class NER3 extends DocumentAnnotator {
       testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     }
-    val trainer2 = new optimize.BatchTrainer(model.parameters)
+    val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
       trainer2.processExamples(examples)
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))

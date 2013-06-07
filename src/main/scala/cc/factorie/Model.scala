@@ -32,6 +32,8 @@ import scala.collection.generic.Growable
  */
 
 trait Model {
+  // TODO Consider adding "type FactorType <: Factor" here so that Template2.factors can return the right type. -akm
+  
   /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
   def factors(variable:Var): Iterable[Factor] // = { val set = newFactorsCollection; addFactors(variable, set); set }
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
