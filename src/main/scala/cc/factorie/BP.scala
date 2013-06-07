@@ -20,7 +20,8 @@ import scala.collection.{Set}
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.Queue
 
-/** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. */
+/** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. 
+    "Ring" refers to whether we are using sum/product or max/product. */
 trait BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor

@@ -113,8 +113,6 @@ trait DoubleSeq {
   }
   //def pr(i:Int, normalizer:Double): Double = apply(i) / normalizer
   
-  /** Return the values as an Array[Double].  Guaranteed to be a copy, not just a pointer to an internal array that would change with changes to the DoubleSeq */
-  def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < length) { a(i) = apply(i); i += 1 }; a }
   /** Return the values as an Array[Double].  Not guaranteed to be a copy; in fact if it is possible to return a pointer to an internal array, it will simply return this. */  
   def asArray: Array[Double] = toArray // Can be overridden for further efficiency
   /** With uncopied contents */
