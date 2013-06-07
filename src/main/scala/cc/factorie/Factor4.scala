@@ -128,11 +128,13 @@ trait Family4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends FamilyWithNeighborDomains
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType = thisFamily.statistics(v1, v2, v3, v4)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = Family4.this.scoreAndStatistics(v1, v2, v3, v4)
     override def valuesStatistics(tensor:Tensor): Tensor = Family4.this.valuesStatistics(tensor)
+    override def statisticsAreValues: Boolean = Family4.this.statisticsAreValues
   }
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = (score(v1, v2, v3, v4), statistics(v1, v2, v3, v4))
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
+  def statisticsAreValues: Boolean = false
 }
 
 trait TupleFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Family4[N1,N2,N3,N4] {

@@ -51,18 +51,22 @@ trait Tensor extends MutableDoubleSeq {
     val denominator:Double = this.twoNorm * t.twoNorm
     if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
   }
+
+  // TODO: consider removing these because we could be copying an immutable Tensor or an inefficient representation
   def *(v:Double): Tensor = {val c = this.copy; c *= v; c}// TODO Should I use this.copy here?
   def /(v:Double): Tensor = {val c = this.copy; c /= v; c} // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
+  
   def normalized: Tensor = { val t = copy; t.normalize(); t } // TODO Make this return Proportions, then fix BP
   def expNormalized: Tensor = { val t = copy; t.expNormalize(); t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
+  def ++=(tensors:Iterable[Tensor]): this.type = { tensors.foreach(t => this += t); this }
   // Methods for mutability not implemented in all Tensors
-  def +=(i:Int, incr:Double): Unit
+  def +=(i:Int, incr:Double): Unit // also defined in MutableDoubleSeq
   def zero(): Unit
   def update(i:Int, v:Double): Unit
   def copy: Tensor
@@ -144,16 +148,18 @@ object Tensor {
       }
   }
   
-  def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {
-    case 1 => tensors.head.copy // Because some callers may rely on being able to do mutate-in-place operations on the results
-    case 2 => tensors.head + tensors.last
-    case _ => {
-      // Was: tensors.head + sum(tensors.tail).  Implementation below avoids lots of copies.
-      var result: Tensor = null
-      for (t <- tensors) if (result eq null) result = t.copy else result += t
-      result
-    }
-  }
+//  def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {
+//    case 1 => tensors.head.copy // Because some callers may rely on being able to do mutate-in-place operations on the results
+//    case 2 => tensors.head + tensors.last
+//    case _ => {
+//      // Was: 
+//      tensors.head + sum(tensors.tail)  //Implementation below avoids lots of copies.
+////      var result: Tensor = null
+////      for (t <- tensors) if (result eq null) result = t.copy else result += t
+////      assert(!result.isInstanceOf[UniformTensor]) // Temporary test to catch a bug.
+////      result
+//    }
+//  }
 
   // Support for dot inner products with dense tensors
   def dot(t1:DenseTensor, t2:DenseTensor): Double = {

@@ -337,6 +337,7 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType = thisFamily.statistics(v1, v2, v3)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = Family3.this.scoreAndStatistics(v1, v2, v3)
     override def valuesStatistics(tensor:Tensor): Tensor = Family3.this.valuesStatistics(tensor)
+    override def statisticsAreValues: Boolean = Family3.this.statisticsAreValues
     //override def valuesScore(tensor:Tensor): Double = thisFamily.valuesScore(tensor) // TODO Consider implementing match here to use available _1 domain
     override def limitedDiscreteValues123: SparseBinaryTensor3 = Family3.this.getLimitedDiscreteValues123(this.asInstanceOf[Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar]])
     override def limitedDiscreteValues12: SparseBinaryTensor2 = Family3.this.getLimitedDiscreteValues12(this.asInstanceOf[Factor3[DiscreteTensorVar,DiscreteTensorVar,N3]])
@@ -346,6 +347,7 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = (score(v1, v2, v3), statistics(v1, v2, v3))
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
+  def statisticsAreValues = false
 
   override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensor3 => {

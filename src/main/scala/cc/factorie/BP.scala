@@ -65,8 +65,8 @@ class BPEdge(val bpVariable: BPVariable1) {
   var bpFactor: BPFactor = null
   var factorNeighborIndex: Int = -1 // TODO Is this necessary?
   // Note:  For Bethe cluster graphs with BPVariable1, these messages will be Tensor1, but for other cluster graphs they could have higher dimensionality
-  var messageFromVariable: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0) // null // bpVariable.scores.blankCopy
-  var messageFromFactor: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0) // null // bpVariable.scores.blankCopy
+  var messageFromVariable: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0)
+  var messageFromFactor: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0)
   def variable = bpVariable.variable
   def factor = bpFactor.factor
 }
@@ -103,10 +103,10 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
       case 0 => throw new Error("BPVariable1 with no edges")
       case 1 => { require(edges.head == e); new UniformTensor1(variable.domain.size, 0.0) }
       case 2 => if (edges.head == e) edges.last.messageFromFactor else if (edges.last == e) edges.head.messageFromFactor else throw new Error
-      case _ => Tensor.sum(edges.filter(_ != e).map(_.messageFromFactor)) 
+      case _ => new DenseTensor1(variable.domain.size) ++= edges.filter(_ != e).map(_.messageFromFactor)
     }
   }
-  def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO Make this more efficient for cases of 1, 2, 3 edges.
+  def calculateBelief: Tensor1 = new DenseTensor1(variable.domain.size) ++= edges.map(_.messageFromFactor) // TODO Make this more efficient for cases of 1, 2, 3 edges?
   def proportions: Proportions1 = new DenseTensorProportions1(calculateMarginal.asInstanceOf[Tensor1].asArray)  // TODO Think about avoiding re-calc every time
   override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
@@ -384,8 +384,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   val scores: Tensor2 = factor match {
     // This only works if statistics has not been overridden.  Hence factor.statisticsAreValues.  (See TestBP.loop2 for an example where this fails.)
     // TODO Try to be more efficient even when statisticsAreValues is false. -akm
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] /*&& factor.statisticsAreValues*/) => {
-      assert(factor.family.weights.value.isInstanceOf[Tensor2])
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.statisticsAreValues && factor.family.weights.value.isInstanceOf[Tensor2]) => {
+      assert(factor.family.weights.value.isInstanceOf[Tensor2], "Expected Tensor2, got "+factor.family.weights.value.getClass+" from family "+factor.family.getClass)
       factor.family.weights.value.asInstanceOf[Tensor2]
     }
     case _ => {

@@ -1,13 +1,15 @@
 Pre 1.0 release:
 
-Strongly consider removing type argument from Domain.  It isn't needed for anything. [McCallum]
 Implement sparse iteration through values for BP [McCallum, Singh]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Finish ChainModel [Passos, Belanger]
-Make Tensor.foreachActiveElement faster with a macro [Luke]
 Implement LinearChain Model/Trainer/Infer for efficiency [McCallum,Martin]
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 In BP, when running on chains, verify that we don't need to walk to create a tree.
+Redesign app.classify for better access to underlying optimize goodness. [McCallum, Passos]
+Finish lexicon data loading management. [McCallum]
+Implement dual decomposition. [Passos]
+Improve LDA speed and multi-threading [Vineet]
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]
@@ -32,6 +34,8 @@ Fixed HACKING.txt Eclipse set up
 
 
 DONE:
+Make Tensor.foreachActiveElement faster with a macro.  After 1.0 or perhaps never. [Luke]
+Strongly consider removing type argument from Domain.  It isn't needed for anything.  Decided against for now. [McCallum]
 Add something like Passage to Document, indexed by char offsets [McCallum]
 Remove VarAndValueGenericDomain [McCallum]
 Remove unused classes from cc.factorie.util [Luke]

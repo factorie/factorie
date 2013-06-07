@@ -639,7 +639,7 @@ class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extend
   override def copy = new UniformTensor2(dim1, dim2, uniformValue)
   override def +(t:Tensor): Tensor = t match {
     case t:UniformTensor2 => { require(dim1 == t.dim1 && dim2 == t.dim2); new UniformTensor2(dim1, dim2, uniformValue + t.uniformValue) }
-    case t:Tensor2 => new DenseTensor2(dim1, dim2, uniformValue) + t
+    case t:Tensor2 => { val t2 = new DenseTensor2(dim1, dim2, uniformValue); t2 += t; t2 }
   }
 }
 
