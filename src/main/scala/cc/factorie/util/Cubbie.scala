@@ -63,7 +63,7 @@ class Cubbie {
 
   /**
    * Underlying map member.
-   * todo: fix __map vs _map confusion one day.
+   * todo: fix map vs _map confusion one day.
    */
   private var __map: MapType = null
 
@@ -294,10 +294,11 @@ class Cubbie {
 
   /**
    * Default implementation of an AbstractSlot.
-   * @param name the name of the slot.
+   * param name the name of the slot.
    * @tparam T the type of the attribute.
    */
-  abstract class Slot[T](val name: String) extends AbstractSlot[T] {
+  trait Slot[T] extends AbstractSlot[T] {
+    val name: String
     def value: T
 
     /**
@@ -311,7 +312,7 @@ class Cubbie {
      * @param value the value to set.
      * @param preHook the hook to call before setting the value.
      */
-    def :=!(value: T)(implicit preHook: Function2[Cubbie#AbstractSlot[Any], Any, Unit]) {
+    def :=!(value: T)(implicit preHook: (Cubbie#AbstractSlot[Any], Any) => Unit) {
       preHook(this, value)
       this := value
     }
@@ -377,10 +378,10 @@ class Cubbie {
 
   /**
    * A slot containing primitive values (ints, strings, booleans etc.).
-   * @param n the name of this slot.
+   * param name the name of this slot.
    * @tparam T the type of the attribute.
    */
-  abstract class PrimitiveSlot[T](n: String) extends Slot[T](n) {
+  trait PrimitiveSlot[T] extends Slot[T] {
     def value: T = _map(name).asInstanceOf[T]
 
     def :=(value: T) {
@@ -388,7 +389,7 @@ class Cubbie {
     }
   }
 
-  case class IntSlot(override val name: String) extends PrimitiveSlot[Int](name) {
+  case class IntSlot(name: String) extends PrimitiveSlot[Int] {
     override def value = _map(name) match {
       case i: Int => i
       case d: Double => d.toInt
@@ -397,9 +398,9 @@ class Cubbie {
     }
   }
 
-  case class BooleanSlot(override val name: String) extends PrimitiveSlot[Boolean](name)
+  case class BooleanSlot(name: String) extends PrimitiveSlot[Boolean]
 
-  case class DoubleSlot(override val name: String) extends PrimitiveSlot[Double](name) {
+  case class DoubleSlot(name: String) extends PrimitiveSlot[Double] {
     override def value = _map(name) match {
       case d: Double => d
       case i: Int => i.toDouble
@@ -408,32 +409,31 @@ class Cubbie {
     }
   }
 
-  case class StringSlot(override val name: String) extends PrimitiveSlot[String](name)
+  case class StringSlot(name: String) extends PrimitiveSlot[String]
 
-  case class DateSlot(override val name: String) extends PrimitiveSlot[java.util.Date](name)
+  case class DateSlot(name: String) extends PrimitiveSlot[java.util.Date]
   // TODO We need other primitive types supported in BSON
 
-  case class TensorSlot(override val name: String) extends PrimitiveSlot[Tensor](name)
+  case class TensorSlot(name: String) extends PrimitiveSlot[Tensor]
 
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
       FACTORIE uses this to store WeightsMap (because copying them to a DoubleListSlot would take too much memory for dependency parsing).
       So Cubbie serialization of DotFamily only works for PrintStream serialization, not BSON and JSON. */
-  case class AnySlot[A<:Any](override val name:String) extends PrimitiveSlot[A](name)
+  case class AnySlot[A<:Any](name:String) extends PrimitiveSlot[A]
   
   /**
    * A slot containing a list of primitives.
-   * @param name the name of the slot.
    * @tparam A the type of primitives the list contains.
    */
-  abstract class PrimitiveListSlot[A](override val name: String) extends Slot[Seq[A]](name) {
+  trait PrimitiveListSlot[A] extends Slot[Seq[A]] {
 
     import collection.JavaConversions._
 
     /**
      * Returns the Seq stored in the underlying map. Does some internal conversion if
      * the underlying list is not a Seq but something convertible.
-     * @todo: remove the case statement here and rely on underlying map implementation
+     * todo: remove the case statement here and rely on underlying map implementation
      *        to return the correct Seq representation.
      * @return the value of slot. May throw an exception if the underlying map has
      *         no field corresponding to this slot.
@@ -451,15 +451,15 @@ class Cubbie {
     } // TODO Perhaps we should store a Map[String,Any] here instead, like BSON?  Avoids the need for conversion later
   }
 
-  case class IntListSlot(override val name: String) extends PrimitiveListSlot[Int](name)
+  case class IntListSlot(name: String) extends PrimitiveListSlot[Int]
 
-  case class BooleanListSlot(override val name: String) extends PrimitiveListSlot[Boolean](name)
+  case class BooleanListSlot(name: String) extends PrimitiveListSlot[Boolean]
 
-  case class DoubleListSlot(override val name: String) extends PrimitiveListSlot[Double](name)
+  case class DoubleListSlot(name: String) extends PrimitiveListSlot[Double]
 
-  case class StringListSlot(override val name: String) extends PrimitiveListSlot[String](name)
+  case class StringListSlot(name: String) extends PrimitiveListSlot[String]
 
-  case class TensorListSlot(override val name: String) extends PrimitiveListSlot[Tensor](name)
+  case class TensorListSlot(name: String) extends PrimitiveListSlot[Tensor]
   /**
    * A slot that contains a list of cubbies.
    * @param name the name of the slot.
@@ -467,7 +467,7 @@ class Cubbie {
    *                    underyling map objects.
    * @tparam A the type of the cubbies in the list.
    */
-  case class CubbieListSlot[A <: Cubbie](override val name: String, constructor: () => A) extends Slot[Seq[A]](name) {
+  case class CubbieListSlot[A <: Cubbie](name: String, constructor: () => A) extends Slot[Seq[A]] {
 
     /**
      * Returns the list of cubbies in this slot. The underlying map is expected to
@@ -512,8 +512,8 @@ class Cubbie {
    * @param constructor the cubbie constructor for cubbies the slot contains.
    * @tparam A the type of cubbies this slot contains.
    */
-  case class RefSlot[A <: Cubbie](override val name: String, constructor: () => A)
-    extends Slot[Any](name) with AbstractRefSlot[A] with AbstractInverseSlot[A] {
+  case class RefSlot[A <: Cubbie](name: String, constructor: () => A)
+    extends Slot[Any] with AbstractRefSlot[A] with AbstractInverseSlot[A] {
     def value = _map(name)
 
     override def unique = true
@@ -558,7 +558,7 @@ class Cubbie {
    * @param constructor the constructor to create the contained cubbie wrapper with.
    * @tparam A the type of cubbie the slot contains.
    */
-  case class CubbieSlot[A <: Cubbie](override val name: String, constructor: () => A) extends Slot[A](name) {
+  case class CubbieSlot[A <: Cubbie](override val name: String, constructor: () => A) extends Slot[A] {
     /**
      * Return the cubbie contained in this slot. This assumes
      * that the underlying map has a corresponding field that contains a

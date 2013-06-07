@@ -91,7 +91,7 @@ object CorefEvaluator {
   }
 
   object Pairwise extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       var tp = 0.0
       var fp = 0.0
       var tn = 0.0
@@ -125,7 +125,7 @@ object CorefEvaluator {
   }
 
   object BCubed extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m = new Metric
       m.precDenominator = pred.getMentionIds.size
       m.recallDenominator = pred.getMentionIds.size
@@ -171,7 +171,7 @@ object CorefEvaluator {
    The source script is in http://conll.bbn.com/download/scorer.v4.tar.gz
   */
   object BCubedNoSingletons extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m = new Metric
       val predNonSingletons = pred.getMentionIds.filter(m => pred.getMentions(pred.getEntity(m)).size > 1)
       val goldNonSingletons = truth.getMentionIds.filter(m => truth.getMentions(truth.getEntity(m)).size > 1)
@@ -201,7 +201,7 @@ object CorefEvaluator {
 
 
   object MUC extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m: Metric = new Metric
       // Recall:
       // go through each true cluster
@@ -234,7 +234,7 @@ object CorefEvaluator {
   }
 
   class CeafE(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m: Metric = new Metric
       val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
       val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
@@ -255,7 +255,7 @@ object CorefEvaluator {
   }
 
   class CeafM(val ignoreSingletons: Boolean = true) extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m: Metric = new Metric
       val predEntities = if (ignoreSingletons) pred.entities.keys.toSeq.filter(pred.entities(_).size > 1) else pred.entities.keys.toSeq
       val truthEntities = if (ignoreSingletons) truth.entities.keys.toSeq.filter(truth.entities(_).size > 1) else truth.entities.keys.toSeq
@@ -277,7 +277,7 @@ object CorefEvaluator {
 
   // Following the specification in http://stel.ub.edu/semeval2010-coref/sites/default/files/blanc-draft3.pdf
   object Blanc extends MetricEvaluator {
-    override def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
+    def evaluate[M](pred: GenericEntityMap[M], truth: GenericEntityMap[M]): Metric = {
       val m = new Metric
       var rc = 0.0 // coreferent and reported as such
       var wc = 0.0 // non-coreferent and reported as coreferent
