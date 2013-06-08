@@ -28,7 +28,7 @@ class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerL
 
 object LoadConll2003 extends LoadConll2003(false)
 
-case class LoadConll2003(BILOU:Boolean = false) extends Load {
+case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
   val conllToPTBMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
 
   def fromSource(source:io.Source): Seq[Document] = {
@@ -61,37 +61,19 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load {
         documents += document
       } else {
         val fields = line.split(' ')
-        // fields = word part-of-speech shallow-parse(IOB) ner-label(IOB)
-        //println(fields.mkString(","))
         assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = conllToPTBMap.getOrElse(fields(1), fields(1))
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-
-        if (false && document.stringLength < 100) {
-          println("word=%s documentlen=>%s<".format(word, document.string))
-          //println("token start,end %d,%d".format(token.stringStart, token.stringLength))
-          println("token=%s".format(token.string))
-          println()
-        }
         token.attr += new Conll2003ChainNerLabel(token, ner)
-        //println("token: " + token + " Ner: " + ner)
         token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
       }
     }
-    if(BILOU) convertToBILOU(documents)
-  /*for(doc <- documents) {
-    for(token <- doc.tokens) {
-      if(token.attr[ChainNerLabel].categoryValue.trim().length == 0) {
-        println("Something Bad Happened")
-        println(token + " - " + token.attr[ChainNerLabel].categoryValue.trim())
-      }
-    }
-  }*/
+    if (BILOU) convertToBILOU(documents)
     //sentence.stringLength = document.stringLength - sentence.stringStart
-    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
+    logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents
   }
   def convertToBILOU(documents : ArrayBuffer[Document]) {
@@ -124,20 +106,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load {
         }
       }
     }
-    //printthings(documents);
   }
 
-  def printthings(documents : ArrayBuffer[Document]) {
-    for(doc <- documents) {
-      for(sentence <- doc.sentences) {
-        for(token <- sentence.tokens) {
-          val ner = token.nerLabel
-          print(token + " -> " + ner.categoryValue + "\t");
-        }
-      }
-      println(" ")
-    }
-  }
   def IOBtoBILOU(prev : Token, token : Token,  next : Token) : String = {
     if(token.nerLabel.categoryValue == "O") return "O";
     // The major case that needs to be converted is I, which is dealt with here
@@ -166,7 +136,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load {
     "I-" + ts(1)
   }
   
-  def splitLabel(token : Token) : Array[String] = {
+  private def splitLabel(token : Token) : Array[String] = {
     if(token.nerLabel.categoryValue.contains("-"))
       token.nerLabel.categoryValue.split("-")
     else
