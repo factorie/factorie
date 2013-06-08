@@ -46,6 +46,28 @@ class WeightsSet extends TensorSet {
     def value = { if (_value eq null) { _value = newBlankTensor }; _value }
     def set(t: Tensor): Unit = _value = t.asInstanceOf[Value] // TODO I'd love to be able to avoid this cast. -akm
   }
+  
+  // TODO Implement Tensor.toSparse as an alternative to this match. -akm
+  // TODO Consider having all Tensor += methods return this.type.  Question: will this reduce efficiency? -akm
+  def sparsify(): Unit = for (weights <- _keys ) {
+    import cc.factorie.util.{DenseDoubleSeq,SparseDoubleSeq}
+    val st = weights.value match {
+      case t:DenseDoubleSeq with Tensor1 => new SparseIndexedTensor1(t.dim1)
+      case t:DenseDoubleSeq with Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
+      case t:DenseDoubleSeq with Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
+      case t:DenseDoubleSeq with Tensor4 => new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+      case t:DenseLayeredTensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, i => new SparseIndexedTensor1(i))
+      case t:SparseDoubleSeq => t
+    }
+    st += weights.value
+    weights.set(st)
+  }
+  
+  def densify(): Unit = for (weights <- _keys if !weights.value.isInstanceOf[util.DenseDoubleSeq]) {
+    val dt = Tensor.newDense(weights.value)
+    dt += weights.value
+    weights.set(dt)
+  }
 }
 
 /** A TensorSet in which the Tensors themselves are stored in a map inside this object. */
