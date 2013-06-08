@@ -164,7 +164,7 @@ object LoadReACE {
       val e2 = lookupEntityMention(doc, getAttr(rel, "e2").get).get
       val args = Seq(e1, e2)
 
-      val m = new RelationMention(e1, e2, ids.rType.get) // + "-" + ids.rSubtype.get)
+      val m = new RelationMention(e1, e2, ids.rType.get, Some(ids.rSubtype.get))
       m.attr += ids
       doc.attr[RelationMentions].add(m)(null)
       args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))

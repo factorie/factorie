@@ -165,7 +165,7 @@ object LoadACE {
           arg => lookupEntityMention(getAttr(arg, "ENTITYMENTIONID"), doc)
         }
         assert(args.size == 2)
-        val m = new RelationMention(args.head, args.last, identifiers.rType) // + "-" + identifiers.rSubtype)
+        val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
         m.attr += identifiers
         doc.attr[RelationMentions].add(m)(null)
         args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))

@@ -27,7 +27,7 @@ object RelationVariables {
     def domain = RelationLabelDomain
   }
 
-  class RelationMention(val arg1: PairwiseMention, val arg2: PairwiseMention, val labelStr: String) extends ArrowVariable(arg1, arg2) with Attr {
+  class RelationMention(val arg1: PairwiseMention, val arg2: PairwiseMention, val relationType: String, val relationSubType: Option[String]) extends ArrowVariable(arg1, arg2) with Attr {
     val arg1Features = new ArgFeatures(arg1, true)
     val arg2Features = new ArgFeatures(arg2, false)
     val features = new Features(this)
@@ -388,7 +388,7 @@ object RelationVariables {
         //} else {
         // add!
         //if ((m1.start <= m2.start && m1.end >= m2.end) || (m2.start <= m1.start && m2.end >= m1.end)) {
-        val rm = new RelationMention(m1, m2, NoneLabel)
+        val rm = new RelationMention(m1, m2, NoneLabel, None)
         docRelations.add(rm)(null)
         rmentions1.add(rm)(null)
         rmentions2.add(rm)(null)
