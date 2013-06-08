@@ -16,24 +16,40 @@ import relation.RelationVariables.{RelationMention, RelationMentions}
 // TODO: consider moving this info into variables.
 trait ACEEntityIdentifiers {
   def eId: String
+
   def eType: String
+
   def eSubtype: String
+
   def eClass: String
 }
 
 trait ACEMentionIdentifiers {
   def mId: String
+
+  def mType: String
+
+  def ldcType: String
+
   def offsetStart: Int
+
   def offsetEnd: Int
 }
 
 trait ACERelationIdentifiers {
   def rId: String
+
   def rType: String
+
   def rSubtype: String
 }
 
 class ACEFileIdentifier(val fileId: String)
+
+class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention with PairwiseMention {
+  override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
+}
+
 
 object LoadACE {
 
@@ -81,19 +97,28 @@ object LoadACE {
       val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
       e.attr += new ACEEntityIdentifiers {
         def eId = getAttr(entity, "ID")
+
         def eType = getAttr(entity, "TYPE")
+
         def eSubtype = getAttr(entity, "SUBTYPE")
+
         def eClass = getAttr(entity, "CLASS")
       }
 
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
-        val m = new NerSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)(null) with PairwiseMention
+        val m = new ACEMentionSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)
         if (m.sentence == null)
           println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
         m.attr += new ACEMentionIdentifiers {
           def mId = getAttr(mention, "ID")
+
+          def mType = getAttr(mention, "TYPE")
+
+          def ldcType = getAttr(mention, "LDCTYPE")
+
           def offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt
+
           def offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt
         }
         m.attr += new EntityRef(m, e)
@@ -148,6 +173,7 @@ object LoadACE {
 
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
+    println("docs: " + docs.size)
     for (d <- docs)
       d.sections.foreach(_.spansOfClass[TokenSpanMention].foreach(s => println(s)))
   }
