@@ -226,8 +226,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
     val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
     model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-    val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).head.logZ
-    val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).head.logZ
+    val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).logZ
+    val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
     val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
@@ -241,8 +241,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     }
 
     // Testing MPLP
-    val mplpSummary = InferByMPLP.infer(Seq(l0, l1, l2, l3), model).head
-    val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model).head
+    val mplpSummary = InferByMPLP.infer(Seq(l0, l1, l2, l3), model)
+    val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model)
     for (v <- Seq(l0, l1, l2, l3)) {
       val mfm = mplpSummary.mapAssignment(v)
       val bpm = mapSummary.marginal(v)

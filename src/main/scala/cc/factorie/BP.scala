@@ -719,21 +719,16 @@ object BP {
   
 }
 
-trait InferByBP extends Infer {
-  def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = None
-}
+trait InferByBP extends Infer[Iterable[DiscreteVar],Model]
+trait MaximizeByBP extends Maximize[Iterable[DiscreteVar],Model]
 
 object InferByBPTreeSum extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Iterable[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
-  }
+  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Iterable[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
-  }
+  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
     BP.inferLoopy(summary)
@@ -742,18 +737,14 @@ object InferByBPLoopy extends InferByBP {
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Iterable[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
-  }
+  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     BP.inferLoopyTreewise(varying, model)
   }
 }
 
-object MaximizeByBPLoopy extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Iterable[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
-  }
+object MaximizeByBPLoopy extends MaximizeByBP {
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)
     BP.inferLoopy(summary)
@@ -762,25 +753,17 @@ object MaximizeByBPLoopy extends Maximize with InferByBP {
 }
 
 object InferByBPChainSum extends InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Seq[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
-    case _ => None
-  }
-  def apply(varying:Seq[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
+  def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying.toSeq, model)
 }
 
-object MaximizeByBPChain extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Seq[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
-    case _ => None
-  }
-  def apply(varying:Seq[DiscreteVar], model:Model): BPSummary = BP.inferChainMax(varying, model)
+object MaximizeByBPChain extends MaximizeByBP {
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
+  def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainMax(varying.toSeq, model)
 }
 
-object MaximizeByBPTree extends Maximize with InferByBP {
-  override def infer(variables:Iterable[Var], model:Model): Option[BPSummary] = variables match {
-    case variables:Iterable[DiscreteVar @unchecked] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables.toSet, model))
-  }
+object MaximizeByBPTree extends MaximizeByBP {
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeMarginalMax(varying, model)
 }
 

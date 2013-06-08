@@ -35,10 +35,9 @@ object MiniBatchExample {
 // TODO add EagerMiniBatchExample that accumulates at construction time rather than when accumulate is called, for threading -luke
 
 /** Calculates value by log-likelihood and gradient by maximum likelihood (that is difference of constraints - expectations). */
-class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Parameters, val infer: Infer) extends Example {
+class LikelihoodExample[A,B](labels: A, model: B, val infer: Infer[A,B]) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
-    if (labels.size == 0) return
-    val summary = infer.infer(labels, model).get
+    val summary = infer.infer(labels, model)
     if (value != null)
       value.accumulate(-summary.logZ)
     val factorMarginals = summary.factorMarginals
@@ -49,7 +48,7 @@ class LikelihoodExample(labels: Iterable[LabeledVar], model: Model with Paramete
           if (value != null) value.accumulate(factor.statisticsScore(aStat))
           if (gradient != null) {
             gradient.accumulate(factor.family.weights, aStat)
-            gradient.accumulate(factor.family.weights, factorMarginal.tensorStatistics, -1.0) // TODO consider match/case instead of cast -akm
+            gradient.accumulate(factor.family.weights, factorMarginal.tensorStatistics, -1.0)
           }
         case factor: Family#Factor if (!factor.family.isInstanceOf[DotFamily]) =>
           if (value != null) value.accumulate(factor.assignmentScore(TargetAssignment))
@@ -275,13 +274,13 @@ class DominationLossExampleAllGood(model: Model with Parameters, goodCandidates:
 
 // StructuredPerceptron is just Likelihood with a Maximize ("value" will be correct as long as the marginals returned by
 // Maximize have the max model score as "logZ")
-class StructuredPerceptronExample(labels: Iterable[LabeledVar], model: Model with Parameters, infer: Maximize = MaximizeByBPLoopy) extends LikelihoodExample(labels, model, infer)
+class StructuredPerceptronExample[A,B](labels: A, model: B, infer: Maximize[A,B]) extends LikelihoodExample(labels, model, infer)
 
 // NOTE: a "loss" is a negated objective - so higher score is worse - otherwise this won't work since there is no way to make a
 // CombinedModel that subtracts one model's score from another
 // USE: make sure that loss overrides neighborDomain1 or valuesScore (inference needs this to score values)
 // NOTE: For structured SVM with specialized inference, just use StructuredPerceptron and pass in a loss-augmented Infer object
-class StructuredSVMExample(labels: Iterable[LabeledVar], model: Model with Parameters, objective: Model = HammingLoss, infer: Maximize = MaximizeByBPLoopy)
+class StructuredSVMExample[A](labels: A, model: Model with Parameters, objective: Model = HammingLoss, infer: Maximize[A,Model])
   extends StructuredPerceptronExample(labels, new CombinedModel(model, objective) with Parameters { override val parameters = model.parameters }, infer) {
   override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     if (value != null) {
@@ -293,16 +292,15 @@ class StructuredSVMExample(labels: Iterable[LabeledVar], model: Model with Param
   }
 }
 
-class SemiSupervisedLikelihoodExample(labels: Iterable[LabeledVar], model: Model with Parameters, inferConstrained: Infer, inferUnconstrained: Infer) extends Example {
+class SemiSupervisedLikelihoodExample[A,B](labels: A, model: B, inferConstrained: Infer[A,B], inferUnconstrained: Infer[A,B]) extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
-    if (labels.size == 0) return
-    val constrainedSummary = inferConstrained.infer(labels, model).get
-    val unconstrainedSummary = inferUnconstrained.infer(labels, model).get
+    val constrainedSummary = inferConstrained.infer(labels, model)
+    val unconstrainedSummary = inferUnconstrained.infer(labels, model)
     if (value != null)
       value.accumulate(constrainedSummary.logZ - unconstrainedSummary.logZ)
     val factors = unconstrainedSummary.factorMarginals
     if (gradient != null) {
-      for (factorMarginal <- factors; factorU <- factorMarginal.factor; if (factorU.isInstanceOf[DotFamily#Factor]); factor <- factorU.asInstanceOf[DotFamily#Factor]) {
+      for (factorMarginal <- factors; factorU <- factorMarginal.factor; if factorU.isInstanceOf[DotFamily#Factor]; factor <- factorU.asInstanceOf[DotFamily#Factor]) {
         gradient.accumulate(factor.family.weights, constrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, 1.0)
         gradient.accumulate(factor.family.weights, unconstrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0)
       }

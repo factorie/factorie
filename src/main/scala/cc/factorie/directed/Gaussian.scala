@@ -41,7 +41,7 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
 
 
 
-object MaximizeGaussianMean extends Maximize {
+object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
   def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
@@ -51,8 +51,8 @@ object MaximizeGaussianMean extends Maximize {
       //println(" MaximizeGaussianMean factor="+factor)
       //println(" MaximizeGaussianMean mean="+mean)
       factor match {
-      	case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
-      	case gm:GaussianMixture.Factor if (gm._2.contains(meanVar)) => {
+      	case g:Gaussian.Factor if g._2 == meanVar => { mean += g._1.doubleValue; sum += 1.0 }
+      	case gm:GaussianMixture.Factor if gm._2.contains(meanVar) => {
           val gate = gm._4
           val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary.getMarginal(gate).isEmpty) null else summary.marginal(gate)
           val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.  And we are doing it twice because of "contains" above
@@ -66,7 +66,7 @@ object MaximizeGaussianMean extends Maximize {
           }
         }
         case m:Mixture.Factor => {}
-        case f:Factor => { if (debug) println("MaximizeGaussianMean can't handle factor "+f.getClass.getName+"="+f); return Double.NaN }
+        case f:Factor => throw new ClassCastException("No acceptable factor class found")
       }
       if (mean != mean) return Double.NaN
     }
@@ -76,20 +76,15 @@ object MaximizeGaussianMean extends Maximize {
   def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m:DirectedModel => m ; case _ => return None }
+  override def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel): AssignmentSummary = {
     val dSummary = new DiscreteSummary1[DiscreteVar]()
-    lazy val assignment = new HashMapAssignment
-    for (v <- variables) v match {
-      case r:MutableDoubleVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, m) }
-      case _ => return None
-    }
-    //println("MaximizeGaussianMean assignment "+assignment(variables.head))
-    Option(new AssignmentSummary(assignment))
+    val assignment = new HashMapAssignment
+    for (v <- variables) { val m = maxMean(v, model, dSummary); assignment.update(v, m) }
+    new AssignmentSummary(assignment)
   }
 }
 
-object MaximizeGaussianVariance extends Maximize {
+object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
   def minSamplesForVarianceEstimate = 5
   def maxVariance(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
@@ -110,8 +105,7 @@ object MaximizeGaussianVariance extends Maximize {
           mean += p * gm._1.doubleValue; sum += p
         }
        }
-      case m:Mixture.Factor => {}
-      case f:Factor => { if (debug) println("MaximizeGaussianVariance can't handle factor "+f.getClass.getName+"="+f); return Double.NaN }
+      case f:Factor => throw new ClassCastException("No compatible factor class found")
     }
     if (sum == 0.0) { if (debug) println("MaximizeGaussianVariance found no child factors"); return Double.NaN }
     mean /= sum
@@ -140,15 +134,11 @@ object MaximizeGaussianVariance extends Maximize {
   def apply(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[Var], model:Model): Option[AssignmentSummary] = {
-    val gModel = model match { case m:DirectedModel => m ; case _ => return None }
+  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel): AssignmentSummary = {
     val dSummary = new DiscreteSummary1[DiscreteVar]()
     lazy val assignment = new HashMapAssignment
-    for (v <- variables) v match {
-      case r:MutableDoubleVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, va) }
-      case _ => return None
-    }
-    Option(new AssignmentSummary(assignment))
+    for (v <- variables) { val va = maxVariance(v, model, dSummary); assignment.update[MutableDoubleVar, MutableDoubleVar#Value](v, va) }
+    new AssignmentSummary(assignment)
   }
 }
 

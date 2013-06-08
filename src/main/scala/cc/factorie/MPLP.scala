@@ -103,10 +103,10 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
   }
 }
 
-object InferByMPLP extends Maximize {
-  def infer(variables:Iterable[Var], model:Model) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model).infer)
+object InferByMPLP extends Maximize[Iterable[DiscreteVar],Model] {
+  def infer(variables:Iterable[DiscreteVar], model:Model) = new MPLP(variables.toSeq, model).infer
 }
 
-class InferByMPLP(maxIterations: Int) extends Maximize {
-  def infer(variables:Iterable[Var], model:Model) = Some(new MPLP(variables.toSeq.asInstanceOf[Seq[DiscreteVar]], model, maxIterations=maxIterations).infer)
+class InferByMPLP(maxIterations: Int) extends Maximize[Iterable[DiscreteVar],Model] {
+  def infer(variables:Iterable[DiscreteVar], model:Model) = new MPLP(variables.toSeq, model, maxIterations=maxIterations).infer
 }

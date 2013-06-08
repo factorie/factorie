@@ -21,8 +21,8 @@ import cc.factorie.directed.{MaximizeGaussianVariance, MaximizeGaussianMean, Max
     The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.
     By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
     this convention differs from other Infer instances, which do not typically change variable values.  */
-trait Maximize extends Infer {
-  def maximize(vs:Iterable[Var], model:Model) = infer(vs, model).get.setToMaximize(null)
+trait Maximize[-A,-B] extends Infer[A,B] {
+  def maximize(vs:A, model:B) = infer(vs, model).setToMaximize(null)
   // TODO Consider adding the following
   //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
 }
@@ -32,29 +32,36 @@ trait Maximize extends Infer {
 /* A suite containing various recipes to maximize the value of variables to maximize some objective, 
    usually maximum likelihood. 
    @author Andrew McCallum */
-class MaximizeSuite extends Maximize {
-  def defaultSuite = Seq(
-    MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions,
-    MaximizeGaussianMean, MaximizeGaussianVariance, MaximizeByBPChain
-  )
-  val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
+class MaximizeSuite extends Maximize[Any,Any] {
+  def defaultSuite: Seq[Maximize[Any,Any]] =
+    Seq(MaximizeGeneratedDiscrete.asInstanceOf[Maximize[Any,Any]],
+      MaximizeGate.asInstanceOf[Maximize[Any,Any]],
+      MaximizeProportions.asInstanceOf[Maximize[Any,Any]],
+      MaximizeGaussianMean.asInstanceOf[Maximize[Any,Any]],
+      MaximizeGaussianVariance.asInstanceOf[Maximize[Any,Any]],
+      MaximizeByBPChain.asInstanceOf[Maximize[Any,Any]])
+  val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Any,Any]]
+
   suite ++= defaultSuite
   //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
-  override def infer(varying:Iterable[Var], model:Model): Option[Summary] = {
+  def infer(varying:Any, model:Any): Summary = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
-    var option: Option[Summary] = None
+    var summary = null.asInstanceOf[Summary]
     val iterator = suite.iterator
-    while (option == None && iterator.hasNext) {
-      option = iterator.next().infer(varying, model)
+    while ((summary eq null) && iterator.hasNext) {
+      try {
+        summary = iterator.next().infer(varying, model)
+      } catch {
+        case e: ClassCastException => ()
+      }
     }
-    option
+    summary
   }
-  def apply(varying:Iterable[Var], model:Model): Summary = {
-    val option = infer(varying, model)
-    if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass.getName; case f:Factor => f.getClass.getName }).mkString(" "))
-    option.get.setToMaximize(null)
-    option.get
+  def apply(varying:Any, model:Model): Summary = {
+    val summary = infer(varying, model)
+    summary.setToMaximize(null)
+    summary
   }
 }
 object Maximize extends MaximizeSuite // A default instance of this class

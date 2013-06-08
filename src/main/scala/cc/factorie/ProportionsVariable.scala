@@ -415,34 +415,15 @@ class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions)
 }
 
 
-object MaximizeProportions extends Maximize {
-  /*override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal]): Option[Summary[ProportionsAssignment]] = {
-    if (variables.size != 1) return None
-    variables.head match {
-      case mp: ProportionsVariable => {
-        model match {
-          case model:DirectedModel => Some(new SingleSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
-          case _ => return None
-        }
-      }
-      case _ => return None
-    }
-  }*/
-  override def infer(variables:Iterable[Var], model:Model): Option[Summary] = {
-    // override def infer(variables:Iterable[Variable], model:Model): Option[Summary[ProportionsAssignment]] = 
-    if (variables.size != 1) return None
-    (variables.head, model) match {
-      case (mp:ProportionsVariable, model:DirectedModel) => {
-        Some(new SingletonSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
-      }
-      case _ => None
-    }
+object MaximizeProportions extends Maximize[ProportionsVariable,DirectedModel] {
+  def infer(variable: ProportionsVariable, model:DirectedModel) = {
+    new SingletonSummary(new ProportionsAssignment(variable, maxProportions(variable, model, null)))
   }
   def apply(p:ProportionsVariable, model:DirectedModel): Unit = apply(p, model, null)
   def apply(p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)
   def maxProportions[A](p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
     // Zero an accumulator
-    var e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
+    val e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
     // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
     model.parentFactor(p) match {
 	  case f:Dirichlet.Factor => e.masses := f._2.tensor

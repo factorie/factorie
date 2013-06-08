@@ -131,7 +131,7 @@ abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
 }
 
 
-object MaximizeDiscrete extends Maximize {
+object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar[_]],Model] {
   def intValue(d:DiscreteVar, factors:Iterable[Factor]): Int = {
     val l = d.domain.size 
     val assignment = new DiscreteAssignment1(d, 0)
@@ -164,18 +164,12 @@ object MaximizeDiscrete extends Maximize {
   }
   def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := intValue(d, model)
   def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
-  def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
-    Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, intValue(varying, model))))
-  override def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVar]] = {
-    if (!variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) return None
+  def infer(varying:DiscreteVar, model:Model) =
+    new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, intValue(varying, model)))
+  override def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model) = {
     val result = new DiscreteSummary1[DiscreteVar]
-    for (v <- variables) {
-      infer(v.asInstanceOf[MutableDiscreteVar[DiscreteValue]], model) match {
-        case Some(dm) => result += dm.asInstanceOf[DiscreteVar]
-        case _ => return None
-      }
-    }
-    Some(result)
+    for (v <- variables) result += infer(v, model)
+    result
   }
 }
 

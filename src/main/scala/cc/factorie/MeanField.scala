@@ -59,12 +59,12 @@ class DiscreteMeanField[V<:DiscreteVar](val model:Model, val summary:DiscreteSum
   def updateQ: Unit = summary.variables.foreach(updateQ(_))
 }
 
-object InferByMeanField extends Infer {
+object InferByMeanField extends Infer[Iterable[DiscreteVar],Model] {
   def inferencer[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
   def apply[V<:DiscreteVar](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
     for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
-  def infer(variables:Iterable[Var], model:Model): Option[Summary] = Some(apply(variables.asInstanceOf[Iterable[DiscreteVar]], model))
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
 }

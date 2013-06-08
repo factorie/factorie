@@ -91,7 +91,7 @@ class DiscreteMixtureCounts[A](val discreteDomain: CategoricalDomain[A], val mix
 
 
 // TODO Currently only handles Gates of a CategoricalMixture; we should make it handle GaussianMixture also.
-object MaximizeGate extends Maximize {
+object MaximizeGate extends Maximize[Iterable[DiscreteVariable],Model] {
   // Underlying workhorse
   def maxIndex[A](gate:DiscreteVariable, df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor): Int = {
     var max = Double.NegativeInfinity
@@ -122,19 +122,13 @@ object MaximizeGate extends Maximize {
     if (maxi >= 0) gate.set(maxi)(null) else throw new Error("MaximizeGate unable to handle model factors.")
   }
   // For generic inference engines
-  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[SimpleDiscreteMarginal1[V]] = {
-    val maxi = maxIndex(varying, model)
-    if (maxi >= 0) Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)))
-    else None
+  def infer[V<:DiscreteVariable](varying:V, model:Model): SimpleDiscreteMarginal1[V] = {
+    new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model)))
   }
-  override def infer(variables:Iterable[Var], model:Model): Option[DiscreteSummary1[DiscreteVariable]] = {
-    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
+  override def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
     val result = new DiscreteSummary1[DiscreteVariable]
-    for (v <- variables.asInstanceOf[Iterable[DiscreteVariable]]) infer(v, model) match {
-      case Some(m) => result += m
-      case None => return None
-    }
-    Some(result)
+    for (v <- variables) result += infer(v, model)
+    result
   }
   
 }
