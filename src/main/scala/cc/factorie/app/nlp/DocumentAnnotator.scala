@@ -41,7 +41,7 @@ trait DocumentAnnotator {
       val annotator = annotatorMap(prereq)
       // Make sure we won't over-write some pre-existing annotation
       for (a <- annotator.postAttrs) 
-        if (doc.annotators.contains(a)) throw new Error(getClass.toString+": annotation collision conflict: "+doc.annotators(a)+" already added attr "+a)
+        if (doc.annotators.contains(a)) throw new Error(getClass.toString+": annotation collision conflict: prereq "+prereq+" would be satisfied by "+annotator.getClass+", but it provides "+a+" which has already been added by "+doc.annotators(a)+".  If the conflict is for Sentence, you may simply need to ask for Sentence segmentation before Token segmentation.")
       annotator.process(doc, annotatorMap)
     }
   }
@@ -66,7 +66,7 @@ object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {
   import cc.factorie.app.nlp._
   //this.update(classOf[pos.PTBPosLabel], new pos.POS3) // TODO where should this find its parameters?
   this.update(classOf[segment.SimplifyPTBTokenString], segment.SimplifyPTBTokenNormalizer)
-  this.update(classOf[Token], cc.factorie.app.nlp.segment.ClearTokenizer)
+  this.update(classOf[Token], cc.factorie.app.nlp.segment.ClearTokenizer) // If you ask for this first, and then ask for Sentence, you will get a conflict. -akm
   this.update(classOf[Sentence], cc.factorie.app.nlp.segment.ClearSegmenter)
   this.update(classOf[lemma.SimplifyDigitsTokenLemma], lemma.SimplifyDigitsLemmatizer)
   this.update(classOf[lemma.CollapseDigitsTokenLemma], lemma.CollapseDigitsLemmatizer)
