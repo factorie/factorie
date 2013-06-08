@@ -251,7 +251,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     }
   }
   // Efficiently support multiple sequential additions
-  override def +=(index:Int, incr:Double): Unit = {
+  override def +=(index:Int, incr:Double): Unit = if (incr != 0.0) {
     ensureCapacity(__npos+1)
     __indices(__npos) = index
     __values(__npos) = incr
