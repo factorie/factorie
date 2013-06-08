@@ -58,7 +58,7 @@ object LoadACE {
   private def makeDoc(sgm: String): Document = {
     val doc = new Document(matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
-    RegexTokenizer.process(doc)
+    ClearTokenizer.process(doc)
     SentenceSegmenter.process(doc)
 
     // trailing tokens should be in a sentence
@@ -122,6 +122,24 @@ object LoadACE {
           def offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt
         }
         m.attr += new EntityRef(m, e)
+
+        val headCharIndex = getAttr(mention \ "head" \ "charseq", "END").toInt //- 1 // is the -1 necessary?
+        val headLeftCharIndex = getAttr(mention \ "head" \ "charseq", "START").toInt
+        try {
+          val tokIndLeft = tokenIndexAtCharIndex(headLeftCharIndex, doc)
+          // set head token to the rightmost token of the ACE head
+          val tokIndRight = tokenIndexAtCharIndex(headCharIndex, doc)
+          m._head = doc.asSection(tokIndRight)
+          //m.attr += new ACEFullHead(new TokenSpan(doc.asSection, tokIndLeft, tokIndRight - tokIndLeft + 1)(null))
+        } catch {
+          case e: Exception =>
+            println("doc: " + doc.tokens.mkString("\n"))
+            println("mention: " + mention)
+            println("headIndex: " + headCharIndex)
+            println("headLeftIndex: " + headLeftCharIndex)
+            e.printStackTrace()
+            System.exit(1)
+        }
       }
     }
   }
