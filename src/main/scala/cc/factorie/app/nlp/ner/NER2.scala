@@ -8,7 +8,7 @@ import cc.factorie.optimize.LikelihoodExample
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
 class NER2 extends DocumentAnnotator {
-  def this(filename: String) = { this(); deserialize(filename) }
+  def this(url:java.net.URL) = { this(); deserialize(url.openConnection.getInputStream) }
 
   object FeaturesDomain extends CategoricalTensorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -287,18 +287,29 @@ class NER2 extends DocumentAnnotator {
   }
   
   // Serialization
-  def serialize(filename: String) {
-    import CubbieConversions._
+  def serialize(filename: String): Unit = {
     val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
-    BinarySerializer.serialize(FeaturesDomain.dimensionDomain, model1, model2, file)
+    serialize(new java.io.FileOutputStream(file))
   }
-  def deserialize(filename: String) {
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
-    val file = new File(filename)
-    assert(file.exists(), "Trying to load non-existent file: '" +file)
-    BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, model1, model2, file)
+    val dstream = new java.io.DataOutputStream(stream)
+    BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model3, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
-  
+  def deserialize(stream: java.io.InputStream): Unit = {
+    import CubbieConversions._
+    val dstream = new java.io.DataInputStream(stream)
+    BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(model3, dstream)
+    model3.parameters.densify()
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }  
   
   /** A queue of tokens, FILO, that will dequeue to maintain size less than maxSize,
       and which also has efficient acess to its elements keyed by Token.string. */

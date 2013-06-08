@@ -4,10 +4,22 @@ import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 
-/** A simple named entity recognizer, trained on CoNLL 2003 data.
-    It does not have sufficient features to be state-of-the-art. */
-class NER3 extends DocumentAnnotator {
-  def this(url:java.net.URL) = { this(); deserialize(url.openConnection.getInputStream) }
+/** A finite-state named entity recognizer, trained on CoNLL 2003 data.
+    Features include context aggregation and lexicons.
+    Trained by online stochastic gradient ascent with an L1 prior that leads to ~90% sparsity.
+    Inference by Viterbi.
+    Achieves ~91% field F1 on CoNLL 2003 dev set. */
+class NER1 extends DocumentAnnotator {
+  def this(file: File) = { this(); deserialize(file) }
+  def this(url:java.net.URL) = {
+    this()
+    // TODO I would really like to register a "classpath" URL handler, as in 
+    // http://stackoverflow.com/questions/861500/url-to-load-resources-from-the-classpath-in-java
+    val stream = url.openConnection.getInputStream //getClass.getResourceAsStream(url.getPath)
+    require(stream ne null, "Not found: "+url)
+    //if (url.getProtocol == "classpath") deserialize(stream) // But deserializing from an InputStream isn't yet working
+    deserialize(stream)
+  }
 
   object FeaturesDomain extends CategoricalTensorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -38,9 +50,23 @@ class NER3 extends DocumentAnnotator {
       def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }
+    // More efficient unrolling if given the sequence of labels
+    override def factors(vars:Iterable[Var]): Iterable[Factor] = vars match {
+      case vars:Seq[BilouConllNerLabel] if vars.forall(_.isInstanceOf[BilouConllNerLabel]) => {
+        val result = new scala.collection.mutable.ArrayBuffer[Factor](vars.length*3)
+        var prev: BilouConllNerLabel = null
+        for (v <- vars) {
+          result += bias.Factor(v); result += evidence.Factor(v, v.token.attr[FeaturesVariable])
+          if (prev ne null) result += markov.Factor(prev, v)
+          prev = v
+        }
+        result
+      }
+      case _ => super.factors(vars)
+    }
   }
   
-  val model2 = new cc.factorie.app.chain.ChainModel[BilouConllNerLabel,FeaturesVariable,Token](BilouConllNerDomain, FeaturesDomain, l=>l.token.attr[FeaturesVariable], l=>l.token, t=>t.attr[BilouConllNerLabel])
+  //val model2 = new cc.factorie.app.chain.ChainModel[BilouConllNerLabel,FeaturesVariable,Token](BilouConllNerDomain, FeaturesDomain, l=>l.token.attr[FeaturesVariable], l=>l.token, t=>t.attr[BilouConllNerLabel])
   val model = model1
   
   
@@ -96,6 +122,8 @@ class NER3 extends DocumentAnnotator {
       if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
       if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
       if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
+      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
+      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
       if (Demonyms.contains(token)) features += "DEMONYM"
     }
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
@@ -137,7 +165,7 @@ class NER3 extends DocumentAnnotator {
   }
 
   // Parameter estimation
-  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001): Unit = {
     def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
     trainDocs.foreach(addFeatures(_)); FeaturesDomain.freeze(); testDocs.foreach(addFeatures(_)) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
@@ -145,31 +173,33 @@ class NER3 extends DocumentAnnotator {
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
     val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.02/examples.length, l2=0.000001/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
+    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=l1Factor/examples.length, l2=l2Factor/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     //val trainer = new optimize.OnlineTrainer(model.parameters)
     for (iteration <- 1 until 4) { 
       trainer.processExamples(examples)
-      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
-      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
-      println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
+      trainDocs.foreach(process(_))
+      println("Train accuracy "+objective.accuracy(trainLabels))
+      println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
+      if (!testDocs.isEmpty) { 
+        testDocs.foreach(process(_))
+        println("Test  accuracy "+objective.accuracy(testLabels))
+        println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
+      }
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
-    return
+    return    // TODO Don't bother LBFGS training
     val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
       trainer2.processExamples(examples)
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
-      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
+      if (!testDocs.isEmpty) testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     }
     new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
   }
-  def train(trainFilename:String, testFilename:String): Unit = {
-    // TODO Make fixLabels no longer necessary by having LoadConll2003 directly create the right label type.
-    def fixLabels(docs:Iterable[Document]): Iterable[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
-    val trainDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(trainFilename))
-    val testDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(testFilename))
-    train(trainDocs, testDocs)
+  def loadDocuments(files:Iterable[File]): Seq[Document] = {
+    def fixLabels(docs:Seq[Document]): Seq[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
+    fixLabels(files.toSeq.flatMap(file => LoadConll2003(BILOU=true).fromFile(file)))
   }
   
   // Serialization
@@ -198,11 +228,26 @@ class NER3 extends DocumentAnnotator {
   }
 }
 
-object NER3 {
+/** Main function for training NER1 from CoNLL 2003 data. */
+object NER1 {
   def main(args:Array[String]): Unit = {
-    val ner = new NER3
-    ner.train(args(0), args(1))
-    ner.model.parameters.sparsify()
-    ner.serialize(args(2))
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val saveModel = new CmdOption("save-model", "NER1.factorie", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
+      val train = new CmdOption("train", List("eng.train"), "FILENAME..", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
+      val test = new CmdOption("test", List("eng.testa"), "FILENAME...", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
+      val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
+      val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
+    }
+    opts.parse(args)
+    
+    val ner = new NER1
+    
+    if (opts.train.wasInvoked) {
+      ner.train(ner.loadDocuments(opts.train.value.map(new File(_))), ner.loadDocuments(opts.test.value.map(new File(_))), opts.l1.value, opts.l2.value)
+      if (opts.saveModel.wasInvoked) ner.serialize(opts.saveModel.value)
+    } else {
+      System.err.println(getClass.toString+" : --train argument required.")
+      System.exit(-1)
+    }
   }
 }

@@ -63,6 +63,7 @@ Install Eclipse Scala plugin:
  Within Eclipse, select menu "Help" -> "Install New Software"
  Enter this URL: http://download.scala-ide.org/update-current-35
  Click all check boxes and install
+ For MVN, also install http://alchim31.free.fr/m2e-scala/update-site
  Relaunch Eclipse
 
 Import Factorie, (assuming that it has already been checked out to "~/workspace/factorie"):

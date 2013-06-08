@@ -189,9 +189,9 @@ class POS3 extends DocumentAnnotator {
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
   }
 
-  def train(trainingFile: String, testFile: String, modelFile: String, alpha: Double, gamma: Double, cutoff: Int, doBootstrap: Boolean, useHingeLoss: Boolean, saveModel: Boolean) {
-    val trainDocs = LoadOWPL.fromFilename(trainingFile, (t,s) => new PTBPosLabel(t,s))
-    val testDocs = LoadOWPL.fromFilename(testFile, (t,s) => new PTBPosLabel(t,s))
+  def train(trainingFile: String, testFile: String, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false) {
+    val trainDocs = LoadOntonotes5.fromFilename(trainingFile)
+    val testDocs = LoadOntonotes5.fromFilename(testFile)
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
@@ -211,7 +211,7 @@ class POS3 extends DocumentAnnotator {
     val numIterations = 2
     var iteration = 0
     
-    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=1.0), maxIterations=numIterations)
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=lrate), maxIterations=numIterations)
     while (iteration < numIterations && !trainer.isConverged) {
       iteration += 1
       val examples = sentences.shuffle.map(sentence => 
@@ -232,7 +232,6 @@ class POS3 extends DocumentAnnotator {
       })
       println("Test accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
     }
-    if (saveModel) serialize(modelFile)
   }
 
   def process1(d: Document) = { predict(d); d }
@@ -261,8 +260,9 @@ object POS3 {
       // Expects three command-line arguments: a train file, a test file, and a place to save the model in
       // the train and test files are supposed to be in OWPL format
       val Pos = new POS3
-      Pos.train(opts.trainFile.value, opts.testFile.value, opts.modelFile.value,
-                opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, opts.saveModel.value)
+      Pos.train(opts.trainFile.value, opts.testFile.value,
+                opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value)
+      if (opts.saveModel.value) Pos.serialize(opts.modelFile.value)
     } else if (opts.runText.wasInvoked) {
       val pos = new POS3
       pos.deserialize(opts.modelFile.value)

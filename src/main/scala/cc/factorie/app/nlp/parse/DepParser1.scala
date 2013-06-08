@@ -26,7 +26,7 @@ import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
-  def this(filename:String) = { this(); deserialize(filename) }
+  def this(url:java.net.URL) = { this(); deserialize(url.openConnection.getInputStream) }
 
   class ParserStack extends ProtectedIntArrayBuffer {
     def push(i: Int) = this._append(i)
@@ -176,18 +176,33 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   
   // Serialization
-  def serialize(filename: String) {
-    import CubbieConversions._
-    val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
-    BinarySerializer.serialize(ActionDomain, FeaturesDomain.dimensionDomain, model, file)
+  def serialize(filename: String): Unit = {
+    val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    serialize(new java.io.FileOutputStream(file))
   }
-  def deserialize(filename: String) {
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
-    val file = new File(filename)
-    assert(file.exists(), "Trying to load non-existent file: '" +file)
-    BinarySerializer.deserialize(ActionDomain, FeaturesDomain.dimensionDomain, model, file)
+    val dstream = new java.io.DataOutputStream(stream)
+    BinarySerializer.serialize(ActionDomain, dstream)
+    BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }
+  def deserialize(stream: java.io.InputStream): Unit = {
+    import CubbieConversions._
+    val dstream = new java.io.DataInputStream(stream)
+    BinarySerializer.deserialize(ActionDomain, dstream)
+    BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(model, dstream)
+    model.parameters.densify()
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   
+    
   // Training
   def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[Action]] = ss.par.map(generateTrainingLabels(_)).seq
   def generateTrainingLabels(s: Sentence): Seq[Action] = {
@@ -329,7 +344,7 @@ object DepParser1 {
       val unlabeled  = new CmdOption("unlabeled", false, "BOOLEAN", "Whether to ignore labels.")
       val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
       val outputDir  = new CmdOption("output", ".", "DIR", "Directory in which to save the parsed output (to be scored by eval.pl).")
-      val warmModel  = new CmdOption("warm", "parser-model", "FILE", "File from which to read a model for warm-start training.")
+      val warmModel  = new CmdOption("warm", "file:parser-model", "URL", "File from which to read a model for warm-start training.")
       val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
       val l2 = new CmdOption("l2",1.0,"FLOAT","l2 regularization param")
       val l1 = new CmdOption("l1",1.0,"FLOAT","l1 regularization param")
@@ -345,7 +360,7 @@ object DepParser1 {
 
     if (opts.warmModel.wasInvoked) {
       print("Loading " + opts.warmModel.value + " as a warm-start model.....")
-      parser.deserialize(opts.warmModel.value)
+      parser.deserialize(util.URL(opts.warmModel.value).openConnection.getInputStream)
       println("Finished loading warm-start model.")
     }
 

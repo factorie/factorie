@@ -1,185 +1,291 @@
-///* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-//   Department of Computer Science.
-//   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-//   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License. */
-//
-//package cc.factorie.app.nlp.pos
-//
-//import cc.factorie._
-//import cc.factorie.optimize._
-//import cc.factorie.app.nlp._
-//import java.io.File
-//
-///** Part-of-speech tagging with training by SampleRank. */
-//class POS1 {
-//  def this(savedModelFile:String) = { this(); BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(savedModelFile)) }
-//  
-//  object PosFeaturesDomain extends CategoricalTensorDomain[String]
-//  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-//    def domain = PosFeaturesDomain
-//    //override def skipNonCategories = true
-//  }
-//
-//  def useSentenceBoundaries = false
-//  object PosModel extends TemplateModel {
-//    // Bias term on each individual label 
-//    val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
-//      lazy val weights = new la.DenseTensor1(PosDomain.size)
-//    }
-//    // Factor between label and observed token
-//    val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
-//      lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
-//      def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
-//      def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
-//    }
-//    // Transition factors between two successive labels
-//    val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
-//      lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
-//      def unroll1(label: PosLabel) = {
-//        if (useSentenceBoundaries) {
-//          if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil
-//        } else {
-//          if (label.token.hasPrev) Factor(label.token.prev.attr[PosLabel], label) else Nil
-//        }
-//      }
-//      def unroll2(label: PosLabel) = {
-//        if (useSentenceBoundaries) {
-//          if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[PosLabel]) else Nil
-//        } else {
-//          if (label.token.hasNext) Factor(label, label.token.next.attr[PosLabel]) else Nil
-//        }
-//      }
-//    }
-//
-//    this += biasTemplate
-//    this += localTemplate
-//    this += transTemplate
-//  }
-//  
-//  def initPosFeatures(document:Document): Unit = {
-//    for (token <- document.tokens) {
-//      val rawWord = token.string
-//      val word = cc.factorie.app.strings.simplifyDigits(rawWord)
-//      val features = token.attr += new PosFeatures(token)
-//      features += "W="+word.toLowerCase
-//      features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
-//      features += "SUFFIX3="+word.takeRight(3)
-//      features += "PREFIX3="+word.take(3)
-//      //if (token.isCapitalized) features += "CAPITALIZED"
-//      //if (token.containsDigit) features += "NUMERIC"
-//      if (token.isPunctuation) features += "PUNCTUATION"
-//    }
-//    for (sentence <- document.sentences)
-//      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[PosFeatures], List(1), List(-1))
-//  }
-//
-//  // TODO Change this to use Viterbi! -akm
-//  def process(document:Document): Unit = {
-//    for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.category(0)) // init value doens't matter
-//    val localModel = new CombinedModel(PosModel.templates(0), PosModel.templates(1))
-//    val localPredictor = new IteratedConditionalModes[PosLabel](localModel)
-//    for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)
-//    val predictor = new VariableSettingsSampler[PosLabel](PosModel)
-//    for (i <- 0 until 3; label <- document.tokens.map(_.attr[PosLabel])) predictor.process(label)
-//  }
-//  
-//  // Add run as server
-//}
-//
-//
-//
-//
-//// For example:
-//// POS1 --train /Users/mccallum/research/data/ie/ner2003/eng.train --test /Users/mccallum/research/data/ie/ner2003/eng.testa --model pos.fac
-//// POS1 --model pos.fac --run ~/research/data/text/nipstxt/nips11/0620.txt
-//object POS1 extends POS1 {
-//  def main(args: Array[String]): Unit = {
-//    object opts extends cc.factorie.util.DefaultCmdOptions {
-//      val trainFile =    new CmdOption("train", "eng.train", "FILE", "CoNLL 2003 format file from which to get training data.")
-//      val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.")
-//      val modelFile =     new CmdOption("model", "pos.fac", "DIR", "File in which to save the trained model.")
-//      val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
-//    }
-//    opts.parse(args)
-//    if (opts.trainFile.wasInvoked)
-//      train()
-//    else if (opts.runFiles.wasInvoked)
-//      run()
-//    else
-//      throw new Error("Must use either --train or --run.")
-//        
-//    def train(): Unit = {
-//      // Read in the data
-//      val trainDocuments = LoadConll2003.fromFilename(opts.trainFile.value)
-//      val testDocuments = LoadConll2003.fromFilename(opts.testFile.value)
-//      //(trainDocuments ++ testDocuments).foreach(_.tokens.foreach(_.attr.remove[cc.factorie.app.nlp.ner.NerLabel]))
-//
-//      // Add features for NER
-//      trainDocuments.foreach(initPosFeatures(_))
-//      testDocuments.foreach(initPosFeatures(_))
-//      println("Example Token features")
-//      println(trainDocuments(3).tokens.take(10).map(_.attr[PosFeatures].toString).mkString("\n"))
-//      println("Num TokenFeatures = "+PosFeaturesDomain.dimensionDomain.size)
-//    
-//      // Get the variables to be inferred (for now, just operate on a subset)
-//      val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[PosLabel]) //.take(10000)
-//      val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[PosLabel]) //.take(2000)
-//    
-//      def printEvaluation(iteration:String): Unit = {
-//        println("Iteration "+iteration)
-//        println("Train Token accuracy = "+ PosObjective.accuracy(trainLabels))
-//        println(" Test Token accuracy = "+ PosObjective.accuracy(testLabels))
-//        /*for (docs <- List(trainDocuments, testDocuments)) {
-//        if (docs.length > 300) println ("TRAIN") else println("TEST") // Fragile
-//        val tokenEvaluation = new LabelEvaluation(PosDomain)
-//        for (doc <- docs; token <- doc) tokenEvaluation += token.attr[PosLabel]
-//        println(tokenEvaluation)
-//        }*/
-//      }
-//
-//      // Train for 5 iterations
-//      (trainLabels ++ testLabels).foreach(_.setRandomly())
-//      val learner = new SampleRankTrainer(new GibbsSampler(PosModel, HammingObjective), new MIRA)
-//      val predictor = new VariableSettingsSampler[PosLabel](PosModel)
-//      for (i <- 1 until 2) {
-//        learner.processContexts(trainLabels)
-//        predictor.processAll(testLabels)
-//        printEvaluation(i.toString)
-//      }
-//
-//      // Predict, also by sampling, visiting each variable 3 times.
-//      //predictor.processAll(testLabels, 3)
-//      for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-//    
-//      // Evaluate
-//      printEvaluation("FINAL")
-//    
-//      if (opts.modelFile.wasInvoked)
-//        BinarySerializer.serialize(PosDomain, PosFeaturesDomain, PosModel, new File(opts.modelFile.value))
-//    }
-//
-//    def run(): Unit = {
-//      BinarySerializer.deserialize(PosDomain, PosFeaturesDomain, PosModel, new File(opts.modelFile.value))
-//      for (filename <- opts.runFiles.value) {
-//        val document = new Document(io.Source.fromFile(filename).getLines.mkString("\n"))
-//        segment.Tokenizer.process(document)
-//        segment.SentenceSegmenter.process(document)
-//        initPosFeatures(document)
-//        process(document)
-//        for (token <- document.tokens)
-//          println("%s %s".format(token.string, token.attr[PosLabel].categoryValue))
-//      }
-//    }
-//  }
-//
-//  
-//}
+package cc.factorie.app.nlp.pos
+import cc.factorie._
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
+import cc.factorie.app.classify.{MultiClassModel, LogLinearTemplate2, LogLinearModel}
+import cc.factorie.la._
+import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, SynchronizedOptimizerOnlineTrainer}
+import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
+import scala.collection.mutable.HashMap
+import java.io.File
+import org.junit.Assert._
+
+class POS1 extends DocumentAnnotator {
+  def this(filename: String) = { this(); deserialize(filename) }
+  
+  object FeatureDomain extends CategoricalTensorDomain[String]
+  class ClassifierModel extends MultiClassModel {
+    val evidence = Weights(new la.DenseTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize))
+  }
+  val model = new ClassifierModel //LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
+  
+  /** Local lemmatizer used for POS features. */
+  protected def lemmatize(string:String): String = cc.factorie.app.strings.collapseDigits(string) // .toLowerCase?
+  /** A special IndexedSeq[String] that will return "null" for indices out of bounds, rather than throwing an error */
+  protected def lemmas(tokens:Seq[Token]): IndexedSeq[String] = new IndexedSeq[String] {
+    val inner: IndexedSeq[String] = tokens.toIndexedSeq.map((t:Token) => lemmatize(t.string))
+    val length: Int = inner.length
+    def apply(i:Int): String = if (i < 0 || i > length-1) null else inner(i)
+  }
+  
+  /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
+      Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger. */
+  object WordData {
+    val ambiguityClasses = collection.mutable.HashMap[String,String]()
+    val ambiguityClassThreshold = 0.7
+    val wordInclusionThreshold = 1
+
+    def preProcess(documents: Seq[Document]) {
+      val wordCounts = collection.mutable.HashMap[String,Int]()
+      val posCounts = collection.mutable.HashMap[String,Array[Int]]()
+      var tokenCount = 0
+      documents.foreach(doc => {
+        doc.tokens.foreach(t => {
+          tokenCount += 1
+          if (t.attr[PTBPosLabel] eq null) {
+            println("POS3.WordData.preProcess tokenCount "+tokenCount)
+            println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+            println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
+          }
+          val lemma = t.lemmaString
+          if (!wordCounts.contains(lemma)) {
+            wordCounts(lemma) = 0
+            posCounts(lemma) = Array.fill(PTBPosDomain.size)(0)
+          }
+          wordCounts(lemma) += 1
+          posCounts(lemma)(t.attr[PTBPosLabel].intValue) += 1
+        })
+      })
+      wordCounts.keys.foreach(w => {
+        if (wordCounts(w) >= wordInclusionThreshold) {
+          val counts = wordCounts(w)
+          val pos = posCounts(w)
+          val bestPos = (0 until 45).maxBy(i => pos(i))
+          if (pos(bestPos) > ambiguityClassThreshold*counts)
+            ambiguityClasses(w) = bestPos.toString
+        }
+      })
+    }
+  }
+  
+  def features(token:Token, lemmaIndex:Int, lemmas:IndexedSeq[String]): SparseBinaryTensor1 = {
+    def lemmaStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas(lemmaIndex + offset)
+    def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(lemmas(lemmaIndex + offset), null)
+    def posTagAtOffset(offset:Int): String = { val t = token.next(offset); if (t ne null) t.attr[PTBPosLabel].categoryValue else null }
+    val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
+    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor._appendUnsafe(i) }
+    // Lemmas at offsets
+    val wp3 = lemmaStringAtOffset(-3)
+    val wp2 = lemmaStringAtOffset(-2)
+    val wp1 = lemmaStringAtOffset(-1)
+    val w0 = lemmaStringAtOffset(0)
+    val wm1 = lemmaStringAtOffset(1)
+    val wm2 = lemmaStringAtOffset(2)
+    val wm3 = lemmaStringAtOffset(3)
+    // Affinity classes at next offsets
+    val a0 = affinityTagAtOffset(0)
+    val ap1 = affinityTagAtOffset(1)
+    val ap2 = affinityTagAtOffset(2)
+    val ap3 = affinityTagAtOffset(3)
+    // POS tags at prev offsets
+    val pm1 = posTagAtOffset(-1)
+    val pm2 = posTagAtOffset(-2)
+    val pm3 = posTagAtOffset(-3)
+    addFeature(wp3)
+    addFeature(wp2)
+    addFeature(wp1)
+    addFeature(w0)
+    addFeature(wm1)
+    addFeature(wm2)
+    addFeature(wm3)
+    addFeature(pm3)
+    addFeature(pm2)
+    addFeature(pm1)
+    addFeature(a0)
+    addFeature(ap1)
+    addFeature(ap2)
+    addFeature(ap3)
+    addFeature(wm2+wm1)
+    addFeature(wm1+w0)
+    addFeature(w0+wp1)
+    addFeature(wp1+wp2)
+    addFeature(wm1+wp1)
+    addFeature(pm2+pm1)
+    addFeature(ap1+ap2)
+    addFeature(pm1+ap1)
+    addFeature(pm1+a0)
+    addFeature(a0+ap1)
+    addFeature(wm2+wm1+w0)
+    addFeature(wm1+w0+wp1)
+    addFeature(w0+wp1+wp2)
+    addFeature(wm2+wm1+wp1)
+    addFeature(wm1+wp1+wp2)
+    addFeature(pm2+pm1+a0)
+    addFeature(pm1+a0+ap1)
+    addFeature(pm2+pm1+ap1)
+    addFeature(pm1+ap1+ap2)
+    addFeature(a0+ap1+ap2)
+    addFeature("PREFIX3="+w0.take(3))
+    addFeature("SUFFIX4="+w0.takeRight(4))
+    //addFeature("SUFFIX2="+w0.takeRight(2))  // I think this would help with NNPS -akm
+    addFeature("SHAPE="+cc.factorie.app.strings.stringShape(w0, 2)) // TODO(apassos): add the remaining jinho features not contained in shape
+    addFeature("HasPeriod="+(w0.indexOf('.') >= 0))
+    addFeature("HasHyphen="+(w0.indexOf('-') >= 0))
+    addFeature("HasDigit="+w0.matches(".*[0-9].*"))
+    tensor
+  }
+  def features(tokens:Seq[Token]): Seq[SparseBinaryTensor1] = {
+    val lemmaStrings = lemmas(tokens)
+    tokens.zipWithIndex.map({case (t:Token, i:Int) => features(t, i, lemmaStrings)})
+  }
+
+  var exampleSetsToPrediction = false
+  class TokensClassifierExample(val tokens:Seq[Token], model:ClassifierModel, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
+    override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+      val lemmaStrings = lemmas(tokens)
+      for (index <- 0 until tokens.length) {
+        val token = tokens(index)
+        val posLabel = token.attr[PTBPosLabel]
+        val featureVector = features(token, index, lemmaStrings)
+        new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateExampleInto(gradient, value)
+  //      new optimize.LinearMultiClassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
+        if (exampleSetsToPrediction) {
+          val prediction = model.evidence.value * featureVector
+          posLabel.set(prediction.maxIndex)(null)
+        }
+      }
+    }
+  }
+  
+  def predict(tokens: Seq[Token]): Unit = {
+    val weightsMatrix = model.evidence.value
+    val lemmaStrings = lemmas(tokens)
+    for (index <- 0 until tokens.length) {
+      val token = tokens(index)
+      val posLabel = token.attr[PTBPosLabel]
+      val featureVector = features(token, index, lemmaStrings)
+      if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
+      val prediction = weightsMatrix * featureVector
+      token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
+    }
+  }
+  def predict(span: TokenSpan): Unit = predict(span.tokens)
+  def predict(document: Document): Unit = {
+    for (section <- document.sections)
+      if (section.hasSentences) document.sentences.foreach(predict(_))  // we have Sentence boundaries 
+      else predict(section.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
+  }
+
+  def serialize(filename: String) {
+    import CubbieConversions._
+    val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
+    assert(FeatureDomain.dimensionDomain ne null); assert(model ne null); assert(WordData.ambiguityClasses ne null)
+    val stream = new java.io.FileOutputStream(new File(filename))
+    val dstream = new java.io.DataOutputStream(stream)
+    //BinarySerializer.serialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
+    BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
+  }
+
+  def deserialize(filename: String) {
+    import CubbieConversions._
+    val file = new File(filename)
+    assert(file.exists(), "Trying to load non-existent file: '" +file)
+    val stream = new java.io.FileInputStream(file)
+    val dstream = new java.io.DataInputStream(stream)
+    //BinarySerializer.deserialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
+    BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(model, dstream)
+    BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
+  }
+
+  def train(trainingFile: String, testFile: String, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false) {
+    val trainDocs = LoadOntonotes5.fromFilename(trainingFile)
+    val testDocs = LoadOntonotes5.fromFilename(testFile)
+    //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
+    println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
+    println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
+    // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
+    for (doc <- (trainDocs ++ testDocs)) {
+      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)
+    }
+    WordData.preProcess(trainDocs)
+    val sentences = trainDocs.flatMap(_.sentences)
+    val testSentences = testDocs.flatMap(_.sentences)
+    // Prune features by count
+    FeatureDomain.dimensionDomain.gatherCounts = true
+    for (sentence <- sentences) features(sentence.tokens) // just to create and count all features
+    FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
+    FeatureDomain.freeze()
+    println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
+    val numIterations = 2
+    var iteration = 0
+    
+    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=lrate), maxIterations=numIterations)
+    while (iteration < numIterations && !trainer.isConverged) {
+      iteration += 1
+      val examples = sentences.shuffle.map(sentence => 
+        new TokensClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
+      trainer.processExamples(examples)
+      exampleSetsToPrediction = doBootstrap
+      var total = 0.0
+      var correct = 0.0
+      var totalTime = 0L
+      testSentences.foreach(s => {
+        val t0 = System.currentTimeMillis()
+        predict(s)
+        totalTime += (System.currentTimeMillis()-t0)
+        for (token <- s.tokens) {
+          total += 1
+          if (token.attr[PTBPosLabel].valueIsTarget) correct += 1.0
+        }
+      })
+      println("Test accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
+    }
+  }
+
+  def process1(d: Document) = { predict(d); d }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.SimplifyPTBTokenString])
+  def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
+  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+}
+
+
+object POS1 {
+  def main(args: Array[String]) {
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
+      val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
+      val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
+      val lrate = new CmdOption("lrate", 0.1, "FLOAT", "Learning rate for training.")
+      val decay = new CmdOption("decay", 0.01, "FLOAT", "Learning rate decay for training.")
+      val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
+      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
+      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
+      val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
+      val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
+    }
+    opts.parse(args)
+    if (opts.trainFile.wasInvoked) {
+      // Expects three command-line arguments: a train file, a test file, and a place to save the model in
+      // the train and test files are supposed to be in OWPL format
+      val pos = new POS1
+      pos.train(opts.trainFile.value, opts.testFile.value,
+                opts.lrate.value, opts.decay.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value)
+      if (opts.saveModel.value) pos.serialize(opts.modelFile.value)
+    } else if (opts.runText.wasInvoked) {
+      val pos = new POS1
+      pos.deserialize(opts.modelFile.value)
+      val doc = cc.factorie.app.nlp.LoadPlainText(cc.factorie.app.nlp.segment.ClearSegmenter).fromFile(new java.io.File(opts.runText.value)).head
+      pos.process(doc)
+      println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
+    }
+  }
+
+  def fromFilename(name: String): POS1 = {
+    val c = new POS1
+    c.deserialize(name)
+    c
+  }
+}
