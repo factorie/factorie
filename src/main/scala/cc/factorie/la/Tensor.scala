@@ -20,6 +20,8 @@ import cc.factorie.util._
 // Note: Many Tensor-like methods are actually implemented in DoubleSeq
 // Tensor adds capabilities for copying, and more explicit sparsity.
 
+// TODO Consider having all Tensor += methods return this.type.  Question: will this reduce efficiency? -akm
+
 /** An N-dimensional collection of Doubles. */
 trait Tensor extends MutableDoubleSeq {
   def numDimensions: Int
@@ -115,14 +117,13 @@ object Tensor {
     case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
   def newSparse(t:Tensor): Tensor = {
-    if (t.length <= 100)
-      newDense(t)
-    else
-      t match {
-        case t:Tensor1 => new SparseTensor1(t.dim1)
-        case t:Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
-        case t:Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
-        case t:Tensor4 => new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+    if (t.length <= 100) newDense(t)
+    else t match {
+      case t:Tensor1 => new SparseTensor1(t.dim1)
+      case t:Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
+      case t:Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
+      case t:Tensor4 => new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+      case t:DenseLayeredTensor2 if t.inner(0).isDense => new DenseLayeredTensor2(t.dim1, t.dim2, i => new SparseIndexedTensor1(i))
     }
   }
   def newSparse(dims:Int*): Tensor = {
