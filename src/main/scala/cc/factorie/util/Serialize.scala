@@ -130,6 +130,12 @@ object BinarySerializer extends GlobalLogging {
   private val SPARSE_INDEXED_TENSOR: Byte = 0x09
   private val SPARSE_BINARY_TENSOR: Byte = 0x10
   private val DENSE_TENSOR: Byte = 0x11
+  
+  private def tensorTypeMatch(tag:Byte, tensor:Tensor): Boolean = tag match {
+    case SPARSE_INDEXED_TENSOR => tensor.isInstanceOf[SparseDoubleSeq]
+    case SPARSE_BINARY_TENSOR => tensor.isInstanceOf[SparseBinaryTensor]
+    case DENSE_TENSOR => tensor.isInstanceOf[DenseDoubleSeq]
+  }
 
   private def deserializeInner(preexisting: Any, tag: Byte, s: DataInputStream): Any = tag match {
     case DOUBLE => s.readDouble()
@@ -143,7 +149,9 @@ object BinarySerializer extends GlobalLogging {
       // use pre-existing if there is one, and it has the right dimensions
       val preexistingTensor = preexisting.toNotNull.flatMap(_.cast[Tensor])
       val newBlank =
-        if (preexistingTensor.exists(_.dimensions.sameElements(dims)))
+        // With the last condition below, deserialization could substitute a different sparsity/density than was allocated.
+        // Useful for training Dense, sparsifying, serializing, and deserializing without changing the Model's Dense initialization. -akm
+        if (preexistingTensor.exists(_.dimensions.sameElements(dims)) && preexistingTensor.exists(tensorTypeMatch(tag, _)))
           preexistingTensor.get
         else (tag, order) match {
           case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))
