@@ -1,6 +1,5 @@
 package cc.factorie.util
 import java.io.IOException
-import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.net.URLStreamHandlerFactory
@@ -8,9 +7,9 @@ import java.net.URLStreamHandlerFactory
 /** A constructor for URLs that handles "classpath:" protocol.
     @author Andrew McCallum */
 object URL {
-  def apply(urlString:String): URL =
-    if (urlString.startsWith("classpath:")) new URL(null, urlString, new ClasspathURLStreamHandler(ClassLoader.getSystemClassLoader))
-    else new URL(urlString)
+  def apply(urlString:String): java.net.URL =
+    if (urlString.startsWith("classpath:")) new java.net.URL(null, urlString, new ClasspathURLStreamHandler(ClassLoader.getSystemClassLoader))
+    else new java.net.URL(urlString)
 }
 
 
@@ -21,7 +20,7 @@ class ClasspathURLStreamHandler extends URLStreamHandler {
   def this(customClassLoader:ClassLoader) = { this(); classLoader = customClassLoader }
   /** The classloader to find resources from. */
   private var classLoader:ClassLoader = getClass.getClassLoader
-  override protected def openConnection(u:URL): URLConnection = classLoader.getResource(u.getPath).openConnection
+  override protected def openConnection(u:java.net.URL): URLConnection = classLoader.getResource(u.getPath).openConnection
 }
 
 /** Set up URL to handle "classpath:" protocols.

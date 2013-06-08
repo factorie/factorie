@@ -52,7 +52,7 @@ class NER1 extends DocumentAnnotator {
     }
     // More efficient unrolling if given the sequence of labels
     override def factors(vars:Iterable[Var]): Iterable[Factor] = vars match {
-      case vars:Seq[BilouConllNerLabel] if vars.forall(_.isInstanceOf[BilouConllNerLabel]) => {
+      case vars:Seq[BilouConllNerLabel @unchecked] if vars.forall(_.isInstanceOf[BilouConllNerLabel]) => {
         val result = new scala.collection.mutable.ArrayBuffer[Factor](vars.length*3)
         var prev: BilouConllNerLabel = null
         for (v <- vars) {

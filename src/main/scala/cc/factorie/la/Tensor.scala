@@ -119,11 +119,11 @@ object Tensor {
   def newSparse(t:Tensor): Tensor = {
     if (t.length <= 100) newDense(t)
     else t match {
+      case t:DenseLayeredTensor2 if t.inner(0).isInstanceOf[DenseDoubleSeq] => new DenseLayeredTensor2(t.dim1, t.dim2, i => new SparseIndexedTensor1(i))
       case t:Tensor1 => new SparseTensor1(t.dim1)
       case t:Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
       case t:Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
       case t:Tensor4 => new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
-      case t:DenseLayeredTensor2 if t.inner(0).isDense => new DenseLayeredTensor2(t.dim1, t.dim2, i => new SparseIndexedTensor1(i))
     }
   }
   def newSparse(dims:Int*): Tensor = {
