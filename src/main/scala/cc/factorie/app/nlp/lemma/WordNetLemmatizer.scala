@@ -2,8 +2,18 @@ package cc.factorie.app.nlp.lemma
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PTBPosLabel,PTBPosDomain}
+import java.io.{FileInputStream,InputStream}
 
-class WordNetLemmatizer(val wordNetDir:String) extends DocumentAnnotator {
+// TODO Rather than reading the WordNet files here, I think this object should simply depend on newly-written methods in wordnet.WordNet. -akm 
+
+class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends DocumentAnnotator {
+  def this(wordNetDir:java.io.File) = this((string:String) => new FileInputStream(new java.io.File(wordNetDir, string)))
+ // def this(url:java.net.URL) = ???
+  //def this() = this(util.InputStreamFromJar(classOf[WordNetLemmatizer]))
+  
+  val resourcePath = "dict/"
+  def sourceFactory(string:String): io.Source = io.Source.fromInputStream(inputStreamFactory(resourcePath+string))
+  
   val NOUN = "n"
   val VERB = "v"
   val ADJC = "aj"
@@ -38,13 +48,13 @@ class WordNetLemmatizer(val wordNetDir:String) extends DocumentAnnotator {
   )
 
   for ((f, pos) <- Seq(("adj", ADJC), ("adv", ADVB), ("noun", NOUN), ("verb", VERB))) {
-    for (line <- scala.io.Source.fromFile(new java.io.File(wordNetDir + "/" + f + ".exc")).getLines) {
+    for (line <- sourceFactory(f + ".exc").getLines) {
       val fields = line.split(" ")
       if (fields(0).indexOf('_') == -1) // For now skip multi-word phrases (indicated by underscore in WordNet)
         exceptionMap(pos)(fields(0)) = fields(1)
     }
 
-    for (line <- scala.io.Source.fromFile(new java.io.File(wordNetDir+"/index." + f)).getLines) {
+    for (line <- sourceFactory("index." + f).getLines) {
       val word = line.split(" ")(0)
       if (!word.contains('_')) wordNetWords(pos) += word.toLowerCase
     }
@@ -86,34 +96,62 @@ class WordNetLemmatizer(val wordNetDir:String) extends DocumentAnnotator {
   }
 }
 
-object WordNetLemmatizer {
-  // TODO Move this to a JUnit test. -akm
-  def main(args: Array[String]) {
-    val wnl = new cc.factorie.app.nlp.lemma.WordNetLemmatizer(args(0))
-    val testWords = List(
-      ("grass", "N"),
-      ("blue", "J"),
-      ("makings", "N"),
-      ("gooey", "J"),
-      ("aklsdjflk", "N"),
-      ("aggressively", "adverb"),
-      ("sparked", "V"),
-      ("walking", "V"),
-      ("loves", "V"),
-      ("polyhedra", "N"),
-      ("orogami", "N"),
-      ("watches", "V"),
-      ("watches", "N"),
-      ("spying", "V"),
-      ("news", "N"),
-      ("mathematics", "N"),
-      ("POLITICS", "N"),
-      ("wonderful", "J")
-    )
+object WordNetLemmatizer extends WordNetLemmatizer(cc.factorie.util.InputStreamFromClasspath(classOf[wordnet.WordNet]))
 
-    testWords.map(x => println(x._1 + " -> " + wnl.lemma(x._1, x._2)))
-  }
-}
+//string => {
+//import java.io.File
+//import java.util.jar.JarFile
+//  val propertyName = "cc.factorie.app.nlp.wordnet.jar"
+//  val jarLocationProperty = System.getProperty(propertyName, null)
+//  if (jarLocationProperty ne null) {
+//    // Try to load from .jar in filesystem location specified by System property cc.factorie.app.nlp.lexicon.jar
+//    val file = new File(jarLocationProperty)
+//    if (!file.exists) throw new Error("File not found at System Property "+propertyName+" value: "+jarLocationProperty)
+//    try {
+//      val jarFile = new JarFile(file)
+//      val jarEntry = jarFile.getJarEntry(string)
+//      jarFile.getInputStream(jarEntry)
+//    } catch {
+//      case e:Exception => throw new Error("Error loading resource '"+string+"' from jar '"+file+"'", e)
+//    }
+//  } else {
+//    // Try to load from .jar on classpath
+//    try {
+//      wordnet.WordNet.getClass.getResourceAsStream(string)
+//    } catch {
+//      case e:Exception => throw new Error("Could not find resource for cc.factorie.app.nlp.lexicon: "+string+".  \nDownload factorie-nlp-lexicon.jar and then either add it classpath or set Java System Property 'cc.factorie.app.nlp.lexicon.jar' to its file system location.", e)
+//    }
+//  }
+//})
+
+//object WordNetLemmatizer {
+//  // TODO Move this to a JUnit test. -akm
+//  def main(args: Array[String]) {
+//    val wnl = new cc.factorie.app.nlp.lemma.WordNetLemmatizer(new java.io.File(args(0)))
+//    val testWords = List(
+//      ("grass", "N"),
+//      ("blue", "J"),
+//      ("makings", "N"),
+//      ("gooey", "J"),
+//      ("aklsdjflk", "N"),
+//      ("aggressively", "adverb"),
+//      ("sparked", "V"),
+//      ("walking", "V"),
+//      ("loves", "V"),
+//      ("polyhedra", "N"),
+//      ("orogami", "N"),
+//      ("watches", "V"),
+//      ("watches", "N"),
+//      ("spying", "V"),
+//      ("news", "N"),
+//      ("mathematics", "N"),
+//      ("POLITICS", "N"),
+//      ("wonderful", "J")
+//    )
+//
+//    testWords.map(x => println(x._1 + " -> " + wnl.lemma(x._1, x._2)))
+//  }
+//}
 
 class WordNetTokenLemma(token:Token, s:String) extends TokenLemma(token, s)
 

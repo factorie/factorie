@@ -4,4 +4,5 @@ package object lexicon {
   val iesl = ClasspathResourceLexicons.iesl
   val uscensus = ClasspathResourceLexicons.uscensus
   val wikipedia = ClasspathResourceLexicons.wikipedia
+  val ssdi = ClasspathResourceLexicons.ssdi
 }

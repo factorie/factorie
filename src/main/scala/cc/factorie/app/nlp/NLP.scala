@@ -23,7 +23,7 @@ object NLP {
       val tnorm = new CmdOption("tnorm", null, null, "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
       val pos1 = new CmdOption("pos1", "classpath:cc/factorie/app/nlp/pos/POS1.factorie", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS1(value) }
       val pos3 = new CmdOption("pos3", "classpath:cc/factorie/app/nlp/pos/POS3.factorie", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS3(value) }
-      val wnlemma = new CmdOption("wnlemma", "/Users/mccallum/tmp/dict", "WordNet-DIR", "Annotate lemma") { override def invoke = annotators += new cc.factorie.app.nlp.lemma.WordNetLemmatizer(value) }
+      val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
       val mention1 = new CmdOption("mention1", null, null, "Annotate noun mention") { override def invoke = annotators += cc.factorie.app.nlp.mention.NounMention1 }
       val ner1 = new CmdOption("ner1", "classpath:cc/factorie/app/nlp/ner/NER1.factorie", "URL", "Annotate CoNLL-2003 NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER1(URL(value)) }
       val ner2 = new CmdOption("ner2", "classpath:cc/factorie/app/nlp/ner/NER2.factorie", "URL", "Annotate Ontonotes NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER2(URL(value)) }

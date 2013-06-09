@@ -4,7 +4,12 @@ import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 
-class WordNet(wordNetDir: String) {
+class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
+  def this(wordNetDir:java.io.File) = this((string:String) => new java.io.FileInputStream(new java.io.File(wordNetDir, string)))
+
+  val resourcePath = "dict/"
+  def sourceFactory(string:String): io.Source = io.Source.fromInputStream(inputStreamFactory(resourcePath+string))
+  
   val ignoredSynsets = Set("n00002137", "n00001930", "n00001740")
   /* for converting from hexidecimal */
   val HEX = 16
@@ -20,7 +25,7 @@ class WordNet(wordNetDir: String) {
    * all of the data and index files and extracts information from them
    * To speed this up, we can combine the wnLemmatizer intialization and the
    * WordNet intialization used below */
-  val wnLemmatizer = new cc.factorie.app.nlp.lemma.WordNetLemmatizer(wordNetDir)
+  val wnLemmatizer = new cc.factorie.app.nlp.lemma.WordNetLemmatizer(inputStreamFactory)
 
   /* There are 2 types of files we deal with here for wordnet:
        1) the data file - this file has 1 line per synset and
@@ -50,11 +55,11 @@ class WordNet(wordNetDir: String) {
     val dataFilename  = kv._2._1
     val indexFilename = kv._2._2
 
-    val indexFile  = scala.io.Source.fromFile(wordNetDir + "/" + indexFilename)
+    val indexFile  = sourceFactory(indexFilename)
     val indexLines = indexFile.getLines.mkString("\n").split("\n")
     indexFile.close()
 
-    val dataFile  = scala.io.Source.fromFile(wordNetDir + "/" + dataFilename)
+    val dataFile  = sourceFactory(dataFilename)
     val dataLines = dataFile.getLines.mkString("\n").split("\n")
     dataFile.close()
 
@@ -189,11 +194,15 @@ class Synset(val id: String, val hyps: Set[String], val ants: Set[String], wn: W
   }
 }
 
-object WordNet {
+object WordNet extends WordNet(cc.factorie.util.InputStreamFromClasspath(classOf[WordNet])) {
+  
+  //System.setProperty("cc.factorie.app.nlp.wordnet.WordNet", "file:/Users/mccallum/research/data/resources/wordnet/WordNet-1.7.1")
+  println("Setting property to "+classOf[WordNet].getName)
+  System.setProperty(classOf[WordNet].getName, "file:/Users/mccallum/research/data/resources/wordnet/WordNet-1.7.1")
 
   /*  pass in the absolute path to the wordnet data dir (that includes the data.* and index.* files  */
   def main(args: Array[String]) {
-    val wn = new cc.factorie.app.nlp.wordnet.WordNet(args(0))
+    val wn = this //new cc.factorie.app.nlp.wordnet.WordNet(new java.io.File(args(0)))
     assert(wn.areAntonyms("good", "evil"))
     assert(!wn.areAntonyms("good", "star"))
     assert(wn.areAntonyms("right", "left"))
