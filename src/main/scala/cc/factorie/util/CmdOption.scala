@@ -25,15 +25,22 @@ trait CmdOption[T] {
   def name: String
   def shortName: Char
   def helpString: String
-  def valueClass: Class[_];
+  def valueClass: Class[_]
   def valueName: String
   def defaultValue: T
   def value: T
+  def setValue(v: T): Unit
   def hasValue: Boolean
   def invokedCount: Int
   def wasInvoked = invokedCount > 0
   def required: Boolean
   def parse(args:Seq[String], index:Int): Int
+  def unParse: String = {
+    if (hasValue)
+      f"--$name%s=${value.toString}%s"
+    else
+      ""
+  }
   override def hashCode = name.hashCode
   override def equals(other:Any) = name.equals(other)
 }
@@ -149,6 +156,7 @@ class CmdOptions {
     var value: T = _
     var invokedCount = 0
     def required = false
+    def setValue(v: T) { value = v }
     def hasValue = valueClass != noValueClass
     def noValueClass = classOf[Any] // This is the value of m.erasure if no type is specified for T in CmdOption[T].
     /** Attempt to match and process command-line option at position 'index' in 'args'.  
@@ -280,13 +288,13 @@ class CmdOptions {
 
 /** Default CmdOption collection that should be included in most CmdOptions. */
 trait DefaultCmdOptions extends CmdOptions {
-  new CmdOption("help", "Print this help message.") {
+  new CmdOption("help", "", "STRING", "Print this help message.") {
     override def invoke = {
       DefaultCmdOptions.this.values.foreach(o => println(o.helpString))
       System.exit(0)
     }
   }
-  new CmdOption("version", "Print version numbers.") {
+  new CmdOption("version", "", "STRING",  "Print version numbers.") {
     override def invoke = {
       throw new Error("Not yet implemented.") // TODO How to manage version strings?
       //println("FACTORIE version "+factorieVersionString)

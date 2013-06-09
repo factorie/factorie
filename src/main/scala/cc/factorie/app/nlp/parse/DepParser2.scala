@@ -14,6 +14,7 @@ import scala._
 import scala.Some
 import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
 import scala.Some
+import scala.concurrent.Future
 
 class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnotator {
   case class ParseDecision(action: String) {
@@ -387,33 +388,35 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
   }
 }
 
-object DepParser2 {
-  def main(args: Array[String]) = {
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFiles =  new CmdOption("train", List(""), "FILE...", "")
-      val testFiles =  new CmdOption("test", List(""), "FILE...", "")
-      val devFiles =   new CmdOption("dev", List(""), "FILE", "")
-      val ontonotes = new CmdOption("onto", "", "", "")
-      val cutoff    = new CmdOption("cutoff", "0", "", "")
-      val loadModel = new CmdOption("load", "", "", "")
-      val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
-      val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
-      val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
-      val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
-      val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
-      val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-      val useSparseTestWeights = new  CmdOption("sparse-test-weights", false,"BOOLEAN","whether to use sparse weights at test time")
-    }
+class DepParser2Args extends cc.factorie.util.CmdOptions {
+  val trainFiles =  new CmdOption("train", "", "STRING", "")
+  val testFiles =  new CmdOption("test", "", "STRING", "")
+  val devFiles =   new CmdOption("dev", "", "STRING", "")
+  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
+  val cutoff    = new CmdOption("cutoff", "0", "", "")
+  val loadModel = new CmdOption("load", "", "", "")
+  val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
+  val modelDir =  new CmdOption("model", "model", "STRING", "Directory in which to save the trained model.")
+  val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
+  val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
+  val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
+  val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
+  val useSparseTestWeights = new  CmdOption("sparse-test-weights", false,"BOOLEAN","whether to use sparse weights at test time")
+}
+
+object DepParser2 extends cc.factorie.util.HyperparameterMain {
+  def evaluateParameters(args: Array[String]) = {
+    val opts = new DepParser2Args
     opts.parse(args)
     import opts._
 
     // Load the sentences
     var loader = LoadConll2008.fromFilename(_)
-    if (ontonotes.wasInvoked)
+    if (ontonotes.value)
       loader = LoadOntonotes5.fromFilename(_)
 
-    def loadSentences(o: CmdOption[List[String]]): Seq[Sentence] = {
-      if (o.wasInvoked) o.value.flatMap(f => loader(f).head.sentences)
+    def loadSentences(o: CmdOption[String]): Seq[Sentence] = {
+      if (o.wasInvoked) loader(o.value).head.sentences.toSeq
       else Seq.empty[Sentence]
     }
 
@@ -446,15 +449,9 @@ object DepParser2 {
 
     // Load other parameters
     val numBootstrappingIterations = bootstrapping.value.toInt
-
-    val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString() + ".parser"
-    var modelFolder: File = new File(modelUrl)
-
     val c = new DepParser2(useSparseTestWeights.value)
-
-    val l1 = 2*opts.l1.value / sentences.length //basically, we're assuming that there are around 20 training transition examples per sentence, but then I don't want to make the penalty too small, so we multiply by 10
+    val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
-
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
 
     def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
@@ -475,42 +472,46 @@ object DepParser2 {
         }
       }
     }
-    // Do training if we weren't told to load a model
-    if (!loadModel.wasInvoked) {
-
-      var trainingVs = c.generateDecisions(sentences, 0)
-      c.featuresDomain.freeze()
-      println("# features " + c.featuresDomain.dimensionDomain.size)
-      c.trainFromVariables(trainingVs, trainFn)
-      // save the initial model
-      if(saveModel.value){
-        println("Saving the model...")
-        println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
-        c.save(modelFolder, gzip = true)
-        println("...DONE")
-        testAll(c)
-        println("Loading it back for serialization testing...")
-        val d = new DepParser2
-        d.load(modelFolder, gzip = true)
-        testAll(d)
-      }else{
-        testAll(c)
-      }
-      trainingVs = null // GC the old training labels
-      for (i <- 0 until numBootstrappingIterations) {
-        c.boosting(sentences, trainFn=trainFn)
-        testAll(c, "Boosting" + i)
-        // save the model
-        if(saveModel.value) {
-          modelFolder = new File(modelUrl + "-bootstrap-iter=" + i)
-          c.save(modelFolder, gzip = true)
-        }
-      }
+    var trainingVs = c.generateDecisions(sentences, 0)
+    c.featuresDomain.freeze()
+    println("# features " + c.featuresDomain.dimensionDomain.size)
+    c.trainFromVariables(trainingVs, trainFn)
+    trainingVs = null // GC the old training labels
+    for (i <- 0 until numBootstrappingIterations) {
+      println("Boosting iteration " + i)
+      c.boosting(sentences, trainFn=trainFn)
     }
-    else {
-      c.load(modelFolder, gzip = true)
-      testAll(c)
+    testSentences.foreach(c.process)
+    if (saveModel.value) {
+      val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString + ".parser"
+      c.save(new java.io.File(modelUrl), gzip = true)
     }
+    ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
   }
 }
 
+object DepParser2Optimizer {
+  def main(args: Array[String]) {
+    val opts = new DepParser2Args
+    opts.parse(args)
+    opts.saveModel.setValue(false)
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
+    /*
+    val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
+      Seq("avon1", "avon2"),
+      "/home/apassos/canvas/factorie-test",
+      "try-log/",
+      "cc.factorie.app.nlp.parse.DepParser2",
+      10, 5)
+      */
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.parse.DepParser2", "try-log/")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 30, 20, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    opts.saveModel.setValue(true)
+    println("Running best configuration...")
+    qs.execute(opts.values.map(_.unParse).toArray)
+  }
+}
