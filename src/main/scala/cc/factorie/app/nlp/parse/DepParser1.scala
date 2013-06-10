@@ -26,7 +26,7 @@ import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
-  def this(url:java.net.URL) = { this(); deserialize(url.openConnection.getInputStream) }
+  def this(url:java.net.URL) = { this(); deserialize(url.openConnection().getInputStream) }
 
   class ParserStack extends ProtectedIntArrayBuffer {
     def push(i: Int) = this._append(i)

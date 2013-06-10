@@ -5,6 +5,7 @@ import java.net.URLStreamHandler
 import java.net.URLStreamHandlerFactory
 import java.io.File
 import java.io.InputStream
+import scala.language.existentials
 
 /** A constructor for URLs that handle our own "classpath:" protocol, (which allows for substitutions specified in Java System Properties) 
     Although "Classpath" is in this object's name, it will also successfully create URLs for standard non-classpath protocols.
