@@ -21,7 +21,7 @@ class NER1 extends DocumentAnnotator {
   } 
   
   // The model
-  val model1 = new TemplateModel with Parameters {
+  class NER1Model extends TemplateModel with Parameters {
     // Bias term on each individual label
     val bias = this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
@@ -60,7 +60,7 @@ class NER1 extends DocumentAnnotator {
   }
   
   //val model2 = new cc.factorie.app.chain.ChainModel[BilouConllNerLabel,FeaturesVariable,Token](BilouConllNerDomain, FeaturesDomain, l=>l.token.attr[FeaturesVariable], l=>l.token, t=>t.attr[BilouConllNerLabel])
-  val model = model1
+  val model = new NER1Model
   
   
   // The training objective
