@@ -264,6 +264,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
+
+  case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)  
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
@@ -357,8 +359,8 @@ object DepParser1Trainer {
 
     opts.parse(args)
 
-    val trainOptions = new TrainOptions(opts.l2.value, opts.l1.value, opts.lrate.value ,opts.optimizerStr.value)
     val parser = new DepParser1(!opts.unlabeled.value)
+    val trainOptions = parser.TrainOptions(opts.l2.value, opts.l1.value, opts.lrate.value ,opts.optimizerStr.value)
 
     if (opts.warmModel.wasInvoked) {
       print("Loading " + opts.warmModel.value + " as a warm-start model.....")
@@ -401,4 +403,3 @@ object DepParser1Trainer {
 }
 
 
-case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)

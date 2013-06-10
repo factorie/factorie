@@ -282,8 +282,7 @@ class POS1 extends DocumentAnnotator {
 }
 
 /** The default POS1 with parameters loaded from resources in the classpath. */
-object POS1 extends POS1(cc.factorie.util.ClasspathURL(classOf[POS1], "-WSJ.factorie"))
-//object POS1 extends POS1(cc.factorie.util.InputStreamFromClasspath(classOf[POS1])("-WSJ.factorie"))  // cc.factorie.util.ClasspathURL(classOf[POS1], "-WSJ.factorie"))
+object POS1 extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
 
 object POS1Trainer {
   def main(args: Array[String]) {

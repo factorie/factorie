@@ -22,7 +22,7 @@ object ClasspathURL {
   private def newURL(urlString:String): java.net.URL =
     if (urlString.startsWith("classpath:")) new java.net.URL(null, urlString, new ClasspathURLStreamHandler)
     else new java.net.URL(urlString)
-  private def newURL(propertyName:String, substitutablePath:String, fixedSuffix:String = null): java.net.URL = {
+  def newURL(propertyName:String, substitutablePath:String, fixedSuffix:String = null): java.net.URL = {
     if (propertyName != null && propertyName.length > 0) {
       val substPath = if (substitutablePath(0) == '/') substitutablePath else "/"+substitutablePath
       newURL("classpath://"+propertyName+substPath+(if (fixedSuffix != null && fixedSuffix.length > 0) "#"+fixedSuffix else ""))
@@ -40,11 +40,10 @@ object ClasspathURL {
   def apply(cls:Class[_], substitutableSuffix:String): java.net.URL = newURL(cls.getName, cls.getName.replace(".", "/")+substitutableSuffix)
   // Do odd checks for "m.erasure == None" just to preserve the ability to use ClasspathURL[MyClass](".factorie") as well as ClasspathURL("propertyName, substitutablePath")
   def apply[C](substitutableSuffix:String, fixedSuffix:String)(implicit m: Manifest[C]): java.net.URL = {
-    println("ClasspathURL.apply sub=%s fixed=%s".format(substitutableSuffix, fixedSuffix))
+    //println("ClasspathURL.apply sub=%s fixed=%s".format(substitutableSuffix, fixedSuffix))
     if (m.erasure eq classOf[Nothing]) newURL(null, substitutableSuffix, fixedSuffix) // Note these variable name have different meaning in newURL 
     else apply(m.erasure, substitutableSuffix, fixedSuffix)
   }
-  // Conflicts with first "apply" above.  Use apply(substitutableSuffix, null) instead.
   def apply[C](substitutableSuffix:String)(implicit m: Manifest[C]): java.net.URL = if (m.erasure eq classOf[Nothing]) newURL(substitutableSuffix) else apply(m.erasure, substitutableSuffix)     
 }
 
@@ -60,6 +59,7 @@ class ClasspathURLStreamHandler extends URLStreamHandler {
   /** The classloader to find resources from. */
   private var classLoader:ClassLoader = ClassLoader.getSystemClassLoader
   override protected def openConnection(url:java.net.URL): URLConnection = {
+    //println("ClasspathURLStreamHandler.openConnection "+url)
     // The URL.getHost is the name of the Java System Property, which if present whose value will override the getPath (but not the getRef)
     val propertyName = url.getHost
     val locationProperty = if (propertyName.length > 0) System.getProperty(propertyName, null) else null
@@ -69,11 +69,11 @@ class ClasspathURLStreamHandler extends URLStreamHandler {
       // Try to load from URL specified by System property
       try {
         var newURL = ClasspathURL(newURLString) // The System Property substituted URL can itself also be a classpath URL.  This makes infinite recursion possible, but we try to detect it below.
-        println("ClasspathURLStreamHandler newURL "+newURL)
+        //println("ClasspathURLStreamHandler newURL "+newURL)
         if (newURL.getProtocol == "classpath" && newURL.getHost == propertyName) { // We would have recursion
-          println("ClasspathURLStreamHandler path=%s ref=%s".format(newURL.getPath, newURL.getRef))
+          //println("ClasspathURLStreamHandler path=%s ref=%s".format(newURL.getPath, newURL.getRef))
           newURL = ClasspathURL(newURL.getPath.drop(1), newURL.getRef) // avoid recursion by removing the "host" propertyName portion of the new URL
-          println("ClasspathURLStreamHandler new non-recursive URL "+newURL)
+          //println("ClasspathURLStreamHandler new non-recursive URL "+newURL)
           //throw new ClasspathURLRecursionException("Java System Property '"+propertyName+"' has value '"+locationProperty+"'.\nThis would cause infinite recursion in cc.factorie.util.ClasspathURLStreamHandler.")
         }
         val connection = newURL.openConnection
@@ -87,7 +87,7 @@ class ClasspathURLStreamHandler extends URLStreamHandler {
       }
     } else {
       val classpathURL = classLoader.getResource(url.getPath)
-      println("ClasspathURLStreamHandler ClassLoader URL "+classpathURL)
+      //println("ClasspathURLStreamHandler ClassLoader URL "+classpathURL)
       if (classpathURL eq null) throw new ClasspathURLResourceException("ClassLoader could not find resource "+url.getPath)
       classpathURL.openConnection
     }

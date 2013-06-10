@@ -96,9 +96,8 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
   def position(index:Int, start:Int): Int = { // Just linear search for now; consider binary search with memory of last position
     makeReadable
-    var i = start; var ii = 0
-    while (i < __npos) { ii = __indices(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
-    -1
+    val pos = java.util.Arrays.binarySearch(__indices, start, _sorted, index)
+    if (pos >= 0) pos else -1
   }
 
   override def toArray: Array[Double] = { val arr = new Array[Double](length); foreachActiveElement((i, v) =>arr(i) = v); arr }
@@ -150,7 +149,10 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         val len = v.activeDomainSize
         val indices = v._indices
         var result = 0.0
-        while (i < len) {
+        var pos = 0
+        while (i < len && pos >= 0) {
+          pos = position(indices(i), pos)
+          if (pos >= 0) result += __values(pos)
           result += apply(indices(i))
           i += 1
         }
