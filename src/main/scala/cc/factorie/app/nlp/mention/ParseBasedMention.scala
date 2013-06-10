@@ -133,9 +133,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     doc
   }
 
-  // TODO: to implement
-  def prereqAttrs: Iterable[Class[_]] = Seq()
-  def postAttrs: Iterable[Class[_]] = Seq() // TODO: what is this for?
+  def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
+  def postAttrs: Iterable[Class[_]] = Seq(classOf[mention.MentionType])
 
 }
 

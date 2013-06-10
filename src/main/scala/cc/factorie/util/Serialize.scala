@@ -151,7 +151,8 @@ object BinarySerializer extends GlobalLogging {
       val newBlank =
         // With the last condition below, deserialization could substitute a different sparsity/density than was allocated.
         // Useful for training Dense, sparsifying, serializing, and deserializing without changing the Model's Dense initialization. -akm
-        if (preexistingTensor.exists(_.dimensions.sameElements(dims)) && preexistingTensor.exists(tensorTypeMatch(tag, _)))
+        // No commented out -akm 10 June 2013
+        if (preexistingTensor.exists(_.dimensions.sameElements(dims)) /*&& preexistingTensor.exists(tensorTypeMatch(tag, _))*/)
           preexistingTensor.get
         else (tag, order) match {
           case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))

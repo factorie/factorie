@@ -72,4 +72,5 @@ object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {
   this.update(classOf[lemma.CollapseDigitsTokenLemma], lemma.CollapseDigitsLemmatizer)
   this.update(classOf[lemma.PorterTokenLemma], lemma.PorterLemmatizer)
   this.update(classOf[lemma.LowercaseTokenLemma], lemma.LowercaseLemmatizer)
+  //this.update(classOf[ner.BilouConllNerLabel], ner.NER1) // TODO Add this once DocumentAnnotatorMap actually contains lazily-evaluated values
 }

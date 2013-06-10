@@ -264,6 +264,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
     }
   }
+
+  case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)  
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
@@ -333,9 +335,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
 }
 
+object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL(classOf[DepParser1], ".factorie"))
+
 
 // Driver for training
-object DepParser1 {
+object DepParser1Trainer {
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
@@ -355,12 +359,12 @@ object DepParser1 {
 
     opts.parse(args)
 
-    val trainOptions = new TrainOptions(opts.l2.value, opts.l1.value, opts.lrate.value ,opts.optimizerStr.value)
     val parser = new DepParser1(!opts.unlabeled.value)
+    val trainOptions = parser.TrainOptions(opts.l2.value, opts.l1.value, opts.lrate.value ,opts.optimizerStr.value)
 
     if (opts.warmModel.wasInvoked) {
       print("Loading " + opts.warmModel.value + " as a warm-start model.....")
-      parser.deserialize(util.URL(opts.warmModel.value).openConnection.getInputStream)
+      parser.deserialize(util.ClasspathURL(opts.warmModel.value).openConnection.getInputStream)
       println("Finished loading warm-start model.")
     }
 
@@ -399,4 +403,3 @@ object DepParser1 {
 }
 
 
-case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)

@@ -48,12 +48,10 @@ class WeightsSet extends TensorSet {
   }
   
   // TODO Consider implementing Tensor.toSparse as an alternative to this new/+=. -akm
-  def sparsify(): Unit = for (weights <- _keys if !weights.value.isInstanceOf[util.SparseDoubleSeq]) {
-    val st = weights.value match {
-      case t: Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (i) => new SparseIndexedTensor1(i))
-      case _ => Tensor.newSparse(weights.value)
-    }
-    weights.value.foreachActiveElement((i, v) => if (v != 0.0) st += (i,v))
+  // This would make it easier for users to loop through the weights and decide themselves on a per-Tensor basis which ones they want to make sparse.
+  def sparsify(): Unit = for (weights <- _keys if !weights.value.isInstanceOf[util.SparseDoubleSeq] && weights.value.length > 200) {
+    val st = Tensor.newSparse(weights.value)
+    st += weights.value
     weights.set(st)
   }
 

@@ -10,12 +10,12 @@ import java.util.jar.JarFile
 
 // To read from .jar in classpath use source = io.Source.fromInputStream(getClass.getResourceAsStream(_))
 // To read from directory in filesystem use source = io.Source.fromFile(new File(_))
-class ResourceLexicons(val source: String=>io.Source, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) {
+class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) {
   class WordLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.WordLexicon(dir+"/"+name, tokenizer, lemmatizer) {
-    try { this ++= source(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
   }
   class PhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
-    try { this ++= source(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
   }
   object iesl {
     private implicit val dir = "iesl"
@@ -50,6 +50,7 @@ class ResourceLexicons(val source: String=>io.Source, val tokenizer:StringSegmen
   // TODO Move these here
   object ssdi {
     private implicit val dir = "ssdi"
+    
     object PersonFirstHighest extends WordLexicon("person-first-highest")
     object PersonFirstHigh extends WordLexicon("person-first-high")
     object PersonFirstMedium extends WordLexicon("person-first-medium")
@@ -152,26 +153,27 @@ class ResourceLexicons(val source: String=>io.Source, val tokenizer:StringSegmen
   }
 }
 
-// Temporary static access through classpath
-object ClasspathResourceLexicons extends ResourceLexicons(s => {
-  val jarLocationProperty = System.getProperty("cc.factorie.app.nlp.lexicon.jar", null)
+/** Static access through classpath or file location (specified as Java System Property)
+    @author Andrew McCallum */
+object ClasspathResourceLexicons extends ResourceLexicons(string => {
+  val jarLocationProperty = System.getProperty("cc.factorie.app.nlp.lexicon.ResourceLexicons.jar", null)
   if (jarLocationProperty ne null) {
     // Try to load from .jar in filesystem location specified by System property cc.factorie.app.nlp.lexicon.jar
     val file = new File(jarLocationProperty)
     if (!file.exists) throw new Error("File not found at System Property cc.factorie.app.nlp.lexicon.jar value: "+jarLocationProperty)
     try {
       val jarFile = new JarFile(file)
-      val jarEntry = jarFile.getJarEntry(s)
+      val jarEntry = jarFile.getJarEntry(string)
       io.Source.fromInputStream(jarFile.getInputStream(jarEntry))
     } catch {
-      case e:Exception => throw new Error("Error loading resource '"+s+"' from jar '"+file+"'", e)
+      case e:Exception => throw new Error("Error loading resource '"+string+"' from jar '"+file+"'", e)
     }
   } else {
     // Try to load from .jar on classpath
     try {
-      io.Source.fromInputStream(StopWords.getClass.getResourceAsStream(s))
+      io.Source.fromInputStream(StopWords.getClass.getResourceAsStream(string))
     } catch {
-      case e:Exception => throw new Error("Could not find resource for cc.factorie.app.nlp.lexicon.  Download factorie-nlp-lexicon.jar and then either add it classpath or set Java System Property cc.factorie.app.nlp.lexicon.jar to its file system location.", e)
+      case e:Exception => throw new Error("Could not find resource for cc.factorie.app.nlp.lexicon: "+string+".  \nDownload factorie-nlp-lexicon.jar and then either add it classpath or set Java System Property 'cc.factorie.app.nlp.lexicon.jar' to its file system location.", e)
     }
   }
 })

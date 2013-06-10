@@ -114,7 +114,7 @@ object WithinDocCoref1 {
   object CorefOptions extends DefaultCmdOptions {
     val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
     val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
-    val wordnet = new CmdOption("wordnet", "wordnet/", "STRING", "The path to wordnet files")
+    val wordnet = new CmdOption("wordnet", "wordnet/", "STRING", "The path to wordnet directory, which should contain a subdirectory called 'dict'") // TODO Make this instead set System Property cc.factorie.app.nlp.wordnet.WordNet to "file:"+this.value
     val gazetteers = new CmdOption("gazetteers", "factorie-nlp-resources/src/main/resources/cc/factorie/app/nlp/lexicon/", "STRING", "Path to the gazetteers")
     val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
     val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
@@ -131,7 +131,7 @@ object WithinDocCoref1 {
     val testDocs = allTest.take((allTest.length*CorefOptions.testPortion.value).toInt)
     println("Training on " + trainDocs.length + " with " + (trainDocs.map(_.attr[MentionList].length).sum/trainDocs.length.toFloat) + " mentions per document")
     println("Loading wordnet")
-    val wordnet = new WordNet(CorefOptions.wordnet.value)
+    val wordnet = new WordNet(new File(CorefOptions.wordnet.value)) // TODO Should instead get it globally
     println("Loading gazetteers")
     val gazetteers = new CorefGazetteers(CorefOptions.gazetteers.value)
     println("Training")

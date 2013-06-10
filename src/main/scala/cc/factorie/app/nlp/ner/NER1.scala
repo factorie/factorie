@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
-import java.io.File
+import java.io.{File, InputStream, FileInputStream}
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
@@ -10,16 +10,9 @@ import cc.factorie.util.{BinarySerializer, CubbieConversions}
     Inference by Viterbi.
     Achieves ~91% field F1 on CoNLL 2003 dev set. */
 class NER1 extends DocumentAnnotator {
-  def this(file: File) = { this(); deserialize(file) }
-  def this(url:java.net.URL) = {
-    this()
-    // TODO I would really like to register a "classpath" URL handler, as in 
-    // http://stackoverflow.com/questions/861500/url-to-load-resources-from-the-classpath-in-java
-    val stream = url.openConnection.getInputStream //getClass.getResourceAsStream(url.getPath)
-    require(stream ne null, "Not found: "+url)
-    //if (url.getProtocol == "classpath") deserialize(stream) // But deserializing from an InputStream isn't yet working
-    deserialize(stream)
-  }
+  def this(stream:InputStream) = { this(); deserialize(stream) }
+  def this(file: File) = this(new FileInputStream(file))
+  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
 
   object FeaturesDomain extends CategoricalTensorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -75,7 +68,7 @@ class NER1 extends DocumentAnnotator {
 
   // Methods of DocumentAnnotator
   override def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence])
   def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
   def process1(document:Document): Document = {
     if (document.tokenCount > 0) {
@@ -109,26 +102,26 @@ class NER1 extends DocumentAnnotator {
       features += "W="+word
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
-      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
-      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
-      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
-      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
-      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
-      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
-      if (Demonyms.contains(token)) features += "DEMONYM"
+//      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+//      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+//      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+//      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+//      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+//      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
+//      if (lexicon.iesl.City.contains(token)) features += "CITY"
+//      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+//      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
+//      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
+//      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
+//      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
+//      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
+//      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
+//      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
+//      if (Demonyms.contains(token)) features += "DEMONYM"
     }
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
-    //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
-    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2), List(0,-1), List(0,1))
+    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
+    //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2), List(0,-1), List(0,1))
 
     for (token <- document.tokens) {
       val word = cc.factorie.app.strings.simplifyDigits(token.string).toLowerCase
@@ -153,6 +146,7 @@ class NER1 extends DocumentAnnotator {
         }
       }
     })
+    //println("NER1.addFeatures"); println(tokenFeaturesString(document.tokens))
     //for (section <- document.sections) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2), Seq(0,0))
   }
 
@@ -172,7 +166,7 @@ class NER1 extends DocumentAnnotator {
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
-    val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
     val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=l1Factor/examples.length, l2=l2Factor/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     //val trainer = new optimize.OnlineTrainer(model.parameters)
     for (iteration <- 1 until 4) { 
@@ -187,6 +181,7 @@ class NER1 extends DocumentAnnotator {
       }
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
+    //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
     return    // TODO Don't bother LBFGS training
     val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
@@ -195,7 +190,7 @@ class NER1 extends DocumentAnnotator {
       if (!testDocs.isEmpty) testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     }
-    new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
+    //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
   }
   def loadDocuments(files:Iterable[File]): Seq[Document] = {
     def fixLabels(docs:Seq[Document]): Seq[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
@@ -213,6 +208,11 @@ class NER1 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    // Sparsify the evidence weights
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
+    sparseEvidenceWeights += model.evidence.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.evidence.weights.set(sparseEvidenceWeights)
+    println("NER1.serialize evidence "+model.evidence.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
@@ -220,16 +220,22 @@ class NER1 extends DocumentAnnotator {
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
+    // Get ready to read sparse evidence weights
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    model.evidence.weights.set(new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    model.parameters.densify()
+    println("NER1 model parameters oneNorm "+model.parameters.oneNorm)
+    //model.parameters.densify()
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
 }
 
-/** Main function for training NER1 from CoNLL 2003 data. */
-object NER1 {
+/** The default NER1 with parameters loaded from resources in the classpath. */
+object NER1 extends NER1(cc.factorie.util.ClasspathURL[NER1](".factorie"))
+
+/** Example main function for training NER1 from CoNLL 2003 data. */
+object NER1Trainer {
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val saveModel = new CmdOption("save-model", "NER1.factorie", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")

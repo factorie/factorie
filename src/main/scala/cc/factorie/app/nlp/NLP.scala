@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp
 
 import java.io._
-import cc.factorie.util.URL
+import cc.factorie.util.ClasspathURL
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
 
 /** A command-line driver for DocumentAnnotators.
@@ -21,14 +21,14 @@ object NLP {
       val token = new CmdOption("token", null, null, "Segment Document into Tokens but not Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearTokenizer }
       val sentence = new CmdOption("sentence", null, null, "Segment Document into Tokens and Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearSegmenter }
       val tnorm = new CmdOption("tnorm", null, null, "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
-      val pos1 = new CmdOption("pos1", "classpath:cc/factorie/app/nlp/pos/POS1.factorie", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS1(value) }
-      val pos3 = new CmdOption("pos3", "classpath:cc/factorie/app/nlp/pos/POS3.factorie", "MODELFILE", "Annotate POS") { override def invoke = annotators += new cc.factorie.app.nlp.pos.POS3(value) }
-      val wnlemma = new CmdOption("wnlemma", "/Users/mccallum/tmp/dict", "WordNet-DIR", "Annotate lemma") { override def invoke = annotators += new cc.factorie.app.nlp.lemma.WordNetLemmatizer(value) }
+      val pos1 = new CmdOption("pos1", ClasspathURL[pos.POS1]("-WSJ.factorie").toString, "URL", "Annotate POS") { override def invoke = { System.setProperty(classOf[pos.POS1].getName, value); annotators += cc.factorie.app.nlp.pos.POS1 } }
+      val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
       val mention1 = new CmdOption("mention1", null, null, "Annotate noun mention") { override def invoke = annotators += cc.factorie.app.nlp.mention.NounMention1 }
-      val ner1 = new CmdOption("ner1", "classpath:cc/factorie/app/nlp/ner/NER1.factorie", "URL", "Annotate CoNLL-2003 NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER1(URL(value)) }
-      val ner2 = new CmdOption("ner2", "classpath:cc/factorie/app/nlp/ner/NER2.factorie", "URL", "Annotate Ontonotes NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER2(URL(value)) }
+      val ner1 = new CmdOption("ner1", ClasspathURL[ner.NER1](".factorie").toString, "URL", "Annotate CoNLL-2003 NER") { override def invoke = { System.setProperty(classOf[ner.NER1].getName, value); annotators += new cc.factorie.app.nlp.ner.NER1(ClasspathURL(value)) } }
+      //val ner1 = new CmdOption("ner1", "classpath:cc/factorie/app/nlp/ner/NER1.factorie", "URL", "Annotate CoNLL-2003 NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER1(ClasspathURL(value)) }
+      val ner2 = new CmdOption("ner2", "classpath:cc/factorie/app/nlp/ner/NER2.factorie", "URL", "Annotate Ontonotes NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER2(ClasspathURL(value)) }
       //val ner3 = new CmdOption("ner3", "classpath:cc/factorie/app/nlp/ner/NER3.factorie", "URL", "Annotate CoNLL-2003 NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER3(URL(value)) }
-      val parser1 = new CmdOption("parser1", "classpath:cc/factorie/app/nlp/parse/DepParser1.factorie", "URL", "Annotate dependency parse with simple model.") { override def invoke = annotators += new cc.factorie.app.nlp.parse.DepParser1(URL(value)) }
+      val parser1 = new CmdOption("parser1", "classpath:cc/factorie/app/nlp/parse/DepParser1.factorie", "URL", "Annotate dependency parse with simple model.") { override def invoke = annotators += new cc.factorie.app.nlp.parse.DepParser1(ClasspathURL(value)) }
     }
     opts.parse(args)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
