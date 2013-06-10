@@ -7,11 +7,14 @@ import cc.factorie.la._
 import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, SynchronizedOptimizerOnlineTrainer}
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import scala.collection.mutable.HashMap
-import java.io.File
+import java.io.{File,InputStream,FileInputStream}
 import org.junit.Assert._
 
 class POS1 extends DocumentAnnotator {
-  def this(filename: String) = { this(); deserialize(filename) }
+  // Different ways to load saved parameters
+  def this(stream:InputStream) = { this(); deserialize(stream) }
+  def this(file: File) = this(new FileInputStream(file))
+  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
   
   object FeatureDomain extends CategoricalTensorDomain[String]
   class ClassifierModel extends MultiClassModel {
@@ -176,29 +179,56 @@ class POS1 extends DocumentAnnotator {
       else predict(section.tokens) // we don't // TODO But if we have trained with Sentence boundaries, won't this hurt accuracy?
   }
 
-  def serialize(filename: String) {
+  // Serialization
+  def serialize(filename: String): Unit = {
+    val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    serialize(new java.io.FileOutputStream(file))
+  }
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
-    val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
-    assert(FeatureDomain.dimensionDomain ne null); assert(model ne null); assert(WordData.ambiguityClasses ne null)
-    val stream = new java.io.FileOutputStream(new File(filename))
     val dstream = new java.io.DataOutputStream(stream)
-    //BinarySerializer.serialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
-
-  def deserialize(filename: String) {
+  def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
-    val file = new File(filename)
-    assert(file.exists(), "Trying to load non-existent file: '" +file)
-    val stream = new java.io.FileInputStream(file)
     val dstream = new java.io.DataInputStream(stream)
-    //BinarySerializer.deserialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(model, dstream)
     BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
+  
+  
+//  def serialize(filename: String) {
+//    import CubbieConversions._
+//    val file = new File(filename); if (file.getParentFile != null && !file.getParentFile.exists) file.getParentFile.mkdirs()
+//    assert(FeatureDomain.dimensionDomain ne null); assert(model ne null); assert(WordData.ambiguityClasses ne null)
+//    val stream = new java.io.FileOutputStream(new File(filename))
+//    val dstream = new java.io.DataOutputStream(stream)
+//    //BinarySerializer.serialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
+//    BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
+//    BinarySerializer.serialize(model, dstream)
+//    BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
+//  }
+//
+//  def deserialize(filename: String) {
+//    import CubbieConversions._
+//    val file = new File(filename)
+//    assert(file.exists(), "Trying to load non-existent file: '" +file)
+//    val stream = new java.io.FileInputStream(file)
+//    val dstream = new java.io.DataInputStream(stream)
+//    //BinarySerializer.deserialize(FeatureDomain.dimensionDomain, model, WordData.ambiguityClasses, file)
+//    BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
+//    BinarySerializer.deserialize(model, dstream)
+//    BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
+//  }
 
   def train(trainingFile: String, testFile: String, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false) {
     val trainDocs = LoadOntonotes5.fromFilename(trainingFile)
@@ -251,8 +281,11 @@ class POS1 extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
 
+/** The default POS1 with parameters loaded from resources in the classpath. */
+object POS1 extends POS1(cc.factorie.util.ClasspathURL(classOf[POS1], "-WSJ.factorie"))
+//object POS1 extends POS1(cc.factorie.util.InputStreamFromClasspath(classOf[POS1])("-WSJ.factorie"))  // cc.factorie.util.ClasspathURL(classOf[POS1], "-WSJ.factorie"))
 
-object POS1 {
+object POS1Trainer {
   def main(args: Array[String]) {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
@@ -276,7 +309,7 @@ object POS1 {
       if (opts.saveModel.value) pos.serialize(opts.modelFile.value)
     } else if (opts.runText.wasInvoked) {
       val pos = new POS1
-      pos.deserialize(opts.modelFile.value)
+      pos.deserialize(new File(opts.modelFile.value))
       val doc = cc.factorie.app.nlp.LoadPlainText(cc.factorie.app.nlp.segment.ClearSegmenter).fromFile(new java.io.File(opts.runText.value)).head
       pos.process(doc)
       println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
@@ -285,7 +318,7 @@ object POS1 {
 
   def fromFilename(name: String): POS1 = {
     val c = new POS1
-    c.deserialize(name)
+    c.deserialize(new File(name))
     c
   }
 }

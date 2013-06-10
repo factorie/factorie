@@ -194,7 +194,9 @@ class Synset(val id: String, val hyps: Set[String], val ants: Set[String], wn: W
   }
 }
 
-object WordNet extends WordNet(cc.factorie.util.InputStreamFromClasspath(classOf[WordNet])) {
+object WordNet extends WordNet(cc.factorie.util.InputStreamFromClasspath(classOf[WordNet]))
+
+object WordNetTest {
   
   //System.setProperty("cc.factorie.app.nlp.wordnet.WordNet", "file:/Users/mccallum/research/data/resources/wordnet/WordNet-1.7.1")
   println("Setting property to "+classOf[WordNet].getName)
@@ -202,7 +204,7 @@ object WordNet extends WordNet(cc.factorie.util.InputStreamFromClasspath(classOf
 
   /*  pass in the absolute path to the wordnet data dir (that includes the data.* and index.* files  */
   def main(args: Array[String]) {
-    val wn = this //new cc.factorie.app.nlp.wordnet.WordNet(new java.io.File(args(0)))
+    val wn = WordNet //new cc.factorie.app.nlp.wordnet.WordNet(new java.io.File(args(0)))
     assert(wn.areAntonyms("good", "evil"))
     assert(!wn.areAntonyms("good", "star"))
     assert(wn.areAntonyms("right", "left"))

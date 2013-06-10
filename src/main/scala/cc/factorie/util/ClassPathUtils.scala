@@ -40,6 +40,7 @@ object ClassPathUtils {
       the named resource can be found.  (2) If the 'propertyName' is not set,
       then the function looks for the named resource in the classpath, relative
       to the 'relativeClass'. */
+  @deprecated("Use cc.factorie.util.InputStreamFromClasspath")
   def inputStreamFromJar(relativeClass:Class[_], propertyName:String)(name:String): InputStream = {
     import java.util.jar.JarFile
     val jarLocationProperty = System.getProperty(propertyName, null)

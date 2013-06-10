@@ -333,9 +333,11 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
 }
 
+object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL(classOf[DepParser1], ".factorie"))
+
 
 // Driver for training
-object DepParser1 {
+object DepParser1Trainer {
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
@@ -360,7 +362,7 @@ object DepParser1 {
 
     if (opts.warmModel.wasInvoked) {
       print("Loading " + opts.warmModel.value + " as a warm-start model.....")
-      parser.deserialize(util.URL(opts.warmModel.value).openConnection.getInputStream)
+      parser.deserialize(util.ClasspathURL(opts.warmModel.value).openConnection.getInputStream)
       println("Finished loading warm-start model.")
     }
 

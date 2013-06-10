@@ -13,11 +13,8 @@ class NER1 extends DocumentAnnotator {
   def this(file: File) = { this(); deserialize(file) }
   def this(url:java.net.URL) = {
     this()
-    // TODO I would really like to register a "classpath" URL handler, as in 
-    // http://stackoverflow.com/questions/861500/url-to-load-resources-from-the-classpath-in-java
     val stream = url.openConnection.getInputStream //getClass.getResourceAsStream(url.getPath)
     require(stream ne null, "Not found: "+url)
-    //if (url.getProtocol == "classpath") deserialize(stream) // But deserializing from an InputStream isn't yet working
     deserialize(stream)
   }
 
@@ -228,8 +225,11 @@ class NER1 extends DocumentAnnotator {
   }
 }
 
-/** Main function for training NER1 from CoNLL 2003 data. */
-object NER1 {
+/** The default NER1 with parameters loaded from resources in the classpath. */
+object NER1 extends NER1(cc.factorie.util.ClasspathURL(classOf[NER1], ".factorie"))
+
+/** Example main function for training NER1 from CoNLL 2003 data. */
+object NER1Trainer {
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val saveModel = new CmdOption("save-model", "NER1.factorie", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
