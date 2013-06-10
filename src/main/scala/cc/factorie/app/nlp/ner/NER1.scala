@@ -209,6 +209,7 @@ class NER1 extends DocumentAnnotator {
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
     // Sparsify the evidence weights
+    import scala.language.reflectiveCalls
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
     sparseEvidenceWeights += model.evidence.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
     model.evidence.weights.set(sparseEvidenceWeights)
@@ -223,6 +224,7 @@ class NER1 extends DocumentAnnotator {
     // Get ready to read sparse evidence weights
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    import scala.language.reflectiveCalls
     model.evidence.weights.set(new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     println("NER1 model parameters oneNorm "+model.parameters.oneNorm)
