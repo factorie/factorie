@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 import java.io.File
-import cc.factorie.util.{BinarySerializer, CubbieConversions}
+import cc.factorie.util.{LogUniformDoubleSampler, CmdOptions, BinarySerializer, CubbieConversions}
 
 /** A simple named entity recognizer, trained on CoNLL 2003 data.
     It does not have sufficient features to be state-of-the-art. */
@@ -137,15 +137,15 @@ class NER3 extends DocumentAnnotator {
   }
 
   // Parameter estimation
-  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1: Double, l2: Double): Double = {
     def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
     trainDocs.foreach(addFeatures(_)); FeaturesDomain.freeze(); testDocs.foreach(addFeatures(_)) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
-    val examples = trainDocs.flatMap(_.sentences.map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=0.02/examples.length, l2=0.000001/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
+    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=l1/examples.length, l2=l2/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     //val trainer = new optimize.OnlineTrainer(model.parameters)
     for (iteration <- 1 until 4) { 
       trainer.processExamples(examples)
@@ -154,7 +154,7 @@ class NER3 extends DocumentAnnotator {
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
-    return
+    return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
       trainer2.processExamples(examples)
@@ -163,13 +163,14 @@ class NER3 extends DocumentAnnotator {
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     }
     new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
+    new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }
-  def train(trainFilename:String, testFilename:String): Unit = {
+  def train(trainFilename:String, testFilename:String, l1: Double=0.001, l2: Double=0.001): Double = {
     // TODO Make fixLabels no longer necessary by having LoadConll2003 directly create the right label type.
     def fixLabels(docs:Iterable[Document]): Iterable[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
     val trainDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(trainFilename))
     val testDocs = fixLabels(LoadConll2003(BILOU=true).fromFilename(testFilename))
-    train(trainDocs, testDocs)
+    train(trainDocs, testDocs, l1, l2)
   }
   
   // Serialization
@@ -198,11 +199,43 @@ class NER3 extends DocumentAnnotator {
   }
 }
 
-object NER3 {
-  def main(args:Array[String]): Unit = {
+object NER3 extends cc.factorie.util.HyperparameterMain {
+  class Opts extends CmdOptions {
+    val train = new CmdOption("train", "eng.train", "STRING", "Training file")
+    val test = new CmdOption("test", "eng.testa", "STRING", "Testing file")
+    val l1 = new CmdOption("l1", 0.001, "DOUBLE", "L1 regularization")
+    val l2 = new CmdOption("l2", 0.001, "DOUBLE", "L2 regularization")
+    val serialize = new CmdOption("serialize", false, "BOOLEAN", "Whether to serialize the model")
+    val modelFile = new CmdOption("model", "", "STRING", "File to save the model in")
+  }
+  def evaluateParameters(args:Array[String]): Double = {
+    object opts extends Opts
+    opts.parse(args)
     val ner = new NER3
-    ner.train(args(0), args(1))
-    ner.model.parameters.sparsify()
-    ner.serialize(args(2))
+    val res = ner.train(opts.train.value, opts.test.value, opts.l1.value, opts.l2.value)
+    if (opts.serialize.value) {
+      ner.model.parameters.sparsify()
+      ner.serialize(args(2))
+    }
+    res
+  }
+}
+
+object NER3Validator {
+  def main(args: Array[String]) {
+    val opts = new NER3.Opts
+    opts.parse(args)
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-6, 10))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-6, 10))
+    opts.serialize.setValue(false)
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.NER3", "try-log/")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 50, 40, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    opts.serialize.setValue(true)
+    println("Running best configuration...")
+    qs.execute(opts.values.map(_.unParse).toArray)
+    println("Done.")
   }
 }
