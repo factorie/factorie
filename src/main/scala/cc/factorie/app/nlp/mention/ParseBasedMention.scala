@@ -15,10 +15,10 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private final val PROPER_NOUNS      = Seq("NNP", "NNPS")
   private final val ALL_NOUNS         = Seq("NN","NNS","NNP","NNPS","PRP","PRP$")
 
-  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS exists(_ == t.posLabel.categoryValue.toUpperCase())
-  private def isCommonNoun     (t: Token) = COMMON_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase())
-  private def isProperNoun     (t: Token) = PROPER_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase())
-  private def isNoun           (t: Token) = ALL_NOUNS         exists(_ == t.posLabel.categoryValue.toUpperCase())
+  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS exists(_ == t.posLabel.categoryValue.toUpperCase)
+  private def isCommonNoun     (t: Token) = COMMON_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase)
+  private def isProperNoun     (t: Token) = PROPER_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase)
+  private def isNoun           (t: Token) = ALL_NOUNS         exists(_ == t.posLabel.categoryValue.toUpperCase)
 
   private def nerSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
@@ -103,7 +103,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
     mentions
       .groupBy( m => m.headTokenIndex + m.span.start)
-      .map { case (_, mentions) => mentions.maxBy(_.length) }
+      .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
       .toSeq
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
@@ -134,7 +134,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   }
 
   def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
-  def postAttrs: Iterable[Class[_]] = Seq(classOf[mention.MentionType])
+  def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
 
 }
 
