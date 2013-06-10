@@ -241,6 +241,7 @@ object NER1 extends NER1(cc.factorie.util.ClasspathURL[NER1](".factorie"))
 object NER1Trainer extends cc.factorie.util.HyperparameterMain {
   class Opts extends cc.factorie.util.CmdOptions {
     val saveModel = new CmdOption("save-model", "NER1.factorie", "STRING", "Filename for the model (saving a trained model or reading a running model.")
+    val serialize = new CmdOption("serialize", false, "BOOLEAN", "Whether to serialize at all")
     val train = new CmdOption("train", "eng.train", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
     val test = new CmdOption("test", "eng.testa", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
     val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
@@ -254,7 +255,7 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     
     if (opts.train.wasInvoked) {
       val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value)
-      if (opts.saveModel.wasInvoked) ner.serialize(opts.saveModel.value)
+      if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
       return ret
     } else {
       System.err.println(getClass.toString+" : --train argument required.")
@@ -270,6 +271,7 @@ object NER1Validator {
   def main(args: Array[String]) {
     val opts = new NER1Trainer.Opts
     opts.parse(args)
+    opts.serialize.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-6, 10))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-6, 10))
     val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.NER1Trainer", "try-log/")
@@ -278,6 +280,7 @@ object NER1Validator {
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     println("Running best configuration...")
+    opts.serialize.setValue(true)
     qs.execute(opts.values.map(_.unParse).toArray)
     println("Done.")
   }
