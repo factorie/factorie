@@ -79,7 +79,10 @@ class HyperParameterSearcher(cmds: CmdOptions,
       val values = futures.filter(_._2.isCompleted).map(_._2.value.get.getOrElse(Double.NegativeInfinity))
       val finiteValues = values.filterNot(_.isInfinite)
       finished = values.length >= numToFinish
-      println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)}  best value: ${values.max} mean value: ${finiteValues.sum/finiteValues.length}")
+      if (values.length > 0)
+        println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)}  best value: ${values.max} mean value: ${finiteValues.sum/finiteValues.length}")
+      else
+        println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)}")
     }
     val bestConfig = futures.filter(_._2.isCompleted).maxBy(_._2.value.get.get)._1
     cmds.parse(bestConfig)
