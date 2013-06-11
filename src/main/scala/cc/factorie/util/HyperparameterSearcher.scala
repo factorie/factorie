@@ -112,7 +112,7 @@ class HyperParameterSearcher(cmds: CmdOptions,
       else
         println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)}")
     }
-    for ((setting,future) <- futures; if future.isCompleted; if future.value.get.isSuccess) {
+    for ((setting,future) <- futures; if future.isCompleted; if future.value.get.isSuccess; if !future.value.get.get.isInfinite) {
       cmds.parse(setting)
       for (p <- parameters) p.accumulate(future.value.get.get)
     }
