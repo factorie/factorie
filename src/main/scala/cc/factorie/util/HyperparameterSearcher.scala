@@ -68,7 +68,7 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
       val mean = sum/count
       val stdDev = math.sqrt(sumSq/count - mean*mean)
       value match {
-        case v: Double => println(f"${v.toDouble}%2.4f $mean%2.2f $stdDev%2.2f")
+        case v: Double => println(f"${v.toDouble}%2.15f $mean%2.2f $stdDev%2.2f")
         case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f")
       }
 
