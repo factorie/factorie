@@ -13,29 +13,44 @@ import cc.factorie.Proportions
 
 trait ParameterSampler[T] {
   def sample(rng: scala.util.Random): T
+  def buckets: Array[(T,Double,Double,Int)]
+  def valueToBucket(v: T): Int
+  def accumulate(value: T, d: Double) {
+    val v = math.max(0, math.min(valueToBucket(value), buckets.length-1))
+    val (_, sum, sumSq, count) = buckets(v)
+    buckets(v) = (value, sum+d, sumSq+d*d, count+1)
+  }
 }
 
 // Samples uniformly one of the values in the sequence.
 class SampleFromSeq[T](seq: Seq[T]) extends ParameterSampler[T] {
+  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
+  def valueToBucket(v: T) = buckets.indexOf(v)
   def sample(rng: Random) = seq(rng.nextInt(seq.length))
 }
 
 // Samples non-uniformly one of the values in the sequence.
 class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends ParameterSampler[T] {
+  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
+  def valueToBucket(v: T) = buckets.indexOf(v)
   def sample(rng: Random) = seq(prop.sampleIndex(rng))
 }
 
 // Samples uniformly a Double in the range
-class UniformDoubleSampler(lower: Double, upper: Double) extends ParameterSampler[Double] {
+class UniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
   val dif = upper - lower
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
+  def valueToBucket(d: Double) = (numBuckets*(d - lower)/dif).toInt
   def sample(rng: Random) = rng.nextDouble()*dif + lower
 }
 
 // Samples Doubles in the range such that their logarithm is uniform.
 // Useful for learning rates, variances, alphas, and other things which
 // vary in order of magnitude.
-class LogUniformDoubleSampler(lower: Double, upper: Double) extends ParameterSampler[Double] {
-  val inner = new UniformDoubleSampler(math.log(lower), math.log(upper))
+class LogUniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
+  val inner = new UniformDoubleSampler(math.log(lower), math.log(upper), numBuckets)
+  def valueToBucket(v: Double) = inner.valueToBucket(math.log(v))
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
   def sample(rng: Random) = math.exp(inner.sample(rng))
 }
 
@@ -46,6 +61,20 @@ class LogUniformDoubleSampler(lower: Double, upper: Double) extends ParameterSam
  */
 case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T]) {
   def set(rng: Random) { option.setValue(sampler.sample(rng)) }
+  def accumulate(objective: Double) { sampler.accumulate(option.value, objective) }
+  def report() {
+    println("Parameter " + option.name + " mean   stddev")
+    for ((value, sum, sumSq, count) <- sampler.buckets) {
+      val mean = sum/count
+      val stdDev = math.sqrt(sumSq/count - mean*mean)
+      value match {
+        case v: Double => println(f"${v.toDouble}%2.4f $mean%2.2f $stdDev%2.2f")
+        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f")
+      }
+
+    }
+    println()
+  }
 }
 
 /**
@@ -84,6 +113,11 @@ class HyperParameterSearcher(cmds: CmdOptions,
       else
         println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)}")
     }
+    for ((setting,future) <- futures; if future.isCompleted; if future.value.get.isSuccess) {
+      cmds.parse(setting)
+      for (p <- parameters) p.accumulate(future.value.get.get)
+    }
+    for (p <- parameters) p.report()
     val bestConfig = futures.filter(_._2.isCompleted).maxBy(_._2.value.get.get)._1
     cmds.parse(bestConfig)
     parameters.map(_.option.unParse).toArray
