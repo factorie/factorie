@@ -82,8 +82,7 @@ object ChainNER1ML {
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
     val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChainSum))
-    val learner = new BatchTrainer(model.parameters)
-    (1 to 10).foreach(_ => learner.processExamples(examples))
+    Trainer.batchTrain(model.parameters, examples)
     val objective = HammingObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))

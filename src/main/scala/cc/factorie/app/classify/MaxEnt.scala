@@ -15,13 +15,12 @@
 package cc.factorie.app.classify
 
 import cc.factorie._
-import cc.factorie.optimize._
 import la.{Tensor1, Tensor}
 
 // TODO should really change this name since the SampleRank objective is not the MaxEnt objective -luke
 // I agree, but then MaxEntLikelihoodTrainer should be changed also. -akm
 // People talk about "MaxEnt" classifiers... we should think about what they really mean. -akm
-class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extends ClassifierTrainer {
+class MaxEntSampleRankTrainer(val optimizer:optimize.GradientOptimizer = new optimize.MIRA) extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
@@ -29,7 +28,7 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
     val sampler = new GibbsSampler(cmodel, HammingObjective) {
       override def pickProposal(proposals: Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
     }
-    val learner = new SampleRankTrainer(sampler, optimizer)
+    val learner = new optimize.SampleRankTrainer(sampler, optimizer)
     learner.processContexts(il, iterations)
     new ModelBasedClassifier(cmodel, il.head.domain)
   }
@@ -38,16 +37,16 @@ class MaxEntSampleRankTrainer(val optimizer:GradientOptimizer = new MIRA) extend
 class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val pieces = il.map(l => new LinearMultiClassExample(
+    val pieces = il.map(l => new optimize.LinearMultiClassExample(
       cmodel.evidenceTemplate.weights,
-      il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
+      il.labelToFeatures(l).value.asInstanceOf[Tensor1],
       l.intValue,
-      LinearObjectives.logMultiClass,
+      optimize.LinearObjectives.logMultiClass,
       weight = il.instanceWeight(l)))
     if (warmStart != null) cmodel.evidenceTemplate.weights.value := warmStart
     // Do the training by BFGS
-    val lbfgs = new optimize.LBFGS with L2Regularization { variance = variance }
-    val strategy = new BatchTrainer(cmodel.parameters, lbfgs)
+    val lbfgs = new optimize.LBFGS with optimize.L2Regularization { variance = variance }
+    val strategy = new optimize.BatchTrainer(cmodel.parameters, lbfgs)
     while (!strategy.isConverged)
       strategy.processExamples(pieces)
     new ModelBasedClassifier(cmodel, il.head.domain)
@@ -58,11 +57,11 @@ class MaxEntLikelihoodTrainer(val variance: Double = 10.0, val warmStart: Tensor
 class MaxEntTrainer extends MaxEntLikelihoodTrainer()
 
 class GeneralClassifierTrainer[L<: LabeledMutableDiscreteVar[_], F<:DiscreteTensorVar](
-  val trainerMaker: WeightsSet => Trainer, val objective: LinearObjectives.MultiClass)  {
+  val trainerMaker: WeightsSet => optimize.Trainer, val objective: optimize.LinearObjectives.MultiClass)  {
   def train(il: LabelList[L, F]) = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val trainer = trainerMaker(cmodel.parameters)
-    val examples = il.map(l => new LinearMultiClassExample(
+    val examples = il.map(l => new optimize.LinearMultiClassExample(
       cmodel.evidenceTemplate.weights,
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
       l.intValue,

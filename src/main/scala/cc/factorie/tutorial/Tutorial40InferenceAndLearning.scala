@@ -2,7 +2,7 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
-import optimize.SampleRankTrainer
+import cc.factorie.optimize.{Trainer, SampleRankTrainer}
 
 object Tutorial40InferenceAndLearning {
   def main(args:Array[String]): Unit = {
@@ -129,18 +129,12 @@ object Tutorial40InferenceAndLearning {
      * To learn a model we need a trainer. We can do stochastic single-threaded training with the
      * SGDTrainer. We can also do multithreaded stochastic learning with the HogwildTrainer.
      **/
-    val trainer0 = new optimize.OnlineTrainer(model.parameters, optimizer0)
-    // One call to processExamples will do one pass over the training set doing updates.
-    trainer0.processExamples(Seq(example1))
+    Trainer.onlineTrain(model.parameters, Seq(example1), optimizer=optimizer0)
 
     // Factorie also supports batch learning. Note that regularization is built into the optimizer
     val optimizer1 = new optimize.LBFGS with optimize.L2Regularization
     optimizer1.variance = 10000.0
-    val trainer1 = new optimize.BatchTrainer(model.parameters, optimizer1)
-    // For batch learning we can test for convergence
-    while (!trainer1.isConverged) {
-      trainer1.processExamples(Seq(example1))
-    }
+    Trainer.batchTrain(model.parameters, Seq(example1), optimizer=optimizer1)
 
     /*&
      * Factorie also supports other batch trainers. The ParallelBatchTrainer keeps a per-thread
@@ -166,7 +160,7 @@ object Tutorial40InferenceAndLearning {
     **/
     val sampler = new GibbsSampler(model, HammingObjective)
     val sampleRankExamples = document.tokens.toSeq.map(t => new optimize.SampleRankExample(t.attr[Label], sampler))
-    trainer0.processExamples(sampleRankExamples)
+    Trainer.onlineTrain(model.parameters, sampleRankExamples, optimizer=optimizer0)
     // SampleRank comes with its own trainer, however, for ease of use
     val trainer2 = new SampleRankTrainer(model.parameters, sampler, optimizer0)
     trainer2.processContexts(document.tokens.toSeq.map(_.attr[Label]))

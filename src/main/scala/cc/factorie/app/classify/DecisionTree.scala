@@ -15,7 +15,6 @@
 package cc.factorie.app.classify
 
 import cc.factorie._
-import cc.factorie.optimize._
 import la.{DenseTensor1, Tensor}
 
 class ID3DecisionTreeTrainer extends ClassifierTrainer {

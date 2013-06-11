@@ -4,6 +4,7 @@ import cc.factorie.app.nlp._
 import java.io.{File, InputStream, FileInputStream}
 import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConversions}
 import scala.concurrent.Await
+import cc.factorie.optimize.Trainer
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
     Features include context aggregation and lexicons.
@@ -168,29 +169,26 @@ class NER1 extends DocumentAnnotator {
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
-    //val trainer = new optimize.OnlineTrainer(model.parameters)
-    for (iteration <- 1 until 4) { 
-      trainer.processExamples(examples)
+    val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
+    def evaluate() {
       trainDocs.foreach(process(_))
       println("Train accuracy "+objective.accuracy(trainLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
-      if (!testDocs.isEmpty) { 
+      if (!testDocs.isEmpty) {
         testDocs.foreach(process(_))
         println("Test  accuracy "+objective.accuracy(testLabels))
         println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       }
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
+    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate)
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
     return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
-    val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
-    while (!trainer2.isConverged) {
-      trainer2.processExamples(examples)
+    Trainer.batchTrain(model.parameters, examples, optimizer = new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 }, evaluate = () => {
       trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
       if (!testDocs.isEmpty) testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
-    }
+    })
     //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
     new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }

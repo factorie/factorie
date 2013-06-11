@@ -61,7 +61,7 @@ trait Tensor extends MutableDoubleSeq {
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   
   def normalized: Tensor = { val t = copy; t.normalize(); t } // TODO Make this return Proportions, then fix BP
-  def expNormalized: Tensor = { val t = copy; t.expNormalize(); t } // TODO Make this return Proportions, then fix BP
+  def expNormalized: this.type = { val t = copy; t.expNormalize(); t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
@@ -71,7 +71,7 @@ trait Tensor extends MutableDoubleSeq {
   def +=(i:Int, incr:Double): Unit // also defined in MutableDoubleSeq
   def zero(): Unit
   def update(i:Int, v:Double): Unit
-  def copy: Tensor
+  def copy: this.type
   def blankCopy: Tensor
 }
 

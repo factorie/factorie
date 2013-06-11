@@ -3,7 +3,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
-import cc.factorie.optimize.LikelihoodExample
+import cc.factorie.optimize.{Trainer, LikelihoodExample}
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
@@ -213,15 +213,15 @@ class NER2 extends DocumentAnnotator {
     // This depends on calling trainPrep alrady
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     def predict(labels:Iterable[BilouOntonotesNerLabel]): Unit = for (label <- labels) MaximizeDiscrete(label, model1)
-    val trainer = new optimize.OnlineTrainer(model1.parameters, maxIterations=1)
-    for (iter <- 1 until 5) {
-      trainer.processExamples(labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1)))
+    val examples = labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1))
+    def evaluate() {
       (trainDocs ++ testDocs).foreach(indepedentPredictDocument(_))
       println("Some model1 training data"); println(sampleOutputString(trainDocs.head.tokens.drop(200).take(200)))
       println("Some model1 testing data"); println(sampleOutputString(testDocs.head.tokens.drop(200).take(200)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
     }
+    Trainer.onlineTrain(model1.parameters, examples.toSeq, maxIterations=1, evaluate=evaluate)
   }
   
   // Parameter estimation
@@ -259,20 +259,17 @@ class NER2 extends DocumentAnnotator {
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
     val examples = labelChains.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
-    val trainer = new optimize.OnlineTrainer(model3.parameters) {
-      override def processExamples(examples: Iterable[optimize.Example]): Unit = {
-        super.processExamples(examples)
-        trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-        testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
-        println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
-        println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
-        println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-        println(segmentEvaluationString(labels(trainDocs).toIndexedSeq))
-        println("Test  accuracy "+objective.accuracy(labels(testDocs)))
-        println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
-      }
+    def evaluate() {
+      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
+      println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
+      println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      println(segmentEvaluationString(labels(trainDocs).toIndexedSeq))
+      println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
     }
-    trainer.trainFromExamples(examples)
+    Trainer.onlineTrain(model3.parameters, examples.toSeq, evaluate=evaluate)
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   

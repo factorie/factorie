@@ -136,7 +136,7 @@ class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: Gradien
 // The guarantee is that while the examples read each tensor they will see a consistent
 // state, but this might not be the state the gradients will get applied to.
 // The optimizer, however, has no consistency guarantees across tensors.
-class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep, val maxIterations: Int = 3, var logEveryN: Int = -1, val nThreads: Int = Runtime.getRuntime.availableProcessors())
+class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptimizer, val maxIterations: Int = 3, var logEveryN: Int = -1, val nThreads: Int = Runtime.getRuntime.availableProcessors())
  extends Trainer with FastLogging {
   var iteration = 0
   var initialized = false
@@ -144,13 +144,13 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
   var accumulatedValue = 0.0
   var t0 = 0L
 
-  private def processExample(e: Example): Unit = {
+  private def processExample(e: Example) {
     val gradient = weightsSet.blankSparseMap
     val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
     val value = new LocalDoubleAccumulator()
     e.accumulateExampleInto(gradientAccumulator, value)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
-    gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+    gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer.step(weightsSet, gradient, value.value)
     this synchronized {
       examplesProcessed += 1
@@ -186,6 +186,13 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientStep,
       }
     }
     initialized = true
+  }
+  def removeLocks() {
+    for (key <- weightsSet.keys) {
+      key.value match {
+        case t: LockingTensor => weightsSet(key) = t.base
+      }
+    }
   }
 
   private trait LockingTensor extends Tensor with SparseDoubleSeq {
@@ -300,5 +307,27 @@ object TrainerHelpers {
     val res = body(pool)
     pool.shutdown()
     res
+  }
+}
+
+object Trainer {
+  def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1) {
+    optimizer match { case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters); case _ => }
+    val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
+      else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
+      else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer)
+      else new BatchTrainer(parameters, optimizer=optimizer)
+    try {
+      while (!trainer.isConverged) { trainer.trainFromExamples(examples.shuffle); evaluate() }
+    } finally {
+      optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
+      trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
+    }
+  }
+  def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN)
+  }
+  def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false)
   }
 }
