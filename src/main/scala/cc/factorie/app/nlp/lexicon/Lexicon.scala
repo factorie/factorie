@@ -46,7 +46,8 @@ trait Lexicon {
       For example if query.string is "New" and query.next.string is "York" and the two-word phrase "New York" is in the lexicon, 
       then this method will return true.  But if query.next.string is "shoes" (and "New shoes" is not in the lexicon) this method will return false. */
   def contains[T<:Observation[T]](query:T): Boolean
-  def contains(span:TokenSpan): Boolean
+  def contains[T<:Observation[T]](query:Seq[T]): Boolean
+  def contains(span:TokenSpan): Boolean = contains(span.value)
   /** Is the input String in the lexicon.  The input is tokenized and lemmatized; 
       if the tokenizer indicates that it is a multi-word phrase, it will be processed by containsWords, otherwise containsWord. */
   def contains(untokenizedString:String): Boolean = { val words = tokenizer(untokenizedString).map(lemmatizer.lemmatize(_)).toSeq; if (words.length == 1) containsWord(words.head) else containsWords(words) }
@@ -72,7 +73,7 @@ class UnionLexicon(val name: String, val members:Lexicon*) extends Lexicon {
   def containsLemmatizedWord(word:String): Boolean = members.exists(_.containsLemmatizedWord(word))
   def containsLemmatizedWords(words: Seq[String]): Boolean = members.exists(_.containsLemmatizedWords(words))
   def contains[T<:Observation[T]](query:T): Boolean = members.exists(_.contains(query))
-  def contains(span:TokenSpan): Boolean = members.exists(_.contains(span))
+  def contains[T<:Observation[T]](query:Seq[T]): Boolean = members.exists(_.contains(query))
 }
 
 /** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
@@ -105,7 +106,7 @@ class WordLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie.a
   final def containsLemmatizedWord(word:String): Boolean = contents.contains(word)
   def contains[T<:Observation[T]](query:T): Boolean = containsWord(query.string)
   def containsLemmatizedWords(words: Seq[String]): Boolean = if (words.length == 1) containsLemmatizedWord(words.head) else false
-  def contains(span:TokenSpan): Boolean = if (span.length == 1) containsWord(span.head.string) else false
+  def contains[T<:Observation[T]](query:Seq[T]): Boolean = if (query.length == 1) containsWord(query.head.string) else false
 }
 
 /** An exception thrown when someone tries to add a multi-word phrase to a WordLexicon. */
@@ -191,13 +192,13 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
   /** Do any of the Lexicon entries contain the given word string. */
   def containsLemmatizedWord(word:String): Boolean = contents.contains(word)
   def containsLemmatizedWords(words: Seq[String]): Boolean = contains(newLexiconTokens(words).head.asInstanceOf[Observation[LexiconToken]])
-  def contains(span:TokenSpan): Boolean = {
-    val query = span.head
-    val entries = contents.getOrElse(lemmatizer.lemmatize(query.string), Nil)
+  def contains[T<:Observation[T]](query:Seq[T]): Boolean = {
+    val queryToken = query.head
+    val entries = contents.getOrElse(lemmatizer.lemmatize(queryToken.string), Nil)
     for (entry <- entries) {
       if (entry eq LexiconToken) return true // The lexicon entry is a single word, indicated just by the presence (keyString, object LexiconToken) 
       var te: LexiconToken = entry
-      var tq = query
+      var tq = queryToken
       var result = true
       // Check for match all the way to the end of this lexicon entry
       do {

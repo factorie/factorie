@@ -27,3 +27,10 @@ class MorphologicalAnalyzer1(fmap: String => io.Source) {
     nounSufxs.exists(suff =>  s.endsWith(suff))
   }
 }
+
+// TODO Robustify this lookup using cc.factorie.util.InputStreamFromClasspath -akm
+object MorphologicalAnalyzer1 extends MorphologicalAnalyzer1((s:String) => {
+  val res = cc.factorie.app.nlp.lexicon.Lexicon.getClass.getResource("morph/en" + s)
+  assert(res ne null, "To load from a jar the factorie nlp resources jar must be in the classpath")
+  io.Source.fromURL(res)
+})

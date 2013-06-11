@@ -45,6 +45,25 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     object PersonLastHigh extends WordLexicon("person-last-high")
     object PersonLastMedium extends WordLexicon("person-last-medium")
     object PersonLast extends UnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
+
+    object Say extends WordLexicon("say")
+    
+    object Demonym extends PhraseLexicon(dir+"/demonyms") {
+      try {
+        for (line <- sourceFactory(dir + "/demonyms.txt").getLines; entry <- line.trim.split("\t")) this += entry
+      } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
+    }
+    
+    // Map from Chilean->Chile and Chileans->Chile
+    object DemonymMap extends scala.collection.mutable.HashMap[String,String] {
+      try {
+        for (line <- sourceFactory(dir + "/demonyms.txt").getLines) {
+          val entries = line.trim.split("\t")
+          val value = entries.head
+          entries.foreach(e => this.update(e, value))
+        } 
+      } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
+    }
   }
   
   // TODO Move these here
