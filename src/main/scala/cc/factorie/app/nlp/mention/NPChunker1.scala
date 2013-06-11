@@ -7,7 +7,7 @@ class NounMentionSpan(sec:Section, initialStart:Int, initialLength:Int) extends 
 }
 
 /** Find noun mentions merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
-object NounMention1 extends DocumentAnnotator {
+object NPChunker1 extends DocumentAnnotator {
   def process1(document:Document): Document = {
     val spans = ArrayBuffer[TokenSpan]()
     var tempSpan: TokenSpan = null

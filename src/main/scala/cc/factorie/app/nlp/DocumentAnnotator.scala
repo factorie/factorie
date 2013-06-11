@@ -64,8 +64,8 @@ class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_],Doc
 
 object DefaultDocumentAnnotatorMap extends DocumentAnnotatorMap {
   import cc.factorie.app.nlp._
-  this.update(classOf[pos.PTBPosLabel], pos.POS1)
-  this.update(classOf[parse.ParseTree], parse.DepParser2)
+  //this.update(classOf[pos.PTBPosLabel], pos.POS1)
+  //this.update(classOf[parse.ParseTree], parse.DepParser2)
   this.update(classOf[segment.SimplifyPTBTokenString], segment.SimplifyPTBTokenNormalizer)
   this.update(classOf[Token], cc.factorie.app.nlp.segment.ClearTokenizer) // If you ask for this first, and then ask for Sentence, you will get a conflict. -akm
   this.update(classOf[Sentence], cc.factorie.app.nlp.segment.ClearSegmenter)
