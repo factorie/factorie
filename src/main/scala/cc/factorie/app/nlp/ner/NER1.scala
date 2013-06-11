@@ -160,7 +160,7 @@ class NER1 extends DocumentAnnotator {
   }
 
   // Parameter estimation
-  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001): Double = {
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001, lr: Double = 1.0): Double = {
     def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
     trainDocs.foreach(addFeatures(_)); FeaturesDomain.freeze(); testDocs.foreach(addFeatures(_)) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
@@ -168,7 +168,7 @@ class NER1 extends DocumentAnnotator {
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
-    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(l1=l1Factor/examples.length, l2=l2Factor/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
+    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)) // L2RegularizedConcentrate or AdaMIRA (gives smaller steps)
     //val trainer = new optimize.OnlineTrainer(model.parameters)
     for (iteration <- 1 until 4) { 
       trainer.processExamples(examples)
@@ -247,6 +247,7 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     val test = new CmdOption("test", "eng.testa", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
     val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
     val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
+    val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
   }
   def evaluateParameters(args:Array[String]): Double = {
     object opts extends Opts
@@ -255,7 +256,7 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     val ner = new NER1
     
     if (opts.train.wasInvoked) {
-      val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value)
+      val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value, opts.learningRate.value)
       if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
       return ret
     } else {
@@ -275,15 +276,16 @@ object NER1Validator {
     opts.serialize.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-12, 1))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-12, 1))
+    val lr = cc.factorie.util.HyperParameter(opts.learningRate, new LogUniformDoubleSampler(1e-3, 10))
     val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.NER1Trainer", "try-log/")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 50, 40, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, lr), qs.execute, 50, 40, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     println("Running best configuration...")
     opts.serialize.setValue(true)
     import scala.concurrent.duration._
-    Await.result(qs.execute(opts.values.map(_.unParse).toArray), 1 hours)
+    Await.result(qs.execute(opts.values.map(_.unParse).toArray), 1.hours)
     println("Done.")
   }
 }

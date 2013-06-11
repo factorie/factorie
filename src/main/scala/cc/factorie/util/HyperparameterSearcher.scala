@@ -159,7 +159,6 @@ abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) 
    * Runs a job in the queue
    * @param script the file name of the shell script to be run
    * @param logFile the file on which to write the output
-   * @return an ID for the job
    */
   def runJob(script: String, logFile: String)
 
@@ -175,7 +174,6 @@ abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) 
       val outFile = thisPrefix+"-out"
       new java.io.File(thisPrefix).getParentFile.mkdirs()
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
-
       val cmdFile = thisPrefix+"-cmd.sh"
       (("echo " + jvmCommand) #> new java.io.File(cmdFile)).!
       blocking { try { runJob(cmdFile, thisPrefix+"-log.txt") } catch { case c: RuntimeException => () } }
@@ -184,8 +182,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) 
       while (!done && tries < 10) {
         tries += 1
         if (new java.io.File(outFile).exists() && io.Source.fromFile(outFile).getLines().toSeq.size > 0) done = true
-        else
-        blocking { Thread.sleep(1000) }
+        else blocking { Thread.sleep(1000) }
       }
       if (new java.io.File(outFile).exists && io.Source.fromFile(outFile).getLines().toSeq.size > 0)
         io.Source.fromFile(outFile).getLines().toSeq.head.toDouble
