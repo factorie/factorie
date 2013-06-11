@@ -14,7 +14,7 @@ import scala._
 import scala.Some
 import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
 import scala.Some
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnotator {
   case class ParseDecision(action: String) {
@@ -512,6 +512,8 @@ object DepParser2Optimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
-    qs.execute(opts.values.map(_.unParse).toArray)
+    import scala.concurrent.duration._
+    Await.result(qs.execute(opts.values.map(_.unParse).toArray), 1 hours)
+    println("Done")
   }
 }

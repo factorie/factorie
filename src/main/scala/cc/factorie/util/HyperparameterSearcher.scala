@@ -63,7 +63,7 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
   def set(rng: Random) { option.setValue(sampler.sample(rng)) }
   def accumulate(objective: Double) { sampler.accumulate(option.value, objective) }
   def report() {
-    println("Parameter " + option.name + " mean   stddev  count")
+    println("Parameter " + option.name + "      mean   stddev  count")
     for ((value, sum, sumSq, count) <- sampler.buckets) {
       val mean = sum/count
       val stdDev = math.sqrt(sumSq/count - mean*mean)
@@ -71,7 +71,6 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
         case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f  ($count)")
         case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f  ($count)")
       }
-
     }
     println()
   }

@@ -3,6 +3,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{LogUniformDoubleSampler, CmdOptions, BinarySerializer, CubbieConversions}
+import scala.concurrent.Await
 
 /** A simple named entity recognizer, trained on CoNLL 2003 data.
     It does not have sufficient features to be state-of-the-art. */
@@ -235,7 +236,8 @@ object NER3Validator {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.serialize.setValue(true)
     println("Running best configuration...")
-    qs.execute(opts.values.map(_.unParse).toArray)
+    import scala.concurrent.duration._
+    Await.result(qs.execute(opts.values.map(_.unParse).toArray), 1 hours)
     println("Done.")
   }
 }
