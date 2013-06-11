@@ -63,13 +63,13 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
   def set(rng: Random) { option.setValue(sampler.sample(rng)) }
   def accumulate(objective: Double) { sampler.accumulate(option.value, objective) }
   def report() {
-    println("Parameter " + option.name + " mean   stddev")
+    println("Parameter " + option.name + " mean   stddev  count")
     for ((value, sum, sumSq, count) <- sampler.buckets) {
       val mean = sum/count
       val stdDev = math.sqrt(sumSq/count - mean*mean)
       value match {
-        case v: Double => println(f"${v.toDouble}%2.15f $mean%2.2f $stdDev%2.2f")
-        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f")
+        case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f  ($count)")
+        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f  ($count)")
       }
 
     }
@@ -226,8 +226,11 @@ object QSubExecutor {
     val argsArray = opts.classArgs.value.split("::").map("--" + _).toArray
     println("Using args \n" + argsArray.mkString("\n"))
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
+    println("---- END OF JOB -----")
+    println("Result was: " + result)
     import sys.process._
     (("echo " + result.toString) #> new java.io.File(opts.outFile.value)).!
+    println(s"Done, file ${opts.outFile.value} written")
   }
 }
 
