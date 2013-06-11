@@ -60,19 +60,19 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   }
   /** The Chain of which this Span is a subsequence. */
   def chain: C = _chain
-  def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
-  def hasPredecessor(i: Int) = (start - i) >= 0
+  def hasSuccessor(i: Int): Boolean = (start + length - 1 + i) < chain.length
+  def hasPredecessor(i: Int): Boolean = (start - i) >= 0
   def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
   def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
   override def apply(i: Int): E = _chain(i + _start)
   // Other Seq-related methods, such as "head" and "iterator" are provided by IndexedSeqVar inherited in SpanVar.
   def isAtStart = start == 0
-  def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]) = {
+  def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]): Boolean = {
     assert(this.chain eq that.chain)
     (that.start <= this.start && that.end >= this.start) ||
     (this.start <= that.start && this.end >= that.start)
   }
-  def isAtEnd = start + length == chain.length
+  def isAtEnd: Boolean = start + length == chain.length
   def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
   def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(chain.length-1,end+n)) yield chain(i)
   def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n)) yield chain(i)

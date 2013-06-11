@@ -8,10 +8,12 @@ import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.mention.{MentionList, Mention, Entity}
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.lexicon
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
 import java.util.concurrent.Callable
 import java.io.File
+import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 
 /**
  * User: apassos
@@ -38,9 +40,10 @@ object WithinDocCoref1 {
   val femalePron = Set("she", "her", "hers", "herself")
   val neuterPron = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
   val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
-
+  val LastNames = new lexicon.UnionLexicon("LastNames", lexicon.iesl.PersonLast, lexicon.uscensus.PersonLast)
+  
   // a guess at the gender of a nominal mention
-  def namGender(m: Mention, corefGazetteers: CorefGazetteers): Char = {
+  def namGender(m: Mention): Char = {
     val fullhead = m.span.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
@@ -51,7 +54,7 @@ object WithinDocCoref1 {
 
     var firstName = ""
     var honor = ""
-    if (corefGazetteers.honors.contains(word0)) {
+    if (lexicon.iesl.PersonHonorific.containsWord(word0)) {
       honor = word0
       if (words.length >= 3) firstName = words(1)
       else if (words.length >= 2) firstName = word0
@@ -63,16 +66,16 @@ object WithinDocCoref1 {
     else if (femaleHonors.contains(honor)) return 'f'
 
     // determine from first name
-    if (corefGazetteers.maleFirstNames.contains(firstName)) g = 'm'
-    else if (corefGazetteers.femaleFirstNames.contains(firstName)) g = 'f'
-    else if (corefGazetteers.lastNames.contains(lastWord)) g = 'p'
+    if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) g = 'm'
+    else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName)) g = 'f'
+    else if (LastNames.containsWord(lastWord)) g = 'p'
 
-    if (corefGazetteers.cities.contains(fullhead) || corefGazetteers.countries.contains(fullhead)) {
+    if (lexicon.iesl.City.contains(m.span) || lexicon.iesl.Country.contains(m.span)) {
       if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
 
-    if (corefGazetteers.orgClosings.contains(lastWord)) {
+    if (lexicon.iesl.OrgSuffix.containsWord(lastWord)) {
       if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
@@ -81,12 +84,12 @@ object WithinDocCoref1 {
   }
 
   // a guess at a gender of a mention which is a common noun
-  def nomGender(m: Mention, wn: WordNet): Char = {
+  def nomGender(m: Mention): Char = {
     val fullhead = m.span.phrase.toLowerCase
-    if (wn.isHypernymOf("male", fullhead)) 'm'
-    else if (wn.isHypernymOf("female", fullhead)) 'f'
-    else if (wn.isHypernymOf("person", fullhead)) 'p'
-    else if (neuterWN.exists(wn.isHypernymOf(_, fullhead))) 'n'
+    if (WordNet.isHypernymOf("male", fullhead)) 'm'
+    else if (WordNet.isHypernymOf("female", fullhead)) 'f'
+    else if (WordNet.isHypernymOf("person", fullhead)) 'p'
+    else if (neuterWN.exists(WordNet.isHypernymOf(_, fullhead))) 'n'
     else 'u'
   }
 
@@ -114,8 +117,6 @@ object WithinDocCoref1 {
   object CorefOptions extends DefaultCmdOptions {
     val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
     val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
-    val wordnet = new CmdOption("wordnet", "wordnet/", "STRING", "The path to wordnet directory, which should contain a subdirectory called 'dict'") // TODO Make this instead set System Property cc.factorie.app.nlp.wordnet.WordNet to "file:"+this.value
-    val gazetteers = new CmdOption("gazetteers", "factorie-nlp-resources/src/main/resources/cc/factorie/app/nlp/lexicon/", "STRING", "Path to the gazetteers")
     val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
     val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
     val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
@@ -130,12 +131,8 @@ object WithinDocCoref1 {
     val trainDocs = allTrain.take((allTrain.length*CorefOptions.trainPortion.value).toInt)
     val testDocs = allTest.take((allTest.length*CorefOptions.testPortion.value).toInt)
     println("Training on " + trainDocs.length + " with " + (trainDocs.map(_.attr[MentionList].length).sum/trainDocs.length.toFloat) + " mentions per document")
-    println("Loading wordnet")
-    val wordnet = new WordNet(new File(CorefOptions.wordnet.value)) // TODO Should instead get it globally
-    println("Loading gazetteers")
-    val gazetteers = new CorefGazetteers(CorefOptions.gazetteers.value)
     println("Training")
-    val coref = new WithinDocCoref1(wordnet, gazetteers)
+    val coref = new WithinDocCoref1
     coref.train(trainDocs, testDocs, CorefOptions.iterations.value, CorefOptions.batchSize.value)
     println("Serializing")
     coref.serialize(CorefOptions.model.value)
@@ -143,7 +140,7 @@ object WithinDocCoref1 {
 }
 
 
-class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends cc.factorie.app.nlp.DocumentAnnotator {
+class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
   object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 5e5.toInt }
   // We want to start training before reading all features, so we need to depend only on the domain's max size
@@ -154,7 +151,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
 
   def process1(document: Document) = {
     val facMents = document.attr[MentionList].toSeq
-    val ments = facMents.map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection, wn, corefGazetteers))
+    val ments = facMents.map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection))
     val out = new GenericEntityMap[Mention]
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
@@ -196,7 +193,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
   def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
   def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
 
-  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: CorefGazetteers) {
+  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) {
     import WithinDocCoref1._
     def parentEntity = mention.attr[Entity]
     def headPos = mention.headToken.posLabel.categoryValue
@@ -209,10 +206,10 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     def isNoun = nounSet.contains(headPos)
     def isProper = properSet.contains(headPos)
     def isPRO = proSet.contains(headPos)
-    val hasSpeakWord = corefGazetteers.hasSpeakWord(mention, 2)
-    val wnLemma = wordNet.lemma(mention.headToken.string, "n")
-    val wnSynsets = wordNet.synsets(wnLemma).toSet
-    val wnHypernyms = wordNet.hypernyms(wnLemma)
+    val hasSpeakWord = lexicon.iesl.Say.contains(mention.span.window(2))
+    val wnLemma = WordNet.lemma(mention.headToken.string, "n")
+    val wnSynsets = WordNet.synsets(wnLemma).toSet
+    val wnHypernyms = WordNet.hypernyms(wnLemma)
     val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
     val nounWords: Set[String] =
         span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
@@ -223,7 +220,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
     val nonDeterminerWords: Seq[String] =
       span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
     val predictEntityType: String = mention.attr[EntityType].categoryValue
-    val demonym: String = corefGazetteers.demonymMap.getOrElse(headPhraseTrim, "")
+    val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
     val capitalization: Char = {
         if (span.length == 1 && span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
@@ -234,13 +231,13 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
       }
     val gender: Char = {
       if (isProper) {
-        WithinDocCoref1.namGender(mention, corefGazetteers)
+        WithinDocCoref1.namGender(mention)
       } else if (isPossessive) {
-        val gnam = WithinDocCoref1.namGender(mention, corefGazetteers)
-        val gnom = WithinDocCoref1.nomGender(mention, wordNet)
+        val gnam = WithinDocCoref1.namGender(mention)
+        val gnom = WithinDocCoref1.nomGender(mention)
         if (gnam == 'u' && gnom != 'u') gnom else gnam
       } else if (isNoun) {
-        WithinDocCoref1.nomGender(mention, wordNet)
+        WithinDocCoref1.nomGender(mention)
       } else if (isPRO) {
         WithinDocCoref1.proGender(mention)
       } else {
@@ -264,8 +261,8 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
           'u'
         }
       } else if (isNoun || isPossessive) {
-          val maybeSing = if (corefGazetteers.isSingular(fullhead)) true else false
-          val maybePlural = if (corefGazetteers.isPlural(fullhead)) true else false
+          val maybeSing = if (MorphologicalAnalyzer1.isSingular(fullhead)) true else false
+          val maybePlural = if (MorphologicalAnalyzer1.isPlural(fullhead)) true else false
 
           if (maybeSing && !maybePlural) {
             's'
@@ -388,7 +385,7 @@ class WithinDocCoref1(wn: WordNet, val corefGazetteers: CorefGazetteers) extends
 
   // processing one document at training time
   private def oneDocExample(doc: Document): Seq[Example] = {
-    val mentions = doc.attr[MentionList].map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection, wn, corefGazetteers))
+    val mentions = doc.attr[MentionList].map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection))
     val examplesList = collection.mutable.ListBuffer[Example]()
     for (anaphorIndex <- 0 until mentions.length) {
       val m1 = mentions(anaphorIndex)
