@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.parse
 
 object ParserEval {
-  def calcUas(trees: Seq[ParseTree]): Double = {
+  def calcUas(trees: Iterable[ParseTree]): Double = {
     var correct = 0.0
     var total = 0.0
     for (tree <- trees) {
@@ -15,7 +15,7 @@ object ParserEval {
     correct / total
   }
   
-  def calcLas(trees: Seq[ParseTree]): Double = {
+  def calcLas(trees: Iterable[ParseTree]): Double = {
     var correct = 0.0
     var total = 0.0
     for (tree <- trees) {

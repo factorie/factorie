@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.pos.PTBPosLabel
 import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
-import java.io.File
+import java.io.{File,InputStream,FileInputStream}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.la._
 import cc.factorie.app.classify.{SVMTrainer, MultiClassModel}
@@ -17,7 +17,11 @@ import scala.Some
 import scala.concurrent.{Await, Future}
 
 class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnotator {
-  case class ParseDecision(action: String) {
+  def this(stream:InputStream) = { this(); deserialize(stream) }
+  def this(file: File) = this(new FileInputStream(file))
+  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+
+case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
     val leftOrRightOrNo = lrnS.toInt
     val shiftOrReduceOrPass = srpS.toInt
@@ -35,9 +39,44 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
   }
+  
+  // Serialization
+  def serialize(file: File): Unit = {
+    if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    serialize(new java.io.FileOutputStream(file))
+  }
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    // Sparsify the evidence weights
+    import scala.language.reflectiveCalls
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    sparseEvidenceWeights += model.evidence.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.evidence.set(sparseEvidenceWeights)
+    val dstream = new java.io.DataOutputStream(stream)
+    BinarySerializer.serialize(featuresDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(labelDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
+  }
+  def deserialize(stream: java.io.InputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    // Get ready to read sparse evidence weights
+    val dstream = new java.io.DataInputStream(stream)
+    BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(labelDomain, dstream)
+    import scala.language.reflectiveCalls
+    model.evidence.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    BinarySerializer.deserialize(model, dstream)
+    println("DepParser2 model parameters oneNorm "+model.parameters.oneNorm)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
+  }
 
-  import cc.factorie.util.CubbieConversions._
-  def save(file: File, gzip: Boolean) = {
+  def oldSave(file: File, gzip: Boolean) = {
+    import cc.factorie.util.CubbieConversions._
     if (useSparseTestWeights) {
       val sparseWeights = new DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new SparseIndexedTensor1(_))
       val denseWeights = model.evidence.value
@@ -55,11 +94,16 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
 
     }
   }
-    var deSerializingSparse = false
-  def load(file: File, gzip: Boolean) = {
+  var deSerializingSparse = false
+  def oldLoad(file: File, gzip: Boolean) = {
+    import cc.factorie.util.CubbieConversions._
     if (useSparseTestWeights) deSerializingSparse = true
     BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
   }
+    
+    
+    
+    
   def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
   val model = new MultiClassModel {
     val evidence = Weights(
@@ -67,9 +111,47 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
       else  new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
   }
 
-  def trainFromVariables(vs: Seq[ParseDecisionVariable], trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
+  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
     trainFn(vs.map(v => (v.asInstanceOf[LabeledCategoricalVariable[String]],v.features)), model)
   }
+  
+  
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001): Unit = {
+    var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0)
+    featuresDomain.freeze()
+    println("DepParser2 #features " + featuresDomain.dimensionDomain.size)
+    trainDecisions(trainingVars, trainSentences, testSentences, l1Factor, l2Factor)
+    trainingVars = null // Allow them to be GC'ed
+    for (i <- 0 until numBootstrappingIterations) {
+      println("Boosting iteration " + (i+1))
+      trainDecisions(generateDecisions(trainSentences, ParserConstants.BOOSTING), trainSentences, testSentences, l1Factor, l2Factor)
+    }
+  }
+  
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], l1Factor:Double = 0.00001, l2Factor:Double = 0.00001): Unit = {
+    val numTrainSentences = trainSentences.size
+    val l1 = l1Factor / numTrainSentences
+    val l2 = l2Factor / numTrainSentences
+    val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
+    val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
+    val examples = trainDecisions.map(v => new LinearMultiClassExample(model.evidence,
+      v.features.value.asInstanceOf[Tensor1],
+      v.targetIntValue,
+      LinearObjectives.sparseLogMultiClass))
+    while (!trainer.isConverged) {
+      trainer.processExamples(examples.shuffle)
+      println(model.evidence.value.toSeq.count(x => x == 0).toFloat/model.evidence.value.length +" sparsity")
+      println("iteration "+trainer.iteration+" TRAIN "+testString(trainSentences))
+      println("iteration "+trainer.iteration+" TEST  "+testString(testSentences))
+    }
+  }
+  
+  def testString(testSentences:Iterable[Sentence]): String = {
+    testSentences.foreach(process(_))
+    val pred = testSentences.map(_.attr[ParseTree])
+    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
+  }
+
 
   lazy val testFeatureSpec = io.Source.fromURL(this.getClass.getResource("/parser-features.json")).getLines().mkString("\n")
   lazy val featureGenerators: Seq[DependencyFeatures.DependencyFeatureGenerator] = DependencyFeatures.fromJSON(testFeatureSpec)
@@ -90,7 +172,7 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
     val BOOSTING   = 2
   }
 
-  def generateDecisions(ss: Seq[Sentence], mode: Int): Seq[ParseDecisionVariable] = {
+  def generateDecisions(ss: Iterable[Sentence], mode: Int): Iterable[ParseDecisionVariable] = {
     ss.flatMap(s => {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
@@ -100,11 +182,20 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
       oracle.instances
     })
   }
-  def boosting(ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]=Seq(), trainFn: (Seq[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) =
+  def boosting(ss: Iterable[Sentence], addlVs: Iterable[ParseDecisionVariable]=Seq(), trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) =
     trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING), trainFn)
+
+  // For DocumentAnnotator trait
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
-  def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PTBPosLabel])
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
+  override def tokenAnnotationString(token:Token): String = {
+    val pt = token.sentence.attr[ParseTree]
+    if (pt eq null) "_\t_\t_\t_"
+    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+(pt.targetParentIndex(token.sentencePosition)+1)+"\t"+pt.label(token.sentencePosition).categoryValue+"\t"+pt.label(token.sentencePosition).targetCategory
+  }
+  //override def tokenAnnotationString(token:Token): String = { val parse = token.parseParent; if (parse ne null) parse.positionInSentence+"\t"+token.parseLabel.categoryValue else "_\t_" }
+
   def process(s: Sentence): Sentence = {
     val parse = s.attr.getOrElseUpdate(new ParseTree(s))
     new NonProjectiveShiftReduce(predict = classify).parse(s).zipWithIndex.map(dt => {
@@ -388,6 +479,10 @@ class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnota
   }
 }
 
+object DepParser2 extends DepParser2(false) {
+  deserialize(cc.factorie.util.ClasspathURL[DepParser2](".factorie").openConnection.getInputStream)
+}
+
 class DepParser2Args extends cc.factorie.util.CmdOptions {
   val trainFiles =  new CmdOption("train", "", "STRING", "")
   val testFiles =  new CmdOption("test", "", "STRING", "")
@@ -404,7 +499,7 @@ class DepParser2Args extends cc.factorie.util.CmdOptions {
   val useSparseTestWeights = new  CmdOption("sparse-test-weights", false,"BOOLEAN","whether to use sparse weights at test time")
 }
 
-object DepParser2 extends cc.factorie.util.HyperparameterMain {
+object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
     val opts = new DepParser2Args
     opts.parse(args)
@@ -454,7 +549,7 @@ object DepParser2 extends cc.factorie.util.HyperparameterMain {
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
 
-    def trainFn(examples: Seq[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
+    def trainFn(examples: Iterable[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
         val featuresSize = examples.head._2.domain.dimensionSize
@@ -484,7 +579,8 @@ object DepParser2 extends cc.factorie.util.HyperparameterMain {
     testSentences.foreach(c.process)
     if (saveModel.value) {
       val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString + ".parser"
-      c.save(new java.io.File(modelUrl), gzip = true)
+      //c.save(new java.io.File(modelUrl), gzip = true)
+      c.serialize(new java.io.File(modelUrl))
     }
     ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
   }

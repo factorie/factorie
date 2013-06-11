@@ -135,6 +135,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].find(mention => mention.span.contains(token)) match { case Some(m:Mention) => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token); case _ => "_" }
 
 }
 

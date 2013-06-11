@@ -74,7 +74,7 @@ object ParseTree {
   val noIndex = -2
 }
 class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) {
-  def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory))
+  def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory)) // Note: this puts in dummy target data which may be confusing
   val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray
   val _parents = theTargetParents.toArray
   val _targetParents = theTargetParents.toArray

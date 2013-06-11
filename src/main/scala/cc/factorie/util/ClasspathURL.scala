@@ -87,7 +87,8 @@ class ClasspathURLStreamHandler extends URLStreamHandler {
         case e:java.io.IOException => throw new Error("Java System Property '"+propertyName+"' has value '"+locationProperty+"',\n but resource named '"+newURLString+"' could not be found.\nEither add to the classpath a jar containing this resource, or set Java System Property '"+propertyName+"' to any valid URL containing the named resource,\n such as file:/my/resource/location or file:relative/location or jar:file:/my/resource.jar or http://foo.com/resource", e) 
       }
     } else {
-      val classpathURL = classLoader.getResource(url.getPath)
+      val path = if (url.getPath.apply(0) == '/') url.getPath.drop(1) else url.getPath // TODO Yipes. Why is this necessary? -akm
+      val classpathURL = classLoader.getResource(path)
       //println("ClasspathURLStreamHandler ClassLoader URL "+classpathURL)
       if (classpathURL eq null) throw new ClasspathURLResourceException("ClassLoader could not find resource "+url.getPath)
       classpathURL.openConnection
