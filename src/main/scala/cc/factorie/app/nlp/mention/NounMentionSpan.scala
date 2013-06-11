@@ -19,10 +19,10 @@ object NounMention1 extends DocumentAnnotator {
         else tempSpan.append(1)(null)
       } else if (tempSpan ne null) {
         if (token.string == "-" && token.hasNext && token.next.attr[pos.PTBPosLabel].categoryValue.take(2) == "NN") tempSpan.append(1)(null) // Handle dashed nouns
-        else { tempSpan = null; spans += tempSpan}
+        else { spans += tempSpan; tempSpan = null}
       }
     }
-    document.attr += (new MentionList ++= spans.map(s => new Mention(s,s.start + s.length -1)))    //this uses the last token in the span as the head token
+    document.attr += (new MentionList ++= spans.map(s => new Mention(s,s.length -1)))    //this uses the last token in the span as the head token
     document
   }
   override def tokenAnnotationString(token:Token): String = {
