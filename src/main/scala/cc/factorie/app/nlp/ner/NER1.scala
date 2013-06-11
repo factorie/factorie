@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 import java.io.{File, InputStream, FileInputStream}
-import cc.factorie.util.{BinarySerializer, CubbieConversions}
+import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConversions}
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
     Features include context aggregation and lexicons.
@@ -102,22 +102,22 @@ class NER1 extends DocumentAnnotator {
       features += "W="+word
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (token.isPunctuation) features += "PUNCTUATION"
-//      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-//      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-//      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-//      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-//      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-//      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-//      if (lexicon.iesl.City.contains(token)) features += "CITY"
-//      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-//      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
-//      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
-//      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
-//      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
-//      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
-//      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
-//      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
-//      if (Demonyms.contains(token)) features += "DEMONYM"
+      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
+      if (lexicon.iesl.City.contains(token)) features += "CITY"
+      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
+      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
+      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
+      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
+      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
+      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
+      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
+      if (Demonyms.contains(token)) features += "DEMONYM"
     }
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
     for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
@@ -159,7 +159,7 @@ class NER1 extends DocumentAnnotator {
   }
 
   // Parameter estimation
-  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001): Unit = {
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001): Double = {
     def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
     trainDocs.foreach(addFeatures(_)); FeaturesDomain.freeze(); testDocs.foreach(addFeatures(_)) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
@@ -182,7 +182,7 @@ class NER1 extends DocumentAnnotator {
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
-    return    // TODO Don't bother LBFGS training
+    return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     val trainer2 = new optimize.BatchTrainer(model.parameters, new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 })
     while (!trainer2.isConverged) {
       trainer2.processExamples(examples)
@@ -191,6 +191,7 @@ class NER1 extends DocumentAnnotator {
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     }
     //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
+    new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }
   def loadDocuments(files:Iterable[File]): Seq[Document] = {
     def fixLabels(docs:Seq[Document]): Seq[Document] = { for (doc <- docs; token <- doc.tokens) token.attr += new BilouConllNerLabel(token, token.attr[NerLabel].categoryValue); docs }
@@ -237,25 +238,50 @@ class NER1 extends DocumentAnnotator {
 object NER1 extends NER1(cc.factorie.util.ClasspathURL[NER1](".factorie"))
 
 /** Example main function for training NER1 from CoNLL 2003 data. */
-object NER1Trainer {
-  def main(args:Array[String]): Unit = {
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val saveModel = new CmdOption("save-model", "NER1.factorie", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
-      val train = new CmdOption("train", List("eng.train"), "FILENAME..", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
-      val test = new CmdOption("test", List("eng.testa"), "FILENAME...", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
-      val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
-      val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
-    }
+object NER1Trainer extends cc.factorie.util.HyperparameterMain {
+  class Opts extends cc.factorie.util.CmdOptions {
+    val saveModel = new CmdOption("save-model", "NER1.factorie", "STRING", "Filename for the model (saving a trained model or reading a running model.")
+    val serialize = new CmdOption("serialize", false, "BOOLEAN", "Whether to serialize at all")
+    val train = new CmdOption("train", "eng.train", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
+    val test = new CmdOption("test", "eng.testa", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
+    val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
+    val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
+  }
+  def evaluateParameters(args:Array[String]): Double = {
+    object opts extends Opts
     opts.parse(args)
     
     val ner = new NER1
     
     if (opts.train.wasInvoked) {
-      ner.train(ner.loadDocuments(opts.train.value.map(new File(_))), ner.loadDocuments(opts.test.value.map(new File(_))), opts.l1.value, opts.l2.value)
-      if (opts.saveModel.wasInvoked) ner.serialize(opts.saveModel.value)
+      val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value)
+      if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
+      return ret
     } else {
       System.err.println(getClass.toString+" : --train argument required.")
       System.exit(-1)
     }
+    Double.NegativeInfinity
+  }
+
+}
+
+
+object NER1Validator {
+  def main(args: Array[String]) {
+    val opts = new NER1Trainer.Opts
+    opts.parse(args)
+    opts.serialize.setValue(false)
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-6, 10))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-6, 10))
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.NER1Trainer", "try-log/")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 50, 40, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    println("Running best configuration...")
+    opts.serialize.setValue(true)
+    qs.execute(opts.values.map(_.unParse).toArray)
+    println("Done.")
   }
 }

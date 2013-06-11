@@ -151,12 +151,15 @@ abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) 
       while (!done && tries < 10) {
         tries += 1
         if (new java.io.File(outFile).exists() && io.Source.fromFile(outFile).getLines().toSeq.size > 0) done = true
-        else println("Retrying to read the file job " + thisId)
+        else
         blocking { Thread.sleep(1000) }
       }
       if (new java.io.File(outFile).exists && io.Source.fromFile(outFile).getLines().toSeq.size > 0)
         io.Source.fromFile(outFile).getLines().toSeq.head.toDouble
-      else Double.NegativeInfinity
+      else {
+        println("Job " + thisId + " failed. See log file " + thisPrefix+"-log.txt for more information.")
+        Double.NegativeInfinity
+      }
     }
   }
 }
