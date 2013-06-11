@@ -186,6 +186,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
+    sparseEvidenceWeights += model.evidence.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.evidence.set(sparseEvidenceWeights)
+    println("NER1.serialize evidence "+model.evidence.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(ActionDomain, dstream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
@@ -197,8 +201,8 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(ActionDomain, dstream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    model.evidence.set(new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    model.parameters.densify()
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   

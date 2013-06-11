@@ -3,13 +3,9 @@ package cc.factorie.tutorial
 import cc.factorie._
 import java.io.File
 import cc.factorie.util.BinarySerializer
-
-//import bp.specialized.Viterbi
-//import bp.{ParallelTrainer, ForwardBackwardExample}
-import app.nlp._
-import app.nlp.pos.{PTBPosLabel, PosFeatures, PTBPosDomain, PosFeaturesDomain}
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.pos.{PTBPosLabel, PTBPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
-//import optimize.LimitedMemoryBFGS
 
 /**
  * Author: martin
@@ -19,7 +15,12 @@ import app.chain.Observations.addNeighboringFeatureConjunctions
  * Prediction uses Viterbi.
  */
 
+/** A simple demonstration of part-of-speech tagging with a finite-state linear-chain CRF.
+    The set of features is impoverished in this demonstration, so the accuracy is not high */
 object ForwardBackwardPOS {
+  
+  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
   object PosModel extends TemplateModel with Parameters {
     // Factor between label and observed token

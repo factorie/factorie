@@ -190,10 +190,10 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    m2.erasure.isAssignableFrom(m1.erasure) && (m1.typeArguments.zip(m2.typeArguments).forall({case (l,r) => checkCompat(l, r)}))
 
  @Test def testClassifierPosSerialization() {
-   val model = new app.nlp.pos.POS3
+   val model = new app.nlp.pos.POS1
    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
    model.serialize(fileName)
-   val otherModel = app.nlp.pos.POS3.fromFilename(fileName)
+   val otherModel = new app.nlp.pos.POS1(new File(fileName))
  }
 
  @Test def testInstanceSerialize(): Unit = {
