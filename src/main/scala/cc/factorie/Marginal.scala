@@ -217,9 +217,9 @@ trait RealMarginal1[V1<:RealVar] extends Marginal {
 
 class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] with Marginal {
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
-  override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
+  override def setVariables(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
   final def value1: V1#Value = mean.asInstanceOf[V1#Value] // For AbstractAssignment1
-  def setToMaximize(implicit d:DiffList): Unit = globalize(d)
+  def setToMaximize(implicit d:DiffList): Unit = setVariables(d)
 }
 
 // Gaussian Marginal

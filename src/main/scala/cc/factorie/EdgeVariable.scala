@@ -17,7 +17,7 @@ package cc.factorie
 /** An abstract variable representing an edge between two nodes in a graph.  
     The value of the variable is a Tuple2 of the source and destination nodes.
     @author Andrew McCallum */
-trait EdgeVar[A,B] extends Var with ValueBound[(A,B)] /*with VarAndValueGenericDomain[EdgeVar[A,B],(A,B)]*/ {
+trait EdgeVar[A,B] extends Var with ValueBound[(A,B)] {
   type Value <: (A,B)
   def src: A
   def dst: B

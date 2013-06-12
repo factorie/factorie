@@ -99,7 +99,7 @@ class AssignmentSummary(val assignment:Assignment) extends Summary {
   def marginals = _marginals.values
   def marginal(v:Var): Marginal1 = _marginals.getOrElse(v, null)
   def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]
-  override def setToMaximize(implicit d:DiffList): Unit = assignment.globalize(d)
+  override def setToMaximize(implicit d:DiffList): Unit = assignment.setVariables(d)
   def logZ = throw new Error("AssignmentSummary does not define logZ")
   def factorMarginals = Nil
 }

@@ -19,7 +19,9 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 // For variables that hold a single discrete value, which is represented as a one-hot Tensor1.
 
-/** A value in a DiscreteDomain.
+/** A value in a DiscreteDomain.  Conceptually it is a single integer value ranging from 0 to the domain size minus one.
+    But it is also a Tensor1, of length domain.size, with 0s in all positions except its integer value; this
+    facilitates its use in various tensor statistics operations. 
     @author Andrew McCallum */
 trait DiscreteValue extends SingletonBinaryTensorLike1 {
   // def dim1: Int remains abstract
@@ -28,8 +30,8 @@ trait DiscreteValue extends SingletonBinaryTensorLike1 {
   override def toString: String = singleIndex.toString
 }
 
-// Because DiscreteDomain is an IndexedSeq it can be passed as a sizeProxy
 /** The domain of a DiscreteVar.  It has a finite size and provides a DiscreteValue for each integer from 0 to size-1.
+    Because DiscreteDomain is an IndexedSeq it can be passed as a "sizeProxy" to various "growable tensors", etc.
     @author Andrew McCallum */
 class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteTensorDomain with Domain[DiscreteValue] {
   thisDomain =>

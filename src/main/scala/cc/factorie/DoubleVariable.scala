@@ -14,12 +14,14 @@
 
 package cc.factorie
 
-/** The type of the domain of DoubleVariables. */
+/** The type of the domain of DoubleVariables.
+    @author Andrew McCallum */
 trait DoubleDomain extends Domain[Double] {
   def minValue = Double.MinValue
   def maxValue = Double.MaxValue
 }
-/** The domain of DoubleVariables. */
+/** The domain of DoubleVariables.
+    @author Andrew McCallum */
 object DoubleDomain extends DoubleDomain { type Value = Double }
 
 /** A Variable with a real (double) value. 
@@ -50,7 +52,7 @@ class DoubleVariable(initialValue: Double) extends MutableDoubleVar {
     _value = newValue
   }
   final def set(newValue:Int)(implicit d:DiffList): Unit = set(newValue.toDouble)
-  //override def :=(newValue:Double): Unit = set(newValue)(null) // To avoid wrapping the Double when calling the generic method in MutableVar
+  //override def :=(newValue:Double): Unit = set(newValue)(null) // To avoid wrapping the Double when calling the generic method in MutableVar, but this method is final in MutableVar.
   case class DoubleDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: DoubleVariable = DoubleVariable.this
     def redo = _value = newValue

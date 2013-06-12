@@ -122,7 +122,7 @@ object WordSegmenterDemo2 {
     val opt = new AdaGrad
     val examples = trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model, infer=MaximizeByBPLoopy))
     Trainer.onlineTrain(model.parameters, examples, maxIterations=15, optimizer=opt)
-    for (sentence <- sentences) InferByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.globalize(null)
+    for (sentence <- sentences) InferByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.setVariables(null)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
     println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
