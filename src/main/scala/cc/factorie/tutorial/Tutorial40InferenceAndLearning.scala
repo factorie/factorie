@@ -147,8 +147,8 @@ object Tutorial40InferenceAndLearning {
 
     // Now we can run inference and see that we have learned
     val summary2 = model.inferBySumProduct(document.tokens.map(_.attr[Label]).toIndexedSeq)
-    assertStringEquals(summary2.logZ, "48.605506179720656")
-    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999301965748612,6.980342513888636E-5)")
+    assertStringEquals(summary2.logZ, "48.63285471872915")
+    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999307662754184,6.923372458157457E-5)")
 
     /*&
      * Factorie also has support for more efficient learning algorithms than traditional

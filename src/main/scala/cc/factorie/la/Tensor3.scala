@@ -67,8 +67,8 @@ trait DenseTensorLike3 extends Tensor3 with DenseTensor {
   }
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 {
-  override def copy: DenseTensor3 = { val t = new DenseTensor3(dim1, dim2, dim3); System.arraycopy(_values, 0, t._values, 0, length); t }
-  override def blankCopy: DenseTensor3 = new DenseTensor3(dim1, dim2, dim3)
+  override def copy = { val t = new DenseTensor3(dim1, dim2, dim3); System.arraycopy(_values, 0, t._values, 0, length); t }
+  override def blankCopy = new DenseTensor3(dim1, dim2, dim3)
 }
 
 class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 = d1; private var _dim2 = d2; private var _dim3 = d3} with DenseTensorLike3 {
@@ -105,8 +105,8 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
     //case t:Tensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); super.+=(t, f) }
     //case t:UniformTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
-  override def copy: GrowableDenseTensor3 = { val c = new GrowableDenseTensor3(_dim1, _dim2, _dim3); c := this; c }
-  override def blankCopy: GrowableDenseTensor3 = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
+  override def copy = { val c = new GrowableDenseTensor3(_dim1, _dim2, _dim3); c := this; c }
+  override def blankCopy = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
 } 
 
 /** A Tensor3 representing the outer product of a Tensor2 (e.g. DenseTensor2) and a Tensor1 (e.g. a SparseBinaryTensor1). */
@@ -196,8 +196,8 @@ class SparseIndexedTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends Ten
       def next() = { i += 1; this }
     }
   }
-  override def blankCopy: SparseIndexedTensor3 = new SparseIndexedTensor3(dim1, dim2, dim3)
-  override def copy: SparseIndexedTensor3 = { val t = new SparseIndexedTensor3(dim1, dim2, dim3); this.copyInto(t); t }
+  override def blankCopy = new SparseIndexedTensor3(dim1, dim2, dim3)
+  override def copy = { val t = new SparseIndexedTensor3(dim1, dim2, dim3); this.copyInto(t); t }
 }
 
 // singleton2, tensor1
@@ -330,7 +330,7 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:DenseTensor => {
       var i = 0
       while (i < _inners.length) {
-        _inners(i) match {
+        inner(i) match {
           case in:DenseTensor =>
             var j = 0
             while (j < in.length) {
