@@ -483,7 +483,7 @@ object DepParser2 extends DepParser2(false) {
   deserialize(cc.factorie.util.ClasspathURL[DepParser2](".factorie").openConnection.getInputStream)
 }
 
-class DepParser2Args extends cc.factorie.util.CmdOptions {
+class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val trainFiles =  new CmdOption("train", "", "STRING", "")
   val testFiles =  new CmdOption("test", "", "STRING", "")
   val devFiles =   new CmdOption("dev", "", "STRING", "")
@@ -601,7 +601,7 @@ object DepParser2Optimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.parse.DepParser2", "try-log/")
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.parse.DepParser2Trainer", "try-log/")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 30, 20, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

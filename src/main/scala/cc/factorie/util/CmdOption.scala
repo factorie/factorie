@@ -39,6 +39,7 @@ trait CmdOption[T] {
     if (hasValue)
       value match {
         case a: Seq[_] => Seq(f"--$name%s") ++ a.map(_.toString)
+        case "" => Seq()
         case a: Any => Seq(f"--$name%s=${value.toString}%s")
       }
 
@@ -299,19 +300,21 @@ trait DefaultCmdOptions extends CmdOptions {
     }
   }
   new CmdOption("version", "", "STRING",  "Print version numbers.") {
-    override def invoke = {
+    override def invoke {
       throw new Error("Not yet implemented.") // TODO How to manage version strings?
       //println("FACTORIE version "+factorieVersionString)
       // TODO How do I print the Scala and JVM version numbers?
       System.exit(0)
     }
   }
-  new CmdOption("config", "config.factorie", "FILE", "Read command option values from a file") {
-    override def invoke = {
-      import scala.io.Source
-      val contents = Source.fromFile(new java.io.File(this.value)).mkString
-      val args = contents.split("\\s+")
-      DefaultCmdOptions.this.parse(args)
+  new CmdOption("config", "", "FILE", "Read command option values from a file") {
+    override def invoke {
+      if (this.value != "") {
+        import scala.io.Source
+        val contents = Source.fromFile(new java.io.File(this.value)).mkString
+        val args = contents.split("\\s+")
+        DefaultCmdOptions.this.parse(args)
+      }
     }
   }
 }
