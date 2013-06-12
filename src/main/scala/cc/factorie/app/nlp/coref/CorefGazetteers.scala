@@ -9,7 +9,6 @@ import cc.factorie.app.nlp.mention.Mention
  * Time: 10:07 PM
  */
 
-// TODO: make this read from the lexicons jar if possible
 class CorefGazetteers(lexDir: String) {
   private def load(name: String): Set[String] = {
     if (lexDir eq null) {
@@ -24,8 +23,11 @@ class CorefGazetteers(lexDir: String) {
   }
   def loadInto(map: collection.mutable.HashMap[String,Set[String]], names: Seq[String], dir: String) {
     names.foreach(lexName => {
-      val name = lexName
-      map += (name -> load(normalizeName(dir+lexName)).map(_.toLowerCase))
+      val name = normalizeName(lexName)
+      if(!map.contains(name))
+        map += (name -> load(dir+lexName).map(_.toLowerCase))
+      else
+        map(name) ++= load(dir+lexName).map(_.toLowerCase)
     })
   }
 
