@@ -59,7 +59,7 @@ object LoadACE {
     val doc = new Document(matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
     ClearTokenizer.process(doc)
-    SentenceSegmenter.process(doc)
+    ClearSegmenter.process(doc)
 
     // trailing tokens should be in a sentence
     val end = doc.asSection.sentences.last.end
@@ -166,6 +166,7 @@ object LoadACE {
         }
         assert(args.size == 2)
         val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
+        if(m.arg1.sentence != m.arg2.sentence) println("sentence doesn't match")
         m.attr += identifiers
         doc.attr[RelationMentions].add(m)(null)
         args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
