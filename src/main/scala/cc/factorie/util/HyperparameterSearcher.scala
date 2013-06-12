@@ -93,7 +93,7 @@ class HyperParameterSearcher(cmds: CmdOptions,
                              secondsToSleep: Int = 60) {
   private def sampledParameters(rng: Random): Array[String] = {
     parameters.foreach(_.set(rng))
-    cmds.values.map(_.unParse).toArray
+    cmds.values.flatMap(_.unParse).toArray
   }
 
   // the contract is that optimize will also set the appropriate values in cmds
@@ -119,7 +119,7 @@ class HyperParameterSearcher(cmds: CmdOptions,
     for (p <- parameters) p.report()
     val bestConfig = futures.filter(_._2.isCompleted).maxBy(_._2.value.get.get)._1
     cmds.parse(bestConfig)
-    parameters.map(_.option.unParse).toArray
+    parameters.flatMap(_.option.unParse).toArray
   }
 }
 

@@ -285,7 +285,7 @@ object NER1Validator {
     println("Running best configuration...")
     opts.serialize.setValue(true)
     import scala.concurrent.duration._
-    Await.result(qs.execute(opts.values.map(_.unParse).toArray), 1.hours)
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
     println("Done.")
   }
 }
