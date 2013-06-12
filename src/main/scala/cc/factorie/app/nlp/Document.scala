@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 /** A portion of the string contents of a Document.
     @author Andrew McCallum */
@@ -96,9 +97,10 @@ class Document extends DocumentSubstring with Attr {
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
   val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
-  private var _sections: Seq[Section] = List(asSection)
-  def sections: Seq[Section] = _sections //if (_sections.length == 0) return Seq(this) else _sections
-  
+  private var _sections: mutable.Buffer[Section] = new ArrayBuffer
+  def sections: Seq[Section] = if (_sections.length == 0) return Seq(asSection) else _sections
+  def +=(s: Section) = _sections += s
+
   // A few iterators that combine the results from the Sections
   //def tokens: Iterator[Token] = for (section <- sections.iterator; token <- section.tokens.iterator) yield token
   def tokens: Iterable[Token] = if (sections.length == 1) sections.head.tokens else new Iterable[Token] { def iterator = for (section <- sections.iterator; token <- section.tokens.iterator) yield token }

@@ -35,11 +35,15 @@ trait CmdOption[T] {
   def wasInvoked = invokedCount > 0
   def required: Boolean
   def parse(args:Seq[String], index:Int): Int
-  def unParse: String = {
+  def unParse: Seq[String] = {
     if (hasValue)
-      f"--$name%s=${value.toString}%s"
+      value match {
+        case a: Seq[_] => Seq(f"--$name%s") ++ a.map(_.toString)
+        case a: Any => Seq(f"--$name%s=${value.toString}%s")
+      }
+
     else
-      ""
+      Seq()
   }
   override def hashCode = name.hashCode
   override def equals(other:Any) = name.equals(other)
@@ -302,11 +306,10 @@ trait DefaultCmdOptions extends CmdOptions {
       System.exit(0)
     }
   }
-  new CmdOption("config", "FILE", "config.factorie", "Read command option values from a file") {
+  new CmdOption("config", "config.factorie", "FILE", "Read command option values from a file") {
     override def invoke = {
-      import java.io.File
       import scala.io.Source
-      val contents = Source.fromFile(new File(this.value)).mkString
+      val contents = Source.fromFile(new java.io.File(this.value)).mkString
       val args = contents.split("\\s+")
       DefaultCmdOptions.this.parse(args)
     }
