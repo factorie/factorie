@@ -2,7 +2,6 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import cc.factorie.la.{DenseTensor2, Tensor1, DenseTensor1}
-import cc.factorie.Family2.Factor
 
 /**
  * User: apassos
