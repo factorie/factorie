@@ -10,8 +10,8 @@ Redesign app.classify for better access to underlying optimize goodness. [McCall
 Finish lexicon data loading management. [McCallum]
 Implement dual decomposition. [Passos]
 Improve LDA speed and multi-threading [Vineet]
-Learning-supporting Sampler
-Packaged POS, NER, DepParser, Coref
+Learning-supporting Sampler extends Infer [Passos]
+Packaged POS, NER, DepParser, Coref [Andrew]
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]
@@ -29,10 +29,32 @@ No holes in Tensor dot products [Passos]
 
 More examples:
 Tutorial examples [McCallum]
+Clean up old examples
 Basic models [All]
 Implement TopicsOverTime (needs Beta distribution) [Bakalov]
 Make an HMM example and show that BP inference and EM training work on it [Belanger]
 Fixed HACKING.txt Eclipse set up
+
+Tutorial coverage:
+000 Introduction: Motivation, overview, first quick examples for feel, comparison with similar tools
+010 Variables, Domains, Assignments, Proportions
+020 Tensors and la package
+030 Factors, Families, Templates, Models
+040 Infer, Summary, Marginal, BP, Sampling, GibbsSampler, MHSampler, MeanField, MLPL, DualDecomposition 
+050 Optimize package
+060 Learning
+070 Directed package
+080 Standard ML models: HMM, Mixture of Gaussians,
+090 Parallelism, Hyperparameter optimization
+100 Classify package
+110 Chain package
+120 NLP package, Document, Section, Token, TokenSpan, Sentence, attr, DocumentAnnotator, pos, ner, mention, parse, lexicon, wordnet, coref
+130 Topic modeling package
+140 Serialization and Cubbies and Mongo
+
+Missing?
+Regression, Matrix Factorization,
+
 
 
 DONE:

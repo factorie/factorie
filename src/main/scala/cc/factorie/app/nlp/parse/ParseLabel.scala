@@ -160,9 +160,6 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
     result
   }
 
-
-
-
   def leftChildren(parentIndex:Int): Seq[Token] = {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0

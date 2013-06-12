@@ -19,9 +19,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
-// TODO Consider name "TensorDiscreteDomain"
-// No longer than current name.  
-// Avoids confusion about "a Tensor containing only discrete values".
+// TODO Consider name "DiscreteVectorDomain", since I think all our use cases are Tensor1 -akm
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
