@@ -15,21 +15,27 @@
 package cc.factorie
 import cc.factorie.la._
 
-trait TensorDomain extends Domain[Tensor]
-object TensorDomain extends TensorDomain
+//trait TensorDomain extends Domain[Tensor]
+//object TensorDomain extends TensorDomain
 
-trait TensorVar extends VarWithDomain[Tensor] with ValueBound[Tensor] {
-  def domain: TensorDomain
+/** An abstract variable whose value is a Tensor. */
+trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var with ValueBound[Tensor] {
+  //def domain: TensorDomain
   def value: Tensor
   @deprecated("Use 'value' instead.", "M4") def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
+}
+
+/** A TensorVar with a specific Tensor type value. */
+trait TypedTensorVar[+A<:Tensor] extends TensorVar with ValueBound[A] {
+  override def value: A
 }
 
 // TODO Consider also, just in case needed:
 // trait TypedTensorVar[+A<:Tensor] extends TensorVar with VarAndValueType[TypedTensorVar[A],A]
 // trait TensorVar extends TypedTensorVar[Tensor]
 
-trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
-  def domain: TensorDomain //with Domain[A]
+trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
+  //def domain: TensorDomain //with Domain[A]
   private var _value: A = null.asInstanceOf[A]
   def value: A = _value // TODO Should this make a copy?
   @inline final def tensor: A = _value // This method will definitely not make a copy
@@ -90,7 +96,7 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
     @author Andrew McCallum */
 class TensorVariable[T <: Tensor] extends MutableTensorVar[T] {
   def this(initialValue: T) = { this(); set(initialValue)(null) }
-  def domain: TensorDomain = TensorDomain
+  //def domain: TensorDomain = TensorDomain
 }
 
 /** Convenience methods for constructing TensorVariables with a Tensor1 of various types.

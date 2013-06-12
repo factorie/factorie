@@ -82,7 +82,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
     These are commonly used for feature vectors, with String categories.
     The 'dimensionDomain' is abstract.
     @author Andrew McCallum */
-abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalTensorVar[C] {
-  def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
+abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor1] with CategoricalTensorVar[C] {
+  def this(initialValue:Tensor1) = { this(); set(initialValue)(null) }
 }
 

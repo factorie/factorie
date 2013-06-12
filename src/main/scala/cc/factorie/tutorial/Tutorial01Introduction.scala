@@ -23,7 +23,7 @@ Its key features include the following:
   However, most commonly the creation of factors for relational data is defined in templates which contain functions that create the necessary factors in a Turing-complete imperative style.  
   This usage of imperative programming to define various aspects of factor graph construction and operation is an innovation originated in FACTORIE; we term this approach imperatively-defined factor graphs.  The above three methods for specifying relational factor graph structure can be mixed in the same model.
 
-FACTORIE comes with pre-built models for:
+FACTORIE comes with pre-built model structures for:
 
 - classification (including document classification, with MaxEnt, NaiveBayes, SVMs and DecisionTrees)
 - linear regression
@@ -33,11 +33,13 @@ FACTORIE comes with pre-built models for:
 - topic models, including latent Dirichlet allocation and multiple variants 
 
 FACTORIE has been successfully applied to various tasks, including:
-- cross-document entity resolution, on 100k mentions, parallelized and distributed
+- cross-document entity resolution, on 100 million mentions, parallelized and distributed
 - within-document coreference, supervised
+- transition-based dependency parsing
 - relation extraction, distantly supervised
 - schema matching
 - ontology alignment
+- parallelized latent Dirichlet allocation
 - topics-over-time
 
 This series of tutorials provides a detailed description of the FACTORIE framework.  
@@ -78,12 +80,13 @@ The following code declares data, model, inference and learning for a linear-cha
     def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
-  Trainer.batchTrain(model.parameters, labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
-  // Inference on the same data.  We could let FACTORIE choose the inference method,
+  val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
+  // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
-  println(model.markov.weights)  // TODO this triggers reflection
+  println(model.markov.weights)
   // Print the inferred tags
   labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }

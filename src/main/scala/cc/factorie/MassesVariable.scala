@@ -145,19 +145,19 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
 
 // Masses Variables 
 
-/** The domain type for MassesVar.  No real functionality, just used as a marker.
-    @author Andrew McCallum */
-trait MassesDomain extends TensorDomain with Domain[Masses]
-
-/** The domain for MassesVar.  No real functionality, just used as a marker.
-    @author Andrew McCallum */
-object MassesDomain extends MassesDomain
+///** The domain type for MassesVar.  No real functionality, just used as a marker.
+//    @author Andrew McCallum */
+//trait MassesDomain extends TensorDomain with Domain[Masses]
+//
+///** The domain for MassesVar.  No real functionality, just used as a marker.
+//    @author Andrew McCallum */
+//object MassesDomain extends MassesDomain
 
 /** An abstract variable with value Masses.
     @author Andrew McCallum */
 trait MassesVar extends TensorVar with ValueBound[Masses] {
   def value: Masses
-  def domain: MassesDomain
+  //def domain: MassesDomain
 }
 
 /** An abstract variable with value Masses.
@@ -167,7 +167,7 @@ trait MutableMassesVar[A<:Masses] extends MutableTensorVar[A] with MassesVar
 /** A variable with value Masses.
     @author Andrew McCallum */
 class MassesVariable extends MutableMassesVar[Masses] {
-  def domain = MassesDomain
+  //def domain = MassesDomain
   def this(initialValue:Masses) = { this(); set(initialValue)(null) }
 }
 

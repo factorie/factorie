@@ -126,7 +126,7 @@ trait Weights extends TensorVar {
   def value: Value
   def set(t: Tensor): Unit
   def tensor = value
-  def domain = TensorDomain
+  //def domain = TensorDomain
 }
 
 trait Weights1 extends Weights with VarWithValue[Tensor1]

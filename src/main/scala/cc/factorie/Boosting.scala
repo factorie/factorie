@@ -8,7 +8,7 @@ import cc.factorie.la.{DenseTensor1, Tensor1}
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/
 abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: TensorVar]
-  (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
+  (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
 
@@ -56,7 +56,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: TensorVa
 class AdaBoostDecisionStumpTemplate[L <: DiscreteVar, F <: TensorVar](
   labelToFeatures: L => F,
   labelDomain: DiscreteDomain,
-  featureDomain: TensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+  featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
   extends AdaBoostTemplateWithStatistics2[L, F](labelToFeatures, labelDomain, featureDomain) {
   var numIterations = 5
   //type WeakClassifier = DecisionStumpTemplate[L, F]

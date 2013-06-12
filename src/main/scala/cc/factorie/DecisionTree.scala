@@ -22,7 +22,7 @@ import scala.Some
     label S1 given feature vector S2, according to a decision tree.
     @author Luke Vilnis*/
 abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: TensorVar]
-  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: TensorDomain)
+  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends Template2[V1, V2] /*with Parameters*/ {
 
@@ -329,7 +329,7 @@ trait ErrorBasedPruning[S1 <: DiscreteVar, S2 <: TensorVar] {
 }
 
 class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with GainRatioSplitting[V1, V2]
@@ -339,7 +339,7 @@ class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
 }
 
 class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]
@@ -349,7 +349,7 @@ class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
 }
 
 class DecisionStumpTemplate[V1 <: DiscreteVar, V2 <: TensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: TensorDomain)
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]

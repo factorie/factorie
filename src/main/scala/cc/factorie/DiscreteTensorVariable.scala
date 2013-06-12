@@ -23,7 +23,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait DiscreteTensorDomain extends TensorDomain {
+trait DiscreteTensorDomain extends Domain[Tensor1] {
   def dimensionDomain: DiscreteDomain
   /** A convenience method to get the size of the dimensionDomain.
       This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
@@ -39,17 +39,19 @@ class DiscreteTensorDomainCubbie extends Cubbie {
   def store(d: DiscreteTensorDomain): Unit = size := d.dimensionDomain.size
   def fetch(): DiscreteTensorDomain = new DiscreteTensorDomain {
     def dimensionDomain = new DiscreteDomain(size.value)
-    type Value = Tensor
+    type Value = Tensor1
   }
 }
 
+// TODO Consider renaming this to DiscreteVectorVar or DiscreteTensorVar1? -akm
+
 /** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
-trait DiscreteTensorVar extends TensorVar {
+trait DiscreteTensorVar extends TypedTensorVar[Tensor1] {
   def domain: DiscreteTensorDomain
   def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
-/** A concrete variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
-abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor] with DiscreteTensorVar {
-  def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
+/** A concrete variable whose value is a Tensor1 whose length matches the size of a DiscreteDomain. */
+abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor1] with DiscreteTensorVar {
+  def this(initialValue:Tensor1) = { this(); set(initialValue)(null) }
 }
