@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -82,7 +83,7 @@ limitations under the License.
       <artifactId>akka-actor_2.10</artifactId>
       <version>2.1.4</version>
     </dependency>
-    
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -102,18 +103,18 @@ limitations under the License.
       <version>2.11.1</version>
     </dependency>
 
-      <dependency>
-        <groupId>net.sourceforge.jregex</groupId>
-        <artifactId>jregex</artifactId>
-        <version>1.2_01</version>
-      </dependency>
+    <dependency>
+      <groupId>net.sourceforge.jregex</groupId>
+      <artifactId>jregex</artifactId>
+      <version>1.2_01</version>
+    </dependency>
 
     <dependency>
       <groupId>net.sourceforge.parallelcolt</groupId>
       <artifactId>parallelcolt</artifactId>
       <version>0.10.0</version>
-    </dependency>        
-	
+    </dependency>
+
   </dependencies>
 
   <distributionManagement>
@@ -197,55 +198,44 @@ limitations under the License.
             <launcher>
               <id>bib-demo</id>
               <mainClass>cc.factorie.app.bib.Coref</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
+              </jvmArgs>
             </launcher>
             <launcher>
               <id>bib-kb</id>
               <mainClass>cc.factorie.app.bib.BibKB</mainClass>
-              <jvmArgs><jvmArg>-Xmx6g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <jvmArgs>
+                <jvmArg>-Xmx6g</jvmArg>
+                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
+              </jvmArgs>
             </launcher>
             <launcher>
               <id>bib-exp</id>
               <mainClass>cc.factorie.app.bib.experiments.EpiDBExperimentOptions</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
+              </jvmArgs>
             </launcher>
-           <launcher>
+            <launcher>
               <id>bib-exp-edits</id>
               <mainClass>cc.factorie.app.bib.experiments.UserEditExperiments</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
+              </jvmArgs>
             </launcher>
             <launcher>
               <id>glm-demo</id>
               <mainClass>cc.factorie.optimize.GlmTest</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
+              </jvmArgs>
             </launcher>
           </launchers>
-        </configuration>
-      </plugin>
-
-      <!-- Assembles the jar and other release formats (tarball, etc.). -->
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.4</version>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>attached</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <tarLongFileMode>gnu</tarLongFileMode>
-          <descriptorRefs>
-            <descriptorRef>project</descriptorRef>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-          <descriptors>
-            <descriptor>src/main/assembly/src.xml</descriptor>
-            <descriptor>src/main/assembly/standalone.xml</descriptor>
-          </descriptors>
         </configuration>
       </plugin>
 
@@ -276,4 +266,40 @@ limitations under the License.
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>runtime</id>
+      <build>
+        <plugins>
+          <!-- Assembles the jar and other release formats (tarball, etc.). -->
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.4</version>
+            <executions>
+              <execution>
+                <id>make-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>attached</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <tarLongFileMode>gnu</tarLongFileMode>
+              <descriptorRefs>
+                <descriptorRef>project</descriptorRef>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <descriptors>
+                <descriptor>src/main/assembly/src.xml</descriptor>
+                <descriptor>src/main/assembly/standalone.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
