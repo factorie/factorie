@@ -411,7 +411,7 @@ class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions)
   override def variables = Seq(p)
   def mean = throw new Error // TODO!!! Should be this instead: value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
-  def setToMaximize(implicit d:DiffList): Unit = globalize(d)
+  def setToMaximize(implicit d:DiffList): Unit = setVariables(d)
 }
 
 

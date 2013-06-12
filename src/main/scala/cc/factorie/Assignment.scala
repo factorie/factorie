@@ -35,7 +35,7 @@ trait Assignment {
   def getOrElse[B<:Var](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
   // TODO Rename this to "set" or "setVariables" -akm
-  def globalize(implicit d:DiffList): Unit = {
+  def setVariables(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
       case v:MutableVar[Any] => v.set(this.apply(v))(d)
       case _ => throw new Error
@@ -58,7 +58,7 @@ object TargetAssignment extends Assignment {
   }
   def get[V<:Var](v:V): Option[V#Value] = Some(apply(v))
   def contains(v:Var) = true
-  override def globalize(implicit d:DiffList): Unit = throw new Error("Cannot set a TargetAssignment.  Instead use variables.setToTarget(DiffList).")
+  override def setVariables(implicit d:DiffList): Unit = throw new Error("Cannot set a TargetAssignment.  Instead use variables.setToTarget(DiffList).")
 }
 
 /** A MutableAssignment backed by a HashMap.
@@ -84,7 +84,7 @@ trait AbstractAssignment1[A<:Var] extends Assignment {
   def apply[B<:Var](v:B): B#Value = if (v eq _1) value1.asInstanceOf[B#Value] else v.value.asInstanceOf[B#Value] // throw new Error("Variable not present: "+v)
   def get[B<:Var](v:B): Option[B#Value] = if (v eq _1) Some(value1.asInstanceOf[B#Value]) else None
   def contains(v:Var): Boolean = if (v eq _1) true else false
-  override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
+  override def setVariables(implicit d:DiffList): Unit = _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
 }
 
 /** An efficient Assignment of one variable.
@@ -114,7 +114,7 @@ trait AbstractAssignment2[A<:Var,B<:Var] extends Assignment {
   def apply[C<:Var](v:C): C#Value = if (v eq _1) value1.asInstanceOf[C#Value] else if (v eq _2) value2.asInstanceOf[C#Value] else v.value.asInstanceOf[C#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2)) true else false
-  override def globalize(implicit d:DiffList): Unit = {
+  override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
     _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
   }
@@ -136,7 +136,7 @@ trait AbstractAssignment3[A<:Var,B<:Var,C<:Var] extends Assignment {
   def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3)) true else false
-  override def globalize(implicit d:DiffList): Unit = {
+  override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
     _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
     _3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
@@ -161,7 +161,7 @@ trait AbstractAssignment4[A<:Var,B<:Var,C<:Var,D<:Var] extends Assignment {
   def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else if (v eq _4) value4.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
   def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else if (v eq _4) Some(value4.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3) || (v eq _4)) true else false
-  override def globalize(implicit d:DiffList): Unit = {
+  override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
     _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
     _3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
@@ -182,7 +182,7 @@ object GlobalAssignment extends Assignment {
   def apply[V<:Var](v:V): V#Value = v.value.asInstanceOf[V#Value]
   def get[V<:Var](v:V): Option[V#Value] = Some(v.value.asInstanceOf[V#Value])
   def contains(v:Var) = true
-  override def globalize(implicit d:DiffList): Unit = {}
+  override def setVariables(implicit d:DiffList): Unit = {}
 }
 
 /** An Assignment backed by a sequence of assignments.  

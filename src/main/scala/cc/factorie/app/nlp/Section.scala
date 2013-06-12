@@ -34,7 +34,7 @@ import scala.collection.mutable.ArrayBuffer
     encompasses the entire Document (even if the Document grows in length).  This is accessed
     via Document.asSection.  This is the sole member of the default Document.sections, but 
     be cautious about always using Document.asSection to get the Documents Tokens, sentences and
-    their annotations, because some other processing may have set the canonical sequence of Sections
+    their annotations, because some other processing may reset the canonical sequence of Sections
     to some other collection.
     
     If you want to tokenize first, and then split a Document into Sections, you can tokenize
