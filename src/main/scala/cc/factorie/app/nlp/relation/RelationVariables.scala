@@ -396,7 +396,6 @@ object RelationVariables {
         //}
       }
     }
-    println("doc relations: " + doc.attr[RelationMentions].size)
     // also, compute all the features
     docRelations.foreach(_.computeFeatures)
   }
