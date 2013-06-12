@@ -6,6 +6,7 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PTBPosLabel, PTBPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
+import cc.factorie.optimize.Trainer
 
 /**
  * Author: martin
@@ -93,14 +94,8 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceLabels = sentences.map(_.posLabels).filter(_.size > 0)
 
-//    val pieces = sentenceLabels.map(vs => new ForwardBackwardExample(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
-//    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
-//    val optimizer = new LimitedMemoryBFGS(trainer) { override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") } }
-//    optimizer.optimize()
     val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(s, PosModel, InferByBPChainSum))
-    val trainer = new optimize.OnlineTrainer(PosModel.parameters, new optimize.AROW(PosModel))
-    (1 to 100).foreach(i => trainer.processExamples(examples))
-    
+    Trainer.onlineTrain(PosModel.parameters, examples, maxIterations=10)
     testSavePrint("final")
   }
 

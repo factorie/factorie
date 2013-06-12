@@ -168,15 +168,13 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
     // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
-    val trainer = new OnlineTrainer(model.parameters, opt, maxIterations=trainIterations)
     for (it <- 0 until trainIterations) {
       val batches = rng.shuffle(docs).grouped(batchSize).toSeq
       for (batch <- 0 until batches.length; documents = batches(batch)) {
         println("Generating training examples batch "+ batch + " of " + batches.length)
         val examples = generateTrainingExamples(documents, nThreads)
         println("Training ")
-        trainer.logEveryN = examples.length-1
-        for (i <- 0 until 2) trainer.processExamples(examples)
+        Trainer.onlineTrain(model.parameters, examples, maxIterations=2)
       }
       domain.freeze()
       opt.setWeightsToAverage(model.parameters)

@@ -93,15 +93,12 @@ object ChainNER2 {
     //val pieces = trainLabels.map(l => new SampleRankExample[Variable](l, new GibbsSampler(model, HammingLossObjective)))
     //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
     val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChainSum))
-    val trainer = new BatchTrainer(model.parameters)
     val predictor = MaximizeByBPChain // new VariableSettingsSampler[ChainNerLabel](model, null)
-    while (!trainer.optimizer.isConverged) {
-      trainer.processExamples(pieces)
+    Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
       (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
-    }
+    })
     println ("Train accuracy = "+ objective.accuracy(trainLabels))
     println ("Test  accuracy = "+ objective.accuracy(testLabels))
-
   }
 
   def load(filename:String) : Seq[Sentence] = {

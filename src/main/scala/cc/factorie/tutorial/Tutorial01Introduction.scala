@@ -78,9 +78,8 @@ The following code declares data, model, inference and learning for a linear-cha
     def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
-  val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
-  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
-  // Inference on the same data.  We could let FACTORIE choose the inference method, 
+  Trainer.batchTrain(model.parameters, labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
+  // Inference on the same data.  We could let FACTORIE choose the inference method,
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.

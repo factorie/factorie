@@ -1,7 +1,7 @@
 package cc.factorie
 
 
-import optimize.{BatchTrainer, LikelihoodExample}
+import cc.factorie.optimize.{Trainer, BatchTrainer, LikelihoodExample}
 import org.scalatest.junit.{JUnitSuite, AssertionsForJUnit}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import org.junit.Assert._
@@ -64,11 +64,9 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
 
     val pieces = new ArrayBuffer[LikelihoodExample[Iterable[DiscreteVar],Model]]
     pieces += new LikelihoodExample(trainings.toIterable, model, InferByBPLoopy)
-    val trainer = new BatchTrainer(model.parameters)
-    while (!trainer.optimizer.isConverged) {
-      trainer.processExamples(pieces)
+    Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
       logger.debug("Accuracy after sampling: " + objective.accuracy(trainings))
-    }
+    })
   }
 }
 

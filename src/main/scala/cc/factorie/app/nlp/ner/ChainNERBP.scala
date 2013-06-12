@@ -111,8 +111,7 @@ class ChainNerBP {
 //    testDocuments.foreach(process(_))
 //    printEvaluation(trainDocuments, testDocuments, "FINAL")
     val examples = vars.map(v => new LikelihoodExample(v, model, InferByBPChainSum))
-    val trainer = new BatchTrainer(model.parameters)
-    trainer.trainFromExamples(examples)
+    Trainer.batchTrain(model.parameters, examples)
     //(1 to 100).foreach(i => trainer.processExamples(pieces))
 
   }

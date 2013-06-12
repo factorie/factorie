@@ -19,6 +19,7 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
+import cc.factorie.optimize.Trainer
 
 /** A raw document classifier without using any of the facilities of cc.factorie.app.DocumentClassification,
     and without using the entity-relationship language of cc.factorie.er.  
@@ -74,14 +75,13 @@ object DocumentClassifier3 {
     
     // Make a test/train split
     val (testSet, trainSet) = documents.shuffle.split(0.5)
-    var trainVariables = trainSet.map(_.label)
-    var testVariables = testSet.map(_.label)
+    val trainVariables = trainSet.map(_.label)
+    val testVariables = testSet.map(_.label)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     // Train and test
     val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(v, model))
-    val trainer = new optimize.OnlineTrainer(model.parameters, new optimize.AROW(model))
-    (1 to 100).foreach(i => trainer.processExamples(examples))
+    Trainer.onlineTrain(model.parameters, examples, maxIterations = 10)
     val predictor = new IteratedConditionalModes(model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)

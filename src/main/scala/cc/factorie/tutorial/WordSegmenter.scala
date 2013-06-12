@@ -21,6 +21,7 @@ import scala.util.Sorting
 import cc.factorie._
 import java.io.File
 import cc.factorie.util.BinarySerializer
+import cc.factorie.optimize.Trainer
 
 object WordSegmenterDemo { 
   
@@ -155,41 +156,10 @@ object WordSegmenterDemo {
     }
 
     // Sample and Learn!
-    //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    //var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    //val learner = new optimize.SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-//    val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective))
-    val learner = new optimize.OnlineTrainer(model.parameters, maxIterations = 15, optimizer = new optimize.AdaGrad(rate = 0.1))
-    //learner.learningRate = 1.0
-    // println("Pre-training:")
-    // println("Train accuracy = "+ objective.accuracy(trainVariables))
-    // println("Test  accuracy = "+ objective.accuracy(testVariables))
-    for (i <- 0 until 25) {
-      learner.processExamples(trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_, model)))
-//      learner.processExamples(trainVariables.map(tv => new optimize.DiscreteLikelihoodExample(tv)))
-      //learner.processAll(trainVariables, 2)
-      //learner.learningRate *= 0.8
-      predictor.processAll(testVariables)
-      //sampler.processAll(testVariables, 2)
-      //sampler.temperature *= 0.8
-      if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    }
-    //println ("Setting weightsSet to average")
-    //learner.setWeightsToAverage
-    //(trainVariables ++ testVariables).foreach(_.setRandomly)
-    //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-    //val predictor = new SamplingMaximizer(sampler)
-    //predictor.maximize(testVariables, iterations=6, rounds=2)
+    val examples = trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_, model))
+    Trainer.onlineTrain(model.parameters, examples, maxIterations =15)
     predictor.processAll(testVariables)
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
-
-
-    // Show the parameters
-    //model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weightsSet.toList))
-    //println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
-    
-    //model.save("/Users/mccallum/tmp/wordsegmenter.factorie")
   }
 
   val data = Array(

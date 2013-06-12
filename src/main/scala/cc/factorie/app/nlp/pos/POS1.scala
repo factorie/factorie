@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
 import cc.factorie.app.classify.{MultiClassModel, LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
-import cc.factorie.optimize.{ConstantLearningRate, AdaGrad, SynchronizedOptimizerOnlineTrainer}
+import cc.factorie.optimize.{Trainer, ConstantLearningRate, AdaGrad, SynchronizedOptimizerOnlineTrainer}
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import scala.collection.mutable.HashMap
 import java.io.{File,InputStream,FileInputStream}
@@ -251,13 +251,7 @@ class POS1 extends DocumentAnnotator {
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
     val numIterations = 2
     var iteration = 0
-    
-    val trainer = new cc.factorie.optimize.OnlineTrainer(model.parameters, new cc.factorie.optimize.AdaGrad(rate=lrate), maxIterations=numIterations)
-    while (iteration < numIterations && !trainer.isConverged) {
-      iteration += 1
-      val examples = sentences.shuffle.map(sentence => 
-        new TokensClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
-      trainer.processExamples(examples)
+    def evaluate() {
       exampleSetsToPrediction = doBootstrap
       var total = 0.0
       var correct = 0.0
@@ -273,6 +267,10 @@ class POS1 extends DocumentAnnotator {
       })
       println("Test accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
     }
+    val examples = sentences.shuffle.map(sentence =>
+      new TokensClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
+    val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
+    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate)
   }
 
   def process1(d: Document) = { predict(d); d }
