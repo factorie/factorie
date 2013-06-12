@@ -25,7 +25,7 @@ class CorefGazetteers(lexDir: String) {
   def loadInto(map: collection.mutable.HashMap[String,Set[String]], names: Seq[String], dir: String) {
     names.foreach(lexName => {
       val name = lexName
-      map += (name -> load(dir+lexName).map(_.toLowerCase))
+      map += (name -> load(normalizeName(dir+lexName)).map(_.toLowerCase))
     })
   }
 
@@ -59,7 +59,6 @@ class CorefGazetteers(lexDir: String) {
       val a = d.trim.split("\t")
       a.map(_ -> a.head)
     }).toMap
-
 
   //these are things used in entity type classification
   val firstNames = maleFirstNames ++ femaleFirstNames ++ wikiLexHash("person").map(_.split(" ").head)
