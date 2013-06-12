@@ -26,7 +26,7 @@ class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classi
     case cv:CategoricalValue[_] => cv.category.toString
     case dv:DiscreteValue => dv.intValue.toString
   }
-  def tensorStatistics = proportions
+  def tensorStatistics = proportions // TODO This seems wrong to me.  Shouldn't it be a Tensor2, and and also include the label value? -akm
 }
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
