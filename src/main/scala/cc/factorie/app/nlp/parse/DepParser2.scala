@@ -16,12 +16,12 @@ import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, Synchron
 import scala.Some
 import scala.concurrent.{Await, Future}
 
-class DepParser2(val useSparseTestWeights: Boolean=false) extends DocumentAnnotator {
+class DepParser2 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
 
-case class ParseDecision(action: String) {
+  case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
     val leftOrRightOrNo = lrnS.toInt
     val shiftOrReduceOrPass = srpS.toInt
@@ -74,41 +74,12 @@ case class ParseDecision(action: String) {
     println("DepParser2 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
-
-  def oldSave(file: File, gzip: Boolean) = {
-    import cc.factorie.util.CubbieConversions._
-    if (useSparseTestWeights) {
-      val sparseWeights = new DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new SparseIndexedTensor1(_))
-      val denseWeights = model.evidence.value
-      denseWeights.foreachElement((i, v) => {
-        val s1 = denseWeights.index1(i)
-        val s2 = denseWeights.index2(i)
-        if (v != 0.0) sparseWeights.inner(s1) += (s2,v)
-      })
-      (0 until labelDomain.size).foreach(s => sparseWeights.inner(s).asInstanceOf[SparseIndexedTensor]._makeReadable())
-      model.evidence.set(sparseWeights)
-      BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
-      model.evidence.set(denseWeights)
-    } else {
-      BinarySerializer.serialize(labelDomain, featuresDomain, model, file, gzip=gzip)
-
-    }
-  }
-  var deSerializingSparse = false
-  def oldLoad(file: File, gzip: Boolean) = {
-    import cc.factorie.util.CubbieConversions._
-    if (useSparseTestWeights) deSerializingSparse = true
-    BinarySerializer.deserialize(labelDomain, featuresDomain, model, file, gzip=gzip)
-  }
-    
     
     
     
   def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
   val model = new MultiClassModel {
-    val evidence = Weights(
-      if (deSerializingSparse) new DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new SparseIndexedTensor1(_))
-      else  new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
+    val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
   }
 
   def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
@@ -479,7 +450,8 @@ case class ParseDecision(action: String) {
   }
 }
 
-object DepParser2 extends DepParser2(false) {
+object DepParser2 extends DepParser2 {
+  println("object DepParser2 loading"); System.out.flush()
   deserialize(cc.factorie.util.ClasspathURL[DepParser2](".factorie").openConnection.getInputStream)
 }
 
@@ -496,7 +468,6 @@ class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-  val useSparseTestWeights = new  CmdOption("sparse-test-weights", false,"BOOLEAN","whether to use sparse weights at test time")
 }
 
 object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
@@ -544,7 +515,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = bootstrapping.value.toInt
-    val c = new DepParser2(useSparseTestWeights.value)
+    val c = new DepParser2
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)

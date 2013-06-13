@@ -25,7 +25,8 @@ import cc.factorie.la.{DenseTensor1, Tensor1}
 import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
 
 
-class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
+class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
+  def this() = this(true)
   def this(url:java.net.URL) = { this(true); deserialize(url.openConnection().getInputStream) }
 
   class ParserStack extends ProtectedIntArrayBuffer {
