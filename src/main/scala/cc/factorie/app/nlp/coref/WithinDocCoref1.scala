@@ -157,7 +157,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[Mention]]
     token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"@"+emap.getEntity(m)).mkString(", ")
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
