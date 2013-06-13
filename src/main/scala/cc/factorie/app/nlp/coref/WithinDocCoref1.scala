@@ -171,7 +171,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
 
   def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
+    val opt = new cc.factorie.optimize.AdaGrad //with ParameterAveraging
     // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
     for (it <- 0 until trainIterations) {
       val batches = rng.shuffle(docs).grouped(batchSize).toSeq
@@ -182,14 +182,14 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         Trainer.onlineTrain(model.parameters, examples, maxIterations=2)
       }
       domain.freeze()
-      opt.setWeightsToAverage(model.parameters)
+      // opt.setWeightsToAverage(model.parameters)  // TODO with ParameterAveraging above, and this was causing null pointer exception in Parameters.scala:100
       println("Iteration " + it)
       // we don't evaluate on the whole training set because it feels wasteful, still it's nice to see some results
       evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
       evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
-      opt.unSetWeightsToAverage(model.parameters)
+      //opt.unSetWeightsToAverage(model.parameters)
     }
-    opt.setWeightsToAverage(model.parameters)
+    //opt.setWeightsToAverage(model.parameters)
   }
 
   // Serialization
