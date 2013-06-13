@@ -30,7 +30,7 @@ case class Mention(span: TokenSpan, headTokenIndex: Int = -1) extends Attr{
   def length: Int = span.length
   assert( headTokenIndex == -1 || headTokenIndex >= 0 && headTokenIndex <= span.length,"if provided, the headTokenIndex passed to the constructor must be an offset w.r.t the start of the mention. Specified " + headTokenIndex + ", but span is only " + span.length + " long")
   def sentence: Sentence = span.sentence
-  def headToken: Token = document.asSection.tokens(headTokenIndex) // This is buggy.  If the Document has multiple Sections, this won't work. -akm
+  def headToken: Token = span(headTokenIndex) // This is buggy.  If the Document has multiple Sections, this won't work. -akm
 }
 
 //this differs from EntityType. This is about whether a mention is a pronoun, etc., not what it potentially refers to (person, location, etc.)
