@@ -16,7 +16,7 @@ import cc.factorie.app.strings.RegexSegmenter
 class RegexTokenizer extends RegexSegmenter(RegexTokenizerHelper.tokenRegex) with DocumentAnnotator {
   def process1(document: Document): Document = {
     for (section <- document.sections) {
-      val tokenIterator = RegexTokenizer.this.apply(section.string.toLowerCase)
+      val tokenIterator = RegexTokenizer.this.apply(section.string)
       while (tokenIterator.hasNext) {
         tokenIterator.next()
         val t = new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
@@ -46,17 +46,18 @@ object RegexTokenizer extends RegexTokenizer {
 object RegexTokenizerHelper { 
   
   
-  val month = """jan
-feb
-mar
-apr
-jun
-jul
-aug
-sep
-oct
-nov
-dec"""
+  val month = """Jan
+Feb
+Mar
+Apr
+Jun
+Jul
+Aug
+Sep
+Sept
+Oct
+Nov
+Dec"""
     
   val state = """Ala
 Alab
@@ -95,42 +96,37 @@ Wyo"""
 Capt
 Col
 Com
+Comdr
 Cpl
 Cpt
 Dr
 Hon
 Gen
+Gov
 Lt
 Mr
 Mrs
 Ms
-rof
 Pvt
 Rev
 Sen
-Sgt
-col
-comdr
-cpl
-cpt
-hon
-gov"""
+Sgt"""
     
-  val place = """ave
-st
-str
-ln"""
-  val org = """inc
-corp
-ltd
-sci
-comm
-inst
-lib
-mus
-ser
-alt
-comput"""
+  val place = """Ave
+St
+Str
+Ln"""
+  val org = """Inc
+Corp
+Ltd
+Sci
+Comm
+Inst
+Lib
+Mus
+Ser
+Alt
+Comput"""
     
   val abbrev = """etc
 vol
@@ -159,7 +155,8 @@ gal"""
   val dashedWords = "[\\w0-9]+(-[\\w0-9]+)*" // words with sequences of single dashes in them
   val combo = "[\\w0-9']+" // any combo of word-chars, numbers, and hyphens
     
-  val tokenRegex = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, finalPunc, finalPunc2, quotes, symbols, words, briefDashedWords, dashedWords, combo).mkString("|").r
+  val tokenRegexString = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, finalPunc, finalPunc2, quotes, symbols, words, briefDashedWords, dashedWords, combo).mkString("|")
+  val tokenRegex = ("(?i)"+tokenRegexString).r // The (?i) makes it case insensitive
   println("RegexTokenizerHelper "+tokenRegex)
 
 }
