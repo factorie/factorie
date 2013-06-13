@@ -13,29 +13,19 @@ import cc.factorie.app.strings.RegexSegmenter
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
     */
-class RegexTokenizer extends RegexSegmenter(Seq(
-  "'[tT]|'[lL]+|'[sS]|'[mM]|'re|'RE|'ve|'VE", // this isn't working as expected
-  "[\\p{L}]\\.[\\p{L}\\.]*", // A.de, A.A.A.I, etc.
-  "[0-9]{1,2}[sthnrd]+[\\-\\p{L}]+", // the second part is for 20th-century
-  "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/,\\+\\=%]", // is there a better way to say, "doesn't end in '.'"?
-  "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}", // email
-  "[A-Z][a-z]?\\.", // A. Mr. but not Mrs. Calif. or Institute.
-  "inc\\.","corp\\.","dec\\.","jan\\.","feb\\.","mar\\.","apr\\.","jun\\.","jul\\.","aug\\.","sep\\.","oct\\.","nov\\.","ala\\.","ariz\\.","ark\\.","colo\\.","conn\\.","del\\.","fla\\.","ill\\.","ind\\.","kans\\.","kan\\.","ken\\.","kent\\.","mass\\.","mich\\.","minn\\.","miss\\.","mont\\.","nebr\\.","neb\\.","nev\\.","dak\\.","okla\\.","oreg\\.","tenn\\.","tex\\.","virg\\.","wash\\.","wis\\.","wyo\\.","mrs\\.","calif\\.","oct\\.","vol\\.","rev\\.","ltd\\.","dea\\.","est\\.","capt\\.","hev\\.","gen\\.","ltd\\.","etc\\.","sci\\.","com\\.","comput\\.","univ\\.","ave\\.","cent\\.","col\\.","comdr\\.","cpl\\.","cpt\\.","dept\\.","dust,","div\\.","est\\.","gal\\.","gov\\.","hon\\.","grad\\.","inst\\.","lib\\.","mus\\.","pseud\\.","ser\\.","alt\\.","Inc\\.","Corp\\.","Dec\\.","Jan\\.","Feb\\.","Mar\\.","Apr\\.","May\\.","Jun\\.","Jul\\.","Aug\\.","Sep\\.","Oct\\.","Nov\\.","Ala\\.","Ariz\\.","Ark\\.","Colo\\.","Conn\\.","Del\\.","Fla\\.","Ill\\.","Ind\\.","Kans\\.","Kan\\.","Ken\\.","Kent\\.","Mass\\.","Mich\\.","Minn\\.","Miss\\.","Mont\\.","Nebr\\.","Neb\\.","Nev\\.","Dak\\.","Okla\\.","Oreg\\.","Tenn\\.","Tex\\.","Virg\\.","Wash\\.","Wis\\.","Wyo\\.","Mrs\\.","Calif\\.","Oct\\.","Vol\\.","Rev\\.","Ltd\\.","Dea\\.","Est\\.","Capt\\.","Hev\\.","Gen\\.","Ltd\\.","Etc\\.","Sci\\.","Comput\\.","Univ\\.","Ave\\.","Cent\\.","Col\\.","Comdr\\.","Cpl\\.","Dept\\.","Dust,","Div\\.","Est\\.","Gal\\.","Gov\\.","Hon\\.","Grad\\.","Inst\\.","Lib\\.","Mus\\.","Pseud\\.","Ser\\.","Alt\\.",
-  "[.?!][\\p{Pf}\\p{Pe}]?", // ending/final punctuation
-  "[\\p{Pf}\\p{Pe}]?[.?!]", // ending/final punctuation followed by [.?!]
-  "[`'\"]+", // mid-sentence quotes
-  """[,-:;$?&@\(\)]+""", // other symbols
-  "[\\w\\-0-9]+(?='([tT]|[lL]+|[sS]|[mM]|re|RE|ve|VE))", // any combo of word-chars, numbers, and hyphens
-  "[\\w0-9]+(-[\\w0-9]+)*", // words with sequences of single dashes in them
-  "[\\w0-9']+" // any combo of word-chars, numbers, and hyphens
-).mkString("|").r) with DocumentAnnotator {
-
+class RegexTokenizer extends RegexSegmenter(RegexTokenizerHelper.tokenRegex) with DocumentAnnotator {
   def process1(document: Document): Document = {
     for (section <- document.sections) {
-      val tokenIterator = RegexTokenizer.this.apply(section.string)
+      val tokenIterator = RegexTokenizer.this.apply(section.string.toLowerCase)
       while (tokenIterator.hasNext) {
         tokenIterator.next()
-        new Token(section, tokenIterator.start, tokenIterator.end)
+        val t = new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
+//        // No, don't do this.  Look for \n\n in Document.String in Sentence segmenter
+//        if (false && document.stringLength > t.stringEnd +2 && document.string(t.stringEnd) == '\n' && document.string(t.stringEnd+1) == '\n') {
+//          // Two newlines in a row, without ending punctuation; add an extra "." to help Sentence segmentation 
+//          val t2 = new Token(section, t.stringEnd, t.stringEnd)
+//          t2.attr += new cc.factorie.app.nlp.TokenString(t2, ".")
+//        }
       }
     }
     document
@@ -51,6 +41,11 @@ object RegexTokenizer extends RegexTokenizer {
     RegexTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
+}
+  
+object RegexTokenizerHelper { 
+  
+  
   val month = """jan
 feb
 mar
@@ -62,6 +57,7 @@ sep
 oct
 nov
 dec"""
+    
   val state = """Ala
 Alab
 Ariz
@@ -78,23 +74,23 @@ Kan
 Ken
 Kent
 Mass
-    mich
-    minn
-    miss
-    mont
-    nebr
-    neb
-    nev
-    dak
-    okla
-    oreg
-    tenn
-    tex
-    virg
-    wash
-    wis
-    wyo
-    """
+Mich
+Minn
+Miss
+Mont
+Nebr
+Neb
+Nev
+Dak
+Okla
+Oreg
+Tenn
+Tex
+Virg
+Wash
+Wis
+Wyo"""
+    
   val honorific = """
 Capt
 Col
@@ -119,11 +115,11 @@ cpl
 cpt
 hon
 gov"""
+    
   val place = """ave
 st
 str
-ln
-"""
+ln"""
   val org = """inc
 corp
 ltd
@@ -141,8 +137,29 @@ vol
 rev
 dea
 est
-gal
-etc
-"""
+gal"""
     
+    
+  
+  
+  val contractions = "'[tT]|'[lL]+|'[sS]|'[mM]|'re|'RE|'ve|'VE" // this isn't working as expected
+  val abbrevs = Seq(month, state, honorific, place, org, abbrev).flatMap(_.split("\n").map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
+  println("RegexTokenizerHelper "+abbrevs)
+  val initials = "[\\p{L}]\\.[\\p{L}\\.]*" // A.de, A.A.A.I, etc.
+  val ordinals = "[0-9]{1,2}[sthnrd]+[\\-\\p{L}]+" // the second part is for 20th-century
+  val numerics = "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/,\\+\\=%]" // is there a better way to say, "doesn't end in '.'"?
+  val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}" // email
+  val briefAbbrevs = "[A-Z][a-z]?\\." // A. Mr. but not Mrs. Calif. or Institute.
+  val finalPunc = "[.?!][\\p{Pf}\\p{Pe}]?" // ending/final punctuation
+  val finalPunc2 = "[\\p{Pf}\\p{Pe}]?[.?!]" // ending/final punctuation followed by [.?!]
+  val quotes = "[`'\"]+" // mid-sentence quotes
+  val symbols = """[,-:;$?&@\(\)]+""" // other symbols
+  val words = "[\\w\\-0-9]+(?='([tT]|[lL]+|[sS]|[mM]|re|RE|ve|VE))" // any combo of word-chars, numbers, and hyphens
+  val briefDashedWords = "[\\p{L}0-9]+(-[\\p{L}0-9\\.]+)*" // words with sequences of single dashes in them
+  val dashedWords = "[\\w0-9]+(-[\\w0-9]+)*" // words with sequences of single dashes in them
+  val combo = "[\\w0-9']+" // any combo of word-chars, numbers, and hyphens
+    
+  val tokenRegex = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, finalPunc, finalPunc2, quotes, symbols, words, briefDashedWords, dashedWords, combo).mkString("|").r
+  println("RegexTokenizerHelper "+tokenRegex)
+
 }
