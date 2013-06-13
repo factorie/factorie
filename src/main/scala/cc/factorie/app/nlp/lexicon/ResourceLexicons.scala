@@ -30,7 +30,7 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     object Money extends WordLexicon("money")
 
     object Company extends PhraseLexicon("company")
-    object OrgSuffix extends WordLexicon("org-suffix")
+    object OrgSuffix extends PhraseLexicon("org-suffix")
 
     object Month extends WordLexicon("month")
     object Day extends WordLexicon("day")
