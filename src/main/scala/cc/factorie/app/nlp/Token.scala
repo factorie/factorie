@@ -62,7 +62,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
-  def docSubstring = document.string.substring(stringStart, stringEnd)
+  def docSubstring = section.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
   def string: String = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
   /** Return the string contents of this Token, either from its specified attr[C], or if unset, directly as a substring of the Document. */
