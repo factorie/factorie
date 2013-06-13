@@ -1,6 +1,9 @@
 package cc.factorie.app.nlp.morph
 
 import collection.mutable
+import cc.factorie.app.nlp.wordnet.WordNet
+import cc.factorie.app.nlp.lexicon.Lexicon
+import cc.factorie.util.ClasspathURL
 
 /** A simple morphological analyzer, simply indicating if a noun is singular or plural.
     Obviously this supports very limited functionality. More will be added as needed.
@@ -9,12 +12,12 @@ class MorphologicalAnalyzer1(fmap: String => io.Source) {
   def this(name: String) = this(s => scala.io.Source.fromFile(name + s))
   val pluralWords = mutable.HashSet[String]()
   val singularWords = mutable.HashSet[String]()
-  fmap("/noun.exc").getLines().foreach(x => {
+  fmap("morph/en/noun.exc").getLines().foreach(x => {
     val words = x.split(" ")
     pluralWords += words(0)
     singularWords += words(1)
   })
-  singularWords ++= fmap("/noun.txt").getLines().toSeq
+  singularWords ++= fmap("morph/en/noun.txt").getLines().toSeq
 
   //note you can imagine that these following methods would simply be negations of each other.
   //for example, you could have them be precision biased and you could classify things as being in the gray area
@@ -30,7 +33,5 @@ class MorphologicalAnalyzer1(fmap: String => io.Source) {
 
 // TODO Robustify this lookup using cc.factorie.util.InputStreamFromClasspath -akm
 object MorphologicalAnalyzer1 extends MorphologicalAnalyzer1((s:String) => {
-  val res = cc.factorie.app.nlp.lexicon.Lexicon.getClass.getResource("morph/en" + s)
-  assert(res ne null, "To load from a jar the factorie nlp resources jar must be in the classpath")
-  io.Source.fromURL(res)
+  io.Source.fromURL(ClasspathURL.withoutClass(classOf[Lexicon], s))
 })
