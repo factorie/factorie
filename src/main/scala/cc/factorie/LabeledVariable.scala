@@ -118,7 +118,7 @@ trait LabeledMutableDiscreteVarWithTarget[A<:DiscreteValue] extends LabeledVarWi
     @author Andrew McCallum */
 abstract class LabeledDiscreteVariable(targetValue:Int) extends DiscreteVariable(targetValue) with LabeledMutableDiscreteVarWithTarget[DiscreteValue] {
   self =>
-  val target = new DiscreteTarget(targetValue).asInstanceOf[TargetType]
+  val target = new DiscreteTarget(targetValue).asInstanceOf[TargetType] // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
   class DiscreteTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteTargetVar[DiscreteValue] /*with AimerType[LabeledDiscreteVariable]*/ {
     def domain = self.domain
     def aimer = self
@@ -150,7 +150,7 @@ trait LabeledMutableCategoricalVarWithTarget[V<:CategoricalValue[C],C] extends L
     @author Andrew McCallum */
 abstract class LabeledCategoricalVariable[C](theTargetCategory:C) extends CategoricalVariable[C](theTargetCategory) with LabeledMutableCategoricalVarWithTarget[CategoricalValue[C],C] with TargetType[CategoricalVariable[C] with CategoricalTargetVar[CategoricalValue[C],C]] {
   self =>
-  val target = new CategoricalTarget(theTargetCategory).asInstanceOf[TargetType]
+  val target = new CategoricalTarget(theTargetCategory).asInstanceOf[TargetType] // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
   class CategoricalTarget(targetVal:C) extends CategoricalVariable(targetVal) with CategoricalTargetVar[CategoricalValue[C],C] {
     def domain = self.domain
     def aimer = self

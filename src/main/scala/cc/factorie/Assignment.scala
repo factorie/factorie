@@ -34,7 +34,6 @@ trait Assignment {
   def contains(v:Var): Boolean
   def getOrElse[B<:Var](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
-  // TODO Rename this to "set" or "setVariables" -akm
   def setVariables(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
       case v:MutableVar[Any] => v.set(this.apply(v))(d)

@@ -16,6 +16,15 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
+// TODO We should really remove the DiffList implicit argument because adding a Sentence to a Section cannot be undone.
+
+/** A span of Tokens making up a sentence within a Document Section.
+    A Sentence is a special case of a TokenSpan, stored in its Section separately from other TokenSpans.
+    From the Sentence you can get its sequence of Tokens, the Section that contains it, and the Document that contains it.
+    Sentences can be added (in order) to a Section, but not removed from a Section.
+    The index of this Sentence into the sequence of Sentences in the Section is available as 'Sentence.indexInSection'. 
+    The annotation ParseTree is stored on a Sentence.
+    @author Andrew McCallum */
 class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(sec, initialStart, initialLength)(d) {
   def this(sec:Section)(implicit d:DiffList = null) = this(sec, sec.length, 0)
   def this(doc:Document)(implicit d:DiffList = null) = this(doc.asSection)
@@ -25,18 +34,18 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int)(implicit d:Diff
   var _indexInSection: Int = -1
   def indexInSection: Int = _indexInSection
 
-  //def tokens: IndexedSeq[Token] = links
-  def tokenAtCharIndex(charOffset:Int): Token = {
-    require(charOffset >= tokens.head.stringStart && charOffset <= tokens.last.stringEnd)
-    var i = 0 // TODO Implement as faster binary search
-    while (i < this.length && tokens(i).stringStart <= charOffset) {
-      val token = tokens(i)
-      //if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
-      if (token.stringStart <= charOffset && token.stringEnd >= charOffset) return token
-      i += 1
-    }
-    return null
-  }
+// Instead use section.tokens.find(token => token.stringStart <= charOffset && token.stringEnd > charOffset) -akm
+//  def tokenAtCharIndex(charOffset:Int): Token = {
+//    require(charOffset >= tokens.head.stringStart && charOffset <= tokens.last.stringEnd)
+//    var i = 0 // TODO Implement as faster binary search
+//    while (i < this.length && tokens(i).stringStart <= charOffset) {
+//      val token = tokens(i)
+//      //if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
+//      if (token.stringStart <= charOffset && token.stringEnd >= charOffset) return token
+//      i += 1
+//    }
+//    return null
+//  }
   def contains(elem: Token) = tokens.contains(elem)
 
   // Parse attributes

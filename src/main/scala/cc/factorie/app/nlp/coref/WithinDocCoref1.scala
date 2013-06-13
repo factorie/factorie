@@ -12,7 +12,7 @@ import cc.factorie.app.nlp.lexicon
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
 import java.util.concurrent.Callable
-import java.io.File
+import java.io.{File,InputStream,FileInputStream}
 import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 
 /**
@@ -21,7 +21,7 @@ import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
  * Time: 10:07 PM
  */
 
-object WithinDocCoref1 {
+object WithinDocCoref1Helper {
   val properSet = Set("NNP", "NNPS")
   val nounSet = Seq("NN", "NNS")
   val posSet = Seq("POS")
@@ -113,17 +113,19 @@ object WithinDocCoref1 {
     })
     map
   }
+}
 
-  object CorefOptions extends DefaultCmdOptions {
-    val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
-    val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
-    val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
-    val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
-    val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
-    val iterations = new CmdOption("iterations", 2, "INT", "Number of iterations for training")
-    val batchSize = new CmdOption("batch-size", 30, "INT", "Number of documents to tokenize at a time")
-  }
+object WithinDocCoref1Trainer {
   def main(args: Array[String]) {
+    object CorefOptions extends DefaultCmdOptions {
+      val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
+      val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
+      val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
+      val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
+      val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
+      val iterations = new CmdOption("iterations", 2, "INT", "Number of iterations for training")
+      val batchSize = new CmdOption("batch-size", 30, "INT", "Number of documents to tokenize at a time")
+    }
     CorefOptions.parse(args)
     println("Loading data")
     val allTrain = ConllCorefLoader.loadWithParse(CorefOptions.train.value)
@@ -135,13 +137,16 @@ object WithinDocCoref1 {
     val coref = new WithinDocCoref1
     coref.train(trainDocs, testDocs, CorefOptions.iterations.value, CorefOptions.batchSize.value)
     println("Serializing")
-    coref.serialize(CorefOptions.model.value)
+    coref.serialize(new File(CorefOptions.model.value))
   }
 }
 
 
 class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
+  def this(stream:InputStream) = { this (); }
+  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+    
   object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 5e5.toInt }
   // We want to start training before reading all features, so we need to depend only on the domain's max size
   object model extends Parameters { val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize)) }
@@ -187,12 +192,34 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     opt.setWeightsToAverage(model.parameters)
   }
 
+  // Serialization
+  def serialize(file: File): Unit = {
+    if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    serialize(new java.io.FileOutputStream(file))
+  }
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    val dstream = new java.io.DataOutputStream(stream)
+    BinarySerializer.serialize(domain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }
+  def deserialize(stream: java.io.InputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    // Get ready to read sparse evidence weights
+    val dstream = new java.io.DataInputStream(stream)
+    BinarySerializer.deserialize(domain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }
   import cc.factorie.util.CubbieConversions._
-  def serialize(file: String)  { BinarySerializer.serialize(model, domain.dimensionDomain, new File(file)) }
-  def deSerialize(file: String) { BinarySerializer.deserialize(model, domain.dimensionDomain, new File(file)) }
 
   private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) {
-    import WithinDocCoref1._
+    import WithinDocCoref1Helper._
     def parentEntity = mention.attr[Entity]
     def headPos = mention.headToken.posLabel.categoryValue
     def span = mention.span
@@ -229,28 +256,28 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       }
     val gender: Char = {
       if (isProper) {
-        WithinDocCoref1.namGender(mention)
+        WithinDocCoref1Helper.namGender(mention)
       } else if (isPossessive) {
-        val gnam = WithinDocCoref1.namGender(mention)
-        val gnom = WithinDocCoref1.nomGender(mention)
+        val gnam = WithinDocCoref1Helper.namGender(mention)
+        val gnom = WithinDocCoref1Helper.nomGender(mention)
         if (gnam == 'u' && gnom != 'u') gnom else gnam
       } else if (isNoun) {
-        WithinDocCoref1.nomGender(mention)
+        WithinDocCoref1Helper.nomGender(mention)
       } else if (isPRO) {
-        WithinDocCoref1.proGender(mention)
+        WithinDocCoref1Helper.proGender(mention)
       } else {
         'u'
       }
     }
     val number: Char = {
       val fullhead = lowerCasePhrase
-      if (WithinDocCoref1.singPron.contains(fullhead)) {
+      if (WithinDocCoref1Helper.singPron.contains(fullhead)) {
         's'
-      } else if (WithinDocCoref1.pluPron.contains(fullhead)) {
+      } else if (WithinDocCoref1Helper.pluPron.contains(fullhead)) {
         'p'
-      } else if (WithinDocCoref1.singDet.exists(fullhead.startsWith)) {
+      } else if (WithinDocCoref1Helper.singDet.exists(fullhead.startsWith)) {
         's'
-      } else if (WithinDocCoref1.pluDet.exists(fullhead.startsWith)) {
+      } else if (WithinDocCoref1Helper.pluDet.exists(fullhead.startsWith)) {
         'p'
       } else if (isProper) {
         if (!fullhead.contains(" and ")) {
@@ -422,7 +449,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val ceafMEval = new CorefEvaluator.CeafM()
     def docToCallable(doc: Document) = new Callable[(Metric,Metric,Metric,Metric,Metric)] { def call() = {
       process1(doc)
-      val trueMap = WithinDocCoref1.truthEntityMap(doc.attr[MentionList])
+      val trueMap = WithinDocCoref1Helper.truthEntityMap(doc.attr[MentionList])
       val predMap = doc.attr[GenericEntityMap[Mention]]
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
@@ -461,4 +488,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     }
   }
 }
+
+//object WithinDocCoref1 extends WithinDocCoref1(cc.factorie.util.ClasspathURL[WithinDocCoref1](".factorie"))
+
 
