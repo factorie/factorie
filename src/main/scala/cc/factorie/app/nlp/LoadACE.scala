@@ -56,7 +56,10 @@ object LoadACE {
   private val matchTag = "<[A-Za-z=_\"/ ]*>".r
 
   private def makeDoc(sgm: String): Document = {
-    val doc = new Document(matchTag.replaceAllIn(io.Source.fromFile(sgm).mkString, _ => "")).setName(sgm)
+    val source = io.Source.fromFile(sgm)
+    val sgmString = source.mkString
+    source.close()
+    val doc = new Document(matchTag.replaceAllIn(sgmString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
     ClearTokenizer.process(doc)
     ClearSegmenter.process(doc)
@@ -166,7 +169,7 @@ object LoadACE {
         }
         assert(args.size == 2)
         val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
-        if(m.arg1.sentence != m.arg2.sentence) println("sentence doesn't match")
+        if (m.arg1.sentence != m.arg2.sentence) println("sentence doesn't match")
         m.attr += identifiers
         doc.attr[RelationMentions].add(m)(null)
         args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
@@ -175,7 +178,13 @@ object LoadACE {
   }
 
   // drops the first two lines (xml decl, and dtd)
-  private def loadXML(apfFile: String): NodeSeq = XML.loadString(io.Source.fromFile(apfFile).getLines().drop(2).mkString("\n"))
+  private def loadXML(apfFile: String): NodeSeq = {
+    val source = io.Source.fromFile(apfFile)
+    val apfLines = source.getLines()
+    source.close()
+
+    XML.loadString(apfLines.drop(2).mkString("\n"))
+  }
 
   // TODO: consider renaming this to fromFile to match the API for other loaders.
   // But if renamed, how can the user know that apf.xml is required (instead of alf.xml or .xml)?
