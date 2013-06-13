@@ -128,7 +128,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
 
-    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).toSeq)
+    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(_.attr[MentionType] ne null).toSeq)
 
     doc
   }

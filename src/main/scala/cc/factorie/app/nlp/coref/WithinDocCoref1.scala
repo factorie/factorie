@@ -4,11 +4,12 @@ import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
 import cc.factorie.optimize._
 import cc.factorie.la.{Tensor1, DenseTensor1}
 import cc.factorie.app.strings.Stopwords
-import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.{Document,Token}
 import cc.factorie.app.nlp.mention.{MentionList, Mention, Entity}
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import cc.factorie.app.nlp.lexicon
+import cc.factorie.app.nlp.mention.MentionType
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
 import java.util.concurrent.Callable
@@ -153,6 +154,15 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
 
   def prereqAttrs = Seq(classOf[PTBPosLabel], classOf[MentionList]) // how to specify that we need entity types?
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
+  override def tokenAnnotationString(token:Token): String = {
+    val emap = token.document.attr[GenericEntityMap[Mention]]
+    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"@"+emap.getEntity(m)).mkString(", ")
+      case _ => "_"
+    }
+  }
+  
+  
 
   def process1(document: Document) = {
     val facMents = document.attr[MentionList].toSeq
@@ -244,7 +254,8 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val headPhraseTrim: String = span.phrase.trim
     val nonDeterminerWords: Seq[String] =
       span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
-    val predictEntityType: String = mention.attr[EntityType].categoryValue
+    // TODO David: Why is attr[EntityType] sometimes null here? -akm  
+    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "UKN" else et.categoryValue }
     val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
     val capitalization: Char = {
@@ -445,18 +456,20 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
 
   private def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
     import CorefEvaluator.Metric
-    val ceafEEval = new CorefEvaluator.CeafE()
-    val ceafMEval = new CorefEvaluator.CeafM()
+    // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
+    //val ceafEEval = new CorefEvaluator.CeafE()
+    //val ceafMEval = new CorefEvaluator.CeafM()
     def docToCallable(doc: Document) = new Callable[(Metric,Metric,Metric,Metric,Metric)] { def call() = {
       process1(doc)
       val trueMap = WithinDocCoref1Helper.truthEntityMap(doc.attr[MentionList])
       val predMap = doc.attr[GenericEntityMap[Mention]]
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      val ce = ceafEEval.evaluate(predMap, trueMap)
-      val cm = ceafMEval.evaluate(predMap, trueMap)
+      //val ce = ceafEEval.evaluate(predMap, trueMap)
+      //val cm = ceafMEval.evaluate(predMap, trueMap)
       val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
-      (b3,muc,ce,cm,bl)
+      //(b3,muc,ce,cm,bl)
+      (b3,muc,new Metric,new Metric,bl)
     }}
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     try {
@@ -489,6 +502,6 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   }
 }
 
-//object WithinDocCoref1 extends WithinDocCoref1(cc.factorie.util.ClasspathURL[WithinDocCoref1](".factorie"))
+object WithinDocCoref1 extends WithinDocCoref1(cc.factorie.util.ClasspathURL[WithinDocCoref1](".factorie"))
 
 

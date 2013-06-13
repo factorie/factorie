@@ -26,7 +26,7 @@ import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
 
 
 class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
-  def this(url:java.net.URL) = { this(); deserialize(url.openConnection().getInputStream) }
+  def this(url:java.net.URL) = { this(true); deserialize(url.openConnection().getInputStream) }
 
   class ParserStack extends ProtectedIntArrayBuffer {
     def push(i: Int) = this._append(i)
@@ -177,6 +177,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   
   // Serialization
   def serialize(filename: String): Unit = {
+    println("DepParser1 serializing to "+filename)
     val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
     serialize(new java.io.FileOutputStream(file))
   }
@@ -317,8 +318,10 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
       println("Training LAS = "+ ParserEval.calcLas(trainSentences.map(_.attr[ParseTree])))
       println(" Testing LAS = "+ ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
       println()
-      println("Saving model...")
-      if (name != "") serialize(name + "-iter-"+iter)
+      if (name != null && name != "") {
+        println("Saving intermediate model...")
+        serialize(name + "-iter-"+iter)
+      }
 
       //opt.unSetWeightsToAverage(model.weightsSet)
     }
@@ -339,7 +342,7 @@ class DepParser1(val useLabels: Boolean = true) extends DocumentAnnotator {
   }
 }
 
-object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL(classOf[DepParser1], ".factorie"))
+object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1](".factorie"))
 
 
 // Driver for training

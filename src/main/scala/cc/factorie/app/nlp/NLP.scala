@@ -2,6 +2,7 @@ package cc.factorie.app.nlp
 
 import java.io._
 import cc.factorie.util.ClasspathURL
+import cc.factorie.app.nlp.parse._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
 
 /** A command-line driver for DocumentAnnotators.
@@ -18,17 +19,19 @@ object NLP {
       val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding for reading document text, such as UTF-8")
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
       // TODO All these options should be replaced by something that will interpret object construction code. -akm
-      val token = new CmdOption("token", null, null, "Segment Document into Tokens but not Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearTokenizer }
-      val sentence = new CmdOption("sentence", null, null, "Segment Document into Tokens and Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearSegmenter }
-      val tnorm = new CmdOption("tnorm", null, null, "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
+      val token = new CmdOption("token", null, "", "Segment Document into Tokens but not Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearTokenizer }
+      val sentence = new CmdOption("sentence", null, "", "Segment Document into Tokens and Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearSegmenter }
+      val tnorm = new CmdOption("tnorm", null, "", "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
       val pos1 = new CmdOption("pos1", ClasspathURL[pos.POS1]("-WSJ.factorie").toString, "URL", "Annotate POS") { override def invoke = { System.setProperty(classOf[pos.POS1].getName, value); annotators += cc.factorie.app.nlp.pos.POS1 } }
       val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma using WordNet's lemmatizer.") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
-      val npchunk1 = new CmdOption("mention1", null, null, "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.NPChunker1 }
-      val mention2 = new CmdOption("mention2", null, null, "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.ParseBasedMentionFinding }
-      val ner1 = new CmdOption("ner1", ClasspathURL[ner.NER1](".factorie").toString, "URL", "Annotate CoNLL-2003 NER") { override def invoke = { System.setProperty(classOf[ner.NER1].getName, value); annotators += new cc.factorie.app.nlp.ner.NER1(ClasspathURL(value)) } }
+      val npchunk1 = new CmdOption("mention1", null, "", "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.NPChunker1 }
+      val mention2 = new CmdOption("mention2", null, "", "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.ParseBasedMentionFinding }
+      val ner1 = new CmdOption("ner1", ClasspathURL[ner.NER1](".factorie").toString, "URL", "Annotate CoNLL-2003 NER") { override def invoke = { System.setProperty(classOf[ner.NER1].getName, value); annotators += cc.factorie.app.nlp.ner.NER1 } }
       val ner2 = new CmdOption("ner2", "classpath:cc/factorie/app/nlp/ner/NER2.factorie", "URL", "Annotate Ontonotes NER") { override def invoke = annotators += new cc.factorie.app.nlp.ner.NER2(ClasspathURL(value)) }
-      //val parser1 = new CmdOption("parser1", "classpath:cc/factorie/app/nlp/parse/DepParser1.factorie", "URL", "Annotate dependency parse with simple model.") { override def invoke = annotators += new cc.factorie.app.nlp.parse.DepParser1(ClasspathURL(value)) }
-      val parser2 = new CmdOption("parser2", ClasspathURL[cc.factorie.app.nlp.parse.DepParser2](".factorie").toString, "URL", "Annotate dependency parse with a shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[cc.factorie.app.nlp.parse.DepParser2].getName, value); annotators += new cc.factorie.app.nlp.parse.DepParser2(ClasspathURL(value)) } }
+      //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
+      val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { annotators += new cc.factorie.app.nlp.parse.DepParser1(ClasspathURL("classpath:cc/factorie/app/nlp/parse/DepParser1.factorie")) } }
+      val parser2 = new CmdOption("parser2", ClasspathURL[DepParser2](".factorie").toString, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser2].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser2 } }
+      val coref1 = new CmdOption("coref1", ClasspathURL[coref.WithinDocCoref1](".factorie").toString, "URL", "Annotate within-document noun mention coreference") { override def invoke = { System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
 
     }
     opts.parse(args)
