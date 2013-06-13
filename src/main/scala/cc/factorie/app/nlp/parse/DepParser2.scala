@@ -91,19 +91,17 @@ class DepParser2 extends DocumentAnnotator {
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0)
     featuresDomain.freeze()
     println("DepParser2 #features " + featuresDomain.dimensionDomain.size)
-    trainDecisions(trainingVars, trainSentences, testSentences, l1Factor, l2Factor)
+    val numTrainSentences = trainSentences.size
+    val optimizer = new AdaGradRDA(1.0, 0.1, l1Factor / numTrainSentences, l2Factor / numTrainSentences)
+    trainDecisions(trainingVars, optimizer, trainSentences, testSentences)
     trainingVars = null // Allow them to be GC'ed
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + (i+1))
-      trainDecisions(generateDecisions(trainSentences, ParserConstants.BOOSTING), trainSentences, testSentences, l1Factor, l2Factor)
+      trainDecisions(generateDecisions(trainSentences, ParserConstants.BOOSTING), optimizer, trainSentences, testSentences)
     }
   }
   
-  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], l1Factor:Double = 0.00001, l2Factor:Double = 0.00001): Unit = {
-    val numTrainSentences = trainSentences.size
-    val l1 = l1Factor / numTrainSentences
-    val l2 = l2Factor / numTrainSentences
-    val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence]): Unit = {
     val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
     val examples = trainDecisions.map(v => new LinearMultiClassExample(model.evidence,
       v.features.value.asInstanceOf[Tensor1],
