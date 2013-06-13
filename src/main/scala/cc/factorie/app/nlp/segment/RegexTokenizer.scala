@@ -140,7 +140,7 @@ gal"""
   
   val contractions = "'[tT]|'[lL]+|'[sS]|'[mM]|'re|'RE|'ve|'VE" // this isn't working as expected
   val abbrevs = Seq(month, state, honorific, place, org, abbrev).flatMap(_.split("\n").map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
-  println("RegexTokenizerHelper "+abbrevs)
+  //println("RegexTokenizerHelper "+abbrevs)
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*" // A.de, A.A.A.I, etc.
   val ordinals = "[0-9]{1,2}[sthnrd]+[\\-\\p{L}]+" // the second part is for 20th-century
   val numerics = "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/,\\+\\=%]" // is there a better way to say, "doesn't end in '.'"?
@@ -157,6 +157,6 @@ gal"""
     
   val tokenRegexString = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, finalPunc, finalPunc2, quotes, symbols, words, briefDashedWords, dashedWords, combo).mkString("|")
   val tokenRegex = ("(?i)"+tokenRegexString).r // The (?i) makes it case insensitive
-  println("RegexTokenizerHelper "+tokenRegex)
+  //println("RegexTokenizerHelper "+tokenRegex)
 
 }
