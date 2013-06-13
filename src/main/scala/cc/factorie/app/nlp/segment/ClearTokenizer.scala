@@ -84,7 +84,7 @@ object TokenizerHelper {
   def addTokensToDoc(tokens: Seq[ClearToken], section: Section): Unit = {
     var offset = 0
     for (ct <- tokens) {
-      val substrStart = section.string.indexOf(ct.text, offset)
+      val substrStart = section.string.indexOf(ct.text, offset) + section.stringStart
       val substrEnd = substrStart + ct.text.length
       new Token(section, substrStart, substrEnd)
       offset = substrEnd
