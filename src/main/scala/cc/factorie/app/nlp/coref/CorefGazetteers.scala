@@ -49,31 +49,31 @@ class CorefGazetteers(lexDir: String) {
   loadInto(wikiLexHash, CorefGazetteers.wikiLexiconsToLoad, "wikipedia/")
 
   //these are things  used elsewhere in the coref code
-  val honors =  lexHash("person-honorific")
-  val cities = lexHash("city")
-  val countries = lexHash("country")
-  val lastNames = lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  ++ wikiLexHash("person").map(x => x.split(" ").last)
-  val maleFirstNames = censusHash("person-first-male")
-  val femaleFirstNames = censusHash("person-first-female")
+  val honors =  lexHash("person-honorific").toSet
+  val cities = lexHash("city").toSet
+  val countries = lexHash("country").toSet
+  val lastNames = (lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  ++ wikiLexHash("person").map(x => x.split(" ").last)).toSet
+  val maleFirstNames = censusHash("person-first-male").toSet
+  val femaleFirstNames = censusHash("person-first-female") .toSet
 
-  val sayWords = lexHash("say")
-  val orgClosings = lexHash("org-suffix")
-  val demonyms = lexHash("demonyms")
+  val sayWords = lexHash("say").toSet
+  val orgClosings = lexHash("org-suffix").toSet
+  val demonyms = lexHash("demonyms").toSet
   val demonymMap = demonyms.flatMap(d => {
       val a = d.trim.split("\t")
       a.map(_ -> a.head)
     }).toMap
 
   //these are things used in entity type classification
-  val firstNames = maleFirstNames ++ femaleFirstNames ++ wikiLexHash("person").map(_.split(" ").head)
-  val events =  wikiLexHash("events") ++ wikiLexHash("battles") ++ wikiLexHash("competition")
-  val placeWords = cities ++ lexHash("country") ++ lexHash("continents") ++ lexHash("us-state") ++ lexHash("place-suffix")  ++ wikiLexHash("location")
-  val orgWords = lexHash("company") ++ lexHash("org-suffix") ++ wikiLexHash("organization")   ++ wikiLexHash("business")
-  val timeWords = lexHash("day") ++ lexHash("month")
-  val personFirstWords = firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") ++ wikiLexHash("person").map(_.split(" ").last)
-  val personLastWords = lastNames  ++ firstNames ++ honors
-  val personFullNames = wikiLexHash("person")
-  val properWords = wikiLexHash("book") ++ wikiLexHash("battles") ++ wikiLexHash("man_made_thing") ++ wikiLexHash("film") ++ wikiLexHash("songs")
+  val firstNames = (maleFirstNames ++ femaleFirstNames ++ wikiLexHash("person").map(_.split(" ").head)).toSet
+  val events =  (wikiLexHash("events") ++ wikiLexHash("battles") ++ wikiLexHash("competition")).toSet
+  val placeWords = (cities ++ lexHash("country") ++ lexHash("continents") ++ lexHash("us-state") ++ lexHash("place-suffix")  ++ wikiLexHash("location") ).toSet
+  val orgWords = (lexHash("company") ++ lexHash("org-suffix") ++ wikiLexHash("organization")   ++ wikiLexHash("business")  ).toSet
+  val timeWords = (lexHash("day") ++ lexHash("month") ).toSet
+  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") ++ wikiLexHash("person").map(_.split(" ").last)).toSet
+  val personLastWords = (lastNames  ++ firstNames ++ honors ).toSet
+  val personFullNames = (wikiLexHash("person") ).toSet
+  val properWords = (wikiLexHash("book") ++ wikiLexHash("battles") ++ wikiLexHash("man_made_thing") ++ wikiLexHash("film") ++ wikiLexHash("songs") ).toSet
 
   def hasSpeakWord(m: Mention, size: Int): Boolean = {
     val until = m.span.head.position

@@ -180,10 +180,9 @@ object LoadACE {
   // drops the first two lines (xml decl, and dtd)
   private def loadXML(apfFile: String): NodeSeq = {
     val source = io.Source.fromFile(apfFile)
-    val apfLines = source.getLines()
+    val result = XML.loadString(source.getLines().drop(2).mkString("\n"))
     source.close()
-
-    XML.loadString(apfLines.drop(2).mkString("\n"))
+    result
   }
 
   // TODO: consider renaming this to fromFile to match the API for other loaders.
