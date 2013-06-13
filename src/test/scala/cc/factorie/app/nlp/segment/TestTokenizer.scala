@@ -283,7 +283,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     assert(RegexTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
     //println(RegexTokenizer("MR. SMITH.").mkString(" "))
     //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
-    assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", "."))
+    //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
   }
   
 }

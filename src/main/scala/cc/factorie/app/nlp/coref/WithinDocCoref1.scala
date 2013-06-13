@@ -114,17 +114,6 @@ object WithinDocCoref1Helper {
     })
     map
   }
-
-  def prettyPrintEntityMap(map: GenericEntityMap[Mention]) {
-    val entityToNumMap = collection.mutable.HashMap[Entity, Int]()
-    for ((e,i) <- map.getEntities.zipWithIndex) {
-      println(s"Printing entity $i")
-      for (m <- e) {
-        val trueEnt = entityToNumMap.getOrElseUpdate(m.attr[Entity], entityToNumMap.size)
-        println(s"  mention phrase: '${m.span.phrase}'  position: ${m.headTokenIndex}  true entity number: $trueEnt")
-      }
-    }
-  }
 }
 
 object WithinDocCoref1Trainer {
@@ -182,7 +171,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
       val bestCand = processOneMention(ments, i)
-      println(s"WithinDocCoref1.process1:  ${ments(i).span.take(2).map(_.string).mkString(" ")} Head: ${ments(i).mention.headToken} POS: ${ments(i).mention.headToken.posLabel.categoryValue} isPRO: ${ments(i).isPRO}  Best pronoun candidate ${bestCand}")
+      println(s"WithinDocCoref1.process1:  ${ments(i).span.take(5).map(_.string).mkString(" ")}  Head:${ments(i).mention.headToken.string} POS:${ments(i).mention.headToken.posLabel.categoryValue} isPRO:${ments(i).isPRO}  Best pronoun candidate ${bestCand}")
       if (bestCand > -1) {
         out.addCoreferentPair(ments(i).mention, ments(bestCand).mention)
       }
