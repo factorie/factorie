@@ -14,6 +14,8 @@ Packaged POS, NER, DepParser, Coref [Andrew]
 Consider removing the implicit DiffList from the arguments to the TokenSpan constructor [Andrew]
 Consider again making Mentions inherit from TokenSpan, with the option to simply initialize from a TokenSpan constructor argument [Andrew]
 Rename ClearTokenizer and ClearSegmenter [Andrew]
+Make DocumentAnnotator take lazy values [Andrew]
+Standardize NER2 [Andrew]
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]

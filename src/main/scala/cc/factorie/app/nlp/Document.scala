@@ -116,8 +116,8 @@ class Document extends DocumentSubstring with Attr {
   /** An efficient way to get the total number of Spans (not including Sentences) in the canonical Sections of this Document. */
   def spanCount: Int = if (sections.length == 0) sections.head.spans.length else sections.foldLeft(0)((result, section) => result + section.spans.length)
     
-  /** Keeping records of which DocumentAnnotators have been run on this document, producing which annotations.
-      The collection of DocumentAnnotators that have been run on this Document.  
+  /** The collection of DocumentAnnotators that have been run on this Document,
+      For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.  
       A Map from the annotation class to the DocumentAnnotator that produced it.
       Note that this map records annotations placed not just on the Document itself, but also its constituents,
       such as TokenSpan, Token, Sentence, etc. */

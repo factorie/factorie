@@ -62,7 +62,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
-  def docSubstring = section.string.substring(stringStart, stringEnd)
+  def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or, if unset, directly as a substring of the Document */
   def string: String = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
   /** Return the string contents of this Token, either from its specified attr[C], or if unset, directly as a substring of the Document. */
@@ -75,7 +75,9 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
   /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
   def positionInSection: Int = position
-  def positionInSentence = if (_sentence eq null) -1 else position - sentence.start
+  // TODO The ClearSegmenter should set Token._sentence, so the "sentence" method doesn't have to search for it. -akm
+  def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
+  //def positionInSentence = if (_sentence eq null) throw new Error("Token(%s)@%d not in a Sentence.".format(string, position)) else position - sentence.start // TODO Consider throwing an Error here? -akm
   @deprecated("Use positionInSentence") def sentencePosition = positionInSentence
   
   // Common attributes, will return null if not present
