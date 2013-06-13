@@ -64,7 +64,7 @@ trait DocumentSubstring {
     @author Andrew McCallum */
 class Document extends DocumentSubstring with Attr {
   def this(stringContents:String) = { this(); _string = stringContents }
-  def name: String = this.attr[DocumentName].string
+  def name: String = { val dn = this.attr[DocumentName]; if (dn ne null) dn.string else null }
   /** Set DocumentName attr on Document.  If String argument is null, remove DocumentName attr if present. */
   def setName(s:String): this.type = { if (s ne null) this.attr += DocumentName(s) else this.attr.remove[DocumentName]; this }
   
