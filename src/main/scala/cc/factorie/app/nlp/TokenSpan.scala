@@ -15,7 +15,9 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 
-/** A sub-sequence of Tokens within a Document. */
+// TODO Consider removing the implicit DiffList from the arguments to the TokenSpan constructor.
+
+/** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Section,Token](sec, initialStart, initialLength) with Attr {
   final def section = chain  // Just a convenient alias
   final def document = chain.document

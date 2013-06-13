@@ -44,6 +44,7 @@ class DiscreteTensorDomainCubbie extends Cubbie {
 }
 
 // TODO Consider renaming this to DiscreteVectorVar or DiscreteTensorVar1? -akm
+// No, for now, saying "Discrete" and "Categorical" will be enough to indicate that it does not have higher rank.
 
 /** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
 trait DiscreteTensorVar extends TypedTensorVar[Tensor1] {
