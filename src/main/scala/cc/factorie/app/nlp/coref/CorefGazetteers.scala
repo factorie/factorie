@@ -2,6 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import java.io.File
 import cc.factorie.app.nlp.mention.Mention
+import collection.mutable
 
 /**
  * User: apassos
@@ -10,18 +11,19 @@ import cc.factorie.app.nlp.mention.Mention
  */
 
 class CorefGazetteers(lexDir: String) {
-  private def load(name: String): Set[String] = {
+  private def load(name: String): mutable.Set[String] = {
     if (lexDir eq null) {
       //println("class is " + cc.factorie.app.nlp.Lexicon.getClass.getName + " resource is " + name)
       val res = cc.factorie.app.nlp.lexicon.Lexicon.getClass.getResource(name)
       assert(res ne null, "To load from a jar the factorie nlp resources jar must be in the classpath")
       val src = io.Source.fromURL(res)
       assert(src ne null)
-      src.getLines().toSet
-    } else
-      io.Source.fromFile(new File(lexDir + name)).getLines().toSet
+      new mutable.LinkedHashSet[String]  ++= src.getLines()
+    } else {
+      new mutable.LinkedHashSet[String]  ++= io.Source.fromFile(new File(lexDir + name)).getLines()
+    }
   }
-  def loadInto(map: collection.mutable.HashMap[String,Set[String]], names: Seq[String], dir: String) {
+  def loadInto(map: collection.mutable.HashMap[String,mutable.Set[String]], names: Seq[String], dir: String) {
     names.foreach(lexName => {
       val name = normalizeName(lexName)
       if(!map.contains(name))
@@ -37,13 +39,13 @@ class CorefGazetteers(lexDir: String) {
   }
 
   //make a big hashmap from filename to a set of the strings in that file
-  val lexHash = collection.mutable.HashMap[String,Set[String]]()
+  val lexHash = collection.mutable.HashMap[String,mutable.Set[String]]()
   loadInto(lexHash, CorefGazetteers.ieslLexiconsToLoad, "iesl/")
 
-  val censusHash = collection.mutable.HashMap[String,Set[String]]()
+  val censusHash = collection.mutable.HashMap[String,mutable.Set[String]]()
   loadInto(censusHash, CorefGazetteers.censusLexiconsToLoad, "uscensus/")
 
-  val wikiLexHash = collection.mutable.HashMap[String,Set[String]]()
+  val wikiLexHash = collection.mutable.HashMap[String,mutable.Set[String]]()
   loadInto(wikiLexHash, CorefGazetteers.wikiLexiconsToLoad, "wikipedia/")
 
   //these are things  used elsewhere in the coref code
