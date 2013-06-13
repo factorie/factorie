@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.wordnet
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
+import cc.factorie.util.ClasspathURL
 
 class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
   def this(wordNetDir:java.io.File) = this((string:String) => new java.io.FileInputStream(new java.io.File(wordNetDir, string)))
@@ -194,7 +195,7 @@ class Synset(val id: String, val hyps: Set[String], val ants: Set[String], wn: W
   }
 }
 
-object WordNet extends WordNet(cc.factorie.util.InputStreamFromClasspath(classOf[WordNet]))
+object WordNet extends WordNet(s => ClasspathURL.withoutClass(classOf[WordNet], s).openConnection().getInputStream)
 
 object WordNetTest {
   

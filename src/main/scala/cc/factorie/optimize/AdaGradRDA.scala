@@ -22,6 +22,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
   def initializeWeights(weights: WeightsSet): Unit = {
     for (key <- weights.keys) {
       key.value match {
+        case t: AdaGradRDATensor => println("Warning: creating two AdaGradRDA optimizers on the same tensors. Reusing old one...")
         case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t.length, delta, rate, l1, l2)
         case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t.dim1, t.dim2, delta, rate, l1, l2)
         case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t.dim1, t.dim2, t.dim3, delta, rate, l1, l2)

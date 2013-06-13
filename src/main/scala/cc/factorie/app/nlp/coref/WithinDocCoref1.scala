@@ -114,6 +114,17 @@ object WithinDocCoref1Helper {
     })
     map
   }
+
+  def prettyPrintEntityMap(map: GenericEntityMap[Mention]) {
+    val entityToNumMap = collection.mutable.HashMap[Entity, Int]()
+    for ((e,i) <- map.getEntities.zipWithIndex) {
+      println(s"Printing entity $i")
+      for (m <- e) {
+        val trueEnt = entityToNumMap.getOrElseUpdate(m.attr[Entity], entityToNumMap.size)
+        println(s"  mention phrase: '${m.span.phrase}'  position: ${m.headTokenIndex}  true entity number: $trueEnt")
+      }
+    }
+  }
 }
 
 object WithinDocCoref1Trainer {
