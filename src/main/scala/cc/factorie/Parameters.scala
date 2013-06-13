@@ -103,7 +103,7 @@ trait TensorSet {
   def oneNorm: Double = tensors.map(_.oneNorm).sum
   def twoNorm: Double = math.sqrt(twoNormSquared)
   def twoNormSquared: Double = tensors.map(_.twoNormSquared).sum
-  def different(w: TensorSet, tolerance: Double): Boolean = keys.exists(k => this(k).different(w(k), tolerance))
+  def different(w: TensorSet, tolerance: Double): Boolean = tensors.zip(w.tensors).exists(pair => pair._1.different(pair._2, tolerance)) //k => this(k).different(w(k), tolerance))
   def containsNaN(): Boolean = tensors.exists(_.containsNaN)
   def :=(other: TensorSet): Unit = other.keys.foreach(k => this(k) := other(k))
   def *=(other: Double): Unit = keys.foreach(k => this(k) *= other)
