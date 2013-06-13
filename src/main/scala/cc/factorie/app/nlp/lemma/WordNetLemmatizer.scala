@@ -3,6 +3,8 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PTBPosLabel,PTBPosDomain}
 import java.io.{FileInputStream,InputStream}
+import cc.factorie.util.ClasspathURL
+import cc.factorie.app.nlp.wordnet.WordNet
 
 // TODO Rather than reading the WordNet files here, I think this object should simply depend on newly-written methods in wordnet.WordNet. -akm 
 
@@ -96,7 +98,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   }
 }
 
-object WordNetLemmatizer extends WordNetLemmatizer(cc.factorie.util.InputStreamFromClasspath(classOf[wordnet.WordNet]))
+object WordNetLemmatizer extends WordNetLemmatizer(string => ClasspathURL.withoutClass(classOf[WordNet], string).openConnection().getInputStream)
 
 //string => {
 //import java.io.File
