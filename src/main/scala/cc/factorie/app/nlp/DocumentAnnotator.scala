@@ -78,5 +78,6 @@ object DefaultDocumentAnnotatorMap extends DocumentAnnotatorLazyMap {
   this.update(classOf[lemma.PorterTokenLemma], ()=>lemma.PorterLemmatizer)
   this.update(classOf[lemma.LowercaseTokenLemma], ()=>lemma.LowercaseLemmatizer)
   this.update(classOf[ner.BilouConllNerLabel], ()=>ner.NER1)
+  this.update(classOf[mention.MentionList], ()=>mention.ParseBasedMentionFinding)
   this.update(classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]], ()=>coref.WithinDocCoref1)
 }
