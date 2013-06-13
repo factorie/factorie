@@ -145,10 +145,10 @@ object WithinDocCoref1Trainer {
 
 class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
-  def this(stream:InputStream) = { this (); }
+  def this(stream:InputStream) = { this (); deserialize(stream) }
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
     
-  object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 5e5.toInt }
+  object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 2e6.toInt; dimensionDomain.growPastMaxSize = true }
   // We want to start training before reading all features, so we need to depend only on the domain's max size
   object model extends Parameters { val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize)) }
 
@@ -171,6 +171,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
       val bestCand = processOneMention(ments, i)
+      println(s"WithinDocCoref1.process1:  ${ments(i).span.take(2).map(_.string).mkString(" ")} Head: ${ments(i).mention.headToken} POS: ${ments(i).mention.headToken.posLabel.categoryValue} isPRO: ${ments(i).isPRO}  Best pronoun candidate ${bestCand}")
       if (bestCand > -1) {
         out.addCoreferentPair(ments(i).mention, ments(bestCand).mention)
       }
@@ -178,6 +179,20 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     document.attr += out
     document
   }
+  
+  def entityMapString(map: GenericEntityMap[Mention]): String = {
+    val sb = new StringBuffer
+    val entityToNumMap = collection.mutable.HashMap[Entity, Int]()
+    for ((e,i) <- map.getEntities.zipWithIndex) {
+      sb append (s"Entity $i\n")
+      for (m <- e) {
+        val trueEnt = entityToNumMap.getOrElseUpdate(m.attr[Entity], entityToNumMap.size)
+        sb append (s"  mention phrase: '${m.span.phrase}'  headindex: ${m.headTokenIndex}  headpos: ${m.headToken.posLabel.categoryValue} true entity number: $trueEnt\n")
+      }
+    }
+    sb.toString
+  }
+
 
   def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
     val rng = new scala.util.Random(0)
@@ -197,6 +212,10 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       // we don't evaluate on the whole training set because it feels wasteful, still it's nice to see some results
       evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
       evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
+//      for (doc <- testDocs.take(3)) {
+//        println(s"Document ${doc.name}\n"+entityMapString(doc.attr[GenericEntityMap[Mention]]))
+//        evaluate("TEST  MICRO", Seq(doc), batchSize, nThreads)
+//      }
       //opt.unSetWeightsToAverage(model.parameters)
     }
     //opt.setWeightsToAverage(model.parameters)
@@ -402,11 +421,11 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     var bestScore = Double.MinValue
     var j = mentionIndex - 1
     var numPositivePairs = 0
-    while (j >= 0 && (numPositivePairs < 100)) {
+    while (j >= 0 && (numPositivePairs < 100)) { // TODO Consider < 2 instead
       val m2 = orderedMentions(j)
       if (!m2.isPRO || m1.isPRO) { // we try to link if either the later mention is a pronoun or the earlier one isn't
-        val score = model.weights.value dot getFeatures(orderedMentions(mentionIndex), orderedMentions(j)).value
-        if (score > 0.0) {
+        val score = if (!m1.nounWords.isEmpty && m1.nounWords == m2.nounWords) Double.PositiveInfinity else model.weights.value dot getFeatures(orderedMentions(mentionIndex), orderedMentions(j)).value
+        if (score > 0.0 || m1.isPRO) {
           numPositivePairs += 1
           if (bestScore <= score) {
             bestCand = j
@@ -454,7 +473,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     }
   }
 
-  private def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
+  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
     import CorefEvaluator.Metric
     // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
     //val ceafEEval = new CorefEvaluator.CeafE()
