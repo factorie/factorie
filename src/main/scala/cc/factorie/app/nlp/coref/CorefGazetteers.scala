@@ -88,7 +88,7 @@ class CorefGazetteers(lexDir: String) {
       io.Source.fromURL(res)
     }
     new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(fmap)
-  } else new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(lexDir + "/morph/en/")
+  } else new cc.factorie.app.nlp.morph.MorphologicalAnalyzer1(lexDir)
   def isPlural(s: String): Boolean   = morph.isPlural(s)
   def isSingular(s: String): Boolean  = morph.isSingular(s)
 }
