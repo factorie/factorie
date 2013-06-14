@@ -238,7 +238,7 @@ class POS1 extends DocumentAnnotator {
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     for (doc <- (trainDocs ++ testDocs)) {
-      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process(doc)
+      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process1(doc)
     }
     WordData.preProcess(trainDocs)
     val sentences = trainDocs.flatMap(_.sentences)
@@ -307,8 +307,9 @@ object POS1Trainer {
     } else if (opts.runText.wasInvoked) {
       val pos = new POS1
       pos.deserialize(new File(opts.modelFile.value))
+      implicit val m = new DocumentAnnotatorLazyMap
       val doc = cc.factorie.app.nlp.LoadPlainText(cc.factorie.app.nlp.segment.ClearSegmenter).fromFile(new java.io.File(opts.runText.value)).head
-      pos.process(doc)
+      pos.process1(doc)
       println(doc.owplString(List((t:Token)=>t.attr[PTBPosLabel].categoryValue)))
     }
   }

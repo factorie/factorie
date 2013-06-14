@@ -165,6 +165,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   
 
   def process1(document: Document) = {
+    //println("foo")
     val facMents = document.attr[MentionList].toSeq
     val ments = facMents.map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection))
     val out = new GenericEntityMap[Mention]

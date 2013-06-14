@@ -61,8 +61,8 @@ object LoadACE {
     source.close()
     val doc = new Document(matchTag.replaceAllIn(sgmString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
-    ClearTokenizer.process(doc)
-    ClearSegmenter.process(doc)
+    ClearTokenizer.process1(doc)
+    ClearSegmenter.process1(doc)
 
     // trailing tokens should be in a sentence
     val end = doc.asSection.sentences.last.end

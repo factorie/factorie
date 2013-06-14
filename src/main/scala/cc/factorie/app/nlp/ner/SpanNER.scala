@@ -17,24 +17,11 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.ner._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DefaultCmdOptions}
 import java.io.File
 
-class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
-  def domain = ConllNerDomain
-}
 
-// TODO this shouldn't extend hcoref Mention
-// TODO Consider containing a Span rather than inheriting from Span.
-// TODO Consider making this an NERMention, inheriting from NounMention
-class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(sec, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
-  val label = new Conll2003SpanNerLabel(this, labelString)
-  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
-    (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
-    (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
-  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
-}
+
 
 object SpanNerFeaturesDomain extends CategoricalTensorDomain[String]
 class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -239,7 +226,7 @@ class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
     if (false && proposal.diff.size > 0) {
       val spanDiffs = proposal.diff.filter(d => d.variable match { case s:NerSpan => s.present; case _ => false })
           spanDiffs.foreach(_.variable match {
-          case span:NerSpan => if (span.present) { if (verbose) println("RECURSIVE PROPOSAL"); this.process(span.last) }
+          case span:NerSpan => if (span.present) { if (verbose) println("RECURSIVE PROPOSAL"); this.process1(span.last) }
           case _ => {}
         })
     }
@@ -318,7 +305,8 @@ class SpanNER {
       for (file <- files(new File(dirname))) {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
-        documents += cc.factorie.app.nlp.segment.ClearTokenizer.process(LoadNYTimesXML.fromFile(file).head)
+        implicit val m = new DocumentAnnotatorLazyMap
+        documents += cc.factorie.app.nlp.segment.ClearTokenizer.process1(LoadNYTimesXML.fromFile(file).head)
         println("  "+documents.last.asSection.length)
         documents.last.asSection.foreach(t=> print(t.string+" ")); println
       }

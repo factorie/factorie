@@ -24,14 +24,30 @@ abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(
   def cubbieSlotValue = categoryValue
 }
 
+@deprecated("Use ConllNerLabel")
+abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
+
+class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
+  def domain = ConllNerDomain
+}
+// TODO this shouldn't extend hcoref Mention
+// TODO Consider containing a Span rather than inheriting from Span.
+// TODO Consider making this an NERMention, inheriting from NounMention
+class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(sec, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
+  val label = new Conll2003SpanNerLabel(this, labelString)
+  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
+    (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) &&
+    (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
+  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+}
+
+
 class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")
 }
 
 @deprecated("Use BioConllNerLabel")
 abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
-@deprecated("Use ConllNerLabel")
-abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
 
 
 object ConllNerDomain extends CategoricalDomain[String] {

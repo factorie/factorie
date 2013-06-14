@@ -60,6 +60,7 @@ object NLP {
       assert(in ne null)
       var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
+      import Implicits.defaultDocumentAnnotatorMap
       for (processor <- annotators)
         document = processor.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))

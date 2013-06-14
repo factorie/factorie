@@ -6,6 +6,7 @@ import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConver
 import scala.concurrent.Await
 import cc.factorie.optimize.Trainer
 
+
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
     Features include context aggregation and lexicons.
     Trained by online stochastic gradient ascent with an L1 prior that leads to ~90% sparsity.
@@ -171,11 +172,11 @@ class NER1 extends DocumentAnnotator {
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
-      trainDocs.foreach(process(_))
+      trainDocs.foreach(process1(_))
       println("Train accuracy "+objective.accuracy(trainLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
       if (!testDocs.isEmpty) {
-        testDocs.foreach(process(_))
+        testDocs.foreach(process1(_))
         println("Test  accuracy "+objective.accuracy(testLabels))
         println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       }
@@ -185,8 +186,8 @@ class NER1 extends DocumentAnnotator {
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
     return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     Trainer.batchTrain(model.parameters, examples, optimizer = new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 }, evaluate = () => {
-      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
-      if (!testDocs.isEmpty) testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
+      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(trainLabels))
+      if (!testDocs.isEmpty) testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     })
     //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))

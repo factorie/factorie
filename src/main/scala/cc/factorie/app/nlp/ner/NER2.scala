@@ -242,8 +242,8 @@ class NER2 extends DocumentAnnotator {
     for (iteration <- 1 until 4) {
       trainDocs.foreach(indepedentPredictDocument(_))
       learner.processContexts(labels(trainDocs))
-      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(iteration*100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(iteration*100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -260,8 +260,8 @@ class NER2 extends DocumentAnnotator {
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
     val examples = labelChains.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
     def evaluate() {
-      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
