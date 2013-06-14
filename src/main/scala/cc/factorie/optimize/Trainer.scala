@@ -318,7 +318,10 @@ object Trainer {
       else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer)
       else new BatchTrainer(parameters, optimizer=optimizer)
     try {
-      while (!trainer.isConverged) { trainer.trainFromExamples(examples.shuffle); evaluate() }
+      while (!trainer.isConverged) {
+        trainer.processExamples(examples.shuffle)
+        evaluate()
+      }
     } finally {
       optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
