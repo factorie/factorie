@@ -2,10 +2,11 @@ package cc.factorie.app.nlp.segment
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import cc.factorie.app.nlp.{Sentence, Document}
+import cc.factorie.app.nlp.{Implicits, Sentence, Document}
 import java.util.zip.ZipInputStream
 import java.io.{BufferedReader, StringReader, FileInputStream}
 import cc.factorie.util.FastLogging
+import Implicits._
 
 class TestTokenizer extends JUnitSuite with FastLogging {
   
