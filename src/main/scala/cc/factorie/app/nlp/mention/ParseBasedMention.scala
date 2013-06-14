@@ -15,10 +15,10 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private final val PROPER_NOUNS      = Seq("NNP", "NNPS")
   private final val ALL_NOUNS         = Seq("NN","NNS","NNP","NNPS","PRP","PRP$")
 
-  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS exists(_ == t.posLabel.categoryValue.toUpperCase)
-  private def isCommonNoun     (t: Token) = COMMON_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase)
-  private def isProperNoun     (t: Token) = PROPER_NOUNS      exists(_ == t.posLabel.categoryValue.toUpperCase)
-  private def isNoun           (t: Token) = ALL_NOUNS         exists(_ == t.posLabel.categoryValue.toUpperCase)
+  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS.contains(t.posLabel.categoryValue.toUpperCase)
+  private def isCommonNoun     (t: Token) = COMMON_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
+  private def isProperNoun     (t: Token) = PROPER_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
+  private def isNoun           (t: Token) = ALL_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
 
   private def nerSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
@@ -69,12 +69,11 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
          usedTokens = new HashSet[Token]();
          (t, si) <- s.tokens.zipWithIndex if nounFilter(t)) yield {
 
-      val di = s.start + si
       //These two filtering rules are from 'Mention Detection: Heuristics for the OntoNotes annotations'
-      val prevTokenIsCopular = if(si > 0) copularVerbs.contains(s.tokens(si-1).string.toLowerCase) else false
+      val prevTokenIsCopular = si > 0 && copularVerbs.contains(s.tokens(si-1).string.toLowerCase)
       val copularPhrase = s.parse.parentIndex(si)!= -1 && prevTokenIsCopular && s.parse.parent(si).posLabel.value == "VB"
 
-      val parentIsNoun = s.parse.parentIndex(si) == -1 && isNoun(s.parse.parent(si))
+      val parentIsNoun = (s.parse.parent(t) ne null) && isNoun(s.parse.parent(t))
       val prevWordIsComma = t.hasPrev && t.prev.string == ","
       val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
       val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
@@ -126,14 +125,13 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
     var docMentions = new ArrayBuffer[Mention]
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= nerSpans(doc)                      map(   m => {m.attr += new MentionType(m,"NAM");m})
+    docMentions ++= nerSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
-
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null)).toSeq)
+    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)
 
     doc
   }
