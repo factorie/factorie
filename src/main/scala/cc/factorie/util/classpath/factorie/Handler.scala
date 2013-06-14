@@ -36,7 +36,8 @@ class Handler extends URLStreamHandler {
       }
     } else {
       val path = if (url.getPath.apply(0) == '/') url.getPath.drop(1) else url.getPath // TODO Yipes. Why is this necessary? -akm
-      val classpathURL = classLoader.getResource(path)
+      val cls = Class.forName(url.getHost)
+      val classpathURL = cls.getResource(path)
       //println("ClasspathURLStreamHandler ClassLoader URL "+classpathURL)
       if (classpathURL eq null) throw new ClasspathURLResourceException("ClassLoader could not find resource "+url.getPath)
       classpathURL.openConnection
