@@ -146,7 +146,7 @@ package object factorie extends CubbieConversions {
 
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
-  implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
+  //implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   // TODO Remove this
   //implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
