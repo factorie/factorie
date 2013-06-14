@@ -171,7 +171,6 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
     for (i <- 0 until ments.size) {
       val bestCand = processOneMention(ments, i)
-      println(s"WithinDocCoref1.process1:  ${ments(i).span.take(5).map(_.string).mkString(" ")}  Head:${ments(i).mention.headToken.string} POS:${ments(i).mention.headToken.posLabel.categoryValue} isPRO:${ments(i).isPRO}  Best pronoun candidate ${bestCand}")
       if (bestCand > -1) {
         out.addCoreferentPair(ments(i).mention, ments(bestCand).mention)
       }

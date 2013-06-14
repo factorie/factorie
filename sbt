@@ -42,7 +42,7 @@ declare -r noshare_opts="-Dsbt.global.base=project/.sbt -Dsbt.boot.directory=pro
 declare -r sbt_opts_file=".sbtopts"
 declare -r latest_28="2.8.1"
 declare -r latest_29="2.9.1"
-declare -r latest_210="2.10.0-SNAPSHOT"
+declare -r latest_210="2.10.1"
 
 declare -r script_path=$(get_script_path "$BASH_SOURCE")
 declare -r script_dir="$(dirname $script_path)"
@@ -287,7 +287,7 @@ process_args ()
             -J*) addJava "${1:2}"; shift ;;
             -28) addSbt "++ $latest_28"; shift ;;
             -29) addSbt "++ $latest_29"; shift ;;
-           -210) addSnapshotRepo ; addSbt "++ $latest_210"; shift ;;
+           -210) addSbt "++ $latest_210"; shift ;;
 
               *) addResidual "$1"; shift ;;
     esac
