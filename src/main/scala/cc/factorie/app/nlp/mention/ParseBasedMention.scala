@@ -72,15 +72,18 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       val di = s.start + si
       //These two filtering rules are from 'Mention Detection: Heuristics for the OntoNotes annotations'
       val prevTokenIsCopular = if(si > 0) copularVerbs.contains(s.tokens(si-1).string.toLowerCase) else false
-      val copularPhrase = if(s.parse.parentIndex(si)!= -1) prevTokenIsCopular && (s.parse.parent(si).attr[PTBPosLabel].value == "VB"  )  else false
+      val copularPhrase = s.parse.parentIndex(si)!= -1 && prevTokenIsCopular && s.parse.parent(si).posLabel.value == "VB"
 
-      val parentIsNoun = if(s.parse.parentIndex(si) == -1) false else isNoun(s.parse.parent(si))
-      val prevWordIsComma = if(si > 0) s.tokens(si -1).string == "," else false
+      val parentIsNoun = s.parse.parentIndex(si) == -1 && isNoun(s.parse.parent(si))
+      val prevWordIsComma = t.hasPrev && t.prev.string == ","
       val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
       val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
 
-      // skip tokens that are already added as part of a larger subtree or aren't nouns
-      if (copularPhrase || apposition) None
+      // skip tokens that are:
+      //   1. part of a copular phrase,
+      //   2. appositive clauses,
+      //   3. other nouns in a noun phrase
+      if (copularPhrase || apposition || parentIsNoun) None
       else {
         val subtree = (Seq(t) ++ s.parse.subtree(si)).sortBy(_.position)
         usedTokens ++= subtree
