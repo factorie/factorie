@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp._
 import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
-import cc.factorie.app.nlp.mention.Mention
+import mention.{MentionType, MentionList, Mention}
 
 /**
  * Created with IntelliJ IDEA.
@@ -28,3 +28,5 @@ object OntonotesEntityTypeDomain extends CategoricalDomain[String] {
 
   freeze()
 }
+
+

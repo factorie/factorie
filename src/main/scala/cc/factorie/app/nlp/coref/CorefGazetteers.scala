@@ -10,6 +10,9 @@ import collection.mutable
  * Time: 10:07 PM
  */
 
+
+object CorefGazetteers extends CorefGazetteers(null)
+
 class CorefGazetteers(lexDir: String) {
   private def load(name: String): mutable.Set[String] = {
     if (lexDir eq null) {
@@ -40,13 +43,13 @@ class CorefGazetteers(lexDir: String) {
 
   //make a big hashmap from filename to a set of the strings in that file
   val lexHash = collection.mutable.HashMap[String,mutable.Set[String]]()
-  loadInto(lexHash, CorefGazetteers.ieslLexiconsToLoad, "iesl/")
+  loadInto(lexHash, CorefGazetteersData.ieslLexiconsToLoad, "iesl/")
 
   val censusHash = collection.mutable.HashMap[String,mutable.Set[String]]()
-  loadInto(censusHash, CorefGazetteers.censusLexiconsToLoad, "uscensus/")
+  loadInto(censusHash, CorefGazetteersData.censusLexiconsToLoad, "uscensus/")
 
   val wikiLexHash = collection.mutable.HashMap[String,mutable.Set[String]]()
-  loadInto(wikiLexHash, CorefGazetteers.wikiLexiconsToLoad, "wikipedia/")
+  loadInto(wikiLexHash, CorefGazetteersData.wikiLexiconsToLoad, "wikipedia/")
 
   //these are things  used elsewhere in the coref code
   val honors =  lexHash("person-honorific").toSet
@@ -65,12 +68,12 @@ class CorefGazetteers(lexDir: String) {
     }).toMap
 
   //these are things used in entity type classification
-  val firstNames = (maleFirstNames ++ femaleFirstNames ++ wikiLexHash("person").map(_.split(" ").head)).toSet
+  val firstNames = (maleFirstNames ++ femaleFirstNames /*++ wikiLexHash("person").map(_.split(" ").head)*/).toSet
   val events =  (wikiLexHash("events") ++ wikiLexHash("battles") ++ wikiLexHash("competition")).toSet
   val placeWords = (cities ++ lexHash("country") ++ lexHash("continents") ++ lexHash("us-state") ++ lexHash("place-suffix")  ++ wikiLexHash("location") ).toSet
   val orgWords = (lexHash("company") ++ lexHash("org-suffix") ++ wikiLexHash("organization")   ++ wikiLexHash("business")  ).toSet
   val timeWords = (lexHash("day") ++ lexHash("month") ).toSet
-  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") ++ wikiLexHash("person").map(_.split(" ").last)).toSet
+  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") /*++ wikiLexHash("person").map(_.split(" ").last)*/).toSet
   val personLastWords = (lastNames  ++ firstNames ++ honors ).toSet
   val personFullNames = (wikiLexHash("person") ).toSet
   val properWords = (wikiLexHash("book") ++ wikiLexHash("battles") ++ wikiLexHash("man_made_thing") ++ wikiLexHash("film") ++ wikiLexHash("songs") ).toSet
@@ -94,7 +97,7 @@ class CorefGazetteers(lexDir: String) {
 }
 
 
-object CorefGazetteers {
+object CorefGazetteersData {
   val ieslLexiconsToLoad = Seq(
     "city.txt",
     "company.txt",
@@ -160,8 +163,8 @@ object CorefGazetteers {
   "organization-redirect.txt",
   "organization.txt",
   "person-paren.txt",
-  "person-redirect-paren.txt",
-  "person-redirect.txt",
+  //"person-redirect-paren.txt",
+  //"person-redirect.txt",
   "person.txt",
   "songs-paren.txt",
   "songs-redirect-paren.txt",
