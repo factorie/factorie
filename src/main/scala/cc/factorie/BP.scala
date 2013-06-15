@@ -19,6 +19,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHash
 import scala.collection.{Set}
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.Queue
+import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
 
 /** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. 
     "Ring" refers to whether we are using sum/product or max/product. */
@@ -111,6 +112,20 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
   override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
   override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
+  def updateOutgoingMAP() {
+    val maxValue = variable.intValue
+    for (e <- edges) {
+      e.messageFromVariable = new Tensor1 with SparseDoubleSeq with ReadOnlyTensor {
+        def isDense = false
+        def activeDomain = new RangeIntSeq(0, variable.domain.size)
+        def activeDomainSize = variable.domain.size
+        def dot(ds: DoubleSeq) = throw new Error("can't dot this marginal")
+        def dim1 = activeDomainSize
+        def apply(i: Int) = if (i == maxValue) 0 else Double.NegativeInfinity
+        def foreachActiveElement(f: (Int, Double) => Unit) = foreachElement(f)
+      }
+    }
+  }
 }
 
 trait BPVariableMaxProduct { self: BPVariable =>
@@ -275,7 +290,7 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
       //throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
       val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 limits everything"); var ii = 0
+      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 can't everything"); var ii = 0
       while (ii < len) {
         val ij = indices(ii)
         val i = scores.index1(ij)
@@ -509,7 +524,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
     case BPMaxProductRing => bpVariables.foreach(v => {
       v.setToMaximize(d)
-      v.updateOutgoing()
+      v.updateOutgoingMAP()
     })
     case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
   }
@@ -678,7 +693,7 @@ object BP {
         markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
-          // f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
+          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
         }
       }
     }
