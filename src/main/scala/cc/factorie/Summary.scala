@@ -92,10 +92,10 @@ class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
 
 /** A Summary with all its probability on one variable-value Assignment. */
 class AssignmentSummary(val assignment:Assignment) extends Summary {
-  val _marginals = assignment.variables.map(v=> (v -> new Marginal1 {
+  val _marginals = assignment.variables.map(v=> v -> new Marginal1 {
     def _1 = v
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
-  })).toMap
+  }).toMap
   def marginals = _marginals.values
   def marginal(v:Var): Marginal1 = _marginals.getOrElse(v, null)
   def marginal(f:Factor): FactorMarginal = null.asInstanceOf[FactorMarginal]

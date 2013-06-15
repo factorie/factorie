@@ -507,7 +507,10 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
-    case BPMaxProductRing => throw new Error("Not yet implemented.  Note: If you're using a chain model BP.inferChainMax already sets the variables to max values.")
+    case BPMaxProductRing => bpVariables.foreach(v => {
+      v.setToMaximize(d)
+      v.updateOutgoing()
+    })
     case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
   }
   def expNormalize(t: Tensor) {
@@ -675,7 +678,7 @@ object BP {
         markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
-          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
+          // f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
         }
       }
     }
@@ -719,16 +722,18 @@ object BP {
   
 }
 
-trait InferByBP extends Infer[Iterable[DiscreteVar],Model]
-trait MaximizeByBP extends Maximize[Iterable[DiscreteVar],Model]
+trait InferByBP extends Infer[Iterable[DiscreteVar],Model] {
+  def infer(variables:Iterable[DiscreteVar], model:Model): BPSummary
+}
+trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 
 object InferByBPTreeSum extends InferByBP {
-  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
-  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
     BP.inferLoopy(summary)
@@ -737,7 +742,7 @@ object InferByBPLoopy extends InferByBP {
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
-  override def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     BP.inferLoopyTreewise(varying, model)
   }
