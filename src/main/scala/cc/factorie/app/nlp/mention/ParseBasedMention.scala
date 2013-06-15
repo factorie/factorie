@@ -73,7 +73,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       val prevTokenIsCopular = si > 0 && copularVerbs.contains(s.tokens(si-1).string.toLowerCase)
       val copularPhrase = s.parse.parentIndex(si)!= -1 && prevTokenIsCopular && s.parse.parent(si).posLabel.value == "VB"
 
-      val parentIsNoun = (s.parse.parent(t) ne null) && isNoun(s.parse.parent(t))
+      val parentIsNoun = s.parse.parentIndex(si) == -1 && s.parse.parent(si) != null && isNoun(s.parse.parent(si))
       val prevWordIsComma = t.hasPrev && t.prev.string == ","
       val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
       val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
