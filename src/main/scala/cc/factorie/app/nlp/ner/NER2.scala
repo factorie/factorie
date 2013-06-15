@@ -364,7 +364,10 @@ class NER2 extends DocumentAnnotator {
 
 }
 
-object NER2 {
+/** The default NER1 with parameters loaded from resources in the classpath. */
+object NER2 extends NER2(cc.factorie.util.ClasspathURL[NER2](".factorie"))
+
+object NER2Trainer {
   def main(args:Array[String]): Unit = {
     if (args.length != 3) throw new Error("Usage: trainfile testfile savemodelfile")
     val ner = new NER2
