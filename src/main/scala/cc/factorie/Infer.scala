@@ -91,16 +91,3 @@ class SamplingInferencer[C,S<:IncrementableSummary](val sampler:Sampler[C], val 
     }
   }
 }
-
-// TODO Consider making this extend Infer?
-object InferByGibbsSampling {
-  // TODO Not a great name, but can't have both named "apply" because they both have default arguments.
-  def withSummary[S<:IncrementableSummary](varying:Iterable[Var with IterableSettings], model:Model, summary:S, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): S = {
-    val inferencer = new SamplingInferencer(new VariableSettingsSampler[Var with IterableSettings](model, null), summary)
-    inferencer.process(varying, iterations, burnIn, thinning)
-    summary
-  }
-  def apply[V<:MutableDiscreteVar[_]](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
-    withSummary(varying, model, new DiscreteSummary1(varying), iterations, burnIn, thinning)
-  }
-}
