@@ -10,8 +10,23 @@ import util._
  * Time: 5:54 PM
  */
 
-/** This implements the AdaGrad algorithm with efficient dual averaging updates and support for l1 and l2 regularization.
-    Good default value for l1 is 0.1/#examples, but it might need to be much smaller, like 0.0001/#examples. */
+
+/**
+ * The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms
+ * for Online Learning and Stochastic Optimization.
+ *
+ * It works by keeping a (reweighted) sum of the gradients seen so far and applying regularization
+ * at prediction time instead of update time.
+ *
+ * Tuning the rate an delta parameters is often not necessary.
+ *
+ * The regularizers, however, are per-example, which mean that their value should be set to be a very
+ * small number, on the order of 0.01/num_training_examples, and these values should be tuned.
+ * @param delta A large value of delta slows the rate at which the learning rates go down initially
+ * @param rate The initial learning rate.
+ * @param l1 The strength of l1 regularization
+ * @param l2 The strength of l2 regularization.
+ */
 class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
   var initialized = false
 

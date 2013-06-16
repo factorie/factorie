@@ -17,23 +17,71 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-/** Change the weightsSet in the direction of the gradient by a factor of "rate" for each step. */
+/**
+ * Base trait for optimizers whose operational form can be described as
+ *    1. get a gradient
+ *    2. do some transformation to it
+ *    3. compute a learning rate
+ *    4. add it to the weights
+ *
+ * Traits which extend this one can have things like parameter averaging or MIRA learning rates
+ * or adaptive learning rates for free.
+ */
 trait GradientStep extends GradientOptimizer {
   var it = 0
+
+  /**
+   * Override this method do to some transformation to the gradient before going on with optimization
+   * @param weights The weights
+   * @param gradient The gradient
+   */
   def processGradient(weights: WeightsSet, gradient: WeightsMap): Unit = {}
+
+  /**
+   * Override this method to change the learning rate
+   * @param weights The weights
+   * @param gradient The gradient
+   * @param value The value
+   * @return The learning rate
+   */
   def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = 1.0
+
+  /**
+   * Actually adds the gradient to the weights. ParameterAveraging overrides this.
+   * @param weights The weights
+   * @param gradient The gradient
+   * @param rate The learning rate
+   */
   def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = weights += (gradient, rate)
-  def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+
+  /**
+   * Should not be overriden. The main flow of a GradientStep optimizer.
+   * @param weights The weights
+   * @param gradient The gradient
+   * @param value The value
+   */
+  final def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     it += 1
     processGradient(weights, gradient)
     val rate = lRate(weights, gradient, value)
     doGradStep(weights, gradient, rate)
   }
+
+  /**
+   * Online optimizers generally don't converge
+   * @return Always false
+   */
   def isConverged = false
-  // TODO What to put here?
+
+  /**
+   * To override if you want to reset internal state.
+   */
   def reset(): Unit = { it = 0 }
 }
 
+/**
+ * Mixin trait to add parameter averaging to any GradientStep
+ */
 trait ParameterAveraging extends GradientStep {
   var wTmp: WeightsMap = null
   override def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = {
@@ -42,15 +90,26 @@ trait ParameterAveraging extends GradientStep {
     wTmp += (gradient, rate*it)
   }
 
-  def setWeightsToAverage(weights: WeightsSet): Unit = weights += (wTmp,-1.0/it)
-  def unSetWeightsToAverage(weights: WeightsSet): Unit = weights += (wTmp,1.0/it)
+  def setWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,-1.0/it)
+  def unSetWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,1.0/it)
   override def reset(): Unit = { super.reset(); wTmp = null }
 }
 
-// This implements the AdaGrad algorithm (with Composite Mirror Descent update) from
-// "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization" by Duchi et al.
+/**
+ * This implements the adaptive learning rates from the AdaGrad algorithm
+ * (with Composite Mirror Descent update) from "Adaptive Subgradient Methods for
+ * Online Learning and Stochastic Optimization" by Duchi et al.
+ *
+ * Can be mixed into any GradientStep.
+ */
 trait AdaptiveLearningRate extends GradientStep {
+  /**
+   * The base learning rate
+   */
   val rate: Double = 1.0
+  /**
+   * The learning rate decay factor.
+   */
   val delta: Double = 0.1
   private var HSq: WeightsMap = null
   var printed = false
@@ -125,54 +184,106 @@ trait AdaptiveLearningRate extends GradientStep {
   }
 }
 
+/**
+ * Mixin trait for implementing a MIRA step
+ */
 trait MarginScaled extends GradientStep {
   val C: Double = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double) ={
     val sqNorm = gradient.twoNormSquared
-    if (sqNorm == 0.0) 0.0 else math.max(-C, math.min(C, -value/(gradient.twoNormSquared)))
+    if (sqNorm == 0.0) 0.0 else math.max(-C, math.min(C, -value/gradient.twoNormSquared))
   }
 }
 
+/**
+ * Mixin trait for a step size which looks like 1/sqrt(T)
+ */
 trait InvSqrtTStepSize extends GradientStep {
   val baseRate = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate / math.sqrt(it + 1)
 }
 
+/**
+ * Mixin trait for a step size which looks like 1/T
+ */
 trait InvTStepSize extends GradientStep {
   val baseRate = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate / (it + 1)
 }
 
+/**
+ * Mixin trait for a constant step size
+ */
 trait ConstantStepSize extends GradientStep {
   val baseRate = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate
 }
 
+/**
+ * Mixin trait for a step size which is normalized by the length of the gradient and looks like 1/sqrt(T)
+ */
 trait InvSqrtTLengthStepSize extends GradientStep {
   val baseRate = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate / (math.sqrt(it + 1) * gradient.twoNorm)
 }
 
+/**
+ * Mixin trait for a step size which is normalized by the length of the gradient and looks like 1/T
+ */
 trait InvTLengthStepSize extends GradientStep {
   val baseRate = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate / ((it + 1) * gradient.twoNorm)
 }
 
+/**
+ * Mixin trait for a step size which is normalized by the length of the gradient and is constant
+ */
 trait ConstantLengthStepSize extends GradientStep {
   val baseRate  = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = baseRate / gradient.twoNorm
 }
 
+/**
+ * The AdaGrad algorithm.
+ *
+ * Should be used with averaging for optimal performance.
+ * @param rate The base learning rate. It's worth tuning it.
+ * @param delta A decay factor. Not worth tuning.
+ */
 class AdaGrad(override val rate: Double = 1.0, override val delta: Double = 0.1) extends AdaptiveLearningRate
 
+/**
+ * A simple gradient descent algorithm with constant learning rate.
+ * @param baseRate The learning rate
+ */
 class ConstantLearningRate(override val baseRate: Double = 1.0) extends ConstantStepSize
 
+/**
+ * A simple gradient descent algorithm with constant norm-independent learning rate.
+ * @param baseRate The learning rate
+ */
 class ConstantLengthLearningRate(override val baseRate: Double = 1.0) extends ConstantLengthStepSize
 
+/**
+ * The MIRA algorithm
+ * @param C The regularization constant. Doesn't really need tuning.
+ */
 class MIRA(override val C: Double = 1.0) extends MarginScaled
 
+/**
+ * The combination of AdaGrad with MIRA
+ * @param rate See AdaGrad, but here it matters much less.
+ * @param delta See AdaGrad, but again here it matters much less.
+ * @param C See MIRA.
+ */
 class AdaMira(override val rate: Double, override val delta: Double = 0.1, override val C: Double = 1.0) extends AdaptiveLearningRate with MarginScaled
 
+/**
+ * Convenience name for the perceptron.
+ */
 class Perceptron extends ConstantLearningRate
 
+/**
+ * Convenience name for the averaged perceptron.
+ */
 class AveragedPerceptron extends ConstantLearningRate with ParameterAveraging

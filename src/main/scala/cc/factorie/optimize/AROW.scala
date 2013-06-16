@@ -8,6 +8,7 @@ import cc.factorie.maths
 
 // TODO Change this so it doesn't require the "model" constructor argument, and instead gets the weightsSet from the "step" call.
 // Then AROW can be the default optimizer in SGDTrainer.
+@deprecated("The AROW algorithm is from an older version of factorie and not as efficient as other algorithms", "1.0")
 class AROW(model:Parameters, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model) {
   //parameters specific to the algorithm
   // TODO this shouldn't be 1-modelScore as it assumes a margin of 1 - should probably put 0 here now that margin is in objective - luke
@@ -29,6 +30,7 @@ class AROW(model:Parameters, val lambdaAROW:Double=1.0) extends ConfidenceWeight
   override def calculateLearningRate(gradient: WeightsMap,margin:Double): Double = alpha(margin,gradient)
 }
 
+@deprecated("The CW algorithm is from an older version of factorie and not as efficient as other algorithms", "1.0")
 class ConfidenceWeighting(val model:Parameters) extends GradientOptimizer {
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   var initialVariance = 0.1

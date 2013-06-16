@@ -4,10 +4,15 @@ import cc.factorie.la._
 import cc.factorie.{WeightsMap, WeightsSet}
 import cc.factorie.util.{DenseDoubleSeq, TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
 
-// This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
-// it won't necessarily work with other losses because of the aggressive projection steps
-// note that adding a learning rate here is nontrivial since the update relies on baseRate / step < 1.0 to avoid zeroing the weights
-// but if I don't add a rate <1 here this optimizer does terribly in my tests -luke
+
+/**
+ * This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
+ * it won't necessarily work with other losses because of the aggressive projection steps
+ * note that adding a learning rate here is nontrivial since the update relies on baseRate / step < 1.0 to avoid zeroing the weights
+ * but if I don't add a rate <1 here this optimizer does terribly in my tests -luke
+ * @param baseRate The base learning rate
+ * @param l2 The l2 regularization constant
+ */
 class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimizer {
   private var step = 1
   private var initialized = false

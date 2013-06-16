@@ -18,6 +18,12 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
+/**
+ * A backtracking line optimizer. Shouldn't be used directly.
+ * @param gradient The gradient
+ * @param line A line
+ * @param initialStepSize The initial step size
+ */
 class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged

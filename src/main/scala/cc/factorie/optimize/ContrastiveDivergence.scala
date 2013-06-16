@@ -4,6 +4,14 @@ import cc.factorie._
 import cc.factorie.la.WeightsMapAccumulator
 import cc.factorie.util.DoubleAccumulator
 
+/**
+  * A training example for using contrastive divergence.
+  * @param context The argument to the sampler
+  * @param model The model to be optimized
+  * @param sampler The sampler.
+  * @param k The number of steps to sample for.
+  * @tparam C The type of sampler context
+  */
 class ContrastiveDivergenceExample[C](val context: C, model: Model with Parameters, val sampler: Sampler[C], val k: Int = 1) extends Example {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
@@ -16,6 +24,13 @@ class ContrastiveDivergenceExample[C](val context: C, model: Model with Paramete
   }
 }
 
+/**
+ * A variant of the contrastive divergence algorithm which does not reset to the ground truth.
+ * @param context The argument to the sampler
+ * @param model The model
+ * @param sampler The sampler
+ * @tparam C The type of sampler context
+ */
 class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val context: C, model: Model with Parameters, val sampler: Sampler[Var]) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
@@ -29,6 +44,15 @@ class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val cont
   }
 }
 
+/**
+ * Contrastive divergence with the hinge loss.
+ * @param context The argument to the sampler
+ * @param model The model
+ * @param sampler The sampler
+ * @param learningMargin The margin in the hinge loss
+ * @param k The number of iterations to sample for
+ * @tparam C The type of sampler context
+ */
 class ContrastiveDivergenceHingeExample[C <: Var](
   val context: C, model: Model with Parameters, val sampler: Sampler[C], val learningMargin: Double = 1.0, val k: Int = 1) extends Example {
   // NOTE: this assumes that variables are set to the ground truth when this method is called
@@ -49,6 +73,14 @@ class ContrastiveDivergenceHingeExample[C <: Var](
   }
 }
 
+/**
+ * A contrastive divergence hinge example which keeps the chain going.
+ * @param context The argument to the sampler
+ * @param model The model
+ * @param sampler The sampler
+ * @param learningMargin The hinge loss margin
+ * @tparam C The type of sampler context
+ */
 class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
   val context: C, model: Model with Parameters, val sampler: Sampler[Var], val learningMargin: Double = 1.0) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth

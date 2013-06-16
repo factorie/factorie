@@ -16,6 +16,10 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
+/**
+ * A conjugate gradient optimizer. Should not be used unless you know you want it.
+ * @param initialStepSize The initial step size. Not too important because line search is performed.
+ */
 class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged

@@ -476,19 +476,19 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
     import CorefEvaluator.Metric
     // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
-    //val ceafEEval = new CorefEvaluator.CeafE()
-    //val ceafMEval = new CorefEvaluator.CeafM()
+    val ceafEEval = new CorefEvaluator.CeafE()
+    val ceafMEval = new CorefEvaluator.CeafM()
     def docToCallable(doc: Document) = new Callable[(Metric,Metric,Metric,Metric,Metric)] { def call() = {
       process1(doc)
       val trueMap = WithinDocCoref1Helper.truthEntityMap(doc.attr[MentionList])
       val predMap = doc.attr[GenericEntityMap[Mention]]
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      //val ce = ceafEEval.evaluate(predMap, trueMap)
-      //val cm = ceafMEval.evaluate(predMap, trueMap)
+      val ce = ceafEEval.evaluate(predMap, trueMap)
+      val cm = ceafMEval.evaluate(predMap, trueMap)
       val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
-      //(b3,muc,ce,cm,bl)
-      (b3,muc,new Metric,new Metric,bl)
+      (b3,muc,ce,cm,bl)
+      //(b3,muc,new Metric,new Metric,bl)
     }}
     val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
     try {

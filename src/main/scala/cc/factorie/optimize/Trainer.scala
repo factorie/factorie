@@ -16,12 +16,14 @@ import util.FastLogging
  * To change this template use File | Settings | File Templates.
  */
 
-/** Learns the parameters of a Model by processing the gradients and values from a collection of Examples. */
+/**
+ * Learns the parameters of a Model by processing the gradients and values from a collection of Examples.
+ */
 trait Trainer {
-  /** The Model that is being trained. */
-//  def weightsSet: WeightsSet
-  // TODO Trainer should probably have an overrideable method "newGradient" which we could override to get e.g. dense gradients for Online, sparse for Batch, etc -luke & alex
-  /** Use all these Examples once to make progress towards training */
+  /**
+   * Process the examples once.
+   * @param examples Examples to be processed
+   */
   def processExamples(examples: Iterable[Example]): Unit
   /** Would more training help? */
   def isConverged: Boolean
@@ -29,8 +31,12 @@ trait Trainer {
   def trainFromExamples(examples: Iterable[Example]): Unit = while (!isConverged) processExamples(examples)
 }
 
-/** Learns the parameters of a Model by summing the gradients and values of all Examples, 
-    and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
+/**
+ * Learns the parameters of a Model by summing the gradients and values of all Examples,
+ *  and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS).
+ * @param weightsSet The parameters to be optimized
+ * @param optimizer The optimizer
+ */
 class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
   val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankDenseMap)
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
@@ -49,8 +55,14 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
   def isConverged = optimizer.isConverged
 }
 
-// Learns the parameters of a model by computing the gradient and calling the
-// optimizer one example at a time.
+/**
+ * Learns the parameters of a model by computing the gradient and calling the
+ * optimizer one example at a time.
+ * @param weightsSet The parameters to be optimized
+ * @param optimizer The optimizer
+ * @param maxIterations The maximum number of iterations until reporting convergence
+ * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
+ */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
   var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseMap)
   var iteration = 0
@@ -311,6 +323,17 @@ object TrainerHelpers {
 }
 
 object Trainer {
+  /**
+   * Convenient function for training. Creates a trainer, trains until convergence, and evaluates after every iteration.
+   * @param parameters The parameters to be optimized
+   * @param examples The examples to train on
+   * @param maxIterations The maximum number of iterations for training
+   * @param evaluate The function for evaluation
+   * @param optimizer The optimizer
+   * @param useParallelTrainer Whether to use parallel training
+   * @param useOnlineTrainer Whether to use online training
+   * @param logEveryN How often to log, if using online training
+   */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1) {
     optimizer match { case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters); case _ => }
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
@@ -327,9 +350,30 @@ object Trainer {
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
     }
   }
+
+  /**
+   * A convenient way to call Trainer.train() for online trainers.
+   * @param parameters The parameters to be optimized
+   * @param examples The examples
+   * @param evaluate The evaluation function
+   * @param useParallelTrainer Whether to train in parallel
+   * @param maxIterations The maximum number of iterations
+   * @param optimizer The optimizer
+   * @param logEveryN How often to log
+   */
   def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1) {
     train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN)
   }
+
+  /**
+   * A convenient way to call Trainer.train() for batch training.
+   * @param parameters The parameters to be optimized
+   * @param examples The examples
+   * @param evaluate The evaluation function
+   * @param useParallelTrainer Whether to use a parallel trainer
+   * @param maxIterations The maximum number of iterations
+   * @param optimizer The optimizer
+   */
   def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization) {
     train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false)
   }
