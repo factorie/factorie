@@ -5,7 +5,11 @@ import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor}
 
 // TODO this should really store weights in log-space, and have an unnormalized version
 
-// This implements the Exponentiated Gradient algorithm of Kivinen and Warmuth - also known as Entropic Mirror Descent (Beck and Teboulle)
+/**
+ * This implements the Exponentiated Gradient algorithm of Kivinen and Warmuth
+ * - also known as Entropic Mirror Descent (Beck and Teboulle)
+ * @param rate The base learning rate
+ */
 class ExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
   private var initialized = false
 

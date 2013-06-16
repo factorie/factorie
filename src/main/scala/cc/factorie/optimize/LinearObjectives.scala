@@ -7,6 +7,11 @@ import classify.{ModelBasedClassifier, LogLinearModel}
 import java.io.File
 import io.Source
 
+/**
+ * Abstract trait for any objective function used in generalized linear models
+ * @tparam Pred The type of the prediction: is it a tensor or a scalar?
+ * @tparam Label The type of the label: is it integer or real-valued or tensor-valued?
+ */
 trait LinearObjective[Pred, Label] {
   def valueAndGradient(prediction: Pred, label: Label): (Double, Pred)
 }
@@ -15,8 +20,13 @@ trait UnivariateLinearObjective[Label] extends LinearObjective[Double, Label]
 trait MultivariateLinearObjective[Label] extends LinearObjective[Tensor1, Label]
 
 object LinearObjectives {
-
+  /**
+   * General type for multivariate linear objective functions for clasification
+   */
   type MultiClass = MultivariateLinearObjective[Int]
+  /**
+   * General type for objective functions for binary classification
+   */
   type Binary = UnivariateLinearObjective[Int]
 
   class HingeMultiClass extends MultivariateLinearObjective[Int] {
@@ -131,30 +141,80 @@ object LinearObjectives {
       (0.5 * (prediction - label) * (prediction - label), prediction - label)
   }
 
+  /**
+   * Squared Objective for multivariate regression
+   */
   val squaredMultivariate = new SquaredMultivariate
+
+  /**
+   * Hinge Objective for multiclass classification
+   */
   val hingeMultiClass = new HingeMultiClass
+
+  /**
+   * Squared hinge Objective for multiclass classification
+   */
   val hingeSqMultiClass = new HingeSqMultiClass
+
+  /**
+   * Log Objective for multiclass classification. Inefficient.
+   */
   val logMultiClass = new LogMultiClass
+
+  /**
+   * Sparse Log Objective for multiclass classification; very efficient.
+   */
   val sparseLogMultiClass = new SparseLogMultiClass
+
+  /**
+   * Epsilon-insensitive squared loss for regression
+   * @param epsilon The tolerance of the loss function
+   * @return An objective function
+   */
   def epsilonInsensitiveSqMultivariate(epsilon: Double) = new EpsilonInsensitiveSqMultivariate(epsilon)
+
+  /**
+   * A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.
+   * @param posSlackRescale The cost of predicting positive when the label is negative
+   * @param negSlackRescale The cost of predicting negative when the label is positive
+   * @return An objective function
+   */
   def hingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) = new HingeScaledBinary(posSlackRescale, negSlackRescale)
 
+  /**
+   * Log objective for binary classification
+   */
   val logBinary = new LogBinary
+
+  /**
+   * Hinge objective for binary classification
+   */
   val hingeBinary = new HingeBinary
+
+  /**
+   * Squared objective for univariate regression
+   */
   val squaredUnivariate = new SquaredUnivariate
 
   type UnivariateLinkFunction = Double => Double
 
   val squaredLossLinkFunction: UnivariateLinkFunction = prediction => prediction
+
+  /**
+   * The logistic sigmoid function.
+   */
   val logisticLinkFunction: UnivariateLinkFunction = prediction => 1.0 / (1 + math.exp(-prediction))
 }
 
-class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
-  extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
-
-class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
-  extends LinearUnivariateExample(weights, featureVector, label, objective, weight)
-
+/**
+ * Base example for all linear multivariate models
+ * @param weights The weights of the classifier
+ * @param featureVector The feature vector
+ * @param label The label
+ * @param objective The objective function
+ * @param weight The weight of this example
+ * @tparam Label The type of the label
+ */
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
@@ -165,6 +225,26 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
   }
 }
 
+/**
+ * Example for all linear multiclass classifiers
+ * @param weights The weights of the classifier
+ * @param featureVector The feature vector
+ * @param label The label
+ * @param objective The objective function
+ * @param weight The weight of this example
+ */
+class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
+  extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
+
+/**
+ * Base example for linear univariate models
+ * @param weights The weights of the classifier
+ * @param featureVector The feature vector
+ * @param label The label
+ * @param objective The objective
+ * @param weight The weight of this example
+ * @tparam Label The type of label
+ */
 class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
@@ -174,6 +254,19 @@ class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, 
     if (gradient != null) gradient.accumulate(weights, featureVector, weight * sgrad)
   }
 }
+
+/**
+ * Base example for linear binary classifiers
+ * @param weights The weights of the classifier
+ * @param featureVector The feature vector
+ * @param label The label (+1 or -1)
+ * @param objective The objective function
+ * @param weight The weight of this example
+ */
+class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
+  extends LinearUnivariateExample(weights, featureVector, label, objective, weight)
+
+
 
 object LinearObjectivesTest {
   object DocumentDomain extends CategoricalTensorDomain[String]

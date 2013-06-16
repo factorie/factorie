@@ -5,7 +5,14 @@ import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
 
 
-// This is based on the algorithm implemented in liblinear
+/**
+ * An implementation of the liblinear algorithm. Not really a GradientOptimizer.
+ * @param lossType 1 if l1 hinge loss, 2 if hinge squared
+ * @param cost The C parameter of the SVM algorithm
+ * @param eps The tolerance of the optimizer
+ * @param bias TODO: no idea what this is - Alex
+ * @param maxIterations Maximum number of iterations
+ */
 class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bias: Double = -1, maxIterations: Int = 1000) {
 
   @inline private final def GETI(y: Array[Byte], i: Int) = y(i) + 1

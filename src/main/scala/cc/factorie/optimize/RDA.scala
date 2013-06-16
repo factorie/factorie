@@ -4,7 +4,13 @@ import cc.factorie.{WeightsMap, WeightsSet}
 import cc.factorie.la._
 import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 
-// Implements the Regularized Dual Averaging algorithm of Xiao (by way of Nesterov) with support for l1 and l2 regularization
+
+/**
+ * Implements the Regularized Dual Averaging algorithm of Xiao (by way of Nesterov) with support for l1 and l2 regularization
+ * @param rate The base learning rate
+ * @param l1 l1 regularization constant. Should be set similarly to that in AdaGradRDA
+ * @param l2 l2 regularization constant. Should be set similarly to that in AdaGradRDA
+ */
 class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
   var initialized = false
 
