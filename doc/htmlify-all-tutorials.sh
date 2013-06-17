@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OUTPUT_DIR="./html"
-EXAMPLE_DIR="../src/main/scala/cc/factorie/example/"
+EXAMPLE_DIR="../src/main/scala/cc/factorie/tutorial/"
 
 mkdir -p $OUTPUT_DIR
 

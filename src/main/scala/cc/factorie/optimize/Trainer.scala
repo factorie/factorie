@@ -381,11 +381,11 @@ object Trainer {
    * @param useOnlineTrainer Whether to use online training
    * @param logEveryN How often to log, if using online training
    */
-  def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1) {
+  def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors()) {
     optimizer match { case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters); case _ => }
-    val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
+    val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
-      else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer)
+      else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
       else new BatchTrainer(parameters, optimizer=optimizer)
     try {
       while (!trainer.isConverged) {
@@ -408,8 +408,8 @@ object Trainer {
    * @param optimizer The optimizer
    * @param logEveryN How often to log
    */
-  def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1) {
-    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN)
+  def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1 ,nThreads: Int = Runtime.getRuntime.availableProcessors()) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN, nThreads=nThreads)
   }
 
   /**
@@ -421,7 +421,7 @@ object Trainer {
    * @param maxIterations The maximum number of iterations
    * @param optimizer The optimizer
    */
-  def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization) {
-    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false)
+  def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization, nThreads: Int = Runtime.getRuntime.availableProcessors()) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false, nThreads=nThreads)
   }
 }

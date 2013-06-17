@@ -45,7 +45,7 @@ Tutorial coverage:
 060 Learning
 070 Directed package
 080 Standard ML models: HMM, Mixture of Gaussians,
-090 Parallelism, Hyperparameter optimization
+090 Parallelism, Hyperparameter optimization [DONE]
 100 Classify package
 110 Chain package
 120 NLP package, Document, Section, Token, TokenSpan, Sentence, attr, DocumentAnnotator, pos, ner, mention, parse, lexicon, wordnet, coref

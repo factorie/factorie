@@ -172,6 +172,10 @@ class TestExamples {
     cc.factorie.tutorial.Tutorial40InferenceAndLearning.main(emptyArgs)
   }
 
+  @Test def testTutorial040() {
+    cc.factorie.tutorial.Tutorial090ParallelismAndHyperparameters.main(emptyArgs)
+  }
+
   @Test def testVarArgs() {
     cc.factorie.tutorial.VarArgsDemo.main(emptyArgs)
   }
