@@ -1,15 +1,12 @@
 Pre 1.0 release:
 
 Implement sparse iteration through values for BP [McCallum, Singh]
-Code review BP.  Make it fast!  [Passos]
 Verify ChainModel actually works [Passos?,Martin]
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 In BP, when running on chains, verify that we don't need to walk to create a tree.
 Redesign app.classify for better access to underlying optimize goodness. [McCallum, Passos]
 Finish lexicon data loading management. [McCallum]
-Implement dual decomposition. [Passos]
 Improve LDA speed and multi-threading [Vineet]
-Learning-supporting Sampler extends Infer [Passos]
 Packaged POS, NER, DepParser, Coref [Andrew]
 Consider removing the implicit DiffList from the arguments to the TokenSpan constructor [Andrew]
 Consider again making Mentions inherit from TokenSpan, with the option to simply initialize from a TokenSpan constructor argument [Andrew]
@@ -61,6 +58,9 @@ Regression, Matrix Factorization,
 
 
 DONE:
+Code review BP.  Make it fast!  [Passos]
+Implement dual decomposition. [Passos]
+Learning-supporting Sampler extends Infer [Passos]
 No holes in Tensor dot products [Passos]
 Make Tensor.foreachActiveElement faster with a macro.  After 1.0 or perhaps never. [Luke]
 Strongly consider removing type argument from Domain.  It isn't needed for anything.  Decided against for now. [McCallum]

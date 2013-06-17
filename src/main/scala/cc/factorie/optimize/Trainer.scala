@@ -9,11 +9,9 @@ import util._
 import util.FastLogging
 
 /**
- * Created by IntelliJ IDEA.
  * User: apassos
  * Date: 10/17/12
  * Time: 7:29 PM
- * To change this template use File | Settings | File Templates.
  */
 
 /**
@@ -269,7 +267,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
     val value = new LocalDoubleAccumulator()
     e.accumulateExampleInto(gradientAccumulator, value)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
-    gradient.tensors.foreach(t => if (t.isInstanceOf[SparseIndexedTensor]) t.asInstanceOf[SparseIndexedTensor].apply(0))
+    gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer synchronized {
       optimizer.step(weightsSet, gradient, value.value)
       examplesProcessed += 1
@@ -294,15 +292,64 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   def isConverged = iteration >= maxIterations
 }
 
+/**
+ * A parallel online trainer which has no locks or synchronization.
+ * Only use this if you know what you're doing.
+ * @param weightsSet The parameters to optimize
+ * @param optimizer The optimizer
+ * @param nThreads How many threads to use
+ * @param maxIterations The maximum number of iterations
+ * @param logEveryN How often to log.
+ * @param locksForLogging Whether to lock around logging. Disabling this might make logging not work at all.
+ */
+class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, var logEveryN : Int = -1, val locksForLogging: Boolean = true)
+  extends Trainer with FastLogging {
+  var examplesProcessed = 0
+  var accumulatedValue = 0.0
+  var t0 = System.currentTimeMillis()
+  val lock = new util.RWLock
+  private def processExample(e: Example): Unit = {
+    val gradient = weightsSet.blankSparseMap
+    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val value = new LocalDoubleAccumulator()
+    e.accumulateExampleInto(gradientAccumulator, value)
+    optimizer.step(weightsSet, gradient, value.value)
+    if (locksForLogging) lock.writeLock()
+    try {
+      examplesProcessed += 1
+      accumulatedValue += value.value
+      if (examplesProcessed % logEveryN == 0) {
+        val accumulatedTime = System.currentTimeMillis() - t0
+        logger.info(TrainerHelpers.getOnlineTrainerStatus(examplesProcessed, logEveryN, accumulatedTime, accumulatedValue))
+        t0 = System.currentTimeMillis()
+        accumulatedValue = 0
+      }
+    } finally {
+      if (locksForLogging) lock.writeUnlock()
+    }
+  }
+  var iteration = 0
+  def processExamples(examples: Iterable[Example]): Unit = {
+    if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
+    iteration += 1
+    t0 = System.currentTimeMillis()
+    examplesProcessed = 0
+    accumulatedValue = 0.0
+    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+  }
+  def isConverged = iteration >= maxIterations
+}
+
+
 object TrainerHelpers {
   import scala.collection.JavaConversions._
 
   def getTimeString(ms: Long): String =
-    if (ms > 120000) "%d minutes" format (ms / 60000) else if (ms> 5000) "%d seconds" format (ms / 1000) else "%d milliseconds" format ms
+    if (ms > 120000) f"${ms/60000}%d minutes" else if (ms> 5000) f"${ms/1000}%d seconds" else s"$ms milliseconds"
   def getBatchTrainerStatus(gradNorm: => Double, value: => Double, ms: => Long) =
-    "GradientNorm: %-10g  value %-10g %s" format (gradNorm, value, getTimeString(ms))
+    f"GradientNorm: $gradNorm%-10g  value $value%-10g ${getTimeString(ms)}%s"
   def getOnlineTrainerStatus(examplesProcessed: Int, logEveryN: Int, accumulatedTime: Long, accumulatedValue: Double) =
-    examplesProcessed + " examples at " + (1000.0*logEveryN/accumulatedTime) + " examples/sec. Average objective: " + (accumulatedValue / logEveryN)
+    f"$examplesProcessed%20s examples at ${1000.0*logEveryN/accumulatedTime}%5.2f examples/sec. Average objective: ${accumulatedValue / logEveryN}%5.5f"
 
   def parForeach[In](xs: Iterable[In], numThreads: Int)(body: In => Unit): Unit = withThreadPool(numThreads)(p => parForeach(xs, p)(body))
   def parForeach[In](xs: Iterable[In], pool: ExecutorService)(body: In => Unit): Unit = {
