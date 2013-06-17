@@ -38,7 +38,7 @@ object BPSumProductRing extends BPRing {
       else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorTreeSumProduct
       else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactorTreeSumProduct
     case factor:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] =>
-      val neighbors = factor.variables.toSet
+      val neighbors = factor.variables.toSet.intersect(varying.toSet)
       if (neighbors.size == 2)
         new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2SumProduct
       else if (neighbors.size == 1)
@@ -56,7 +56,7 @@ object BPMaxProductRing extends BPRing {
       if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2MaxProduct
       else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorMaxProduct
     case factor:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] =>
-      val neighbors = factor.variables.toSet
+      val neighbors = factor.variables.toSet.intersect(varying.toSet)
       if (neighbors.size == 2)
         new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2MaxProduct
       else if (neighbors.size == 1)
