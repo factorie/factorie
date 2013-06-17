@@ -57,73 +57,6 @@ with Parameters
     val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
   }
   var useObsMarkov = false
-  // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types -luke
-  def families: Seq[DotFamily] = if (useObsMarkov) Seq(bias, obs, markov, obsmarkov) else Seq(bias, obs, markov)
-
-  // TODO this does not calculate statistics for obsmarkov template -luke
-  def marginalStatistics(labels: Seq[Label], nodeMargs: Array[Array[Double]], edgeMargs: Array[Array[Double]]): WeightsMap = {
-    val biasStats = Tensor.newDense(bias.weights.value)
-    val obsStats = Tensor.newSparse(obs.weights.value)
-    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
-
-    var li = 0
-    while (li < labels.length) {
-      val l = labels(li)
-      val marg = nodeMargs(li)
-      val features = labelToFeatures(l).tensor
-      var mi = 0
-      while (mi < marg.length) {
-        val m = marg(mi)
-        if (m != 0) {
-          features.foreachActiveElement((fi, fv) => obsStats += (mi * features.length + fi, fv * m))
-          biasStats(mi) += m
-        }
-        mi += 1
-      }
-      li += 1
-    }
-
-    val markovStats =
-      if (labels.length > 1) new DenseTensor1(ArrayOps.elementwiseSum(edgeMargs))
-      else new SparseTensor1(labels(0).domain.size * labels(0).domain.size)
-
-    val result = parameters.blankSparseMap
-    result(bias.weights) = biasStats
-    result(obs.weights) = obsStats
-    result(markov.weights) = markovStats
-    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
-    result
-  }
-
-  def assignmentStatistics(labels: Seq[Label], assignments: Seq[Int]): WeightsMap = {
-    val biasStats = Tensor.newDense(bias.weights.value)
-    val obsStats = Tensor.newSparse(obs.weights.value)
-    val markovStats = Tensor.newSparse(markov.weights.value)
-    val obsmarkovStats = if (useObsMarkov) Tensor.newSparse(obsmarkov.weights.value) else null
-
-    for (i <- 0 until labels.length) {
-      val l = labels(i)
-      val features = labelToFeatures(l).tensor
-      biasStats += (assignments(i), 1)
-      obsStats += Tensor.outer(new SingletonBinaryTensor1(l.domain.size, assignments(i)), features)
-      if (i > 0) {
-        val prev = labels(i - 1)
-        markovStats += (assignments(i - 1) * labelDomain.size + assignments(i), 1)
-        if (useObsMarkov) obsmarkovStats += Tensor.outer(
-          prev.tensor.asInstanceOf[Tensor1], l.target.asInstanceOf[Tensor1], features)
-      }
-    }
-
-    val result = parameters.blankSparseMap
-    result(bias.weights) = biasStats
-    result(obs.weights) = obsStats
-    result(markov.weights) = markovStats
-    if (useObsMarkov) result(obsmarkov.weights) = obsmarkovStats
-    result
-  }
-
-  def targetStatistics(labels: Seq[Label]): WeightsMap =
-    assignmentStatistics(labels, labels.map(_.targetIntValue))
 
   def serialize(prefix: String) {
     val modelFile = new File(prefix + "-model")
@@ -162,11 +95,11 @@ with Parameters
     result
   }
   override def factors(variables: Iterable[Var]): Iterable[Factor] = variables match {
-    case variables: IndexedSeq[Label] if (variables.forall(v => labelClass.isAssignableFrom(v.getClass))) => factorsWithContext(variables)
+    case variables: IndexedSeq[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) => factorsWithContext(variables)
     case _ => super.factors(variables)
   }
   def factors(v: Var) = v match {
-    case label:Label if (label.getClass eq labelClass) => {
+    case label:Label if label.getClass eq labelClass => {
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)
       result += obs.Factor(label, labelToFeatures(label))
@@ -184,124 +117,6 @@ with Parameters
       result
     }
   }
-
-  // Inference
-  // TODO FIXME this does not work for useObsMarkov=true right now -luke
-  def inferBySumProduct(labels: IndexedSeq[Label]): ChainSummary = {
-    val summary = new ChainSummary {
-      private val (__nodeMarginals, __edgeMarginals, _logZ) = ForwardBackward.marginalsAndLogZ(labels, obs, markov, bias, labelToFeatures)
-      private val _expectations = marginalStatistics(labels, __nodeMarginals, __edgeMarginals)
-      private val _nodeMarginals = new LinkedHashMap[Var, DiscreteMarginal1[DiscreteVar]] ++=
-        labels.zip(__nodeMarginals).map({case (l, m) => l -> new SimpleDiscreteMarginal1[DiscreteVar](l, new DenseProportions1(m)) })
-      private val _edgeMarginals =
-        labels.zip(labels.drop(1)).zip(__edgeMarginals).map({ case ((l1, l2), m) =>
-          // m is label X label
-          val ds = labelDomain.length
-          val t = new DenseProportions2(ds, ds)
-          var d1 = 0
-          while (d1 < ds) {
-	          var d2 = 0
-            while (d2 < ds) {
-              t.masses(d1, d2) += m(d1 * ds + d2)
-              d2 += 1
-            }
-	          d1 += 1
-          }
-          new DiscreteMarginal2(l1, l2, t)
-        }).toArray
-      def expectations = _expectations
-      override def logZ = _logZ
-      def marginals: Iterable[DiscreteMarginal] = _nodeMarginals.values
-      def marginal(v: Var): DiscreteMarginal1[DiscreteVar] = _nodeMarginals(v)
-      lazy val factors: Iterable[Factor] = self.factors(labels)
-      override def marginal(_f: Factor): FactorMarginal = {
-        val f = _f.asInstanceOf[DotFamily#Factor]
-        if (f.family == bias || f.family == obs)
-          marginal(f.variables.head).asInstanceOf[FactorMarginal]
-        else if (f.family == markov)
-          _edgeMarginals(labels.indexOf(f.variables.head)).asInstanceOf[FactorMarginal]
-        else
-          throw new Error("ChainModel marginals can only be returned for ChainModel factors")
-      }
-    }
-    summary
-  }
-
-  // TODO learning doesn't work for this yet... -luke
-  def inferByMaxProduct(labels: IndexedSeq[Label]): ChainSummary = {
-    new ChainSummary {
-      private val targetInts = Viterbi.search(labels, obs, markov, bias, labelToFeatures).toArray
-      lazy private val variableTargetMap = labels.zip(targetInts).toMap
-      private val variables = labels
-      lazy private val _marginals = new LinkedHashMap[Var, DiscreteMarginal1[DiscreteVar]] ++=
-        labels.zip(targetInts).map({case (l, t) => l -> new SimpleDiscreteMarginal1[DiscreteVar](l, new SingletonProportions1(labelDomain.size, t))})
-      def marginals: Iterable[DiscreteMarginal] = _marginals.values
-      lazy val factors: Iterable[Factor] = self.factors(labels)
-      def marginal(v: Var): DiscreteMarginal1[DiscreteVar] = _marginals(v)
-      override def setToMaximize(implicit d:DiffList): Unit = {
-        var i = 0
-        while (i < variables.length) {
-          variables(i).set(targetInts(i))(d)
-          i += 1
-        }
-      }
-      val expectations = assignmentStatistics(labels, targetInts)
-      override val logZ = expectations.toSeq.map({case (weights, stats) => weights.value dot stats}).sum
-      override def marginal(_f: Factor): FactorMarginal = {
-        val f = _f.asInstanceOf[DotFamily#Factor]
-        if (f.family == bias)
-          f match { case f: DotFamilyWithStatistics1[Label]#Factor => new SimpleDiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor1[Label] { val factor = f } }
-        else if (f.family == obs)
-          f match { case f:DotFamilyWithStatistics2[Label,Features]#Factor => new SimpleDiscreteMarginal1(f._1, _marginals(f._1).proportions.asInstanceOf[Proportions1]) with DiscreteMarginal1Factor2[Label,Features] { val factor = f } }
-        else if (f.family == markov) {
-          val f2 = _f.asInstanceOf[Factor2[Label, Label]]
-          val s = labelDomain.dimensionDomain.size
-          new DiscreteMarginal2(f2._1, f2._2, new SingletonProportions2(s, s, variableTargetMap(f2._1), variableTargetMap(f2._2))) with DiscreteMarginal2Factor2[Label,Label] { val factor = f2 }
-        }
-        else
-          throw new Error("ChainModel marginals can only be returned for ChainModel factors")
-      }
-    }
-  }
 }
 
-trait ChainSummary extends Summary {
-  // Do we actually want the marginal of arbitrary sets of variables? -brian
-  def marginal(vs:Var*): DiscreteMarginal = null
-  override def marginal(v:Var): DiscreteMarginal1[DiscreteVar]
-  def expectations: WeightsMap // TODO this should be 1-hot tensors for Viterbi -luke
-  def factors: Iterable[Factor]
-  def factorMarginals = factors.map(marginal)
-}
 
-object ChainModel {
-  trait ChainInfer {
-    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary
-  }
-  object MarginalInference extends ChainInfer {
-    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
-      model.inferBySumProduct(variables.asInstanceOf[IndexedSeq[L]])
-  }
-  object MAPInference extends ChainInfer {
-    def infer[L <: LabeledMutableDiscreteVarWithTarget[_]](variables: Iterable[L], model: ChainModel[L, _, _]): ChainSummary =
-      model.inferByMaxProduct(variables.asInstanceOf[IndexedSeq[L]])
-  }
-  class ChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](model: ChainModel[L, _, _], val labels: IndexedSeq[L], infer: ChainInfer = MarginalInference) extends Example {
-    private var cachedTargetStats: WeightsMap = null
-    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
-      if (labels.size == 0) return
-      if (cachedTargetStats == null) cachedTargetStats = model.targetStatistics(labels)
-      val summary = infer.infer(labels, model)
-      if (gradient != null) {
-        for ((weights, stats) <- cachedTargetStats.toSeq) gradient.accumulate(weights, stats)
-        for ((weights, stats) <- summary.expectations.toSeq) gradient.accumulate(weights, stats, -1.0)
-      }
-      if (value != null) {
-        val targetValue = cachedTargetStats.toSeq.map({case (weights, stats) => weights.value dot stats}).sum
-        value.accumulate(targetValue - summary.logZ)
-      }
-    }
-  }
-  
-  def createChainExample[L <: LabeledMutableDiscreteVarWithTarget[_]](model: ChainModel[L,_,_], labels: IndexedSeq[L]) = new ChainExample(model, labels)
-}

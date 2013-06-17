@@ -86,16 +86,7 @@ object Tutorial40InferenceAndLearning {
      * factorie has MaximizeByBPChain, which runs viterbi, InferByBPTreeSum, which runs BP on
      * trees, and InferByBPLoopy which runs loopy belief propagation.
      *
-     * It is easy to implement one's own Infer object, and indeed the ChainModel does so with
-     * more efficient code.
-     **/
-
-    val summary1 = model.inferBySumProduct(document.tokens.map(_.attr[Label]).toIndexedSeq)
-    assertStringEquals(summary1.logZ, "6.931471805599453")
-    assertStringEquals(summary1.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.5,0.5)")
-
-
-    /*&
+     *
      * One of the main uses of inference is in learning.
      *
      * The learning infrastructure in factorie is made of three components which can
@@ -112,14 +103,12 @@ object Tutorial40InferenceAndLearning {
 
 
 
-    /*& The most common example one uses is the LikelihoodExample, which computes the value and the
+    /*&
+     * The most common example one uses is the LikelihoodExample, which computes the value and the
      * gradient for maximum likelihood training. Here's how to construct one for this sentence
      * using Factorie's BP inferencer.
      **/
     val example0 = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
-
-    // The ChainModel, however, comes with its own more efficient example
-    val example1 = ChainModel.createChainExample(model, document.tokens.map(_.attr[Label]).toIndexedSeq)
 
     /*& In this tutorial let's use the AdaGrad optimizer, which is efficient and has
      * per-coordinate learning rates but is unregularized
@@ -130,12 +119,12 @@ object Tutorial40InferenceAndLearning {
      * To learn a model we need a trainer. We can do stochastic single-threaded training with the
      * SGDTrainer. We can also do multithreaded stochastic learning with the HogwildTrainer.
      **/
-    Trainer.onlineTrain(model.parameters, Seq(example1), optimizer=optimizer0)
+    Trainer.onlineTrain(model.parameters, Seq(example0), optimizer=optimizer0)
 
     // Factorie also supports batch learning. Note that regularization is built into the optimizer
     val optimizer1 = new optimize.LBFGS with optimize.L2Regularization
     optimizer1.variance = 10000.0
-    Trainer.batchTrain(model.parameters, Seq(example1), optimizer=optimizer1)
+    Trainer.batchTrain(model.parameters, Seq(example0), optimizer=optimizer1)
 
     /*&
      * Factorie also supports other batch trainers. The ParallelBatchTrainer keeps a per-thread
@@ -147,9 +136,9 @@ object Tutorial40InferenceAndLearning {
      */
 
     // Now we can run inference and see that we have learned
-    val summary2 = model.inferBySumProduct(document.tokens.map(_.attr[Label]).toIndexedSeq)
-    assertStringEquals(summary2.logZ, "48.63285471872915")
-    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999307662754184,6.923372458157457E-5)")
+    val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
+    assertStringEquals(summary2.logZ, "48.63285471869274")
+    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999307662754185,6.923372458152193E-5)")
 
     /*&
      * Factorie also has support for more efficient learning algorithms than traditional

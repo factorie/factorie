@@ -1,15 +1,12 @@
 Pre 1.0 release:
 
 Implement sparse iteration through values for BP [McCallum, Singh]
-Verify ChainModel actually works [Passos?,Martin]
-In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
-In BP, when running on chains, verify that we don't need to walk to create a tree.
 Redesign app.classify for better access to underlying optimize goodness. [McCallum, Passos]
-Finish lexicon data loading management. [McCallum]
+In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 Improve LDA speed and multi-threading [Vineet]
 Packaged POS, NER, DepParser, Coref [Andrew]
 Consider removing the implicit DiffList from the arguments to the TokenSpan constructor [Andrew]
-Consider again making Mentions inherit from TokenSpan, with the option to simply initialize from a TokenSpan constructor argument [Andrew]
+Consider again making Mentions inherit from TokenSpan, with the option to simply initialize from a TokenSpan constructor argument [Andrew] [Passos: please don't!]
 Rename ClearTokenizer and ClearSegmenter [Andrew]
 Make DocumentAnnotator take lazy values [Andrew]
 Standardize NER2 [Andrew]
@@ -22,10 +19,8 @@ Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [
 Look at app.nlp.relation  [McCallum]
 Make reasonable command-line tools for MALLET functionality, and document  [McCallum and others]
 Sanity-check pass through all code [All]
-Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
-Write JUnit tests for cc.factorie.la [Vilnis?]
 
 More examples:
 Tutorial examples [McCallum]
@@ -58,6 +53,11 @@ Regression, Matrix Factorization,
 
 
 DONE:
+Write JUnit tests for cc.factorie.la [Vilnis?]
+ Consider which println's should be transformed into Logging statements
+Finish lexicon data loading management. [McCallum]
+In BP, when running on chains, verify that we don't need to walk to create a tree.
+Verify ChainModel actually works [Passos?,Martin]
 Code review BP.  Make it fast!  [Passos]
 Implement dual decomposition. [Passos]
 Learning-supporting Sampler extends Infer [Passos]

@@ -163,50 +163,6 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
   }
 
-  @Test def testChainModelBP {
-    for ((bpInfer, chainInfer) <- Seq((InferByBPChainSum, ChainModel.MarginalInference), (MaximizeByBPChain, ChainModel.MAPInference))) {
-      object cdomain extends CategoricalTensorDomain[String]()
-      val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
-      features += "asd"
-      val ldomain = new CategoricalDomain[String]()
-      val d = new app.nlp.Document("noname")
-      val t0 = new Token(d, 0, 1)
-      val t1 = new Token(d, 0, 1)
-      val t2 = new Token(d, 0, 1)
-      val t3 = new Token(d, 0, 1)
-      class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
-      val l0 = new Label("1")
-      val l1 = new Label("0")
-      val l2 = new Label("2")
-      val l3 = new Label("3")
-      val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2, l3 -> t3)
-      val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
-      val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
-      model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-      val ex = new LikelihoodExample(Seq(l0, l1, l2, l3), model, bpInfer)
-      val ex1 = new ChainModel.ChainExample(model, Seq(l0, l1, l2, l3).toIndexedSeq, chainInfer)
-      val optimizer = new ConstantLearningRate {}
-      for (i <- 0 until 10) {
-        val gradientAccumulator0 = new LocalWeightsMapAccumulator(model.parameters.blankSparseMap)
-        val gradientAccumulator1 = new LocalWeightsMapAccumulator(model.parameters.blankSparseMap)
-        val valueAccumulator0 = new LocalDoubleAccumulator
-        val valueAccumulator1 = new LocalDoubleAccumulator
-        ex.accumulateExampleInto(/*model, */gradientAccumulator0, valueAccumulator0)
-        ex1.accumulateExampleInto(/*model, */gradientAccumulator1, valueAccumulator1)
-        assertEquals(valueAccumulator0.value, valueAccumulator1.value, 0.001)
-        gradientAccumulator0.tensorSet.keys.foreach(f => {
-          logger.debug("checking family: " + f.getClass.getName)
-          logger.debug("good grad: " + gradientAccumulator0.tensorSet)
-          logger.debug("bad grad: " + gradientAccumulator1.tensorSet)
-          gradientAccumulator0.tensorSet(f).foreachActiveElement((i,d) => {
-            assertEquals(gradientAccumulator0.tensorSet(f)(i), gradientAccumulator1.tensorSet(f)(i), 0.001)
-          })
-        })
-        optimizer.step(model.parameters, gradientAccumulator0.tensorSet, Double.NaN)
-      }
-    }
-  }
-
   @Test def testLoopyLogZ {
     object cdomain extends CategoricalTensorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
