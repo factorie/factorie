@@ -37,8 +37,13 @@ object BPSumProductRing extends BPRing {
       if (varying == null || (varying.contains(factor._1) && varying.contains(factor._2))) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2SumProduct
       else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorTreeSumProduct
       else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactorTreeSumProduct
-    case factor:Factor3[DiscreteVar @unchecked,DiscreteVar @unchecked,DiscreteTensorVar @unchecked] =>
-      new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2SumProduct
+    case factor:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] =>
+      val neighbors = factor.variables.toSet
+      if (neighbors.size == 2)
+        new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2SumProduct
+      else if (neighbors.size == 1)
+        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorTreeSumProduct
+      else throw new Error("Can't create the factor")
   }
 }
 
@@ -50,8 +55,13 @@ object BPMaxProductRing extends BPRing {
     case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
       if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2MaxProduct
       else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorMaxProduct
-    case factor:Factor3[DiscreteVar @unchecked,DiscreteVar @unchecked,DiscreteTensorVar @unchecked] =>
-      new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2MaxProduct
+    case factor:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] =>
+      val neighbors = factor.variables.toSet
+      if (neighbors.size == 2)
+        new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2MaxProduct
+      else if (neighbors.size == 1)
+        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorMaxProduct
+      else throw new Error("Can't create the factor")
   }
 }
 
@@ -250,6 +260,22 @@ abstract class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVa
     result
   }
 }
+
+abstract class BPFactor1Factor3(val factor: Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1Factor3[DiscreteTensorVar,DiscreteTensorVar,DiscreteTensorVar,DiscreteVar] {
+  def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
+  def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
+  val scores: Tensor1 = {
+    val v = edge1.variable
+    val result = new DenseTensor1(v.domain.dimensionSize)
+    var i = 0
+    while (i < v.domain.dimensionSize) {
+      result(i) = factor.assignmentScore(new Assignment1[DiscreteVar](v, v.domain(i).asInstanceOf[v.Value]))
+      i += 1
+    }
+    result
+  }
+}
+
 
 // An abstract class for BPFactors that have 2 varying neighbors.  They may have additional constant neighbors.
 abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSummary) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {

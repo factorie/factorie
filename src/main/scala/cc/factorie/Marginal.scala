@@ -90,9 +90,9 @@ trait DiscreteMarginal1Factor2[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar] exte
   }
 }
 
-trait DiscreteMarginal1Factor3[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar,V3<:DiscreteTensorVar] extends FactorMarginal {
-  this: DiscreteMarginal1[V1] =>
-  def _1: V1
+trait DiscreteMarginal1Factor3[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar,V3<:DiscreteTensorVar,V4<:DiscreteVar] extends FactorMarginal {
+  this: DiscreteMarginal1[V4] =>
+  def _1: V4
   override def factor: Factor3[V1,V2,V3]
   def tensorStatistics = {
     if (_1 eq factor._1)
