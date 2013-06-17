@@ -60,7 +60,7 @@ object ConllCorefLoader {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-  def loadWithParse(f: String): Seq[Document] = {
+  def loadWithParse(f: String, loadSIngletons: Boolean = true): Seq[Document] = {
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
     val tokenizer = """(\(|\||\)|\d+)""".r
@@ -168,7 +168,7 @@ object ConllCorefLoader {
         }
 
         val foo = fields(5).split("\\*")
-        if (foo.length >= 1) {
+        if (foo.length >= 1 && loadSIngletons) {
           val bracketOpens = foo(0)
           val bracketCloses = if (foo.length > 1) foo(1) else ""
           for (nonTerminal <- bracketOpens.split("\\(").drop(1)) {
