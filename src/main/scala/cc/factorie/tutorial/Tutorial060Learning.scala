@@ -2,10 +2,10 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
-import cc.factorie.optimize.{Trainer, SampleRankTrainer}
+import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
 import Implicits.defaultDocumentAnnotatorMap
 
-object Tutorial40InferenceAndLearning {
+object Tutorial060Learning {
   def main(args:Array[String]): Unit = {
     /*& Here we set up a simple linear chain CRF, such as the one used for part-of-speech tagging,
      * named-entity recognition, or noun phrase chunking. It will be our running example in this
@@ -86,6 +86,8 @@ object Tutorial40InferenceAndLearning {
      * factorie has MaximizeByBPChain, which runs viterbi, InferByBPTreeSum, which runs BP on
      * trees, and InferByBPLoopy which runs loopy belief propagation.
      *
+     * For more inference tools see the Inference tutorial.
+     *
      *
      * One of the main uses of inference is in learning.
      *
@@ -108,23 +110,23 @@ object Tutorial40InferenceAndLearning {
      * gradient for maximum likelihood training. Here's how to construct one for this sentence
      * using Factorie's BP inferencer.
      **/
-    val example0 = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
+    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
 
     /*& In this tutorial let's use the AdaGrad optimizer, which is efficient and has
-     * per-coordinate learning rates but is unregularized
+     * per-coordinate learning rates but is not regularized
      **/
     val optimizer0 = new optimize.AdaGrad()
 
     /*&
-     * To learn a model we need a trainer. We can do stochastic single-threaded training with the
-     * SGDTrainer. We can also do multithreaded stochastic learning with the HogwildTrainer.
+     * To learn a model the simplest way is to call Trainer.onlineTrain. This will optimize the
+     * parameters with AdaGrad and parameter averaging using SGD.
      **/
-    Trainer.onlineTrain(model.parameters, Seq(example0), optimizer=optimizer0)
+    Trainer.onlineTrain(model.parameters, Seq(example), optimizer=optimizer0)
 
     // Factorie also supports batch learning. Note that regularization is built into the optimizer
     val optimizer1 = new optimize.LBFGS with optimize.L2Regularization
     optimizer1.variance = 10000.0
-    Trainer.batchTrain(model.parameters, Seq(example0), optimizer=optimizer1)
+    Trainer.batchTrain(model.parameters, Seq(example), optimizer=optimizer1)
 
     /*&
      * Factorie also supports other batch trainers. The ParallelBatchTrainer keeps a per-thread
@@ -133,12 +135,41 @@ object Tutorial40InferenceAndLearning {
      *
      * Also note that all online optimizers can be used with the batch trainers, but not the
      * other way around.
+     *
+     * One can also not call Trainer.onlineTrain or Trainer.batchTrain and create a Trainer
+     * explicitly. A Trainer is a policy object which is responsible for deciding which gradients
+     * are evaluated, when, and in which threads, and when these gradients are given to the optimizers.
+     *
+     * All trainers inherit from Trainer. To create a trainer, simply instantiate it.
+     */
+    val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer0)
+    /*&
+     * To use the trainer we can either call .trainFromExamples or call things in a loop:
+     */
+    trainer.trainFromExamples(Seq(example))
+    // or
+    while (!trainer.isConverged) {
+      trainer.processExamples(Seq(example))
+    }
+    /*&
+     * Some trainers might require some tear down after training for optimal usage. See the implementation
+     * of Trainer.train for an example of how to do so.
+     *
+     *
+     * Factorie also has many other optimizers. Usually AdaGrad with ParameterAveraging is a good bet,
+     * but often one wants something more specific.
+     *
+     * There are two main regularized online optimizers in factorie: AdaGradRDA, which uses regularized
+     * dual averaging and supports l1 and l2 regularization, and L2RegularizedConstantRate, which supports
+     * only l2 regularization. Neither of these optimizers support parameter averaging.
+     *
+     * For more information see the java docs of the cc.factorie.optimize package.
      */
 
     // Now we can run inference and see that we have learned
     val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
-    assertStringEquals(summary2.logZ, "48.63285471869274")
-    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999307662754185,6.923372458152193E-5)")
+    assertStringEquals(summary2.logZ, "48.63607808707934")
+    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897908,6.913211020917863E-5)")
 
     /*&
      * Factorie also has support for more efficient learning algorithms than traditional
@@ -156,8 +187,8 @@ object Tutorial40InferenceAndLearning {
     trainer2.processContexts(document.tokens.toSeq.map(_.attr[Label]))
 
     /*&
-     * Finally, there are many other useful examples in factorie. The GLMExample implements generalized
-     * linear models for many classification loss functions, for example, and the
+     * Finally, there are many other useful examples in factorie. The LinearMultiClassExample
+     * implements generalized linear models for many classification loss functions, for example, and the
      * DominationLossExample knows how to do learning to rank.
      **/
   }
