@@ -141,11 +141,11 @@ object Tutorial060Learning {
      * are evaluated, when, and in which threads, and when these gradients are given to the optimizers.
      *
      * All trainers inherit from Trainer. To create a trainer, simply instantiate it.
-     */
+     **/
     val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer0)
     /*&
      * To use the trainer we can either call .trainFromExamples or call things in a loop:
-     */
+     **/
     trainer.trainFromExamples(Seq(example))
     // or
     while (!trainer.isConverged) {
@@ -164,7 +164,7 @@ object Tutorial060Learning {
      * only l2 regularization. Neither of these optimizers support parameter averaging.
      *
      * For more information see the java docs of the cc.factorie.optimize package.
-     */
+     **/
 
     // Now we can run inference and see that we have learned
     val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)

@@ -6,11 +6,6 @@ import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.nlp.segment.{SentenceSegmenter, RegexTokenizer}
 import cc.factorie.optimize.Trainer
 
-/**
- * User: apassos
- * Date: 6/17/13
- * Time: 11:46 AM
- */
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {
     /*&
@@ -36,7 +31,7 @@ object Tutorial090ParallelismAndHyperparameters {
      * internally used to index into factorie tensors.
      *
      * The most commonly used factorie domain is the CategoricalDomain
-     */
+     **/
     val c = new CategoricalDomain[String]()
 
     /*&
@@ -46,7 +41,7 @@ object Tutorial090ParallelismAndHyperparameters {
      *
      * The one exception is that when the domain is being frozen no other thread should
      * be writing to it.
-     */
+     **/
     for (feature <- (0 until 1000).par) {
       // calling .index on a domain will add the category to the domain if it's not present,
       // and return its index. It is fine to do this from many threads at once.
@@ -66,7 +61,8 @@ object Tutorial090ParallelismAndHyperparameters {
      * optimize package see the relevant tutorials on learning and optimization.
      *
      * Here we create a simple chain model and one document, with some labels and features.
-     */
+     **/
+
     object LabelDomain extends CategoricalDomain[String]
     class Label(val token: Token, s: String) extends LabeledCategoricalVariable(s) {
       def domain = LabelDomain
@@ -92,24 +88,25 @@ object Tutorial090ParallelismAndHyperparameters {
       features += "IsCapitalized=" + t.string(0).isUpper.toString
     })
     val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
-    /*
+
+    /*&
      * Though we only have one training example we can still use factorie's parallel
      * training facilities, and they should perform normally.
      *
      * As seen in the learning tutorial, the main way of training a model with in batch
      * model (that is, accumulating the gradients of all training examples and giving
      * them to the optimizer all together) is by using Trainer.batchTrain
-     */
+     **/
     Trainer.batchTrain(model.parameters, Seq(example))
     /*&
      * Indeed, because there are no safety issues, Trainer.batchTrain uses parallelism
      * by default. To disable it, call
-     */
+     **/
     Trainer.batchTrain(model.parameters, Seq(example), useParallelTrainer = false)
     /*&
      * It is also possible to control how many threads will be used in the parallel
      * training process.
-     */
+     **/
     Trainer.batchTrain(model.parameters, Seq(example), nThreads=2)
     /*&
      * By default factorie will use one learning thread per processor in your machine.
@@ -122,11 +119,11 @@ object Tutorial090ParallelismAndHyperparameters {
      *
      * Parallelism is also available in the online trainers, but it's disabled by default.
      * So, doing
-     */
+     **/
     Trainer.onlineTrain(model.parameters, Seq(example))
     /*&
      * will not use parallelism, and it has to be enabled explicitly, as in
-     */
+     **/
     Trainer.onlineTrain(model.parameters, Seq(example), useParallelTrainer = true)
     /*&
      * The default ParallelOnlineTrainer tries to keep the weights safe. It read locks
@@ -147,7 +144,7 @@ object Tutorial090ParallelismAndHyperparameters {
      * The main object which drives the hyperparameter optimization process is a
      * HyperparameterSearcher. To specify one we need to first define some command-line
      * options to be optimized.
-     */
+     **/
     import cc.factorie.util.CmdOptions
     object opts extends CmdOptions {
       val dummy1 = new CmdOption("dummy1", "A", "STRING", "Doesn't mean anything")
@@ -156,7 +153,7 @@ object Tutorial090ParallelismAndHyperparameters {
     /*&
      * Once we have the command-line options we need to creat Hyperparameter objects,
      * which are templates for how each hyperparameter can take values.
-     */
+     **/
     import cc.factorie.util.{HyperParameter,SampleFromSeq,UniformDoubleSampler}
     val d1 = new HyperParameter(opts.dummy1, new SampleFromSeq(Seq("A", "B", "C")))
     val d2 = new HyperParameter(opts.dummy2, new UniformDoubleSampler(0, 1))
@@ -166,13 +163,13 @@ object Tutorial090ParallelismAndHyperparameters {
      *
      * Factorie doesn't care how this Future is computed. The simplest (but not that
      * useful) option is to just compute it right away and return a successful future
-     */
+     **/
     import scala.concurrent.Future
     val executor0 = (a: Array[String]) => Future.successful(1.0)
     /*&
      * A more interesting strategy is to return a future which will execute each training
      * job in parallel in the same machine
-     */
+     **/
     import scala.concurrent.ExecutionContext.Implicits.global
     import scala.concurrent.future
     val executor1 = (a: Array[String]) => future { 1.0 }
@@ -186,7 +183,7 @@ object Tutorial090ParallelismAndHyperparameters {
      * want to start, and for how many of those jobs do you wait until they finish.
      *
      * Now we are ready to optimize the hyperparameters.
-     */
+     **/
     val hyp = new cc.factorie.util.HyperParameterSearcher(opts, Seq(d1, d2), executor1, numTrials=10, numToFinish=5, secondsToSleep=1)
     val args = hyp.optimize()
     assertStringEquals(args.length, "2")
@@ -215,6 +212,6 @@ object Tutorial090ParallelismAndHyperparameters {
      * Since this tutorial should be runnable without distributed environments being properly set
      * up we can't run either of those classes. To see an example of how to use QSubExecutor see
      * for instance the DepParser2Optimizer object.
-     */
+     **/
   }
 }

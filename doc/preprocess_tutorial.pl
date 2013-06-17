@@ -42,8 +42,8 @@ while(<>){
   }
 
   # assertStringEqual line
-  elsif(/^(\s*)assertStringEquals\("([^,]*)"\s*,\s*(.*)\)/){#\s*([^,\]*)\)\s*/ && ($state = 0)) {
-    print "$1$3\n\n``` \n\n ``$2`` \n\n```scala\n\n"
+  elsif(/^(\s*)assertStringEquals\(\s*(.*),\s* "(.*)"/){#"(.*)"\s*\)/){#\s*([^,\]*)\)\s*/ && ($state = 0)) {
+    print "$1$2\n\n``` \n\n `` = $3`` \n\n```scala\n\n"
   }
 
   # any other line
