@@ -45,7 +45,7 @@ class TestDecisionTree extends JUnitSuite {
     val evaluate = (c: MultiClassClassifier[Tensor1]) => {
       val accuracy = testFeatures.map(i => c.classification(i).bestLabelIndex)
         .zip(testLabels).count(i => i._1 == i._2).toDouble/testLabels.length
-      println(f"Test accuracy: $accuracy%1.4f")
+      println(f"Test accuracy: $accuracy%1.4f trainer: ${c.getClass.getName}")
       assert(accuracy > 0.66)
     }
 
