@@ -12,9 +12,10 @@ import cc.factorie.la._
 import cc.factorie.app.classify.{SVMTrainer, MultiClassModel}
 import scala._
 import scala.Some
-import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
+import cc.factorie.optimize._
 import scala.Some
 import scala.concurrent.{Await, Future}
+import scala.Some
 
 class DepParser2 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
@@ -528,16 +529,17 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
         val featuresSize = examples.head._2.domain.dimensionSize
         SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq, parallel=true)
       } else {
-        val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
-        val ex = examples.map(e => new LinearMultiClassExample(model.evidence,
-          e._2.value.asInstanceOf[Tensor1],
-          e._1.targetIntValue,
-          LinearObjectives.sparseLogMultiClass))
-        while (!trainer.isConverged) {
-          trainer.processExamples(ex.shuffle)
-          println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
-          testAll(c, "iteration " + trainer.iteration)
-        }
+        Trainer.onlineTrain(model.parameters,
+          examples.map(e => new LinearMultiClassExample(model.evidence,
+            e._2.value,
+            e._1.targetIntValue,
+            LinearObjectives.sparseLogMultiClass)).toSeq,
+          optimizer=optimizer,
+          maxIterations=2,
+          evaluate = () => {
+            println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
+            testAll(c, "iteration ")
+          })
       }
     }
     var trainingVs = c.generateDecisions(sentences, 0)
