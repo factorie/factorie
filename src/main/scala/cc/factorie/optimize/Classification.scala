@@ -94,7 +94,7 @@ class LinearMultiClassTrainer(val optimizer: GradientOptimizer,
                         val useOnlineTrainer: Boolean,
                         val shouldAverage: Boolean,
                         val objective: LinearObjectives.MultiClass,
-                        val maxIterations: Int) extends MultiClassTrainerBase[LinearMultiClassClassifier] {
+                        val maxIterations: Int)(implicit random: scala.util.Random) extends MultiClassTrainerBase[LinearMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) = {
     val classifier = new LinearMultiClassClassifier(labelSize, featureSize)
     val examples = (0 until labels.length).map(i => new LinearMultiClassExample(classifier.weights, features(i), labels(i), objective, weight=weights(i)))
@@ -107,12 +107,12 @@ class OnlineLinearMultiClassTrainer(useParallel:Boolean = false,
                               shouldAverage:Boolean = true,
                               optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging,
                               objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
-                              maxIterations: Int = 3)
+                              maxIterations: Int = 3)(implicit random: scala.util.Random)
   extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = true, shouldAverage, objective, maxIterations) {}
 
 class BatchLinearMultiClassTrainer(useParallel:Boolean = true,
                              optimizer: GradientOptimizer = new LBFGS with L2Regularization,
                              objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
-                             maxIterations: Int = 200)
+                             maxIterations: Int = 200)(implicit random: scala.util.Random)
   extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = false, shouldAverage=false, objective, maxIterations) {}
 

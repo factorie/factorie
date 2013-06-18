@@ -117,6 +117,7 @@ object Classify {
       val printInfoGain = new CmdOption("print-infogain", false, "true|false", "Print the training features with highest information gain.")
     }
     opts.parse(args)
+    implicit val random = new scala.util.Random(0)
 
     object FeaturesDomain extends CategoricalTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
@@ -289,7 +290,7 @@ object Classify {
     val classifierTrainer = opts.trainer.value match {
       case "MaxEntTrainer" => new MaxEntTrainer()
       case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()
-      case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer()
+      case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer(random=random)
       case "NaiveBayesTrainer" => new NaiveBayesTrainer()
       case "SVMTrainer" => new SVMTrainer()
       case "ID3DecisionTreeTrainer" => new ID3DecisionTreeTrainer()

@@ -24,13 +24,13 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
       return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
-  def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
+  def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = maths.nextGaussian(mean, variance)(random)
   case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
     override def logpr(child:Double, mean:Double, variance:Double): Double = self.logpr(child, mean, variance)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(child:Double, mean:Double, variance:Double) = math.exp(logpr(child, mean, variance))
     override def pr: Double = self.pr(_1.value, _2.value, _3.value)
-    def sampledValue(mean:Double, variance:Double): Double = self.sampledValue(mean, variance)
+    def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = self.sampledValue(mean, variance)
     //override def sampledValue: Double = self.sampledValue(_2.value, _3.value)
   }
   def newFactor(a:DoubleVar, b:DoubleVar, c:DoubleVar) = Factor(a, b, c)

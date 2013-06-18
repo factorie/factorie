@@ -8,6 +8,7 @@ import cc.factorie.optimize.Trainer
 
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {
+    implicit val random = new scala.util.Random(0)
     /*&
      * Factorie has support for parallelism and distributed computation in some parts
      * which are often bottlenecks when working with machine learning and natural

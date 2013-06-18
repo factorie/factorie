@@ -13,6 +13,7 @@ object LDA4 {
     var year = 2001
   }
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val numTopics = 20
     val numIterations = 50
     val tokenizer = cc.factorie.app.strings.alphaSegmenter
@@ -41,7 +42,7 @@ object LDA4 {
         doc.year = year.toInt
         if (doc.year > maxYear) maxYear = doc.year
         if (doc.year < minYear) minYear = doc.year
-        if (doc.length > 3) { print("+"+doc.year); Console.flush; lda.addDocument(doc) } 
+        if (doc.length > 3) { print("+"+doc.year); Console.flush; lda.addDocument(doc, random) }
       }})
       println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
       /*for (file <- recursiveFiles(new File(dirname))) {

@@ -48,6 +48,7 @@ class TestProposalSamplers extends TestCase with cc.factorie.util.FastLogging {
   }
 
   def testV2F1 = {
+    implicit val random = new scala.util.Random(0)
     val samples = 10000
     val v1 = new BinVar(0)
     val v2 = new BinVar(0)

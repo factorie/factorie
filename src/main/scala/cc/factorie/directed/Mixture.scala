@@ -43,7 +43,7 @@ trait MixtureFactor extends DirectedFactor {
 class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
 object MixtureDomain extends MixtureDomain[Any]
 // NOTE Was Mixture[+P...]
-class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirectedModel) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
+class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirectedModel, implicit val random: scala.util.Random) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
 {
   /* A Mixture is a deterministic function of its parents.  
      This fact is examined in DirectedModel.factors, causing factors(mixtureComponent)
@@ -86,12 +86,12 @@ class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirected
 }
 
 object Mixture extends DirectedFamily1[Mixture[Var]] {
-  def apply[P<:Var](n:Int)(constructor: =>P)(implicit model: MutableDirectedModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead
+  def apply[P<:Var](n:Int)(constructor: =>P)(implicit model: MutableDirectedModel, random: scala.util.Random): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead
   case class Factor(override val _1:Mixture[Var]) extends super.Factor(_1) {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Var] = _1.components
     def pr(v:C#Value) = 1.0
-    def sampledValue: ChildType#Value = throw new Error("Cannot sample a Mixture")
+    def sampledValue(implicit random: scala.util.Random): ChildType#Value = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
       throw new Error("Not yet implemented.")
       //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component

@@ -22,7 +22,7 @@ import cc.factorie.directed._
 
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
-    val random = new scala.util.Random(0)
+    implicit val random = new scala.util.Random(0)
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
@@ -63,6 +63,7 @@ object GaussianMixtureDemo {
 // TODO: this is a really slow test, I should profile this -luke
 object MultivariateGaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)

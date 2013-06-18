@@ -209,7 +209,7 @@ class NER2 extends DocumentAnnotator {
     println("Training with %d features.".format(FeaturesDomain.dimensionSize))
   }
   
-  def trainModel1(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+  def trainModel1(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     // This depends on calling trainPrep alrady
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     def predict(labels:Iterable[BilouOntonotesNerLabel]): Unit = for (label <- labels) MaximizeDiscrete(label, model1)
@@ -225,7 +225,7 @@ class NER2 extends DocumentAnnotator {
   }
   
   // Parameter estimation
-  def trainModel2(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+  def trainModel2(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     trainPrep(trainDocs, testDocs)
     // Model2 depends on Model1, so train Model1 also
@@ -254,7 +254,7 @@ class NER2 extends DocumentAnnotator {
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   
-  def trainModel3(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+  def trainModel3(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
@@ -273,7 +273,7 @@ class NER2 extends DocumentAnnotator {
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   
-  def train(trainFilename:String, testFilename:String): Unit = {
+  def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
     val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
     val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
     mainModel match {
@@ -369,6 +369,7 @@ object NER2 extends NER2(cc.factorie.util.ClasspathURL[NER2](".factorie"))
 
 object NER2Trainer {
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length != 3) throw new Error("Usage: trainfile testfile savemodelfile")
     val ner = new NER2
     ner.train(args(0), args(1))

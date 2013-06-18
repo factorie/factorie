@@ -20,9 +20,9 @@ object DirichletMixture extends DirectedFamily3[ProportionsVariable,Mixture[Mass
   case class Factor(override val _1:ProportionsVariable, override val _2:Mixture[MassesVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with MixtureFactor {
     def gate = _3
     def pr(child:Proportions,  mixture:Seq[Masses], z:DiscreteValue) = Dirichlet.pr(child, mixture(z.intValue))
-    def sampledValue(mixture:Seq[Masses], z:DiscreteValue): Proportions = Dirichlet.sampledValue(mixture(z.intValue))
+    def sampledValue(mixture:Seq[Masses], z:DiscreteValue)(implicit random: scala.util.Random): Proportions = Dirichlet.sampledValue(mixture(z.intValue))
     def prChoosing(child:Proportions,  mixture:Seq[Masses], mixtureIndex:Int): Double = Dirichlet.pr(child, mixture(mixtureIndex))
-    def sampledValueChoosing(mixture:Seq[Masses], mixtureIndex:Int): Proportions = Dirichlet.sampledValue(mixture(mixtureIndex)) //.asInstanceOf[ProportionsVar#Value]
+    def sampledValueChoosing(mixture:Seq[Masses], mixtureIndex:Int)(implicit random: scala.util.Random): Proportions = Dirichlet.sampledValue(mixture(mixtureIndex)) //.asInstanceOf[ProportionsVar#Value]
   }
   def newFactor(a:ProportionsVariable, b:Mixture[MassesVariable], c:DiscreteVariable) = Factor(a, b, c)
 }

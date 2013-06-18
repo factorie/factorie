@@ -78,6 +78,7 @@ object ChainNER2 {
   
 
   def main(args: Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile.")
 
     // Read in the data
@@ -87,7 +88,7 @@ object ChainNER2 {
     // Get the variables to be inferred (for now, just operate on a subset)
     val trainLabels = trainSentences.map(_.links).flatten //.take(10000)
     val testLabels = testSentences.map(_.links).flatten //.take(2000)
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
     
     // Train for 5 iterations
     //val pieces = trainLabels.map(l => new SampleRankExample[Variable](l, new GibbsSampler(model, HammingLossObjective)))

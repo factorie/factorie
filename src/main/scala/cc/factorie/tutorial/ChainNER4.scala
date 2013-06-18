@@ -64,6 +64,7 @@ object ChainNER4 {
   val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER4 trainfile testfile")
 
     // Read in the data
@@ -91,7 +92,7 @@ object ChainNER4 {
     
     // Sample and Learn!
     val startTime = System.currentTimeMillis
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
     //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
     //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent(model))

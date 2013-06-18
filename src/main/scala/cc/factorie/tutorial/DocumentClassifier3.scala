@@ -59,6 +59,7 @@ object DocumentClassifier3 {
   val objective = new HammingTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length < 2) 
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
@@ -77,7 +78,7 @@ object DocumentClassifier3 {
     val (testSet, trainSet) = documents.shuffle.split(0.5)
     val trainVariables = trainSet.map(_.label)
     val testVariables = testSet.map(_.label)
-    (trainVariables ++ testVariables).foreach(_.setRandomly())
+    (trainVariables ++ testVariables).foreach(_.setRandomly)
 
     // Train and test
     val examples = trainVariables.map(v => new optimize.DiscreteLikelihoodExample(v, model))

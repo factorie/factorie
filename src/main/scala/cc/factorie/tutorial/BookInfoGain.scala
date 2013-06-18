@@ -23,7 +23,7 @@ object BookInfoGain {
   var useBoostedClassifier = false
 
   def main(args: Array[String]): Unit = {
-
+    implicit val random = new scala.util.Random(0)
     if (args.length < 2)
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 

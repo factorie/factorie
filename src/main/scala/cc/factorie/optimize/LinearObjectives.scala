@@ -286,6 +286,7 @@ object LinearObjectivesTest {
   }
   def main(args: Array[String]): Unit = {
     // Read data and create Variables
+    implicit val random = new scala.util.Random(0)
     var docLabels = new classify.LabelList[Label, Document](_.document)
     for (directory <- args) {
       val directoryFile = new File(directory)

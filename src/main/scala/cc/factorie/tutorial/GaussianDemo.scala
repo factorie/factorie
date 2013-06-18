@@ -8,6 +8,7 @@ import cc.factorie.directed.{MaximizeMultivariateGaussianCovariance, MaximizeMul
 object GaussianDemo {
   def main(args: Array[String]): Unit = {
     implicit val model = DirectedModel()
+    implicit val random = new scala.util.Random(0)
     val mean = new DoubleVariable(10)
     val variance = new DoubleVariable(1.0)
 
@@ -35,6 +36,7 @@ object GaussianDemo {
 object MultivariateGaussianDemo {
   def main(args:Array[String]): Unit = {
     implicit val model = DirectedModel()
+    implicit val random = new scala.util.Random(0)
     val mean = new TensorVariable[Tensor1](new DenseTensor1(10, 0.0))
     val variance = new TensorVariable[Tensor2](new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 1.0 else 0.0)))
 

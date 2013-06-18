@@ -32,8 +32,8 @@ object Discrete extends DirectedFamily2[DiscreteVariable,ProportionsVariable] {
     override def pr: Double = _2.value.apply(_1.intValue)
     def prValue(p:Proportions, intValue:Int): Double = p.apply(intValue)
     override def prValue(intValue:Int): Double = _2.value.apply(intValue)
-    def sampledValue(p:Proportions): DiscreteValue = _1.domain.apply(p.sampleIndex)
-    override def sampledValue: DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
+    def sampledValue(p:Proportions)(implicit random: scala.util.Random): DiscreteValue = _1.domain.apply(p.sampleIndex)
+    override def sampledValue(implicit random: scala.util.Random): DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
     def maxIntValue(p:Proportions): Int = p.maxIndex // TODO 
     override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
   }

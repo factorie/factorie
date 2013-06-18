@@ -7,6 +7,7 @@ import Implicits.defaultDocumentAnnotatorMap
 
 object Tutorial060Learning {
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     /*& Here we set up a simple linear chain CRF, such as the one used for part-of-speech tagging,
      * named-entity recognition, or noun phrase chunking. It will be our running example in this
      * tutorial, but most of the things we'll discuss generalize all across factorie.

@@ -5,7 +5,7 @@ import cc.factorie.la._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)
+class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)(implicit random: scala.util.Random)
   extends MultiClassTrainerBase[DecisionTreeMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: DecisionTreeMultiClassClassifier => Unit): DecisionTreeMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _)))
@@ -18,7 +18,7 @@ class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with Tensor
 }
 
 // TODO why not train an SVM on these predictions instead of just doing majority voting?
-class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25, treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer, random: scala.util.Random = new scala.util.Random(0))
+class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25, treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer, implicit val random: scala.util.Random = new scala.util.Random(0))
   extends MultiClassTrainerBase[RandomForestMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: RandomForestMultiClassClassifier => Unit): RandomForestMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _)))
@@ -103,14 +103,14 @@ trait DecisionTreeTrainer {
 
   def getBucketPrediction(labels: Seq[Instance], weights: Instance => Double): Label = getPrediction(getBucketStats(labels, weights))
 
-  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: ((Tensor1, Label)) => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1): DTree = {
+  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: ((Tensor1, Label)) => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1)(implicit random: scala.util.Random): DTree = {
     val tree =
       if (maxDepth <= 1000) trainTree(trainInstances.toSeq, 0, maxDepth, Set.empty[(Int, Double)], instanceWeights, numFeaturesToUse)
       else trainTreeNoMaxDepth(trainInstances.toSeq, maxDepth, instanceWeights, numFeaturesToUse)
     if (pruneInstances.size == 0) tree else prune(tree, pruneInstances)
   }
 
-  private def trainTree(stats: Seq[Instance], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int): DTree = {
+  private def trainTree(stats: Seq[Instance], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit random: scala.util.Random): DTree = {
     // FIXME fix this since "distinct" doesn't do what you want on tensors... try maxIndex? -luke
     if (maxDepth < depth || stats.map(l => if (l._2.isInstanceOf[Tensor]) l._2.asInstanceOf[Tensor].maxIndex else l._2).distinct.length == 1 || shouldStop(stats, depth)) {
       makeLeaf(getBucketStats(stats, instanceWeights))
@@ -127,7 +127,7 @@ trait DecisionTreeTrainer {
     }
   }
 
-  private def trainTreeNoMaxDepth(startingSamples: Seq[Instance], maxDepth: Int, instanceWeights: Instance => Double, numFeaturesToChoose: Int): DTree = {
+  private def trainTreeNoMaxDepth(startingSamples: Seq[Instance], maxDepth: Int, instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit random: scala.util.Random): DTree = {
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
@@ -178,7 +178,7 @@ trait DecisionTreeTrainer {
 
   // TODO add delegates to bag up the instances and the features
   // limit what features we look at right here and just leave nulls in those spots
-  private def getSplittingFeatureAndThreshold(stats: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int): Option[(Int, Double)] = {
+  private def getSplittingFeatureAndThreshold(stats: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit random: scala.util.Random): Option[(Int, Double)] = {
     val state = getPerNodeState(stats, instanceWeights)
     val numFeatures = stats.head._1.length
     val possibleFeatureThresholds = getPossibleFeatureThresholds(stats, numFeaturesToChoose)
@@ -213,7 +213,7 @@ trait DecisionTreeTrainer {
 
   @inline def hasFeature(featureIdx: Int, feats: Tensor1, threshold: Double): Boolean = feats(featureIdx) > threshold
 
-  private def getPossibleFeatureThresholds(stats: Array[Instance], numFeaturesToChoose: Int): Array[Array[Double]] = {
+  private def getPossibleFeatureThresholds(stats: Array[Instance], numFeaturesToChoose: Int)(implicit random: scala.util.Random): Array[Array[Double]] = {
     val numInstances = stats.length
     val numFeatures = stats(0)._1.length
     val possibleThresholds = new Array[Array[Double]](numFeatures)

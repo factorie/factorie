@@ -54,6 +54,7 @@ object ChainNER1ML {
 
   
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))

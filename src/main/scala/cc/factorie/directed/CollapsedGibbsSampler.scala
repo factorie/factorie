@@ -18,7 +18,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel) extends Sampler[Iterable[MutableVar[_]]] {
+class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(implicit val random: scala.util.Random) extends Sampler[Iterable[MutableVar[_]]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -81,7 +81,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel) ext
 
 
 trait CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure
+  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler)(implicit random: scala.util.Random): CollapsedGibbsSamplerClosure
 }
 
 trait CollapsedGibbsSamplerClosure {
@@ -91,7 +91,7 @@ trait CollapsedGibbsSamplerClosure {
 
 
 object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler)(implicit random: scala.util.Random): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.size != 1) return null
     val pFactor = factors.collectFirst({case f:DirectedFactor => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
@@ -99,7 +99,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
     //if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
     new Closure(pFactor.get)
   }
-  class Closure(val factor:DirectedFactor) extends CollapsedGibbsSamplerClosure {
+  class Closure(val factor:DirectedFactor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       factor.updateCollapsedParents(-1.0)
       val variable = factor.child.asInstanceOf[MutableVar[_]]
@@ -115,7 +115,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
 
 // TODO This the "one outcome" and "one outcome parent" case for now.
 object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler)(implicit random: scala.util.Random): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.size != 2) return null
     //println("GateCollapsedGibbsSamplerHander: "+factors.map(_.asInstanceOf[Family#Factor].family.getClass).mkString)
     //val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
@@ -131,7 +131,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
     new Closure(gFactor.get, sampler.isCollapsed(gFactor.get.parents.head), mFactor.get, sampler.isCollapsed(mFactor.get.parents.head))
   }
     
-  class Closure(val gFactor:DiscreteGeneratingFactor, val gCollapsed:Boolean, val mFactor:MixtureFactor, val mCollapsed:Boolean) extends CollapsedGibbsSamplerClosure
+  class Closure(val gFactor:DiscreteGeneratingFactor, val gCollapsed:Boolean, val mFactor:MixtureFactor, val mCollapsed:Boolean)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gate = mFactor.gate //family.child(gFactor)
@@ -159,8 +159,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       // Sample
       //println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
       // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
-      if (sum == 0) gate.set(cc.factorie.random.nextInt(domainSize))(null)
-      else gate.set(cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))(null)
+      if (sum == 0) gate.set(random.nextInt(domainSize))(null)
+      else gate.set(cc.factorie.maths.nextDiscrete(distribution, sum)(random))(null)
       // Put back sufficient statistics of collapsed dependencies
       if (gCollapsed) gFactor.updateCollapsedParents(1.0)
       if (mCollapsed) mFactor.updateCollapsedParents(1.0)
@@ -169,7 +169,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
 }
 
 object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler)(implicit random: scala.util.Random): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.size != 2) return null
     val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor => f})
@@ -178,7 +178,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
     new Closure(sampler, gFactor.get, mFactor.get)
   }
     
-  class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor) extends CollapsedGibbsSamplerClosure
+  class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
@@ -209,8 +209,8 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
         // Sample
         // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
-        if (sum == 0) z = cc.factorie.random.nextInt(domainSize)
-        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
+        if (sum == 0) z = random.nextInt(domainSize)
+        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(random)
         gates.set(index, z)(null)
         // Put back sufficient statistics of collapsed dependencies
         if (gParentCollapsed) gParent.incrementMasses(z, 1.0)
@@ -223,7 +223,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
 
 
 object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+  def sampler(v:Iterable[Var], factors:Iterable[Factor], sampler:CollapsedGibbsSampler)(implicit random: scala.util.Random): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.size != 2) return null
     val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val mFactor = factors.collectFirst({case f:PlatedCategoricalMixture.Factor => f})
@@ -232,7 +232,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
     new Closure(sampler, gFactor.get, mFactor.get)
   }
 
-  class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedCategoricalMixture.Factor) extends CollapsedGibbsSamplerClosure
+  class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedCategoricalMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
@@ -263,8 +263,8 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
         assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
         // Sample
         // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
-        if (sum == 0) z = cc.factorie.random.nextInt(domainSize)
-        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
+        if (sum == 0) z = random.nextInt(domainSize)
+        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(random)
         gates.set(index, z)(null)
         // Put back sufficient statistics of collapsed dependencies
         if (gParentCollapsed) gParent.incrementMasses(z, 1.0)

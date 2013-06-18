@@ -88,7 +88,7 @@ class DepParser2 extends DocumentAnnotator {
   }
   
   
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001): Unit = {
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001)(implicit random: scala.util.Random): Unit = {
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0)
     featuresDomain.freeze()
     println("DepParser2 #features " + featuresDomain.dimensionDomain.size)
@@ -102,7 +102,7 @@ class DepParser2 extends DocumentAnnotator {
     }
   }
   
-  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence]): Unit = {
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
     val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
     val examples = trainDecisions.map(v => new LinearMultiClassExample(model.evidence,
       v.features.value.asInstanceOf[Tensor1],
@@ -476,6 +476,7 @@ class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
 object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
     val opts = new DepParser2Args
+    implicit val random = new scala.util.Random(0)
     opts.parse(args)
     import opts._
 
@@ -523,7 +524,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
 
-    def trainFn(examples: Iterable[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
+    def trainFn(examples: Iterable[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel)(implicit random: scala.util.Random) {
       if (useSVM.value) {
         val labelSize = examples.head._1.domain.size
         val featuresSize = examples.head._2.domain.dimensionSize

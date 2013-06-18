@@ -7,7 +7,7 @@ import cc.factorie.directed.{DirectedModel, DirectedFactor}
     selected according to the variable type and its neighboring factors.
     If the model is not a DirectedModel, then the variable should inherit from IterableSettings
     which is used to create a list of Proposals with alternative values. */
-class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Var] {
+class GibbsSampler(val model:Model, val objective:Model = null)(implicit val random: scala.util.Random) extends ProposalSampler[Var] {
   type V = Var
   private var _handlers: Iterable[GibbsSamplerHandler] = null 
   def defaultHandlers = GibbsSamplerDefaultHandlers
@@ -85,14 +85,14 @@ trait GibbsSamplerClosure {
 
 
 object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
-  class Closure(val variable:MutableVar[_], val factor:DirectedFactor) extends GibbsSamplerClosure {
+  class Closure(val variable:MutableVar[_], val factor:DirectedFactor)(implicit random: scala.util.Random) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
   def sampler(v:Var, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
       case List(factor:DirectedFactor) => {
         v match {
-          case v:MutableVar[_] => new Closure(v, factor)
+          case v:MutableVar[_] => new Closure(v, factor)(sampler.random)
         }
       }
       case _ => null

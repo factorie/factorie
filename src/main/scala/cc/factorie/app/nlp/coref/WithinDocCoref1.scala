@@ -118,6 +118,7 @@ object WithinDocCoref1Helper {
 
 object WithinDocCoref1Trainer {
   def main(args: Array[String]) {
+    implicit val random = new scala.util.Random(0)
     object CorefOptions extends DefaultCmdOptions {
       val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
       val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
@@ -194,7 +195,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   }
 
 
-  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2) {
+  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2)(implicit random: scala.util.Random) {
     val rng = new scala.util.Random(0)
     val opt = new cc.factorie.optimize.AdaGrad //with ParameterAveraging
     // since the main bottleneck is generating the training examples we do that in parallel and train sequentially

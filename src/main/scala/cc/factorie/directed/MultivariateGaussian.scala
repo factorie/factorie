@@ -19,14 +19,14 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
     -0.5 * (k * math.log(2 * math.Pi) + math.log(determinant(variance)) + (invert(variance) * centered dot centered))
   }
   def pr(value: Tensor1, mean: Tensor1, variance: Tensor2): Double = math.exp(logpr(value, mean, variance))
-  def sampledValue(mean: Tensor1, variance: Tensor2): Tensor1 = nextGaussian(mean, variance)(cc.factorie.random)
+  def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = nextGaussian(mean, variance)(random)
   case class Factor(override val _1: MutableTensorVar[Tensor1], override val _2: MutableTensorVar[Tensor1], override val _3: MutableTensorVar[Tensor2])
     extends super.Factor(_1, _2, _3) {
     override def logpr(child: Tensor1, mean: Tensor1, variance: Tensor2): Double = self.logpr(child, mean, variance)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(child: Tensor1, mean: Tensor1, variance: Tensor2) = math.exp(logpr(child, mean, variance))
     override def pr: Double = self.pr(_1.value, _2.value, _3.value)
-    def sampledValue(mean: Tensor1, variance: Tensor2): Tensor1 = self.sampledValue(mean, variance)
+    def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = self.sampledValue(mean, variance)
   }
   def newFactor(a: MutableTensorVar[Tensor1], b: MutableTensorVar[Tensor1], c: MutableTensorVar[Tensor2]) = Factor(a, b, c)
   def nextGaussian(mean: Tensor1, covariance: Tensor2)(implicit r: Random): Tensor1 = {
@@ -54,11 +54,11 @@ object MultivariateGaussianMixture
       MultivariateGaussian.logpr(child, means(z.intValue), variances(z.intValue))
     def pr(child: Tensor1, means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue) =
       MultivariateGaussian.pr(child, means(z.intValue), variances(z.intValue))
-    def sampledValue(means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue): Tensor1 =
+    def sampledValue(means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue)(implicit random: scala.util.Random): Tensor1 =
       MultivariateGaussian.sampledValue(means(z.intValue), variances(z.intValue))
     def prChoosing(child: Tensor1, means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int): Double =
       MultivariateGaussian.pr(child, means(mixtureIndex), variances(mixtureIndex))
-    def sampledValueChoosing(means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int): Tensor1 =
+    def sampledValueChoosing(means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int)(implicit random: scala.util.Random): Tensor1 =
       MultivariateGaussian.sampledValue(means(mixtureIndex), variances(mixtureIndex))
   }
   def newFactor(a: MutableTensorVar[Tensor1], b: Mixture[MutableTensorVar[Tensor1]], c: Mixture[MutableTensorVar[Tensor2]], d: DiscreteVariable) =

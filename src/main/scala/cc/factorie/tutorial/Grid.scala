@@ -23,7 +23,7 @@ object Grid {
     def setUsingObserved = this.setCategory(observed.doubleValue > 0.0)(null)
   }
 
-  def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = Pair(10.0, 10.0)): Seq[Seq[Pixel]] = {
+  def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = Pair(10.0, 10.0), random: scala.util.Random = new scala.util.Random(0)): Seq[Seq[Pixel]] = {
 
     def checkInCircle(x: Int, y: Int, c: (Double, Double), outer: Double, inner: Double) = {
       val d = math.pow(x - c._1, 2) + math.pow(y - c._2, 2)
@@ -35,7 +35,7 @@ object Grid {
       val row = new ArrayBuffer[Pixel]
       for (j <- 0 until N) {
         val truth = checkInCircle(i, j, c, outerRadius, innerRadius)
-        val score = (if (truth) 1.0 else -1.0) + cc.factorie.random.nextGaussian() * sigma
+        val score = (if (truth) 1.0 else -1.0) + random.nextGaussian() * sigma
         row += new Pixel(i, j, image, score, truth)
       }
       image += row
@@ -93,7 +93,8 @@ object Grid {
     pixels.foreach(_.setUsingObserved)
     // println("Local accuracy: " + objective.accuracy(pixels))
     // printImage(image)
-    pixels.foreach(_.setRandomly())
+    implicit val random = new scala.util.Random(0)
+    pixels.foreach(_.setRandomly)
     //*
     val sampler = new SamplingMaximizer[Pixel](new VariableSettingsSampler(gridModel))
     sampler.maximize(pixels, iterations=10, rounds=10)

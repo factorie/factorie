@@ -45,6 +45,7 @@ test if model ranking agrees with training signal (randomly created?)
 
 class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
   @Test def testRealVariableWorks() {
+    implicit val random = new scala.util.Random(0)
     class Prob(val scoreVal:Double) extends RealVariable(scoreVal)
     class Data(val scoreVal: Double, val truth: Boolean) extends LabeledBooleanVariable(truth) {
       val score=new Prob(scoreVal)
@@ -102,7 +103,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
   var model: TemplateModel = null
 
 
-  class AllPairsProposer(model: CombinedModel) extends MHSampler[Null](model)
+  class AllPairsProposer(model: CombinedModel) extends MHSampler[Null](model)(new scala.util.Random(0))
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {

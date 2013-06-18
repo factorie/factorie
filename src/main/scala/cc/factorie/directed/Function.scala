@@ -36,7 +36,7 @@ trait DoubleFunctionFactor extends FunctionFactor { type ValueType = Double }
 object DoubleSum2 extends DirectedFamily3[DoubleFunction,DoubleVar,DoubleVar] {
   case class Factor(override val _1:DoubleFunction, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
     def pr(child:Double, p1:Double, p2:Double): Double = if (child == p1 + p2) 1.0 else 0.0
-    def sampledValue(p1:Double, p2:Double): Double = p1 + p2
+    def sampledValue(p1:Double, p2:Double)(implicit random: scala.util.Random=null): Double = p1 + p2
     def value: Double = _2.doubleValue + _3.doubleValue 
   }
   def newFactor(_1:DoubleFunction, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)

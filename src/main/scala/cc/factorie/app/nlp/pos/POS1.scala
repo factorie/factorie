@@ -230,7 +230,7 @@ class POS1 extends DocumentAnnotator {
 //    BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
 //  }
 
-  def train(trainingFile: String, testFile: String, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false) {
+  def train(trainingFile: String, testFile: String, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false)(implicit random: scala.util.Random) {
     val trainDocs = LoadOntonotes5.fromFilename(trainingFile)
     val testDocs = LoadOntonotes5.fromFilename(testFile)
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
@@ -284,6 +284,7 @@ object POS1 extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
 
 object POS1Trainer {
   def main(args: Array[String]) {
+    implicit val random = new scala.util.Random(0)
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
       val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")

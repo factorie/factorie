@@ -20,7 +20,7 @@ object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
   case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {
     def pr(k:Int, mean:Double): Double = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
     //def pr(s:Statistics): Double = pr(s._1, s._2)
-    def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+    def sampledValue(mean:Double)(implicit random: scala.util.Random): Int = maths.nextPoisson(mean)(random).toInt
     //def sampledValue(s:Statistics): Int = sampledValue(s._2)
   }
   def newFactor(a:IntegerVar, b:DoubleVar) = Factor(a, b)

@@ -72,7 +72,7 @@ object Maximize extends MaximizeSuite // A default instance of this class
 //}
 
 object SamplingMaximizer {
-  def apply[V <: Var with IterableSettings](model: Model) = new SamplingMaximizer[V](new VariableSettingsSampler[V](model))
+  def apply[V <: Var with IterableSettings](model: Model)(implicit random: scala.util.Random) = new SamplingMaximizer[V](new VariableSettingsSampler[V](model))
 }
 
 class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {

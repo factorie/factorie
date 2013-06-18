@@ -51,7 +51,7 @@ package object factorie extends CubbieConversions {
 
   //var randomSeed = 0
   //implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
-  implicit var random = new Random(0)
+  var random = new Random(0)
   def setRandomSeed(seed: Long): Unit = {
     random = new Random(seed)
   }

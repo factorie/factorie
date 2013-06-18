@@ -29,8 +29,7 @@ class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(super
 // --read-docs recursive-lda-docs.txt --read-docs-topic-index 5 --num-layers 1 --num-iterations=30 --fit-alpha-interval=10  --diagnostic-phrases --print-topics-phrases --write-docs recursive-lda-docs5.txt
 
 
-class RecursiveLDA(wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, beta1:Double = 0.01)(implicit model:MutableDirectedModel)
-extends LDA(wordSeqDomain, numTopics, alpha1, beta1)(model)
+class RecursiveLDA(wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, beta1:Double = 0.01)(implicit model:MutableDirectedModel, override implicit val random: scala.util.Random) extends LDA(wordSeqDomain, numTopics, alpha1, beta1)(model, random)
 
 
 object RecursiveLDA {
@@ -66,11 +65,12 @@ object RecursiveLDA {
       // TODO Add stopwords option
     }
     opts.parse(args)
+    implicit val random = new scala.util.Random(0)
     val numTopics = opts.numTopics.value
     println("numTopics="+numTopics)
     object WordSeqDomain extends CategoricalSeqDomain[String]
     //implicit val model = DirectedModel()
-    var lda = new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel())
+    var lda = new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel(),random)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {
@@ -80,7 +80,7 @@ object RecursiveLDA {
           if (lda.documents.size == opts.maxNumDocs.value) break
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           doc.time = file.lastModified
-          if (doc.length >= minDocLength) lda.addDocument(doc)
+          if (doc.length >= minDocLength) lda.addDocument(doc, random)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
         }}
         //println()
@@ -103,7 +103,7 @@ object RecursiveLDA {
         for (file <- new File(directory).listFiles; if (file.isFile)) {
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           doc.time = year
-          if (doc.length >= 3) lda.addDocument(doc)
+          if (doc.length >= 3) lda.addDocument(doc, random)
           print("."); Console.flush
         }
         println()
@@ -133,7 +133,7 @@ object RecursiveLDA {
         if (text eq null) throw new Error("No () group for --read-lines-regex in "+line)
         if (opts.readLinesRegexPrint.value) println(text)
         val doc = Document.fromString(WordSeqDomain, name+":"+count, text, segmenter = mySegmenter)
-        if (doc.length >= minDocLength) lda.addDocument(doc)
+        if (doc.length >= minDocLength) lda.addDocument(doc, random)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
       }}
@@ -158,7 +158,7 @@ object RecursiveLDA {
         // If readDocsTopicIndex.wasInvoked then only read in words that had been assigned readDocsTopicIndex.value, and reassign them random Zs
         val numWords = if (opts.readDocsTopicIndex.wasInvoked) doc.readNameWordsMapZs(reader, ti => if (ti == filterTopicIndex) random.nextInt(numTopics) else -1) else doc.readNameWordsZs(reader)
         if (numWords < 0) break
-        else if (numWords >= minDocLength) lda.addDocument(doc) // Skip documents that have only one word because inference can't handle them
+        else if (numWords >= minDocLength) lda.addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
         else if (!opts.readDocsTopicIndex.wasInvoked) System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
       reader.close()
@@ -184,13 +184,13 @@ object RecursiveLDA {
       var documents2 = new ArrayBuffer[RecursiveDocument]
       for (topicRange <- Range(0, numTopics).grouped(opts.numThreads.value)) {
         val topicRangeStart: Int = topicRange.head
-        var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel()))
+        var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(DirectedModel(),random))
         for (i <- topicRange) lda2(i-topicRangeStart).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
         for (doc <- documents1) {
           for (ti <- doc.zs.uniqueIntValues) if (topicRange.contains(ti)) {
             val rdoc = new RecursiveDocument(doc, ti)
             //if (rdoc.name.endsWith("0003.txt")) { println("topic="+ti+" super: "+doc.toString+"\nsub: "+rdoc.toString+"\n\n") }
-            if (rdoc.ws.length > 0) { lda2(ti - topicRangeStart).addDocument(rdoc); documents2 += rdoc }
+            if (rdoc.ws.length > 0) { lda2(ti - topicRangeStart).addDocument(rdoc, random); documents2 += rdoc }
           }
         }
         println("Starting second-layer parallel inference for "+topicRange)

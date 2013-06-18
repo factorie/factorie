@@ -9,11 +9,7 @@ import cc.factorie.la.{Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
 
 class TestDecisionTree extends JUnitSuite {
   @Test def runTest(): Unit = {
-    val random = new scala.util.Random(0)
-    object featuresDomain extends DiscreteTensorDomain {
-      val dimensionDomain = new DiscreteDomain(100)
-    }
-    object labelDomain extends DiscreteDomain(2)
+    implicit val random = new scala.util.Random(0)
     val mean1 = (0 until 100).map(_ => random.nextDouble()).toSeq
     val mean2 = (0 until 100).map(_ => random.nextDouble()).toSeq
     val positiveExampleSeqs = (0 until 100).map(_ => (0 until 10).map(_ => mean1.zipWithIndex.sampleProportionally(_._1)._2))

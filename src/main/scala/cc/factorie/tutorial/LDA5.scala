@@ -18,8 +18,8 @@ object LDA5 {
   val beta1 = 0.1
   val alpha1 = 0.1
   val fitDirichlet = false
-  cc.factorie.random.setSeed(0)
-  
+  implicit val random = new scala.util.Random(0)
+
   object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }

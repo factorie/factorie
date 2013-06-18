@@ -201,6 +201,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
  @Test def testInstanceSerialize(): Unit = {
+   implicit val random = new scala.util.Random(0)
    import app.classify._
    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
    val ll = new LabelList[app.classify.Label, Features](_.features)

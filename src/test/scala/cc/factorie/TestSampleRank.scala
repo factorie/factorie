@@ -21,7 +21,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
   }
   
   def main(args:Array[String]): Unit = {
-    val random = new scala.util.Random(0)
+    implicit val random = new scala.util.Random(0)
     // Test Tensor index arithmetic
     for (trials <- 1 to 100) {
       val dim1 = random.nextInt(20)+1

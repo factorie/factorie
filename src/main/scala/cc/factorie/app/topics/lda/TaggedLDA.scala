@@ -32,10 +32,11 @@ object TaggedLDA {
   val WordDomain = WordSeqDomain.elementDomain
   val tokenizer = cc.factorie.app.strings.alphaSegmenter
   implicit val model = DirectedModel()
+  implicit val random = new scala.util.Random(0)
   val lda = new LDA(WordSeqDomain, numTopics, alpha1)
   
   def main(args:Array[String]): Unit = {
-    val directories = 
+    val directories =
       if (args.length > 0) args.toList 
       else if (true) List("11", "12", "10", "09", "08").take(4).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       else if (false) List("acq", "earn", "money-fx").map("/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/"+_)
@@ -46,7 +47,7 @@ object TaggedLDA {
         print("."); Console.flush
         val text = scala.io.Source.fromFile(file).mkString
         val doc = new TaggedDocument(WordSeqDomain, file.toString, tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
-        lda.addDocument(doc)
+        lda.addDocument(doc, random)
         for (tag <- tags) if (tag.matches(text)) {
           doc.tags += tag
           val masses = MassesVariable.dense(numTopics, alpha1)

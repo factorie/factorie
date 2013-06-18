@@ -20,8 +20,9 @@ class BoostedMultiClassClassifier(val weakClassifiers: Seq[(MultiClassClassifier
     new ClassifierTemplate2[T](l2f, this)
 }
 
-class BoostingMultiClassTrainer(numWeakLearners: Int = 100, trainWeakLearner: MultiClassTrainerBase[MultiClassClassifier[Tensor1]] = new DecisionTreeMultiClassTrainer(treeTrainer = new DecisionStumpTrainer))
+class BoostingMultiClassTrainer(numWeakLearners: Int = 100, argTrainWeakLearner: MultiClassTrainerBase[MultiClassClassifier[Tensor1]] = null)(implicit random: scala.util.Random)
   extends MultiClassTrainerBase[BoostedMultiClassClassifier] {
+  val trainWeakLearner = if (argTrainWeakLearner ne null) argTrainWeakLearner else new DecisionTreeMultiClassTrainer(treeTrainer = new DecisionStumpTrainer)
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: BoostedMultiClassClassifier => Unit): BoostedMultiClassClassifier = {
     val weightedWeakLearners = AdaBoostTrainer.train(
       features, labels, labelSize, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(labelSize, featureSize, labels, features, _, c => {}))

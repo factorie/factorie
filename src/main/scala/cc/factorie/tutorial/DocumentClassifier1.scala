@@ -38,6 +38,7 @@ object DocumentClassifier1 {
   val model = new classify.LogLinearModel[Label,Document](_.document, LabelDomain, DocumentDomain)
 
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length < 2) 
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
@@ -66,7 +67,7 @@ object DocumentClassifier1 {
 
     // Make a test/train split
     val (trainVariables, testVariables) = docLabels.shuffle.split(0.5)
-    (trainVariables ++ testVariables).foreach(_.setRandomly())
+    (trainVariables ++ testVariables).foreach(_.setRandomly)
 
     //println(model)
     //println(model.factors(trainVariables.head))

@@ -23,8 +23,8 @@ import cc.factorie.directed._
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
-           val burnIn: Int = 100)(implicit val model:MutableDirectedModel) {
-  def this(numTopics:Int, alpha1:Double, beta1:Double, burnIn:Int) = this(new CategoricalSeqDomain[String], numTopics, alpha1, beta1, burnIn)(DirectedModel())
+           val burnIn: Int = 100)(implicit val model:MutableDirectedModel, implicit val random: scala.util.Random) {
+  def this(numTopics:Int, alpha1:Double, beta1:Double, burnIn:Int)(implicit random: scala.util.Random) = this(new CategoricalSeqDomain[String], numTopics, alpha1, beta1, burnIn)(DirectedModel(), random)
   var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain(numTopics)
@@ -54,7 +54,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain) ~ Dirichlet(betas))
   
-  protected def setupDocument(doc:Doc, m:MutableDirectedModel): Unit = {
+  protected def setupDocument(doc:Doc, m:MutableDirectedModel, random: scala.util.Random): Unit = {
+    implicit val rng = random
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 0)  // was > 1
     if (doc.theta eq null) doc.theta = ProportionsVariable.sortedSparseCounts(numTopics)
@@ -70,9 +71,9 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
 
   /** Add a document to the LDA model. */
-  def addDocument(doc:Doc): Unit = {
+  def addDocument(doc:Doc, random: scala.util.Random): Unit = {
     if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
-    setupDocument(doc, model)
+    setupDocument(doc, model, random)
     documentMap(doc.name) = doc
     maxDocSize = math.max(maxDocSize, doc.ws.length)
   }
@@ -91,7 +92,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       for (i <- 1 to iterations) sampler.process(doc.zs)
     } else {
       val m = DirectedModel()
-      setupDocument(doc, m)
+      setupDocument(doc, m, random)
       //println("LDA.inferDocumentTheta: model factors = "+m.allFactors)
       //println("LDA.inferDocumentTheta: zs factors = "+m.factors(Seq(doc.zs)))
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), m)
@@ -207,7 +208,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     for (doc <- documents) doc.writeNameWordsZs(pw)
   }
   
-  def addDocumentsFromWordZs(file:File, minDocLength:Int): Unit = {
+  def addDocumentsFromWordZs(file:File, minDocLength:Int, random: scala.util.Random): Unit = {
     import scala.util.control.Breaks._
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
     reader.mark(512)
@@ -222,7 +223,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       doc.zs = new Zs(Nil)
       val numWords = doc.readNameWordsZs(reader)
       if (numWords < 0) break
-      else if (numWords >= minDocLength) addDocument(doc) // Skip documents that have only one word because inference can't handle them
+      else if (numWords >= minDocLength) addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
       //else System.err.println("addDocumentsFromWordZs skipping document %s: only %d words found.".format(doc.name, numWords))
     }}
     reader.close()
@@ -298,11 +299,12 @@ class LDACmd {
       // 0.23 0.15 0.62
       // 
     }
+    implicit val random = new scala.util.Random(0)
     opts.parse(args)
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
     val model = DirectedModel()
-    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model)
+    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model,random)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {
@@ -311,7 +313,7 @@ class LDACmd {
         breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
           if (lda.documents.size == opts.maxNumDocs.value) break
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
-          if (doc.length >= minDocLength) lda.addDocument(doc)
+          if (doc.length >= minDocLength) lda.addDocument(doc, random)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
         }}
         //println()
@@ -337,7 +339,7 @@ class LDACmd {
         if (text eq null) throw new Error("No () group for --read-lines-regex in "+line)
         if (opts.readLinesRegexPrint.value) println(text)
         val doc = Document.fromString(WordSeqDomain, name+":"+count, text, segmenter = mySegmenter)
-        if (doc.length >= minDocLength) lda.addDocument(doc)
+        if (doc.length >= minDocLength) lda.addDocument(doc, random)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
       }}
@@ -359,7 +361,7 @@ class LDACmd {
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
         if (numWords < 0) break
-        else if (numWords >= minDocLength) lda.addDocument(doc) // Skip documents that have only one word because inference can't handle them
+        else if (numWords >= minDocLength) lda.addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
         else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
       reader.close()
@@ -446,7 +448,7 @@ class LDACmd {
   }
 
   @deprecated("Will be removed")
-  def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String]) : LDA = {
+  def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String], random: scala.util.Random) : LDA = {
     val file = new File(fileName)
     if(!file.exists()) return null;
 
@@ -461,7 +463,7 @@ class LDACmd {
 
     println("loading model with " + numTopics + " topics")
 
-    val lda = new LDA(wordSeqDomain, numTopics)(DirectedModel()) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
+    val lda = new LDA(wordSeqDomain, numTopics)(DirectedModel(),random) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
     while(lines.hasNext) {
       line = lines.next()
       var tokens = new ArrayBuffer[String]
@@ -477,7 +479,7 @@ class LDACmd {
       }
 
       val doc = Document.fromStringIterator(wordSeqDomain, docName, tokens.iterator, stopwords = cc.factorie.app.strings.EmptyStringSet) // create and add document
-      lda.addDocument(doc)
+      lda.addDocument(doc, random)
       for(i <- 0 until doc.length) // put z's to correct values we found in loaded file
         doc.zs.set(i, topicAssignments(i))(null)
 

@@ -130,7 +130,7 @@ class SpanNerObjective extends TemplateModel {
 }
 
 // The sampler
-class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
+class TokenSpanSampler(model:Model, objective:Model)(override implicit val random: scala.util.Random) extends SettingsSampler[Token](model, objective) {
   // The proposer for changes to Spans touching this Token
   def settings(token:Token) = new SettingIterator {
     private val _seq = token.document.asSection
@@ -202,8 +202,8 @@ class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Tok
 }
 
 // The predictor for test data
-class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
-  def this(file:File) = this(new SpanNerModel(file))
+class SpanNerPredictor(model:Model)(implicit random: scala.util.Random) extends TokenSpanSampler(model, null) {
+  def this(file:File)(implicit random: scala.util.Random) = this(new SpanNerModel(file))
   var verbose = false
   temperature = 0.0001 
   override def preProcessHook(t:Token): Token = { 
@@ -233,7 +233,7 @@ class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
   }
 }
 
-class SpanNER {
+class SpanNER(implicit val random: scala.util.Random) {
   var verbose = false
   
   class Lexicon(file:File) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(file) {
@@ -244,7 +244,7 @@ class SpanNER {
   val objective = new SpanNerObjective
   val predictor = new SpanNerPredictor(model)
 
-  def train(trainFiles:Seq[String], testFile:String): Unit = {
+  def train(trainFiles:Seq[String], testFile:String)(implicit random: scala.util.Random): Unit = {
     // predictor.verbose = true
     // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
     val trainDocuments = trainFiles.flatMap(LoadConll2003.fromFilename(_))
@@ -445,7 +445,7 @@ class SpanNER {
   
 }
 
-object SpanNER extends SpanNER {
+object SpanNER extends SpanNER()(new scala.util.Random(0)) {
   // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
     import CubbieConversions._

@@ -162,7 +162,7 @@ class NER1 extends DocumentAnnotator {
   }
 
   // Parameter estimation
-  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001, lr: Double = 1.0): Double = {
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 000001, lr: Double = 1.0)(implicit random: scala.util.Random): Double = {
     def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
     trainDocs.foreach(addFeatures(_)); FeaturesDomain.freeze(); testDocs.foreach(addFeatures(_)) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
@@ -250,6 +250,7 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
   }
   def evaluateParameters(args:Array[String]): Double = {
     object opts extends Opts
+    implicit val random = new scala.util.Random(0)
     opts.parse(args)
     
     val ner = new NER1

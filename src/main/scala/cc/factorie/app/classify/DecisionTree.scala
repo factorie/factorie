@@ -17,7 +17,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.optimize._
 
-class ID3DecisionTreeTrainer extends ClassifierTrainer {
+class ID3DecisionTreeTrainer(implicit random: scala.util.Random) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L, Model] = {
     val trainer = new DecisionTreeMultiClassTrainer
     val classifier = trainer.train(il, il.labelToFeatures, il.instanceWeight)
@@ -25,7 +25,7 @@ class ID3DecisionTreeTrainer extends ClassifierTrainer {
   }
 }
 
-class AdaBoostDecisionStumpTrainer extends ClassifierTrainer {
+class AdaBoostDecisionStumpTrainer(implicit random: scala.util.Random) extends ClassifierTrainer {
   var iterations = 1000
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L, Model] = {
     val trainer = new BoostingMultiClassTrainer(iterations)
