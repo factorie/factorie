@@ -53,7 +53,7 @@ trait Factor extends Ordered[Factor] {
   def assignmentScore(a:Assignment): Double
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
       For Factors/Family in which the Statistics are the values, this method simply calls statisticsScore(Tensor). */
-  def valuesScore(tensor:Tensor): Double = throw new Error("This Factor class does not implement valuesScore(Tensor).")
+  def valuesScore(tensor:Tensor): Double = throw new Error(s"This Factor class ${this.getClass.getName} does not implement valuesScore(Tensor).")
   // Do not declare statisticsScore(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
 
   // Getting the statistics

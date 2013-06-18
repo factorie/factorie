@@ -164,6 +164,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
   }
 
   @Test def testLoopyLogZ {
+    val random = new scala.util.Random(0)
     object cdomain extends CategoricalTensorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
     features += "asd"
@@ -204,6 +205,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val bpm = mapSummary.marginal(v)
       assertEquals(bpm.proportions.maxIndex, mfm.intValue)
     }
+    DDTestMain.main(Array())
 
     // testing dual decomposition
     val model0 = DualDecomposition.getBPInferChain(Seq(l0, l1, l2), model)
