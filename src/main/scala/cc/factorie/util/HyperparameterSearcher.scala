@@ -4,6 +4,7 @@ import scala.util.{Try, Random}
 import scala.concurrent._
 import akka.actor._
 import cc.factorie.Proportions
+import java.text.SimpleDateFormat
 
 /**
  * User: apassos
@@ -160,8 +161,9 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
    * @param logFile the file on which to write the output
    */
   def runJob(script: String, logFile: String)
-  val prefix = s"hyper-search-${java.util.UUID.randomUUID().getLeastSignificantBits}/"
-  println(s"QSubExecutor saving logs in $prefix")
+  val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
+  val prefix = s"hyper-search-$date/"
+  println(s"QSubExecutor saving logs in $prefix. The latest logs are always in hyper-search-latest/")
   var id = 0
   def execute(args: Array[String]) = {
     id += 1
@@ -264,7 +266,8 @@ class SSHActorExecutor(user: String,
     actors.head.ask(ExecuteJob(serializeArgs(args), job))(timeoutMinutes.minutes) mapTo manifest[Double] fallbackTo Future.successful(Double.NegativeInfinity)
   }
   def shutdown() { system.shutdown() }
-  val logPrefix = s"hyper-search-${java.util.UUID.randomUUID().getLeastSignificantBits}/"
+  val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
+  val logPrefix = s"hyper-search-$date/"
   println(s"Writing log files to $logPrefix")
   class SSHActor(machine: String, i: Int) extends Actor {
     def receive = {
