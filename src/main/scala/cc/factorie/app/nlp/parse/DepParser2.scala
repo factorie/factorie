@@ -142,7 +142,10 @@ class DepParser2 extends DocumentAnnotator {
   }
 
   def generateDecisions(ss: Iterable[Sentence], mode: Int): Iterable[ParseDecisionVariable] = {
-    ss.flatMap(s => {
+    import scala.concurrent._
+    import scala.concurrent.duration._
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val futures = ss.map(s => future {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
         else new NonprojectiveBoostingOracle(s, classify)
@@ -150,6 +153,7 @@ class DepParser2 extends DocumentAnnotator {
       new NonProjectiveShiftReduce(oracle.predict).parse(s)
       oracle.instances
     })
+    futures.flatMap(f => Await.result(f, 100.hours))
   }
   def boosting(ss: Iterable[Sentence], addlVs: Iterable[ParseDecisionVariable]=Seq(), trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) =
     trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING), trainFn)
