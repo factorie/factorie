@@ -16,6 +16,7 @@ package cc.factorie
 import java.util.BitSet
 import scala.util.Random
 import cc.factorie.util.DoubleSeq
+import scala.annotation.tailrec
 
 // Consider also implicit class DenseTensor1(a:Array[Double])
 package object maths {
@@ -77,7 +78,7 @@ package object maths {
     def twoNormalize(s:A): Double = { val norm = twoNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
     def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
     def contains(s:A, d:Double): Boolean = { var i = 0; while (i < s.length) { if (s(i) == d) return true; i += 1 }; false }
-    def maxIndex(a:Array[Double]): Int = { var i = 0; var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
+    def maxIndex(a:Array[Double]): Int = { var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
     def isNaN(s:A): Boolean = contains(s, Double.NaN)
     def substitute(s:A, oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < s.length) { if (s(i) == oldValue) s(i) = newValue; i += 1 } }
     def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
@@ -166,7 +167,196 @@ package object maths {
   def factorial(n: Int): Double = if (n < FactorialCache.size) FactorialCache.factorial(n) else math.exp(logGamma(n+1.0))
   def logFactorial(n: Int): Double = logGamma(n+1.0)
 
-// LogGamma
+  // Digamma
+
+  // This implementation is from the Apache Commons math library, version 3.0
+  object Digamma {
+    // Euler-Mascheroni constant
+    val GAMMA = 0.577215664901532860606512090082
+    val S_LIMIT = 1e-5
+    val C_LIMIT = 49
+
+    def digamma(x: Double): Double =
+      if (x > 0 && x <= S_LIMIT)
+        -GAMMA - 1.0 / x
+      else if (x >= C_LIMIT) {
+        val inv = 1.0 / (x * x)
+        math.log(x) - 0.5 / x - inv * ((1.0 / 12) + inv * (1.0 / 120 - inv / 252))
+      } else
+        digamma(x + 1) - 1 / x
+  }
+
+  def digamma(x: Double): Double = Digamma.digamma(x)
+
+  // LogGamma
+
+  // todo: use fast "log"
+  // This implementation is from the Apache Commons math library, version 3.0
+  object LogGamma2 {
+    val INV_GAMMA1P_M1_A0 = .611609510448141581788E-08
+    val INV_GAMMA1P_M1_A1 = .624730830116465516210E-08
+    val INV_GAMMA1P_M1_B1 = .203610414066806987300E+00
+    val INV_GAMMA1P_M1_B2 = .266205348428949217746E-01
+    val INV_GAMMA1P_M1_B3 = .493944979382446875238E-03
+    val INV_GAMMA1P_M1_B4 = -.851419432440314906588E-05
+    val INV_GAMMA1P_M1_B5 = -.643045481779353022248E-05
+    val INV_GAMMA1P_M1_B6 = .992641840672773722196E-06
+    val INV_GAMMA1P_M1_B7 = -.607761895722825260739E-07
+    val INV_GAMMA1P_M1_B8 = .195755836614639731882E-09
+    val INV_GAMMA1P_M1_P0 = .6116095104481415817861E-08
+    val INV_GAMMA1P_M1_P1 = .6871674113067198736152E-08
+    val INV_GAMMA1P_M1_P2 = .6820161668496170657918E-09
+    val INV_GAMMA1P_M1_P3 = .4686843322948848031080E-10
+    val INV_GAMMA1P_M1_P4 = .1572833027710446286995E-11
+    val INV_GAMMA1P_M1_P5 = -.1249441572276366213222E-12
+    val INV_GAMMA1P_M1_P6 = .4343529937408594255178E-14
+    val INV_GAMMA1P_M1_Q1 = .3056961078365221025009E+00
+    val INV_GAMMA1P_M1_Q2 = .5464213086042296536016E-01
+    val INV_GAMMA1P_M1_Q3 = .4956830093825887312020E-02
+    val INV_GAMMA1P_M1_Q4 = .2692369466186361192876E-03
+    val INV_GAMMA1P_M1_C = -.422784335098467139393487909917598E+00
+    val INV_GAMMA1P_M1_C0 = .577215664901532860606512090082402E+00
+    val INV_GAMMA1P_M1_C1 = -.655878071520253881077019515145390E+00
+    val INV_GAMMA1P_M1_C2 = -.420026350340952355290039348754298E-01
+    val INV_GAMMA1P_M1_C3 = .166538611382291489501700795102105E+00
+    val INV_GAMMA1P_M1_C4 = -.421977345555443367482083012891874E-01
+    val INV_GAMMA1P_M1_C5 = -.962197152787697356211492167234820E-02
+    val INV_GAMMA1P_M1_C6 = .721894324666309954239501034044657E-02
+    val INV_GAMMA1P_M1_C7 = -.116516759185906511211397108401839E-02
+    val INV_GAMMA1P_M1_C8 = -.215241674114950972815729963053648E-03
+    val INV_GAMMA1P_M1_C9 = .128050282388116186153198626328164E-03
+    val INV_GAMMA1P_M1_C10 = -.201348547807882386556893914210218E-04
+    val INV_GAMMA1P_M1_C11 = -.125049348214267065734535947383309E-05
+    val INV_GAMMA1P_M1_C12 = .113302723198169588237412962033074E-05
+    val INV_GAMMA1P_M1_C13 = -.205633841697760710345015413002057E-06
+
+    val HALF_LOG_2_PI = 0.5 * math.log(2.0 * math.Pi)
+
+    val LANCZOS_G = 607.0 / 128.0
+    val LANCZOS = Array[Double](
+        0.99999999999999709182,
+        57.156235665862923517,
+        -59.597960355475491248,
+        14.136097974741747174,
+        -0.49191381609762019978,
+        .33994649984811888699e-4,
+        .46523628927048575665e-4,
+        -.98374475304879564677e-4,
+        .15808870322491248884e-3,
+        -.21026444172410488319e-3,
+        .21743961811521264320e-3,
+        -.16431810653676389022e-3,
+        .84418223983852743293e-4,
+        -.26190838401581408670e-4,
+        .36899182659531622704e-5)
+
+    def lanczos(x: Double): Double = {
+      var sum = 0.0
+      for (i <- LANCZOS.length - 1 until 0)
+        sum = sum + (LANCZOS(i) / (x + i))
+      sum + LANCZOS(0)
+    }
+    def logGamma1p(x: Double): Double ={
+      if (x < -0.5)
+        sys.error("Number is too small: %f < -0.5" format x)
+      if (x > 1.5)
+        sys.error("Number is too small: %f > 1.5" format x)
+      -math.log1p(invGamma1pm1(x))
+    }
+    def logGamma(x: Double): Double =
+      if (x.isNaN || (x <= 0.0))
+        Double.NaN
+      else if (x < 0.5)
+        logGamma1p(x) - math.log(x)
+      else if (x <= 2.5)
+        logGamma1p((x - 0.5) - 0.5)
+      else if (x <= 8.0) {
+        val n = math.floor(x - 1.5).asInstanceOf[Int]
+        var prod = 1.0
+        for (i <- 0 until n)
+          prod *= x - i
+        logGamma1p(x - (n + 1)) + math.log(prod)
+      } else {
+        val sum = lanczos(x)
+        val tmp = x + LANCZOS_G + .5
+        ((x + .5) * math.log(tmp)) - tmp +
+        HALF_LOG_2_PI + math.log(sum / x)
+      }
+
+    def invGamma1pm1(x: Double): Double = {
+      if (x < -0.5)
+        sys.error("Number is too small: %f < -0.5" format x)
+      if (x > 1.5)
+        sys.error("Number is too small: %f > 1.5" format x)
+
+      val t = if (x <= 0.5) x else (x - 0.5) - 0.5
+      if (t < 0.0) {
+        val a = INV_GAMMA1P_M1_A0 + t * INV_GAMMA1P_M1_A1
+        var b = INV_GAMMA1P_M1_B8
+        b = INV_GAMMA1P_M1_B7 + t * b
+        b = INV_GAMMA1P_M1_B6 + t * b
+        b = INV_GAMMA1P_M1_B5 + t * b
+        b = INV_GAMMA1P_M1_B4 + t * b
+        b = INV_GAMMA1P_M1_B3 + t * b
+        b = INV_GAMMA1P_M1_B2 + t * b
+        b = INV_GAMMA1P_M1_B1 + t * b
+        b = 1.0 + t * b
+
+        var c = INV_GAMMA1P_M1_C13 + t * (a / b)
+        c = INV_GAMMA1P_M1_C12 + t * c
+        c = INV_GAMMA1P_M1_C11 + t * c
+        c = INV_GAMMA1P_M1_C10 + t * c
+        c = INV_GAMMA1P_M1_C9 + t * c
+        c = INV_GAMMA1P_M1_C8 + t * c
+        c = INV_GAMMA1P_M1_C7 + t * c
+        c = INV_GAMMA1P_M1_C6 + t * c
+        c = INV_GAMMA1P_M1_C5 + t * c
+        c = INV_GAMMA1P_M1_C4 + t * c
+        c = INV_GAMMA1P_M1_C3 + t * c
+        c = INV_GAMMA1P_M1_C2 + t * c
+        c = INV_GAMMA1P_M1_C1 + t * c
+        c = INV_GAMMA1P_M1_C + t * c
+        if (x > 0.5)
+          t * c / x
+        else
+          x * ((c + 0.5) + 0.5)
+      } else {
+        var p = INV_GAMMA1P_M1_P6
+        p = INV_GAMMA1P_M1_P5 + t * p
+        p = INV_GAMMA1P_M1_P4 + t * p
+        p = INV_GAMMA1P_M1_P3 + t * p
+        p = INV_GAMMA1P_M1_P2 + t * p
+        p = INV_GAMMA1P_M1_P1 + t * p
+        p = INV_GAMMA1P_M1_P0 + t * p
+
+        var q = INV_GAMMA1P_M1_Q4
+        q = INV_GAMMA1P_M1_Q3 + t * q
+        q = INV_GAMMA1P_M1_Q2 + t * q
+        q = INV_GAMMA1P_M1_Q1 + t * q
+        q = 1.0 + t * q
+
+        var c = INV_GAMMA1P_M1_C13 + (p / q) * t
+        c = INV_GAMMA1P_M1_C12 + t * c
+        c = INV_GAMMA1P_M1_C11 + t * c
+        c = INV_GAMMA1P_M1_C10 + t * c
+        c = INV_GAMMA1P_M1_C9 + t * c
+        c = INV_GAMMA1P_M1_C8 + t * c
+        c = INV_GAMMA1P_M1_C7 + t * c
+        c = INV_GAMMA1P_M1_C6 + t * c
+        c = INV_GAMMA1P_M1_C5 + t * c
+        c = INV_GAMMA1P_M1_C4 + t * c
+        c = INV_GAMMA1P_M1_C3 + t * c
+        c = INV_GAMMA1P_M1_C2 + t * c
+        c = INV_GAMMA1P_M1_C1 + t * c
+        c = INV_GAMMA1P_M1_C0 + t * c
+
+        if (x > 0.5)
+          (t / x) * ((c - 0.5) - 0.5)
+        else
+          x * c
+      }
+    }
+  }
 
   object LogGamma {
     val d1 = -5.772156649015328605195174e-1
@@ -223,7 +413,6 @@ package object maths {
     import LogGamma._
     var x = xa
     var result = 0.0; var y = 0.0; var xnum = 0.0; var xden = 0.0
-    var i = 0
     val a = 0.6796875
 
     if ((x <= 0.5) || ((x > a) && (x <= 1.5))) {
@@ -621,7 +810,7 @@ package object maths {
   /** Return a random double drawn from a Gamma distribution with mean alpha*beta+lamba and variance alpha*beta^2. */
   def nextGamma(alpha: Double, beta: Double, lambda: Double)(implicit r: Random): Double = {
     var gamma = 0.0
-    if (alpha <= 0.0 || beta <= 0.0) throw new IllegalArgumentException ("alpha and beta must be strictly positive.");
+    if (alpha <= 0.0 || beta <= 0.0) throw new IllegalArgumentException ("alpha and beta must be strictly positive.")
     if (alpha < 1.0) {
       var p = 0.0
       var flag = false
