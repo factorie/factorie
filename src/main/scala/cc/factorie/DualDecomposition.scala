@@ -30,42 +30,23 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
     var dualIncreases = 1
     var iterations = 1
     while (updated) {
-      println("doing something")
       summaries.map(_.infer()) // summaries are responsible for caching inference results if they did not change
-      println("a")
       val newDual = summaries.map(_.summary.logZ).sum
-      println("a")
       if (newDual > dual) dualIncreases += 1
-      println("a")
       dual = newDual
-      println("a " + dual)
       logger.info(s"Dual: $dual}")
-      println("a")
       updated = false
-      println("a")
       for ((i1, v1, i2, v2) <- constraints) {
-        println("a")
         val discreteMarginal1 = summaries(i1).summary.marginal(v1).asInstanceOf[DiscreteMarginal]
-        println("a")
         val discreteMarginal2 = summaries(i2).summary.marginal(v2).asInstanceOf[DiscreteMarginal]
-        println("a")
-        println("a " + discreteMarginal1.proportions + " " + discreteMarginal2.proportions)
         if (discreteMarginal1.proportions.maxIndex != discreteMarginal2.proportions.maxIndex) {
-          println("a")
           updated = true
-          println("a")
           val t = new SparseIndexedTensor1(discreteMarginal1.proportions.length)
-          println("a " + discreteMarginal1.proportions + " " + discreteMarginal2.proportions)
           t += (discreteMarginal1.proportions.maxIndex, -1.0)
-          println("a")
           t += (discreteMarginal2.proportions.maxIndex, 1.0)
-          println("a")
           val step = stepSize(iterations, dualIncreases)
-          println("a")
           summaries(i1).incrementWeights(v1, t, step)
-          println("a")
           summaries(i2).incrementWeights(v2, t, -step)
-          println("a")
         }
       }
       iterations += 1
@@ -112,38 +93,3 @@ object DualDecomposition {
   }
 }
 
-object DDTestMain {
-  def main(args: Array[String]) {
-    val random = new scala.util.Random(0)
-    object cdomain extends CategoricalTensorDomain[String]()
-    val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
-    features += "asd"
-    val ldomain = new CategoricalDomain[String]()
-    val d = new app.nlp.Document("noname")
-    val t0 = new Token(d, 0, 1)
-    val t1 = new Token(d, 0, 1)
-    val t2 = new Token(d, 0, 1)
-    val t3 = new Token(d, 0, 1)
-    class Label(t: String) extends LabeledCategoricalVariable[String](t) { def domain = ldomain}
-    val l0 = new Label("1")
-    val l1 = new Label("0")
-    val l2 = new Label("2")
-    val l3 = new Label("3")
-    val lToT = Map(l0 -> t0, l1 -> t1, l2 -> t2, l3 -> t3)
-    val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
-    val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
-    model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-
-    // testing dual decomposition
-    val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model)
-    val model0 = DualDecomposition.getBPInferChain(Seq(l0, l1, l2), model)
-    val model1 = DualDecomposition.getBPInferChain(Seq(l2, l3), model)
-    val ddSummary = InferByDualDecomposition.infer(Seq(model0, model1), Seq((0, l2, 1, l2)))
-    for (v <- Seq(l0, l1, l2, l3)) {
-      val mfm = ddSummary.mapAssignment(v)
-      val bpm = mapSummary.marginal(v)
-      assert(bpm.proportions.maxIndex == mfm.intValue)
-    }
-
-  }
-}
