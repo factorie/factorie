@@ -152,16 +152,16 @@ trait Executor {
  * A general executor for job queues.
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
- * @param prefix A path on which to store the files.
  */
-abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) extends Executor {
+abstract class JobQueueExecutor(memory: Int, className: String) extends Executor {
   /**
    * Runs a job in the queue
    * @param script the file name of the shell script to be run
    * @param logFile the file on which to write the output
    */
   def runJob(script: String, logFile: String)
-
+  val prefix = s"hyper-search-${java.util.UUID.randomUUID().getLeastSignificantBits}/"
+  println(s"QSubExecutor saving logs in $prefix")
   var id = 0
   def execute(args: Array[String]) = {
     id += 1
@@ -198,9 +198,8 @@ abstract class JobQueueExecutor(memory: Int, className: String, prefix: String) 
  * An executor that uses qsub as it is set up in UMass.
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
- * @param prefix A path on which to store the files.
  */
-class QSubExecutor(memory: Int, className: String, prefix: String) extends JobQueueExecutor(memory, className, prefix) {
+class QSubExecutor(memory: Int, className: String) extends JobQueueExecutor(memory, className) {
   import sys.process._
   def runJob(script: String, logFile: String) { s"qsub -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
@@ -240,7 +239,6 @@ object QSubExecutor {
  * @param user The username
  * @param machines The list of machines on which to ssh
  * @param directory The directory to "cd" in each machine
- * @param logPrefix The prefix of the place on which to store logs
  * @param className The class whose main function the slaves will run. Needs to be
  *                  an instance of HyperparameterMain
  * @param memory How much memory to give each slave JVM, in gigabytes
@@ -249,7 +247,6 @@ object QSubExecutor {
 class SSHActorExecutor(user: String,
                        machines: Seq[String],
                        directory: String,
-                       logPrefix: String,
                        className: String,
                        memory: Int,
                        timeoutMinutes: Int) extends Executor {
@@ -267,7 +264,8 @@ class SSHActorExecutor(user: String,
     actors.head.ask(ExecuteJob(serializeArgs(args), job))(timeoutMinutes.minutes) mapTo manifest[Double] fallbackTo Future.successful(Double.NegativeInfinity)
   }
   def shutdown() { system.shutdown() }
-
+  val logPrefix = s"hyper-search-${java.util.UUID.randomUUID().getLeastSignificantBits}/"
+  println(s"Writing log files to $logPrefix")
   class SSHActor(machine: String, i: Int) extends Actor {
     def receive = {
       case ExecuteJob(args, j) =>
