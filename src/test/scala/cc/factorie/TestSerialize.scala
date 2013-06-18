@@ -22,6 +22,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
   @Test def testTensorSerialization(): Unit = {
+    val random = new scala.util.Random(0)
     val tensorFile = java.io.File.createTempFile("FactorieTestFile", "serialize-tensor").getAbsolutePath
     val tensor = new SparseIndexedTensor2(100, 20)
     for (i <- 0 until tensor.length) tensor(i) = random.nextDouble()
@@ -37,6 +38,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
   }
 
   @Test def testOutOfOrderDomainSerialization(): Unit = {
+    val random = new scala.util.Random(0)
     val file = java.io.File.createTempFile("foo", "multi")
       object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
       MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
@@ -62,6 +64,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
 
  @Test def testChainModelSerialization(): Unit = {
+   val random = new scala.util.Random(0)
 
    val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
 
@@ -161,6 +164,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
  @Test def testMultipleSerialization(): Unit = {
+   val random = new scala.util.Random(0)
    val file = java.io.File.createTempFile("foo", "multi")
    object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")

@@ -22,6 +22,7 @@ import cc.factorie.directed._
 
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
+    val random = new scala.util.Random(0)
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
