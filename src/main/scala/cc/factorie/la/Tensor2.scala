@@ -83,6 +83,8 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     }
   }
   
+  def toTensor1: DenseTensor1 = new DenseTensor1(_values)
+  
   override def dot(t:DoubleSeq): Double = t match {
     //case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     //case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
@@ -626,6 +628,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tens
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
   override def foreachActiveElement(f: (Int,Double) => Unit) = tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), v1*v2)))
+  def toTensor1: DenseTensor1 = new DenseTensor1(Array.tabulate(length)(apply(_))) 
 }
 
 object Outer2Tensor {

@@ -159,7 +159,8 @@ class DepParser2 extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
-    val pt = token.sentence.attr[ParseTree]
+    val sentence = token.sentence
+    val pt = if (sentence ne null) sentence.attr[ParseTree] else null
     if (pt eq null) "_\t_\t_\t_"
     else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+(pt.targetParentIndex(token.sentencePosition)+1)+"\t"+pt.label(token.sentencePosition).categoryValue+"\t"+pt.label(token.sentencePosition).targetCategory
   }
