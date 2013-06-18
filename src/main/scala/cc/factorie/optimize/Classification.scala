@@ -43,6 +43,36 @@ trait MultiClassClassifier[Features] extends Classifier[Tensor1, Features] {
   def classification(features: Features) = new MultiClassClassification(score(features))
 }
 
+trait MultiClassTrainerBase[+C <: MultiClassClassifier[Tensor1]] {
+  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: C => Unit): C
+
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C= {
+    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex)
+                                                                                         .zip(testLabels).count(i => i._1 == i._2.targetIntValue).toDouble/testLabels.length}%1.4f")
+    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), weights, evaluate)
+  }
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C =
+    train(labels, features, labels.map(i => 1.0), testLabels, testFeatures)
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double]): C =
+    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), weights, c => ())
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar]): C =
+    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), c => ())
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], evaluate: C => Unit): C =
+    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), weights, evaluate)
+  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], evaluate: C => Unit): C =
+    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), evaluate)
+  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): C =
+    train(labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
+  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, l2w: Label => Double = (l: Label) => 1.0): C =
+    train(labels, labels.map(l2f), labels.map(l2w))
+}
+
+class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: MultiClassClassifier[Tensor1])(implicit ml: Manifest[T], mf: Manifest[TensorVar]) extends Template2[T, TensorVar] {
+  def unroll1(v: T) = Factor(v, l2f(v))
+  def unroll2(v: TensorVar) = Nil
+  def score(v1: T#Value, v2: TensorVar#Value): Double = classifier.score(v2.asInstanceOf[Tensor1])(v1.asInstanceOf[DiscreteValue].intValue)
+}
+
 class LinearBinaryClassifier(val featureSize: Int) extends BaseBinaryClassifier[Tensor1] with Parameters {
   val weights = Weights(new DenseTensor1(featureSize))
   def score(features: Tensor1) = weights.value.dot(features)
@@ -59,48 +89,30 @@ class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) exten
   }
 }
 
-class MultiClassTrainer(val optimizer: GradientOptimizer,
+class LinearMultiClassTrainer(val optimizer: GradientOptimizer,
                         val useParallelTrainer: Boolean,
                         val useOnlineTrainer: Boolean,
                         val shouldAverage: Boolean,
                         val objective: LinearObjectives.MultiClass,
-                        val maxIterations: Int) {
+                        val maxIterations: Int) extends MultiClassTrainerBase[LinearMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) = {
     val classifier = new LinearMultiClassClassifier(labelSize, featureSize)
     val examples = (0 until labels.length).map(i => new LinearMultiClassExample(classifier.weights, features(i), labels(i), objective, weight=weights(i)))
     Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer)
     classifier
   }
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): LinearMultiClassClassifier = {
-    val evaluate = (c: LinearMultiClassClassifier) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex).zip(testLabels).count(i => i._1 == i._2.targetIntValue).toDouble/testLabels.length}%1.4f")
-    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value.asInstanceOf[Tensor1]), weights, evaluate)
-  }
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): LinearMultiClassClassifier =
-    train(labels, features, labels.map(i => 1.0), testLabels, testFeatures)
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double]): LinearMultiClassClassifier =
-    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value.asInstanceOf[Tensor1]), weights, c => ())
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar]): LinearMultiClassClassifier =
-    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value.asInstanceOf[Tensor1]), labels.map(i => 1.0), c => ())
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit): LinearMultiClassClassifier =
-    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value.asInstanceOf[Tensor1]), weights, evaluate)
-  def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], evaluate: LinearMultiClassClassifier => Unit): LinearMultiClassClassifier =
-    simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value.asInstanceOf[Tensor1]), labels.map(i => 1.0), evaluate)
-  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): LinearMultiClassClassifier =
-    train(labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
-  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, l2w: Label => Double = (l: Label) => 1.0): LinearMultiClassClassifier =
-    train(labels, labels.map(l2f), labels.map(l2w))
 }
 
-class OnlineMultiClassTrainer(useParallel:Boolean = false,
+class OnlineLinearMultiClassTrainer(useParallel:Boolean = false,
                               shouldAverage:Boolean = true,
                               optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging,
                               objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
                               maxIterations: Int = 3)
-  extends MultiClassTrainer(optimizer, useParallel, useOnlineTrainer = true, shouldAverage, objective, maxIterations) {}
+  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = true, shouldAverage, objective, maxIterations) {}
 
-class BatchMultiClassTrainer(useParallel:Boolean = true,
+class BatchLinearMultiClassTrainer(useParallel:Boolean = true,
                              optimizer: GradientOptimizer = new LBFGS with L2Regularization,
                              objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
                              maxIterations: Int = 200)
-  extends MultiClassTrainer(optimizer, useParallel, useOnlineTrainer = false, shouldAverage=false, objective, maxIterations) {}
+  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = false, shouldAverage=false, objective, maxIterations) {}
 
