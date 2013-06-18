@@ -116,7 +116,7 @@ class DepParser2 extends DocumentAnnotator {
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
-    testSentences.foreach(process(_))
+    testSentences.par.foreach(process(_))
     val pred = testSentences.map(_.attr[ParseTree])
     "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
   }
@@ -496,7 +496,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        ss.foreach(c.process)
+        ss.par.foreach(c.process)
         val pred = ss.map(_.attr[ParseTree])
         println("LAS: " + ParserEval.calcLas(pred))
         println("UAS: " + ParserEval.calcUas(pred))
@@ -545,7 +545,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
       println("Boosting iteration " + i)
       c.boosting(sentences, trainFn=trainFn)
     }
-    testSentences.foreach(c.process)
+    testSentences.par.foreach(c.process)
     if (saveModel.value) {
       val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString + ".parser"
       //c.save(new java.io.File(modelUrl), gzip = true)
