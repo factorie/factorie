@@ -205,7 +205,6 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val bpm = mapSummary.marginal(v)
       assertEquals(bpm.proportions.maxIndex, mfm.intValue)
     }
-    DDTestMain.main(Array())
 
     // testing dual decomposition
     val model0 = DualDecomposition.getBPInferChain(Seq(l0, l1, l2), model)
