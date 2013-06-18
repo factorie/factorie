@@ -163,7 +163,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
   val prefix = s"hyper-search-$date/"
-  println(s"QSubExecutor saving logs in $prefix. The latest logs are always in hyper-search-latest/")
+  println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
     id += 1
