@@ -530,12 +530,13 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
         SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq, parallel=true)
       } else {
         Trainer.onlineTrain(model.parameters,
-          examples.map(e => new LinearMultiClassExample(model.evidence,
+          MiniBatchExample(50, examples.map(e => new LinearMultiClassExample(model.evidence,
             e._2.value,
             e._1.targetIntValue,
-            LinearObjectives.sparseLogMultiClass)).toSeq,
+            LinearObjectives.sparseLogMultiClass)).toSeq),
           optimizer=optimizer,
           maxIterations=2,
+          useParallelTrainer=true,
           evaluate = () => {
             println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
             testAll(c, "iteration ")
