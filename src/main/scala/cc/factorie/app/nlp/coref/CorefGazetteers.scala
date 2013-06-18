@@ -55,7 +55,7 @@ class CorefGazetteers(lexDir: String) {
   val honors =  lexHash("person-honorific").toSet
   val cities = lexHash("city").toSet
   val countries = lexHash("country").toSet
-  val lastNames = (lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  ++ wikiLexHash("person").map(x => x.split(" ").last)).toSet
+  val lastNames = (lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  /*++ wikiLexHash("person").map(x => x.split(" ").last)*/).toSet
   val maleFirstNames = censusHash("person-first-male").toSet
   val femaleFirstNames = censusHash("person-first-female") .toSet
 
@@ -73,7 +73,7 @@ class CorefGazetteers(lexDir: String) {
   val placeWords = (cities ++ lexHash("country") ++ lexHash("continents") ++ lexHash("us-state") ++ lexHash("place-suffix")  ++ wikiLexHash("location") ).toSet
   val orgWords = (lexHash("company") ++ lexHash("org-suffix") ++ wikiLexHash("organization")   ++ wikiLexHash("business")  ).toSet
   val timeWords = (lexHash("day") ++ lexHash("month") ).toSet
-  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") /*++ wikiLexHash("person").map(_.split(" ").last)*/).toSet
+  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") /*++ wikiLexHash("person").map(_.split(" ").head)*/).toSet
   val personLastWords = (lastNames  ++ firstNames ++ honors ).toSet
   val personFullNames = (wikiLexHash("person") ).toSet
   val properWords = (wikiLexHash("book") ++ wikiLexHash("battles") ++ wikiLexHash("man_made_thing") ++ wikiLexHash("film") ++ wikiLexHash("songs") ).toSet
