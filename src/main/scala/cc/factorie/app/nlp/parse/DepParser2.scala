@@ -43,7 +43,7 @@ class DepParser2 extends DocumentAnnotator {
   
   // Serialization
   def serialize(file: File): Unit = {
-    if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    if (file.getParentFile ne null) file.getParentFile.mkdirs()
     serialize(new java.io.FileOutputStream(file))
   }
   def deserialize(file: File): Unit = {
