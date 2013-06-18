@@ -52,6 +52,9 @@ object Tutorial090ParallelismAndHyperparameters {
      * Other objects which also use CategoricalDomains as their back ends, such as the
      * CategoricalTensorDomain are then also thread-safe.
      *
+     * Also for all DocumentAnnotators calling annotator.process in multiple threads
+     * is safe.
+     *
      *
      * Another big bottleneck in machine learning and natural language processing systems
      * is parameter estimation (learning). Factorie has automatic support for many
