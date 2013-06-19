@@ -47,7 +47,7 @@ object DenseCountsProportionsCollapser extends Collapser {
           //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
           case f:Discrete.Factor => p.value.masses.+=(f._1.intValue, 1.0)
           //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
-          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.value.masses.+=(f._1(i).intValue, 1.0))
+          case f:PlatedDiscrete.Factor => (0 until f._1.length).foreach(i => p.value.masses.+=(f._1(i).intValue, 1.0))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
           case f:Dirichlet.Factor => p.tensor match {
             case pt:DenseProportions1 => pt.masses.+=(f._2.tensor)
@@ -81,8 +81,8 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
           //case f:MixtureComponent.Factor => {}
           case f:Mixture.Factor => {}
           case f:CategoricalMixture[_]#Factor => m(f._3.intValue).value.masses.+=(f._1.intValue, 1.0)
-          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
-          case f:PlatedCategoricalMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
+          case f:PlatedDiscreteMixture.Factor => (0 until f._1.length).foreach(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
+          case f:PlatedCategoricalMixture.Factor => (0 until f._1.length).foreach(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true

@@ -57,7 +57,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
       })
     }
     baseEntropy = targetProportions.entropy
-    forIndex(numFeatures)(featureIndex => {
+    for (featureIndex <- 0 until numFeatures) {
       //println("InfoGain feature="+instanceDomain.dimensionDomain.asInstanceOf[CategoricalDomain[String]].category(featureIndex))
       //println("InfoGain targetProportions="+targetProportions.masses)
       //println("InfoGain featureTargetProp="+featureTargetProportions(featureIndex).masses)
@@ -73,7 +73,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
           //maths.entropy((0 until numLabels).map(li => (targetProportions.mass(li) - featureTargetProportions(featureIndex).mass(li))/normWithoutFeature))
         } else 0.0
       infogains(featureIndex) = baseEntropy - featureCount(featureIndex)/numInstances * entropyWithFeature - (numInstances-featureCount(featureIndex))/numInstances * entropyWithoutFeature
-    })
+    }
   }
 
 }

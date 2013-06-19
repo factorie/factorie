@@ -93,7 +93,7 @@ trait Factor extends Ordered[Factor] {
     case other:Factor =>
       (this eq other) || ((this.equalityPrerequisite eq other.equalityPrerequisite)
                           && (this.hashCode == other.hashCode)
-                          && forallIndex(numVariables)(i =>
+                          && (0 until numVariables).forall(i =>
                             (this.variable(i) eq other.variable(i)) || // TODO Consider getting rid of this, and just using == all the time.
                             (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
                             // TODO with the == above, some Vars classes should implement equals based on sameContents
