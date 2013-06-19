@@ -1,11 +1,10 @@
 package cc.factorie.db.mongo
 
-import cc.factorie.Cubbie
 import org.bson.BSONObject
 import scala.collection.JavaConversions._
 import com.mongodb._
 import org.bson.types.BasicBSONList
-import cc.factorie.util.CubbieRefs
+import cc.factorie.util.{Cubbie, CubbieRefs}
 import scala.annotation.tailrec
 import collection.{Map => GenericMap, mutable, MapProxy, JavaConversions}
 import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}

@@ -2,6 +2,7 @@ package cc.factorie
 
 import cc.factorie.la._
 import scala.collection.mutable
+import cc.factorie.util.Cubbie
 
 /** An object with a "parameters" method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.
     This trait also provides methods called "Weights" which create new Weights objects that are automatically added to the parameters WeightsSet.

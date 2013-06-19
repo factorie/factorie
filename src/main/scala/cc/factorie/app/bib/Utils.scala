@@ -12,8 +12,10 @@ import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 import collection.mutable
 import cc.factorie.directed.DirectedModel
+import Utils.random
 
 object Utils{
+  implicit val random = new scala.util.Random(0)
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
     var idSet = new HashSet[String]
     for(line <- scala.io.Source.fromFile(idSubsetFile).getLines)idSet += line

@@ -4,6 +4,7 @@ import cc.factorie._
 import app.nlp.hcoref.PairwiseMention
 import cc.factorie.app.nlp.{ACEMentionIdentifiers, Token, Document}
 import collection.mutable.{HashMap, ArrayBuffer}
+import cc.factorie.util.Attr
 
 /**
  * @author sameer, brian, sebastian

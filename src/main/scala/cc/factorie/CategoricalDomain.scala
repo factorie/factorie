@@ -16,6 +16,7 @@ package cc.factorie
 import scala.collection.mutable
 import java.io._
 import java.util.zip.{GZIPOutputStream, GZIPInputStream}
+import cc.factorie.util.Cubbie
 
 // For single categorical values
 

@@ -15,6 +15,7 @@
 package cc.factorie
 import cc.factorie.la._
 import collection.mutable
+import cc.factorie.util.Cubbie
 
 /** A domain over Tensor values, where the dimensions of the Tensor correspond to a CategoricalDomain.
     This trait is often used for the domain of feature vectors.

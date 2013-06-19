@@ -7,6 +7,7 @@ import org.w3c.dom.{Node, NodeList, Document}
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import cc.factorie.app.topics.lda.LDA
 import java.text.SimpleDateFormat
+import Utils.random
 
 /*
 object CiteSeeRLabeledDataLoader{

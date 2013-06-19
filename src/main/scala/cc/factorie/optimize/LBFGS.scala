@@ -18,6 +18,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.util.FastLogging
 
 // TODO What kind of regularization would be used with LBFGS other than L2?
 // If nothing, then incorporate it directly into LBFGS. -akm

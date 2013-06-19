@@ -8,7 +8,7 @@ import cc.factorie.app.nlp.hcoref._
 import experiments.DebugDiffList
 import java.io.{PrintWriter, File, BufferedWriter}
 import collection.mutable.{HashMap,HashSet, ArrayBuffer}
-
+import Utils.random
 
 class HEAuthorCorefModel(val heTemperature:Double=0.5) extends AuthorCorefModel(false){
   def scoreFactor(factor:Factor):Double = {

@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp
 import cc.factorie._
+import cc.factorie.util.{Cubbie, Attr}
 
 // TODO Consider removing the implicit DiffList from the arguments to the TokenSpan constructor.
 

@@ -27,12 +27,12 @@ class LREval(val wSeqDomain: CategoricalSeqDomain[String], val zDomain: Discrete
   }
 
   /** Sets up the test documents and computes the information rate */
-  def calcLR(testFile: String, numParticles: Int, useResampling: Boolean): Double = {
+  def calcLR(testFile: String, numParticles: Int, useResampling: Boolean)(implicit random: scala.util.Random): Double = {
     doCalc(setUpDocs(testFile), numParticles, useResampling)
   }
 
   /** Creates documents from a file */
-  def setUpDocs(testFile: String): ArrayBuffer[Document]= {
+  def setUpDocs(testFile: String)(implicit random: scala.util.Random): ArrayBuffer[Document]= {
 
     val docs = new ArrayBuffer[Document]()
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter("\\p{Alpha}+".r)
@@ -51,7 +51,7 @@ class LREval(val wSeqDomain: CategoricalSeqDomain[String], val zDomain: Discrete
   }
 
   /** Computes the information rate */
-  def doCalc(testDocs: ArrayBuffer[Document], numParticles: Int, useResampling: Boolean): Double = {
+  def doCalc(testDocs: ArrayBuffer[Document], numParticles: Int, useResampling: Boolean)(implicit random: scala.util.Random): Double = {
     var heldoutLogLike = 0.0
 
     var docInd = 0
@@ -94,7 +94,7 @@ class LREval(val wSeqDomain: CategoricalSeqDomain[String], val zDomain: Discrete
   }
 
   /** Samples a topic a assignment for a given position in a document. */
-  def sampleAtPosition(position: Int, doc: Doc, docTopicCounts: Array[Int], decrDocCounts: Boolean, decrTopicCounts: Boolean) {
+  def sampleAtPosition(position: Int, doc: Doc, docTopicCounts: Array[Int], decrDocCounts: Boolean, decrTopicCounts: Boolean)(implicit random: scala.util.Random) {
 
     val ti = doc.zs.intValue(position)
     val wi = doc.ws.intValue(position)
@@ -127,7 +127,7 @@ class LREval(val wSeqDomain: CategoricalSeqDomain[String], val zDomain: Discrete
     }
 
     // Sample a topic
-    var sample = cc.factorie.random.nextDouble() * totalMass
+    var sample = random.nextDouble() * totalMass
 		var newTi = -1
 		while (sample > 0.0) {
 		  newTi += 1

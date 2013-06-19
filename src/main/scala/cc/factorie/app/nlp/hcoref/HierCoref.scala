@@ -4,6 +4,7 @@ import com.mongodb.DB
 import db.mongo._
 import la.SparseIndexedTensor
 import collection.mutable.{ArrayBuffer,ListBuffer,HashSet,HashMap,LinkedHashMap}
+import cc.factorie.util.Cubbie
 
 class BagOfTruths(val entity:Entity, truths:Map[String,Double]=null) extends BagOfWordsVariable(Nil,truths) with EntityAttr
 class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)

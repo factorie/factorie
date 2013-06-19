@@ -9,7 +9,7 @@ import com.mongodb.Mongo
 import java.io.File
 import scala.Some
 import collection.mutable
-
+import Utils.random
 /*
 class MongoAuthorCollection(mongoDB:com.mongodb.DB) extends MongoDBBibEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB) with BibCollectionAccessPatterns[AuthorCubbie]{
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie

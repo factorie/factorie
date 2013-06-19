@@ -417,7 +417,6 @@ class ChainNer2 {
 
   def test(testFilename:String): Unit = {
     implicit val random = new scala.util.Random(0)
-    setRandomSeed(75839485)
     // Read in the data
     val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
     println("Initializing testing features")

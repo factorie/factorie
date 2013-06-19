@@ -16,6 +16,7 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
+import cc.factorie.util.FastLogging
 
 object Conll2003NerDomain extends CategoricalDomain[String]
 class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerLabel(token, initialValue) {

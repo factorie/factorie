@@ -19,36 +19,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 package object factorie extends CubbieConversions {
-
-  // TODO: does this need to be in the package object?
-  trait ThisType[+This<:AnyRef] {
-    this: This =>
-    type ThisType = This
-  }
-
-
-  //var randomSeed = 0
-  //implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
-  var random = new Random(0)
-  def setRandomSeed(seed: Long): Unit = {
-    random = new Random(seed)
-  }
-
-  // TODO: do these need to be in the package object? They don't look like an essential part
-  // of the external API and can easily be imported from util
-  type Logging = cc.factorie.util.Logging
-  type FastLogging = cc.factorie.util.FastLogging
-  type GlobalLogging = cc.factorie.util.GlobalLogging
-  type Attr = cc.factorie.util.Attr
-  type Cubbie = cc.factorie.util.Cubbie
-
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f
-  def time(f: =>Unit) : Long = {
-    val start = System.currentTimeMillis
-    f
-    start - System.currentTimeMillis
-  }
-  def printTime(f: =>Unit) : Unit = println(time(f)/1000.0+" seconds")
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
     def cast[U](implicit m: ClassTag[U]): Option[U] = if (m >:> ClassTag(a.getClass)) Some(a.asInstanceOf[U]) else None
