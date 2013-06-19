@@ -16,13 +16,12 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.classify.{MultiClassModel, Classification, Classifier, LabelList}
+import cc.factorie.app.classify.{LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie.util.{BinarySerializer, CubbieConversions, ProtectedIntArrayBuffer, LocalDoubleAccumulator}
-import cc.factorie.la.{DenseTensor1, Tensor1}
-import optimize.{AdaGrad, MiniBatchExample, ParameterAveraging}
+import cc.factorie.util.{BinarySerializer, CubbieConversions, ProtectedIntArrayBuffer}
+import cc.factorie.optimize._
 
 
 class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
@@ -107,9 +106,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   var featuresSkipNonCategories = true
   
   // The model scoring an Action in the context of Features
-  val model = new MultiClassModel {
-    val evidence = Weights(new la.DenseTensor2(ActionDomain.size, FeaturesDomain.dimensionSize))
-  }
+  lazy val model = new LinearMultiClassClassifier(ActionDomain.size, FeaturesDomain.dimensionSize)
   
   // Action implementations
   def applyLeftArc(tree: ParseTree, stack: ParserStack, input: ParserStack, relation: String = ""): Unit = {
@@ -143,8 +140,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
 
   def predict(stack: ParserStack, input: ParserStack, tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
-    val weights = model.evidence.value
-    val prediction = weights * v.features.tensor.asInstanceOf[Tensor1]
+    val prediction = model.classification(v.features.tensor).score
     (v, v.domain.categories(v.validTargetList.maxBy(prediction(_))))
   }
 
@@ -189,9 +185,9 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.evidence.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
-    model.evidence.set(sparseEvidenceWeights)
-    println("NER1.serialize evidence "+model.evidence.value.getClass.getName)
+    sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.weights.set(sparseEvidenceWeights)
+    println("DepParser1.serialize evidence "+model.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(ActionDomain, dstream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
@@ -203,7 +199,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(ActionDomain, dstream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
-    model.evidence.set(new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
@@ -260,16 +256,6 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
     }
     actionLabels
   }
-  class Example(ignoredModel:Parameters, featureVector:la.Tensor1, targetLabel:Int) extends optimize.Example {
-    // similar to GLMExample, but specialized to DepParser.model
-    def accumulateExampleInto(gradient:la.WeightsMapAccumulator, value:util.DoubleAccumulator): Unit = {
-      val weights = model.evidence.value
-      val prediction = weights * featureVector
-      val (obj, grad) = optimize.LinearObjectives.sparseLogMultiClass.valueAndGradient(prediction, targetLabel)
-      if (value ne null) value.accumulate(obj)
-      if (gradient ne null) gradient.accumulate(model.evidence, grad outer featureVector)
-    }
-  }
 
   case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)  
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
@@ -280,9 +266,9 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
-    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.evidence.value.length))
+    println("%d parameters.  %d tensor size.".format(ActionDomain.size * FeaturesDomain.dimensionSize, model.weights.value.length))
     println("Generating examples...")
-    val examples = MiniBatchExample(10,trainActions.map(a => new Example(model, a.features.value.asInstanceOf[la.Tensor1], a.targetIntValue)))
+    val examples = MiniBatchExample(10,trainActions.map(a => new LinearMultiClassExample(model.weights, a.features.value, a.targetIntValue, LinearObjectives.sparseLogMultiClass)))
     freezeDomains()
     println("Training...")
     val rng = new scala.util.Random(0)
@@ -295,16 +281,10 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
       case "AdaGrad" =>  new AdaGrad(options.lrate, 0.1)
       case "L2RegularizedConstantRate" => new cc.factorie.optimize.L2RegularizedConstantRate(l2,options.lrate)
     }
-
-
-    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(model.parameters, opt, maxIterations = numIteration, nThreads = nThreads)
     var iter = 0
-    while(!trainer.isConverged) {
-      iter += 1
-      trainer.processExamples(rng.shuffle(examples).toSeq.asInstanceOf[Seq[Example]])
-      // trainActions.foreach()
+    def evaluate() {
       trainActions.foreach(a => {
-        a.set((model.evidence.value * a.features.tensor.asInstanceOf[Tensor1]).maxIndex)(null)
+        a.set(model.classification(a.features.tensor).bestLabelIndex)(null)
       })
       println("Train action accuracy = "+HammingObjective.accuracy(trainActions))
       //opt.setWeightsToAverage(model.weightsSet)
@@ -323,13 +303,11 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
         println("Saving intermediate model...")
         serialize(name + "-iter-"+iter)
       }
-
-      //opt.unSetWeightsToAverage(model.weightsSet)
+      iter += 1
     }
+    implicit val random = new scala.util.Random(0)
+    Trainer.onlineTrain(model.parameters, examples, optimizer=opt, maxIterations=numIteration, nThreads=nThreads, useParallelTrainer=true, evaluate=evaluate)
     println("Finished training.")
-    //opt.setWeightsToAverage(model.weightsSet)
-    //opt.finalizeWeights(model.weightsSet)
-    // Print accuracy diagnostics
   }
 
   // DocumentAnnotator interface

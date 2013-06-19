@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
-import cc.factorie.app.classify.{MultiClassModel, LogLinearTemplate2, LogLinearModel}
+import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
