@@ -6,6 +6,7 @@ import collection.mutable
 import cc.factorie._
 import cc.factorie.la._
 import scala.language.implicitConversions
+import cc.factorie.optimize.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie, RandomForestMultiClassClassifier}
 
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
@@ -16,6 +17,11 @@ trait CubbieConversions {
   implicit def m2cc[T](m: T)(implicit cc: StoreFetchCubbie[T]): Cubbie = { cc.store(m); cc }
   implicit def ccts[T <: Seq[Tensor]]: StoreFetchCubbie[T] = new TensorListCubbie[T]
   implicit def cct[T <: Tensor]: StoreFetchCubbie[T] = new TensorCubbie[T]
+
+  implicit def btc: RandomForestCubbie = new RandomForestCubbie
+  implicit def rfc: DecisionTreeCubbie = new DecisionTreeCubbie
+  implicit def dtc: BoostedTreeCubbie = new BoostedTreeCubbie
+
   implicit def modm(m: Parameters): Cubbie = new WeightsSetCubbie(m.parameters)
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
