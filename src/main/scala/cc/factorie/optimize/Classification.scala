@@ -1,7 +1,7 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.la.{DenseTensor2, Tensor1, DenseTensor1}
+import cc.factorie.la.{Tensor2, DenseTensor2, Tensor1, DenseTensor1}
 
 /**
  * User: apassos
@@ -92,27 +92,50 @@ class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) exten
 class LinearMultiClassTrainer(val optimizer: GradientOptimizer,
                         val useParallelTrainer: Boolean,
                         val useOnlineTrainer: Boolean,
-                        val shouldAverage: Boolean,
                         val objective: LinearObjectives.MultiClass,
-                        val maxIterations: Int)(implicit random: scala.util.Random) extends MultiClassTrainerBase[LinearMultiClassClassifier] {
+                        val maxIterations: Int,
+                        val miniBatch: Int,
+                        val nThreads: Int)(implicit random: scala.util.Random) extends MultiClassTrainerBase[LinearMultiClassClassifier] {
+  def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) {
+    val examples = (0 until labels.length).map(i => new LinearMultiClassExample(classifier.weights, features(i), labels(i), objective, weight=weights(i)))
+    Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer, miniBatch=miniBatch, nThreads=nThreads)
+  }
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) = {
     val classifier = new LinearMultiClassClassifier(labelSize, featureSize)
-    val examples = (0 until labels.length).map(i => new LinearMultiClassExample(classifier.weights, features(i), labels(i), objective, weight=weights(i)))
-    Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer)
+    baseTrain(classifier, labels, features, weights, evaluate)
     classifier
   }
 }
 
+class SVMMultiClassTrainer(parallel: Boolean=false)(implicit random: scala.util.Random) extends LinearMultiClassTrainer(optimizer=null, useParallelTrainer=parallel, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
+  override def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) {
+    val ll = labels.toArray
+    val ff = features.toArray
+    val numLabels = classifier.weights.value.dim1
+    val weightTensor = {
+      if (parallel) (0 until numLabels).par.map { label => (new LinearL2SVM).train(ff, ll, label) }
+      else (0 until numLabels).map { label => (new LinearL2SVM).train(ff, ll, label) }
+    }
+    val weightsValue = classifier.weights.value
+    for (f <- 0 until weightsValue.dim2; (l,t) <- (0 until numLabels).zip(weightTensor)) {
+      weightsValue(l,f) = t(f)
+    }
+    evaluate(classifier)
+  }
+}
+
 class OnlineLinearMultiClassTrainer(useParallel:Boolean = false,
-                              shouldAverage:Boolean = true,
                               optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging,
                               objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
-                              maxIterations: Int = 3)(implicit random: scala.util.Random)
-  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = true, shouldAverage, objective, maxIterations) {}
+                              maxIterations: Int = 3,
+                              miniBatch: Int = -1,
+                              nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
+  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = true, objective, maxIterations, miniBatch, nThreads) {}
 
 class BatchLinearMultiClassTrainer(useParallel:Boolean = true,
                              optimizer: GradientOptimizer = new LBFGS with L2Regularization,
                              objective: LinearObjectives.MultiClass = LinearObjectives.sparseLogMultiClass,
-                             maxIterations: Int = 200)(implicit random: scala.util.Random)
-  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = false, shouldAverage=false, objective, maxIterations) {}
+                             maxIterations: Int = 200,
+                             nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
+  extends LinearMultiClassTrainer(optimizer, useParallel, useOnlineTrainer = false, objective, maxIterations, -1, nThreads) {}
 
