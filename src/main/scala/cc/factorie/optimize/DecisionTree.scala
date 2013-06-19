@@ -5,6 +5,7 @@ import cc.factorie.la._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.StoreFetchCubbie
+import java.util.Random
 
 class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)
   extends MultiClassTrainerBase[DecisionTreeMultiClassClassifier] {
@@ -132,6 +133,8 @@ class ID3DecisionTreeTrainer
 }
 
 trait DecisionTreeTrainer {
+  implicit var random = new scala.util.Random(0)
+
   type Instance = (Tensor1, Label)
   type Label
   type BucketStats
@@ -151,7 +154,7 @@ trait DecisionTreeTrainer {
 
   def getBucketPrediction(labels: Seq[Instance], weights: Instance => Double): Label = getPrediction(getBucketStats(labels, weights))
 
-  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: ((Tensor1, Label)) => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1): DTree = {
+  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: Instance => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1): DTree = {
     val tree =
       if (maxDepth <= 1000) trainTree(trainInstances.toSeq, 0, maxDepth, Set.empty[(Int, Double)], instanceWeights, numFeaturesToUse)
       else trainTreeNoMaxDepth(trainInstances.toSeq, maxDepth, instanceWeights, numFeaturesToUse)

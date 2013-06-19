@@ -11,6 +11,7 @@ import cc.factorie.util.CubbieConversions._
 
 class TestDecisionTree extends JUnitSuite {
   @Test def runTest(): Unit = {
+    implicit val random = new scala.util.Random(0)
     object featuresDomain extends DiscreteTensorDomain {
       val dimensionDomain = new DiscreteDomain(100)
     }
