@@ -191,22 +191,22 @@ class LBFGS(var numIterations: Double = 1000,
       assert(s.size == y.size)
 
 
-      forReverseIndex(s.size)(i => {
+      for (i <- s.size -1 to 0 by -1) {
         // alpha(i) = rho(i) * ArrayOps.dot(direction, s(i))
         alpha(i) = rho(i) *  (direction dot s(i))
 
         // ArrayOps.incr(direction, y(i), -1.0 * alpha(i))
         direction.+=(y(i),-1.0 * alpha(i))
 
-      })
+      }
       direction.*=(gamma)
 
-      forIndex(s.size)(i => {
+      for (i <- 0 until s.size) {
         //val beta = rho(i) * ArrayOps.dot(direction, y(i))
         val beta = rho(i) * (direction dot y(i))
         //ArrayOps.incr(direction, s(i), alpha(i) - beta)
         direction.+=(s(i),alpha(i) - beta)
-      })
+      }
 
       oldParams := params
       oldValue = value

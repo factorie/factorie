@@ -40,7 +40,7 @@ class NaiveBayesTrainer extends ClassifierTrainer {
       })
     }
     // Put results into the model templates
-    forIndex(numLabels)(i => cmodel.biasTemplate.weights.value(i) = math.log(bias(i)))
+    (0 until numLabels).foreach(i => cmodel.biasTemplate.weights.value(i) = math.log(bias(i)))
     val evWeightsValue = cmodel.evidenceTemplate.weights.value
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
       evWeightsValue(li * numFeatures + fi) = math.log(evid(li).apply(fi))

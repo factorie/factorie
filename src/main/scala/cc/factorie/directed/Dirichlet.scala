@@ -24,8 +24,8 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
   def pr(value:Proportions, alpha:Masses): Double = {
     require(value.length == alpha.length)
     var result = maths.logGamma(alpha.sum)
-    forIndex(value.length)((i:Int) => result -= maths.logGamma(alpha(i)))
-    forIndex(value.length)((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
+    (0 until value.length).foreach((i:Int) => result -= maths.logGamma(alpha(i)))
+    (0 until value.length).foreach((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
     assert(result == result, "alpha="+alpha.toSeq+" p="+value.toSeq) // NaN?
     result
   }
@@ -36,12 +36,12 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
     val p = new Array[Double](alpha.length)
     val c = new Array[Double](alpha.length)
     for (child <- children) c(child.intValue) += 1.0
-    forIndex(alpha.length)(i => {
+    for (i <- 0 until alpha.length) {
       p(i) = maths.nextGamma(alpha(i) + c(i), 1)(random)
       if (p(i) <= 0.0) p(i) = 0.0001
       norm += p(i)
-    })
-    forIndex(alpha.length)(i => p(i) /= norm)
+    }
+    (0 until alpha.length).foreach(i => p(i) /= norm)
     p
   }
   case class Factor(override val _1:ProportionsVariable, override val _2:MassesVariable) extends super.Factor(_1, _2) {

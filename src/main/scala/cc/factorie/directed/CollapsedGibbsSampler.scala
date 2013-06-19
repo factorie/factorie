@@ -147,13 +147,13 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       var sum = 0.0
       //println("GateCollapsedGibbsSamplerHandler gFactor "+gFactor.family.getClass)
       //println("GateCollapsedGibbsSamplerHandler mFactor "+mFactor.family.getClass)
-      forIndex(domainSize)(i => {
+      for (i <- 0 until domainSize) {
         //throw new Error
         distribution(i) = /*gStat.prValue(i) * */ 
           gFactor.prValue(i) // * mFactor.prChoosing(i) // TODO Re-implement these methods so that they don't allocate new Statistics objects with each call
         throw new Error("Not yet implemented")
         sum += distribution(i)
-      })
+      }
       assert(sum == sum, "Distribution sum is NaN")
       assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
       // Sample

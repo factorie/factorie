@@ -18,45 +18,7 @@ import scala.util.Random
 import cc.factorie.util.DoubleSeq
 import scala.annotation.tailrec
 
-// Consider also implicit class DenseTensor1(a:Array[Double])
 package object maths {
-  
-  // TODO This will get removed also when cc.factorie.optimize uses la.Tensor
-  trait ArrayWrapper {
-    type A = Array[Double]
-    def s: Array[Double]
-    //def length = s.length
-    //def apply(i:Int) = s(i)
-    //def update(i:Int, d:Double): Unit = s(i) = d
-    def oneNorm: Double = ArrayOps.oneNorm(s)
-    def twoNorm: Double = ArrayOps.twoNorm(s)
-    def twoNormSquared: Double = ArrayOps.twoNormSquared(s)
-    def infinityNorm: Double = ArrayOps.infinityNorm(s)
-    def +=(d: Double): Unit = ArrayOps.+=(s, d)
-    def -=(d: Double): Unit = ArrayOps.-=(s, d)
-    def *=(d: Double): Unit = ArrayOps.*=(s, d)
-    def /=(d: Double): Unit = ArrayOps./=(s, d)
-    def incr(t: A): Unit = ArrayOps.incr(s, t)
-    def incr(t: A, factor: Double): Unit = ArrayOps.incr(s, t, factor)
-    def different(t: A, threshold:Double): Boolean = ArrayOps.different(s, t, threshold)
-    def dot(t: A): Double = ArrayOps.dot(s, t)
-    def normalize(): Double = ArrayOps.normalize(s)
-    def oneNormalize(): Double = ArrayOps.oneNormalize(s)
-    def twoNormalize(): Double = ArrayOps.twoNormalize(s)
-    def twoSquaredNormalize(): Double = ArrayOps.twoSquaredNormalize(s)
-    def expNormalize(): Double = ArrayOps.expNormalize(s)
-    def normalizeLogProb(): Double = ArrayOps.normalizeLogProb(s)
-    def contains(d: Double): Boolean = ArrayOps.contains(s, d)
-    def maxIndex: Int = ArrayOps.maxIndex(s)
-    def isNaN: Boolean = ArrayOps.isNaN(s)
-    def substitute(oldValue: Double, newValue: Double): Unit = ArrayOps.substitute(s, oldValue, newValue)
-    def copy: Array[Double] = ArrayOps.copy(s)
-    def set(t: A): Unit = ArrayOps.set(s, t)
-  }
-
-  //implicit def array2ArrayOps(toWrap: Array[Double]): ArrayWrapper = new ArrayWrapper { val s = toWrap }
-
-// ArrayOps
   
   trait ArrayOps {
     type A = Array[Double]
