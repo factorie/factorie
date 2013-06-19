@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
 import cc.factorie.app.classify.{MultiClassModel, LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
-import cc.factorie.optimize.{Trainer, ConstantLearningRate, AdaGrad, SynchronizedOptimizerOnlineTrainer}
+import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import scala.collection.mutable.HashMap
 import java.io.{File,InputStream,FileInputStream}
@@ -17,10 +17,7 @@ class POS1 extends DocumentAnnotator {
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
   
   object FeatureDomain extends CategoricalTensorDomain[String]
-  class ClassifierModel extends MultiClassModel {
-    val evidence = Weights(new la.DenseTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize))
-  }
-  val model = new ClassifierModel //LogLinearModel[CategoricalVariable[String], CategoricalTensorVar[String]]((a) => null, (b) => null, PTBPosDomain, FeatureDomain)
+  lazy val model = new LinearMultiClassClassifier(PTBPosDomain.size, FeatureDomain.dimensionSize)
   
   /** Local lemmatizer used for POS features. */
   protected def lemmatize(string:String): String = cc.factorie.app.strings.collapseDigits(string) // .toLowerCase?
@@ -143,33 +140,30 @@ class POS1 extends DocumentAnnotator {
   }
 
   var exampleSetsToPrediction = false
-  class TokensClassifierExample(val tokens:Seq[Token], model:ClassifierModel, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
+  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMultiClassClassifier, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
     override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
         val posLabel = token.attr[PTBPosLabel]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearMultiClassExample(model.evidence, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateExampleInto(gradient, value)
+        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateExampleInto(gradient, value)
   //      new optimize.LinearMultiClassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateExampleInto(model, gradient, value) 
         if (exampleSetsToPrediction) {
-          val prediction = model.evidence.value * featureVector
-          posLabel.set(prediction.maxIndex)(null)
+          posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
         }
       }
     }
   }
   
   def predict(tokens: Seq[Token]): Unit = {
-    val weightsMatrix = model.evidence.value
     val lemmaStrings = lemmas(tokens)
     for (index <- 0 until tokens.length) {
       val token = tokens(index)
       val posLabel = token.attr[PTBPosLabel]
       val featureVector = features(token, index, lemmaStrings)
       if (token.attr[PTBPosLabel] eq null) token.attr += new PTBPosLabel(token, "NNP")
-      val prediction = weightsMatrix * featureVector
-      token.attr[PTBPosLabel].set(prediction.maxIndex)(null)
+      token.attr[PTBPosLabel].set(model.classification(featureVector).bestLabelIndex)(null)
     }
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
@@ -266,9 +260,10 @@ class POS1 extends DocumentAnnotator {
         }
       })
       println("Test accuracy: " + (correct/total) + " tokens/sec: " + 1000.0*testSentences.map(_.length).sum/totalTime)
+      println(s"Sparsity: ${model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length}")
     }
     val examples = sentences.shuffle.map(sentence =>
-      new TokensClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
+      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
     val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate)
   }
