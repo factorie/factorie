@@ -4,10 +4,9 @@ import org.bson.BSONObject
 import scala.collection.JavaConversions._
 import com.mongodb._
 import org.bson.types.BasicBSONList
-import cc.factorie.util.{Cubbie, CubbieRefs}
-import scala.annotation.tailrec
-import collection.{Map => GenericMap, mutable, MapProxy, JavaConversions}
-import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+import cc.factorie.util.Cubbie
+import collection.{Map => GenericMap, mutable, JavaConversions}
+import scala.collection.mutable.ArrayBuffer
 import scala._
 import scala.Predef._
 import scala.Some
@@ -31,7 +30,6 @@ trait AbstractCubbieCollection[+C <: Cubbie] extends Iterable[C] {
   /**
    * Find all cubbies for which the id is within the given set of ids.
    * @param id the id of the object to find.
-   * @param values the sequence of values the attribute can be in.
    * @return all cubbies in this collection which have one of the provided ids.
    */
   def findById(id:Any):Iterator[C]
@@ -78,7 +76,7 @@ trait MutableCubbieCollection[C <: Cubbie] extends AbstractCubbieCollection[C] {
    * @param oldCubbie the old state of the cubbie.
    * @param newCubbie the new state of the cubbie.
    */
-  def updateDelta(oldCubbie: C, newCubbie: C)
+  def updateDelta(oldCubbie: C, newCubbie: C): WriteResult
 
   /**
    * Removes all cubbies that match the given query.
@@ -199,7 +197,7 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    */
   private def modification(oldOpt: Option[Any], newOpt: Option[Any]): Modification = {
     oldOpt -> newOpt match {
-      case (Some(s1: Seq[_]), Some(s2: Seq[_])) if (s2.startsWith(s1)) =>
+      case (Some(s1: Seq[_]), Some(s2: Seq[_])) if s2.startsWith(s1) =>
         Modification("$pushAll", toMongo(s2.drop(s1.size)))
       case (Some(oldValue), Some(newValue)) =>
         Modification("$set", toMongo(newValue))
@@ -217,12 +215,12 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    * @param newCubbie a new version of the cubbie to store
    * @return a mongodb WriteResult.
    */
-  def updateDelta(oldCubbie: C, newCubbie: C) = {
+  def updateDelta(oldCubbie: C, newCubbie: C): WriteResult = {
     require(oldCubbie.id == newCubbie.id)
     val keys = oldCubbie._map.keySet ++ newCubbie._map.keySet
     val insertDBO = new BasicDBObject()
     var foundDiff = false
-    for (key <- keys; if (key != "_id")) {
+    for (key <- keys; if key != "_id") {
       if(oldCubbie._map.get(key) != newCubbie._map.get(key)){
         foundDiff=true
         val mod = modification(oldCubbie._map.get(key), newCubbie._map.get(key))
@@ -233,6 +231,8 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     if(foundDiff){
       val queryDBO = new BasicDBObject("_id", oldCubbie.id)
       coll.update(queryDBO, insertDBO)
+    } else {
+      null
     }
   }
 
@@ -269,7 +269,7 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    * @param query a function that maps a cubbie to a cubbie that should be matched.
    * @return unit
    */
-  def remove(query: C => C) = {
+  def remove(query: C => C) {
     val queryDBO = safeDbo(query)
     coll.remove(queryDBO)
   }
@@ -357,7 +357,7 @@ trait MongoCubbieConverter[C <: Cubbie] {
  */
 trait EagerCubbieConverter[C <: Cubbie] extends MongoCubbieConverter[C] {
   abstract override def mongo2Cubbie(dbo: DBObject, constructor: () => C) = {
-    MongoCubbieConverter.eagerCubbie(dbo, constructor)
+    MongoCubbieConverter.eagerCubbie[C](dbo, constructor)
   }
 }
 
@@ -452,7 +452,7 @@ class MongoCubbie[C <: Cubbie](val cubbie: C) {
    * @param id the id for matching cubbies to have.
    * @return the encompassing query cubbie itself.
    */
-  def idIs(id: Any): cubbie.type = {
+  def idIs(id: Any): C = {
     cubbie._map("_id") = id
     cubbie
   }
@@ -462,7 +462,7 @@ class MongoCubbie[C <: Cubbie](val cubbie: C) {
    * @param ids the ids for matching cubbies to have.
    * @return the encompassing query cubbie itself.
    */
-  def idsIn(ids: Seq[Any]): cubbie.type = {
+  def idsIn(ids: Seq[Any]): C = {
     cubbie._map("_id") = Map("$in" -> ids)
     cubbie
   }
@@ -637,7 +637,7 @@ object DerefImplicits {
 
 
 class CachedFunction[F, T](val delegate: F => T) extends Map[F, T] {
-  val cache = new HashMap[F, T]
+  val cache = new collection.mutable.HashMap[F, T]
 
   def get(key: F) = Some(cache.getOrElseUpdate(key, delegate(key)))
 
@@ -683,7 +683,7 @@ class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterabl
       for (prototype <- prototypes.getOrElseUpdate(ofType, cubbies(ofType).headOption);
            refSlot = refSlotFunction(prototype)) yield {
         if (!indexed(refSlot)) {
-          for (c <- cubbies.lift(ofType).getOrElse(Nil); if (refSlotFunction(c).opt == Some(id))) {
+          for (c <- cubbies.lift(ofType).getOrElse(Nil); if refSlotFunction(c).opt == Some(id)) {
             index(refSlot -> id) = index.getOrElse(refSlot -> id, Nil) :+ c
           }
           indexed += refSlot
@@ -713,7 +713,7 @@ class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractC
   }
 }
 
-class Indexer(val indices: Cubbie => Seq[Cubbie#AbstractSlot[Any]]) extends Function2[Cubbie#AbstractSlot[Any], Any, Unit] {
+class Indexer(val indices: Cubbie => Seq[Cubbie#AbstractSlot[Any]]) extends ((Cubbie#AbstractSlot[Any], Any) => Unit) {
 
   case class SlotKey(cubbieClass: Class[Cubbie], name: String, value: Any) {
   }
@@ -722,12 +722,10 @@ class Indexer(val indices: Cubbie => Seq[Cubbie#AbstractSlot[Any]]) extends Func
     SlotKey(slot.cubbie.getClass.asInstanceOf[Class[Cubbie]], slot.name, value)
   }
 
-  val index = new HashMap[SlotKey, List[Cubbie]]
+  val index = new mutable.HashMap[SlotKey, List[Cubbie]]
 
-  //val index = new HashMap[]
   def apply(slot: Cubbie#AbstractSlot[Any], value: Any) {
-    //todo: odd cast
-    val typed = slot.cubbie.asInstanceOf[Cubbie]
+    val typed = slot.cubbie
     if (indices(typed).contains(slot)) {
       val key = slotKey(slot, value)
       index(key) = index.getOrElse(key, Nil) :+ typed

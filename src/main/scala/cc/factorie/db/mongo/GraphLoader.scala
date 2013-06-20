@@ -2,9 +2,7 @@ package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
 import annotation.tailrec
-import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
-import collection.mutable.HashMap
-import cc.factorie.db.mongo.GraphLoader.IndexBasedInverter
+import scala.collection.{Map => GenericMap}
 
 
 object GraphLoader {
@@ -42,10 +40,10 @@ object GraphLoader {
     }
     else {
       //fill-up roots into refs
-      var refs = oldRefs ++ roots.map(c => c.id -> c).toMap
+      val refs = oldRefs ++ roots.map(c => c.id -> c).toMap
 
       //mapping from collections to the ids that need to be loaded
-      val colls2ids = new HashMap[AbstractCubbieCollection[Cubbie], List[Any]]
+      val colls2ids = new collection.mutable.HashMap[AbstractCubbieCollection[Cubbie], List[Any]]
 
       //gather ids to load for each collection
       for (c <- roots) {
@@ -96,7 +94,7 @@ object GraphLoader {
       var graph = oldIndex ++ roots.map(c => (c.cubbieClass, c.Id.name, c.id) -> Seq(c))
 
       //mapping from collections and attributes to the values that need to be queried for.
-      val collsAttr2ids = new HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
+      val collsAttr2ids = new collection.mutable.HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
 
       //gather queries to execute
       for (c <- roots) {
@@ -149,10 +147,10 @@ object GraphLoader {
   def toRefs(index:Index) = index.filter(_._1._2 == "_id").map(pair => pair._1._3 -> pair._2.head)
 
   class IndexBasedInverter(index:Index) extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]){
-    val prototypeCache = new HashMap[Manifest[Cubbie],Cubbie]
+    val prototypeCache = new collection.mutable.HashMap[Manifest[Cubbie],Cubbie]
 
     def apply(v1: Cubbie#InverseSlot[Cubbie]) = {
-      val prototype = prototypeCache.getOrElseUpdate(v1.manifest, v1.manifest.erasure.newInstance().asInstanceOf[Cubbie])
+      val prototype = prototypeCache.getOrElseUpdate(v1.manifest, v1.manifest.runtimeClass.newInstance().asInstanceOf[Cubbie])
       val prototypeClass = prototype.cubbieClass
       val attrName = v1.slot(prototype).name
       index((prototypeClass,attrName,v1.target.get))
