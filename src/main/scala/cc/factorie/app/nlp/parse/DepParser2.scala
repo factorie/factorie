@@ -563,7 +563,7 @@ object DepParser2Optimizer {
       10, 5)
       */
     val qs = new cc.factorie.util.QSubExecutor(40, "cc.factorie.app.nlp.parse.DepParser2Trainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 100, 80, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)

@@ -118,6 +118,12 @@ class HyperParameterSearcher(cmds: CmdOptions,
       for (p <- parameters) p.accumulate(future.value.get.get)
     }
     for (p <- parameters) p.report()
+    val top10 = futures.filter(_._2.isCompleted).map(i => (i._1,i._2.value.get.get)).sortBy(i => i._2).reverse.take(10).reverse
+    println("Top configurations: ")
+    for ((setting,value) <- top10) {
+      cmds.parse(setting)
+      println(f"$value%2.4f  configuration: ${parameters.map(p => p.option.name +":"+ p.option.value).mkString(" ")}")
+    }
     val bestConfig = futures.filter(_._2.isCompleted).maxBy(_._2.value.get.get)._1
     cmds.parse(bestConfig)
     parameters.flatMap(_.option.unParse).toArray
