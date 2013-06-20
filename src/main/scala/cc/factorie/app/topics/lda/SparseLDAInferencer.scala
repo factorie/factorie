@@ -21,8 +21,8 @@ class SparseLDAInferencer(
   private var beta1: Double = 0.01
   private var betaSum = beta1 * wordDomain.size
   var smoothingMass: Double = 0.0
+  val numTopics = zDomain.size
   private val cachedCoefficients = new Array[Double](numTopics)
-  def numTopics = zDomain.size
 
   if (verbosity > 0) println("Finished initializing phiCounts")
   if (verbosity > 5) println("nt "+phiCounts.mixtureCounts.mkString(" "))
