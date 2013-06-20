@@ -219,6 +219,9 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def dot(ds: DoubleSeq) = lock.withReadLock(base.dot(ds))
     def update(i: Int, v: Double) { lock.withWriteLock(base.update(i,v)) }
     def apply(i: Int) = lock.withReadLock(base.apply(i))
+    override def *=(d:Double): Unit = lock.withWriteLock { base *= d}
+    override def *=(ds:DoubleSeq): Unit = lock.withWriteLock { base *= ds }
+    override def /=(ds:DoubleSeq): Unit = lock.withWriteLock { base /= ds }
   }
 
   private class LockingTensor1(val base: Tensor1) extends Tensor1 with LockingTensor {
@@ -382,20 +385,32 @@ object Trainer {
    * @param logEveryN How often to log, if using online training
    */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
-    optimizer match { case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters); case _ => }
+    optimizer match {
+      case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
+      case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
+      case o: L2RegularizedConstantRate if !o.initialized => o.initializeWeights(parameters)
+      case o: Pegasos if !o.initialized => o.initializeWeights(parameters)
+      case _ =>
+    }
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
       else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
       else new BatchTrainer(parameters, optimizer=optimizer)
+    trainer match { case t: ParallelOnlineTrainer => t.replaceTensorsWithLocks(); case _ => }
     try {
       while (!trainer.isConverged) {
         trainer.processExamples(actualEx.shuffle)
+        optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
         evaluate()
+        optimizer match { case o: ParameterAveraging => o.unSetWeightsToAverage(parameters); case _ => }
       }
     } finally {
-      optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
+      optimizer match {
+        case o: ParameterAveraging => o.setWeightsToAverage(parameters)
+        case _ =>
+      }
     }
   }
 

@@ -15,7 +15,7 @@ import cc.factorie.util.{DenseDoubleSeq, TruncatedArrayIntSeq, DoubleSeq, RangeI
  */
 class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimizer {
   private var step = 1
-  private var initialized = false
+  var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (!initialized) { initializeWeights(weights); initialized = true }
@@ -86,6 +86,7 @@ object MutableScalableWeights {
       if (f == 0.0) zero()
       else multiplier *= f
     }
+
     override def +=(ds: DoubleSeq, factor: Double) {
       ds match {
         case o: SparseIndexedTensor =>

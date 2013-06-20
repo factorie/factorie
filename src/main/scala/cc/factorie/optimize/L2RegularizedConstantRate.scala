@@ -11,15 +11,18 @@ import cc.factorie.{WeightsMap, WeightsSet}
  * @param rate The learning rate
  */
 class L2RegularizedConstantRate(l2: Double = 0.1, rate: Double = 0.1) extends GradientOptimizer {
-  private var initialized = false
+  var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
-    if (!initialized) { initializeWeights(weights); initialized = true }
+    if (!initialized) initializeWeights(weights)
     weights += (gradient, rate)
     weights *= (1.0 - rate * l2)
   }
 
-  def initializeWeights(weights: WeightsSet) = MutableScalableWeights.initializeWeights(weights)
+  def initializeWeights(weights: WeightsSet) = {
+    MutableScalableWeights.initializeWeights(weights)
+    initialized = true
+  }
   def finalizeWeights(weights: WeightsSet) = MutableScalableWeights.finalizeWeights(weights)
 
   def isConverged = false

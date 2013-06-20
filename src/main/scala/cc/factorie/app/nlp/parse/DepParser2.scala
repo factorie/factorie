@@ -136,7 +136,8 @@ class DepParser2 extends DocumentAnnotator {
   def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
     import scala.concurrent._
     import scala.concurrent.duration._
-    implicit val exc = scala.concurrent.ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(nThreads))
+    val pool = Executors.newFixedThreadPool(nThreads)
+    implicit val exc = scala.concurrent.ExecutionContext.fromExecutorService(pool)
     val futures = ss.map(s => future {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
@@ -145,7 +146,9 @@ class DepParser2 extends DocumentAnnotator {
       new NonProjectiveShiftReduce(oracle.predict).parse(s)
       oracle.instances
     })
-    futures.flatMap(f => Await.result(f, 100.hours))
+    val decisions = futures.flatMap(f => Await.result(f, 100.hours))
+    pool.shutdown()
+    decisions
   }
   def boosting(ss: Iterable[Sentence], addlVs: Iterable[ParseDecisionVariable]=Seq(), nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
     trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
@@ -463,6 +466,8 @@ class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
+  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
 object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
@@ -514,9 +519,9 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     val c = new DepParser2
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
-    val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
+    val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
     val trainer = if (useSVM.value) new SVMMultiClassTrainer()
-    else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value)
+    else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
@@ -545,8 +550,10 @@ object DepParser2Optimizer {
     val opts = new DepParser2Args
     opts.parse(args)
     opts.saveModel.setValue(false)
-    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
-    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -556,7 +563,7 @@ object DepParser2Optimizer {
       10, 5)
       */
     val qs = new cc.factorie.util.QSubExecutor(40, "cc.factorie.app.nlp.parse.DepParser2Trainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 30, 20, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 100, 80, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)

@@ -1,4 +1,4 @@
-package cc.factorie.example
+package cc.factorie.tutorial
 import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
