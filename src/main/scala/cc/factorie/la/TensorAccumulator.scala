@@ -22,32 +22,14 @@ class LocalWeightsMapAccumulator(val tensorSet: WeightsMap) extends WeightsMapAc
 class SmartGradientAccumulator extends WeightsMapAccumulator {
   val map = new WeightsMap(w => throw new Error("trying to read an inexistent gradient"))
   val stateMap = collection.mutable.HashMap[Weights,Int]()
-  val doubleMap = collection.mutable.HashMap[Weights,Double]()
   val EMPTY = 0
   val SINGLE_TENSOR = 1
   val ACCUMULATOR = 3
   def clear() {
     map.clear()
     stateMap.clear()
-    doubleMap.clear()
   }
-  def getMap: WeightsMap = {
-    for ((k,v) <- stateMap if v == SINGLE_TENSOR) {
-      map(k) match {
-        case t: Outer1Tensor2 => // TODO: change GradientStep to not need to mutate the gradient, or maybe move this logic there
-          val t2 = new SparseIndexedTensor2(t.dim1, t.dim2)
-          t2 += (t,doubleMap(k))
-          map(k) = t2
-        case t: Outer1Tensor3 =>
-          val t2 = new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
-          t2 += (t,doubleMap(k))
-          map(k) = t2
-        case t: DenseTensor => if (doubleMap(k) != 1.0) t *= doubleMap(k)
-        case t: SparseIndexedTensor => if (doubleMap(k) != 1.0) t *= doubleMap(k)
-      }
-    }
-    map
-  }
+  def getMap: WeightsMap = map
   def accumulate(key: Weights, t: Tensor, d: Double) {
     stateMap.getOrElse(key, EMPTY) match {
       case ACCUMULATOR => map(key) += (t,d)
@@ -64,14 +46,22 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
           case t: Tensor4 => new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
           case _ => throw new Error(s"Any concrete tensor should be either a Tensor1, Tensor2, Tensor3, or Tensor4. Offending class: ${map(key).getClass.getName}")
         }
-        newTensor += (map(key),doubleMap(key))
+        newTensor += map(key)
         newTensor += (t,d)
         map(key) = newTensor
         stateMap(key) = ACCUMULATOR
       case EMPTY =>
         stateMap(key) = SINGLE_TENSOR
-        map(key) = t
-        doubleMap(key) = d
+        t match {
+          case t: SparseTensor if !t.isInstanceOf[SparseIndexedTensor] =>
+            // This again suggests we really want more tensors supporting *=
+            val newT = Tensor.newSparse(t)
+            newT += (t,d)
+            map(key) = newT
+          case t: Tensor =>
+            t *= d
+            map(key) = t
+        }
     }
   }
 

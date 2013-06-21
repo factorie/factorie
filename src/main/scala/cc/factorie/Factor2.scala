@@ -261,10 +261,10 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
         case (v1: SingletonBinaryTensor1, v2: SingletonBinaryTensor1) =>
           val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
           val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
-          score(domain0(v1.singleIndex), domain1(v1.singleIndex))
+          v.scale*score(domain0(v1.singleIndex), domain1(v1.singleIndex))
         case (v1: SingletonBinaryTensor1, v2: N2#Value @unchecked) =>
           val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
-          score(domain0(v1.singleIndex), v2)
+          v.scale*score(domain0(v1.singleIndex), v2)
       }
     }
   }

@@ -118,6 +118,29 @@ trait AdaptiveLearningRate extends GradientStep {
 //    val l2 = 0.1
 //    gradient += (weightsSet, -l2)
     if (HSq == null) { HSq = weights.blankDenseMap }
+    for (template <- gradient.keys) {
+      gradient(template) match {
+        case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense =>
+          gradient(template) = new DenseTensor2(t.dim1, t.dim2)
+          gradient(template) += t
+        case t: Outer1Tensor2 =>
+          gradient(template) = new SparseIndexedTensor2(t.dim1, t.dim2)
+          gradient(template) += t
+        case t: SparseBinaryTensor1 =>
+          gradient(template) = new SparseIndexedTensor1(t.dim1)
+          gradient(template) += t
+        case t: SparseBinaryTensor2 =>
+          gradient(template) = new SparseIndexedTensor2(t.dim1, t.dim2)
+          gradient(template) += t
+        case t: SparseBinaryTensor3 =>
+          gradient(template) = new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
+          gradient(template) += t
+        case t: SparseBinaryTensor4 =>
+          gradient(template) = new SparseIndexedTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+          gradient(template) += t
+        case _ =>
+      }
+    }
     for (template <- gradient.keys)
       (gradient(template), HSq(template)) match {
         case (g: DenseTensor, hSq: DenseTensor) =>

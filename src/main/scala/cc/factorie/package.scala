@@ -30,5 +30,5 @@ package object factorie extends CubbieConversions {
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
 
-  def assertStringEquals(expr:Any, str:String) = require(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")
+  def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
 }

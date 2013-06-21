@@ -621,11 +621,15 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tens
   // we can dot against other outer tensors here efficiently i think
   def dim1 = tensor1.dim1
   def dim2 = tensor2.dim1
+  var scale = 1.0
+  override def *=(d: Double) = scale *= d
   def activeDomain1 = tensor1.activeDomain1
   def activeDomain2 = tensor2.activeDomain1
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
-  override def foreachActiveElement(f: (Int,Double) => Unit) = tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), v1*v2)))
+  override def foreachActiveElement(f: (Int,Double) => Unit) =
+    if (scale == 1.0) tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), v1*v2)))
+    else tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), scale*v1*v2)))
 }
 
 object Outer2Tensor {
@@ -689,7 +693,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i).+=(t._inners(i), f); i += 1 } }
-    case t:Outer1Tensor2 => { val t1 = t.tensor1; val l1 = t1.length; var i = 0; while (i < l1) { if (t1(i) != 0.0) { getInner(i).+=(t.tensor2, f) }; i += 1 }}
+    case t:Outer1Tensor2 => { val ff = f*t.scale; val t1 = t.tensor1; val l1 = t1.length; var i = 0; while (i < l1) { if (t1(i) != 0.0) { getInner(i).+=(t.tensor2, ff) }; i += 1 }}
     case t:TensorTimesScalar => this += (t.tensor, f * t.scalar)
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while(i < arr.length) {this(i) += arr(i)*f ; i += 1}}
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var i = 0; while (i < len) { this(indices(i)) += values(i)*f ; i += 1}  }
