@@ -34,7 +34,7 @@ object WSabie {
   }
 
   class WSabieExample(model: WSabieModel, val query: la.Tensor1, val positive: la.Tensor1, val negative: la.Tensor1) extends optimize.Example {
-    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+    def accumulateValueAndGradient(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
       val weights = model.weights.value
       val queryEmbeddings = weights * query
       val posEmbeddings = weights * positive
