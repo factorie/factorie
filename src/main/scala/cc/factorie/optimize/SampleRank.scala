@@ -23,7 +23,7 @@ import util.DoubleAccumulator
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {
   var learningMargin = 1.0
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])

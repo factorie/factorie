@@ -5,9 +5,10 @@ import cc.factorie.la._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.StoreFetchCubbie
-import java.util.Random
+import scala.util.Random
 
 class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)
+  (implicit random: Random)
   extends MultiClassTrainerBase[DecisionTreeMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: DecisionTreeMultiClassClassifier => Unit): DecisionTreeMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _)))
@@ -19,17 +20,19 @@ class DecisionTreeMultiClassTrainer(treeTrainer: DecisionTreeTrainer with Tensor
   }
 }
 
-class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25, treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)(implicit val random: scala.util.Random)
+class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25,
+  useParallel: Boolean = true, numThreads: Int = Runtime.getRuntime.availableProcessors(), treeTrainer: DecisionTreeTrainer with TensorStatsAndLabels = new ID3DecisionTreeTrainer)
+  (implicit random: Random)
   extends MultiClassTrainerBase[RandomForestMultiClassClassifier] {
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: RandomForestMultiClassClassifier => Unit): RandomForestMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _)))
     val weightsMap = instances.zip(weights).toMap[(Tensor1, Tensor1), Double]
-    val trees = for (i <- 0 until numTrees) yield {
+    val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
       val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
       treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
       treeTrainer.train(bootstrap, weightsMap, numFeaturesToUse = numFeaturesToUse)
-    }
-    val classifier = new RandomForestMultiClassClassifier(trees)
+    })
+    val classifier = new RandomForestMultiClassClassifier(trees.toSeq)
     evaluate(classifier)
     classifier
   }
@@ -133,7 +136,6 @@ class ID3DecisionTreeTrainer
 }
 
 trait DecisionTreeTrainer {
-  implicit var random = new scala.util.Random(0)
 
   type Instance = (Tensor1, Label)
   type Label
@@ -154,14 +156,14 @@ trait DecisionTreeTrainer {
 
   def getBucketPrediction(labels: Seq[Instance], weights: Instance => Double): Label = getPrediction(getBucketStats(labels, weights))
 
-  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: Instance => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1): DTree = {
+  def train(trainInstances: Seq[(Tensor1, Label)], instanceWeights: Instance => Double, pruneInstances: Seq[(Tensor1, Label)] = Nil, numFeaturesToUse: Int = -1)(implicit rng: Random): DTree = {
     val tree =
       if (maxDepth <= 1000) trainTree(trainInstances.toSeq, 0, maxDepth, Set.empty[(Int, Double)], instanceWeights, numFeaturesToUse)
       else trainTreeNoMaxDepth(trainInstances.toSeq, maxDepth, instanceWeights, numFeaturesToUse)
     if (pruneInstances.size == 0) tree else prune(tree, pruneInstances)
   }
 
-  private def trainTree(stats: Seq[Instance], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int): DTree = {
+  private def trainTree(stats: Seq[Instance], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit rng: Random): DTree = {
     // FIXME this is an ugly way to figure out if the bucket has only one label -luke
     if (maxDepth < depth || stats.map(l => if (l._2.isInstanceOf[Tensor]) l._2.asInstanceOf[Tensor].maxIndex else l._2).distinct.length == 1 || shouldStop(stats, depth)) {
       makeLeaf(getBucketStats(stats, instanceWeights))
@@ -178,7 +180,7 @@ trait DecisionTreeTrainer {
     }
   }
 
-  private def trainTreeNoMaxDepth(startingSamples: Seq[Instance], maxDepth: Int, instanceWeights: Instance => Double, numFeaturesToChoose: Int): DTree = {
+  private def trainTreeNoMaxDepth(startingSamples: Seq[Instance], maxDepth: Int, instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit rng: Random): DTree = {
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
@@ -227,7 +229,7 @@ trait DecisionTreeTrainer {
     (fst, snd)
   }
 
-  private def getSplittingFeatureAndThreshold(stats: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int): Option[(Int, Double)] = {
+  private def getSplittingFeatureAndThreshold(stats: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit rng: Random): Option[(Int, Double)] = {
     val state = getPerNodeState(stats, instanceWeights)
     val numFeatures = stats.head._1.length
     val possibleFeatureThresholds = getPossibleFeatureThresholds(stats, numFeaturesToChoose)
@@ -262,7 +264,7 @@ trait DecisionTreeTrainer {
 
   @inline def hasFeature(featureIdx: Int, feats: Tensor1, threshold: Double): Boolean = feats(featureIdx) > threshold
 
-  private def getPossibleFeatureThresholds(stats: Array[Instance], numFeaturesToChoose: Int): Array[Array[Double]] = {
+  private def getPossibleFeatureThresholds(stats: Array[Instance], numFeaturesToChoose: Int)(implicit rng: Random): Array[Array[Double]] = {
     val numInstances = stats.length
     val numFeatures = stats(0)._1.length
     val possibleThresholds = new Array[Array[Double]](numFeatures)
