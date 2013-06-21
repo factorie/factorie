@@ -62,7 +62,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
  * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
  */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
-  var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseMap)
+  var gradientAccumulator = new SmartGradientAccumulator
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -77,11 +77,11 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
         timePerIteration = 0
       }
       val t0 = System.currentTimeMillis()
-      gradientAccumulator.tensorSet.zero()
+      gradientAccumulator.clear()
       valueAccumulator.value = 0
       example.accumulateValueAndGradient(gradientAccumulator, valueAccumulator)
       valuesSeenSoFar += valueAccumulator.value
-      optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
+      optimizer.step(weightsSet, gradientAccumulator.getMap, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
     }})
   }
@@ -155,11 +155,11 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
   var t0 = 0L
 
   private def processExample(e: Example) {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
     e.accumulateValueAndGradient(gradientAccumulator, value)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+    val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer.step(weightsSet, gradient, value.value)
     this synchronized {
@@ -265,11 +265,11 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   var accumulatedValue = 0.0
   var t0 = System.currentTimeMillis()
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
     e.accumulateValueAndGradient(gradientAccumulator, value)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+    val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer synchronized {
       optimizer.step(weightsSet, gradient, value.value)
@@ -312,11 +312,10 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
   var t0 = System.currentTimeMillis()
   val lock = new util.RWLock
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
     e.accumulateValueAndGradient(gradientAccumulator, value)
-    optimizer.step(weightsSet, gradient, value.value)
+    optimizer.step(weightsSet, gradientAccumulator.getMap, value.value)
     if (locksForLogging) lock.writeLock()
     try {
       examplesProcessed += 1

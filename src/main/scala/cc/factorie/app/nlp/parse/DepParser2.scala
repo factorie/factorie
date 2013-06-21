@@ -150,8 +150,8 @@ class DepParser2 extends DocumentAnnotator {
     pool.shutdown()
     decisions
   }
-  def boosting(ss: Iterable[Sentence], addlVs: Iterable[ParseDecisionVariable]=Seq(), nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
-    trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
+  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
+    trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
@@ -521,7 +521,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
     val trainer = if (useSVM.value) new SVMMultiClassTrainer()
-    else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
+      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
@@ -562,7 +562,7 @@ object DepParser2Optimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(40, "cc.factorie.app.nlp.parse.DepParser2Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser2Trainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
