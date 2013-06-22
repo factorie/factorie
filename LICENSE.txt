@@ -1,6 +1,6 @@
 License for the FACTORIE toolkit, contained in this directory.
 
-This software is Copyright (C) 2008-2010 University of Massachusetts
+This software is Copyright (C) 2008-2013 University of Massachusetts
 Amherst, Department of Computer Science, and is licensed under the
 terms of the Apache License, Version 2.0 or (at your option)
 any subsequent version.
@@ -12,6 +12,10 @@ THIRD PARTY COMPONENTS
 
 The JBLAS linear algebra library is Copyright (c) 2009, Mikio L. Braun and contributors
 All rights reserved. BSD-style license/disclaimer included below.
+
+The LogGamma and DiGamma implementations are based on code from the Apache Commons Math
+library, version 3.2, licensed under the Apache License 2.0:
+Copyright 2001-2013 The Apache Software Foundation
 
 The PunktTokenizer component is based on code from the NLTK library,
 ported from Python and modified, licensed under Apache License 2.0:
