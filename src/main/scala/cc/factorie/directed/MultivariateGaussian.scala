@@ -6,10 +6,8 @@ import cc.factorie.DiscreteVariable
 import cc.factorie.la._
 import cc.factorie.maths
 import cc.factorie.MutableTensorVar
-import cern.colt.matrix.tdouble.{DoubleFactory2D, DoubleMatrix2D}
-import cern.colt.matrix.tdouble.algo.decomposition._
 import scala.util.Random
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D
+import org.jblas.DoubleMatrix
 
 object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
   self =>
@@ -31,15 +29,14 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
   def newFactor(a: MutableTensorVar[Tensor1], b: MutableTensorVar[Tensor1], c: MutableTensorVar[Tensor2]) = Factor(a, b, c)
   def nextGaussian(mean: Tensor1, covariance: Tensor2)(implicit r: Random): Tensor1 = {
     val uncorrelated = new DenseTensor1(Array.fill(mean.length)(maths.nextGaussian(0.0, 1.0)(r)))
-    choleskyT(covariance) * uncorrelated + mean
+    uncorrelated * cholesky(covariance) + mean
   }
-  def matrix2Tensor(matrix: DoubleMatrix2D): DenseTensor2 = new DenseTensor2(matrix.toArray)
-  def tensor2Matrix(matrix: Tensor2) = { val n = matrix.dim1; new DenseDoubleMatrix2D(matrix.asArray.grouped(n).toArray) }
-  def invert(matrix: Tensor2): DenseTensor2 =
-    matrix2Tensor(new DenseDoubleLUDecomposition(tensor2Matrix(matrix)).solve(DoubleFactory2D.dense.identity(matrix.dim1)))
-  def choleskyT(matrix: Tensor2): DenseTensor2 =
-    matrix2Tensor(new DenseDoubleCholeskyDecomposition(tensor2Matrix(matrix)).getLtranspose)
-  def determinant(matrix: Tensor2): Double = new DenseDoubleLUDecomposition(tensor2Matrix(matrix)).det()
+  def matrix2Tensor(matrix: DoubleMatrix): DenseTensor2 = new DenseTensor2(matrix.toArray2)
+  def tensor2Matrix(matrix: Tensor2) = { val m = matrix.dim1; new DoubleMatrix(matrix.asArray.grouped(m).toArray) }
+  def invert(matrix: Tensor2): DenseTensor2 = matrix2Tensor(org.jblas.Solve.solve(tensor2Matrix(matrix), org.jblas.DoubleMatrix.eye(matrix.dim1)))
+  def cholesky(matrix: Tensor2): DenseTensor2 =
+    matrix2Tensor(org.jblas.Decompose.cholesky(tensor2Matrix(matrix)))
+  def determinant(matrix: Tensor2): Double = org.jblas.Decompose.lu(tensor2Matrix(matrix)).u.diag().prod()
 }
 
 object MultivariateGaussianMixture
