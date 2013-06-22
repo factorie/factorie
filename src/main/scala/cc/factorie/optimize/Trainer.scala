@@ -45,7 +45,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
     gradientAccumulator.tensorSet.zero()
     valueAccumulator.value = 0.0
     val startTime = System.currentTimeMillis
-    examples.foreach(example => example.accumulateValueAndGradient(gradientAccumulator, valueAccumulator))
+    examples.foreach(example => example.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.tensorSet.oneNorm, valueAccumulator.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
@@ -79,7 +79,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
       val t0 = System.currentTimeMillis()
       gradientAccumulator.clear()
       valueAccumulator.value = 0
-      example.accumulateValueAndGradient(gradientAccumulator, valueAccumulator)
+      example.accumulateValueAndGradient(valueAccumulator, gradientAccumulator)
       valuesSeenSoFar += valueAccumulator.value
       optimizer.step(weightsSet, gradientAccumulator.getMap, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
@@ -114,7 +114,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
     gradientAccumulator.l.tensorSet.zero()
     valueAccumulator.l.value = 0
     val startTime = System.currentTimeMillis
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(gradientAccumulator, valueAccumulator))
+    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.l.tensorSet.oneNorm, valueAccumulator.l.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.l.value)
@@ -131,7 +131,7 @@ class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: Gradien
     val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseMap))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
-    examples.par.foreach(example => example.accumulateValueAndGradient(gradientAccumulator.get, valueAccumulator.get))
+    examples.par.foreach(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensorSet
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
@@ -157,7 +157,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
   private def processExample(e: Example) {
     val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateValueAndGradient(gradientAccumulator, value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
     val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
@@ -267,7 +267,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   private def processExample(e: Example): Unit = {
     val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateValueAndGradient(gradientAccumulator, value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
     val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
@@ -314,7 +314,7 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
   private def processExample(e: Example): Unit = {
     val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateValueAndGradient(gradientAccumulator, value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
     optimizer.step(weightsSet, gradientAccumulator.getMap, value.value)
     if (locksForLogging) lock.writeLock()
     try {

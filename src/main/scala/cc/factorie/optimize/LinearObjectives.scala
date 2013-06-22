@@ -277,7 +277,7 @@ object LinearObjectives {
  */
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateValueAndGradient(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val prediction = weights.value * featureVector
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
@@ -307,7 +307,7 @@ class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: 
  */
 class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateValueAndGradient(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val score = weights.value dot featureVector
     val (obj, sgrad) = objective.valueAndGradient(score, label)
     if (value != null) value.accumulate(obj)

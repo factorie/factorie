@@ -141,13 +141,13 @@ class POS1 extends DocumentAnnotator {
 
   var exampleSetsToPrediction = false
   class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMultiClassClassifier, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
-    override def accumulateValueAndGradient(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+    def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
         val posLabel = token.attr[PTBPosLabel]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(gradient, value)
+        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
   //      new optimize.LinearMultiClassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
         if (exampleSetsToPrediction) {
           posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
