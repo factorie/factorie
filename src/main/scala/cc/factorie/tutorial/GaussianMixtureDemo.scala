@@ -95,13 +95,15 @@ object MultivariateGaussianMixtureDemo {
     val em = new EMInferencer(meanComponents.toIterable, zs, InferByMeanField, model, MaximizeMultivariateGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
-      // println("Estimated means at iteration " + i)
-      // meanComponents.foreach(m => println(m.value))
+//      println("Estimated means at iteration " + i)
+//      meanComponents.foreach(m => println(m.value))
 //      println("Estimated z's at iteration" + i)
 //      zs.foreach(z => println(z.proportions(model)))
     }
-    // println("\nOriginal means")
-    // origMeans.foreach(println(_))
+//    println("\nOriginal means")
+//    origMeans.foreach(println(_))
+
+    assert(meanComponents.zip(origMeans).forall({case (m1, m2) => (m1.value - m2).twoNorm / m2.twoNorm < .1}), "Inferred means were not within tolerance of true means!")
   }
 }
 

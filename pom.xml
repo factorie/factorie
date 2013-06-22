@@ -109,11 +109,11 @@ limitations under the License.
       <version>1.2_01</version>
     </dependency>
 
-    <dependency>
-      <groupId>net.sourceforge.parallelcolt</groupId>
-      <artifactId>parallelcolt</artifactId>
-      <version>0.10.0</version>
-    </dependency>
+      <dependency>
+        <groupId>org.jblas</groupId>
+        <artifactId>jblas</artifactId>
+        <version>1.2.3</version>
+      </dependency>
 
   </dependencies>
 
