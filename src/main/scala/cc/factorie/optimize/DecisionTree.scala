@@ -76,7 +76,9 @@ class TreeNodeCubbie extends StoreFetchCubbie[DTree] {
   val right = CubbieSlot[TreeNodeCubbie]("right", () => new TreeNodeCubbie)
   val tensor = TensorSlot("tensor")
   // FIXME I really wish we didn't have to do this to build the slots eagerly
-  threshold := 0; feature := 0; isLeaf := false
+  threshold := 0;
+  feature := 0;
+  isLeaf := false
   def store(t: DTree): Unit = t match {
     case t: DTBranch =>
       isLeaf := false
@@ -91,7 +93,9 @@ class TreeNodeCubbie extends StoreFetchCubbie[DTree] {
   def fetch(): DTree =
     if (!isLeaf.value) DTBranch(left.value.fetch(), right.value.fetch(), feature.value, threshold.value)
     else DTLeaf(tensor.value.asInstanceOf[Tensor1])
-  private def toCubbie(dt: DTree): TreeNodeCubbie = {val c = new TreeNodeCubbie; c.store(dt); c}
+  private def toCubbie(dt: DTree): TreeNodeCubbie = {
+    val c = new TreeNodeCubbie; c.store(dt); c
+  }
 }
 
 class DecisionTreeCubbie extends StoreFetchCubbie[DecisionTreeMultiClassClassifier] {
@@ -120,7 +124,7 @@ class DecisionStumpTrainer
   extends DecisionTreeTrainer
   with TensorStatsAndLabels
   with GainRatioSplitting
-with SampleSizeStopping
+  with SampleSizeStopping
   with NoPruning {
   maxDepth = 1
   val minSampleSize = 4
@@ -140,16 +144,18 @@ trait DecisionTreeTrainer {
   type Instance = (Tensor1, Label)
   type Label
   type BucketStats
-  type State
-
-  def getPerNodeState(stats: Seq[Instance], instanceWeights: Instance => Double): State
-  def evaluateSplittingCriteria(s: State, withFeature: BucketStats, withoutFeature: BucketStats): Double
+  // TODO come back and rewrite to use perBucketStates and splitting criteria
+  //  type State
+  //
+  //  def getBucketState(instances: Iterable[Instance], instanceWeights: Instance => Double): State
   def prune(tree: DTree, pruningSet: Seq[Instance]): DTree
 
   def getBucketStats(labels: Iterable[Instance], weights: Instance => Double): BucketStats
   def getPrediction(stats: BucketStats): Label
   def makeLeaf(stats: BucketStats): DTree
   def shouldStop(stats: Seq[Instance], depth: Int): Boolean = false
+  def evaluateSplittingCriteria(instances: Seq[Instance], instanceWeights: Instance => Double, possibleFeatureThresholds: Array[Array[Double]]): Array[Array[Double]]
+  //  def evaluateSplittingCriteria(state: State, statsWith: BucketStats, statsWithout: BucketStats): Double
 
   // what's a good value for this?
   var maxDepth = 500
@@ -184,13 +190,13 @@ trait DecisionTreeTrainer {
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
-      if (ab.length <= idx) { ab.insertAll(ab.length, Iterable.fill(idx - ab.length + 1)(dfault)) }
+      if (ab.length <= idx) {ab.insertAll(ab.length, Iterable.fill(idx - ab.length + 1)(dfault))}
       ab.update(idx, item)
     }
     var currentChildId = 0 // get childIdx or create one if it's not there already
     def child(childMap: DenseIntMap[Int], heapIdx: Int) =
       if (childMap.length > heapIdx && childMap(heapIdx) != -1) childMap(heapIdx)
-      else {currentChildId += 1; updateIntMap(childMap, heapIdx, currentChildId, -1); currentChildId }
+      else {currentChildId += 1; updateIntMap(childMap, heapIdx, currentChildId, -1); currentChildId}
     // go down
     val leftChildren, rightChildren = new DenseIntMap[Int]() // heapIdx -> childHeapIdx
     val todo = mutable.Stack((startingSamples, Set.empty[(Int, Double)], 0, 0)) // samples, usedFeatures, depth, heapIdx
@@ -224,42 +230,16 @@ trait DecisionTreeTrainer {
   }
 
   private def split[T](xs: Iterable[T])(pred: T => Boolean): (Iterable[T], Iterable[T]) = {
-    val fst = new ArrayBuffer[T]; val snd = new ArrayBuffer[T]
+    val fst = new ArrayBuffer[T];
+    val snd = new ArrayBuffer[T]
     for (x <- xs) if (pred(x)) fst += x else snd += x
     (fst, snd)
   }
 
-  private def getSplittingFeatureAndThreshold(stats: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit rng: Random): Option[(Int, Double)] = {
-    val state = getPerNodeState(stats, instanceWeights)
-    val numFeatures = stats.head._1.length
-    val possibleFeatureThresholds = getPossibleFeatureThresholds(stats, numFeaturesToChoose)
-    var featureIdx = 0
-    var maxIdx = 0
-    var maxThreshold = Double.NegativeInfinity
-    var maxValue = Double.NegativeInfinity
-    while (featureIdx < numFeatures) {
-      val thresholds = possibleFeatureThresholds(featureIdx)
-      if (thresholds != null) {
-        var thresholdIdx = 0
-        while (thresholdIdx < thresholds.length) {
-          val threshold = thresholds(thresholdIdx)
-          if (!usedFeatures((featureIdx, threshold))) {
-            val (instancesWith, instancesWithout) = split(stats)(s => hasFeature(featureIdx, s._1, threshold))
-            if (instancesWith.size > 0 && instancesWithout.size > 0) {
-              val criteria = evaluateSplittingCriteria(state, getBucketStats(instancesWith, instanceWeights), getBucketStats(instancesWithout, instanceWeights))
-              if (criteria > maxValue) {
-                maxValue = criteria
-                maxIdx = featureIdx
-                maxThreshold = threshold
-              }
-            }
-          }
-          thresholdIdx += 1
-        }
-      }
-      featureIdx += 1
-    }
-    if (maxValue > Double.NegativeInfinity) Some((maxIdx, maxThreshold)) else None
+  private def getSplittingFeatureAndThreshold(instances: Array[Instance], usedFeatures: Set[(Int, Double)], instanceWeights: Instance => Double, numFeaturesToChoose: Int)(implicit rng: Random): Option[(Int, Double)] = {
+    val possibleFeatureThresholds = getPossibleFeatureThresholds(instances, numFeaturesToChoose)
+    val criteria = evaluateSplittingCriteria(instances, instanceWeights, possibleFeatureThresholds)
+    if (criteria.size > 0) Some(criteria.flatten.zip(possibleFeatureThresholds.zipWithIndex.flatMap({case (arr, i) => arr.map((i, _))})).maxBy(_._1)._2) else None
   }
 
   @inline def hasFeature(featureIdx: Int, feats: Tensor1, threshold: Double): Boolean = feats(featureIdx) > threshold
@@ -312,7 +292,7 @@ trait DecisionTreeTrainer {
         var s = 0
         while (s < sorted.length) {
           val srt = sorted(s)
-          if (last < srt) { thresholds += ((srt + last) / 2); last = srt }
+          if (last < srt) {thresholds += ((srt + last) / 2); last = srt}
           s += 1
         }
         possibleThresholds(f) = thresholds.result()
@@ -320,37 +300,29 @@ trait DecisionTreeTrainer {
       f += 1
     }
     possibleThresholds
+    //    possibleThresholds.toSeq.zipWithIndex.flatMap({case (arr, idx) => arr.toSeq.map((idx, _))})
   }
 }
 
-trait NoTrainingState {
+trait InfoGainSplitting {
   this: DecisionTreeTrainer with TensorStatsAndLabels =>
-  type State = Unit
-  def getPerNodeState(stats: Seq[Instance], instanceWeights: Instance => Double): State = ()
-  def evaluateSplittingCriteria(s: State, withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double =
-    evaluateSplittingCriteria(withFeature, withoutFeature)
-  def evaluateSplittingCriteria(withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double
-}
-
-trait InfoGainSplitting
-  extends NoTrainingState {
-  this: DecisionTreeTrainer with TensorStatsAndLabels =>
-  def evaluateSplittingCriteria(withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double = {
-    // we're using information gain modulo the constant factor of base entropy
-    val numFeatures = withFeature._2 + withoutFeature._2
-    val pctWith = withFeature._2 * 1.0 / numFeatures
-    val pctWithout = withoutFeature._2 * 1.0 / numFeatures
-    val infoGainMinusBaseEntropy = -(pctWith * withFeature._1.entropy + pctWithout * withoutFeature._1.entropy)
-    infoGainMinusBaseEntropy
+  type State = Double
+  def getBucketState(instances: Iterable[Instance], instanceWeights: Instance => Double): Double = getBucketStats(instances, instanceWeights)._1.entropy
+  def evaluateSplittingCriteria(baseEntropy: Double, withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double = {
+    val numInstances = withFeature._2 + withoutFeature._2
+    val pctWith = withFeature._2 * 1.0 / numInstances
+    val pctWithout = withoutFeature._2 * 1.0 / numInstances
+    val infoGain = baseEntropy - (pctWith * withFeature._1.entropy + pctWithout * withoutFeature._1.entropy)
+    infoGain
   }
 }
 
 trait GainRatioSplitting {
   this: DecisionTreeTrainer with TensorStatsAndLabels =>
+  // this can be factored out as this will be the same for std dev reduction, gain ratio, GINI, etc
   type State = Double
-  def getPerNodeState(stats: Seq[Instance], instanceWeights: Instance => Double): State =
-    getBucketStats(stats, instanceWeights)._1.entropy
-  def evaluateSplittingCriteria(baseEntropy: State, withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double = {
+  def getBucketState(instances: Iterable[Instance], instanceWeights: Instance => Double): Double = getBucketStats(instances, instanceWeights)._1.entropy
+  def evaluateSplittingCriteria(baseEntropy: Double, withFeature: (Tensor1, Double), withoutFeature: (Tensor1, Double)): Double = {
     val numInstances = withFeature._2 + withoutFeature._2
     val pctWith = withFeature._2 * 1.0 / numInstances
     val pctWithout = withoutFeature._2 * 1.0 / numInstances
@@ -400,16 +372,60 @@ trait ErrorBasedPruning {
 trait TensorStatsAndLabels {
   this: DecisionTreeTrainer =>
   type Label = Tensor1
-  type BucketStats = (Tensor1, Double) // weighted avg and weighted count
+  type State
+  type BucketStats = (Tensor1, Double)
+  // weighted avg and weighted count
+  def getBucketState(labels: Iterable[Instance], weights: Instance => Double): State
   def getBucketStats(labels: Iterable[Instance], weights: Instance => Double): BucketStats = {
     val numLabels = labels.head._2.length
-    val sum = labels.foldLeft(new DenseTensor1(numLabels))((acc, el) => {acc += (el._2, weights(el)); acc})
+    val sum = labels.foldLeft(new DenseTensor1(numLabels))((acc, el) => {acc +=(el._2, weights(el)); acc})
     val denom = labels.map(weights).sum
     sum /= denom
     (sum, denom)
   }
   def getPrediction(stats: BucketStats): Label = stats._1
   def makeLeaf(stats: BucketStats): DTree = DTLeaf(stats._1)
+  def evaluateSplittingCriteria(instances: Seq[Instance], instanceWeights: Instance => Double, possibleFeatureThresholds: Array[Array[Double]]): Array[Array[Double]] = {
+    val possThresholds = possibleFeatureThresholds
+    val allStats = getBucketStats(instances, instanceWeights)
+    class MutableBucketStats(val sum: DenseTensor1 = new DenseTensor1(instances(0)._2.length), var mult: Double = 0.0)
+    val withFeatureStats = Array.tabulate(possThresholds.size)(i => Array.fill(possThresholds(i).size)(new MutableBucketStats))
+    val costReductions = Array.tabulate(possThresholds.size)(i => Array.fill(possThresholds(i).size)(0.0))
+    for (inst@(feats, label) <- instances) {
+      feats.foreachActiveElement((i, v) => {
+        val featureValues = possibleFeatureThresholds(i)
+        val split = featureValues.count(fv => fv > v)
+        val stats = withFeatureStats(i)(split)
+        val instWeight = instanceWeights(inst)
+        stats.sum +=(label, instWeight)
+        stats.mult += instWeight
+      })
+    }
+    val baseEntropy = getBucketState(instances, instanceWeights)
+    for (f <- 0 until possibleFeatureThresholds.length) {
+      val thresholds = possibleFeatureThresholds(f)
+      for (t <- 0 until thresholds.length) {
+        val withStats = withFeatureStats(f)(t)
+        val withoutStats = new MutableBucketStats
+        withoutStats.sum +=(allStats._1, allStats._2)
+        withoutStats.mult += allStats._2
+        withoutStats.sum -= withStats.sum
+        // stupid floating point - this can go below zero
+        val withoutStatsArr = withoutStats.sum.asArray
+        var i = 0; val len = withoutStatsArr.length
+        while (i < len) {if (withoutStatsArr(i) < 0.0) withoutStatsArr(i) = 0.0; i += 1}
+        withoutStats.mult -= withStats.mult
+        val infogain =
+          if (withStats.mult > 0.0 && withoutStats.mult > 0.0)
+            evaluateSplittingCriteria(baseEntropy, (withStats.sum / withStats.mult, withStats.mult), (withoutStats.sum / withoutStats.mult, withoutStats.mult))
+          else
+            Double.NegativeInfinity
+        costReductions(f)(t) = infogain
+      }
+    }
+    costReductions
+  }
+  def evaluateSplittingCriteria(s: State, withStats: BucketStats, withoutStats: BucketStats): Double
 }
 
 // TODO add more versions of the tree that can do labels that aren't tensors
