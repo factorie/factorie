@@ -397,6 +397,8 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
 
 trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
   def activeDomainSize = tensor1.activeDomainSize * tensor2.activeDomainSize
+  var scale = 1.0
+  override def *=(d: Double) = scale *= d
 
   def tensor1: Tensor
   def tensor2: Tensor
@@ -414,9 +416,10 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
   @inline final def singleFlatIndex(i:Int, j:Int): Int = i*tensor2.length + j
   def activeDomain = new Outer2IntSeq(tensor1.length, tensor2.length, tensor1.activeDomain, tensor2.activeDomain)
   def isDense: Boolean = false
-  def apply(i: Int): Double = tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
-  override def twoNormSquared = tensor1.twoNormSquared * tensor2.twoNormSquared
-  override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
+  def apply(i: Int): Double = scale*tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
+  override def twoNormSquared = scale*scale*tensor1.twoNormSquared * tensor2.twoNormSquared
+  override def =+(a: Array[Double], offset: Int, vv: Double): Unit = {
+    val v = scale*vv
     // note that this is different from the singleIndex in Tensor2, as these are not dimensions but lengths of the whole tensors
     @inline def singleIndex(i: Int, j: Int): Int = i * tensor2.length + j
     if (offset != 0) super.=+(a, offset, v)
@@ -511,7 +514,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
         })
     }
   }
-  def dot(ds: DoubleSeq): Double = ds match {
+  def dot(ds: DoubleSeq): Double = scale * (ds match {
     case dt: DenseTensor =>
       (tensor1, tensor2) match {
         // NOTE if we added singletontensor/dense, this would cover all the singleton layered tensor stuff if we made those outer2tensors
@@ -609,10 +612,10 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
       }
       case t: Outer2Tensor =>
         val firstDot = tensor1 dot t.tensor1
-        if (firstDot == 0.0) 0.0 else firstDot * (tensor2 dot t.tensor2)
+        t.scale * (if (firstDot == 0.0) 0.0 else firstDot * (tensor2 dot t.tensor2))
       // this obviously won't work if tensor1 and tensor2 aren't rank-1, still neat
       case t: Tensor2 => tensor1 dot (t * tensor2.asInstanceOf[Tensor1])
-    }
+    })
 }
 
 
@@ -621,8 +624,6 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tens
   // we can dot against other outer tensors here efficiently i think
   def dim1 = tensor1.dim1
   def dim2 = tensor2.dim1
-  var scale = 1.0
-  override def *=(d: Double) = scale *= d
   def activeDomain1 = tensor1.activeDomain1
   def activeDomain2 = tensor2.activeDomain1
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
