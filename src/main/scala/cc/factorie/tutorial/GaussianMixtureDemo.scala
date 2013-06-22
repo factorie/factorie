@@ -103,6 +103,6 @@ object MultivariateGaussianMixtureDemo {
 //    println("\nOriginal means")
 //    origMeans.foreach(println(_))
 
-    assert(meanComponents.zip(origMeans).forall({case (m1, m2) => (m1.value - m2).twoNorm / m2.twoNorm < .1}), "Inferred means were not within tolerance of true means!")
+    meanComponents.foreach(m1 => assert(origMeans.exists(m2 => (m1.value - m2).twoNorm / m2.twoNorm < .1), "Inferred means were not within tolerance of true means!"))
   }
 }

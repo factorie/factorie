@@ -62,13 +62,13 @@ object MultivariateGaussianMixture
     Factor(a, b, c, d)
 }
 
-object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],DirectedModel] {
-  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] =
+object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],(DirectedModel,Summary)] {
+  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: Summary): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
   def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor1]], model: DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  def infer(variables: Iterable[MutableTensorVar[Tensor1]], m: (DirectedModel,Summary)): AssignmentSummary = {
+    val (model,dSummary) = m
     val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxMean(v, model, dSummary)
@@ -80,7 +80,7 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
     factors: Iterable[DirectedFactor],
     pred1: MultivariateGaussian.Factor => Boolean,
     pred2: MultivariateGaussianMixture.Factor => Int,
-    summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] = {
+    summary: Summary): Option[Tensor1] = {
     val factorIter = factors.iterator
     var sum = null: Tensor1; var count = 0.0
     while (factorIter.hasNext)
@@ -91,7 +91,7 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
           count += 1
         case f@MultivariateGaussianMixture.Factor(fvalue, fmeans, _, gate) if pred2(f) != -1 =>
           if (sum == null) sum = new DenseTensor1(fvalue.value.length, 0.0)
-          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate)
+          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate).asInstanceOf[DiscreteMarginal1[DiscreteVar]]
            val mixtureIndex = pred2(f)
            if (gateMarginal eq null) {
              if (gate.intValue == mixtureIndex) { sum += fvalue.value; count += 1.0 }
