@@ -15,14 +15,12 @@
 
 package cc.factorie.tutorial
 
-import scala.collection.mutable.{ArrayBuffer}
-import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
 import app.classify
-import classify._
-import la.Tensor
+import cc.factorie.optimize._
+import language.postfixOps
 
 /**A document classifier that uses Decision Trees.
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
@@ -64,44 +62,15 @@ object DocumentClassifier4 {
 
     // Make a test/train split
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
-    val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
-    val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val start = System.currentTimeMillis
-    // Train decision tree
-    val classifier =
-      //if (useBoostedClassifier) new AdaBoostDecisionStumpTrainer().train(trainLabels) else 
-      //new ID3DecisionTreeTrainer().train(trainLabels)
-      new MaxEntTrainer().train(trainLabels)
-      //new NaiveBayesTrainer().train(trainLabels)
+    // Train and test the decision tree
+//    val trainer = new RandomForestMultiClassTrainer(numTrees = 100, numFeaturesToUse = 10000, numInstancesToSample = 500, treeTrainer = new C45DecisionTreeTrainer { maxDepth = 25 })
+//    val trainer = new BoostingMultiClassTrainer(numWeakLearners = 1000)
 
-    // Test decision tree
-
-    val testTrial = new classify.Trial[Label](classifier)
-    testTrial ++= testLabels
-
-    val trainTrial = new classify.Trial[Label](classifier)
-    trainTrial ++= trainLabels
-
-    // println("Train accuracy = " + trainTrial.accuracy)
-    // println("Test  accuracy = " + testTrial.accuracy)
-    // println("Number of ms to train/test: " + (System.currentTimeMillis - start))
-    
-    // Print highest weightsSet
-//    val weightsSet = classifier.asInstanceOf[classify.ModelBasedClassifier[Label]].model.asInstanceOf[classify.LogLinearModel[Label,Document]].evidenceTemplate.weightsSet
-//    val elements = weightsSet.activeElements.toSeq.sortBy(_._2).reverse
-//    println("Class labels: "+LabelDomain.categories.mkString(" "))
-//    for (e <- elements.take(100)) {
-//      val i = e._1
-//      val w = e._2
-//      val ci = weightsSet.index1(i)
-//      val fi = weightsSet.index2(i)
-//      println("%7f %-10s %s".format(w, DocumentDomain.dimensionDomain.category(fi), LabelDomain.category(ci)))
-//    }
-    
-    //    println(classifier.model
-    //      .asInstanceOf[DecisionTreeStatistics2Base[Label#ValueType,Document#ValueType]]
-    //      .splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
+    val trainer = new DecisionTreeMultiClassTrainer(new C45DecisionTreeTrainer { maxDepth = 1500 })
+    val start = System.currentTimeMillis()
+    trainer.train[Label](trainSet, (_: Label).document, testSet, (_: Label) => 1.0)
+    println(f"Elapsed time: ${System.currentTimeMillis() - start}%dms")
   }
 }
 
