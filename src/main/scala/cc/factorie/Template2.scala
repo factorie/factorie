@@ -50,9 +50,10 @@ abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifes
   def unroll2(v:N2): Iterable[FactorType]
 
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = {
+    // Loop over vars separately from factors to avoid creating all factors for what could be very large data
     (classOf[DiscreteVar].isAssignableFrom(neighborClass1), classOf[DiscreteVar].isAssignableFrom(neighborClass2)) match {
       case (true, true) => {
-        for (factor <- factors(vars).asInstanceOf[Iterable[Factor2[DiscreteVar,DiscreteVar]]]) {
+        for (v <- vars; factor <- factors(v).asInstanceOf[Iterable[Factor2[DiscreteVar,DiscreteVar]]]) {
           if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new la.SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize)
           limitedDiscreteValues12.+=(factor._1.intValue, factor._2.intValue)
           if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new la.SparseBinaryTensor1(factor._1.domain.dimensionSize)
@@ -60,7 +61,7 @@ abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifes
         }
       }
       case (true, false) => {
-        for (factor <- factors(vars).asInstanceOf[Iterable[Factor2[DiscreteVar,DiscreteVar]]]) {
+        for (v <- vars; factor <- factors(v).asInstanceOf[Iterable[Factor2[DiscreteVar,DiscreteVar]]]) {
           if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new la.SparseBinaryTensor1(factor._1.domain.dimensionSize)
           limitedDiscreteValues1.+=(factor._1.intValue)
         }
