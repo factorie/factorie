@@ -89,7 +89,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
 }
 
 /** Train using one trainer, until it has converged, and then use the second trainer instead.
-    Typically use is to first train with an online stochastic gradient ascent such as OnlineTrainer and AdaGrad,
+    Typical use is to first train with an online stochastic gradient ascent such as OnlineTrainer and AdaGrad,
     and then a batch trainer, like BatchTrainer and LBFGS. */
 class TwoStageTrainer(firstTrainer: Trainer, secondTrainer: Trainer) {
   def processExamples(examples: Iterable[Example]) {

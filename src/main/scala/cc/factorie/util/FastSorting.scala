@@ -3,7 +3,7 @@ package cc.factorie.util
 import cc.factorie._
 
 object FastSorting {
-  // WARNING this sorts both the keys and the values -luke
+  // NOTE: This sorts keeps the keys and values in correspondence, while sorting by the keys
   def quickSort(keys: Array[Int], values: Array[Int]): Unit = {
     // lo = pivot, hi = range
     def quickSortInner(keys: Array[Int], values: Array[Int], lo: Int, hi: Int): Unit = {
