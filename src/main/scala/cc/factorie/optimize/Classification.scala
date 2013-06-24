@@ -15,7 +15,7 @@ trait BaseClassification[Pred] {
   def proportions: Proportions
 }
 
-trait Classifier[Pred, Features] {
+trait BaseClassifier[Pred, Features] {
   def score(features: Features): Pred
   def classification(features: Features): BaseClassification[Pred]
 }
@@ -35,11 +35,11 @@ class MultiClassClassification(val score: Tensor1) extends BaseClassification[Te
   lazy val bestLabelIndex = proportions.maxIndex
 }
 
-trait BaseBinaryClassifier[Features] extends Classifier[Double, Features] {
+trait BaseBinaryClassifier[Features] extends BaseClassifier[Double, Features] {
   def classification(features: Features) = new BinaryClassification(score(features))
 }
 
-trait MultiClassClassifier[Features] extends Classifier[Tensor1, Features] {
+trait MultiClassClassifier[Features] extends BaseClassifier[Tensor1, Features] {
   def classification(features: Features) = new MultiClassClassification(score(features))
 }
 
@@ -130,7 +130,7 @@ class MultiClassTrainer(val optimizer: GradientOptimizer,
    * @param labels The labels
    * @param features The feature vector variables, one per label
    * @param evaluate How to evaluate after each iteration of training
-   * @return
+   * @return A trained classifier
    */
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], evaluate: LinearMultiClassClassifier => Unit): LinearMultiClassClassifier =
     simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), evaluate)
@@ -139,7 +139,7 @@ class MultiClassTrainer(val optimizer: GradientOptimizer,
    * Simplest training function: no weights, just label and feature variables
    * @param labels The labels
    * @param features The feature variables, one per label
-   * @return A trainer classifier
+   * @return A trained classifier
    */
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar]): LinearMultiClassClassifier =
     simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), c => ())
