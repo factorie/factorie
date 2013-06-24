@@ -5,12 +5,26 @@ import org.junit.Test
 import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.traversableExtras
-import cc.factorie.la.{Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
+import cc.factorie.la.{SingletonTensor1, Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
 
 class TestDecisionTree extends JUnitSuite {
-  @Test def runTest(): Unit = {
+  @Test def testRegression(): Unit = {
+    implicit val random = new scala.util.Random(0)
+    val xs = Seq[Double](1, 2, 6, 8, 34, 45)
+    val ys = xs.map(x => x * x)
+    val instances = xs.zip(ys).map({
+      case (x, y) => DecisionTreeTrainer.Instance[Tensor1](new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
+    })
+    val trainer = new RegressionTreeTrainer { minSampleSize = 1 }
+    val tree = trainer.train(instances)
+    val xs2 = Seq[Double](5, 7, 8, 23, 50)
+    xs2.zip(xs2.map(x => DTree.score(new SingletonTensor1(1, 0, x), tree))).foreach({
+      case (x, y) => println(f"x: $x%f y: ${y(0)}%f")
+    })
+  }
+  @Test def testClassification(): Unit = {
     implicit val random = new scala.util.Random(0)
     object featuresDomain extends DiscreteTensorDomain {
       val dimensionDomain = new DiscreteDomain(100)

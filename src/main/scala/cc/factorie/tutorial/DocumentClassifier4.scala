@@ -53,7 +53,7 @@ object DocumentClassifier4 {
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
         docLabels += new Document(file).label
       }
@@ -65,9 +65,9 @@ object DocumentClassifier4 {
 
     // Train and test the decision tree
 //    val trainer = new RandomForestMultiClassTrainer(numTrees = 100, numFeaturesToUse = 10000, numInstancesToSample = 500, treeTrainer = new C45DecisionTreeTrainer { maxDepth = 25 })
-//    val trainer = new BoostingMultiClassTrainer(numWeakLearners = 1000)
+    val trainer = new BoostingMultiClassTrainer(numWeakLearners = 1000)
 
-    val trainer = new DecisionTreeMultiClassTrainer(new C45DecisionTreeTrainer { maxDepth = 1500 })
+//    val trainer = new DecisionTreeMultiClassTrainer(new C45DecisionTreeTrainer { maxDepth = 1500 })
     val start = System.currentTimeMillis()
     trainer.train[Label](trainSet, (_: Label).document, testSet, (_: Label) => 1.0)
     println(f"Elapsed time: ${System.currentTimeMillis() - start}%dms")

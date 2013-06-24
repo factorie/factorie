@@ -32,6 +32,15 @@ trait Tensor2 extends Tensor {
     case t:Tensor2 => require(t.dim1 == dim1 && t.dim2 == dim2)
     case _ => throw new Error("Tensor ranks do not match.")
   }
+  def diag(): Tensor1 = {
+    val ret = new DenseTensor1(dim1)
+    var i = 0; val len = dim1
+    while (i < len) {
+      ret(i) = apply(i, i)
+      i += 1
+    }
+    ret
+  }
   def apply(i:Int, j:Int): Double = apply(i*dim2 + j)
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)

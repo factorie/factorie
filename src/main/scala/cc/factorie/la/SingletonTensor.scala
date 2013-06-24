@@ -29,7 +29,7 @@ trait SingletonTensor extends SparseTensor with ReadOnlyTensor {
   def _indices: Array[Int] = Array(singleIndex)
 }
 
-trait SingletonIndexedTensor extends SparseBinaryTensor with SingletonTensor {
+trait SingletonIndexedTensor extends SparseIndexedTensor with SingletonTensor {
 
   def _values: Array[Double] = Array(singleValue)
   def copyInto(t: SparseIndexedTensor): Unit = t(singleIndex) = singleValue
