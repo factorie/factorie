@@ -14,15 +14,18 @@ class TestDecisionTree extends JUnitSuite {
     implicit val random = new scala.util.Random(0)
     val xs = Seq[Double](1, 2, 6, 8, 34, 45)
     val ys = xs.map(x => x * x)
+    xs.zip(ys).foreach({case (x, y) => println(f"x: $x%f y: $y%f")})
     val instances = xs.zip(ys).map({
       case (x, y) => DecisionTreeTrainer.Instance[Tensor1](new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
     })
     val trainer = new RegressionTreeTrainer { minSampleSize = 1 }
     val tree = trainer.train(instances)
     val xs2 = Seq[Double](5, 7, 8, 23, 50)
-    xs2.zip(xs2.map(x => DTree.score(new SingletonTensor1(1, 0, x), tree))).foreach({
-      case (x, y) => println(f"x: $x%f y: ${y(0)}%f")
+    val preds = xs2.map(x => DTree.score(new SingletonTensor1(1, 0, x), tree)(0))
+    xs2.zip(preds).foreach({
+      case (x, y) => println(f"x: $x%f y: $y%f")
     })
+    assert(preds.sameElements(Seq[Double](36, 36, 64, 1156, 2025)), "Dec tree regression didn't work!")
   }
   @Test def testClassification(): Unit = {
     implicit val random = new scala.util.Random(0)

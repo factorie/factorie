@@ -300,7 +300,7 @@ trait DecisionTreeTrainer {
       inst.feats.foreachActiveElement((i, v) => {
         val featureValues = possibleFeatureThresholds(i)
         if (featureValues != null) {
-          val split = featureValues.count(fv => fv > v)
+          val split = featureValues.length - featureValues.count(fv => fv > v) - 1
           val stats = withFeatureStats(i)(split)
           accumulate(stats, inst)
         }
@@ -421,7 +421,9 @@ trait DiagonalCovarianceSplitting {
   def samePred(labels: Seq[Label]): Boolean = false
   def getBucketState(instances: Iterable[Instance]): Double = getStdDev(getBucketStats(instances))
   def getStdDev(stats: BucketStats): Double = {
-    val variance = (stats.sumSq - (stats.sum outer stats.sum).asInstanceOf[Tensor2].diag()).asArray.product
+    // TODO fix this it is quite numerically unstable -luke
+    val diag = stats.sumSq / stats.mult - (stats.sum / stats.mult outer stats.sum / stats.mult).asInstanceOf[Tensor2].diag()
+    val variance = diag.asArray.product
     math.sqrt(variance)
   }
   def evaluateSplittingCriteria(baseStdDev: Double, withFeature: MutableBucketStats, withoutFeature: MutableBucketStats): Double = {
