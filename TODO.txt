@@ -36,7 +36,7 @@ Tutorial coverage:
 020 Tensors and la package
 030 Factors, Families, Templates, Models
 040 Infer, Summary, Marginal, BP, Sampling, GibbsSampler, MHSampler, MeanField, MLPL, DualDecomposition 
-050 Optimize package
+050 Optimize package [DONE]
 060 Learning
 070 Directed package
 080 Standard ML models: HMM, Mixture of Gaussians,
