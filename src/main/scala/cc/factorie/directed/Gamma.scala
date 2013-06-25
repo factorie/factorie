@@ -22,16 +22,16 @@ object Gamma extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
     val diff = value - mean
-    return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
+    - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   }
   def pr(x:Double, alpha:Double, beta:Double): Double = {
     require(x > 0)
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
-  def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha, beta)(cc.factorie.random)
+  def sampledValue(alpha:Double, beta:Double)(implicit random: scala.util.Random): Double = maths.nextGamma(alpha, beta)(random)
   case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
     def pr(child:Double, mean:Double, variance:Double): Double = self.pr(child, mean, variance)
-    def sampledValue(mean:Double, variance:Double): Double = self.sampledValue(mean, variance)
+    def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = self.sampledValue(mean, variance)
   }
   def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }

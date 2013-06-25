@@ -14,6 +14,8 @@
 
 package cc.factorie
 
+import cc.factorie.util.Attr
+
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
 // The "target" is a container for the true, correct value.

@@ -20,6 +20,7 @@ class TimeStampedDocument(domain:CategoricalSeqDomain[String], name:String, toke
 object TopicsOverTime {
   val numTopics = 10
   implicit val model = DirectedModel()
+  implicit val random = new scala.util.Random(0)
   object ZDomain extends DiscreteDomain(numTopics)
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
@@ -32,8 +33,8 @@ object TopicsOverTime {
   val beta = MassesVariable.growableUniform(WordDomain, 0.1)
   val alphas = MassesVariable.dense(numTopics, 0.1)
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
-  val balphas = Mixture(numTopics)(new DoubleVariable) 
-  val bbetas  = Mixture(numTopics)(new DoubleVariable) 
+  val balphas = Mixture(numTopics)(new DoubleVariable)(model, random)
+  val bbetas  = Mixture(numTopics)(new DoubleVariable)(model, random)
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")

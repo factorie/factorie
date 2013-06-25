@@ -3,6 +3,9 @@ package cc.factorie
 import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator, Tensor}
 import cc.factorie.optimize.Example
 import cc.factorie.util.DoubleAccumulator
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.chain.ChainModel
+import org.junit.Assert._
 
 /**
  * User: apassos
@@ -20,7 +23,7 @@ case class ModelWithInference[M,V](vars: V, model: M)(implicit val infer: (V,M) 
   def summary = infer(vars, model)
 }
 
-class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.LearningRates.expDualIncrease(1.0, 0.9)) extends Infer[Seq[WarmStartWeightedSummary], Seq[(Int,DiscreteVar,Int,DiscreteVar)]] {
+class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.LearningRates.expDualIncrease(1.0, 0.9)) extends Infer[Seq[WarmStartWeightedSummary], Seq[(Int,DiscreteVar,Int,DiscreteVar)]] with cc.factorie.util.GlobalLogging {
   def infer(summaries: Seq[WarmStartWeightedSummary], constraints: Seq[(Int, DiscreteVar, Int, DiscreteVar)]): MAPSummary = {
     var dual = summaries.map(_.summary.logZ).sum
     var updated = true
@@ -31,6 +34,7 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
       val newDual = summaries.map(_.summary.logZ).sum
       if (newDual > dual) dualIncreases += 1
       dual = newDual
+      logger.info(s"Dual: $dual}")
       updated = false
       for ((i1, v1, i2, v2) <- constraints) {
         val discreteMarginal1 = summaries(i1).summary.marginal(v1).asInstanceOf[DiscreteMarginal]
@@ -69,6 +73,7 @@ object DualDecomposition {
     def infer() { summary = baseInfer.infer(vars, combinedModel)}
     class WeightedFactor(v: DiscreteVar, t: Tensor, d: Double) extends Factor1[DiscreteVar](v) {
       def score(v1: DiscreteVar#Value) = d*(v1 dot t)
+      override def valuesScore(v1: Tensor) = d*(v1 dot t)
     }
     def incrementWeights(v: DiscreteVar, t: Tensor, d: Double) { weightedModel += new WeightedFactor(v, t, d)}
   }
@@ -87,3 +92,4 @@ object DualDecomposition {
     def invSqrtT(eta: Double) = (iteration: Int, dualIncreases: Int) => eta/math.sqrt(iteration)
   }
 }
+

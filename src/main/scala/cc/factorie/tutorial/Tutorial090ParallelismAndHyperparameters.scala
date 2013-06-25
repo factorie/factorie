@@ -8,6 +8,7 @@ import cc.factorie.optimize.Trainer
 
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {
+    implicit val random = new scala.util.Random(0)
     /*&
      * Factorie has support for parallelism and distributed computation in some parts
      * which are often bottlenecks when working with machine learning and natural
@@ -51,6 +52,9 @@ object Tutorial090ParallelismAndHyperparameters {
     /*&
      * Other objects which also use CategoricalDomains as their back ends, such as the
      * CategoricalTensorDomain are then also thread-safe.
+     *
+     * Also for all DocumentAnnotators calling annotator.process in multiple threads
+     * is safe.
      *
      *
      * Another big bottleneck in machine learning and natural language processing systems

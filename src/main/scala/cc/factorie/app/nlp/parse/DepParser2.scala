@@ -8,13 +8,11 @@ import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
 import java.io.{File,InputStream,FileInputStream}
 import cc.factorie.util.BinarySerializer
-import cc.factorie.la._
-import cc.factorie.app.classify.{SVMTrainer, MultiClassModel}
 import scala._
+import cc.factorie.optimize._
+import scala.concurrent.Await
 import scala.Some
-import cc.factorie.optimize.{LinearObjectives, LinearMultiClassExample, SynchronizedOptimizerOnlineTrainer, AdaGradRDA}
-import scala.Some
-import scala.concurrent.{Await, Future}
+import java.util.concurrent.Executors
 
 class DepParser2 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
@@ -42,7 +40,7 @@ class DepParser2 extends DocumentAnnotator {
   
   // Serialization
   def serialize(file: File): Unit = {
-    if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    if (file.getParentFile ne null) file.getParentFile.mkdirs()
     serialize(new java.io.FileOutputStream(file))
   }
   def deserialize(file: File): Unit = {
@@ -54,8 +52,8 @@ class DepParser2 extends DocumentAnnotator {
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.evidence.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
-    model.evidence.set(sparseEvidenceWeights)
+    sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(labelDomain, dstream)
@@ -69,7 +67,7 @@ class DepParser2 extends DocumentAnnotator {
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     import scala.language.reflectiveCalls
-    model.evidence.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     println("DepParser2 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
@@ -77,18 +75,17 @@ class DepParser2 extends DocumentAnnotator {
     
     
     
-  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category((model.evidence.value * v.features.tensor.asInstanceOf[Tensor1]).maxIndex))
-  val model = new MultiClassModel {
-    val evidence = Weights(new DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size))
-  }
+  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category(model.classification(v.features.tensor).bestLabelIndex))
+  lazy val model = new LinearMultiClassClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
-  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) {
-    trainFn(vs.map(v => (v.asInstanceOf[LabeledCategoricalVariable[String]],v.features)), model)
+
+  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMultiClassTrainer, evaluate: (LinearMultiClassClassifier) => Unit) {
+    trainer.baseTrain(model, vs.map(_.targetIntValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
   }
   
   
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001): Unit = {
-    var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0)
+  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
+    var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     featuresDomain.freeze()
     println("DepParser2 #features " + featuresDomain.dimensionDomain.size)
     val numTrainSentences = trainSentences.size
@@ -97,26 +94,21 @@ class DepParser2 extends DocumentAnnotator {
     trainingVars = null // Allow them to be GC'ed
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + (i+1))
-      trainDecisions(generateDecisions(trainSentences, ParserConstants.BOOSTING), optimizer, trainSentences, testSentences)
+      trainDecisions(generateDecisions(trainSentences, ParserConstants.BOOSTING, nThreads), optimizer, trainSentences, testSentences)
     }
   }
   
-  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence]): Unit = {
-    val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
-    val examples = trainDecisions.map(v => new LinearMultiClassExample(model.evidence,
-      v.features.value.asInstanceOf[Tensor1],
-      v.targetIntValue,
-      LinearObjectives.sparseLogMultiClass))
-    while (!trainer.isConverged) {
-      trainer.processExamples(examples.shuffle)
-      println(model.evidence.value.toSeq.count(x => x == 0).toFloat/model.evidence.value.length +" sparsity")
-      println("iteration "+trainer.iteration+" TRAIN "+testString(trainSentences))
-      println("iteration "+trainer.iteration+" TEST  "+testString(testSentences))
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
+    def evaluate(c: LinearMultiClassClassifier) {
+      // println(model.weights.value.toSeq.count(x => x == 0).toFloat/model.weights.value.length +" sparsity")
+      println(" TRAIN "+testString(trainSentences))
+      println(" TEST  "+testString(testSentences))
     }
+    new OnlineLinearMultiClassTrainer(optimizer=optimizer).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
-    testSentences.foreach(process(_))
+    testSentences.par.foreach(process(_))
     val pred = testSentences.map(_.attr[ParseTree])
     "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
   }
@@ -141,8 +133,12 @@ class DepParser2 extends DocumentAnnotator {
     val BOOSTING   = 2
   }
 
-  def generateDecisions(ss: Iterable[Sentence], mode: Int): Iterable[ParseDecisionVariable] = {
-    ss.flatMap(s => {
+  def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
+    import scala.concurrent._
+    import scala.concurrent.duration._
+    val pool = Executors.newFixedThreadPool(nThreads)
+    implicit val exc = scala.concurrent.ExecutionContext.fromExecutorService(pool)
+    val futures = ss.map(s => future {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
         else new NonprojectiveBoostingOracle(s, classify)
@@ -150,9 +146,12 @@ class DepParser2 extends DocumentAnnotator {
       new NonProjectiveShiftReduce(oracle.predict).parse(s)
       oracle.instances
     })
+    val decisions = futures.flatMap(f => Await.result(f, 100.hours))
+    pool.shutdown()
+    decisions
   }
-  def boosting(ss: Iterable[Sentence], addlVs: Iterable[ParseDecisionVariable]=Seq(), trainFn: (Iterable[(LabeledCategoricalVariable[String],DiscreteTensorVar)], MultiClassModel) => Unit) =
-    trainFromVariables(addlVs ++ generateDecisions(ss, ParserConstants.BOOSTING), trainFn)
+  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
+    trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
@@ -461,17 +460,21 @@ class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
   val cutoff    = new CmdOption("cutoff", "0", "", "")
   val loadModel = new CmdOption("load", "", "", "")
+  val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use")
   val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
   val modelDir =  new CmdOption("model", "model", "STRING", "Directory in which to save the trained model.")
   val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
+  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
 object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
     val opts = new DepParser2Args
+    implicit val random = new scala.util.Random(0)
     opts.parse(args)
     import opts._
 
@@ -497,7 +500,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        ss.foreach(c.process)
+        ss.par.foreach(c.process)
         val pred = ss.map(_.attr[ParseTree])
         println("LAS: " + ParserEval.calcLas(pred))
         println("UAS: " + ParserEval.calcUas(pred))
@@ -517,36 +520,23 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     val c = new DepParser2
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
-    val optimizer = new AdaGradRDA(1.0, 0.1, l1, l2)
-
-    def trainFn(examples: Iterable[(LabeledCategoricalVariable[String], DiscreteTensorVar)], model: MultiClassModel) {
-      if (useSVM.value) {
-        val labelSize = examples.head._1.domain.size
-        val featuresSize = examples.head._2.domain.dimensionSize
-        SVMTrainer.train(model, labelSize, featuresSize, examples.map(_._1).toArray.toSeq, examples.map(_._2).toArray.toSeq, parallel=true)
-      } else {
-        val trainer = new SynchronizedOptimizerOnlineTrainer(model.parameters, optimizer, maxIterations=2)
-        val ex = examples.map(e => new LinearMultiClassExample(model.evidence,
-          e._2.value.asInstanceOf[Tensor1],
-          e._1.targetIntValue,
-          LinearObjectives.sparseLogMultiClass))
-        while (!trainer.isConverged) {
-          trainer.processExamples(ex.shuffle)
-          println(c.model.evidence.value.toSeq.count(x => x == 0).toFloat/c.model.evidence.value.length +" sparsity")
-          testAll(c, "iteration " + trainer.iteration)
-        }
-      }
+    val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
+    val trainer = if (useSVM.value) new SVMMultiClassTrainer()
+      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
+    def evaluate(cls: LinearMultiClassClassifier) {
+      println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
+      testAll(c, "iteration ")
     }
-    var trainingVs = c.generateDecisions(sentences, 0)
+    var trainingVs = c.generateDecisions(sentences, 0, nThreads.value)
     c.featuresDomain.freeze()
     println("# features " + c.featuresDomain.dimensionDomain.size)
-    c.trainFromVariables(trainingVs, trainFn)
+    c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + i)
-      c.boosting(sentences, trainFn=trainFn)
+      c.boosting(sentences, nThreads=nThreads.value, trainer=trainer, evaluate=evaluate)
     }
-    testSentences.foreach(c.process)
+    testSentences.par.foreach(c.process)
     if (saveModel.value) {
       val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString + ".parser"
       //c.save(new java.io.File(modelUrl), gzip = true)
@@ -561,8 +551,10 @@ object DepParser2Optimizer {
     val opts = new DepParser2Args
     opts.parse(args)
     opts.saveModel.setValue(false)
-    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
-    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-6, 1))
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -571,8 +563,8 @@ object DepParser2Optimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.parse.DepParser2Trainer", "try-log/")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2), qs.execute, 30, 20, 60)
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser2Trainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)

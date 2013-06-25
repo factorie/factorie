@@ -215,7 +215,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   }
 
   class StructuredPerceptronParsingExample(val sent: Sentence) extends cc.factorie.optimize.Example {
-    def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+    def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
       if (gradient ne null) {
         val gt = groundTruthEdges(sent)
         gt.foreach(f => gradient.accumulate(DependencyModel.weights, f.value))

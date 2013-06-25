@@ -15,32 +15,21 @@
 package cc.factorie.app.classify
 
 import cc.factorie._
-import la.{DenseTensor1, Tensor}
+import cc.factorie.optimize._
 
-class ID3DecisionTreeTrainer extends ClassifierTrainer {
-  var iterations = 10
-  var learningRateDecay = 0.9
+class ID3DecisionTreeTrainer(implicit random: scala.util.Random) extends ClassifierTrainer {
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L, Model] = {
-    val dmodel = new ID3DecisionTreeTemplate[L, F](
-      il.labelToFeatures,
-      il.labelDomain,
-      il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val instanceWeights = il.map(il.instanceWeight(_)).toArray
-    dmodel.train(il, new DenseTensor1(instanceWeights))
-    new ModelBasedClassifier(dmodel, il.head.domain)
+    val trainer = new DecisionTreeMultiClassTrainer
+    val classifier = trainer.train(il, il.labelToFeatures, il.instanceWeight)
+    new ModelBasedClassifier(classifier.asTemplate(il.labelToFeatures)(il.labelManifest), il.head.domain)
   }
 }
 
-class AdaBoostDecisionStumpTrainer extends ClassifierTrainer {
-  var iterations = 10
+class AdaBoostDecisionStumpTrainer(implicit random: scala.util.Random) extends ClassifierTrainer {
+  var iterations = 1000
   def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L, Model] = {
-    // FIXME why can't we make AdaBoost template type more general?
-    val dmodel = new AdaBoostDecisionStumpTemplate[L, F](
-      il.labelToFeatures,
-      il.labelDomain,
-      il.instanceDomain)(il.labelManifest, il.featureManifest)
-    dmodel.numIterations = iterations
-    dmodel.train(il)
-    new ModelBasedClassifier(dmodel, il.head.domain)
+    val trainer = new BoostingMultiClassTrainer(iterations)
+    val classifier = trainer.train(il, il.labelToFeatures, il.instanceWeight)
+    new ModelBasedClassifier(classifier.asTemplate(il.labelToFeatures)(il.labelManifest), il.head.domain)
   }
 }

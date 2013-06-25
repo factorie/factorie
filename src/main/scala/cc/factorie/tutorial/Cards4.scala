@@ -21,6 +21,7 @@ object Cards4 {
   }
 
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val jane = new Location("jane")
     val floor = new Location("floor")
     val locations = List(floor, jane)

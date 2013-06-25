@@ -35,6 +35,7 @@ import cc.factorie.la.Tensor
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
 trait Sampler[C] {
+  implicit def random: scala.util.Random
   type ContextType = C
   //if (contextClass == classOf[Nothing]) throw new Error("Constructor for class "+this.getClass.getName+" must be given type argument");
   /** The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int). */
@@ -133,7 +134,7 @@ trait ProposalSampler[C] extends Sampler[C] {
     and scores them efficiently by unrolling factors from the Model just once.
     Will not work for case factor diagrams.
     @author Andrew McCallum */
-class DiscreteProposalSampler(val model:Model, val objective:Model = null) extends ProposalSampler[DiscreteVar] {
+class DiscreteProposalSampler(val model:Model, val objective:Model = null)(implicit val random: scala.util.Random) extends ProposalSampler[DiscreteVar] {
   def proposals(context:DiscreteVar): Seq[Proposal] = {
     val modelFactors = model.factors(context)
     val objectiveFactors = if (objective ne null) objective.factors(context) else null
@@ -157,7 +158,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null) exten
   }
 }
 
-class DiscreteProposalMaximizer(override val model:Model, override val objective:Model = null) extends DiscreteProposalSampler(model, objective) {
+class DiscreteProposalMaximizer(override val model:Model, override val objective:Model = null) extends DiscreteProposalSampler(model, objective)(null) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxBy(_.modelScore)
 }
 
@@ -165,7 +166,7 @@ class DiscreteProposalMaximizer(override val model:Model, override val objective
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C)", 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) extends ProposalSampler[C] {
+abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(implicit val random: scala.util.Random) extends ProposalSampler[C] {
   //def this(m:Model) = this(m, null)
   def model: Model = theModel
   def objective = theObjective 
@@ -197,7 +198,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
 }
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
-abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
+abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective)(null) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
 }
 
@@ -208,12 +209,12 @@ abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) e
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null)(implicit random: scala.util.Random) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
 // TODO Remove and recommend GibbsSampler instead
-class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
+class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, objective:Model = null)(implicit random: scala.util.Random) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList
     val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
@@ -285,7 +286,7 @@ trait FactorQueue[C] extends Sampler[C] {
           val qd = sampleFromQueue
           if (qd != null) queueDiff ++= qd
         }
-      } else if (!queue.isEmpty && cc.factorie.random.nextDouble < queueProportion) {
+      } else if (!queue.isEmpty && random.nextDouble < queueProportion) {
         val qd = sampleFromQueue
         if (qd != null) queueDiff ++= qd
       }
@@ -375,7 +376,7 @@ class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) extends I
   }
 }
 
-class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
+class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
   def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model): Summary = {
     val sampler = new VariableSettingsSampler[MutableDiscreteVar[_]](model)
     val baseInfer = new InferBySampling[MutableDiscreteVar[_]](samplesToCollect, samplingInterval)
@@ -383,4 +384,4 @@ class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int) extends
   }
 }
 
-object InferByGibbsSampling extends InferByGibbsSampling(10, 10)
+object InferByGibbsSampling extends InferByGibbsSampling(10, 10, new scala.util.Random(0))

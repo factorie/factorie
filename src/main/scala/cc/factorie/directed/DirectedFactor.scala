@@ -26,7 +26,7 @@ trait DirectedFactor extends Factor {
   def logpr: Double = math.log(pr) // logpr(statistics)
   //def score: Double = logpr
   //def sampledValue(s:StatisticsType): Any
-  def sampledValue: Any // = sampledValue(statistics)
+  def sampledValue(implicit random: scala.util.Random): Any // = sampledValue(statistics)
   // TODO Consider removing these methods because we'd have specialized code in the inference recipes.
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
   // TODO Consider passing a second argument which is the value of the child to use in the update
@@ -48,7 +48,7 @@ class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V2<:Var](partialFactor: V2 => DirectedFactor)(implicit model:MutableDirectedModel): V = {
+  def :~[V2<:Var](partialFactor: V2 => DirectedFactor)(implicit model:MutableDirectedModel, random: scala.util.Random): V = {
     model += partialFactor(v.asInstanceOf[V2])
     v.set(model.parentFactor(v).sampledValue.asInstanceOf[v.Value])(null)
     v
@@ -77,7 +77,7 @@ abstract class DirectedFactorWithStatistics1[C<:Var](override val _1:C) extends 
   def pr(v1:C#Value): Double
   def logpr(v1:C#Value): Double = math.log(pr(v1))
   def pr: Double = pr(_1.value.asInstanceOf[C#Value])
-  override def sampledValue: C#Value
+  override def sampledValue(implicit random: scala.util.Random): C#Value
 }
 
 abstract class DirectedFactorWithStatistics2[C<:Var,P1<:Var](override val _1:C, override val _2:P1) extends TupleFactorWithStatistics2[C,P1](_1, _2) with DirectedFactor {
@@ -88,8 +88,8 @@ abstract class DirectedFactorWithStatistics2[C<:Var,P1<:Var](override val _1:C, 
   def pr(v1:C#Value, v2:P1#Value): Double
   def logpr(v1:C#Value, v2:P1#Value): Double = math.log(pr(v1, v2))
   def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value])
-  def sampledValue(p1:P1#Value): C#Value
-  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value])
+  def sampledValue(p1:P1#Value)(implicit random: scala.util.Random): C#Value
+  def sampledValue(implicit random: scala.util.Random): C#Value = sampledValue(_2.value.asInstanceOf[P1#Value])
   // TODO Consider this:
   //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
 }
@@ -102,8 +102,8 @@ abstract class DirectedFactorWithStatistics3[C<:Var,P1<:Var,P2<:Var](override va
   def pr(v1:C#Value, v2:P1#Value, v3:P2#Value): Double
   def logpr(v1:C#Value, v2:P1#Value, v3:P2#Value): Double = math.log(pr(v1, v2, v3))
   def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
-  def sampledValue(p1:P1#Value, p2:P2#Value): C#Value
-  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
+  def sampledValue(p1:P1#Value, p2:P2#Value)(implicit random: scala.util.Random): C#Value
+  def sampledValue(implicit random: scala.util.Random): C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
 }
 
 abstract class DirectedFactorWithStatistics4[C<:Var,P1<:Var,P2<:Var,P3<:Var](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends TupleFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) with DirectedFactor {
@@ -114,8 +114,8 @@ abstract class DirectedFactorWithStatistics4[C<:Var,P1<:Var,P2<:Var,P3<:Var](ove
   def pr(v1:C#Value, v2:P1#Value, v3:P2#Value, v4:P3#Value): Double
   def logpr(v1:C#Value, v2:P1#Value, v3:P2#Value, v4:P3#Value): Double = math.log(pr(v1, v2, v3, v4))
   def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
-  def sampledValue(p1:P1#Value, p2:P2#Value, p3:P3#Value): C#Value
-  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
+  def sampledValue(p1:P1#Value, p2:P2#Value, p3:P3#Value)(implicit random: scala.util.Random): C#Value
+  def sampledValue(implicit random: scala.util.Random): C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
 }
 
 trait DirectedFamily1[Child<:Var] {

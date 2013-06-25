@@ -24,10 +24,10 @@ class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixtu
   case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {
     def gate = _3
     def pr(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], z:DiscreteValue): Double = mixture(z.intValue).apply(child.intValue)
-    def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue): CategoricalValue[A] = _1.domain.apply(mixture(z.intValue).sampleIndex)
+    def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(z.intValue).sampleIndex)
     def prChoosing(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(child.intValue)
     def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
-    def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): CategoricalValue[A] = _1.domain.apply(mixture(mixtureIndex).sampleIndex)
+    def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(mixtureIndex).sampleIndex)
     def prValue(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int, intValue:Int): Double = mixture.apply(mixtureIndex).apply(intValue)
     def prValue(intValue:Int) = prValue(_2.value.asInstanceOf[scala.collection.Seq[Proportions]], _3.intValue, intValue)
     override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
@@ -36,13 +36,11 @@ class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixtu
   def newFactor(a: CategoricalVariable[A], b: Mixture[ProportionsVariable], c:DiscreteVariable) = new Factor(a, b, c)
 }
 object CategoricalMixture {
-  def newFactor[A](a:CategoricalVariable[A], b:Mixture[ProportionsVariable], c:DiscreteVariable): CategoricalMixture[A]#Factor = {
+  def newFactor[A](a:CategoricalVariable[A], b:Mixture[ProportionsVariable], c:DiscreteVariable)(implicit random: scala.util.Random): CategoricalMixture[A]#Factor = {
     val dm = new CategoricalMixture[A]()
     dm.Factor(a, b, c)
   }
-  def apply[A](p1: Mixture[ProportionsVariable],p2:DiscreteVariable) = new Function1[CategoricalVariable[A],CategoricalMixture[A]#Factor] {
-    def apply(c:CategoricalVariable[A]): CategoricalMixture[A]#Factor = newFactor[A](c, p1, p2)
-  }
+  def apply[A](p1: Mixture[ProportionsVariable],p2:DiscreteVariable)(implicit random: scala.util.Random) = (c:CategoricalVariable[A]) => newFactor[A](c, p1, p2)
 }
 
 class DiscreteMixtureCounts[A](val discreteDomain: CategoricalDomain[A], val mixtureDomain: DiscreteDomain) extends Seq[SortedSparseCounts] {

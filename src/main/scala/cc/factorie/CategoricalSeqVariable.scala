@@ -18,6 +18,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math
 import java.util.Arrays
 import collection.mutable
+import cc.factorie.util.Cubbie
 
 /** A Domain for sequences of CategoricalValues.
     @author Andrew McCallum */

@@ -110,8 +110,9 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case t:UniformTensor => { val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }}
     case t:TensorTimesScalar => this.+=(t.tensor, t.scalar) //{ t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) } 
     case t:Outer1Tensor2 => {
+      val ff = f*t.scale
       require(this.isInstanceOf[Tensor2]) // Makes sure rank matches!
-      t =+ (__values, f)
+      t =+ (__values, ff)
     }
     case t:Tensor => t.=+(this.asArray, f)
   }

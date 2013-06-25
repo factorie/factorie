@@ -84,6 +84,8 @@ object WordSegmenterDemo2 {
 
   def main(args: Array[String]) : Unit = {
     // Read data and create Variables
+    implicit val random = new scala.util.Random(0)
+
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
       var beginword = true
@@ -107,7 +109,7 @@ object WordSegmenterDemo2 {
     val trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
 
-    testVariables.foreach(_.setRandomly())
+    testVariables.foreach(_.setRandomly)
     // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     // println ("Initial test accuracy = "+ objective.accuracy(testVariables))

@@ -55,7 +55,7 @@ class ChainNerModel extends TemplateModel with Parameters {
 class ChainNerObjective extends HammingTemplate[ChainNerLabel]
 
   
-class ChainNer {
+class ChainNer(implicit random: scala.util.Random) {
 
   val model = new ChainNerModel
   val objective = new ChainNerObjective
@@ -112,6 +112,7 @@ class ChainNer {
   def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
   def train(trainFilename:String, testFilename:String): Unit = {
+    implicit val random = new scala.util.Random(0)
     // Read in the data
     val trainDocuments = LoadConll2003.fromFilename(trainFilename)
     val testDocuments = LoadConll2003.fromFilename(testFilename)
@@ -136,7 +137,7 @@ class ChainNer {
       //testDocuments.foreach(process(_))
       //printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
+      (trainLabels ++ testLabels).foreach(_.setRandomly)
       val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate) //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (iteration <- 1 until 3) {
@@ -234,7 +235,7 @@ class ChainNer {
   
 }
 
-object ChainNer extends ChainNer {
+object ChainNer extends ChainNer()(new scala.util.Random(0)) {
   import cc.factorie.util.DefaultCmdOptions
   var verbose = false
 

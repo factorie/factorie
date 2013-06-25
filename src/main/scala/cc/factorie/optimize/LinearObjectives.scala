@@ -105,9 +105,24 @@ object LinearObjectives {
         prediction(i) -= label(i)
         val o = math.max(0, math.abs(prediction(i)) - epsilon)
         objective -= o*o
+        // BUG FIXME this is the same gradient as regular sq loss - not epsilon-insensitive
         prediction(i) = -2*prediction(i)
       }
       (objective, prediction)
+    }
+  }
+
+  class EpsilonInsensitiveAbsMultivariate(epsilon: Double) extends MultivariateLinearObjective[Tensor1] {
+    def valueAndGradient(prediction: Tensor1, label: Tensor1): (Double, Tensor1) = {
+      var objective = 0.0
+      val gradient = new SparseBinaryTensor1(prediction.size)
+      for (i <- prediction.activeDomain) {
+        val diff = label(i) - prediction(i)
+        val value = -math.max(0, math.abs(diff) - epsilon)
+        objective -= value
+        gradient += (i, if (value == 0.0) 0.0 else math.signum(diff))
+      }
+      (objective, gradient)
     }
   }
 
@@ -138,40 +153,80 @@ object LinearObjectives {
 
   class SquaredUnivariate extends UnivariateLinearObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
-      (0.5 * (prediction - label) * (prediction - label), prediction - label)
+      (-0.5 * (prediction - label) * (prediction - label), label - prediction)
+  }
+
+  class AbsoluteUnivariate extends UnivariateLinearObjective[Double] {
+    def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
+      (-math.abs(label - prediction), math.signum(label - prediction))
+  }
+
+  class EpsilonInsensitiveAbsUnivariate(epsilon: Double = 1.0) extends UnivariateLinearObjective[Double] {
+    def valueAndGradient(prediction: Double, label: Double): (Double, Double) = {
+      val value = -math.max(math.abs(label - prediction) - epsilon, 0)
+      (value, if (value != 0.0) math.signum(label - prediction) else 0.0)
+    }
+  }
+
+  class EpsilonInsensitiveSqUnivariate(epsilon: Double = 1.0) extends UnivariateLinearObjective[Double] {
+    def valueAndGradient(prediction: Double, label: Double): (Double, Double) = {
+      val value = -0.5 * math.pow(math.max(math.abs(label - prediction) - epsilon, 0), 2)
+      (value, if (value != 0.0) label - prediction else 0.0)
+    }
   }
 
   /**
-   * Squared Objective for multivariate regression
+   * Squared objective for multivariate regression
    */
   val squaredMultivariate = new SquaredMultivariate
 
   /**
-   * Hinge Objective for multiclass classification
+   * Hinge objective for multiclass classification
    */
   val hingeMultiClass = new HingeMultiClass
 
   /**
-   * Squared hinge Objective for multiclass classification
+   * Squared hinge objective for multiclass classification
    */
   val hingeSqMultiClass = new HingeSqMultiClass
 
   /**
-   * Log Objective for multiclass classification. Inefficient.
+   * Log objective for multiclass classification. Inefficient.
    */
   val logMultiClass = new LogMultiClass
 
   /**
-   * Sparse Log Objective for multiclass classification; very efficient.
+   * Sparse Log objective for multiclass classification; very efficient.
    */
   val sparseLogMultiClass = new SparseLogMultiClass
 
   /**
-   * Epsilon-insensitive squared loss for regression
-   * @param epsilon The tolerance of the loss function
+   * Epsilon-insensitive squared objective for multivariate regression
+   * @param epsilon The tolerance of the objective function
    * @return An objective function
    */
   def epsilonInsensitiveSqMultivariate(epsilon: Double) = new EpsilonInsensitiveSqMultivariate(epsilon)
+
+  /**
+   * Epsilon-insensitive squared objective for univariate regression
+   * @param epsilon The tolerance of the objective function
+   * @return An objective function
+   */
+  def epsilonInsensitiveSqUnivariate(epsilon: Double) = new EpsilonInsensitiveSqUnivariate(epsilon)
+
+  /**
+   * Epsilon-insensitive absolute objective for multivariate regression
+   * @param epsilon The tolerance of the objective function
+   * @return An objective function
+   */
+  def epsilonInsensitiveAbsMultivariate(epsilon: Double) = new EpsilonInsensitiveAbsMultivariate(epsilon)
+
+  /**
+   * Epsilon-insensitive absolute objective for univariate regression
+   * @param epsilon The tolerance of the objective function
+   * @return An objective function
+   */
+  def epsilonInsensitiveAbsUnivariate(epsilon: Double) = new EpsilonInsensitiveAbsUnivariate(epsilon)
 
   /**
    * A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.
@@ -196,6 +251,11 @@ object LinearObjectives {
    */
   val squaredUnivariate = new SquaredUnivariate
 
+  /**
+   * Absolute objective for univariate regression
+   */
+  val absoluteUnivariate = new AbsoluteUnivariate
+
   type UnivariateLinkFunction = Double => Double
 
   val squaredLossLinkFunction: UnivariateLinkFunction = prediction => prediction
@@ -217,7 +277,7 @@ object LinearObjectives {
  */
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val prediction = weights.value * featureVector
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
@@ -247,7 +307,7 @@ class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: 
  */
 class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val score = weights.value dot featureVector
     val (obj, sgrad) = objective.valueAndGradient(score, label)
     if (value != null) value.accumulate(obj)
@@ -286,6 +346,7 @@ object LinearObjectivesTest {
   }
   def main(args: Array[String]): Unit = {
     // Read data and create Variables
+    implicit val random = new scala.util.Random(0)
     var docLabels = new classify.LabelList[Label, Document](_.document)
     for (directory <- args) {
       val directoryFile = new File(directory)

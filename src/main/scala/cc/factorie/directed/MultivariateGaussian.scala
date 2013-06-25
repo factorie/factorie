@@ -6,10 +6,8 @@ import cc.factorie.DiscreteVariable
 import cc.factorie.la._
 import cc.factorie.maths
 import cc.factorie.MutableTensorVar
-import cern.colt.matrix.tdouble.{DoubleFactory2D, DoubleMatrix2D}
-import cern.colt.matrix.tdouble.algo.decomposition._
 import scala.util.Random
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D
+import org.jblas.DoubleMatrix
 
 object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
   self =>
@@ -19,27 +17,26 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
     -0.5 * (k * math.log(2 * math.Pi) + math.log(determinant(variance)) + (invert(variance) * centered dot centered))
   }
   def pr(value: Tensor1, mean: Tensor1, variance: Tensor2): Double = math.exp(logpr(value, mean, variance))
-  def sampledValue(mean: Tensor1, variance: Tensor2): Tensor1 = nextGaussian(mean, variance)(cc.factorie.random)
+  def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = nextGaussian(mean, variance)(random)
   case class Factor(override val _1: MutableTensorVar[Tensor1], override val _2: MutableTensorVar[Tensor1], override val _3: MutableTensorVar[Tensor2])
     extends super.Factor(_1, _2, _3) {
     override def logpr(child: Tensor1, mean: Tensor1, variance: Tensor2): Double = self.logpr(child, mean, variance)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(child: Tensor1, mean: Tensor1, variance: Tensor2) = math.exp(logpr(child, mean, variance))
     override def pr: Double = self.pr(_1.value, _2.value, _3.value)
-    def sampledValue(mean: Tensor1, variance: Tensor2): Tensor1 = self.sampledValue(mean, variance)
+    def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = self.sampledValue(mean, variance)
   }
   def newFactor(a: MutableTensorVar[Tensor1], b: MutableTensorVar[Tensor1], c: MutableTensorVar[Tensor2]) = Factor(a, b, c)
   def nextGaussian(mean: Tensor1, covariance: Tensor2)(implicit r: Random): Tensor1 = {
     val uncorrelated = new DenseTensor1(Array.fill(mean.length)(maths.nextGaussian(0.0, 1.0)(r)))
-    choleskyT(covariance) * uncorrelated + mean
+    uncorrelated * cholesky(covariance) + mean
   }
-  def matrix2Tensor(matrix: DoubleMatrix2D): DenseTensor2 = new DenseTensor2(matrix.toArray)
-  def tensor2Matrix(matrix: Tensor2) = { val n = matrix.dim1; new DenseDoubleMatrix2D(matrix.asArray.grouped(n).toArray) }
-  def invert(matrix: Tensor2): DenseTensor2 =
-    matrix2Tensor(new DenseDoubleLUDecomposition(tensor2Matrix(matrix)).solve(DoubleFactory2D.dense.identity(matrix.dim1)))
-  def choleskyT(matrix: Tensor2): DenseTensor2 =
-    matrix2Tensor(new DenseDoubleCholeskyDecomposition(tensor2Matrix(matrix)).getLtranspose)
-  def determinant(matrix: Tensor2): Double = new DenseDoubleLUDecomposition(tensor2Matrix(matrix)).det()
+  def matrix2Tensor(matrix: DoubleMatrix): DenseTensor2 = new DenseTensor2(matrix.toArray2)
+  def tensor2Matrix(matrix: Tensor2) = { val m = matrix.dim1; new DoubleMatrix(matrix.asArray.grouped(m).toArray) }
+  def invert(matrix: Tensor2): DenseTensor2 = matrix2Tensor(org.jblas.Solve.solve(tensor2Matrix(matrix), org.jblas.DoubleMatrix.eye(matrix.dim1)))
+  def cholesky(matrix: Tensor2): DenseTensor2 =
+    matrix2Tensor(org.jblas.Decompose.cholesky(tensor2Matrix(matrix)))
+  def determinant(matrix: Tensor2): Double = org.jblas.Decompose.lu(tensor2Matrix(matrix)).u.diag().prod()
 }
 
 object MultivariateGaussianMixture
@@ -54,24 +51,24 @@ object MultivariateGaussianMixture
       MultivariateGaussian.logpr(child, means(z.intValue), variances(z.intValue))
     def pr(child: Tensor1, means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue) =
       MultivariateGaussian.pr(child, means(z.intValue), variances(z.intValue))
-    def sampledValue(means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue): Tensor1 =
+    def sampledValue(means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue)(implicit random: scala.util.Random): Tensor1 =
       MultivariateGaussian.sampledValue(means(z.intValue), variances(z.intValue))
     def prChoosing(child: Tensor1, means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int): Double =
       MultivariateGaussian.pr(child, means(mixtureIndex), variances(mixtureIndex))
-    def sampledValueChoosing(means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int): Tensor1 =
+    def sampledValueChoosing(means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int)(implicit random: scala.util.Random): Tensor1 =
       MultivariateGaussian.sampledValue(means(mixtureIndex), variances(mixtureIndex))
   }
   def newFactor(a: MutableTensorVar[Tensor1], b: Mixture[MutableTensorVar[Tensor1]], c: Mixture[MutableTensorVar[Tensor2]], d: DiscreteVariable) =
     Factor(a, b, c, d)
 }
 
-object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],DirectedModel] {
-  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] =
+object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],(DirectedModel,Summary)] {
+  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: Summary): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
   def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor1]], model: DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  def infer(variables: Iterable[MutableTensorVar[Tensor1]], m: (DirectedModel,Summary)): AssignmentSummary = {
+    val (model,dSummary) = m
     val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxMean(v, model, dSummary)
@@ -83,7 +80,7 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
     factors: Iterable[DirectedFactor],
     pred1: MultivariateGaussian.Factor => Boolean,
     pred2: MultivariateGaussianMixture.Factor => Int,
-    summary: DiscreteSummary1[DiscreteVar]): Option[Tensor1] = {
+    summary: Summary): Option[Tensor1] = {
     val factorIter = factors.iterator
     var sum = null: Tensor1; var count = 0.0
     while (factorIter.hasNext)
@@ -94,7 +91,7 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
           count += 1
         case f@MultivariateGaussianMixture.Factor(fvalue, fmeans, _, gate) if pred2(f) != -1 =>
           if (sum == null) sum = new DenseTensor1(fvalue.value.length, 0.0)
-          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate)
+          val gateMarginal: DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate).asInstanceOf[DiscreteMarginal1[DiscreteVar]]
            val mixtureIndex = pred2(f)
            if (gateMarginal eq null) {
              if (gate.intValue == mixtureIndex) { sum += fvalue.value; count += 1.0 }

@@ -14,7 +14,7 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
   class MPLPFactor(val factor: Factor) {
     val thisVariables = factor.variables.toSet
     val varyingVariables = thisVariables.filter(v => v.isInstanceOf[DiscreteVar]).map(_.asInstanceOf[DiscreteVar]).filter(varying.contains).toSet
-    val lambdas = varyingVariables.map(v => (v -> new DenseTensor1(v.domain.size))).toMap
+    val lambdas = varyingVariables.map(v => v -> new DenseTensor1(v.domain.size)).toMap
     def mapScore: Double = getMaxMarginals(varyingVariables.head).max
     def getMaxMarginals(v: DiscreteVar): DenseTensor1 = {
       assert(varyingVariables.contains(v))
@@ -67,7 +67,7 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
     if (!converged) {
       val sumMarginals = new DenseTensor1(maxMarginals.head.length)
       maxMarginals.foreach(sumMarginals += _)
-      sumMarginals *= 1.0/(maxMarginals.length)
+      sumMarginals *= 1.0/maxMarginals.length
       for (i <- 0 until factors.length) {
         val lambda = factors(i).lambdas(v)
         for (j <- 0 until lambda.length)
@@ -97,7 +97,16 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
     } while (!converged && i < maxIterations)
     val assignment = new HashMapAssignment(ignoreNonPresent=false)
     for (v <- variables) {
-      assignment.update(v, v.domain(variableFactors(v).head.getMaxMarginals(v).maxIndex).asInstanceOf[DiscreteVar#Value])
+      val value = v.domain(variableFactors(v).head.getMaxMarginals(v).maxIndex).asInstanceOf[DiscreteVar#Value]
+      assignment.update(v, value)
+      // go over the factors and "set" this variable to this value. This will avoid bad behavior when
+      // the LP relaxation is not tight
+      for (factor <- variableFactors(v)) {
+        val lambda = factor.lambdas(v)
+        for (i <- 0 until lambda.length)
+          lambda(i) = Double.NegativeInfinity
+        lambda(value.intValue) = 0
+      }
     }
     new MAPSummary(assignment, factors.map(_.factor).toSeq)
   }

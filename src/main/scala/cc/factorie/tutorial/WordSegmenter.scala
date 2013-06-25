@@ -136,7 +136,7 @@ object WordSegmenterDemo {
     
     // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    (trainVariables ++ testVariables).foreach(_.setRandomly())
+    (trainVariables ++ testVariables).foreach(_.setRandomly)
     println ("Initial train accuracy = "+ objective.accuracy(testVariables))
     println ("Initial test  accuracy = "+ objective.accuracy(testVariables))
     

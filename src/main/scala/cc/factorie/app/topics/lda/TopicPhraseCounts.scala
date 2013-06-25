@@ -23,13 +23,13 @@ class TopicPhraseCounts(numTopics:Int, multiWordOnly:Boolean = true) {
       sb.setLength(0)
     }
     //println("TopicPhraseCounts.+="+doc.breaks+" len="+ws.length+"  "+doc.ws.categoryValues.mkString(" "))
-    forIndex(ws.length)(i => {
+    for (i <- 0 until ws.length) {
       //if (i+1 < ws.length && (ws.categoryValue(i) == "logistic" || ws.categoryValue(i) == "Logistic")) println("@"+i+" Logistic:"+zs.intValue(i)+" "+(if (doc.breaks.contains(i+1)) "#" else " ")+" "+ws.categoryValue(i+1)+":"+zs.intValue(i+1)+"\t  "+doc.ws.categoryValues.mkString(" "))
       if (zs.intValue(i) == prevzi && !doc.breaks.contains(i)) sb.append("_")
       else if (sb.length > 0) addThenReset(sb.toString)
       sb.append(ws.categoryValue(i))
       prevzi = zs.intValue(i)
-    })
+    }
     if (sb.length > 0) addThenReset(sb.toString)
   }
   

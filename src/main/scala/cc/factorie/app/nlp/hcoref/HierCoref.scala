@@ -4,6 +4,7 @@ import com.mongodb.DB
 import db.mongo._
 import la.SparseIndexedTensor
 import collection.mutable.{ArrayBuffer,ListBuffer,HashSet,HashMap,LinkedHashMap}
+import cc.factorie.util.Cubbie
 
 class BagOfTruths(val entity:Entity, truths:Map[String,Double]=null) extends BagOfWordsVariable(Nil,truths) with EntityAttr
 class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
@@ -12,6 +13,10 @@ class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(
 class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d);def --()(implicit d:DiffList):Unit=this.set(intValue-1)(d)} //convenient for determining whether an entity needs its attributes recomputed
 class MentionCountVariable(val entity:Entity,initialValue:Int=0) extends IntegerVariable(initialValue)
 
+object Util {
+  implicit val random = new scala.util.Random(0)
+}
+import Util.random
 
 abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent

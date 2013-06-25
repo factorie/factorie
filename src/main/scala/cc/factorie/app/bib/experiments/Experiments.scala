@@ -10,6 +10,8 @@ import cc.factorie._
 import app.nlp.hcoref._
 import io.Source
 import scala.util.Random
+import cc.factorie.util.{Attr,Cubbie}
+import Utils.random
 
 class DebugDiffList extends DiffList{
   override def scoreAndUndo(model:Model): Double = {
@@ -378,6 +380,7 @@ trait HumanEditOptions extends ExperimentOptions{
 
 object UserEditExperiments extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions with HumanEditOptions with EDBExpOpts{
   def main(argsIn:Array[String]) ={
+    implicit val random = new scala.util.Random(0)
     var args:Array[String]=new Array[String](0)
     if(argsIn.length>0 && argsIn.head.startsWith("--config")){
       val contents = scala.io.Source.fromFile(new File(argsIn.head.split("=")(1))).mkString

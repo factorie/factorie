@@ -16,7 +16,7 @@ import java.io._
 import java.text.DecimalFormat
 import scala.Some
 import scala.language.reflectiveCalls
-
+import Utils.random
 trait BibEntity{
   var dataSource:String=""
   var paperMentionId:String=null
@@ -154,12 +154,12 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   //def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
   //def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
-class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity with HumanEditMention{
+class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false)(implicit random: scala.util.Random) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable with BibEntity with HumanEditMention{
   //println("   creating author: f:"+f+" m: "+m+" l: "+l)a
   var _id = EntityUtils.newId //java.util.UUID.randomUUID.toString+""
   override def id = _id
   var citedBy:Option[PaperEntity] = None
-  priority = random.nextDouble
+  priority = random.nextDouble()
   canopyAttributes += new AuthorFLNameCanopy(this)
   def entity:HierEntity = this
   def addMoreCanopies:Unit = (fullName.firstName+" "+fullName.middleName+" "+fullName.lastName).replaceAll(" +"," ").trim.split(" ").toSet.foreach((s:String) => canopyAttributes += new SimpleStringCanopy(this,s))
@@ -189,6 +189,7 @@ object Coref{
   lazy val ldaOpt = if(ldaFileOpt==None)None else Some(LDAUtils.loadLDAModelFromAlphaAndPhi(new File(ldaFileOpt.get)))
   var ldaFileOpt:Option[String] = None
   def main(argsIn:Array[String]) ={
+    implicit val random = new scala.util.Random(0)
     var args:Array[String]=new Array[String](0)
     if(argsIn.length>0 && argsIn.head.startsWith("--config")){
       val contents = scala.io.Source.fromFile(new File(argsIn.head.split("=")(1))).mkString
@@ -493,7 +494,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
   }
-  def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean):Unit ={
+  def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean)(implicit random: scala.util.Random):Unit ={
     println("Processing all authors.")
     val entities = random.shuffle(authorColl.loadAll)
     val numEntities = entities.size.toDouble
@@ -508,7 +509,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
   }
-  def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false):Unit ={
+  def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false)(implicit random: scala.util.Random):Unit ={
     println("Processing all papers.")
     var entities:Seq[PaperEntity] = random.shuffle(paperColl.loadAll)
     if(hashInitialize){
@@ -1131,8 +1132,8 @@ trait CanopyStatistics[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
       i+=1
     }
   }
-  def value(s:String) = (countsAccept.getOrElse(s,0.0) + ((random.nextDouble-0.5)/100.0+0.5))/(countsSamples.getOrElse(s,0.0)+1.0)
-  def accept = {
+  def value(s:String)(implicit random: scala.util.Random) = (countsAccept.getOrElse(s,0.0) + ((random.nextDouble-0.5)/100.0+0.5))/(countsSamples.getOrElse(s,0.0)+1.0)
+  def accept(implicit random: scala.util.Random) = {
     countsAccept(_sampled)=countsAccept.getOrElse(_sampled,0.0) + 1.0
     //lastAccept(_sampled) = countsSample.getOrElse(_sampled,0.0)+1 //countsSample can also be thought of as the per-canopy time scale
   }
@@ -1142,11 +1143,11 @@ trait CanopyStatistics[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
 }
 class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](val maxCandidateSize:Int=20) extends CanopyStatistics[E]{
   protected var _max:String = null
-  protected def _maxValue:Double = if(_max==null) -1.0 else value(_max)
+  protected def _maxValue(implicit random: scala.util.Random):Double = if(_max==null) -1.0 else value(_max)
   protected var candidates = new Array[String](candidateSize)
   protected var candidatesSet = new HashSet[String]
   protected var mentions:Seq[E] = null
-  override def reset(cs:HashMap[String,ArrayBuffer[E]] = new HashMap[String,ArrayBuffer[E]]):Unit ={
+  override def reset(cs:HashMap[String,ArrayBuffer[E]]):Unit ={
     super.reset(cs)
     mentions = cs.flatMap(_._2).filter(_.isObserved).toSeq
     candidates = new Array[String](candidateSize)
@@ -1177,7 +1178,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
     //println("  count: "+count)
 //    println("  candidates: "+candidates.size)
   }
-  protected def sampleCanopy:String ={
+  protected def sampleCanopy(implicit random: scala.util.Random):String ={
     val e = mentions(random.nextInt(mentions.size))
     val canopy = e.canopyAttributes(random.nextInt(e.canopyAttributes.size))
     if(canopies.contains(canopy.canopyName))canopy.canopyName
@@ -1192,7 +1193,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
     _sampled = candidates(sampledLocIdx)
     _sampled
   }
-  override def accept = {
+  override def accept(implicit random: scala.util.Random) = {
     super.accept
     candidates(random.nextInt(candidates.size)) = _sampled
   }
@@ -2050,7 +2051,7 @@ trait BibDatabase{
   def authorColl:DBEntityCollection[AuthorEntity,AuthorCubbie]
   def paperColl:DBEntityCollection[PaperEntity,PaperCubbie]
 }
-abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends BibDatabase{
+abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie")(implicit val random: scala.util.Random) extends BibDatabase{
   import MongoCubbieConverter._
   import MongoCubbieImplicits._
   println("MongoBibDatabase: "+mongoServer+":"+mongoPort+"/"+mongoDBName)

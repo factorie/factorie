@@ -24,31 +24,31 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
   def pr(value:Proportions, alpha:Masses): Double = {
     require(value.length == alpha.length)
     var result = maths.logGamma(alpha.sum)
-    forIndex(value.length)((i:Int) => result -= maths.logGamma(alpha(i)))
-    forIndex(value.length)((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
+    (0 until value.length).foreach((i:Int) => result -= maths.logGamma(alpha(i)))
+    (0 until value.length).foreach((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
     assert(result == result, "alpha="+alpha.toSeq+" p="+value.toSeq) // NaN?
     result
   }
-  def sampledValue(masses:Masses, children:Iterable[DiscreteVar] = Nil): Proportions = new DenseProportions1(sampledArray(masses, children))
+  def sampledValue(masses:Masses, children:Iterable[DiscreteVar] = Nil)(implicit random: scala.util.Random): Proportions = new DenseProportions1(sampledArray(masses, children))
   // TODO Make a more general argument type than Iterable[DiscreteVar], like Iterable[Int] (but I'm concerned about boxing)
-  def sampledArray(alpha:Masses, children:Iterable[DiscreteVar] = Nil): Array[Double] = {
+  def sampledArray(alpha:Masses, children:Iterable[DiscreteVar] = Nil)(implicit random: scala.util.Random): Array[Double] = {
     var norm = 0.0
     val p = new Array[Double](alpha.length)
     val c = new Array[Double](alpha.length)
     for (child <- children) c(child.intValue) += 1.0
-    forIndex(alpha.length)(i => {
-      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random) 
+    for (i <- 0 until alpha.length) {
+      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(random)
       if (p(i) <= 0.0) p(i) = 0.0001
       norm += p(i)
-    })
-    forIndex(alpha.length)(i => p(i) /= norm)
+    }
+    (0 until alpha.length).foreach(i => p(i) /= norm)
     p
   }
   case class Factor(override val _1:ProportionsVariable, override val _2:MassesVariable) extends super.Factor(_1, _2) {
     def pr(p:Proportions, m:Masses) = self.pr(p, m)
     override def pr: Double = self.pr(_1.value, _2.value)
-    def sampledValue(masses:Masses): Proportions = self.sampledValue(masses, Nil)
-    override def sampledValue: Proportions = self.sampledValue(_2.value, Nil)
+    def sampledValue(masses:Masses)(implicit random: scala.util.Random): Proportions = self.sampledValue(masses, Nil)
+    override def sampledValue(implicit random: scala.util.Random): Proportions = self.sampledValue(_2.value, Nil)
     override def updateCollapsedChild(): Boolean = { _1.tensor.+=(_2.value); true }
   }
   def newFactor(a:ProportionsVariable, b:MassesVariable) = Factor(a, b)

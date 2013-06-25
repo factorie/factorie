@@ -119,6 +119,15 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   }*/
 }
 
+/**
+ * A convenience trait for a class which needs to have its own type as a type parameter
+ * @tparam This the type of concrete instances.
+ */
+trait ThisType[+This<:AnyRef] {
+  this: This =>
+  type ThisType = This
+}
+
 /** A chain of elements, each of which has methods "next", "prev", etc.
     @author Andrew McCallum */
 trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with IndexedSeqSimilar[E] {

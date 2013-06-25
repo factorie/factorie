@@ -267,6 +267,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val as = t._indices; val vs = t._values; var i = 0; while (i < len) { +=(as(i), f * vs(i)); i += 1 }}
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while (i < arr.length) {this += (i, arr(i)*f)  ; i += 1} }
     case t:Outer2Tensor => {
+      val ff = f*t.scale
       (t.tensor1, t.tensor2) match {
         case (t1: DenseTensor, t2: SparseBinaryTensor) =>
           var i = 0
@@ -289,7 +290,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             val values = t2._valuesSeq
             var j = 0
             while (j < len) {
-              this += (t.singleFlatIndex(i, indices(j)), f*t1(i)*values(j))
+              this += (t.singleFlatIndex(i, indices(j)), ff*t1(i)*values(j))
               j += 1
             }
             i += 1
@@ -302,7 +303,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           var i = 0
           while (i < len) {
             val singleidx = t.singleFlatIndex(i0, arr(i))
-            this += (singleidx, f*t1.singleValue*values(i))
+            this += (singleidx, ff*t1.singleValue*values(i))
             i += 1
           }
         }
@@ -317,7 +318,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           while (i < len1) {
             var j = 0
             while (j < len2) {
-              this += (t.singleFlatIndex(indices1(i), indices2(j)), f*values1(i)*values2(j))
+              this += (t.singleFlatIndex(indices1(i), indices2(j)), ff*values1(i)*values2(j))
               j += 1
             }
             i += 1
@@ -328,7 +329,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           val arr = t2.asArray
           var i = 0
           while (i < arr.length) {
-            this += (t.singleFlatIndex(i0, i), f*arr(i))
+            this += (t.singleFlatIndex(i0, i), ff*arr(i))
             i += 1
           }
         }
@@ -339,7 +340,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           while (i < arr1.length) {
             var j = 0
             while (j < arr2.length) {
-              this += (t.singleFlatIndex(i, j), arr1(i)*arr2(j)*f)
+              this += (t.singleFlatIndex(i, j), arr1(i)*arr2(j)*ff)
               j += 1
             }
             i += 1

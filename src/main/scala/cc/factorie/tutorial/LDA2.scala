@@ -42,6 +42,7 @@ object LDA2 {
   val alphas = MassesVariable.dense(numTopics, 0.1)
 
   def main(args: Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
     val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]

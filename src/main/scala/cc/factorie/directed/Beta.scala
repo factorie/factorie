@@ -32,15 +32,15 @@ object Beta extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
     require(result <= 1.0, "value="+value+" alpha="+alpha+" beta="+beta+" result="+result)
     result
   }
-  def sampledValue(alpha:Double, beta:Double): Double = {
-    val x = maths.nextGamma(alpha, 1.0)(cc.factorie.random) 
-    val y = maths.nextGamma(beta, 1.0)(cc.factorie.random)
+  def sampledValue(alpha:Double, beta:Double)(implicit random: scala.util.Random): Double = {
+    val x = maths.nextGamma(alpha, 1.0)
+    val y = maths.nextGamma(beta, 1.0)
     x / (x + y)
   }
   // TODO Consider making this not a case class, but Factor1 be a case class?
   case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
     def pr(child:Double, alpha:Double, beta:Double): Double = self.pr(child, alpha, beta)
-    def sampledValue(alpha:Double, beta:Double): Double = self.sampledValue(alpha, beta)
+    def sampledValue(alpha:Double, beta:Double)(implicit random: scala.util.Random): Double = self.sampledValue(alpha, beta)
   }
   def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }
@@ -51,9 +51,9 @@ object BetaMixture extends DirectedFamily4[DoubleVariable,Mixture[DoubleVariable
   case class Factor(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:Mixture[DoubleVariable], override val _4:DiscreteVariable) extends super.Factor(_1, _2, _3, _4) {
     def gate = _4
     def pr(child:Double, alpha:Seq[Double], beta:Seq[Double], z:DiscreteValue) = Beta.pr(child, alpha(z.intValue), beta(z.intValue)) 
-    def sampledValue(alpha:Seq[Double], beta:Seq[Double], z:DiscreteValue): Double = Beta.sampledValue(alpha(z.intValue), beta(z.intValue)) 
+    def sampledValue(alpha:Seq[Double], beta:Seq[Double], z:DiscreteValue)(implicit random: scala.util.Random): Double = Beta.sampledValue(alpha(z.intValue), beta(z.intValue))
     def prChoosing(child:Double, alpha:Seq[Double], beta:Seq[Double], z:Int): Double = Beta.pr(child, alpha(z), beta(z)) 
-    def sampledValueChoosing(alpha:Seq[Double], beta:Seq[Double], z:Int): Double = Beta.sampledValue(alpha(z), beta(z))
+    def sampledValueChoosing(alpha:Seq[Double], beta:Seq[Double], z:Int)(implicit random: scala.util.Random): Double = Beta.sampledValue(alpha(z), beta(z))
   }
   def newFactor(a:DoubleVariable, b:Mixture[DoubleVariable], c:Mixture[DoubleVariable], d:DiscreteVariable) = Factor(a, b, c, d)
 }

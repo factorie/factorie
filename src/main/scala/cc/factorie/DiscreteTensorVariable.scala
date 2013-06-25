@@ -18,6 +18,7 @@ import scala.util.Random
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import cc.factorie.util.Cubbie
 
 // TODO Consider name "DiscreteVectorDomain", since I think all our use cases are Tensor1 -akm
 

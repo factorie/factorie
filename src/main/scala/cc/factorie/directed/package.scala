@@ -16,61 +16,12 @@
 
 package cc.factorie
 
-import cc.factorie._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
 package object directed {
-
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       and add this new factor to the given model. */
   implicit def generatedVarExtras[V<:Var](v:V) = new GeneratedVarWrapper(v)
   implicit def generatedMutableVarExtras[V<:MutableVar[_]](v:V) = new GeneratedMutableVarWrapper(v)
-
-
-
-  /*@deprecated
-  object DirectedModel extends Model {
-    /** Only works on Iterable[GeneratedVar] */
-    def factors(variables:Iterable[Variable]): Seq[Factor] = {
-      val result = new scala.collection.mutable.ArrayBuffer[Factor];
-      variables.foreach(v => v match {
-        // TODO Also handle ContainerVariables!!!  Consider also interaction with handling of GeneratedVar.isDeterministic
-        case cv: ContainerVariable[_] => throw new Error("ContainerVariables not yet handled in DirectedModel.")
-        case gv:GeneratedVar => {
-          if (gv.parentFactor != null) result += gv.parentFactor
-          if (gv.childFactors ne Nil) {
-            for (childFactor <- gv.childFactors) {
-              result += childFactor
-              if (childFactor.child.isDeterministic) result ++= factors(Seq(childFactor.child))
-            }
-          }
-        }
-      })
-      // TODO If a parent is a deterministic function (through a deterministic factor), also return factors that are parents of the deterministic factor
-      // TODO Likewise for children?  Or perhaps not necessary.
-      normalize(result)
-    }
-  }*/
-
-  // Removed because it was causing implicit conflicts and because it was too much "magic".  
-  // Users should have to create their own (implicit) models.
-  // -akm 17 Jan 2012
-  //implicit val defaultGenerativeModel = new GenerativeFactorModel
-
-  /*implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
-    val value: IndexedSeq[Double] = s.toIndexedSeq
-    def apply(i:Int) = value(i)
-    def length = value.length
-    //def sampleInt = maths.nextDiscrete(value)(cc.factorie.random)
-  }*/
-  
-  //implicit val denseDirichletEstimator = new DenseDirichletEstimator
-  //implicit val mutableProportionsEstimator = new MutableProportionsEstimator
-  
-  // TODO Consider generic mixtures like this:
-  //new Word(str) ~ Mixture(phis)(Discrete(_))
-
 }
 

@@ -32,6 +32,15 @@ trait Tensor2 extends Tensor {
     case t:Tensor2 => require(t.dim1 == dim1 && t.dim2 == dim2)
     case _ => throw new Error("Tensor ranks do not match.")
   }
+  def diag(): Tensor1 = {
+    val ret = new DenseTensor1(dim1)
+    var i = 0; val len = dim1
+    while (i < len) {
+      ret(i) = apply(i, i)
+      i += 1
+    }
+    ret
+  }
   def apply(i:Int, j:Int): Double = apply(i*dim2 + j)
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
@@ -399,6 +408,8 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
 
 trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
   def activeDomainSize = tensor1.activeDomainSize * tensor2.activeDomainSize
+  var scale = 1.0
+  override def *=(d: Double) = scale *= d
 
   def tensor1: Tensor
   def tensor2: Tensor
@@ -416,9 +427,10 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
   @inline final def singleFlatIndex(i:Int, j:Int): Int = i*tensor2.length + j
   def activeDomain = new Outer2IntSeq(tensor1.length, tensor2.length, tensor1.activeDomain, tensor2.activeDomain)
   def isDense: Boolean = false
-  def apply(i: Int): Double = tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
-  override def twoNormSquared = tensor1.twoNormSquared * tensor2.twoNormSquared
-  override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
+  def apply(i: Int): Double = scale*tensor1(i / tensor2.length) * tensor2(i % tensor2.length)
+  override def twoNormSquared = scale*scale*tensor1.twoNormSquared * tensor2.twoNormSquared
+  override def =+(a: Array[Double], offset: Int, vv: Double): Unit = {
+    val v = scale*vv
     // note that this is different from the singleIndex in Tensor2, as these are not dimensions but lengths of the whole tensors
     @inline def singleIndex(i: Int, j: Int): Int = i * tensor2.length + j
     if (offset != 0) super.=+(a, offset, v)
@@ -513,7 +525,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
         })
     }
   }
-  def dot(ds: DoubleSeq): Double = ds match {
+  def dot(ds: DoubleSeq): Double = scale * (ds match {
     case dt: DenseTensor =>
       (tensor1, tensor2) match {
         // NOTE if we added singletontensor/dense, this would cover all the singleton layered tensor stuff if we made those outer2tensors
@@ -611,10 +623,10 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
       }
       case t: Outer2Tensor =>
         val firstDot = tensor1 dot t.tensor1
-        if (firstDot == 0.0) 0.0 else firstDot * (tensor2 dot t.tensor2)
+        t.scale * (if (firstDot == 0.0) 0.0 else firstDot * (tensor2 dot t.tensor2))
       // this obviously won't work if tensor1 and tensor2 aren't rank-1, still neat
       case t: Tensor2 => tensor1 dot (t * tensor2.asInstanceOf[Tensor1])
-    }
+    })
 }
 
 
@@ -692,7 +704,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i).+=(t._inners(i), f); i += 1 } }
-    case t:Outer1Tensor2 => { val t1 = t.tensor1; val l1 = t1.length; var i = 0; while (i < l1) { if (t1(i) != 0.0) { getInner(i).+=(t.tensor2, f) }; i += 1 }}
+    case t:Outer1Tensor2 => { val ff = f*t.scale; val t1 = t.tensor1; val l1 = t1.length; var i = 0; while (i < l1) { if (t1(i) != 0.0) { getInner(i).+=(t.tensor2, ff) }; i += 1 }}
     case t:TensorTimesScalar => this += (t.tensor, f * t.scalar)
     case t:DenseTensor => { val arr = t.asArray; var i = 0; while(i < arr.length) {this(i) += arr(i)*f ; i += 1}}
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var i = 0; while (i < len) { this(indices(i)) += values(i)*f ; i += 1}  }

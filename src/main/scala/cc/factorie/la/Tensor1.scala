@@ -51,6 +51,8 @@ trait Tensor1 extends Tensor {
       def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
     }
   }
+  override def *(f: Double): Tensor1 = super.*(f).asInstanceOf[Tensor1]
+  override def /(f: Double): Tensor1 = super./(f).asInstanceOf[Tensor1]
   def +(t: Tensor1): Tensor1 = super.+(t).asInstanceOf[Tensor1]
   def -(t: Tensor1): Tensor1 = super.-(t).asInstanceOf[Tensor1]
   // TODO: * could be either dot or outer.  Resolve 1xN vs Nx1 status of Tensor1

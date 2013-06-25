@@ -2,6 +2,7 @@ package cc.factorie
 
 import cc.factorie.la._
 import scala.collection.mutable
+import cc.factorie.util.Cubbie
 
 /** An object with a "parameters" method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.
     This trait also provides methods called "Weights" which create new Weights objects that are automatically added to the parameters WeightsSet.
@@ -71,6 +72,8 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
   // Note that for sparse tensor hash sets, "keys" only gives you the keys that have been added thus far
   def keys: Seq[Weights] = _map.keys.toSeq
   def tensors: Seq[Tensor] = _map.values.toSeq
+  def containts(key: Weights) = _map.contains(key)
+  def clear() = _map.clear()
   def apply(key: Weights): Tensor = _map.getOrElseUpdate(key, defaultTensor(key))
   def update(key: Weights, value: Tensor) = _map(key) = value
   def copy: WeightsMap = {

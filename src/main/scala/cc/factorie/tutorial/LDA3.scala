@@ -16,8 +16,7 @@ object LDA3 {
   val beta1 = 0.1
   val alpha1 = 0.1
   val fitDirichlet = false
-  cc.factorie.random.setSeed(0)
-  
+
   implicit val model = DirectedModel()
   object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -40,6 +39,7 @@ object LDA3 {
   val alphas = MassesVariable.dense(numTopics, alpha1)
 
   def main(args: Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val directories = 
       if (args.length > 0) args.toList 
       else if (true) List("11", "12", "10", "09", "08").take(4).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)

@@ -11,7 +11,8 @@ class SparseLDAInferencer(
     var phiCounts:DiscreteMixtureCounts[String],
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
-    model:DirectedModel)
+    model:DirectedModel,
+    random: scala.util.Random)
 {
   var verbosity = 0
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
@@ -20,8 +21,8 @@ class SparseLDAInferencer(
   private var beta1: Double = 0.01
   private var betaSum = beta1 * wordDomain.size
   var smoothingMass: Double = 0.0
+  val numTopics = zDomain.size
   private val cachedCoefficients = new Array[Double](numTopics)
-  def numTopics = zDomain.size
 
   if (verbosity > 0) println("Finished initializing phiCounts")
   if (verbosity > 5) println("nt "+phiCounts.mixtureCounts.mkString(" "))
@@ -175,7 +176,7 @@ class SparseLDAInferencer(
       //assert(smoothingMass > 0)
       //assert(topicBetaMass > 0, "topicBetaMass="+topicBetaMass+" doc.length="+zs.length)
       //assert(topicTermMass >= 0)
-      val r = cc.factorie.random.nextDouble()
+      val r = random.nextDouble()
       var sample = r * (smoothingMass + topicBetaMass + topicTermMass)
       val origSample = sample
       //println("smoothingMass="+smoothingMass+" topicBetaMass="+topicBetaMass+" topicTermMass="+topicTermMass+" sample="+sample)
@@ -327,7 +328,7 @@ object SparseLDAInferencer {
     docs:Iterable[Doc],
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
-    model:DirectedModel) : SparseLDAInferencer = {
+    model:DirectedModel)(implicit random: scala.util.Random) : SparseLDAInferencer = {
 
     // Create and populate the (word,topic) counts
     val phiCounts = new DiscreteMixtureCounts(wordDomain, zDomain)
@@ -335,6 +336,6 @@ object SparseLDAInferencer {
     for (doc <- docs)
       phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
 
-    new SparseLDAInferencer(zDomain, wordDomain, phiCounts, initialAlphas, initialBeta1, model)
+    new SparseLDAInferencer(zDomain, wordDomain, phiCounts, initialAlphas, initialBeta1, model, random)
   }
 }

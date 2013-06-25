@@ -45,7 +45,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
     gradientAccumulator.tensorSet.zero()
     valueAccumulator.value = 0.0
     val startTime = System.currentTimeMillis
-    examples.foreach(example => example.accumulateExampleInto(gradientAccumulator, valueAccumulator))
+    examples.foreach(example => example.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.tensorSet.oneNorm, valueAccumulator.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
@@ -62,7 +62,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
  * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
  */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
-  var gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankSparseMap)
+  var gradientAccumulator = new SmartGradientAccumulator
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -77,11 +77,11 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
         timePerIteration = 0
       }
       val t0 = System.currentTimeMillis()
-      gradientAccumulator.tensorSet.zero()
+      gradientAccumulator.clear()
       valueAccumulator.value = 0
-      example.accumulateExampleInto(gradientAccumulator, valueAccumulator)
+      example.accumulateValueAndGradient(valueAccumulator, gradientAccumulator)
       valuesSeenSoFar += valueAccumulator.value
-      optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
+      optimizer.step(weightsSet, gradientAccumulator.getMap, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
     }})
   }
@@ -114,7 +114,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
     gradientAccumulator.l.tensorSet.zero()
     valueAccumulator.l.value = 0
     val startTime = System.currentTimeMillis
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateExampleInto(gradientAccumulator, valueAccumulator))
+    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.l.tensorSet.oneNorm, valueAccumulator.l.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.l.value)
@@ -131,7 +131,7 @@ class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: Gradien
     val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseMap))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
-    examples.par.foreach(example => example.accumulateExampleInto(gradientAccumulator.get, valueAccumulator.get))
+    examples.par.foreach(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensorSet
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
@@ -155,11 +155,11 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
   var t0 = 0L
 
   private def processExample(e: Example) {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateExampleInto(gradientAccumulator, value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+    val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer.step(weightsSet, gradient, value.value)
     this synchronized {
@@ -219,6 +219,9 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def dot(ds: DoubleSeq) = lock.withReadLock(base.dot(ds))
     def update(i: Int, v: Double) { lock.withWriteLock(base.update(i,v)) }
     def apply(i: Int) = lock.withReadLock(base.apply(i))
+    override def *=(d:Double): Unit = lock.withWriteLock { base *= d}
+    override def *=(ds:DoubleSeq): Unit = lock.withWriteLock { base *= ds }
+    override def /=(ds:DoubleSeq): Unit = lock.withWriteLock { base /= ds }
   }
 
   private class LockingTensor1(val base: Tensor1) extends Tensor1 with LockingTensor {
@@ -262,11 +265,11 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
   var accumulatedValue = 0.0
   var t0 = System.currentTimeMillis()
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateExampleInto(gradientAccumulator, value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
     // The following line will effectively call makeReadable on all the sparse tensors before acquiring the lock
+    val gradient = gradientAccumulator.getMap
     gradient.tensors.foreach({ case t: SparseIndexedTensor => t.apply(0); case _ => })
     optimizer synchronized {
       optimizer.step(weightsSet, gradient, value.value)
@@ -309,11 +312,10 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
   var t0 = System.currentTimeMillis()
   val lock = new util.RWLock
   private def processExample(e: Example): Unit = {
-    val gradient = weightsSet.blankSparseMap
-    val gradientAccumulator = new LocalWeightsMapAccumulator(gradient)
+    val gradientAccumulator = new SmartGradientAccumulator
     val value = new LocalDoubleAccumulator()
-    e.accumulateExampleInto(gradientAccumulator, value)
-    optimizer.step(weightsSet, gradient, value.value)
+    e.accumulateValueAndGradient(value, gradientAccumulator)
+    optimizer.step(weightsSet, gradientAccumulator.getMap, value.value)
     if (locksForLogging) lock.writeLock()
     try {
       examplesProcessed += 1
@@ -357,6 +359,12 @@ object TrainerHelpers {
     pool.invokeAll(futures).toSeq
   }
 
+  def parMap[In, Out](xs: Iterable[In], numThreads: Int)(body: In => Out): Iterable[Out] = withThreadPool(numThreads)(p => parMap(xs, p)(body))
+  def parMap[In, Out](xs: Iterable[In], pool: ExecutorService)(body: In => Out): Iterable[Out] = {
+    val futures = xs.map(x => javaClosure(body(x)))
+    pool.invokeAll(futures).toSeq.map(_.get())
+  }
+
   def javaAction(in: => Unit): Callable[Object] = new Callable[Object] { def call(): Object = {in; null} }
   def javaClosure[A](in: => A): Callable[A] = new Callable[A] { def call(): A = in }
 
@@ -381,20 +389,33 @@ object Trainer {
    * @param useOnlineTrainer Whether to use online training
    * @param logEveryN How often to log, if using online training
    */
-  def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors()) {
-    optimizer match { case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters); case _ => }
+  def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
+    optimizer match {
+      case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
+      case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
+      case o: L2RegularizedConstantRate if !o.initialized => o.initializeWeights(parameters)
+      case o: Pegasos if !o.initialized => o.initializeWeights(parameters)
+      case _ =>
+    }
+    val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
       else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
       else new BatchTrainer(parameters, optimizer=optimizer)
+    trainer match { case t: ParallelOnlineTrainer => t.replaceTensorsWithLocks(); case _ => }
     try {
       while (!trainer.isConverged) {
-        trainer.processExamples(examples.shuffle)
+        trainer.processExamples(actualEx.shuffle)
+        optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
         evaluate()
+        optimizer match { case o: ParameterAveraging => o.unSetWeightsToAverage(parameters); case _ => }
       }
     } finally {
-      optimizer match { case o: ParameterAveraging => o.setWeightsToAverage(parameters); case _ => }
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
+      optimizer match {
+        case o: ParameterAveraging => o.setWeightsToAverage(parameters)
+        case _ =>
+      }
     }
   }
 
@@ -408,8 +429,8 @@ object Trainer {
    * @param optimizer The optimizer
    * @param logEveryN How often to log
    */
-  def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1 ,nThreads: Int = Runtime.getRuntime.availableProcessors()) {
-    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN, nThreads=nThreads)
+  def onlineTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=false, maxIterations: Int = 3, optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging, logEveryN: Int = -1 ,nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int = -1)(implicit random: scala.util.Random) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=true, logEveryN=logEveryN, nThreads=nThreads, miniBatch)
   }
 
   /**
@@ -421,7 +442,7 @@ object Trainer {
    * @param maxIterations The maximum number of iterations
    * @param optimizer The optimizer
    */
-  def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization, nThreads: Int = Runtime.getRuntime.availableProcessors()) {
-    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false, nThreads=nThreads)
+  def batchTrain(parameters: WeightsSet, examples: Seq[Example], evaluate: () => Unit = () => (), useParallelTrainer: Boolean=true, maxIterations: Int = 200, optimizer: GradientOptimizer = new LBFGS with L2Regularization, nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random) {
+    train(parameters, examples, maxIterations, evaluate, optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=false, nThreads=nThreads, miniBatch= -1)
   }
 }

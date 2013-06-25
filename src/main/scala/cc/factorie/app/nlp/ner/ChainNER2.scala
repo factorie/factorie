@@ -326,6 +326,7 @@ class ChainNer2 {
   }
 
   def train(trainFilename:String, testFilename:String): Unit = {
+    implicit val random = new scala.util.Random(0)
     // Read in the data
     val trainDocuments = LoadConll2003(BILOU=true).fromFilename(trainFilename)
     val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
@@ -354,12 +355,12 @@ class ChainNer2 {
       val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
       val trainer = new ParallelBatchTrainer(model.parameters, new LBFGS with L2Regularization)
 			trainer.trainFromExamples(examples)
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
+      (trainLabels ++ testLabels).foreach(_.setRandomly)
       trainDocuments.foreach(process(_))
       testDocuments.foreach(process(_))
       printEvaluation(trainDocuments, testDocuments, "FINAL")
 	  } else {
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
+      (trainLabels ++ testLabels).foreach(_.setRandomly)
       val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new AdaGrad)
       val predictor = new IteratedConditionalModes(model) // {temperature=0.01}
       println("Example Token features")
@@ -381,14 +382,14 @@ class ChainNer2 {
 		  println(trainDocuments(3).tokens.map(token => token.nerLabel.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
 		  println("Example Test Token features")
 		  println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
+      (trainLabels ++ testLabels).foreach(_.setRandomly)
 	    if(bP) {
 			  val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
         val examples = vars.map(v => new LikelihoodExample(v.toSeq, model2, InferByBPChainSum))
         val trainer = new ParallelBatchTrainer(model2.parameters, new LBFGS with L2Regularization)
 			  trainer.trainFromExamples(examples)
-			  (trainLabels ++ testLabels).foreach(_.setRandomly())
+			  (trainLabels ++ testLabels).foreach(_.setRandomly)
 	    
 		    trainDocuments.foreach(process(_))
 		    testDocuments.foreach(process(_))
@@ -415,8 +416,7 @@ class ChainNer2 {
   }
 
   def test(testFilename:String): Unit = {
-
-    setRandomSeed(75839485)
+    implicit val random = new scala.util.Random(0)
     // Read in the data
     val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
     println("Initializing testing features")
@@ -425,7 +425,7 @@ class ChainNer2 {
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
     // Add secondary features to domain before it gets frozen
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel])
-    (testLabels).foreach(_.setRandomly())
+    (testLabels).foreach(_.setRandomly)
 
     if(bP) {
       testDocuments.foreach( process(_) )

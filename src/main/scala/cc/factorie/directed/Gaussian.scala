@@ -24,13 +24,13 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
       return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
-  def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
+  def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = maths.nextGaussian(mean, variance)(random)
   case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
     override def logpr(child:Double, mean:Double, variance:Double): Double = self.logpr(child, mean, variance)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(child:Double, mean:Double, variance:Double) = math.exp(logpr(child, mean, variance))
     override def pr: Double = self.pr(_1.value, _2.value, _3.value)
-    def sampledValue(mean:Double, variance:Double): Double = self.sampledValue(mean, variance)
+    def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = self.sampledValue(mean, variance)
     //override def sampledValue: Double = self.sampledValue(_2.value, _3.value)
   }
   def newFactor(a:DoubleVar, b:DoubleVar, c:DoubleVar) = Factor(a, b, c)
@@ -41,9 +41,9 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
 
 
 
-object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
+object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(DirectedModel,Summary)] {
   var debug = false
-  def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+  def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary): Double = {
     var mean = 0.0
     var sum = 0.0
     //println("MaximizeGaussianMean var="+meanVar)
@@ -54,7 +54,7 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],Directed
       	case g:Gaussian.Factor if g._2 == meanVar => { mean += g._1.doubleValue; sum += 1.0 }
       	case gm:GaussianMixture.Factor if gm._2.contains(meanVar) => {
           val gate = gm._4
-          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary.getMarginal(gate).isEmpty) null else summary.marginal(gate)
+          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary.getMarginal(gate).isEmpty) null else summary.marginal(gate).asInstanceOf[DiscreteMarginal1[DiscreteVar]]
           val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.  And we are doing it twice because of "contains" above
           if (gateMarginal eq null) {
             if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
@@ -73,15 +73,19 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],Directed
     //println("MaximizeGaussianMean mean="+(mean/sum))
     mean / sum
   }
-  def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
+  def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  override def infer(variables:Iterable[MutableDoubleVar], m:(DirectedModel,Summary)): AssignmentSummary = {
+    val (model,dSummary) = m
     val assignment = new HashMapAssignment
     for (v <- variables) { val m = maxMean(v, model, dSummary); assignment.update(v, m) }
     new AssignmentSummary(assignment)
   }
+}
+
+object MaximizeGaussianMeanNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
+  def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
 }
 
 object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {

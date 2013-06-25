@@ -83,7 +83,7 @@ class ChainNerBP {
   def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerLabel])
   def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
-  def train(trainFilename:String, testFilename:String): Unit = {
+  def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
     // Read in the data
     val trainDocuments = LoadConll2003.fromFilename(trainFilename).take(100)
     val testDocuments = LoadConll2003.fromFilename(testFilename).take(20)
@@ -210,6 +210,7 @@ object ChainNerBP extends ChainNerBP {
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = ChainNerBP.this.verbose = true }
       //val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
+    implicit val random = new scala.util.Random(0)
     opts.parse(args)
     
     if (opts.lexiconDir.wasInvoked) {

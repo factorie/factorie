@@ -115,7 +115,7 @@ object Coref1 {
     }
   }
 
-  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))
+  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))(new scala.util.Random(0))
   def nerMentionExtraction(doc:Document): Unit = {
     for (iteration <- 1 to 3; token <- doc.tokens) spanner.process(token)
   }
@@ -132,7 +132,7 @@ object Coref1 {
     }*/
   }
 
-  object EntityRefSampler extends SettingsSampler[EntityRef](new EntityMentionModel, null) {
+  object EntityRefSampler extends SettingsSampler[EntityRef](new EntityMentionModel, null)(new scala.util.Random(0)) {
     def settings(entityRef:EntityRef) : SettingIterator = new SettingIterator {
       val mention = entityRef.src.asInstanceOf[TokenSpanMention]
       val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];

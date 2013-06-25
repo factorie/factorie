@@ -175,12 +175,12 @@ object CorefMentionsDemo {
         }
       })
 
-      val sampler = new MHSampler[Null](model) {
+      val sampler = new MHSampler[Null](model)(new scala.util.Random(0)) {
         temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList): Double = {
           // Pick a random mention
-          val m = mentionList.sampleUniformly(cc.factorie.random)
+          val m = mentionList.sampleUniformly(random)
           //println("CorefMentions MHSampler mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
           var e: Entity = null

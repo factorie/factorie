@@ -21,7 +21,7 @@ limitations under the License.
   <name>Factorie</name>
   <groupId>cc.factorie</groupId>
   <artifactId>factorie</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT1</version>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
@@ -109,11 +109,11 @@ limitations under the License.
       <version>1.2_01</version>
     </dependency>
 
-    <dependency>
-      <groupId>net.sourceforge.parallelcolt</groupId>
-      <artifactId>parallelcolt</artifactId>
-      <version>0.10.0</version>
-    </dependency>
+      <dependency>
+        <groupId>org.jblas</groupId>
+        <artifactId>jblas</artifactId>
+        <version>1.2.3</version>
+      </dependency>
 
   </dependencies>
 

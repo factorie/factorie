@@ -52,6 +52,7 @@ object ChainNER1a {
   }
 
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))
     for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
@@ -62,7 +63,7 @@ object ChainNER1a {
     }
     val trainLabels : Seq[ChainNerLabel] = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
     val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingObjective)))
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     Trainer.onlineTrain(model.parameters, pieces, maxIterations=5, evaluate = ()=> {

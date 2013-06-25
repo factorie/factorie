@@ -60,17 +60,3 @@ trait ClassifierEvaluator[L <: MutableDiscreteVar[_]] {
   def += (c: Classification[L]): Unit
   def toString: String
 }
-
-// TODO Consider renaming this to MultiClassParameters -akm
-trait MultiClassModel extends Parameters {
-  val evidence: Weights2
-  def predict(feats: Tensor1): Int = scores(feats).maxIndex
-  def scores(feats: Tensor1): Tensor1 = evidence.value * feats
-}
-
-// TODO Consider renaming this to BinaryClassParameters -akm
-trait BinaryModel extends Parameters {
-  val evidence: Weights1
-  def predict(feats: Tensor1): Int = if (score(feats) > 0) 1 else -1
-  def score(feats: Tensor1): Double = evidence.value dot feats
-}

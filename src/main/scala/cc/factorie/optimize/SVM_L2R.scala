@@ -1,6 +1,5 @@
 package cc.factorie.optimize
 
-import cc.factorie.random
 import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
 
@@ -19,6 +18,7 @@ class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bia
   @inline private final def swap(a: Array[Int], i0: Int, i1: Int) { val t = a(i0); a(i0) = a(i1); a(i1) = t }
 
   def train(xTensors: Seq[Tensor1], ys: Array[Int], currLabel: Int): DenseTensor1 = {
+    val random = new scala.util.Random(0)
 
     val N = ys.size
     val D = xTensors.head.length

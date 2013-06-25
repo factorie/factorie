@@ -12,8 +12,10 @@ import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 import collection.mutable
 import cc.factorie.directed.DirectedModel
+import Utils.random
 
 object Utils{
+  implicit val random = new scala.util.Random(0)
   def copySubset(sourceDir:File,targetDir:File,idSubsetFile:File):Unit ={
     var idSet = new HashSet[String]
     for(line <- scala.io.Source.fromFile(idSubsetFile).getLines)idSet += line
@@ -914,6 +916,7 @@ object LDAUtils{
   val model = DirectedModel()
 //cc.factorie.app.strings.StringSegmenter
   def inferTopicsForPapers(papers:Iterable[PaperEntity],lda:LDA,mySegmenter:cc.factorie.app.strings.RegexSegmenter=new cc.factorie.app.strings.RegexSegmenter("\\p{Alpha}+".r)):Unit ={
+    implicit val random = new scala.util.Random(0)
     var count = 0
     for(paper <- papers.par){
       val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
@@ -950,9 +953,10 @@ object LDAUtils{
 
   def loadLDAModelFromAlphaAndPhi(file:File):LDA ={
     println("Loading topic model from phis and alphas.")
+    implicit val random = new scala.util.Random(0)
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
     val numTopics = reader.readLine.toInt
-    val lda = new LDA(WordSeqDomain, numTopics)(model)
+    val lda = new LDA(WordSeqDomain, numTopics)(model,random)
     lda.phis.foreach(_.tensor.zero())
     reader.mark(512)
     val alphasName = reader.readLine()
@@ -984,6 +988,7 @@ object LDAUtils{
   }
 
   def main(args:Array[String]) = {
+    implicit val random = new scala.util.Random(0)
     println("Args: "+args.length)
     for(arg <- args)
       println("  "+arg)
@@ -1041,14 +1046,14 @@ object LDAUtils{
 
     if(opts.writeModel.wasInvoked){
       StopWatch.start("Training LDA...")
-      val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model)
+      val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model,random)
       if(opts.initialIterations.wasInvoked && opts.initialIterations.value>0){
         val subsetSize = (opts.initialSubset.value * docs.size.toDouble).toInt
         println("Initializing on subset of the data: " + subsetSize)
         //val randomIndices = random.shuffle(1 until (subsetSize-1))
         //val randomSubset = new ArrayBuffer[String]
         //for(randomIndex <- randomIndices)randomSubset += docs(randomIndex)
-        cc.factorie.random.shuffle(docs)
+        random.shuffle(docs)
         val randomSubset = new ArrayBuffer[String]
         val foldInData = new ArrayBuffer[String]
         for(i<-0 until subsetSize)randomSubset += docs(i)
@@ -1058,7 +1063,7 @@ object LDAUtils{
         for(paper <- randomSubset){
           val doc = Document.fromString(WordSeqDomain,lda.documents.size+"",paper,segmenter=mySegmenter)
           //val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
-          if (doc.length >= 3) lda.addDocument(doc)
+          if (doc.length >= 3) lda.addDocument(doc, random)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
         }
         if (opts.initialIterations.value > 0) {
@@ -1074,7 +1079,7 @@ object LDAUtils{
       for(paper<-docs){
         val doc = Document.fromString(WordSeqDomain,lda.documents.size+"",paper,segmenter=mySegmenter)
         //val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
-        if (doc.length >= 3) lda.addDocument(doc)
+        if (doc.length >= 3) lda.addDocument(doc, random)
         if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
       }
       if (opts.numIterations.value > 0) {

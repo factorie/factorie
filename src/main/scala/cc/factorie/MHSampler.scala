@@ -24,9 +24,8 @@ import cc.factorie.util.Hooks0
     @see ProposalSampler
     @see GibbsSampler
 */
-abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
-  var random = cc.factorie.random
-  
+abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Random) extends ProposalSampler[C] {
+
   /** This method must be implemented in concrete subclasses.
       It should return the log of the ratio of backwards-to-forwards jump probabilities. */
   def propose(context:C)(implicit d:DiffList) : Double

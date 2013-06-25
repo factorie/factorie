@@ -78,13 +78,13 @@ class TestLearning {
     for ((ple, lle) <- plExamples.zip(llExamples)) {
       val localPLgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
       val localPLvalue = new LocalDoubleAccumulator(0.0)
-      ple.accumulateExampleInto(localPLgrad, localPLvalue)
-      ple.accumulateExampleInto(plgrad, plvalue)
+      ple.accumulateValueAndGradient(localPLvalue, localPLgrad)
+      ple.accumulateValueAndGradient(plvalue, plgrad)
 
       val localLLgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
       val localLLvalue = new LocalDoubleAccumulator(0.0)
-      lle.accumulateExampleInto(localLLgrad, localLLvalue)
-      lle.accumulateExampleInto(llgrad, llvalue)
+      lle.accumulateValueAndGradient(localLLvalue, localLLgrad)
+      lle.accumulateValueAndGradient(llvalue, llgrad)
 
       // check local
       assertEquals("local value does not match", localPLvalue.value, localLLvalue.value, 1.0e-7)

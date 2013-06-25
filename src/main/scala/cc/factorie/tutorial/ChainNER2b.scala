@@ -69,6 +69,7 @@ object ChainNER2b {
   
 
   def main(args: Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile\n where files are in CoNLL Shared Task 2003 format.")
 
     // Read in the data
@@ -89,7 +90,7 @@ object ChainNER2b {
     // println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Train and test
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
     val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate)
     val predictor = new VariableSettingsSampler[Label](model)
     for (i <- 1 to 4) {

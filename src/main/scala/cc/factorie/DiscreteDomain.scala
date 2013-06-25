@@ -16,6 +16,7 @@ package cc.factorie
 import cc.factorie.la._
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import cc.factorie.util.Cubbie
 
 // For variables that hold a single discrete value, which is represented as a one-hot Tensor1.
 

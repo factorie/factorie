@@ -106,7 +106,7 @@ object Classify {
       val readClassifier = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
       val trainingPortion = new CmdOption("training-portion", 0.5, "FRACTION", "The fraction of the instances that should be used for training.  testing-portion is 1.0 - training-portion - validation-portion.")
       val validationPortion = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
-      val localRandomSeed = new CmdOption("random-seed", -1, "N", "The random seed for randomly selecting a proportion of the instance list for training")
+      val localRandomSeed = new CmdOption("random-seed", 0, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
       val trainer = new CmdOption("trainer", "MaxEntTrainer", "Class()", "The constructor for a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
@@ -122,8 +122,7 @@ object Classify {
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
-    if (opts.localRandomSeed.wasInvoked)
-      setRandomSeed(opts.localRandomSeed.value)
+    implicit val random = new scala.util.Random(opts.localRandomSeed.value)
 
     def fileToString(f: File): String = {
       if (!f.exists || !f.isFile) throw new IllegalArgumentException("File " + f.getName + " does not exist.")
@@ -289,7 +288,7 @@ object Classify {
     val classifierTrainer = opts.trainer.value match {
       case "MaxEntTrainer" => new MaxEntTrainer()
       case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()
-      case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer()
+      case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer(random=random)
       case "NaiveBayesTrainer" => new NaiveBayesTrainer()
       case "SVMTrainer" => new SVMTrainer()
       case "ID3DecisionTreeTrainer" => new ID3DecisionTreeTrainer()

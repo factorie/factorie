@@ -92,7 +92,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
   //def set(newValue:Value)(implicit d:DiffList): Unit
   //def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[Value])(d)
   @inline final def :=(i:Int): Unit = set(i)(null)
-  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
+  def setRandomly(implicit random:Random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings: SettingIterator = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1

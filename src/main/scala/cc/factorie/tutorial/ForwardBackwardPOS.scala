@@ -79,7 +79,7 @@ object ForwardBackwardPOS {
         testDocuments: Seq[Document] = Seq.empty[Document],
         iterations: Int = 100,
         modelFile: String = "",
-        extraId: String = ""): Unit = {
+        extraId: String = "")(implicit random: scala.util.Random): Unit = {
 
     def testSavePrint(label: String): Unit = {
       test(documents, label = "train")
@@ -100,9 +100,10 @@ object ForwardBackwardPOS {
   }
 
   def test(documents: Seq[Document], label: String = "test"): Unit = {
+    implicit val random = new scala.util.Random(0)
     val sentences = documents.flatMap(_.sentences)
     val labels = sentences.map(_.tokens).flatMap(_.map(t => t.posLabel))
-    labels.map(_.setRandomly())
+    labels.map(_.setRandomly)
     sentences.map(predictSentence(_))
     println(label + " accuracy: " + percentageSetToTarget(labels) + "%")
   }
@@ -140,6 +141,7 @@ object ForwardBackwardPOS {
       val extraId =   new CmdOption("label", "", "STRING", "An extra identifier.  Useful for testing different sets of features.")
     }
     opts.parse(args)
+    implicit val random = new scala.util.Random(0)
     import opts._
 
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked) {

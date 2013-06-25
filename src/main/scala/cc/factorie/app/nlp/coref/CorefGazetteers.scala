@@ -55,7 +55,7 @@ class CorefGazetteers(lexDir: String) {
   val honors =  lexHash("person-honorific").toSet
   val cities = lexHash("city").toSet
   val countries = lexHash("country").toSet
-  val lastNames = (lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  ++ wikiLexHash("person").map(x => x.split(" ").last)).toSet
+  val lastNames = (lexHash("person-last-high") ++ lexHash("person-last-highest") ++ censusHash("person-last")  /*++ wikiLexHash("person").map(x => x.split(" ").last)*/).toSet
   val maleFirstNames = censusHash("person-first-male").toSet
   val femaleFirstNames = censusHash("person-first-female") .toSet
 
@@ -73,7 +73,7 @@ class CorefGazetteers(lexDir: String) {
   val placeWords = (cities ++ lexHash("country") ++ lexHash("continents") ++ lexHash("us-state") ++ lexHash("place-suffix")  ++ wikiLexHash("location") ).toSet
   val orgWords = (lexHash("company") ++ lexHash("org-suffix") ++ wikiLexHash("organization")   ++ wikiLexHash("business")  ).toSet
   val timeWords = (lexHash("day") ++ lexHash("month") ).toSet
-  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") /*++ wikiLexHash("person").map(_.split(" ").last)*/).toSet
+  val personFirstWords = (firstNames ++  lexHash("person-first-high") ++  lexHash("person-first-highest") ++ lexHash("jobtitle") ++ lexHash("person-honorific") /*++ wikiLexHash("person").map(_.split(" ").head)*/).toSet
   val personLastWords = (lastNames  ++ firstNames ++ honors ).toSet
   val personFullNames = (wikiLexHash("person") ).toSet
   val properWords = (wikiLexHash("book") ++ wikiLexHash("battles") ++ wikiLexHash("man_made_thing") ++ wikiLexHash("film") ++ wikiLexHash("songs") ).toSet
@@ -126,50 +126,50 @@ object CorefGazetteersData {
   )
 
   val wikiLexiconsToLoad = Seq(
-  "battles-paren.txt",
-  "battles-redirect-paren.txt",
-  "battles-redirect.txt",
-  "battles.txt",
-  "book-paren.txt",
-  "book-redirect-paren.txt",
-  "book-redirect.txt",
-  "book.txt",
-  "business-paren.txt",
-  "business-redirect-paren.txt",
-  "business-redirect.txt",
-  "business.txt",
-  "competition-paren.txt",
-  "competition-redirect-paren.txt",
-  "competition-redirect.txt",
-  "competition.txt",
-  "events-paren.txt",
-  "events-redirect-paren.txt",
-  "events-redirect.txt",
-  "events.txt",
-  "film-paren.txt",
-  "film-redirect-paren.txt",
-  "film-redirect.txt",
-  "film.txt",
-  "location-paren.txt",
-  "location-redirect-paren.txt",
-  "location-redirect.txt",
-  "location.txt",
-  "man_made_thing-paren.txt",
-  "man_made_thing-redirect-paren.txt",
-  "man_made_thing-redirect.txt",
-  "man_made_thing.txt",
-  "organization-paren.txt",
-  "organization-redirect-paren.txt",
-  "organization-redirect.txt",
-  "organization.txt",
-  "person-paren.txt",
-  //"person-redirect-paren.txt",
-  //"person-redirect.txt",
-  "person.txt",
-  "songs-paren.txt",
-  "songs-redirect-paren.txt",
-  "songs-redirect.txt",
-  "songs.txt"
+    "battles-paren.txt",
+    "battles-redirect-paren.txt",
+    "battles-redirect.txt",
+    "battles.txt",
+    "book-paren.txt",
+    "book-redirect-paren.txt",
+    "book-redirect.txt",
+    "book.txt",
+    "business-paren.txt",
+    "business-redirect-paren.txt",
+    "business-redirect.txt",
+    "business.txt",
+    "competition-paren.txt",
+    "competition-redirect-paren.txt",
+    "competition-redirect.txt",
+    "competition.txt",
+    "events-paren.txt",
+    "events-redirect-paren.txt",
+    "events-redirect.txt",
+    "events.txt",
+    "film-paren.txt",
+    "film-redirect-paren.txt",
+    "film-redirect.txt",
+    "film.txt",
+    "location-paren.txt",
+    //"location-redirect-paren.txt",
+    //"location-redirect.txt",
+    "location.txt",
+    "man_made_thing-paren.txt",
+    "man_made_thing-redirect-paren.txt",
+    "man_made_thing-redirect.txt",
+    "man_made_thing.txt",
+    //"organization-paren.txt",
+    // "organization-redirect-paren.txt",
+    // "organization-redirect.txt",
+    "organization.txt",
+    "person-paren.txt",
+    //"person-redirect-paren.txt",
+    //"person-redirect.txt",
+    "person.txt",
+    "songs-paren.txt",
+    "songs-redirect-paren.txt",
+    "songs-redirect.txt",
+    "songs.txt"
   )
 }
 

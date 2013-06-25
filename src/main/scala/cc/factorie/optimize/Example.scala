@@ -20,7 +20,7 @@ import cc.factorie.la._
 trait Example {
   // gradient or value can be null if they don't need to be computed.
   // TODO should this be called (compute|accumulate)ValueAndGradient or something? -luke
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit
 }
 
 /**
@@ -28,8 +28,8 @@ trait Example {
  * @param baseExamples The examples in this batch.
  */
 class MiniBatchExample(val baseExamples: Seq[Example]) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
-    baseExamples.foreach(_.accumulateExampleInto(gradient, value))
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
+    baseExamples.foreach(_.accumulateValueAndGradient(value, gradient))
   }
 }
 
@@ -59,7 +59,7 @@ object MiniBatchExample {
  * @tparam B The type of the model
  */
 class LikelihoodExample[A,B](labels: A, model: B, val infer: Infer[A,B]) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val summary = infer.infer(labels, model)
     if (value != null)
       value.accumulate(-summary.logZ)
@@ -88,7 +88,7 @@ class LikelihoodExample[A,B](labels: A, model: B, val infer: Infer[A,B]) extends
  * @param model The model
  */
 class PseudomaxExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     for (label <- labels) {
       val factors = model.factors(label)
       val proportions = label.proportions(factors)
@@ -117,7 +117,7 @@ class PseudomaxExample(labels: Iterable[LabeledDiscreteVar], model: Model with P
  * @param model The model
  */
 class PseudomaxMarginExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     for (label <- labels) {
       val factors = model.factors(label)
       val proportionsNotAugmented = label.proportions(factors)
@@ -144,7 +144,7 @@ class PseudomaxMarginExample(labels: Iterable[LabeledDiscreteVar], model: Model 
  * @param model The model
  */
 class PseudolikelihoodExample(labels: Iterable[LabeledDiscreteVar], model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     for (label <- labels) {
       val factors = model.factors(label)
       val proportions = label.proportions(factors)
@@ -186,7 +186,7 @@ class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVa
     distribution.expNormalize()
     (new DenseTensorProportions1(distribution.asArray, checkNormalization=false), targetIndex)
   }
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     for (component <- components) {
       val factors = model.factors(component) // should this be just DotFamily factors?
       val (proportions, targetIndex) = computeProportions(component, factors)
@@ -212,7 +212,7 @@ class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVa
  * @param model The model
  */
 class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val factors = model.factors(label)
     val proportions = label.proportions(factors)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
@@ -236,7 +236,7 @@ class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Par
  * @param model The model
  */
 class CaseFactorDiscreteLikelihoodExample(label: LabeledMutableDiscreteVar[_], model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
     if (gradient ne null) {
@@ -288,7 +288,7 @@ object GoodBadExample {
  * You probably don't want to use this.
  */
 class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var], model: Model with Parameters) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
@@ -312,7 +312,7 @@ class DominationLossExample(goodCandidates: Seq[Var], badCandidates: Seq[Var], m
  * You probably don't want to use this.
  */
 class DominationLossExampleAllGood(model: Model with Parameters, goodCandidates: Seq[Var], badCandidates: Seq[Var]) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     require(gradient != null, "The DominationLossExampleAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
@@ -350,10 +350,11 @@ class StructuredPerceptronExample[A,B](labels: A, model: B, infer: Maximize[A,B]
  */
 class StructuredSVMExample[A](labels: A, model: Model with Parameters, loss: Model = HammingLoss, infer: Maximize[A,Model])
   extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer) {
-  override def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  override def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     if (value != null) {
       val valueAcc = new LocalDoubleAccumulator(0.0)
-      super.accumulateExampleInto(gradient, valueAcc)
+      // TODO why are we doing this again? -luke
+      super.accumulateValueAndGradient(valueAcc, gradient)
       // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
       if (value != null) value.accumulate(valueAcc.value)
     }
@@ -371,7 +372,7 @@ class StructuredSVMExample[A](labels: A, model: Model with Parameters, loss: Mod
  * @tparam B The type of the model
  */
 class SemiSupervisedLikelihoodExample[A,B](labels: A, model: B, inferConstrained: Infer[A,B], inferUnconstrained: Infer[A,B]) extends Example {
-  def accumulateExampleInto(gradient: WeightsMapAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val constrainedSummary = inferConstrained.infer(labels, model)
     val unconstrainedSummary = inferUnconstrained.infer(labels, model)
     if (value != null)

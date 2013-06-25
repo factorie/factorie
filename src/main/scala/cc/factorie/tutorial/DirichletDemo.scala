@@ -21,6 +21,7 @@ import cc.factorie.directed.{Discrete, MaximizeDirichletByMomentMatching, Dirich
 object DirichletDemo {
 
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     object WordDomain extends EnumDomain { val a, b, c, d, e, f = Value }
     class Word extends DiscreteVariable { def domain = WordDomain }
     implicit val model = DirectedModel()

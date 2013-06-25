@@ -22,6 +22,7 @@ import cc.factorie.directed._
 
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
@@ -62,6 +63,7 @@ object GaussianMixtureDemo {
 // TODO: this is a really slow test, I should profile this -luke
 object MultivariateGaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
+    implicit val random = new scala.util.Random(0)
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
@@ -93,13 +95,14 @@ object MultivariateGaussianMixtureDemo {
     val em = new EMInferencer(meanComponents.toIterable, zs, InferByMeanField, model, MaximizeMultivariateGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
-      // println("Estimated means at iteration " + i)
-      // meanComponents.foreach(m => println(m.value))
+//      println("Estimated means at iteration " + i)
+//      meanComponents.foreach(m => println(m.value))
 //      println("Estimated z's at iteration" + i)
 //      zs.foreach(z => println(z.proportions(model)))
     }
-    // println("\nOriginal means")
-    // origMeans.foreach(println(_))
+//    println("\nOriginal means")
+//    origMeans.foreach(println(_))
+
+    meanComponents.foreach(m1 => assert(origMeans.exists(m2 => (m1.value - m2).twoNorm / m2.twoNorm < .1), "Inferred means were not within tolerance of true means!"))
   }
 }
-
