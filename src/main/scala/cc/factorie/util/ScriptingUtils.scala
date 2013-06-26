@@ -6,13 +6,14 @@ object ScriptingUtils {
     import scala.tools.reflect.ToolBox
     val cm = universe.runtimeMirror(getClass.getClassLoader)
     val tb = cm.mkToolBox()
-    val script = "import cc.factorie._; {" + str.split("\n").map("    " + _).mkString + "}"
+    val script = "import cc.factorie._\n {\n" + str + "\n}"
     tb.eval(tb.parse(script)).asInstanceOf[T]
   }
   def main(args: Array[String]): Unit = {
     val res = eval[String](
       """
-"asd" + "foo" + "!"
+val tmp = "asd" + "foo"
+tmp + "!"
       """)
     println(res)
     val res2 = eval[cc.factorie.optimize.GradientOptimizer]("import cc.factorie.optimize._; new AdaGrad(rate = 0.1)")
