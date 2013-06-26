@@ -18,7 +18,7 @@ import cc.factorie._
 import app.classify
 import app.strings.SetBasedStopwords
 import java.io._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 
 // Feature and Label classes
@@ -108,7 +108,7 @@ object Classify {
       val validationPortion = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
       val localRandomSeed = new CmdOption("random-seed", 0, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
-      val trainer = new CmdOption("trainer", "MaxEntTrainer", "Class()", "The constructor for a ClassifierTrainer class.")
+      val trainer = new CmdOption("trainer", "new MaxEntTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
       val crossValidation = new CmdOption("cross-validation", 0, "N", "The number of folds for cross-validation (DEFAULT=0)")
 
@@ -283,18 +283,7 @@ object Classify {
       writeInstances(bigll, instancesFile)
     }
 
-    // to get true eval, add reference to scala-tools and use scala.tools.nsc.interpreter.IMain?? -luke
-    // see http://stackoverflow.com/questions/1183645/eval-in-scala
-    val classifierTrainer = opts.trainer.value match {
-      case "MaxEntTrainer" => new MaxEntTrainer()
-      case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()
-      case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer(random=random)
-      case "NaiveBayesTrainer" => new NaiveBayesTrainer()
-      case "SVMTrainer" => new SVMTrainer()
-      case "ID3DecisionTreeTrainer" => new ID3DecisionTreeTrainer()
-      case "AdaBoostDecisionStumpTrainer" => new AdaBoostDecisionStumpTrainer()
-      case e => throw new IllegalArgumentException("Unknown ClassifierTrainer: " + e)
-    }
+    val classifierTrainer = ScriptingUtils.eval[ClassifierTrainer](opts.trainer.value, Seq("cc.factorie.app.classify._"))
 
     val start = System.currentTimeMillis
 
