@@ -39,11 +39,19 @@ trait BaseBinaryClassifier[Features] extends BaseClassifier[Double, Features] {
   def classification(features: Features) = new BinaryClassification(score(features))
 }
 
-trait MultiClassClassifier[Features] extends BaseClassifier[Tensor1, Features] {
-  def classification(features: Features) = new MultiClassClassification(score(features))
+class ClassifierTemplate[Features,Value<:DiscreteValue,T<:LabeledMutableDiscreteVar[Value],F<:VarWithValue[Features]](classifier: BaseClassifier[Tensor1,Features], l2f: T => F)(implicit ml: Manifest[T], implicit val mf: Manifest[F]) extends Template2[T,F] {
+  def unroll1(v: T) = Factor(v, l2f(v))
+  def unroll2(v: F) = Nil
+  def score(v1: T#Value, v2: Features): Double = classifier.classification(v2).score(v1.asInstanceOf[DiscreteValue].intValue)
 }
 
-trait MultiClassTrainerBase[+C <: MultiClassClassifier[Tensor1]] {
+trait MultiClassClassifier[Features] extends BaseClassifier[Tensor1, Features] {
+  def classification(features: Features) = new MultiClassClassification(score(features))
+  def asTemplate[Value<:DiscreteValue,T <: LabeledMutableDiscreteVar[Value],F<: VarWithValue[Features]](l2f: T => F)(implicit ml: Manifest[T], mf: Manifest[F]) = new ClassifierTemplate[Features,Value,T,F](this, l2f)
+}
+
+trait MultiClassTrainerBase[C <: MultiClassClassifier[Tensor1]] {
+  def baseTrain(classifier: C, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: C => Unit)
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: C => Unit): C
 
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C= {
@@ -63,8 +71,29 @@ trait MultiClassTrainerBase[+C <: MultiClassClassifier[Tensor1]] {
     simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), evaluate)
   def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): C =
     train(labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
-  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, l2w: Label => Double = (l: Label) => 1.0): C =
+  def train[Label<:LabeledDiscreteVar](labels: Seq[Label], l2f: Label => DiscreteTensorVar, l2w: Label => Double): C =
     train(labels, labels.map(l2f), labels.map(l2w))
+
+
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]) {
+    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex)
+                                                                                         .zip(testLabels).count(i => i._1 == i._2.targetIntValue).toDouble/testLabels.length}%1.4f")
+    baseTrain(classifier, labels.map(_.targetIntValue), features.map(_.value), weights, evaluate)
+  }
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): Unit =
+    train(classifier, labels, features, labels.map(i => 1.0), testLabels, testFeatures)
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double]): Unit =
+    baseTrain(classifier, labels.map(_.targetIntValue), features.map(_.value), weights, c => ())
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar]): Unit =
+    baseTrain(classifier, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), c => ())
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], weights: Seq[Double], evaluate: C => Unit): Unit =
+    baseTrain(classifier, labels.map(_.targetIntValue), features.map(_.value), weights, evaluate)
+  def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[DiscreteTensorVar], evaluate: C => Unit): Unit =
+    baseTrain(classifier, labels.map(_.targetIntValue), features.map(_.value), labels.map(i => 1.0), evaluate)
+  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => DiscreteTensorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): Unit =
+    train(classifier, labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
+  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => DiscreteTensorVar, l2w: Label => Double): Unit =
+    train(classifier, labels, labels.map(l2f), labels.map(l2w))
 }
 
 class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: MultiClassClassifier[Tensor1])(implicit ml: Manifest[T], mf: Manifest[TensorVar]) extends Template2[T, TensorVar] {
@@ -82,7 +111,7 @@ class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) exten
   self =>
   val weights = Weights(new DenseTensor2(labelSize, featureSize))
   def score(features: Tensor1) = weights.value * features
-  def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
+  def asDotTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
     val weights = self.weights

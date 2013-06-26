@@ -10,12 +10,22 @@ import scala.util.Random
 class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer with TensorLabels = new ID3DecisionTreeTrainer)
   (implicit random: Random)
   extends MultiClassTrainerBase[DecisionTreeMultiClassClassifier] {
+
+  def baseTrain(classifier: DecisionTreeMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (DecisionTreeMultiClassClassifier) => Unit) {
+    val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+    })
+    val dtree = treeTrainer.train(instances)
+    classifier.tree = dtree
+    evaluate(classifier)
+  }
+
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: DecisionTreeMultiClassClassifier => Unit): DecisionTreeMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
       case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
     })
     val dtree = treeTrainer.train(instances)
-    val classifier = new DecisionTreeMultiClassClassifier(dtree)
+    val classifier = new DecisionTreeMultiClassClassifier(dtree, labelSize)
     evaluate(classifier)
     classifier
   }
@@ -26,6 +36,20 @@ class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
   useParallel: Boolean = true, numThreads: Int = Runtime.getRuntime.availableProcessors(), treeTrainer: DecisionTreeTrainer with TensorLabels = new ID3DecisionTreeTrainer)
   (implicit random: Random)
   extends MultiClassTrainerBase[RandomForestMultiClassClassifier] {
+
+  def baseTrain(classifier: RandomForestMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (RandomForestMultiClassClassifier) => Unit) {
+    val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+    })
+    val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
+      val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
+      treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
+      treeTrainer.train(bootstrap, numFeaturesToUse = numFeaturesToUse)
+    })
+    classifier.trees = trees.toSeq
+    evaluate(classifier)
+  }
+
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: RandomForestMultiClassClassifier => Unit): RandomForestMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
       case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
@@ -35,13 +59,13 @@ class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
       treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
       treeTrainer.train(bootstrap, numFeaturesToUse = numFeaturesToUse)
     })
-    val classifier = new RandomForestMultiClassClassifier(trees.toSeq)
+    val classifier = new RandomForestMultiClassClassifier(trees.toSeq, labelSize)
     evaluate(classifier)
     classifier
   }
 }
 
-class RandomForestMultiClassClassifier(val trees: Seq[DTree]) extends MultiClassClassifier[Tensor1] {
+class RandomForestMultiClassClassifier(var trees: Seq[DTree], val labelSize: Int) extends MultiClassClassifier[Tensor1] {
   self =>
   def score(features: Tensor1) = {
     // TODO why not train an SVM on these predictions instead of just doing majority voting? -luke
@@ -54,7 +78,7 @@ class RandomForestMultiClassClassifier(val trees: Seq[DTree]) extends MultiClass
     new ClassifierTemplate2(l2f, this)
 }
 
-class DecisionTreeMultiClassClassifier(val tree: DTree) extends MultiClassClassifier[Tensor1] {
+class DecisionTreeMultiClassClassifier(var tree: DTree, val labelSize: Int) extends MultiClassClassifier[Tensor1] {
   def score(features: Tensor1) =
     DTree.score(features, tree)
   def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
@@ -63,11 +87,14 @@ class DecisionTreeMultiClassClassifier(val tree: DTree) extends MultiClassClassi
 
 class RandomForestCubbie extends StoreFetchCubbie[RandomForestMultiClassClassifier] {
   val trees = CubbieListSlot[TreeNodeCubbie]("trees", () => new TreeNodeCubbie)
+  val labelSize = IntSlot("labelSize")
   trees := Seq()
+  labelSize := 0
   def store(c: RandomForestMultiClassClassifier): Unit = {
     trees := c.trees.map(t => {val c = new TreeNodeCubbie; c.store(t); c})
+    labelSize := c.labelSize
   }
-  def fetch(): RandomForestMultiClassClassifier = new RandomForestMultiClassClassifier(trees.value.map(_.fetch()))
+  def fetch(): RandomForestMultiClassClassifier = new RandomForestMultiClassClassifier(trees.value.map(_.fetch()), labelSize.value)
 }
 
 class TreeNodeCubbie extends StoreFetchCubbie[DTree] {
@@ -103,13 +130,15 @@ class TreeNodeCubbie extends StoreFetchCubbie[DTree] {
 
 class DecisionTreeCubbie extends StoreFetchCubbie[DecisionTreeMultiClassClassifier] {
   val tree = CubbieSlot[TreeNodeCubbie]("tree", () => new TreeNodeCubbie)
+  val labelSize = IntSlot("labelSize")
   def store(t: DecisionTreeMultiClassClassifier): Unit = {
     val bc = new TreeNodeCubbie
     bc.store(t.tree)
+    labelSize := t.labelSize
     tree := bc
   }
   def fetch(): DecisionTreeMultiClassClassifier =
-    new DecisionTreeMultiClassClassifier(tree.value.fetch())
+    new DecisionTreeMultiClassClassifier(tree.value.fetch(), labelSize.value)
 }
 
 // TODO add regression tree -luke

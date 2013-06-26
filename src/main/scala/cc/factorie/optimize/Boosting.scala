@@ -11,7 +11,7 @@ class BoostedBinaryClassifier(val weakClassifiers: Seq[(BaseBinaryClassifier[Ten
 }
 
 // TODO this multiclass doesn't work for >2 classes right now - also add gradient boosting -luke
-class BoostedMultiClassClassifier(val weakClassifiers: Seq[(MultiClassClassifier[Tensor1], Double)], val numLabels: Int) extends MultiClassClassifier[Tensor1] {
+class BoostedMultiClassClassifier(var weakClassifiers: Seq[(MultiClassClassifier[Tensor1], Double)], val numLabels: Int) extends MultiClassClassifier[Tensor1] {
   def score(features: Tensor1) =
     weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.score(features), t._2); acc})
   def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
@@ -21,6 +21,13 @@ class BoostedMultiClassClassifier(val weakClassifiers: Seq[(MultiClassClassifier
 class BoostingMultiClassTrainer(numWeakLearners: Int = 100, argTrainWeakLearner: MultiClassTrainerBase[MultiClassClassifier[Tensor1]] = null)(implicit random: scala.util.Random)
   extends MultiClassTrainerBase[BoostedMultiClassClassifier] {
   val trainWeakLearner = if (argTrainWeakLearner ne null) argTrainWeakLearner else new DecisionTreeMultiClassTrainer(treeTrainer = new DecisionStumpTrainer)
+
+  def baseTrain(classifier: BoostedMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (BoostedMultiClassClassifier) => Unit) {
+    classifier.weakClassifiers = AdaBoostTrainer.train(
+      features, labels, classifier.numLabels, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(classifier.numLabels, features.head.length, labels, features, _, c => {}))
+     evaluate(classifier)
+  }
+
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: BoostedMultiClassClassifier => Unit): BoostedMultiClassClassifier = {
     val weightedWeakLearners = AdaBoostTrainer.train(
       features, labels, labelSize, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(labelSize, featureSize, labels, features, _, c => {}))
