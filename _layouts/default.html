@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link href="{{ site.baseurl }}/assets/css/bootstrap.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/pygments/default.css" media="screen" />
+        <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
+        <title>Factorie: {{ page.title }}</title>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="page-header">
+              <h1><img width="50px" src="{{ site.baseurl }}/assets/images/{{ site.factorie_logo }}">
+                <a href="{{ site.baseurl }}/index.html">Factorie</a></h1>
+            </div>
+
+            <div class="row">
+                <div class="span3">
+                    {% include nav.html %}
+                </div>
+                <div class="span9">
+                  {{ content }}
+                </div>
+            </div>
+
+            <hr>
+            {% include footer.html %}
+        </div> <!-- /container -->
+
+    </body>
+</html>
