@@ -19,6 +19,10 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 package object factorie extends CubbieConversions {
+  var random = new Random(0)
+  def setRandomSeed(seed: Long): Unit = {
+    random = new Random(seed)
+  }
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
