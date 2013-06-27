@@ -214,7 +214,7 @@ trait MarginScaled extends GradientStep {
   val C: Double = 1.0
   override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double) ={
     val sqNorm = gradient.twoNormSquared
-    if (sqNorm == 0.0) 0.0 else math.max(-C, math.min(C, -value/gradient.twoNormSquared))
+    if (sqNorm == 0.0) 0.0 else math.max(0.0, math.min(C, -value/gradient.twoNormSquared))
   }
 }
 
