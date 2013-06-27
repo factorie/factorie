@@ -104,14 +104,14 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
     mentions
-      .groupBy( m => m.headTokenIndex + m.span.start)
+      .groupBy( m => m.headToken )
       .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
       .toSeq
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
     // Note: equality is only in the first set of arguments for case classes
-    case class MentionStartLength(start: Int, length: Int)(val mention: Mention) {
-      def this(mention: Mention) = this(mention.start, mention.length)(mention)
+    case class MentionStartLength(section:Section, start: Int, length: Int)(val mention: Mention) {
+      def this(mention: Mention) = this(mention.section, mention.start, mention.length)(mention)
     }
 
     (for (m <- mentions) yield new MentionStartLength(m))
