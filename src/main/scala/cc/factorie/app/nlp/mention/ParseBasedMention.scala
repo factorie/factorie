@@ -85,8 +85,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       if (copularPhrase || apposition || parentIsNoun) None
       else {
         val subtree = (Seq(t) ++ {
-          //s.parse.subtree(si)
-          Seq(si) ++ s.parse.getChildrenIndices(si).filterNot(ci => s.tokens(ci).posLabel.categoryValue.startsWith("V")).flatMap(s.parse.getSubtreeInds(_)).distinct
+          val filter = { ci : Int => s.tokens(ci).posLabel.categoryValue.startsWith("V") }
+          Seq(si) ++ s.parse.getChildrenIndices(si, filter).flatMap(s.parse.getSubtreeInds(_,filter)).distinct
         }.map(i => s.tokens(i))).sortBy(_.position)
         usedTokens ++= subtree
         val (start, length) = subtree.size match {
@@ -102,7 +102,6 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       }
 
     }).flatten.toSeq
-
 
 
   private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
