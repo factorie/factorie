@@ -36,6 +36,7 @@ trait PairwiseCorefModel extends Parameters {
   def deserialize(stream: DataInputStream) {
     BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)
     BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
+    BinarySerializer.deserialize(new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
     BinarySerializer.deserialize(this, stream)
     stream.close()
     MentionPairFeaturesDomain.freeze()
@@ -46,7 +47,7 @@ trait PairwiseCorefModel extends Parameters {
   }
 
   def serialize(filename: String) {
-    BinarySerializer.serialize(MentionPairLabelThing.tokFreq, MentionPairFeaturesDomain, this, new File(filename))
+    BinarySerializer.serialize(MentionPairLabelThing.tokFreq, MentionPairFeaturesDomain, new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]}, this, new File(filename))
   }
 
   def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
