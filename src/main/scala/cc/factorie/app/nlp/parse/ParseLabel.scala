@@ -140,24 +140,24 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
     getChildrenIndices(parentIndex).map(i => sentence.tokens(i))
   }
 
-  def getChildrenIndices(parentIndex:Int): Seq[Int] = {
+  def getChildrenIndices(parentIndex:Int, filter : Int => Boolean = {x => false}): Seq[Int] = {
     val result = new ArrayBuffer[Int]
     var i = 0
     while (i < _parents.length) {
       if (_parents(i) == parentIndex) result += i
       i += 1
     }
-    result
+    result.filterNot(filter)
   }
 
   def subtree(parentIndex:Int): Seq[Token] = {
     getSubtreeInds(parentIndex).map(sentence.tokens(_))
   }
 
-  def getSubtreeInds(parentIndex: Int): Seq[Int] = {
+  def getSubtreeInds(parentIndex: Int, filter : Int => Boolean = {x => false}): Seq[Int] = {
     val result = new ArrayBuffer[Int]()
     result += parentIndex
-    result ++= getChildrenIndices(parentIndex).flatMap(getSubtreeInds(_)).distinct
+    result ++= getChildrenIndices(parentIndex, filter).flatMap(getSubtreeInds(_)).distinct
     result
   }
 
