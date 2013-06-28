@@ -75,7 +75,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     println(infoMsg.format(numTopics, numTypes, numDocs, maxIterations))
 
     var wordGradientSize = 500000
-    var docTopicsSize = 50000
+    var maxTokens = 50000
 
     //Store the constants
     val expDiGammaBeta:Double = Math.exp(digamma(beta)) // exp(digamma(beta))
@@ -90,7 +90,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     val topicCoefficients = new Array[Double](numTopics) // represent alpha + Ndk * topicNormalizer
 
     val samplingWeights = new Array[Double](numTopics)  // represent Part 1 of Eq15
-    val topicTokenTotals = new Array[Double](numTopics) // represent Nk
+    val Nk = new Array[Double](numTopics)
 
     //Arrays to note what we sampled for the current batch
     var wordGradientQueueTopics = new Array[Int](wordGradientSize)
@@ -110,30 +110,32 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     val skipIterations = 10
 
     var startTime:Long = 0
-    var docTopics = new Array[Int](docTopicsSize) // z assignment for the tokens
-    val docTopicCounts = new Array[Int](numTopics) //Ndk, local to the document
+    var zs = new Array[Int](maxTokens) // z assignment for the tokens
+    val Ndk = new Array[Int](numTopics) //Ndk, local to the document
 
     while (iteration < maxIterations) {
       if (iteration == skipIterations) startTime = System.currentTimeMillis()
 
+      wordGradientLimit = 0
       //This depends upon scale, hence needs to be update for every iteration
-      for (topic <- 0 until numTopics) topicNormalizers(topic) = 1.0 / (betaSum + scale * topicTokenTotals(topic) - 0.5)
+      for (topic <- 0 until numTopics) topicNormalizers(topic) = 1.0 / (betaSum + scale * Nk(topic) - 0.5)
 
       //Samples changes for last run, this should go down with #of iterations
       var currSamples = 0
       var currChanges = 0
 
       for (d <- 0 until batchSize) {
+        //Get token list for a random document
         val ws: CategoricalSeqVariable[String] = docProvider.getRandomDocument()
         val numTokens = ws.length
 
         //Do we have enough space in docTopics?
-        if (numTokens > docTopicsSize) {
-          docTopicsSize *= 2
-          docTopics = new Array[Int](docTopicsSize)
-          println("resize docTopics: "+ numTokens + " "+ docTopicsSize)
+        if (numTokens > maxTokens) {
+          maxTokens *= 2
+          zs = new Array[Int](maxTokens)
+          println("resize docTopics: "+ numTokens + " "+ maxTokens)
         } else {
-          java.util.Arrays.fill(docTopics, 0)
+          java.util.Arrays.fill(zs, 0)
         }
 
         if (wordGradientLimit + numTokens > wordGradientSize) {
@@ -145,25 +147,25 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
           println("resize wordGradQueue: "+ wordGradientSize + " "+ wordGradientLimit)
         }
 
-        java.util.Arrays.fill(docTopicCounts, 0)
+        java.util.Arrays.fill(Ndk, 0)
 
         var coefficientSum = 0.0
         for (topic <- 0 until numTopics) {
-          topicCoefficients(topic) = (alpha + docTopicCounts(topic)) * topicNormalizers(topic)
+          topicCoefficients(topic) = (alpha + Ndk(topic)) * topicNormalizers(topic)
           coefficientSum += topicCoefficients(topic)
         }
 
         for (sweep <- 0 until numSamples) {
-          var wp = 0
-          while (wp < ws.length) {
-            val word = ws.intValue(wp)
-            val oldTopic = docTopics(wp)
+          var currentTokenIndex = 0
+          while (currentTokenIndex < ws.length) {
+            val word = ws.intValue(currentTokenIndex)
+            val oldTopic = zs(currentTokenIndex)
 
             // We only get Ndk after the first sweep
             if (sweep > 0) {
-              docTopicCounts(oldTopic) -= 1
+              Ndk(oldTopic) -= 1
               coefficientSum -= topicCoefficients(oldTopic)
-              topicCoefficients(oldTopic) = (alpha + docTopicCounts(oldTopic)) * topicNormalizers(oldTopic)
+              topicCoefficients(oldTopic) = (alpha + Ndk(oldTopic)) * topicNormalizers(oldTopic)
               coefficientSum += topicCoefficients(oldTopic)
             }
 
@@ -175,20 +177,19 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
             var sparseSamplingSum = 0.0
             while(samplingLimit < currentTypeWeights.length && currentTypeWeights(samplingLimit) > 0.0) {
               val topic = currentTypeTopics(samplingLimit)
-
               //We have a big value, approximate exp(digamma(x)) by x - 0.5
               if (scale * currentTypeWeights(samplingLimit) > 5.0) {
-                samplingWeights(samplingLimit) = (beta + scale * currentTypeWeights(samplingLimit) - 0.5 - expDiGammaBeta) * topicNormalizers(topic)
+                samplingWeights(samplingLimit) = (beta + scale * currentTypeWeights(samplingLimit) - 0.5 - expDiGammaBeta) * topicCoefficients(topic)
               }
               else {
                 val appx = approximateExpDigamma(beta + scale * currentTypeWeights(samplingLimit))
-                samplingWeights(samplingLimit) = (appx - expDiGammaBeta) * topicNormalizers(topic)
+                samplingWeights(samplingLimit) = (appx - expDiGammaBeta) * topicCoefficients(topic)
               }
               sparseSamplingSum += samplingWeights(samplingLimit)
               samplingLimit += 1
             }
 
-            val Z = sparseSamplingSum + expDiGammaBeta * coefficientSum
+            val Z = sparseSamplingSum + coefficientSum * expDiGammaBeta
             val origSample = Z * random.nextDouble()
             var sample = origSample
             var newTopic = 0
@@ -222,18 +223,18 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
             }
 
             //We already decremented for oldTopic, thus update here no matter what
-            docTopicCounts(newTopic) +=1
+            Ndk(newTopic) +=1
             coefficientSum -= topicCoefficients(newTopic)
-            topicCoefficients(newTopic) = (alpha + docTopicCounts(newTopic)) * topicNormalizers(newTopic)
+            topicCoefficients(newTopic) = (alpha + Ndk(newTopic)) * topicNormalizers(newTopic)
             coefficientSum += topicCoefficients(newTopic)
 
             //if (oldTopic != newTopic) {
-              docTopics(wp) = newTopic
+              zs(currentTokenIndex) = newTopic
               wordGradientQueueTopics(wordGradientLimit) = newTopic
               wordGradientQueueTypes(wordGradientLimit) = word
               wordGradientLimit +=1
             //}
-            wp += 1
+            currentTokenIndex += 1
           }
         }
       }
@@ -257,11 +258,8 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
 
         topics(index) = topic
         weights(index) += wordWeight
-        topicTokenTotals(topic) += wordWeight
+        Nk(topic) += wordWeight
       }
-
-      //Reset!
-      wordGradientLimit = 0
 
       if (scale < 0.01) {
         println("Rescale: "+ iteration)
@@ -273,7 +271,6 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
       if (iteration % printTopicInterval == 1) {
         val iterationMsg = "Changes/Samples: %d/%d Rate:%f scale: "
         println(iterationMsg.format(currChanges, currSamples, (currChanges + 0.0)/currSamples) + scale)
-
         export()
         println(topicsSummary(10))
       }
