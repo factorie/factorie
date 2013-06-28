@@ -16,15 +16,15 @@ import cc.factorie.util.coref.GenericEntityMap
  */
 
 trait PairwiseCorefModel extends Parameters {
-  object MentionPairFeaturesDomain extends CategoricalTensorDomain[String] {
+  val MentionPairFeaturesDomain = new CategoricalTensorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
   }
-  object MentionPairCrossFeaturesDomain extends DiscreteTensorDomain {
+  val MentionPairCrossFeaturesDomain = new DiscreteTensorDomain {
     def dimensionDomain: DiscreteDomain = new DiscreteDomain(5e6.toInt + 1)
   }
 
-  object MentionPairLabelDomain extends CategoricalDomain[String] { this += "YES"; this += "NO"; freeze() }
+  val MentionPairLabelDomain = new CategoricalDomain[String] { this += "YES"; this += "NO"; freeze() }
 
   object MentionPairLabelThing {
     val tokFreq = new mutable.HashMap[String, Int]()

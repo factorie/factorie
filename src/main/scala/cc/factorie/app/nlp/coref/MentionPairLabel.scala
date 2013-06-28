@@ -156,7 +156,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
 }
 
 class MentionPairLabel(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], val initialValue: Boolean, options: Coref2Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
-  val domain = model.MentionPairLabelDomain
+  def domain = model.MentionPairLabelDomain
   val features = new MentionPairFeatures(model, mention1, mention2, mentions, options)
 }
 
