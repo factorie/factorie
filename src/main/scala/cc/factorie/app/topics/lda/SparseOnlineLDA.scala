@@ -5,6 +5,7 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 import cc.factorie.maths.digamma
 import cc.factorie.directed._
 import cc.factorie.la.DenseTensor1
+import java.io.PrintWriter
 
 /**
  * Created with IntelliJ IDEA.
@@ -16,17 +17,19 @@ import cc.factorie.la.DenseTensor1
 
 /* Implementation for Sparse Stochastic inference by Mimno et.al */
 class SparseOnlineLDA(val docProvider: WordSeqProvider,
-                      val numTopics: Int,
-                      val alpha: Double,
-                      val beta: Double,
-                      val batchSize: Int,
-                      val numSamples: Int,
-                      val burninSamples: Int,
-                      val learningRate: Double,
+                      val numTopics: Int = 200,
+                      val alpha: Double = 0.1,
+                      val beta: Double = 0.1,
+                      val batchSize: Int = 200,
+                      val numSamples: Int = 5,
+                      val burninSamples: Int = 2,
+                      val learningRate: Double = 100.0,
                       val kappa: Double = 0.6,
-                      val numBatches: Int)
+                      val maxIterations: Int=2000,
+                      val printTopicInterval: Int=10,
+                      val topicsFileName: String = "lda.topics")
 {
-  implicit val random = new scala.util.Random(0)
+  implicit val random = new scala.util.Random(1)
   implicit val model = DirectedModel()
 
   val wordDomain: CategoricalDomain[String] = docProvider.getWordDomain
@@ -68,7 +71,8 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
   }
 
   def train() {
-    println("numTypes: "+ numTypes+ " numTopics: "+ numTopics + " batchSize: "+ batchSize)
+    val infoMsg = "numTopics: %d numTypes: %d numDocs: %d maxIterations: %d"
+    println(infoMsg.format(numTopics, numTypes, numDocs, maxIterations))
 
     var wordGradientSize = 500000
     var docTopicsSize = 50000
@@ -99,10 +103,6 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     var numDocBucket = 0
     def totalSamples = numSparseBucket + numDocBucket
 
-    //Samples changes for last run, this should go down with #of iterations
-    var currSamples = 0
-    var currChanges = 0
-
     var scale = 1.0   // pi_t
     var iteration = 0 // t
 
@@ -113,11 +113,15 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     var docTopics = new Array[Int](docTopicsSize) // z assignment for the tokens
     val docTopicCounts = new Array[Int](numTopics) //Ndk, local to the document
 
-    while (iteration < numBatches) {
+    while (iteration < maxIterations) {
       if (iteration == skipIterations) startTime = System.currentTimeMillis()
 
       //This depends upon scale, hence needs to be update for every iteration
       for (topic <- 0 until numTopics) topicNormalizers(topic) = 1.0 / (betaSum + scale * topicTokenTotals(topic) - 0.5)
+
+      //Samples changes for last run, this should go down with #of iterations
+      var currSamples = 0
+      var currChanges = 0
 
       for (d <- 0 until batchSize) {
         val ws: CategoricalSeqVariable[String] = docProvider.getRandomDocument()
@@ -212,7 +216,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
             }
 
             //Keeps track of how many changes are happening per samples
-            if (sweep > burninSamples) {
+            if (sweep >= burninSamples) {
               currSamples += 1
               if (oldTopic != newTopic) currChanges += 1
             }
@@ -223,12 +227,12 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
             topicCoefficients(newTopic) = (alpha + docTopicCounts(newTopic)) * topicNormalizers(newTopic)
             coefficientSum += topicCoefficients(newTopic)
 
-            if (oldTopic != newTopic) {
+            //if (oldTopic != newTopic) {
               docTopics(wp) = newTopic
               wordGradientQueueTopics(wordGradientLimit) = newTopic
               wordGradientQueueTypes(wordGradientLimit) = word
               wordGradientLimit +=1
-            }
+            //}
             wp += 1
           }
         }
@@ -266,14 +270,12 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
         sortAndPrune(0.1)
       }
 
-      //if ((iteration % 10) == 1) println("iteration: "+ iteration)
+      if (iteration % printTopicInterval == 1) {
+        val iterationMsg = "Changes/Samples: %d/%d Rate:%f scale: "
+        println(iterationMsg.format(currChanges, currSamples, (currChanges + 0.0)/currSamples) + scale)
 
-      if (iteration % 100 == 0) {
-        println("iteration: "+ iteration +" Changes:"+ currChanges + " / "+ currSamples + " TotalSamples: " + numSparseBucket + "," +numDocBucket + "( "+ totalSamples+ ")")
         export()
         println(topicsSummary(10))
-        currChanges = 0
-        currSamples = 0
       }
 
       iteration += 1
@@ -281,7 +283,13 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     }
 
     val endTime = System.currentTimeMillis()
-    println("Time for "+ (numBatches - skipIterations)+ " iterations: "+ (endTime - startTime) / 1000 + "s")
+    val timeMsg = "Total time for %d iterations:%d s Docs Processed: %d\n"
+    println(timeMsg.format(maxIterations - skipIterations, (endTime - startTime)/1000, docsProcessed))
+
+    export()
+    val topicsWriter = new PrintWriter(topicsFileName)
+    topicsWriter.write(topicsSummary(50))
+    topicsWriter.close()
   }
 
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
@@ -359,7 +367,7 @@ object SparseOnlineLDA {
     val learningRate  = opts.learningRate.value
     val kappa         = opts.kappa.value
 
-    val docProvider = new DocumentProvider(opts.readLines.value)
+    val docProvider = new DocumentProvider(opts.readLines.value, 1)
     docProvider.processDocuments()
 
     val lda = new SparseOnlineLDA(docProvider, numTopics, alpha, beta, batchSize, numSamples, burninSamples, learningRate, kappa, opts.numBatches.value)
