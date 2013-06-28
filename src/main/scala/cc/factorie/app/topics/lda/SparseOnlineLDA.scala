@@ -23,7 +23,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
                       val batchSize: Int = 200,
                       val numSamples: Int = 5,
                       val burninSamples: Int = 2,
-                      val learningRate: Double = 100.0,
+                      val initLearningRate: Double = 100.0,
                       val kappa: Double = 0.6,
                       val maxIterations: Int=2000,
                       val printTopicInterval: Int=10,
@@ -41,7 +41,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
 
   var typeWeights:Array[Array[Double]] = null
   var typeTopics:Array[Array[Int]] = null //n_tw
-  val topicTokenTotals = new Array[Double](numTopics) // n_t
+  val Nk = new Array[Double](numTopics) // n_t
 
   def approximateExpDigamma(x: Double) = {
     var correction = 0.0;
@@ -70,6 +70,7 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     }
   }
 
+  //TODO: Remove for, foreach, to prevent boxing
   def train() {
     val infoMsg = "numTopics: %d numTypes: %d numDocs: %d maxIterations: %d"
     println(infoMsg.format(numTopics, numTypes, numDocs, maxIterations))
@@ -90,7 +91,6 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
     val topicCoefficients = new Array[Double](numTopics) // represent alpha + Ndk * topicNormalizer
 
     val samplingWeights = new Array[Double](numTopics)  // represent Part 1 of Eq15
-    val Nk = new Array[Double](numTopics)
 
     //Arrays to note what we sampled for the current batch
     var wordGradientQueueTopics = new Array[Int](wordGradientSize)
@@ -239,11 +239,11 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
         }
       }
 
-      var rowT: Double = math.pow(learningRate + iteration, -kappa)
-      scale *=  (1.0 - rowT)
+      val learningRate: Double = math.pow(initLearningRate + iteration, -kappa)
+      scale *=  (1.0 - learningRate)
 
       //wordWeight is contribution of one member, this does not depend on any other value
-      val wordWeight:Double = (rowT * wordWeightConstant) / scale // Nkw += (p_t * D) / (B * pi_t * numSamples) Nkw^s
+      val wordWeight:Double = (learningRate * wordWeightConstant) / scale // Nkw += (p_t * D) / (B * pi_t * numSamples) Nkw^s
 
       //Update word weights, go through all the samples.
       for (s <- 0 until wordGradientLimit) {
@@ -295,13 +295,14 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def sortAndPrune(cutoff: Double) {
-    for (word <- 0 until numTypes) {
-      val weights = typeWeights(word)
-      val topics = typeTopics(word)
+    var currWord = 0
+
+    while (currWord < numTypes) {
+      val weights = typeWeights(currWord)
+      val topics = typeTopics(currWord)
 
       var sortedLimit = 0
 
-      //TODO: These counts always increase! Why?
       while (sortedLimit < numTopics && weights(sortedLimit) > 0.0) {
         if (weights(sortedLimit) < cutoff) {
           weights(sortedLimit) = 0.0
@@ -323,16 +324,29 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
         }
         sortedLimit += 1
       }
+      currWord += 1
     }
   }
 
   //This is to prevent underflow,
   def rescale(scale: Double) {
-    for (word <- 0 until numTypes) {
-      val weights = typeWeights(word)
-      for (topic <- 0 until numTopics) weights(topic) *= scale
+    var currWord = 0
+    while (currWord < numTypes) {
+      val weights = typeWeights(currWord)
+
+      var currTopic = 0
+      while (weights(currTopic) > 0.0 && currTopic < numTopics) {
+        weights(currTopic) *= scale
+        currTopic +=1
+      }
+      currWord +=1
     }
-    for (topic <- 0 until numTopics) topicTokenTotals(topic) *= scale
+
+    var currTopic = 0
+    while (currTopic < numTopics)  {
+      Nk(currTopic) *= scale
+      currTopic += 1
+    }
   }
 }
 
@@ -350,8 +364,8 @@ object SparseOnlineLDA {
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val numBatches =    new CmdOption("num-batches", 5000, "N", "Num batches to process")
       val burninSamples = new CmdOption("burn-in-samples", 2, "N", "Burn in samples")
-      val learningRate =  new CmdOption("learning-rate", 100.0, "N", "Burn in samples")
-      val kappa =         new CmdOption("kappa", 0.6, "N", "learning rate exponent")
+      val initLearningRate =  new CmdOption("init-learning-rate", 100.0, "N", "initial learning Rate: 1.0 / [this value] + iteration")
+      val kappa =         new CmdOption("kappa", 0.6, "N", "learning rate exponent: exp(rowT, kappa)")
     }
 
     opts.parse(args)
@@ -361,7 +375,7 @@ object SparseOnlineLDA {
     val batchSize     = opts.batchSize.value
     val numSamples    = opts.numSamples.value
     val burninSamples = opts.burninSamples.value
-    val learningRate  = opts.learningRate.value
+    val learningRate  = opts.initLearningRate.value
     val kappa         = opts.kappa.value
 
     val docProvider = new DocumentProvider(opts.readLines.value, 1)
