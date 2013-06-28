@@ -17,10 +17,10 @@ import java.io.PrintWriter
 
 /* Implementation for Sparse Stochastic inference by Mimno et.al */
 class SparseOnlineLDA(val docProvider: WordSeqProvider,
-                      val numTopics: Int = 200,
+                      val numTopics: Int = 10,
                       val alpha: Double = 0.1,
                       val beta: Double = 0.1,
-                      val batchSize: Int = 200,
+                      val batchSize: Int = 100,
                       val numSamples: Int = 5,
                       val burninSamples: Int = 2,
                       val initLearningRate: Double = 100.0,
@@ -118,13 +118,18 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
 
       wordGradientLimit = 0
       //This depends upon scale, hence needs to be update for every iteration
-      for (topic <- 0 until numTopics) topicNormalizers(topic) = 1.0 / (betaSum + scale * Nk(topic) - 0.5)
+      var currTopic = 0
+      while (currTopic < numTopics) {
+        topicNormalizers(currTopic) = 1.0 / (betaSum + scale * Nk(currTopic) - 0.5)
+        currTopic += 1
+      }
 
       //Samples changes for last run, this should go down with #of iterations
       var currSamples = 0
       var currChanges = 0
 
-      for (d <- 0 until batchSize) {
+      var doc = 0
+      while(doc < batchSize) {
         //Get token list for a random document
         val ws: CategoricalSeqVariable[String] = docProvider.getRandomDocument()
         val numTokens = ws.length
@@ -150,9 +155,12 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
         java.util.Arrays.fill(Ndk, 0)
 
         var coefficientSum = 0.0
-        for (topic <- 0 until numTopics) {
-          topicCoefficients(topic) = (alpha + Ndk(topic)) * topicNormalizers(topic)
-          coefficientSum += topicCoefficients(topic)
+
+        var currTopic = 0
+        while (currTopic < numTopics) {
+          topicCoefficients(currTopic) = (alpha + Ndk(currTopic)) * topicNormalizers(currTopic)
+          coefficientSum += topicCoefficients(currTopic)
+          currTopic += 1
         }
 
         for (sweep <- 0 until numSamples) {
@@ -228,15 +236,15 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
             topicCoefficients(newTopic) = (alpha + Ndk(newTopic)) * topicNormalizers(newTopic)
             coefficientSum += topicCoefficients(newTopic)
 
-            //if (oldTopic != newTopic) {
-              zs(currentTokenIndex) = newTopic
-              wordGradientQueueTopics(wordGradientLimit) = newTopic
-              wordGradientQueueTypes(wordGradientLimit) = word
-              wordGradientLimit +=1
-            //}
+            zs(currentTokenIndex) = newTopic
+            wordGradientQueueTopics(wordGradientLimit) = newTopic
+            wordGradientQueueTypes(wordGradientLimit) = word
+            wordGradientLimit +=1
+
             currentTokenIndex += 1
           }
         }
+        doc += 1
       }
 
       val learningRate: Double = math.pow(initLearningRate + iteration, -kappa)
@@ -246,9 +254,10 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
       val wordWeight:Double = (learningRate * wordWeightConstant) / scale // Nkw += (p_t * D) / (B * pi_t * numSamples) Nkw^s
 
       //Update word weights, go through all the samples.
-      for (s <- 0 until wordGradientLimit) {
-        val word = wordGradientQueueTypes(s)
-        val topic = wordGradientQueueTopics(s)
+      var sampleNum = 0
+      while (sampleNum < wordGradientLimit) {
+        val word = wordGradientQueueTypes(sampleNum)
+        val topic = wordGradientQueueTopics(sampleNum)
 
         val weights = typeWeights(word)
         val topics = typeTopics(word)
@@ -259,6 +268,8 @@ class SparseOnlineLDA(val docProvider: WordSeqProvider,
         topics(index) = topic
         weights(index) += wordWeight
         Nk(topic) += wordWeight
+
+        sampleNum += 1
       }
 
       if (scale < 0.01) {
@@ -354,14 +365,13 @@ object SparseOnlineLDA {
 
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     new CmdOption("num-topics", 't', 1500, "N", "Number of topics.")
-      val batchSize =     new CmdOption("batch-size", 'b', 200, "N", "Number of documents to be process in one go")
+      val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
+      val batchSize =     new CmdOption("batch-size", 'b', 100, "N", "Number of documents to be process in one go")
       val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
       val beta =          new CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
       val numSamples =    new CmdOption("num-samples", 'i', 5, "N", "Number of sweeps.")
       val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
-      val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val numBatches =    new CmdOption("num-batches", 5000, "N", "Num batches to process")
       val burninSamples = new CmdOption("burn-in-samples", 2, "N", "Burn in samples")
       val initLearningRate =  new CmdOption("init-learning-rate", 100.0, "N", "initial learning Rate: 1.0 / [this value] + iteration")
