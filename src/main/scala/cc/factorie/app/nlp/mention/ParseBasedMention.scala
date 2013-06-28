@@ -84,7 +84,10 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       //   3. other nouns in a noun phrase
       if (copularPhrase || apposition || parentIsNoun) None
       else {
-        val subtree = (Seq(t) ++ s.parse.subtree(si)).sortBy(_.position)
+        val subtree = (Seq(t) ++ {
+          //s.parse.subtree(si)
+          Seq(si) ++ s.parse.getChildrenIndices(si).filterNot(ci => s.tokens(ci).posLabel.categoryValue.startsWith("V")).flatMap(s.parse.getSubtreeInds(_)).distinct
+        }.map(i => s.tokens(i))).sortBy(_.position)
         usedTokens ++= subtree
         val (start, length) = subtree.size match {
           // leaf of the parse
