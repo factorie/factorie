@@ -10,7 +10,7 @@ import cc.factorie._
  * To change this template use File | Settings | File Templates.
  */
 trait WordSeqProvider {
-  def processDocuments(): Unit
+  def initializeDocuments(): Stream[CategoricalSeqVariable[String]]
   def getRandomDocument(): CategoricalSeqVariable[String]
   def getWordDomain: CategoricalDomain[String]
   def numDocs:Int
