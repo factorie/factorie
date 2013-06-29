@@ -147,7 +147,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
       if (_parents(i) == parentIndex) result += i
       i += 1
     }
-    result.filterNot(filter)
+    result.sorted.takeWhile( i => !filter(i))
   }
 
   def subtree(parentIndex:Int): Seq[Token] = {

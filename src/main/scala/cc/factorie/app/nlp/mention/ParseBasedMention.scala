@@ -20,10 +20,28 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private def isProperNoun     (t: Token) = PROPER_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
   private def isNoun           (t: Token) = ALL_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
 
+  var FILTER_APPOS = true /* This flag is so that appositive filtering can be turned off.
+                            If the mentions that we are extracting do not include the appositives as part of a mention
+                            we want to make sure that we are extracting the appositives separately
+                            default behavior is that we do filter the appositives.   */
+
+
   private def nerSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
       Mention(section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
+  }
+
+  private def NNPSpans(doc : Document) : Seq[Mention] = {
+    val spans = ArrayBuffer[ArrayBuffer[Token]]()
+    spans += ArrayBuffer[Token]()
+    for(section <- doc.sections; sentence <- section.sentences; token <- sentence.tokens) {
+      if(spans.last.nonEmpty && spans.last.last.next != token) spans += ArrayBuffer[Token]()
+      if(isProperNoun(token)) spans.last += token
+    }
+    if(spans.nonEmpty && spans.last.isEmpty) spans.remove(spans.length-1)
+    (for(span <- spans) yield
+      Mention(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection)).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
@@ -76,16 +94,18 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       val parentIsNoun = s.parse.parent(si) != null && isNoun(s.parse.parent(si))
       val prevWordIsComma = t.hasPrev && t.prev.string == ","
       val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
-      val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
+      //val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
+      val apposition = s.parse.label(si).categoryValue == "appos"
 
       // skip tokens that are:
       //   1. part of a copular phrase,
       //   2. appositive clauses,
       //   3. other nouns in a noun phrase
-      if (copularPhrase || apposition || parentIsNoun) None
+      if (FILTER_APPOS && (copularPhrase || apposition ||  parentIsNoun)) None
+      else if(copularPhrase || parentIsNoun && !apposition) None
       else {
         val subtree = (Seq(t) ++ {
-          val filter = { ci : Int => s.tokens(ci).posLabel.categoryValue.startsWith("V") }
+          val filter = { ci : Int => s.tokens(ci).posLabel.categoryValue.startsWith("V") || s.tokens(ci).posLabel.categoryValue.startsWith("CC") || s.parse.label(ci).categoryValue == "appos" }
           Seq(si) ++ s.parse.getChildrenIndices(si, filter).flatMap(s.parse.getSubtreeInds(_,filter)).distinct
         }.map(i => s.tokens(i))).sortBy(_.position)
         usedTokens ++= subtree
@@ -95,8 +115,9 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
           // non-leaf
           case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
         }
+        val commaLength = if(subtree.last.string == ",") length-1 else length
         val headTokenIndexInSpan = t.position - start
-        val res = Some(Mention(section, start, length,headTokenIndexInSpan))
+        val res = Some(Mention(section, start, commaLength, headTokenIndexInSpan))
 
         res
       }
@@ -131,6 +152,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
+    docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
     doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)

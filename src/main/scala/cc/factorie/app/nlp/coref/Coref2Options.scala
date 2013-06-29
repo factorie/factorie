@@ -22,6 +22,7 @@ class Coref2Options {
 
   def useEntityType = configHash("useEntityType")
 
+  var mergeMentionWithApposition = false
   var useMIRA = true
   var useAverageIterate = false
   var numTrainingIterations = 5
