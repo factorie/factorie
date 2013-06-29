@@ -150,6 +150,7 @@ object MentionAlignment {
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap) {
+    cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = false
     val a = new DocumentAnnotator {
       def process1(document: Document) = document
       def prereqAttrs = Seq(classOf[MentionList])

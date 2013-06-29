@@ -37,6 +37,7 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val useNonGoldBoundaries = new CmdOption("use-nongold-boundaries",false,"BOOLEAN","whether to use non-gold mention boundaries")
   val mentionAlignmentShiftWidth = new CmdOption("alignment-width",0,"INT","tolerance on boundaries when aligning detected mentions to gt mentions")
   val useEntityType = new CmdOption("use-entity-type",true,"BOOLEAN","whether to use entity type info")
+  val mergeAppositions = new CmdOption("mergeAppositions",false,"BOOLEAN","whether to merge appositions as a rule")
 }
 
 object WithinDocCoref2Trainer {
@@ -97,6 +98,8 @@ object WithinDocCoref2Trainer {
     options.slackRescale = opts.slackRescale.value
     options.mentionAlignmentShiftWidth = opts.mentionAlignmentShiftWidth.value
     options.useNonGoldBoundaries = opts.useNonGoldBoundaries.value
+    options.mergeMentionWithApposition = opts.mergeAppositions.value
+
     // options still in flux
     options.mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
     options.conjunctionStyle = opts.conjunctionStyle.value match {
