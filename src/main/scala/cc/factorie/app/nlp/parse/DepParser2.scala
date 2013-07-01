@@ -454,15 +454,15 @@ object DepParser2 extends DepParser2 {
 }
 
 class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
-  val trainFiles =  new CmdOption("train", "", "STRING", "")
-  val testFiles =  new CmdOption("test", "", "STRING", "")
-  val devFiles =   new CmdOption("dev", "", "STRING", "")
+  val trainFiles =  new CmdOption("train", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
+  val testFiles =  new CmdOption("test", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
+  val devFiles =   new CmdOption("dev", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
   val cutoff    = new CmdOption("cutoff", "0", "", "")
   val loadModel = new CmdOption("load", "", "", "")
-  val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use")
+  val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use during training.")
   val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
-  val modelDir =  new CmdOption("model", "model", "STRING", "Directory in which to save the trained model.")
+  val modelDir =  new CmdOption("model", "model", "FILENAME", "File in which to save the trained model.")
   val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
@@ -476,25 +476,17 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     val opts = new DepParser2Args
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    import opts._
 
     // Load the sentences
-    var loader = LoadConll2008.fromFilename(_)
-    if (ontonotes.value)
-      loader = LoadOntonotes5.fromFilename(_)
-
-    def loadSentences(o: CmdOption[String]): Seq[Sentence] = {
-      if (o.wasInvoked) loader(o.value).head.sentences.toSeq
+    def loadSentences(o: opts.CmdOption[Seq[String]]): Seq[Sentence] = {
+      if (o.wasInvoked) o.value.flatMap(filename => (if (opts.ontonotes.value) LoadOntonotes5.fromFilename(filename) else LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
       else Seq.empty[Sentence]
     }
-
-    val sentences = loadSentences(trainFiles)
-    val devSentences = loadSentences(devFiles)
-    val testSentences = loadSentences(testFiles)
-
+    val sentences = loadSentences(opts.trainFiles)
+    val devSentences = loadSentences(opts.devFiles)
+    val testSentences = loadSentences(opts.testFiles)
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
-
 
     def testSingle(c: DepParser2, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
@@ -516,30 +508,29 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     }
 
     // Load other parameters
-    val numBootstrappingIterations = bootstrapping.value.toInt
+    val numBootstrappingIterations = opts.bootstrapping.value.toInt
     val c = new DepParser2
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
-    val trainer = if (useSVM.value) new SVMMultiClassTrainer()
+    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
       else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }
-    var trainingVs = c.generateDecisions(sentences, 0, nThreads.value)
+    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
     c.featuresDomain.freeze()
     println("# features " + c.featuresDomain.dimensionDomain.size)
     c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + i)
-      c.boosting(sentences, nThreads=nThreads.value, trainer=trainer, evaluate=evaluate)
+      c.boosting(sentences, nThreads=opts.nThreads.value, trainer=trainer, evaluate=evaluate)
     }
     testSentences.par.foreach(c.process)
-    if (saveModel.value) {
-      val modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString + ".parser"
-      //c.save(new java.io.File(modelUrl), gzip = true)
+    if (opts.saveModel.value) {
+      val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
     }
     ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
