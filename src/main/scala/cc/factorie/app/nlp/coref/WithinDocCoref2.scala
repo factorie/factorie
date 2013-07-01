@@ -248,7 +248,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2.mention) == predMap.reverseMap(m2.mention))
         mergeFeatures(candLabel, mergeables)
         candLabels += candLabel
-        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains)  || options.mergeMentionWithApposition && m1.isAppositionOf(m2)) Double.PositiveInfinity
+        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains)  || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
         else model.score(candLabel.value)
         // Pronouns should always link to something
         if (score > 0.0) {
@@ -288,7 +288,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
         mergeFeatures(candLabel, mergeables)
         candLabels += candLabel
         // Always link exact head matches
-        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) &&  m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && m1.isAppositionOf(m2)) Double.PositiveInfinity
+        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) &&  m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
              else model.score(candLabel.value)
         // Pronouns should always link to something
         if (score > 0.0) {
@@ -318,7 +318,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
             mergeFeatures(candLabel, mergeables)
             candLabels += candLabel
             // Always link exact head matches
-            val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && m1.isAppositionOf(m2)) Double.PositiveInfinity
+            val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
             else model.score(candLabel.value)
             // Pronouns should always link to something
             if (score > 0.0) {

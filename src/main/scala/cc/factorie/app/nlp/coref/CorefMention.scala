@@ -65,8 +65,8 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   val isPossessive = CorefMention.posSet.contains(mention.headToken.posLabel.categoryValue)
 
   def isAppositionOf(m : CorefMention) : Boolean = {
-    val isAppo = m.headToken.parseLabel.categoryValue == "appos"
-    val isChildOf = m.headToken.parseParent == m.headToken
+    val isAppo = headToken.parseLabel.categoryValue == "appos"
+    val isChildOf = headToken.parseParent == m.headToken
     isAppo && isChildOf
   }
 
