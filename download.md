@@ -16,7 +16,7 @@ The latest release of Factorie is 1.0.0-M4.
 Or, you can can check out the latest snapshot version by:
 
 ```
-    $ hg clone https://factorie.googlecode.com/hg/ factorie
+    $ git clone https://github.com/factorie/factorie.git
 ```
 
 See [Installation](installation.html) for details.
@@ -37,4 +37,4 @@ Earlier Versions
 
 To download the earlier versions of Factorie (for example 0.10.2), check out the source as above, followed by:
 
-    $ hg update -C "factorie-0.10.2" .
+    $ git checkout "factorie-0.10.2"
