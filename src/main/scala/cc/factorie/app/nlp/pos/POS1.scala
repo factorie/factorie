@@ -266,7 +266,7 @@ class POS1 extends DocumentAnnotator {
   
 
   
-  def train(trainDocs:Seq[Document], testDocs:Seq[Document], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 2, l1Factor:Double = 0.000001, l2Factor:Double = 0.00001)(implicit random: scala.util.Random) {
+  def train(trainDocs:Seq[Document], testDocs:Seq[Document], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.00001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     for (doc <- (trainDocs ++ testDocs)) {
       cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process1(doc)
