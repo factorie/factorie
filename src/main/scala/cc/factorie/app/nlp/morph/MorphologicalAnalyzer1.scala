@@ -33,5 +33,5 @@ class MorphologicalAnalyzer1(fmap: String => io.Source) {
 
 // TODO Robustify this lookup using cc.factorie.util.InputStreamFromClasspath -akm
 object MorphologicalAnalyzer1 extends MorphologicalAnalyzer1((s:String) => {
-  io.Source.fromURL(ClasspathURL.withoutClass(classOf[Lexicon], s))
+  io.Source.fromURL(ClasspathURL.fromDirectory[Lexicon](s))
 })
