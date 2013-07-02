@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 import cc.factorie.maths.digamma
 import cc.factorie.directed._
 import cc.factorie.la.DenseTensor1
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import scala.util.matching.Regex
 
 /**
@@ -363,6 +363,38 @@ class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
 }
 
 object SparseOnlineLDA {
+  val docBuffer = new ArrayBuffer[Doc]
+  val minDocLength = 3
+  var numDocs = 0
+
+  object WordSeqDomain extends CategoricalSeqDomain[String]
+  val tokenRegex = new Regex("\\p{Alpha}+")
+  val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(tokenRegex)
+
+  def nextDocument(): Stream[CategoricalSeqVariable[String]] = {
+    Stream.cons(getRandomDocument(), nextDocument())
+  }
+
+  //Adds documents and returns the word domain
+  def initializeDocuments(fileName:String): Stream[CategoricalSeqVariable[String]] = {
+    val source = scala.io.Source.fromFile(new File(fileName))
+    var count = 0
+    for (line <- source.getLines()) {
+      val text: String = line
+      val doc = Document.fromString(WordSeqDomain, fileName +":"+count, text, segmenter = mySegmenter)
+      if (doc.length >= minDocLength) docBuffer += doc
+      count += 1
+      if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
+    }
+    source.close()
+    numDocs = docBuffer.length
+    nextDocument()
+  }
+
+  def getRandomDocument(): CategoricalSeqVariable[String] = {
+    val docIndex = random.nextInt(numDocs)
+    docBuffer(docIndex).ws
+  }
 
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -390,13 +422,9 @@ object SparseOnlineLDA {
     val kappa         = opts.kappa.value
 
     implicit val random = new scala.util.Random(1)
-    val tokenRegex = new Regex("\\p{Alpha}+")
-    val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(tokenRegex)
 
-    val docProvider = new DocumentProvider(opts.readLines.value, mySegmenter)
-    val docs:Stream[CategoricalSeqVariable[String]] = docProvider.initializeDocuments()
-    val numDocs = docProvider.numDocs
-    val wordDomain = docProvider.getWordDomain
+    val docs:Stream[CategoricalSeqVariable[String]] = initializeDocuments(opts.readLines.value)
+    val wordDomain = WordSeqDomain.elementDomain
 
     val lda = new SparseOnlineLDA(wordDomain, numDocs, numTopics, alpha, beta, batchSize, numSamples, burninSamples, learningRate, kappa, opts.numBatches.value)
     lda.train(docs)
