@@ -358,6 +358,10 @@ class Dense2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val newTens
 
 }
 
+object Singleton2LayeredTensorLike3 {
+  var haveWarned = false
+}
+
 // singletonindexed2, tensor1
 trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with ReadOnlyTensor {
   def singleIndex1: Int
@@ -379,6 +383,12 @@ trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq with Rea
     case t:SingletonBinaryTensor3 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2) inner(t.singleIndex3) else 0.0
     case t:SingletonTensor3 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2) inner(t.singleIndex3) * t.singleValue else 0.0
     case t:Singleton2LayeredTensorLike3 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2) inner.dot(t.inner) else 0.0
+    case _: Tensor =>
+      if (!Singleton2LayeredTensorLike3.haveWarned) {
+        Singleton2LayeredTensorLike3.haveWarned = true
+        println(s"Warning: Singleton2LayeredTensorLike3 has no dot case for ${t.getClass.getName}")
+      }
+      var res = 0.0; foreachActiveElement((i, v) => res += t(i)*v); res
   }
 }
 class Singleton2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, var singleIndex1:Int, var singleIndex2:Int, var singleValue1:Double, var singleValue2:Double, var inner:Tensor1) extends Singleton2LayeredTensorLike3
