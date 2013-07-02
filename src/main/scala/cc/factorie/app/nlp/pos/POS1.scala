@@ -224,7 +224,7 @@ class POS1 extends DocumentAnnotator {
 
   // Serialization
   def serialize(filename: String): Unit = {
-    val file = new File(filename); if (file.getParentFile eq null) file.getParentFile.mkdirs()
+    val file = new File(filename); if (file.getParentFile ne null) file.getParentFile.mkdirs()
     serialize(new java.io.FileOutputStream(file))
   }
   def deserialize(file: File): Unit = {

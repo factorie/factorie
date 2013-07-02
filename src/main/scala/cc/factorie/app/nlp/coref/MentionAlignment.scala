@@ -138,7 +138,8 @@ object MentionAlignment {
   def checkContainment(h: mutable.HashMap[(Int,Int),Mention], start: Int, length: Int, options: Coref2Options): Option[Mention] = {
     val startIdx = start
     val endIdx = start + length
-    for (startShift <- Seq(0); endShift <- Seq(0); if startIdx + startShift <= endIdx + endShift) {
+    val shifts = (-1*options.mentionAlignmentShiftWidth to options.mentionAlignmentShiftWidth)
+    for (startShift <- shifts; endShift <- shifts; if startIdx + startShift <= endIdx + endShift) {
       val newStart = startIdx + startShift
       val newEnd = endIdx + endShift
       val key = (newStart, newEnd - newStart)
