@@ -147,7 +147,6 @@ class SparseLDAInferencer(
       val wi = ws.intValue(zp) // intValue of word, "word index"
       //assert(wi < WordDomain.size)
       val ntd = localTopicCounts(ti); //assert(ntd > 0) // n_{t|d}
-      val nt = phiCounts.mixtureCounts(ti); //assert(nt > 0)
       val phiCountsWi = phiCounts(wi)
       //assert(phiCountsWi.countOfIndex(ti) > 0) //ANTON: Note that this is a time-consuming statement.
 
@@ -164,7 +163,6 @@ class SparseLDAInferencer(
       topicBetaMass -= beta1 * ntd * cachedDenominators(ti)
 
       cachedDenominators(ti) = 1.0 / (betaSum + phiCounts.mixtureCounts(ti) -1)
-       //nt -> nt-1
       cachedSmoothing(ti) = alphas(ti) * cachedDenominators(ti)
       smoothingMass += cachedSmoothing(ti) * beta1
       topicBetaMass += beta1 * (ntd-1) * cachedDenominators(ti)
@@ -291,17 +289,18 @@ class SparseLDAInferencer(
         val newNt = phiCounts.mixtureCounts(newTi)
         val newNtd = localTopicCounts(newTi) // n_{t|d}
         smoothingMass -= cachedSmoothing(newTi) * beta1
-        cachedSmoothing(newTi) = alphas(newTi) / (newNt + betaSum)
-        smoothingMass += cachedSmoothing(newTi) * beta1
+        topicBetaMass -= beta1 * (newNtd-1) * cachedDenominators(newTi)
+
         cachedDenominators(newTi) = 1.0 / (betaSum + newNt)
+        cachedSmoothing(newTi) = alphas(newTi) * cachedDenominators(newTi)
+        smoothingMass += cachedSmoothing(newTi) * beta1
         if (smoothingMass <= 0.0) {
           println("smoothingMass="+smoothingMass+" alphas(ti)=%f beta1=%f newNt=%d betaSum=%f".format(alphas(ti), beta1, newNt, betaSum))
           val smoothingMass2 = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum))) // TODO This foldLeft does boxing.
           println("recalc smoothingMass="+smoothingMass2)
         }
-        topicBetaMass -= beta1 * (newNtd-1) / ((newNt-1) + betaSum)
-        topicBetaMass += beta1 * newNtd / (newNt + betaSum)
-        cachedCoefficients(newTi) = (alphas(newTi) + newNtd) / (newNt + betaSum)
+        topicBetaMass += beta1 * newNtd * cachedDenominators(newTi)
+        cachedCoefficients(newTi) = (alphas(newTi) + newNtd) * cachedDenominators(newTi)
         //cachedCoefficients(ti) = (alphas(ti) + (ntd-1)) / ((nt-1) + betaSum) // Already done above
         zs.set(zp, newTi)(null)  // Set the new value of z!
       } else {
