@@ -48,8 +48,8 @@ class SparseLDAInferencer(
     smoothingMass = 0
     var t = 0
     while(t < numTopics){
-      cachedDenominators(t) = phiCounts.mixtureCounts(t) + betaSum
-      val topicSmoothing = alphas(t) / cachedDenominators(t)
+      cachedDenominators(t) = 1.0 / (phiCounts.mixtureCounts(t) + betaSum)
+      val topicSmoothing = alphas(t) * cachedDenominators(t)
       cachedCoefficients(t) = topicSmoothing
       cachedSmoothing(t) = topicSmoothing
       smoothingMass += topicSmoothing
@@ -126,8 +126,8 @@ class SparseLDAInferencer(
       //val ti = docTopicCounts.indexAtPosition(p) // topic index
       val ti = localTopicIndex(denseIndex)
       val ntd = localTopicCounts(ti) // n_{t|d}
-      topicBetaMass += ntd / cachedDenominators(ti)
-      cachedCoefficients(ti) = (alphas(ti) + ntd) / cachedDenominators(ti)
+      topicBetaMass += ntd * cachedDenominators(ti)
+      cachedCoefficients(ti) = (alphas(ti) + ntd) * cachedDenominators(ti)
       denseIndex += 1
     }
 
@@ -156,18 +156,20 @@ class SparseLDAInferencer(
       val origTopicBetaMass = topicBetaMass
       val origCachedCoefficientTi = cachedCoefficients(ti)
       val origCachedSmoothingTi = cachedSmoothing(ti)
+      val origCachedDenominatorTi = cachedDenominators(ti)
 
       smoothingMass -= cachedSmoothing(ti) * beta1
-      topicBetaMass -= beta1 * ntd / cachedDenominators(ti)
+      topicBetaMass -= beta1 * ntd * cachedDenominators(ti)
 
-      cachedDenominators(ti) -= 1 //nt -> nt-1
-      cachedSmoothing(ti) = alphas(ti) / cachedDenominators(ti)
+      cachedDenominators(ti) = 1.0 / (betaSum + phiCounts.mixtureCounts(ti) -1)
+       //nt -> nt-1
+      cachedSmoothing(ti) = alphas(ti) * cachedDenominators(ti)
       smoothingMass += cachedSmoothing(ti) * beta1
-      topicBetaMass += beta1 * (ntd-1) / cachedDenominators(ti)
+      topicBetaMass += beta1 * (ntd-1) * cachedDenominators(ti)
 
       // Reset cachedCoefficients
       // If this is the last ti in this document and newTi != ti, then this value matches the "smoothing only" cachedCoefficient we want when we are done with this document
-      cachedCoefficients(ti) = (alphas(ti) + (ntd-1)) / cachedDenominators(ti)
+      cachedCoefficients(ti) = (alphas(ti) + (ntd-1)) * cachedDenominators(ti)
 
       // q = \sum_t ...  [Mimno "Sparse LDA"]
       var phiCountsWiTiPosition = -1
@@ -218,9 +220,13 @@ class SparseLDAInferencer(
         while (sample > 0.0 && denseIndex < nonZeroTopics) {
 
           newTi = localTopicIndex(denseIndex)
-          val nNewTiD = localTopicCounts(newTi)
+          var nNewTiD = localTopicCounts(newTi)
 
-          sample -= nNewTiD / cachedDenominators(newTi)
+          if (newTi == ti) {
+            nNewTiD -= 1
+          }
+
+          sample -= nNewTiD * cachedDenominators(newTi)
           denseIndex += 1
         }
         // Allow for rounding error, but not too much
@@ -285,7 +291,7 @@ class SparseLDAInferencer(
         smoothingMass -= cachedSmoothing(newTi) * beta1
         cachedSmoothing(newTi) = alphas(newTi) / (newNt + betaSum)
         smoothingMass += cachedSmoothing(newTi) * beta1
-        cachedDenominators(newTi) += 1
+        cachedDenominators(newTi) = 1.0 / (betaSum + newNt)
         if (smoothingMass <= 0.0) {
           println("smoothingMass="+smoothingMass+" alphas(ti)=%f beta1=%f newNt=%d betaSum=%f".format(alphas(ti), beta1, newNt, betaSum))
           val smoothingMass2 = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum))) // TODO This foldLeft does boxing.
@@ -301,7 +307,7 @@ class SparseLDAInferencer(
         topicBetaMass = origTopicBetaMass
         cachedCoefficients(ti) = origCachedCoefficientTi
         cachedSmoothing(ti) = origCachedSmoothingTi
-        cachedDenominators(ti) +=1
+        cachedDenominators(ti) = origCachedDenominatorTi
       }
 
       //val cachedCoefficients = Array.tabulate(numTopics)(t => alphas(t) / (phiCounts.mixtureCounts(t) + betaSum))
