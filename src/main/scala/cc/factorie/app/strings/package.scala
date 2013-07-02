@@ -82,6 +82,9 @@ package object strings {
   def collapseDigits(word:String): String = {
     if (cc.factorie.app.nlp.lexicon.NumberWords.containsWord(word) || containsDigitRegex.findFirstIn(word).nonEmpty) "0" else word
   }
+  def replaceDigits(word:String): String = {
+    if (cc.factorie.app.nlp.lexicon.NumberWords.containsWord(word)) "<NUM>" else digitsRegex.replaceAllIn(word, "0")
+  }
 
   /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */
   def editDistance(s:String, s2: String, substCost: Int = 1, deleteCost: Int = 1, insertCost: Int = 1): Int = {

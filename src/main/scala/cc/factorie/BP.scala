@@ -315,13 +315,15 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
     if (hasLimitedDiscreteValues12) {
       //throw new Error("This code path leads to incorrect marginals")
       //println("BPFactor2SumProduct calculateOutgoing1")
-      val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 can't everything"); var ii = 0
+      val indices = limitedDiscreteValues12._indices.toSet
+      val len = edge1.variable.domain.size * edge2.variable.domain.size;  /* require(len > 0, "limitedDiscreteValues12 can't everything"); */ var ii = 0
       while (ii < len) {
-        val ij = indices(ii)
-        val i = scores.index1(ij)
-        val j = scores.index2(ij)
-        result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j)) // TODO This could be scores(ij)
+        val i = scores.index1(ii)
+        val j = scores.index2(ii)
+        if (indices.contains(ii))
+          result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j)) // TODO This could be scores(ij)
+        else
+          result(i) = cc.factorie.maths.sumLogProb(result(i), edge2.messageFromVariable(j))
         ii += 1
       }
     } else {
@@ -342,13 +344,17 @@ trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
       //throw new Error("This code path leads to incorrect marginals")
-      val indices: Array[Int] = limitedDiscreteValues12._indices
-      val len = limitedDiscreteValues12.activeDomainSize; require(len > 0, "limitedDiscreteValues12 limits everything"); var ii = 0
+      val indices = limitedDiscreteValues12._indices.toSet
+      val len = edge1.variable.domain.size * edge2.variable.domain.size //limitedDiscreteValues12.activeDomainSize; /* require(len > 0, "limitedDiscreteValues12 limits everything"); */
+      var ii = 0
       while (ii < len) {
-        val ij = indices(ii)
-        val i = scores.index1(ij)
-        val j = scores.index2(ij)
-        result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i)) // TODO This could be scores(ij)
+        val i = scores.index1(ii)
+        val j = scores.index2(ii)
+        if (indices.contains(ii)) {
+          result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i)) // TODO This could be scores(ij)
+        } else {
+          result(j) = cc.factorie.maths.sumLogProb(result(j), edge1.messageFromVariable(i))
+        }
         ii += 1
       }
     } else {
@@ -737,7 +743,7 @@ object BP {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]].toArray // this includes both Factor1[Label], Factor2[Label,Features]
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]].toArray
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
-        assert(markovBPFactors.length < 2 || markovBPFactors.sliding(2).forall(fs => fs(0).edge2.bpVariable == fs(1).edge1.bpVariable)) // Make sure we got the Markov chain factors in order!
+        // assert(markovBPFactors.length < 2 || markovBPFactors.sliding(2).forall(fs => fs(0).edge2.bpVariable == fs(1).edge1.bpVariable)) // Make sure we got the Markov chain factors in order!
         // Send all messages from observations to labels in parallel
         obsBPFactors.foreach(_.edge1.bpFactor.updateOutgoing())
         // Send forward messages

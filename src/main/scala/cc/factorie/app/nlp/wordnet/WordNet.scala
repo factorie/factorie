@@ -195,7 +195,7 @@ class Synset(val id: String, val hyps: Set[String], val ants: Set[String], wn: W
   }
 }
 
-object WordNet extends WordNet(s => ClasspathURL.withoutClass(classOf[WordNet], s).openConnection().getInputStream)
+object WordNet extends WordNet(s => ClasspathURL.fromDirectory[WordNet](s).openConnection().getInputStream)
 
 object WordNetTest {
   

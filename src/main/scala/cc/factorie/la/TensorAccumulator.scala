@@ -58,6 +58,10 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
             val newT = Tensor.newSparse(t)
             newT += (t,d)
             map(key) = newT
+          case t: Singleton2BinaryLayeredTensor3 =>
+            val newT = Tensor.newSparse(t)
+            newT += (t,d)
+            map(key) = newT
           case t: Tensor =>
             t *= d
             map(key) = t

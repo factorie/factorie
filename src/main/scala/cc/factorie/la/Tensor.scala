@@ -175,6 +175,7 @@ object Tensor {
     }
     case t1:Tensor2 => t2 match {
       case t2:Tensor2 => outer(t1, t2)
+      case t2:Tensor1 => new Outer2Tensor3(t1, t2)
     }
   }
   def outer(t1:Tensor, t2:Tensor, t3:Tensor): Tensor = t1 match {
