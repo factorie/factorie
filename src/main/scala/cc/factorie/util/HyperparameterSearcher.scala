@@ -33,7 +33,7 @@ class SampleFromSeq[T](seq: Seq[T]) extends ParameterSampler[T] {
 // Samples non-uniformly one of the values in the sequence.
 class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends ParameterSampler[T] {
   val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
-  def valueToBucket(v: T) = buckets.indexOf(v)
+  def valueToBucket(v: T) = (0 until buckets.length).filter(i => buckets(i)._1 == v).head
   def sample(rng: Random) = seq(prop.sampleIndex(rng))
 }
 
