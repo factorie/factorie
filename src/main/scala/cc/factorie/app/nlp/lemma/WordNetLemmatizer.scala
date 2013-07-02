@@ -98,7 +98,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   }
 }
 
-object WordNetLemmatizer extends WordNetLemmatizer(string => ClasspathURL.withoutClass(classOf[WordNet], string).openConnection().getInputStream)
+object WordNetLemmatizer extends WordNetLemmatizer(string => ClasspathURL.fromDirectory[WordNet](string).openConnection().getInputStream)
 
 //string => {
 //import java.io.File
