@@ -36,6 +36,7 @@ trait DocumentAnnotator {
   def preProcess(doc: Document, annotatorMap: DocumentAnnotatorLazyMap): Unit = {
     for (prereq <- prereqAttrs) if (!doc.hasAnnotation(prereq)) {
       //println("DocumentAnnotator.preProcess needing to add "+prereq)
+      if (!annotatorMap.contains(prereq)) throw new Error(getClass.toString+": annotator for prereq "+prereq+" not found.")
       val annotator = annotatorMap(prereq)()
       // Make sure we won't over-write some pre-existing annotation
       for (a <- annotator.postAttrs) 
