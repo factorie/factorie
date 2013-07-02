@@ -26,6 +26,8 @@ class SparseLDAInferencer(
   private val cachedSmoothing = new Array[Double](numTopics)
   private val cachedDenominators = new Array[Double](numTopics)
 
+  private val topicTermScores = new Array[Double](numTopics)
+
   if (verbosity > 0) println("Finished initializing phiCounts")
   if (verbosity > 5) println("nt "+phiCounts.mixtureCounts.mkString(" "))
 
@@ -175,7 +177,7 @@ class SparseLDAInferencer(
       var phiCountsWiTiPosition = -1
 
       var topicTermMass = 0.0
-      val topicTermScores = new Array[Double](phiCountsWi.numPositions)
+
       var tp = 0
       while(tp < phiCountsWi.numPositions){
         val ti2 = phiCountsWi.indexAtPosition(tp)
