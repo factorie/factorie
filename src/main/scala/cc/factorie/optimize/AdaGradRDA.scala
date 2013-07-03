@@ -109,6 +109,11 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
             gradSquares(i) += arr(i)*arr(i)*factor*factor
             i += 1
           }
+        case o: Outer1Tensor2 =>
+          o.foreachActiveElement((i, v) => {
+            gradients(i) += v*factor
+            gradSquares(i) += v*v*factor*factor
+          })
         case _ => throw new Error("no match statement for " + ds.getClass.getName)
       }
     }
