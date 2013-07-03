@@ -6,12 +6,9 @@ group: tutorial
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
 
-Templates Tutorial
-=================
-
 ```scala
 
-package cc.factorie.example
+package cc.factorie.tutorial
 
 object TutorialTemplate {
   

@@ -6,12 +6,9 @@ group: tutorial
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
 
-Domain Tutorial
-=================
-
 ```scala
 
-package cc.factorie.example
+package cc.factorie.tutorial
 
 import org.junit.Assert._
 import cc.factorie._

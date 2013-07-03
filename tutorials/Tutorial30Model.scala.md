@@ -6,6 +6,12 @@ group: tutorial
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
 
+```scala
+
+
+```
+
+
 Model Tutorial
 ==============
 
@@ -16,7 +22,7 @@ The trait ``Model`` leaves abstract how this mapping from Variables to Factors i
 
 ```scala
 
-package cc.factorie.example
+package cc.factorie.tutorial
 
 import cc.factorie._
 import cc.factorie.la._
