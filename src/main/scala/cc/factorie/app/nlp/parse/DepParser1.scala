@@ -317,7 +317,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     val pt = token.sentence.attr[ParseTree]
     if (pt eq null) "_\t_"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+(pt.targetParentIndex(token.sentencePosition)+1)+"\t"+pt.label(token.sentencePosition).categoryValue+"\t"+pt.label(token.sentencePosition).targetCategory
+    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
   }
 }
 
