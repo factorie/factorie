@@ -155,7 +155,7 @@ class DepParser2 extends DocumentAnnotator {
 
   // For DocumentAnnotator trait
   def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel]) // Sentence also includes Token
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
     val sentence = token.sentence
@@ -448,10 +448,11 @@ class DepParser2 extends DocumentAnnotator {
   }
 }
 
-object DepParser2 extends DepParser2 {
-  println("object DepParser2 loading"); System.out.flush()
-  deserialize(cc.factorie.util.ClasspathURL[DepParser2](".factorie").openConnection.getInputStream)
-}
+object DepParser2 extends DepParser2(cc.factorie.util.ClasspathURL[DepParser2](".factorie"))
+
+object DepParser2Ontonotes extends DepParser2(cc.factorie.util.ClasspathURL[DepParser2]("-Ontonotes.factorie"))
+
+
 
 class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
