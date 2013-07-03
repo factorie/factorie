@@ -485,8 +485,8 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       val predMap = doc.attr[GenericEntityMap[Mention]]
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      val ce = ceafEEval.evaluate(predMap, trueMap)
-      val cm = ceafMEval.evaluate(predMap, trueMap)
+      val ce = null //ceafEEval.evaluate(predMap, trueMap)
+      val cm = null //ceafMEval.evaluate(predMap, trueMap)
       val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
       (b3,muc,ce,cm,bl)
       //(b3,muc,new Metric,new Metric,bl)
