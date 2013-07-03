@@ -292,7 +292,7 @@ class POS1 extends DocumentAnnotator {
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)
-    if (true) {
+    if (false) {
       // Print test results to file
       val source = new java.io.PrintStream(new File("pos1-test-output.txt"))
       for (s <- testSentences) {
