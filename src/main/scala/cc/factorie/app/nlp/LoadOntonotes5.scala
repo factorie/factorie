@@ -55,7 +55,7 @@ object LoadOntonotes5 {
         if (sentence eq null)
           sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
-        assert(fields.length >= 10)
+        assert(fields.length >= 10, "Fewer than 10 fields in file "+filename+"\nOffending line:\n"+line)
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
         val lemma = fields(2) // was 3
