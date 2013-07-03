@@ -271,7 +271,7 @@ limitations under the License.
 
   <profiles>
     <profile>
-      <id>runtime</id>
+      <id>jar-with-dependencies</id>
       <build>
         <plugins>
           <!-- Assembles the jar and other release formats (tarball, etc.). -->
@@ -290,12 +290,41 @@ limitations under the License.
             <configuration>
               <tarLongFileMode>gnu</tarLongFileMode>
               <descriptorRefs>
-                <descriptorRef>project</descriptorRef>
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>nlp-jar-with-dependencies</id>
+      <dependencies>
+        <dependency>
+          <groupId>cc.factorie.app.nlp</groupId>
+          <artifactId>factorie-nlp-resources</artifactId>
+          <version>0.1-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <!-- Assembles the jar and other release formats (tarball, etc.). -->
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.4</version>
+            <executions>
+              <execution>
+                <id>make-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>attached</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <tarLongFileMode>gnu</tarLongFileMode>
               <descriptors>
-                <descriptor>src/main/assembly/src.xml</descriptor>
-                <descriptor>src/main/assembly/standalone.xml</descriptor>
+                <descriptor>src/main/assembly/nlp-jar-with-dependencies.xml</descriptor>
               </descriptors>
             </configuration>
           </plugin>

@@ -3,14 +3,23 @@
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
 
-cp=$factoriedir/target/classes:$CLASSPATH
-#echo $cp
+factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
+factorienlpjar=$factoriedir/target/factorie-1.0-SNAPSHOT-nlp-jar-with-dependencies.jar
 
-# Make this command-line changeable
-MEMORY=2g
+if [ -e $factorienlpjar ] ; then
+  jar=$factorienlpjar
+elif [ -e $factoriejar ] ; then
+  jar=$factoriejar
+else
+  echo Jar not found $factoriejar
+  exit -1
+fi
+
+# This makes -Xmx value command-line changeable
+MEMORY=3g
 
 # Make this a scala command
-JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath $cp"
+JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -cp $jar"
 
 CMD=$1
 shift
@@ -41,20 +50,8 @@ EOF
 CLASS=
 
 case $CMD in
-	import-dir) CLASS=cc.factorie.classify.tui.Text2Vectors;;
-	import-file) CLASS=cc.factorie.classify.tui.Csv2Vectors;;
-        import-svmlight) CLASS=cc.factorie.classify.tui.SvmLight2Vectors;;
-	train-classifier) CLASS=cc.factorie.classify.tui.Vectors2Classify;;
-        classify-dir) CLASS=cc.factorie.classify.tui.Text2Classify;;
-        classify-file) CLASS=cc.factorie.classify.tui.Csv2Classify;;
-        classify-svmlight) CLASS=cc.factorie.classify.tui.SvmLight2Classify;;
-	train-topics) CLASS=cc.factorie.topics.tui.Vectors2Topics;;
-	infer-topics) CLASS=cc.factorie.topics.tui.InferTopics;;
-	evaluate-topics) CLASS=cc.factorie.topics.tui.EvaluateTopics;;
-	hlda) CLASS=cc.factorie.topics.tui.HierarchicalLDATUI;;
-	prune) CLASS=cc.factorie.classify.tui.Vectors2Vectors;;
-	split) CLASS=cc.factorie.classify.tui.Vectors2Vectors;;
-	bulk-load) CLASS=cc.factorie.util.BulkLoader;;
+	nlp) CLASS=cc.factorie.app.nlp.NLP;;
+	lda) CLASS=cc.factorie.app.topics.lda.LDA;;
 	run) CLASS=$1; shift;;
 	*) echo "Unrecognized command: $CMD"; help; exit 1;;
 esac
