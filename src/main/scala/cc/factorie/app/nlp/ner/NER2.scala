@@ -365,7 +365,8 @@ class NER2 extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object NER2 extends NER2(cc.factorie.util.ClasspathURL[NER2](".factorie"))
+object NER2WSJ extends NER2(cc.factorie.util.ClasspathURL[NER2]("-WSJ.factorie"))
+object NER2Ontonotes extends NER2(cc.factorie.util.ClasspathURL[NER2]("-Ontonotes.factorie"))
 
 object NER2Trainer {
   def main(args:Array[String]): Unit = {
