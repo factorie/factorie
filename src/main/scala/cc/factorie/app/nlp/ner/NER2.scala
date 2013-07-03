@@ -258,7 +258,7 @@ class NER2 extends DocumentAnnotator {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
-    val examples = labelChains.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
+    val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
     def evaluate() {
       trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
@@ -269,7 +269,7 @@ class NER2 extends DocumentAnnotator {
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
     }
-    Trainer.onlineTrain(model3.parameters, examples.toSeq, evaluate=evaluate, useParallelTrainer = true)
+    Trainer.onlineTrain(model3.parameters, examples.seq.toSeq, evaluate=evaluate, useParallelTrainer = true)
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   
