@@ -160,7 +160,7 @@ class DepParser2 extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     val sentence = token.sentence
     val pt = if (sentence ne null) sentence.attr[ParseTree] else null
-    if (pt eq null) "_\t_\t_\t_"
+    if (pt eq null) "_\t_"
     else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
   }
   //override def tokenAnnotationString(token:Token): String = { val parse = token.parseParent; if (parse ne null) parse.positionInSentence+"\t"+token.parseLabel.categoryValue else "_\t_" }
@@ -455,9 +455,9 @@ object DepParser2Ontonotes extends DepParser2(cc.factorie.util.ClasspathURL[DepP
 
 
 class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
-  val trainFiles =  new CmdOption("train", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
-  val testFiles =  new CmdOption("test", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
-  val devFiles =   new CmdOption("dev", Nil.asInstanceOf[Seq[String]], "FILENAME...", "")
+  val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
+  val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
+  val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
   val cutoff    = new CmdOption("cutoff", "0", "", "")
   val loadModel = new CmdOption("load", "", "", "")
@@ -479,8 +479,8 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     opts.parse(args)
 
     // Load the sentences
-    def loadSentences(o: opts.CmdOption[Seq[String]]): Seq[Sentence] = {
-      if (o.wasInvoked) o.value.flatMap(filename => (if (opts.ontonotes.value) LoadOntonotes5.fromFilename(filename) else LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
+    def loadSentences(o: opts.CmdOption[List[String]]): Seq[Sentence] = {
+      if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) LoadOntonotes5.fromFilename(filename) else LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
       else Seq.empty[Sentence]
     }
     val sentences = loadSentences(opts.trainFiles)
