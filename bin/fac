@@ -29,19 +29,8 @@ help()
 cat <<EOF
 Factorie commands: 
 
-  import-dir         load the contents of a directory into factorie instances (one per file)
-  import-file        load a single file into factorie instances (one per line)
-  import-svmlight    load SVMLight format data files into Factorie instances
-  train-classifier   train a classifier from Factorie data files
-  classify-dir       classify data from a single file with a saved classifier
-  classify-file      classify the contents of a directory with a saved classifier
-  classify-svmlight  classify data from a single file in SVMLight format
-  train-topics       train a topic model from Factorie data files
-  infer-topics       use a trained topic model to infer topics for new documents
-  evaluate-topics    estimate the probability of new documents under a trained model
-  hlda               train a topic model using Hierarchical LDA
-  prune              remove features based on frequency or information gain
-  split              divide data into testing, training, and validation portions
+  nlp                run NLP server listening on a socket (pos, ner, parse, coref,... available)
+  lda                train and use a latent Dirichlet allocation model
 
 Include --help with any option for more information
 EOF
