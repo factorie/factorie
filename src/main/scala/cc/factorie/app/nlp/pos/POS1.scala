@@ -291,7 +291,7 @@ class POS1 extends DocumentAnnotator {
       new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
-    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate)
+    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)
     if (true) {
       // Print test results to file
       val source = new java.io.PrintStream(new File("pos1-test-output.txt"))

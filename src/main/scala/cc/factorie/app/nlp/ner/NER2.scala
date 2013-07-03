@@ -269,7 +269,7 @@ class NER2 extends DocumentAnnotator {
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
     }
-    Trainer.onlineTrain(model3.parameters, examples.toSeq, evaluate=evaluate)
+    Trainer.onlineTrain(model3.parameters, examples.toSeq, evaluate=evaluate, useParallelTrainer = true)
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   
@@ -280,7 +280,6 @@ class NER2 extends DocumentAnnotator {
       case model:Model2 => trainModel2(trainDocs, testDocs)
       case model:Model3 => trainModel3(trainDocs, testDocs)
     }
-    
   }
   
   // Serialization

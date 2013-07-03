@@ -182,7 +182,7 @@ class NER1 extends DocumentAnnotator {
       }
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
-    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate)
+    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
     return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     Trainer.batchTrain(model.parameters, examples, optimizer = new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 }, evaluate = () => {
