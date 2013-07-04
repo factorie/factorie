@@ -84,6 +84,8 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
       val label = m1.parentEntity == m2.parentEntity
 
       var skip = false
+      if(options.usePronounRules && m2.isPRO)
+        skip = true
 
       if (cataphora) {
         if (label && !options.allowPosCataphora || !label && !options.allowNegCataphora) {
@@ -253,13 +255,13 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
       val m1 = allMentions(i)
       assert(numGenderSets(i).size == 1)
-      val numGenderSet1 = numGenderSets(i).head
+      val numGender1 = numGenderSets(i).head
       var j = i -1
       var searching = true
       while(j > 0 && searching){
         val m2 = allMentions(j)
         //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
-        if(!m2.isPRO && numGenderSets(j).contains(numGenderSet1)){
+        if(/*!m2.isPRO && */ numGenderSets(j).contains(numGender1)){
           predMap.addCoreferentPair(m1,m2)
           searching = false
         }
