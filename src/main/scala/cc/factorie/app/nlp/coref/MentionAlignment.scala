@@ -17,7 +17,7 @@ import cc.factorie.app.nlp.parse.ParseTree
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,wn: WordNet, corefGazetteers: CorefGazetteers, portion: Double,useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,wn: WordNet, corefGazetteers: CorefGazetteers, portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -82,8 +82,11 @@ object MentionAlignment {
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
     val name = detectedDoc.name
 
-    val gtHash = mutable.HashMap[(Int,Int),Mention]()
-    gtHash ++= groundTruthMentions.map(m => ((m.start,m.length),m))
+    val gtSpanHash = mutable.HashMap[(Int,Int),Mention]()
+    gtSpanHash ++= groundTruthMentions.map(m => ((m.start,m.length),m))
+    val gtHeadHash = mutable.HashMap[Int,Mention]()
+    gtHeadHash ++= groundTruthMentions.map(m => (getHeadTokenInDoc(m),m))
+
     val gtAligned = mutable.HashMap[Mention,Boolean]()
     gtAligned ++= groundTruthMentions.map(m => (m,false))
     var exactMatches = 0
@@ -95,7 +98,7 @@ object MentionAlignment {
     val entityHash = groundTruthMentions.groupBy(m => m.attr[Entity]).toMap
 
     detectedMentions.foreach(m => {
-      val alignment = checkContainment(gtHash,m.start,m.length, options)
+      val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options)
       if(alignment.isDefined){
         val gtMention = alignment.get
         m.attr +=  gtMention.attr[Entity]
@@ -113,6 +116,17 @@ object MentionAlignment {
         unAlignedEntityCount += 1
       }
     })
+    if(true){
+      def mentionString(m: Mention): String = {
+        m.span.string
+      }
+
+      val missedDetections =  gtAligned.filter(x => !x._2).map(_._1)
+      val falsePositives =  detectedMentions.filter(m => !entityHash.contains(m.attr[Entity]))
+      println("\n\nMissed Detections\n" + missedDetections.map(mentionString(_)).mkString("\n") )
+      println("\nFalse Positives\n"   + missedDetections.map(mentionString(_)).mkString("\n") )
+
+    }
 
     //first, we add everything as a corefmention to the detectedDoc
     val cml = new MentionList
@@ -135,17 +149,31 @@ object MentionAlignment {
     val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.attr[Entity]).length > 1)
     ((name,entityMap),new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length))
   }
-  def checkContainment(h: mutable.HashMap[(Int,Int),Mention], start: Int, length: Int, options: Coref2Options): Option[Mention] = {
+
+  def getHeadTokenInDoc(m: Mention): Int = {
+    //todo: a better way to do this is to get the head from the dependency parse produced on the detected mentions
+    m.start + m.headTokenIndex
+  }
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options): Option[Mention] = {
+    val start = m.start
+    val length = m.length
+    val headTokIdxInDoc = m.headTokenIndex + m.start
     val startIdx = start
     val endIdx = start + length
+
+    //first, try to align it based on the mention boundaries
     val shifts = (-1*options.mentionAlignmentShiftWidth to options.mentionAlignmentShiftWidth)
     for (startShift <- shifts; endShift <- shifts; if startIdx + startShift <= endIdx + endShift) {
       val newStart = startIdx + startShift
       val newEnd = endIdx + endShift
       val key = (newStart, newEnd - newStart)
-      if(h.contains(key))
-        return Some(h(key))
+      if(startLengthHash.contains(key))
+        return Some(startLengthHash(key))
     }
+
+    //next, align it based on the head token
+    if(headHash.contains(headTokIdxInDoc))
+      return Some(headHash(headTokIdxInDoc))
     None
   }
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
