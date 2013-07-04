@@ -85,9 +85,15 @@ class DepParser2 extends DocumentAnnotator {
   
   
   def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
+    featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
+    println("Before pruning # features " + featuresDomain.dimensionDomain.size)
+    println("DepParser2.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
-    println("DepParser2 #features " + featuresDomain.dimensionDomain.size)
+    println("After pruning # features " + featuresDomain.dimensionDomain.size)
+    trainingVars = generateDecisions(trainSentences, 0, nThreads)
+    featuresDomain.freeze()
     val numTrainSentences = trainSentences.size
     val optimizer = new AdaGradRDA(1.0, 0.1, l1Factor / numTrainSentences, l2Factor / numTrainSentences)
     trainDecisions(trainingVars, optimizer, trainSentences, testSentences)
@@ -520,9 +526,14 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }
+    c.featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
+    c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     c.featuresDomain.freeze()
-    println("# features " + c.featuresDomain.dimensionDomain.size)
+    c.featuresDomain.dimensionDomain.gatherCounts = false
+    println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
+    trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
     c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
