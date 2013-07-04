@@ -34,6 +34,7 @@ object NLP {
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
       val parser1 = new CmdOption[String]("parser1", null, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { annotators += new cc.factorie.app.nlp.parse.DepParser1(ClasspathURL[DepParser1](".factorie")) } }
       val parser2 = new CmdOption[String]("parser2", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { if (value ne null) System.setProperty(classOf[DepParser2].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser2 } }
+      val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
       val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
 
     }

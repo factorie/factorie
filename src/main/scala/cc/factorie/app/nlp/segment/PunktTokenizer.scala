@@ -83,6 +83,8 @@ object PunktTokenizer extends PunktTokenizer
 
 class PunktTokenizer extends DocumentAnnotator {
 
+  def tokenAnnotationString(token: Token) = token.string + "\t"
+
   def commonAbbreviations: Set[String] = DefaultRules.commonAbbreviations
   def commonSentenceStarters: Set[String] = DefaultRules.commonSentenceStarters
   def sentenceBoundaryInference: SentenceBoundaryInference = JointlyAcrossDocuments

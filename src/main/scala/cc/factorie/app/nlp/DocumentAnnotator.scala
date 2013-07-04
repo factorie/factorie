@@ -31,7 +31,7 @@ trait DocumentAnnotator {
   
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
-  def tokenAnnotationString(token:Token): String = null
+  def tokenAnnotationString(token:Token): String
   
   def preProcess(doc: Document, annotatorMap: DocumentAnnotatorLazyMap): Unit = {
     for (prereq <- prereqAttrs) if (!doc.hasAnnotation(prereq)) {
@@ -51,12 +51,14 @@ object UnknownDocumentAnnotator extends DocumentAnnotator {
   def process1(document: Document): Document = document
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Nil
+  def tokenAnnotationString(token: Token) = null
 }
 
 object NoopDocumentAnnotator extends DocumentAnnotator {
   def process1(document: Document): Document = document
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Nil
+  def tokenAnnotationString(token: Token) = null
 }
 
 class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_], DocumentAnnotator]
