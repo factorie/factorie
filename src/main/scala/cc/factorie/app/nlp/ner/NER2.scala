@@ -303,7 +303,8 @@ class NER2 extends DocumentAnnotator {
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(model3, dstream)
-    model3.parameters.densify()
+    //model3.parameters.densify()
+    println("NER2 model parameters oneNorm "+model3.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }  
   
