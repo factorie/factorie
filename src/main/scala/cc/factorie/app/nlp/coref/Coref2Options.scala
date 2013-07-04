@@ -18,9 +18,10 @@ class Coref2Options {
   }
 
   def setConfig(key:String,value: Boolean) = {configHash(key) = value}
-  protected val configHash = mutable.HashMap[String,Boolean]() ++= Seq(("useEntityType",true))
-
+  protected val configHash = mutable.HashMap[String,Boolean]() ++= Seq(("useEntityType",true),("usePronounRules",false))
   def useEntityType = configHash("useEntityType")
+
+  def usePronounRules = configHash("usePronounRules")
 
   var mergeMentionWithApposition = false
   var useMIRA = true
