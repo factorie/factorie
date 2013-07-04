@@ -505,8 +505,8 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         results.foreach(eval => {
           b3Score.microAppend(eval._1)
           mucScore.microAppend(eval._2)
-          ceafE.microAppend(eval._3)
-          ceafM.microAppend(eval._4)
+          //ceafE.microAppend(eval._3) // TODO Commenting out temporarily since it is crashing.
+          //ceafM.microAppend(eval._4)
           blanc.macroAppend(eval._5)
         })
       }
