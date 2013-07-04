@@ -34,16 +34,13 @@ object DocumentClassifier1 {
     def domain = LabelDomain
   }
  
-  // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
-  val model = new classify.LogLinearModel[Label,Document](_.document, LabelDomain, DocumentDomain)
-
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     if (args.length < 2) 
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var docLabels = new classify.LabelList[Label,Document](_.document)
+    var docLabels = new ArrayBuffer[Label]()
     //var docLabels = new classify.LabelList[Label,Document](_.document)
     //var docLabels = new classify.LabelList((l:Label) => l.document)
     for (directory <- args) {
@@ -55,31 +52,14 @@ object DocumentClassifier1 {
       }
     }
     
-    val infogains = new classify.InfoGain(docLabels)
-    //println(infogains.top(20).mkString(" "))
-    //println()
-    val plig = new classify.PerLabelInfoGain(docLabels)
-    //for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))
-    //println()
-    val pllo = new classify.PerLabelLogOdds(docLabels)
-    //for (label <- LabelDomain) println(label.category+": "+pllo.top(label, 20))
-    //println()
-
-    // Make a test/train split
     val (trainVariables, testVariables) = docLabels.shuffle.split(0.5)
     (trainVariables ++ testVariables).foreach(_.setRandomly)
 
     //println(model)
     //println(model.factors(trainVariables.head))
-
-    // Train and test
-    val learner = new SampleRankTrainer(new GibbsSampler(model, HammingObjective), new MIRA)
-    val predictor = new GibbsSampler(model)
-    def objective = new HammingTemplate[Label]
-    for (i <- 0 until 10) {
-      learner.processContexts(trainVariables)
-      predictor.processAll(testVariables)
-    }
+    val classifier = new OnlineLinearMultiClassTrainer().train(trainVariables, trainVariables.map(_.document))
+    (trainVariables ++ testVariables).foreach(v => v.set(classifier.classification(v.document.value).bestLabelIndex)(null))
+    val objective = HammingObjective
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
 

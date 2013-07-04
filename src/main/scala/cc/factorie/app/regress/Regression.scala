@@ -1,7 +1,6 @@
 package cc.factorie.app.regress
 
 import cc.factorie._
-import app.classify.LabelList
 import cc.factorie.la._
 import optimize._
 import java.io.File

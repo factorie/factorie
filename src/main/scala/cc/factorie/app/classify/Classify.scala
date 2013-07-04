@@ -20,6 +20,9 @@ import app.strings.SetBasedStopwords
 import java.io._
 import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
+import scala.collection.mutable.ArrayBuffer
+import cc.factorie.optimize.{LinearMultiClassClassifier, LinearMultiClassClassifierCubbie, MultiClassClassifier, MultiClassTrainerBase}
+import cc.factorie.la.Tensor1
 
 // Feature and Label classes
 
@@ -148,10 +151,10 @@ object Classify {
       } else {
         cc.factorie.app.strings.Stopwords
       }
-    val labels = new LabelList[Label, Features](_.features)
-    val trainingLabels = new LabelList[Label, Features](_.features)
-    val validationLabels = new LabelList[Label, Features](_.features)
-    val testingLabels = new LabelList[Label, Features](_.features)
+    val labels = new ArrayBuffer[Label]()
+    val trainingLabels = new ArrayBuffer[Label]()
+    val validationLabels = new ArrayBuffer[Label]()
+    val testingLabels = new ArrayBuffer[Label]()
 
     // Helper functions
     def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
@@ -166,20 +169,20 @@ object Classify {
           features += words.mkString(",")
     }
 
-    def readInstancesFromFileSVMLight(fileName: String): LabelList[Label, Features] = {
+    def readInstancesFromFileSVMLight(fileName: String): ArrayBuffer[Label] = {
       val textFile = new File(fileName)
       val text = fileToString(textFile)
       Serialize.readInstancesSVMLight(text, FeaturesDomain, LabelDomain)
     }
 
-    def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
+    def readInstancesFromFile(fileName: String): ArrayBuffer[Label] = {
       val cubbie = new LabelListCubbie(FeaturesDomain, LabelDomain, opts.readBinaryFeatures.value)
       val file = new File(fileName)
       BinarySerializer.deserialize(cubbie, file)
       cubbie.fetch()
     }
 
-    def writeInstances(ll: LabelList[Label, Features], file: File): Unit = {
+    def writeInstances(ll: ArrayBuffer[Label], file: File): Unit = {
       val cubbie = new LabelListCubbie(FeaturesDomain, LabelDomain, opts.readBinaryFeatures.value)
       cubbie.store(ll)
       BinarySerializer.serialize(cubbie, file)
@@ -237,19 +240,15 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val classifier = new ModelBasedClassifier[Label, LogLinearModel[Label,Features]](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
-      BinarySerializer.deserialize(new ModelBasedClassifierCubbie(classifier), classifierFile)
-      val classifications = classifier.classify(labels)
-      for (cl <- classifications) println(cl.label)
+      val cubbie = new cc.factorie.optimize.LinearMultiClassClassifierCubbie
+      BinarySerializer.deserialize(cubbie, classifierFile)
+      val classifier = cubbie.fetch
+      val classifications = labels.map(l => classifier.classification(l.features.value))
+      for (cl <- labels) println(cl)
       if (opts.writeInstances.wasInvoked) {
         val instancesFile = new File(opts.writeInstances.value)
         instancesFile.createNewFile()
         writeInstances(labels, instancesFile)
-      }
-      if (opts.writeClassifications.wasInvoked) {
-        val classificationsFile = new File(opts.writeClassifications.value)
-        val str = new PrintStream(classificationsFile)
-        for (cl <- classifications) Serialize.writeClassification(cl, str)
       }
       return
     }
@@ -272,50 +271,51 @@ object Classify {
 
     if (opts.printInfoGain.wasInvoked) {
       println("Top 20 features with highest information gain: ")
-      new InfoGain(trainingLabels).top(20).foreach(println(_))
+      new InfoGain(trainingLabels, (l: Label) => l.features).top(20).foreach(println(_))
     }
 
     if (opts.writeInstances.wasInvoked) {
       val instancesFile = new File(opts.writeInstances.value)
       instancesFile.createNewFile()
-      val bigll = new LabelList[Label, Features](_.features)
+      val bigll = new ArrayBuffer[Label]()
       bigll ++= (trainingLabels ++ testingLabels ++ validationLabels)
       writeInstances(bigll, instancesFile)
     }
 
-    val classifierTrainer = ScriptingUtils.eval[ClassifierTrainer](opts.trainer.value, Seq("cc.factorie.app.classify._"))
+    val classifierTrainer = ScriptingUtils.eval[MultiClassTrainerBase[MultiClassClassifier[Tensor1]]](opts.trainer.value, Seq("cc.factorie.app.classify._"))
 
     val start = System.currentTimeMillis
 
-    val classifier = classifierTrainer.train(trainingLabels)
+    val classifier = classifierTrainer.train(trainingLabels, trainingLabels.map(_.features))
 
     println("Classifier trained in " + ((System.currentTimeMillis - start) / 1000.0) + " seconds.")
 
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
-      // TODO should classifier cubbie write the vocab + the model in one file? -luke
-      if (!(classifier.isInstanceOf[ModelBasedClassifier[_,_]] && classifier.asInstanceOf[ModelBasedClassifier[_,_]].model.isInstanceOf[Parameters]))
-        sys.error("Only ModelBasedClassifiers with weightsSet can be serialized.")
-      val mbc = classifier.asInstanceOf[ModelBasedClassifier[Label, Model with Parameters]]
-      BinarySerializer.serialize(new ModelBasedClassifierCubbie(mbc), classifierFile)
+      classifier match {
+        case model: LinearMultiClassClassifier =>
+          val mc = new LinearMultiClassClassifierCubbie
+          mc.store(model)
+          BinarySerializer.serialize(mc, classifierFile)
+      }
     }
 
     opts.evaluator.value match {
       case "Trial" =>
         if (trainingLabels.length > 0) {
-          val trainTrial = new classify.Trial[Label](classifier)
+          val trainTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           trainTrial ++= trainingLabels
           println("== Training Evaluation ==")
           println(trainTrial.toString)
         }
         if (testingLabels.length > 0) {
-          val testTrial = new classify.Trial[Label](classifier)
+          val testTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           testTrial ++= testingLabels
           println("== Testing Evaluation ==")
           println(testTrial.toString)
         }
         if (validationLabels.length > 0) {
-          val validationTrial = new classify.Trial[Label](classifier)
+          val validationTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           validationTrial ++= validationLabels
           println("== Validation Evaluation ==")
           println(validationTrial.toString)

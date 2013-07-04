@@ -65,8 +65,10 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
 
   protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
     val labels = new ArrayBuffer[MentionPairLabel]
-    for (i <- 0 until mentions.size)
-      labels ++= generateMentionPairLabelsForOneAnaphor(mentions, i, map)
+    for (i <- 0 until mentions.size){
+      if(!options.usePronounRules || !mentions(i).isPRO)
+        labels ++= generateMentionPairLabelsForOneAnaphor(mentions, i, map)
+    }
     /*if (Options.debug) println("# of ex = " + labels.size)*/
     labels
   }
@@ -196,6 +198,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
   }
 
   def processDocumentOneModelFromMentions(ments: Seq[CorefMention]): GenericEntityMap[Mention] = {
+
     val predMap = new GenericEntityMap[Mention]
     ments.foreach(m => predMap.addMention(m.mention, predMap.numMentions.toLong))
     for (i <- 0 until ments.size) {
@@ -209,24 +212,61 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    val ments = doc.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
-    val predMap = new GenericEntityMap[Mention]
-    ments.foreach(m => predMap.addMention(m.mention, predMap.numMentions.toLong))
+    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
+    val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
+
+
+    val predMap = new GenericEntityMap[CorefMention]
+    allMents.foreach(m => predMap.addMention(m, predMap.numMentions.toLong))
     val candidateMentionsToTheLeft = ArrayBuffer[CorefMention]()
 
     for (i <- 0 until ments.size) {
       val m1 = ments(i)
       val bestCand = processOneMentionByEntities(ments, i, candidateMentionsToTheLeft ,predMap)
       if (bestCand != null) {
-        predMap.addCoreferentPair(m1.mention, bestCand.mention)
+        predMap.addCoreferentPair(m1, bestCand)
       }
       if(bestCand != null || m1.isProper){
         candidateMentionsToTheLeft += m1
       }
     }
-    predMap
+    if(options.usePronounRules)
+      doCorefOnPronounsUsingRules(predMap,allMents)
+
+    // we need to convert it into an entity Map of Mentions, rather than CorefMentions
+    val predMap2 = new GenericEntityMap[Mention]
+    predMap2.entities ++= predMap.entities.map(kv => (kv._1,kv._2.map(m => m.mention)))
+    predMap2.reverseMap ++= predMap.reverseMap.map(kv => (kv._1.mention,kv._2))
+    predMap2
   }
 
+  case class CoarseMentionType(gender: Char,number: Char)
+
+  def doCorefOnPronounsUsingRules(predMap: GenericEntityMap[CorefMention],allMentions: Seq[CorefMention]): Unit = {
+
+    //first, make a map from entity ids in the predMap to sets of CoarseMentionTypes that appear somewhere in the entity.
+    val numGenderSetsForEntities = predMap.entities.map(kv => (kv._1,kv._2.map(m => CoarseMentionType(m.gender,m.number)).toSet))
+
+    //make such a set for every mention. For those mentions that aren't in entities, the set is just a singleton.
+    val numGenderSets = allMentions.map(m => numGenderSetsForEntities.getOrElse(predMap.getEntity(m),Set(CoarseMentionType(m.gender,m.number))))
+
+    for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
+      val m1 = allMentions(i)
+      assert(numGenderSets(i).size == 1)
+      val numGenderSet1 = numGenderSets(i).head
+      var j = i -1
+      var searching = true
+      while(j > 0 && searching){
+        val m2 = allMentions(j)
+        //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
+        if(!m2.isPRO && numGenderSets(j).contains(numGenderSet1)){
+          predMap.addCoreferentPair(m1,m2)
+          searching = false
+        }
+        j -= 1
+      }
+    }
+  }
 
 
   def processOneMention(orderedMentions: Seq[CorefMention], mentionIndex: Int, predMap: GenericEntityMap[Mention]): CorefMention = {
@@ -265,7 +305,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
   }
 
   //this doesn't look at the preceeding mentions, but only the mentions that are in an existing entity or are proper
-  def processOneMentionByEntities(orderedMentions: Seq[CorefMention], mentionIndex: Int, candidateMentionsToTheLeft: ArrayBuffer[CorefMention], predMap: GenericEntityMap[Mention]): CorefMention = {
+  def processOneMentionByEntities(orderedMentions: Seq[CorefMention], mentionIndex: Int, candidateMentionsToTheLeft: ArrayBuffer[CorefMention], predMap: GenericEntityMap[CorefMention]): CorefMention = {
     val m1 = orderedMentions(mentionIndex)
     val candLabels = ArrayBuffer[MentionPairFeatures]()
     var bestCand: CorefMention = null
@@ -284,7 +324,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
 
       if (!cataphora || options.allowTestCataphora) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
-        val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2.mention) == predMap.reverseMap(m2.mention))
+        val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)
         candLabels += candLabel
         // Always link exact head matches
@@ -314,7 +354,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
           val cataphora = m2.isPRO && !m1.isPRO
           if(!cataphora || options.allowTestCataphora){
             val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
-            val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2.mention) == predMap.reverseMap(m2.mention))
+            val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
             mergeFeatures(candLabel, mergeables)
             candLabels += candLabel
             // Always link exact head matches

@@ -9,7 +9,6 @@ import cc.factorie.util.TopN
     @since 0.10
  */
 class PerLabelLogOdds[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], labelToFeatures:L=>F) {
-  def this(labels:LabelList[L,F]) = this(labels, labels.labelToFeatures)
   val instanceDomain: DiscreteTensorDomain = labelToFeatures(labels.head).domain
   val featureDomain: DiscreteDomain = instanceDomain.dimensionDomain
   val labelDomain: DiscreteDomain = labels.head.domain
