@@ -3,9 +3,9 @@ import cc.factorie._
 import app.classify
 import cc.factorie.util._
 import cc.factorie.la._
-import classify.{ModelBasedClassifier, LogLinearModel}
 import java.io.File
 import io.Source
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Abstract trait for any objective function used in generalized linear models
@@ -347,7 +347,7 @@ object LinearObjectivesTest {
   def main(args: Array[String]): Unit = {
     // Read data and create Variables
     implicit val random = new scala.util.Random(0)
-    var docLabels = new classify.LabelList[Label, Document](_.document)
+    var docLabels = new ArrayBuffer[Label]()
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
@@ -359,54 +359,13 @@ object LinearObjectivesTest {
 
     // Make a test/train split
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
-    val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
-    val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
+    val trainLabels = new ArrayBuffer[Label]() ++= trainSet
+    val testLabels = new ArrayBuffer[Label]() ++= testSet
 
     val loss = LinearObjectives.hingeMultiClass
     // needs to be binary
-    val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
-    //val modelWithWeights = new ModelWithWeightsImpl(model)
+    val trainer = new OnlineLinearMultiClassTrainer()
+    val classifier = trainer.train(trainLabels, trainLabels.map(_.document))
 
-    //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
-    val pieces = trainLabels.map(l => new LinearMultivariateExample(model.evidenceTemplate.weights, l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
-
-    //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-//            val strategy = new BatchTrainer(model)
-    val strategy = new OnlineTrainer(model.parameters, optimizer = new AdaGrad)
-
-//        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
-//    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
-//    lbfgs.tolerance = 0.05
-//    val strategy = new SGDThenBatchTrainer(lbfgs, model, learningRate = .01)
-    //    val strategy = new BatchTrainer(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
-
-    var totalTime = 0L
-    var i = 0
-    var perfectAccuracy = false
-    while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
-      val t0 = System.currentTimeMillis()
-      strategy.processExamples(pieces)
-      println(model.evidenceTemplate.weights)
-      //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
-
-      totalTime += System.currentTimeMillis() - t0
-
-      val classifier = new ModelBasedClassifier[Label, model.evidenceTemplate.type](model.evidenceTemplate, LabelDomain)
-
-      val testTrial = new classify.Trial[Label](classifier)
-      testTrial ++= testLabels
-
-      val trainTrial = new classify.Trial[Label](classifier)
-      trainTrial ++= trainLabels
-
-      //      println("Parameters = " + model.evidenceTemplate.weightsSet)
-      println("Train accuracy = " + trainTrial.accuracy)
-      println("Test  accuracy = " + testTrial.accuracy)
-      println("Total time to train: " + totalTime / 1000.0)
-      i += 1
-      perfectAccuracy = (trainTrial.accuracy == 1.0 && testTrial.accuracy == 1.0)
-    }
-
-    if (strategy.isConverged || perfectAccuracy) println("Converged in " + totalTime / 1000.0)
   }
 }

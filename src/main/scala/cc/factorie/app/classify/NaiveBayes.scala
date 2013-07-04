@@ -14,36 +14,33 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.optimize.{MultiClassTrainerBase, LinearMultiClassClassifier}
+import cc.factorie.la.Tensor1
 
-class NaiveBayesTrainer extends ClassifierTrainer {
-  var biasSmoothingMass = 1.0
-  var evidenceSmoothingMass = 1.0
-  def train[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
-    val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val labelDomain = il.labelDomain
-    val featureDomain = il.featureDomain
-    val numLabels = labelDomain.size
-    val numFeatures = featureDomain.size
-    val bias = new DenseProportions1(numLabels)
+class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MultiClassTrainerBase[LinearMultiClassClassifier]  {
+  def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMultiClassClassifier) => Unit) {
+    val numLabels = classifier.labelSize
+    val numFeatures = classifier.featureSize
+    // assuming the existence of a bias feature
     val evid = Seq.tabulate(numLabels)(i => new DenseProportions1(numFeatures))
     // Note: this doesn't actually build the graphical model, it just gathers smoothed counts, never creating factors
     // Incorporate smoothing, with simple +m smoothing
-    for (li <- 0 until numLabels) bias.masses += (li, biasSmoothingMass)
     for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).masses += (fi, evidenceSmoothingMass)
     // Incorporate evidence
-    for (label <- il) {
-      val targetIndex = label.intValue
-      bias.masses += (targetIndex, 1.0)
-      val features = il.labelToFeatures(label)
-      features.value.foreachActiveElement((featureIndex, featureValue) => {
-        evid(targetIndex).masses += (featureIndex, featureValue)
+    for (i <- 0 until labels.length; label = labels(i); feature = features(i); w = weights(i)) {
+      feature.foreachActiveElement((featureIndex, featureValue) => {
+        evid(label).masses += (featureIndex, w*featureValue)
       })
     }
     // Put results into the model templates
-    (0 until numLabels).foreach(i => cmodel.biasTemplate.weights.value(i) = math.log(bias(i)))
-    val evWeightsValue = cmodel.evidenceTemplate.weights.value
+    val evWeightsValue = classifier.weights.value
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
       evWeightsValue(li * numFeatures + fi) = math.log(evid(li).apply(fi))
-    new ModelBasedClassifier(cmodel, il.head.domain)
+  }
+
+  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMultiClassClassifier) => Unit) = {
+    val classifier = new LinearMultiClassClassifier(labelSize, featureSize)
+    baseTrain(classifier, labels, features, weights, evaluate)
+    classifier
   }
 }

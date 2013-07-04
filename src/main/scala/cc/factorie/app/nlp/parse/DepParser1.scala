@@ -16,7 +16,6 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.classify.{LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
@@ -261,8 +260,8 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
-    val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
-    val testActions = new LabelList[Action, Features]((action: Action) => action.features)
+    val trainActions = new ArrayBuffer[Action]()
+    val testActions = new ArrayBuffer[Action]()
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))

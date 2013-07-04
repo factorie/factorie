@@ -1,6 +1,5 @@
 package cc.factorie.optimize
 
-import cc.factorie.app.classify.LogLinearModel
 import cc.factorie.la._
 import util._
 import cc.factorie._

@@ -15,32 +15,22 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
+import cc.factorie.optimize.{MultiClassClassification, MultiClassClassifier}
 
-// TODO Should we also store the input features here? -akm
-/** The result of applying a Classifier to a Label. */
-class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classifier[L], theProportions:Proportions1) extends SimpleDiscreteMarginal1(theLabel, theProportions) {
-  final def label = _1
-  val bestLabelIndex = proportions.maxIndex
-  def bestLabelValue = label.domain.apply(bestLabelIndex)
-  def bestCategoryValue: String = bestLabelValue match {
-    case cv:CategoricalValue[_] => cv.category.toString
-    case dv:DiscreteValue => dv.intValue.toString
-  }
-  def tensorStatistics = proportions // TODO This seems wrong to me.  Shouldn't it be a Tensor2, and and also include the label value? -akm
-}
+
+case class LabeledClassification[L](label: L, classification: MultiClassClassification)
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
-class Trial[L<:LabeledMutableDiscreteVar[_]](val classifier:Classifier[L])
-  extends LabeledDiscreteEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] with ClassifierEvaluator[L] {
-  private val classifications = new ArrayBuffer[Classification[L]]
+class Trial[L<:LabeledMutableDiscreteVar[_],F](val classifier: MultiClassClassifier[F], labelDomain: CategoricalDomain[String], l2f: L => F)
+  extends LabeledDiscreteEvaluation(labelDomain) with IndexedSeq[LabeledClassification[L]] {
+  private val classifications = new ArrayBuffer[LabeledClassification[L]]
   def length = classifications.length
   def apply(i:Int) = classifications(i)
-  def +=(label:L): Unit = { classifications.+=(classifier.classify(label)); super.+=(label) }
+  def +=(label:L): Unit = { classifications += LabeledClassification(label, classifier.classification(l2f(label))); super.+=(label) }
   def ++=(labels:Iterable[L]): this.type = { labels.foreach(+=(_)); this }
-  def +=(c:Classification[L]): Unit = {
-    if (c.classifier == classifier) classifications += c
-    else throw new Error("Classification.classifier does not match.")
+  def +=(c:LabeledClassification[L]): Unit = {
+    classifications += c
   }
   override def toString: String = "OVERALL: " + overallEvalString + "\n" +  evalString
 }
