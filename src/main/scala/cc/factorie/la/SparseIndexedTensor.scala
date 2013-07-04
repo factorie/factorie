@@ -151,14 +151,18 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         var result = 0.0
         var pos = 0
         while (i < len && pos >= 0) {
-          pos = position(indices(i), pos)
-          if (pos >= 0) result += __values(pos)
-          result += apply(indices(i))
+          val posTmp = position(indices(i), pos)
+          if (posTmp >= 0) {
+            pos = posTmp
+            result += __values(pos)
+          }
           i += 1
         }
         result
       }
-      case v:DoubleSeq => { var result = 0.0; var p = 0; while (p < __npos) { result += v(__indices(p)) * __values(p); p += 1 }; result }
+      case t: Tensor => var dot = 0.0
+        t.foreachActiveElement((i, v) => dot += apply(i)*v)
+        dot
     }
   }
 
