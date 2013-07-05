@@ -6,8 +6,8 @@ import cc.factorie.app.nlp.mention.{MentionType, Mention, MentionList}
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
-import java.io.{File, FileInputStream, DataInputStream}
-import cc.factorie.util.BinarySerializer
+import java.io._
+import cc.factorie.util.{ClasspathURL, ClassPathUtils, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -16,7 +16,9 @@ import scala.collection.mutable.ArrayBuffer
  * Time: 12:25 PM
  */
 
-class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options) extends DocumentAnnotator {
+abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
+  val options = new Coref2Options
+  val model: PairwiseCorefModel
 
   def prereqAttrs = Seq(classOf[MentionList])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
@@ -45,25 +47,27 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options)
     }
   }
 
-  def deserialize(stream: DataInputStream, configStream: DataInputStream) {
+  def deserialize(stream: DataInputStream) {
     import cc.factorie.util.CubbieConversions._
     val config = options.getConfigHash
-    BinarySerializer.deserialize(config, configStream)
-    configStream.close()
+    BinarySerializer.deserialize(config, stream)
     options.setConfigHash(config)
     println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
     model.deserialize(stream)
+    stream.close()
   }
 
   def deserialize(filename: String) {
-    deserialize(new DataInputStream(new FileInputStream(filename)), new DataInputStream(new FileInputStream(filename + ".config")))
+    deserialize(new DataInputStream(new FileInputStream(filename)))
   }
 
   def serialize(filename: String) {
     import cc.factorie.util.CubbieConversions._
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    BinarySerializer.serialize(options.getConfigHash,new File(filename + ".config"))
-    model.serialize(filename)
+    val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
+    BinarySerializer.serialize(options.getConfigHash, stream)
+    BinarySerializer.serialize(model, stream)
+    stream.close()
   }
 
 
@@ -409,4 +413,16 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options)
     pool.shutdown()
   }
 
+}
+
+class WithinDocCoref2 extends BaseWithinDocCoref2 {
+  val model = new BaseCorefModel
+}
+
+class ImplicitConjunctionWithinDocCoref2 extends BaseWithinDocCoref2 {
+  val model = new ImplicitCrossProductCorefModel
+}
+
+object WithinDocCoref2 extends WithinDocCoref2 {
+  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref2](".factorie").openConnection().getInputStream))
 }

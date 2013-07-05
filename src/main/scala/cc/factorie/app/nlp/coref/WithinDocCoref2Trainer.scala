@@ -127,15 +127,14 @@ object WithinDocCoref2Trainer {
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
-        val model = new BaseCorefModel
-        val lr = new WithinDocCoref2(model, options)
+        val lr = new WithinDocCoref2()
         lr.deserialize(opts.deserialize.value)
         lr.doTest(testDocs, wn, testTrueMaps.toMap, "Test")
         lr
       }
       else{
-        val model = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitCrossProductCorefModel else new BaseCorefModel
-        val lr = new WithinDocCoref2(model, options)
+        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
+        lr.options.setConfigHash(options.getConfigHash)
         lr.train(trainDocs, testDocs, wn, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value)
         lr
       }
