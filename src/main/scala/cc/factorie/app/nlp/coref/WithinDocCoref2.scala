@@ -261,7 +261,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
       while(j > 0 && searching){
         val m2 = allMentions(j)
         //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
-        if(/*!m2.isPRO && */ numGenderSets(j).contains(numGender1)){
+        if(!m2.isPRO &&  numGenderSets(j).contains(numGender1)){
           predMap.addCoreferentPair(m1,m2)
           searching = false
         }

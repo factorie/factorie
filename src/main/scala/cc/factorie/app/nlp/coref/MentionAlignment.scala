@@ -6,7 +6,7 @@ import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention.{Entity, MentionList, Mention}
 import cc.factorie.app.nlp.pos.PTBPosLabel
-import scala.collection.mutable.HashMap
+import collection.mutable.{ArrayBuffer, HashMap}
 import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
 
@@ -17,6 +17,8 @@ import cc.factorie.app.nlp.parse.ParseTree
  */
 
 object MentionAlignment {
+
+
   def makeLabeledData(f: String, outfile: String ,wn: WordNet, corefGazetteers: CorefGazetteers, portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
@@ -33,8 +35,17 @@ object MentionAlignment {
     //now do POS tagging and parsing on the extracted tokens
     documentsToBeProcessed.par.foreach(findMentions(_))
 
+    //these are the offsets that mention boundary alignment will consider
+    //the order of this array is very important, so that it will take exact string matches if they exist
+    val shifts =  ArrayBuffer[Int]()
+    shifts += 0
+    for(i <- 1 to options.mentionAlignmentShiftWidth){
+      shifts +=  i
+      shifts += -1*i
+    }
+
     //align gold mentions to detected mentions in order to get labels for detected mentions
-    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options))
+    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options,shifts))
     val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
@@ -77,7 +88,7 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, cg: CorefGazetteers,useEntityTypes: Boolean, options: Coref2Options): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, cg: CorefGazetteers,useEntityTypes: Boolean, options: Coref2Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
     val name = detectedDoc.name
@@ -96,9 +107,9 @@ object MentionAlignment {
     //here, we create a bunch of new entity objects, that differ from the entities that the ground truth mentions point to
     //however, we index them by the same uIDs that the ground mentions use
     val entityHash = groundTruthMentions.groupBy(m => m.attr[Entity]).toMap
-
+    val falsePositives1 = ArrayBuffer[Mention]()
     detectedMentions.foreach(m => {
-      val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options)
+      val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
       if(alignment.isDefined){
         val gtMention = alignment.get
         m.attr +=  gtMention.attr[Entity]
@@ -107,13 +118,17 @@ object MentionAlignment {
         val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString),cg)  else "UKN"
         m.attr += new EntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
+        println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
       }else{
+        println("not aligned: "  +  m.span.string + ":" + m.start)
+
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
         val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString),cg)  else "UKN"
         m.attr += new EntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
+        falsePositives1 += m
       }
     })
     if(true){
@@ -124,8 +139,8 @@ object MentionAlignment {
       val missedDetections =  gtAligned.filter(x => !x._2).map(_._1)
       val falsePositives =  detectedMentions.filter(m => !entityHash.contains(m.attr[Entity]))
       println("\n\nMissed Detections\n" + missedDetections.map(mentionString(_)).mkString("\n") )
-      println("\nFalse Positives\n"   + missedDetections.map(mentionString(_)).mkString("\n") )
-
+      println("\nFalse Positives\n"     + falsePositives.map(mentionString(_)).mkString("\n") )
+      println("\nFalse Positives1\n"    + falsePositives1.map(mentionString(_)).mkString("\n") )
     }
 
     //first, we add everything as a corefmention to the detectedDoc
@@ -154,7 +169,7 @@ object MentionAlignment {
     //todo: a better way to do this is to get the head from the dependency parse produced on the detected mentions
     m.start + m.headTokenIndex
   }
-  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options): Option[Mention] = {
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options, shifts: Seq[Int]): Option[Mention] = {
     val start = m.start
     val length = m.length
     val headTokIdxInDoc = m.headTokenIndex + m.start
@@ -162,7 +177,8 @@ object MentionAlignment {
     val endIdx = start + length
 
     //first, try to align it based on the mention boundaries
-    val shifts = (-1*options.mentionAlignmentShiftWidth to options.mentionAlignmentShiftWidth)
+
+
     for (startShift <- shifts; endShift <- shifts; if startIdx + startShift <= endIdx + endShift) {
       val newStart = startIdx + startShift
       val newEnd = endIdx + endShift
@@ -171,7 +187,7 @@ object MentionAlignment {
         return Some(startLengthHash(key))
     }
 
-    //next, align it based on the head token
+    //next, back off to aligning it based on the head token
     if(headHash.contains(headTokIdxInDoc))
       return Some(headHash(headTokIdxInDoc))
     None
@@ -179,7 +195,7 @@ object MentionAlignment {
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap) {
-    cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = false
+    cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
     val a = new DocumentAnnotator {
       def process1(document: Document) = document
       def prereqAttrs = Seq(classOf[MentionList])
