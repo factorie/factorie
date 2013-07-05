@@ -181,6 +181,7 @@ object MentionAlignment {
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = false
     val a = new DocumentAnnotator {
+      def tokenAnnotationString(token: Token) = null
       def process1(document: Document) = document
       def prereqAttrs = Seq(classOf[MentionList])
       def postAttrs = Nil

@@ -44,6 +44,7 @@ class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegment
   private val L_BRACKETS = Array("\"", "(", "{", "[")
   private val R_BRACKETS = Array("\"", ")", "}", "]")
 
+  def tokenAnnotationString(token: Token) = null
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]] = {
     val sentences = new mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]()
     val tokens = tokenizer.getTokenList(fin)
@@ -149,6 +150,9 @@ class EnglishTokenizer(cfg: EnglishTokenizerConfig) extends AbstractTokenizer {
   private val P_RECOVER_HYPHEN: Pattern = Pattern.compile(S_HYPHEN)
   private val P_RECOVER_APOSTROPHY: Pattern = Pattern.compile(S_APOSTROPHY)
   private val P_RECOVER_AMPERSAND: Pattern = Pattern.compile(S_AMPERSAND)
+
+
+  def tokenAnnotationString(token: Token) = token.string + "\t"
 
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken] = {
     var lTokens = tokenizeWhiteSpaces(str)

@@ -14,6 +14,11 @@ import cc.factorie.app.strings.RegexSegmenter
     @author martin 
     */
 class RegexTokenizer extends RegexSegmenter(RegexTokenizerHelper.tokenRegex) with DocumentAnnotator {
+
+  /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
+      If there is no per-token annotation, return null.  Used in Document.owplString. */
+  def tokenAnnotationString(token: Token) = token.string + "\t"
+
   def process1(document: Document): Document = {
     for (section <- document.sections) {
       val tokenIterator = RegexTokenizer.this.apply(section.string)

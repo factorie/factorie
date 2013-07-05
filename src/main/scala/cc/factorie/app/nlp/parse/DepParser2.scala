@@ -550,6 +550,10 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
+      val d = new DepParser2
+      d.deserialize(new java.io.File(modelUrl))
+      testSentences.foreach(d.process)
+      println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
     }
     ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
   }

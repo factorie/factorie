@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Document, DocumentAnnotator}
-import cc.factorie.app.nlp.mention.{Mention, MentionList}
+import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
+import cc.factorie.app.nlp.mention.{MentionType, Mention, MentionList}
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
@@ -23,6 +23,13 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
     else document.attr += processDocumentOneModel(document)
     document
+  }
+  def tokenAnnotationString(token:Token): String = {
+    val emap = token.document.attr[GenericEntityMap[Mention]]
+    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+      case _ => "_"
+    }
   }
 
   trait CorefParallelHelper[T] {
@@ -84,6 +91,8 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
       val label = m1.parentEntity == m2.parentEntity
 
       var skip = false
+      if(options.usePronounRules && m2.isPRO)
+        skip = true
 
       if (cataphora) {
         if (label && !options.allowPosCataphora || !label && !options.allowNegCataphora) {
@@ -253,13 +262,13 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
       val m1 = allMentions(i)
       assert(numGenderSets(i).size == 1)
-      val numGenderSet1 = numGenderSets(i).head
+      val numGender1 = numGenderSets(i).head
       var j = i -1
       var searching = true
       while(j > 0 && searching){
         val m2 = allMentions(j)
         //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
-        if(!m2.isPRO && numGenderSets(j).contains(numGenderSet1)){
+        if(/*!m2.isPRO && */ numGenderSets(j).contains(numGender1)){
           predMap.addCoreferentPair(m1,m2)
           searching = false
         }
