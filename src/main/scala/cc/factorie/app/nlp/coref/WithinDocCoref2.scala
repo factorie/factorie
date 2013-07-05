@@ -330,8 +330,9 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
       val m2 = orderedMentions(j)
       numCompared += 1
       val cataphora = m2.isPRO && !m1IsPro
+      //val proPro = m1.isPRO && m2.isPRO
 
-      if (!cataphora || options.allowTestCataphora) {
+      if (/*!proPro &&*/ (!cataphora || options.allowTestCataphora)) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)
@@ -347,8 +348,8 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
             bestScore = score
           }
         }
+        mentionsComparedWith += m2
       }
-      mentionsComparedWith += m2
       j -= 1
     }
     //now, look at the list of candidateMentionsToTheLeft and compare to things that you haven't compared to yet

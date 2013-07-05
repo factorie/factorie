@@ -45,7 +45,7 @@ object MentionAlignment {
     }
 
     //align gold mentions to detected mentions in order to get labels for detected mentions
-    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options,shifts))
+    val alignmentInfo =  documents.zip(documentsToBeProcessed).map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options,shifts))    //todo: change this back to be .par
     val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
@@ -110,6 +110,8 @@ object MentionAlignment {
     val falsePositives1 = ArrayBuffer[Mention]()
     detectedMentions.foreach(m => {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
+      if(m.span.string == "/.")
+        println("XXXXX\n/.   : " + m.span.tokens.map(_.posLabel.categoryValue).mkString(" ") + ": " + m.sentence.string)
       if(alignment.isDefined){
         val gtMention = alignment.get
         m.attr +=  gtMention.attr[Entity]
@@ -121,7 +123,6 @@ object MentionAlignment {
         println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
       }else{
         println("not aligned: "  +  m.span.string + ":" + m.start)
-
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
@@ -131,16 +132,20 @@ object MentionAlignment {
         falsePositives1 += m
       }
     })
+    println("# gt mentions = " + gtAligned.size)
+    println("succesfully aligned " + gtAligned.count(x => x._2))
+    println("unsuccesfully aligned " + gtAligned.count(x => !x._2))
+    println("aligned " + exactMatches + " things")
+
     if(true){
       def mentionString(m: Mention): String = {
         m.span.string
       }
-
       val missedDetections =  gtAligned.filter(x => !x._2).map(_._1)
       val falsePositives =  detectedMentions.filter(m => !entityHash.contains(m.attr[Entity]))
       println("\n\nMissed Detections\n" + missedDetections.map(mentionString(_)).mkString("\n") )
+      println("\n\nRelevant Missed Detections\n" + missedDetections.filter(m => entityHash(m.attr[Entity]).length > 1).map(mentionString(_)).mkString("\n") )
       println("\nFalse Positives\n"     + falsePositives.map(mentionString(_)).mkString("\n") )
-      println("\nFalse Positives1\n"    + falsePositives1.map(mentionString(_)).mkString("\n") )
     }
 
     //first, we add everything as a corefmention to the detectedDoc
