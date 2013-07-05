@@ -37,13 +37,12 @@ object EntityTypeAnnotator1 extends EntityTypeAnnotator1(null)  //the constructo
 
 class EntityTypeAnnotator1(lexDir: String) extends DocumentAnnotator {
   import EntityTypeAnnotator1Util._
-  lazy val gaz = new CorefGazetteers(lexDir)
   def process1(document:Document): Document = {
     document.attr[MentionList].foreach(predictEntityType(_))
     document
   }
   def predictEntityType(m: Mention): Unit = {
-    val prediction = classifyUsingRules(m.span.tokens.map(_.lemmaString),gaz)
+    val prediction = classifyUsingRules(m.span.tokens.map(_.lemmaString))
     m.attr += new EntityType(m,prediction)
   }
   override def tokenAnnotationString(token:Token): String = {
@@ -59,17 +58,17 @@ object EntityTypeAnnotator1Util {
   final val articles = Seq("a","A","the","The").toSet
 
   //this expects cased strings as input
-  def classifyUsingRules(strings: Seq[String], cg: CorefGazetteers): String = {
+  def classifyUsingRules(strings: Seq[String]): String = {
 
     val uStr = strings.filter(!articles.contains(_))
     val str = uStr.map(_.toLowerCase)
     val str1 = strings.mkString(" ")
     val uStr1 = uStr.mkString(" ")
 
-    val isPerson = detectIfPerson(str,uStr, cg)
-    val isPlace = detectIfPlace(str1,uStr1, cg)
-    val isEvent = detectIfEvent(str1,uStr1, cg)
-    val isOrganization = detectIfOrg(str1,uStr1, cg)
+    val isPerson = detectIfPerson(str,uStr)
+    val isPlace = detectIfPlace(str1,uStr1)
+    val isEvent = detectIfEvent(str1,uStr1)
+    val isOrganization = detectIfOrg(str1,uStr1)
     val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
 
     if(onlyOne){
@@ -89,23 +88,23 @@ object EntityTypeAnnotator1Util {
     }
   }
 
-  def detectIfPerson(strs: Seq[String], uStrs: Seq[String], cg: CorefGazetteers): Boolean = {
+  def detectIfPerson(strs: Seq[String], uStrs: Seq[String]): Boolean = {
     val isCased = strs.zip(uStrs).exists(ab => ab._1 != ab._2)
     val str = strs.mkString(" ")
     val uStr = uStrs.mkString(" ")
-    val fullStringPerson = cg.personFullNames.contains(str) && isCased
+    val fullStringPerson = lexicon.wikipedia.Person.contains(str) && isCased
     val fields = strs
     val uFields = uStrs
 
     val firstIsCased = fields(0) != uFields(0)
     val secondIsCased = if(fields.length == 2) fields(1) != uFields(1) else false
-    val firstContained = cg.personFirstWords.contains(fields(0))
-    val secondContained =   if(fields.length == 2) cg.lastNames.contains(fields(1))  else false
+    val firstContained = lexicon.uscensus.PersonFirstFemale.contains(fields(0)) || lexicon.uscensus.PersonFirstMale.contains(fields(0))
+    val secondContained =   if(fields.length == 2) lexicon.uscensus.PersonLast.contains(fields(1))  else false
 
     val firstName = fields.length == 2  && firstContained  &&  firstIsCased  && secondIsCased
-    val firstName2 = fields.length == 1 && cg.firstNames.contains(fields(0))  &&  firstIsCased
+    val firstName2 = fields.length == 1 && lexicon.iesl.PersonFirst.contains(fields(0))  &&  firstIsCased
     val lastName = fields.length == 2   && firstContained && secondContained   &&  secondIsCased && firstIsCased
-    val lastName2 = fields.length == 1   && cg.lastNames.contains(fields(0))   &&  firstIsCased
+    val lastName2 = fields.length == 1   && lexicon.uscensus.PersonLast.contains(fields(0))   &&  firstIsCased
     val bothNames = fields.length == 2 && firstContained && secondContained
     val isI = fields.length == 1 && uStr == "I"
 
@@ -113,18 +112,18 @@ object EntityTypeAnnotator1Util {
     isPerson  && ! isI
   }
   //the follow three methods just check for exact string matches
-  def detectIfPlace(s: String, us: String, cg: CorefGazetteers): Boolean = {
-    cg.placeWords.contains(s)
+  def detectIfPlace(s: String, us: String): Boolean = {
+    lexicon.iesl.AllPlaces.contains(s)
   }
-  def detectIfOrg(s: String, us: String, cg: CorefGazetteers): Boolean = {
-    cg.orgWords.contains(s)
+  def detectIfOrg(s: String, us: String): Boolean = {
+    lexicon.iesl.OrgSuffix.contains(s)
   }
-  def detectIfEvent(s: String, us: String, cg: CorefGazetteers): Boolean = {
-    cg.events.contains(s)
+  def detectIfEvent(s: String, us: String): Boolean = {
+    lexicon.wikipedia.Event.contains(s)
   }
 
-  def classifyUsingRules(rawString: String, cg: CorefGazetteers): String = {
-    classifyUsingRules(rawString.split(" "),cg)
+  def classifyUsingRules(rawString: String): String = {
+    classifyUsingRules(rawString.split(" "))
   }
 
 }

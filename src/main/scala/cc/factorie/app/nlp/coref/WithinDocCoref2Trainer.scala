@@ -14,9 +14,11 @@ import java.io.File
 
 
 trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
+  val trainFile = new CmdOption("train", "conll-train-clean.txt", "STRING", "File with training data")
+  val testFile = new CmdOption("test", "conll-test-clean.txt", "STRING", "File with testing data")
   val numPositivePairsTrain = new CmdOption("prune-train", 2, "INT", "number of positive pairs before pruning instances in training")
   val numPositivePairsTest = new CmdOption("prune-test", 100, "INT", "number of positive pairs before pruning instances in testing")
-  val portion = new CmdOption("portion", 1.0, "DOUBLE", "Portion of corpus to load.")
+  val portion = new CmdOption("portion", 0.1, "DOUBLE", "Portion of corpus to load.")
   val serialize = new CmdOption("serialize", "N/A", "FILE", "Filename in which to serialize classifier.")
   val deserialize = new CmdOption("deserialize", "N/A", "FILE", "Filename from which to deserialize classifier.")
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
@@ -34,7 +36,7 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val conjunctionStyle = new CmdOption("conjunction-style", "NONE", "NONE|HASH|SLOW", "What types of conjunction features to use - options are NONE, HASH, and SLOW (use slow string-based conjunctions).")
   val entityLR = new CmdOption("entity-left-right",false,"BOOLEAN","whether to do entity-based pruning in lr search")
   val slackRescale = new CmdOption("slack-rescale",2.0,"FLOAT","recall bias for hinge loss")
-  val useNonGoldBoundaries = new CmdOption("use-nongold-boundaries",false,"BOOLEAN","whether to use non-gold mention boundaries")
+  val useNonGoldBoundaries = new CmdOption("use-nongold-boundaries",true,"BOOLEAN","whether to use non-gold mention boundaries")
   val mentionAlignmentShiftWidth = new CmdOption("alignment-width",0,"INT","tolerance on boundaries when aligning detected mentions to gt mentions")
   val useEntityType = new CmdOption("use-entity-type",true,"BOOLEAN","whether to use entity type info")
   val mergeAppositions = new CmdOption("mergeAppositions",false,"BOOLEAN","whether to merge appositions as a rule")
@@ -117,22 +119,23 @@ object WithinDocCoref2Trainer {
     println()
 
     val wn =   new WordNet(new File(opts.wnDir.value))   //cc.factorie.app.nlp.wordnet.WordNet
-    val gz = new cc.factorie.app.nlp.coref.CorefGazetteers("factorie-nlp-resources/src/main/resources/cc/factorie/app/nlp/lexicon/")
     val rng = new scala.util.Random(opts.randomSeed.value)
 
-    val (trainDocs,trainPredMaps,testDocs,testTrueMaps) =  if(opts.useNonGoldBoundaries.value )  makeTrainTestDataNonGold("conll-train-clean.txt","conll-test-clean.txt",wn,gz, options) else makeTrainTestData("conll-train-clean.txt","conll-test-clean.txt",wn,gz)
+    val (trainDocs,trainPredMaps,testDocs,testTrueMaps) =  if(opts.useNonGoldBoundaries.value )
+      makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options)
+    else makeTrainTestData(opts.trainFile.value,opts.testFile.value)
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val model = new BaseCorefModel
-        val lr = new WithinDocCoref2(model, options, wn, gz)
+        val lr = new WithinDocCoref2(model, options)
         lr.deserialize(opts.deserialize.value)
         lr.doTest(testDocs, wn, testTrueMaps.toMap, "Test")
         lr
       }
       else{
         val model = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitCrossProductCorefModel else new BaseCorefModel
-        val lr = new WithinDocCoref2(model, options, wn, gz)
+        val lr = new WithinDocCoref2(model, options)
         lr.train(trainDocs, testDocs, wn, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value)
         lr
       }
@@ -155,9 +158,9 @@ object WithinDocCoref2Trainer {
     }
   }
 
-  def makeTrainTestData(trainFile: String, testFile: String, wn: WordNet, gz: CorefGazetteers): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    val allTrainDocs = ConllCorefLoader.loadWithParse("conll-train-clean.txt")
-    val allTestDocs  =  ConllCorefLoader.loadWithParse("conll-test-clean.txt")
+  def makeTrainTestData(trainFile: String, testFile: String): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+    val allTrainDocs = ConllCorefLoader.loadWithParse(trainFile)
+    val allTestDocs  =  ConllCorefLoader.loadWithParse(testFile)
 
     val trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
     val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
@@ -172,10 +175,10 @@ object WithinDocCoref2Trainer {
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, wn: WordNet, gz: CorefGazetteers, options: Coref2Options): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref2Options): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
     import cc.factorie.app.nlp.Implicits._
-    val (trainDocs,trainMap) = MentionAlignment.makeLabeledData("conll-train-clean.txt",null,wn,gz,opts.portion.value,options.useEntityType, options)
-    val (testDocs,testMap) = MentionAlignment.makeLabeledData("conll-test-clean.txt",null,wn,gz,opts.portion.value,options.useEntityType, options)
+    val (trainDocs,trainMap) = MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options)
+    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
     (trainDocs,trainMap,testDocs,testMap)
   }
 }

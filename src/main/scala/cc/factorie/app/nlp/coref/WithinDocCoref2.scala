@@ -16,7 +16,8 @@ import scala.collection.mutable.ArrayBuffer
  * Time: 12:25 PM
  */
 
-class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options, val wordnet: WordNet, val gazetteers: CorefGazetteers) extends DocumentAnnotator {
+class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options) extends DocumentAnnotator {
+
   def prereqAttrs = Seq(classOf[MentionList])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process1(document: Document) = {
@@ -67,7 +68,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
 
 
   def generateTrainingInstances(d: Document, map: GenericEntityMap[Mention]): Seq[MentionPairLabel] = {
-    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers)), map)
+    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
   }
 
   protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
@@ -201,7 +202,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
 
   def processDocumentOneModel(doc: Document): GenericEntityMap[Mention] = {
     val ments = doc.attr[MentionList]
-    val corefMentions = ments.map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
+    val corefMentions = ments.map(CorefMention.mentionToCorefMention)
     val map = processDocumentOneModelFromMentions(corefMentions)
     map
   }
@@ -221,7 +222,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
+    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention)
     val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
 
 

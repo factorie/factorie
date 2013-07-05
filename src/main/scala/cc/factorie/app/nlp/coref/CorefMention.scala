@@ -5,6 +5,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
+import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 
 /**
  * User: apassos
@@ -12,8 +13,8 @@ import scala.collection.mutable
  * Time: 12:23 PM
  */
 object CorefMention{
-  def mentionToCorefMention(m: Mention,wn: WordNet,gz: CorefGazetteers): CorefMention = {
-    val cm = new CorefMention(m,m.start,m.sentence.indexInSection,wn,gz)
+  def mentionToCorefMention(m: Mention): CorefMention = {
+    val cm = new CorefMention(m,m.start,m.sentence.indexInSection)
     cm.attr += new EntityType(m,m.attr[EntityType].categoryValue)
     cm
   }
@@ -21,7 +22,7 @@ object CorefMention{
 
   //todo: the default headTokenIndex here is a little funky. If you don't pass it anything, it sets it using the NN heuristic below.
   //todo: however, if the span truly has the root as its parse parent, we also use the NN heuristic. Is there something else we should be doing for this second case?
-  def apply(span: TokenSpan, tokenNum: Int, sentenceNum: Int, wordNet: WordNet, corefGazetteers: cc.factorie.app.nlp.coref.CorefGazetteers, mentionType: String = null, headTokenIndex: Int = -1) = {
+  def apply(span: TokenSpan, tokenNum: Int, sentenceNum: Int, mentionType: String = null, headTokenIndex: Int = -1) = {
     //here, we use the final noun as the head if it wasn't passed a headTokenIndex (from parsing)
     val headInd = {
       if(headTokenIndex > span.length){
@@ -37,7 +38,7 @@ object CorefMention{
 
     val docMention = new Mention(span,headInd)
     docMention.attr += new MentionType(docMention,mentionType)
-    new CorefMention(docMention, tokenNum,  sentenceNum, wordNet, corefGazetteers)
+    new CorefMention(docMention, tokenNum,  sentenceNum)
   }
 
   val posTagsSet = Set("PRP", "PRP$", "WP", "WP$")
@@ -50,7 +51,7 @@ object CorefMention{
 }
 
 //basically, this is a wrapper around factorie Mention, with some extra stuff
-class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int, wordNet: WordNet, val corefGazetteers: cc.factorie.app.nlp.coref.CorefGazetteers) extends cc.factorie.util.Attr {
+class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
   val _head =  mention.span.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
   def parentEntity = mention.attr[Entity]
@@ -70,9 +71,9 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
     isAppo && isChildOf
   }
 
-  var cache = new MentionCache(this, wordNet, corefGazetteers)
+  var cache = new MentionCache(this)
   def clearCache() {
-    cache = new MentionCache(this, wordNet, corefGazetteers)
+    cache = new MentionCache(this)
   }
 
   def hasSpeakWord: Boolean = cache.hasSpeakWord
@@ -95,11 +96,12 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def printInfo : String = Seq[String]("gender",gender.toString,"number",number.toString,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
 }
 
-class MentionCache(m: CorefMention, wordNet: WordNet, corefGazetteers: cc.factorie.app.nlp.coref.CorefGazetteers) {
-  lazy val hasSpeakWord = corefGazetteers.hasSpeakWord(m.mention, 2)
-  lazy val wnLemma = wordNet.lemma(m.headToken.string, "n")
-  lazy val wnSynsets = wordNet.synsets(wnLemma).toSet
-  lazy val wnHypernyms = wordNet.hypernyms(wnLemma)
+class MentionCache(m: CorefMention) {
+  import cc.factorie.app.nlp.lexicon
+  lazy val hasSpeakWord = m.mention.span.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val wnLemma = WordNet.lemma(m.headToken.string, "n")
+  lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
+  lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
   lazy val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
   lazy val nounWords: Set[String] =
       m.span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
@@ -108,9 +110,9 @@ class MentionCache(m: CorefMention, wordNet: WordNet, corefGazetteers: cc.factor
   lazy val nonDeterminerWords: Seq[String] =
     m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
-      m.span.tokens.map(_.string).filterNot(corefGazetteers.orgClosings.contains(_)).filter(t => t(0).isUpper).map(_(0)).mkString("")
+      m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
   lazy val predictEntityType: String = m.mention.attr[EntityType].categoryValue
-  lazy val demonym: String = corefGazetteers.demonymMap.getOrElse(m.headPhraseTrim, "")
+  lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(m.headPhraseTrim, "")
 
   lazy val capitalization: Char = {
       if (m.span.length == 1 && m.span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
@@ -121,13 +123,13 @@ class MentionCache(m: CorefMention, wordNet: WordNet, corefGazetteers: cc.factor
     }
   lazy val gender: Char = {
     if (m.isProper) {
-      CorefFeatures.namGender(m.mention, corefGazetteers)
+      CorefFeatures.namGender(m.mention)
     } else if (m.isPossessive) {
-      val gnam = CorefFeatures.namGender(m.mention, corefGazetteers)
-      val gnom = CorefFeatures.nomGender(m.mention, wordNet)
+      val gnam = CorefFeatures.namGender(m.mention)
+      val gnom = CorefFeatures.nomGender(m.mention, WordNet)
       if (gnam == 'u' && gnom != 'u') gnom else gnam
     } else if (m.isNoun) {
-      CorefFeatures.nomGender(m.mention, wordNet)
+      CorefFeatures.nomGender(m.mention, WordNet)
     } else if (m.isPRO) {
       CorefFeatures.proGender(m.mention)
     } else {
@@ -151,8 +153,8 @@ class MentionCache(m: CorefMention, wordNet: WordNet, corefGazetteers: cc.factor
         'u'
       }
     } else if (m.isNoun || m.isPossessive) {
-        val maybeSing = if (corefGazetteers.isSingular(fullhead)) true else false
-        val maybePlural = if (corefGazetteers.isPlural(fullhead)) true else false
+        val maybeSing = if (MorphologicalAnalyzer1.isSingular(fullhead)) true else false
+        val maybePlural = if (MorphologicalAnalyzer1.isPlural(fullhead)) true else false
 
         if (maybeSing && !maybePlural) {
           's'
@@ -202,17 +204,18 @@ object CorefFeatures {
       "Mismatch"
   }
 
-  def matchingTokensRelations(m1: CorefMention, m2: CorefMention, corefGazetteers: cc.factorie.app.nlp.coref.CorefGazetteers) = {
+  def matchingTokensRelations(m1: CorefMention, m2: CorefMention) = {
+    import cc.factorie.app.nlp.lexicon
     val set = new mutable.HashSet[String]()
     for (w1 <- m2.span.toSeq.map(_.string.toLowerCase))
       for (w2 <- m1.span.toSeq.map(_.string.toLowerCase))
        if (w1.equals(w2) || m2.wnSynsets.exists(m1.wnHypernyms.contains) || m1.wnHypernyms.exists(m2.wnHypernyms.contains) ||
-           corefGazetteers.countries.contains(w1) && corefGazetteers.countries.contains(w2) ||
-           corefGazetteers.cities.contains(w1) && corefGazetteers.cities.contains(w2) ||
-           corefGazetteers.maleFirstNames.contains(w1) && corefGazetteers.maleFirstNames.contains(w2) ||
+           lexicon.iesl.Country.contains(w1) && lexicon.iesl.Country.contains(w2) ||
+           lexicon.iesl.City.contains(w1) && lexicon.iesl.City.contains(w2) ||
+           lexicon.uscensus.PersonFirstMale.contains(w1) && lexicon.uscensus.PersonFirstMale.contains(w2) ||
            // commented out the femaleFirstNames part, Roth publication did not use
-           corefGazetteers.femaleFirstNames.contains(w1) && corefGazetteers.femaleFirstNames.contains(w2) ||
-           corefGazetteers.lastNames.contains(w1) && corefGazetteers.lastNames.contains(w2))
+           lexicon.uscensus.PersonFirstFemale.contains(w1) && lexicon.uscensus.PersonFirstFemale.contains(w2) ||
+           lexicon.uscensus.PersonLast.contains(w1) && lexicon.uscensus.PersonLast.contains(w2))
         set += getPairRelations(m1, m2)
     set.toSet
   }
@@ -243,8 +246,8 @@ object CorefFeatures {
   val allPronouns = maleHonors ++ femaleHonors ++ neuterWN ++ malePron ++ femalePron ++ neuterPron ++ personPron
   // TODO: this cache is not thread safe if we start making GenderMatch not local
   // val cache = scala.collection.mutable.Map[String, Char]()
-
-  def namGender(m: Mention, corefGazetteers: cc.factorie.app.nlp.coref.CorefGazetteers): Char = {
+  import cc.factorie.app.nlp.lexicon
+  def namGender(m: Mention): Char = {
     val fullhead = m.span.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
@@ -255,7 +258,7 @@ object CorefFeatures {
 
     var firstName = ""
     var honor = ""
-    if (corefGazetteers.honors.contains(word0)) {
+    if (lexicon.iesl.PersonHonorific.contains(word0)) {
       honor = word0
       honor = removePunct(honor)
       if (words.length >= 3)
@@ -273,20 +276,20 @@ object CorefFeatures {
       return 'f'
 
     // determine from first name
-    if (corefGazetteers.maleFirstNames.contains(firstName))
+    if (lexicon.uscensus.PersonFirstMale.contains(firstName))
       g = 'm'
-    else if (corefGazetteers.femaleFirstNames.contains(firstName))
+    else if (lexicon.uscensus.PersonFirstFemale.contains(firstName))
       g = 'f'
-    else if (corefGazetteers.lastNames.contains(lastWord))
+    else if (lexicon.uscensus.PersonLast.contains(lastWord))
       g = 'p'
 
-    if (corefGazetteers.cities.contains(fullhead) || corefGazetteers.countries.contains(fullhead)) {
+    if (lexicon.iesl.City.contains(fullhead) || lexicon.iesl.Country.contains(fullhead)) {
       if (g.equals("m") || g.equals("f") || g.equals("p"))
         return 'u'
       g = 'n'
     }
 
-    if (corefGazetteers.orgClosings.contains(lastWord)) {
+    if (lexicon.iesl.OrgSuffix.contains(lastWord)) {
       if (g.equals("m") || g.equals("f") || g.equals("p"))
         return 'u'
       g = 'n'
