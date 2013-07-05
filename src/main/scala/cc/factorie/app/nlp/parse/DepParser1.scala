@@ -262,6 +262,13 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
     println("Generating trainActions...")
     val trainActions = new ArrayBuffer[Action]()
     val testActions = new ArrayBuffer[Action]()
+    FeaturesDomain.dimensionDomain.gatherCounts = true
+    for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
+    println("Before pruning # features " + FeaturesDomain.dimensionDomain.size)
+    println("DepParser1.train first 20 feature counts: "+FeaturesDomain.dimensionDomain.counts.toSeq.take(20))
+    FeaturesDomain.dimensionDomain.trimBelowCount(3)
+    println(" After pruning # features " + FeaturesDomain.dimensionDomain.size)
+    trainActions.clear()
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))

@@ -52,7 +52,13 @@ class DepParser2 extends DocumentAnnotator {
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+//    //sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+//    println("DepParser2.serialize checking sparsification not different.")
+//    assert(!sparseEvidenceWeights.different(model.weights.value, 0.001))
+//    println("Checking dot matches")
+//    val u = new la.DenseTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, 1.0)
+//    assert(maths.almostEquals(sparseEvidenceWeights.dot(u), model.weights.value.dot(u), 0.001))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(featuresDomain.dimensionDomain, dstream)
