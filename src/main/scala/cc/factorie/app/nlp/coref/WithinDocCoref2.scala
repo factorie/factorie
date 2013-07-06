@@ -143,28 +143,31 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     val optimizer = if (options.useAverageIterate) new AdaGrad(1.0) with ParameterAveraging else if (options.useMIRA) new AdaMira(1.0) with ParameterAveraging else new AdaGrad(rate = 1.0)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
-    val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
-    for (iter <- 0 until options.numTrainingIterations) {
-      val shuffledDocs = rng.shuffle(trainDocs)
-      val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
-      for ((batch, b) <- batches.zipWithIndex) {
-        if (options.numThreads > 1) trainer.runParallel(batch)
-        else trainer.runSequential(batch)
-      }
-      if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
-      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
-      println("Train docs")
-      doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
-      println("Test docs")
-      doTest(testDocs, wn, testTrueMaps, "Test")
+    try {
+      val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
+      for (iter <- 0 until options.numTrainingIterations) {
+        val shuffledDocs = rng.shuffle(trainDocs)
+        val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
+        for ((batch, b) <- batches.zipWithIndex) {
+          if (options.numThreads > 1) trainer.runParallel(batch)
+          else trainer.runSequential(batch)
+        }
+        if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+        optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+        println("Train docs")
+        doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
+        println("Test docs")
+        doTest(testDocs, wn, testTrueMaps, "Test")
 
       if(saveModelBetweenEpochs && iter % saveFrequency == 0)
         serialize(filename + "-" + iter)
 
-      optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+        optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+      }
+      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+    } finally {
+      pool.shutdown()
     }
-    optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
-    pool.shutdown()
   }
 
   abstract class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService)
@@ -176,11 +179,9 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       val trueMap = testTrueMaps(fId)
       val predMap = getPredMap(doc, model)
 
-      if(options.useNonGoldBoundaries){
-        val gtMentions = trueMap.entities.values.flatten.toSet
-        val predMention = predMap.entities.values.flatten.toSet
-        gtMentions.diff(predMention).foreach(predMap.addMention(_,predMap.numMentions + 1))
-      }
+      val gtMentions = trueMap.entities.values.flatten.toSet
+      val predMention = predMap.entities.values.flatten.toSet
+      gtMentions.diff(predMention).foreach(predMap.addMention(_,predMap.numMentions + 1))
       val pw = CorefEvaluator.Pairwise.evaluate(predMap, trueMap)
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
