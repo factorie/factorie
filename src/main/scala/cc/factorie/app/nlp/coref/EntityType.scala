@@ -96,9 +96,9 @@ object EntityTypeAnnotator1Util {
     val fields = strs
     val uFields = uStrs
 
-    val firstIsCased = fields(0) != uFields(0)
+    val firstIsCased = fields.nonEmpty && fields(0) != uFields(0)
     val secondIsCased = if(fields.length == 2) fields(1) != uFields(1) else false
-    val firstContained = lexicon.uscensus.PersonFirstFemale.contains(fields(0)) || lexicon.uscensus.PersonFirstMale.contains(fields(0))
+    val firstContained = fields.nonEmpty && (lexicon.uscensus.PersonFirstFemale.contains(fields(0)) || lexicon.uscensus.PersonFirstMale.contains(fields(0)))
     val secondContained =   if(fields.length == 2) lexicon.uscensus.PersonLast.contains(fields(1))  else false
 
     val firstName = fields.length == 2  && firstContained  &&  firstIsCased  && secondIsCased

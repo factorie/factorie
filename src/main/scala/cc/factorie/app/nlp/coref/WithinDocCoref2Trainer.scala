@@ -31,7 +31,6 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val saveFrequency = new CmdOption("save-frequency", 4, "INT", "how often to save the model between epochs")
   val useExactEntTypeMatch = new CmdOption("use-exact-entity-type-match", true, "BOOLEAN", "whether to require exact alignment between NER annotation and NP annotation")
   val trainPortionForTest = new CmdOption("train-portion-for-test", 0.1, "DOUBLE", "When testing on train, what portion to use.")
-  val wnDir = new CmdOption("wordnet", "wordnet", "STRING", "Path to the wordnet database.")   //now we load from a jar
   val mergeFeaturesAtAll = new CmdOption("merge-features-at-all", true, "BOOLEAN", "Whether to merge features")
   val conjunctionStyle = new CmdOption("conjunction-style", "NONE", "NONE|HASH|SLOW", "What types of conjunction features to use - options are NONE, HASH, and SLOW (use slow string-based conjunctions).")
   val entityLR = new CmdOption("entity-left-right",false,"BOOLEAN","whether to do entity-based pruning in lr search")
@@ -118,7 +117,6 @@ object WithinDocCoref2Trainer {
     for (o <- opts.values.toSeq.sortBy(_.name); if !ignoreOpts(o.name)) println(o.name + " = " + o.value)
     println()
 
-    val wn =   new WordNet(new File(opts.wnDir.value))   //cc.factorie.app.nlp.wordnet.WordNet
     val rng = new scala.util.Random(opts.randomSeed.value)
 
     val (trainDocs,trainPredMaps,testDocs,testTrueMaps) =  if(opts.useNonGoldBoundaries.value )
@@ -129,13 +127,13 @@ object WithinDocCoref2Trainer {
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
         lr.deserialize(opts.deserialize.value)
-        lr.doTest(testDocs, wn, testTrueMaps.toMap, "Test")
+        lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
       }
       else{
         val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
         lr.options.setConfigHash(options.getConfigHash)
-        lr.train(trainDocs, testDocs, wn, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value)
+        lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value)
         lr
       }
 
