@@ -15,7 +15,7 @@ import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 object CorefMention{
   def mentionToCorefMention(m: Mention): CorefMention = {
     val cm = new CorefMention(m,m.start,m.sentence.indexInSection)
-    cm.attr += new EntityType(m,m.attr[EntityType].categoryValue)
+    cm.attr += new EntityType(m, m.attr[EntityType].categoryValue)
     cm
   }
 

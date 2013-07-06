@@ -48,7 +48,7 @@ class EntityTypeAnnotator1(lexDir: String) extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[EntityType].categoryValue + ":" + m.span.indexOf(token)).mkString(","); case _ => "_" }
   }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Mention])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[EntityType])
 
 }

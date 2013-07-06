@@ -20,7 +20,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
   val options = new Coref2Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs = Seq(classOf[MentionList])
+  def prereqAttrs = Seq(classOf[MentionList], classOf[EntityType])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process1(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)

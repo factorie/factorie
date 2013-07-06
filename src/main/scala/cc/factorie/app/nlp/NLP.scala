@@ -4,6 +4,7 @@ import java.io._
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.parse._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
+import cc.factorie.app.nlp.coref.EntityTypeAnnotator1
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -11,6 +12,7 @@ import java.net.{InetAddress,ServerSocket,Socket,SocketException}
     @author Andrew McCallum */
 object NLP {
   val annotators = new scala.collection.mutable.ArrayBuffer[DocumentAnnotator]
+  annotators += EntityTypeAnnotator1
   var logStream = System.err
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
