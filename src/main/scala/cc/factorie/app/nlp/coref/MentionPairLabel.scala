@@ -122,7 +122,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
     addMergeableFeature("etm" + entityTypeMatch)
     addMergeableFeature("lhp" + CorefFeatures.headWordsCross(mention1, mention2, model))
     if (mention1.span.sentence == mention2.span.sentence) addMergeableFeature("ss") // false values of this feature are not included in Roth's system
-    CorefFeatures.matchingTokensRelations(mention1, mention2, mention1.corefGazetteers).foreach(r => addMergeableFeature("apr" + r))
+    CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
 
     if (mention1.span.head.string.toLowerCase == mention2.span.head.string.toLowerCase)
       addMergeableFeature("bM")

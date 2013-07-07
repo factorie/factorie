@@ -191,7 +191,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
   }
   /** Do any of the Lexicon entries contain the given word string. */
   def containsLemmatizedWord(word:String): Boolean = contents.contains(word)
-  def containsLemmatizedWords(words: Seq[String]): Boolean = contains(newLexiconTokens(words).head.asInstanceOf[Observation[LexiconToken]])
+  def containsLemmatizedWords(words: Seq[String]): Boolean = newLexiconTokens(words).nonEmpty && contains(newLexiconTokens(words).head.asInstanceOf[Observation[LexiconToken]])
   def contains[T<:Observation[T]](query:Seq[T]): Boolean = {
     val queryToken = query.head
     val entries = contents.getOrElse(lemmatizer.lemmatize(queryToken.string), Nil)

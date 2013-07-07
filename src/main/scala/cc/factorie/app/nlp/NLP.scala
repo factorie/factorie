@@ -4,6 +4,7 @@ import java.io._
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.parse._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
+import cc.factorie.app.nlp.coref.EntityTypeAnnotator1
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -11,6 +12,7 @@ import java.net.{InetAddress,ServerSocket,Socket,SocketException}
     @author Andrew McCallum */
 object NLP {
   val annotators = new scala.collection.mutable.ArrayBuffer[DocumentAnnotator]
+  annotators += EntityTypeAnnotator1
   var logStream = System.err
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
@@ -35,7 +37,8 @@ object NLP {
       val parser1 = new CmdOption[String]("parser1", null, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { annotators += new cc.factorie.app.nlp.parse.DepParser1(ClasspathURL[DepParser1](".factorie")) } }
       val parser2 = new CmdOption[String]("parser2", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { if (value ne null) System.setProperty(classOf[DepParser2].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser2 } }
       val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
-      val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
+      val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference using a simple left-to-right system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
+      val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
 
     }
     opts.parse(args)

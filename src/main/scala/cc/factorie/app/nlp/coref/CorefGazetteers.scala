@@ -10,9 +10,10 @@ import collection.mutable
  * Time: 10:07 PM
  */
 
-
+@deprecated
 object CorefGazetteers extends CorefGazetteers(null)
 
+@deprecated
 class CorefGazetteers(lexDir: String) {
   private def load(name: String): mutable.Set[String] = {
     if (lexDir eq null) {

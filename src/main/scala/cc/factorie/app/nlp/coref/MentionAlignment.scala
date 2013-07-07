@@ -17,7 +17,7 @@ import cc.factorie.app.nlp.parse.ParseTree
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,wn: WordNet, corefGazetteers: CorefGazetteers, portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -34,7 +34,7 @@ object MentionAlignment {
     documentsToBeProcessed.par.foreach(findMentions(_))
 
     //align gold mentions to detected mentions in order to get labels for detected mentions
-    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options))
+    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,WordNet,useEntityTypes, options))
     val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
@@ -77,7 +77,7 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, cg: CorefGazetteers,useEntityTypes: Boolean, options: Coref2Options): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref2Options): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
     val name = detectedDoc.name
@@ -104,14 +104,14 @@ object MentionAlignment {
         m.attr +=  gtMention.attr[Entity]
         if(entityHash(gtMention.attr[Entity]).length > 1) relevantExactMatches += 1
         exactMatches += 1
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString),cg)  else "UKN"
+        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
         m.attr += new EntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
       }else{
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString),cg)  else "UKN"
+        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
         m.attr += new EntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
       }

@@ -6,8 +6,8 @@ import cc.factorie.app.nlp.mention.{MentionType, Mention, MentionList}
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
-import java.io.{File, FileInputStream, DataInputStream}
-import cc.factorie.util.BinarySerializer
+import java.io._
+import cc.factorie.util.{ClasspathURL, ClassPathUtils, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -16,8 +16,11 @@ import scala.collection.mutable.ArrayBuffer
  * Time: 12:25 PM
  */
 
-class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options, val wordnet: WordNet, val gazetteers: CorefGazetteers) extends DocumentAnnotator {
-  def prereqAttrs = Seq(classOf[MentionList])
+abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
+  val options = new Coref2Options
+  val model: PairwiseCorefModel
+
+  def prereqAttrs = Seq(classOf[MentionList], classOf[EntityType])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process1(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
@@ -44,30 +47,32 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     }
   }
 
-  def deserialize(stream: DataInputStream, configStream: DataInputStream) {
+  def deserialize(stream: DataInputStream) {
     import cc.factorie.util.CubbieConversions._
     val config = options.getConfigHash
-    BinarySerializer.deserialize(config, configStream)
-    configStream.close()
+    BinarySerializer.deserialize(config, stream)
     options.setConfigHash(config)
     println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    model.deserialize(stream)
+    BinarySerializer.deserialize(model, stream)
+    stream.close()
   }
 
   def deserialize(filename: String) {
-    deserialize(new DataInputStream(new FileInputStream(filename)), new DataInputStream(new FileInputStream(filename + ".config")))
+    deserialize(new DataInputStream(new FileInputStream(filename)))
   }
 
   def serialize(filename: String) {
     import cc.factorie.util.CubbieConversions._
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    BinarySerializer.serialize(options.getConfigHash,new File(filename + ".config"))
-    model.serialize(filename)
+    val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
+    BinarySerializer.serialize(options.getConfigHash, stream)
+    BinarySerializer.serialize(model, stream)
+    stream.close()
   }
 
 
   def generateTrainingInstances(d: Document, map: GenericEntityMap[Mention]): Seq[MentionPairLabel] = {
-    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers)), map)
+    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
   }
 
   protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
@@ -138,28 +143,31 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     val optimizer = if (options.useAverageIterate) new AdaGrad(1.0) with ParameterAveraging else if (options.useMIRA) new AdaMira(1.0) with ParameterAveraging else new AdaGrad(rate = 1.0)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
-    val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
-    for (iter <- 0 until options.numTrainingIterations) {
-      val shuffledDocs = rng.shuffle(trainDocs)
-      val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
-      for ((batch, b) <- batches.zipWithIndex) {
-        if (options.numThreads > 1) trainer.runParallel(batch)
-        else trainer.runSequential(batch)
-      }
-      if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
-      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
-      println("Train docs")
-      doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
-      println("Test docs")
-      doTest(testDocs, wn, testTrueMaps, "Test")
+    try {
+      val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
+      for (iter <- 0 until options.numTrainingIterations) {
+        val shuffledDocs = rng.shuffle(trainDocs)
+        val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
+        for ((batch, b) <- batches.zipWithIndex) {
+          if (options.numThreads > 1) trainer.runParallel(batch)
+          else trainer.runSequential(batch)
+        }
+        if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+        optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+        println("Train docs")
+        doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
+        println("Test docs")
+        doTest(testDocs, wn, testTrueMaps, "Test")
 
       if(saveModelBetweenEpochs && iter % saveFrequency == 0)
         serialize(filename + "-" + iter)
 
-      optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+        optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+      }
+      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+    } finally {
+      pool.shutdown()
     }
-    optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
-    pool.shutdown()
   }
 
   abstract class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService)
@@ -171,11 +179,9 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
       val trueMap = testTrueMaps(fId)
       val predMap = getPredMap(doc, model)
 
-      if(options.useNonGoldBoundaries){
-        val gtMentions = trueMap.entities.values.flatten.toSet
-        val predMention = predMap.entities.values.flatten.toSet
-        gtMentions.diff(predMention).foreach(predMap.addMention(_,predMap.numMentions + 1))
-      }
+      val gtMentions = trueMap.entities.values.flatten.toSet
+      val predMention = predMap.entities.values.flatten.toSet
+      gtMentions.diff(predMention).foreach(predMap.addMention(_,predMap.numMentions + 1))
       val pw = CorefEvaluator.Pairwise.evaluate(predMap, trueMap)
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
@@ -201,7 +207,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
 
   def processDocumentOneModel(doc: Document): GenericEntityMap[Mention] = {
     val ments = doc.attr[MentionList]
-    val corefMentions = ments.map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
+    val corefMentions = ments.map(CorefMention.mentionToCorefMention)
     val map = processDocumentOneModelFromMentions(corefMentions)
     map
   }
@@ -221,7 +227,7 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention(_, wordnet, gazetteers))
+    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention)
     val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
 
 
@@ -408,4 +414,16 @@ class WithinDocCoref2(val model: PairwiseCorefModel, val options: Coref2Options,
     pool.shutdown()
   }
 
+}
+
+class WithinDocCoref2 extends BaseWithinDocCoref2 {
+  val model = new BaseCorefModel
+}
+
+class ImplicitConjunctionWithinDocCoref2 extends BaseWithinDocCoref2 {
+  val model = new ImplicitCrossProductCorefModel
+}
+
+object WithinDocCoref2 extends WithinDocCoref2 {
+  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref2](".factorie").openConnection().getInputStream))
 }

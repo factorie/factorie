@@ -26,6 +26,7 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     object City extends PhraseLexicon("city")
     object USState extends PhraseLexicon("us-state")
     object PlaceSuffix extends WordLexicon("place-suffix")
+    object AllPlaces extends UnionLexicon("place-suffix", Continents, Country, City, USState)
 
     object JobTitle extends PhraseLexicon("jobtitle") // TODO Rename file to job-title
     object Money extends WordLexicon("money")
