@@ -45,7 +45,7 @@ object MentionAlignment {
     }
 
     //align gold mentions to detected mentions in order to get labels for detected mentions
-    val alignmentInfo =  documents.zip(documentsToBeProcessed).map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options,shifts))    //todo: change this back to be .par
+    val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,wn,corefGazetteers,useEntityTypes, options,shifts))
     val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
@@ -103,15 +103,13 @@ object MentionAlignment {
     var exactMatches = 0
     var relevantExactMatches = 0
     var unAlignedEntityCount = 0
-
+    var debug = false
     //here, we create a bunch of new entity objects, that differ from the entities that the ground truth mentions point to
     //however, we index them by the same uIDs that the ground mentions use
     val entityHash = groundTruthMentions.groupBy(m => m.attr[Entity]).toMap
     val falsePositives1 = ArrayBuffer[Mention]()
     detectedMentions.foreach(m => {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
-      if(m.span.string == "/.")
-        println("XXXXX\n/.   : " + m.span.tokens.map(_.posLabel.categoryValue).mkString(" ") + ": " + m.sentence.string)
       if(alignment.isDefined){
         val gtMention = alignment.get
         m.attr +=  gtMention.attr[Entity]
@@ -120,9 +118,9 @@ object MentionAlignment {
         val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString),cg)  else "UKN"
         m.attr += new EntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
-        println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
+        if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
       }else{
-        println("not aligned: "  +  m.span.string + ":" + m.start)
+        if(debug) println("not aligned: "  +  m.span.string + ":" + m.start)
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
@@ -132,12 +130,8 @@ object MentionAlignment {
         falsePositives1 += m
       }
     })
-    println("# gt mentions = " + gtAligned.size)
-    println("succesfully aligned " + gtAligned.count(x => x._2))
-    println("unsuccesfully aligned " + gtAligned.count(x => !x._2))
-    println("aligned " + exactMatches + " things")
 
-    if(true){
+    if(debug){
       def mentionString(m: Mention): String = {
         m.span.string
       }

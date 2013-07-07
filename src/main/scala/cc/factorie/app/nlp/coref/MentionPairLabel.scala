@@ -21,11 +21,16 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
   def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
 
   def addFeature(f: String) {
-    if(mention1.isPRO)
-      features += "pro-"+f
-    else
-      features += "npro-"+f
+    if(options.trainSeparatePronounWeights){
+      if(mention1.isPRO)
+        features += "pro-"+f
+      else
+        features += "npro-"+f
+    }else
+      features += f
   }
+
+
 
   computeFeatures()
   def computeConjunctionFeatures() {
