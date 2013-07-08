@@ -232,6 +232,9 @@ class POS1 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize, new la.SparseIndexedTensor1(_))
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+    model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
@@ -242,6 +245,7 @@ class POS1 extends DocumentAnnotator {
     import CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
+    model.weights.set(new la.DenseLayeredTensor2(PTBPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
