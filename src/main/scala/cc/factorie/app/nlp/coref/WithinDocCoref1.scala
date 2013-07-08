@@ -453,7 +453,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         if (label) numAntecedent += 1
         if (!(m2.isPRO && !m1.isPRO) && (label || (numAntecedent < 3))) {
           examplesList += new LinearBinaryExample(model.weights,
-            getFeatures(m1, m2).value.asInstanceOf[Tensor1],
+            getFeatures(m1, m2).value,
             if (label) 1 else -1,
             LinearObjectives.hingeScaledBinary(negSlackRescale=3.0))
         }
