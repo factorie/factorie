@@ -40,6 +40,7 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val useEntityType = new CmdOption("use-entity-type",true,"BOOLEAN","whether to use entity type info")
   val mergeAppositions = new CmdOption("mergeAppositions",false,"BOOLEAN","whether to merge appositions as a rule")
   val usePronounRules = new CmdOption("use-pronoun-rules",false,"BOOLEAN","whether to do deterministic assigning of pronouns and not consider pronouns for training")
+  val trainSeparatePronounWeights = new CmdOption("separate-pronoun-weights",false,"BOOLEAN","train a separate weight vector for pronoun-pronoun comparison")
 }
 
 object WithinDocCoref2Trainer {
@@ -83,7 +84,7 @@ object WithinDocCoref2Trainer {
     val options = new Coref2Options
     //options that get serialized with the model
     options.setConfig("useEntityType",opts.useEntityType.value)
-
+    options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
     // options which affect only learning
     options.useAverageIterate = opts.useAverageIterate.value
     options.numTrainingIterations = opts.numTrainingIterations.value

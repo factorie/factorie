@@ -64,7 +64,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   val nullLemma = new TokenLemma(null, "null")
   class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
-    override def skipNonCategories = featuresSkipNonCategories
+    override def skipNonCategories = FeaturesDomain.dimensionDomain.frozen // TODO was: featuresSkipNonCategories -akm
     import cc.factorie.app.strings.simplifyDigits
     // assumes all locations > 0
     def formFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =

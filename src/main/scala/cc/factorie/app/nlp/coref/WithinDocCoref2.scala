@@ -274,7 +274,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       while(j > 0 && searching){
         val m2 = allMentions(j)
         //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
-        if(/*!m2.isPRO && */ numGenderSets(j).contains(numGender1)){
+        if(!m2.isPRO &&  numGenderSets(j).contains(numGender1)){
           predMap.addCoreferentPair(m1,m2)
           searching = false
         }
@@ -336,8 +336,10 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       val m2 = orderedMentions(j)
       numCompared += 1
       val cataphora = m2.isPRO && !m1IsPro
+      //val proPro = m1.isPRO && m2.isPRO       //uncomment this and the !proPro part below if you want to prohibit
+      //pronoun-pronoun comparison
 
-      if (!cataphora || options.allowTestCataphora) {
+      if (/*!proPro &&*/ (!cataphora || options.allowTestCataphora)) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)
@@ -353,8 +355,8 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
             bestScore = score
           }
         }
+        mentionsComparedWith += m2
       }
-      mentionsComparedWith += m2
       j -= 1
     }
     //now, look at the list of candidateMentionsToTheLeft and compare to things that you haven't compared to yet
