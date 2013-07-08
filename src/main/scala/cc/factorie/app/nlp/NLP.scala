@@ -12,7 +12,6 @@ import cc.factorie.app.nlp.coref.EntityTypeAnnotator1
     @author Andrew McCallum */
 object NLP {
   val annotators = new scala.collection.mutable.ArrayBuffer[DocumentAnnotator]
-  annotators += EntityTypeAnnotator1
   var logStream = System.err
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
@@ -38,7 +37,7 @@ object NLP {
       val parser2 = new CmdOption[String]("parser2", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { if (value ne null) System.setProperty(classOf[DepParser2].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser2 } }
       val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
       val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference using a simple left-to-right system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
-      val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
+      val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += EntityTypeAnnotator1; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
 
     }
     opts.parse(args)
