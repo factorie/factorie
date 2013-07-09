@@ -146,6 +146,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   def process1(doc: Document): Document = {
     //if NER has already been done, then convert the NER tags to NER spans
+    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
+
     if (doc.hasAnnotation(classOf[BilouOntonotesNerLabel]))
       addNerSpans[BilouOntonotesNerLabel](doc)
     else if(doc.hasAnnotation(classOf[BilouConllNerLabel]))
@@ -168,7 +170,6 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
-
 
   def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
     for (s <- doc.sections;t <- s.tokens) {
