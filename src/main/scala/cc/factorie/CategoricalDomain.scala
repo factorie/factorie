@@ -56,7 +56,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
   override def dimensionDomain: CategoricalDomain[C] = this
-  @inline final override def length = _elements.length
+  @inline final override def length = lock.withReadLock { _elements.length }
   var growPastMaxSize: Boolean = true
   def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
@@ -91,8 +91,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
               thisIndex = e
             }
           } finally {
-            lock.readLock()
             lock.writeUnlock()
+            lock.readLock()
           }
         }
         //_indices.getOrElse(category, null)
