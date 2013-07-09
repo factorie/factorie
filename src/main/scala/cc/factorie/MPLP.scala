@@ -42,7 +42,32 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
             }
             marginals(value) = maxScore
           }
-        case _ => throw new Error("There is no efficient way to marginalize over an arbitrary number of neighbors")
+        case _ =>
+          def increment(a: Array[Int], domains: Array[Int]): Boolean = {
+            var i = a.length-1
+            var done = false
+            while (i >= 0 && !done) {
+              a(i) = (a(i) + 1) % domains(i)
+              if (a(i) != 0) done = true
+              i -= 1
+            }
+            !done
+          }
+          for (value <- 0 until v.domain.size) {
+            val others = varyingVariables.filterNot(_ eq v).map(_.asInstanceOf[MutableDiscreteVar[DiscreteValue]]).toSeq
+            val domainSizes = others.map(_.domain.size).toArray
+            val values = (0 until others.size).map(i => 0).toArray
+            var maxScore = Double.NegativeInfinity
+            do {
+              implicit val d = new DiffList
+              for (i <- 0 until others.length) others(i).set(others(i).domain(values(i)))(d)
+              var score = factor.currentScore
+              d.undo
+              for (i <- 0 until others.length) score += lambdas(others(i))(values(i))
+              if (score > maxScore) maxScore = score
+            } while (increment(values, domainSizes))
+            marginals(value) = maxScore
+          }
       }
       marginals += lambdas(v)
       marginals
