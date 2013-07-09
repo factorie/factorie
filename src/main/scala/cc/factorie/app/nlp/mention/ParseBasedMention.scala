@@ -148,7 +148,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     //if NER has already been done, then convert the NER tags to NER spans
     if (doc.hasAnnotation(classOf[BilouOntonotesNerLabel]))
       addNerSpans[BilouOntonotesNerLabel](doc)
-    else
+    else if(doc.hasAnnotation(classOf[BilouConllNerLabel]))
       addNerSpans[BilouConllNerLabel](doc)
 
     var docMentions = new ArrayBuffer[Mention]
@@ -170,7 +170,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
 
 
-  def addNerSpans[T <: NerLabel](doc: Document): Unit = {
+  def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
     for (s <- doc.sections;t <- s.tokens) {
       if (t.attr[T].categoryValue != "O") {
         val attr = t.attr[T].categoryValue.split("-")
