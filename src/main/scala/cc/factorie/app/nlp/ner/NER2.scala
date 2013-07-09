@@ -293,6 +293,9 @@ class NER2 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    model3.evidence.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+    model3.evidence.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model3, dstream)
@@ -302,6 +305,7 @@ class NER2 extends DocumentAnnotator {
     import CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    model3.evidence.weights.set(new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model3, dstream)
     //model3.parameters.densify()
     println("NER2 model parameters oneNorm "+model3.parameters.oneNorm)

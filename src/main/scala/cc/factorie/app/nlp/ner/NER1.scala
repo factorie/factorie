@@ -212,9 +212,8 @@ class NER1 extends DocumentAnnotator {
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.evidence.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.evidence.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.evidence.weights.set(sparseEvidenceWeights)
-    println("NER1.serialize evidence "+model.evidence.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)

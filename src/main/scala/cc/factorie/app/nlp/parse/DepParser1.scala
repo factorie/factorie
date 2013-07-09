@@ -184,7 +184,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     println("DepParser1.serialize evidence "+model.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
@@ -257,7 +257,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   }
 
   case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)  
-  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 3): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
     val trainActions = new ArrayBuffer[Action]()
