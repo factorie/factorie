@@ -91,8 +91,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
               thisIndex = e
             }
           } finally {
-            lock.readLock()
             lock.writeUnlock()
+            lock.readLock()
           }
         }
         //_indices.getOrElse(category, null)
