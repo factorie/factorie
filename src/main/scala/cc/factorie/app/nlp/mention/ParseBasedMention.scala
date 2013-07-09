@@ -4,7 +4,7 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.ner.NerSpan
+import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import scala.Some
 
@@ -145,6 +145,13 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
 
   def process1(doc: Document): Document = {
+    //if NER has already been done, then convert the NER tags to NER spans
+    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
+
+    if (doc.hasAnnotation(classOf[BilouOntonotesNerLabel]))
+      addNerSpans[BilouOntonotesNerLabel](doc)
+    else if(doc.hasAnnotation(classOf[BilouConllNerLabel]))
+      addNerSpans[BilouConllNerLabel](doc)
 
     var docMentions = new ArrayBuffer[Mention]
     // NAM = proper noun, NOM = common noun, PRO = pronoun
@@ -164,6 +171,24 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
 
+  def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
+    for (s <- doc.sections;t <- s.tokens) {
+      if (t.attr[T].categoryValue != "O") {
+        val attr = t.attr[T].categoryValue.split("-")
+        if (attr(0) == "U") {
+          new NerSpan(s, attr(1), t.positionInSection, 1)(null)
+        } else if (attr(0) == "B") {
+          if(t.hasNext) {
+            var lookFor = t.next
+            while (lookFor.hasNext && lookFor.attr[T].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
+            new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection + 1)(null)
+          } else {
+            new NerSpan(s, attr(1), t.positionInSection, 1)(null)
+          }
+        }
+      }
+    }
+  }
 }
 
 
