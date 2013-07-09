@@ -127,7 +127,7 @@ object WithinDocCoref2Trainer {
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
-	println("deserializing from " + opts.deserialize.value)
+	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
