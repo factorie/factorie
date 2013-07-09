@@ -54,6 +54,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     options.setConfigHash(config)
     println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
     BinarySerializer.deserialize(model, stream)
+    model.MentionPairFeaturesDomain.dimensionDomain.freeze()
     stream.close()
   }
 
