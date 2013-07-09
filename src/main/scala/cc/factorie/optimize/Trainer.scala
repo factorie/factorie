@@ -389,6 +389,7 @@ object Trainer {
    * @param logEveryN How often to log, if using online training
    */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
+    parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
     optimizer match {
       case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
       case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
