@@ -119,15 +119,17 @@ object WithinDocCoref2Trainer {
     println()
 
     val rng = new scala.util.Random(opts.randomSeed.value)
-
+    val loadTrain = !opts.deserialize.wasInvoked
     val (trainDocs,trainPredMaps,testDocs,testTrueMaps) =  if(opts.useNonGoldBoundaries.value )
-      makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options)
-    else makeTrainTestData(opts.trainFile.value,opts.testFile.value)
+      makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain)
+    else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
+	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
+        lr.model.MentionPairFeaturesDomain.freeze()
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
       }
@@ -156,26 +158,29 @@ object WithinDocCoref2Trainer {
     }
   }
 
-  def makeTrainTestData(trainFile: String, testFile: String): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    val allTrainDocs = ConllCorefLoader.loadWithParse(trainFile)
+  def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+
+    var trainDocs: Seq[Document] = null
+    var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[Mention]] = null
+    if (loadTrain){
+      val allTrainDocs = ConllCorefLoader.loadWithParse(trainFile)
+      trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
+      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
+      trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
+    }
     val allTestDocs  =  ConllCorefLoader.loadWithParse(testFile)
-
-    val trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
     val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
-    println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
     println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[MentionList].length).sum.toFloat / testDocs.length + " mention/doc")
-
     val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
-    val trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
 
 
     (trainDocs,trainEntityMaps,testDocs,testEntityMaps)
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref2Options): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref2Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
     import cc.factorie.app.nlp.Implicits._
-    val (trainDocs,trainMap) = MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options)
+    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
     (trainDocs,trainMap,testDocs,testMap)
   }

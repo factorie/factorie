@@ -197,7 +197,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
 
   def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2)(implicit random: scala.util.Random) {
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad //with ParameterAveraging
+    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
     // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
     for (it <- 0 until trainIterations) {
       val batches = rng.shuffle(docs).grouped(batchSize).toSeq
@@ -205,7 +205,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         println("Generating training examples batch "+ batch + " of " + batches.length)
         val examples = generateTrainingExamples(documents, nThreads)
         println("Training ")
-        Trainer.onlineTrain(model.parameters, examples, maxIterations=2)
+        Trainer.onlineTrain(model.parameters, examples, maxIterations=1, optimizer=opt)
       }
       domain.freeze()
       // opt.setWeightsToAverage(model.parameters)  // TODO with ParameterAveraging above, and this was causing null pointer exception in Parameters.scala:100
@@ -453,7 +453,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         if (label) numAntecedent += 1
         if (!(m2.isPRO && !m1.isPRO) && (label || (numAntecedent < 3))) {
           examplesList += new LinearBinaryExample(model.weights,
-            getFeatures(m1, m2).value.asInstanceOf[Tensor1],
+            getFeatures(m1, m2).value,
             if (label) 1 else -1,
             LinearObjectives.hingeScaledBinary(negSlackRescale=3.0))
         }

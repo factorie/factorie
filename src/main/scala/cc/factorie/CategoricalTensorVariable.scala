@@ -73,7 +73,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   def +=(elt:C): Unit = +=(elt, 1.0)
   def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))
   @deprecated("Use this.tensor.+= instead?") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
-  def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
+  def activeCategories: Seq[C] = tensor.activeDomain.toSeq.map(i => domain.dimensionDomain.category(i))
 }
 
 // TODO we should maybe refactor this to not set the Value type to "Tensor", as this makes things require casting down the road when using this for eg classifiers on tensor1 features -luke

@@ -232,11 +232,11 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
   private var _size: Int = 0
   def count = _size
 
-  def +=(label: LabeledDiscreteVar): this.type = {
+  def +=(label: LabeledDiscreteVar): this.type = +=(label, label.intValue)
+  def +=(label: LabeledDiscreteVar, predIndex: Int): this.type = {
     require(label.domain eq domain)
     _size += 1
     val trueIndex = label.targetIntValue
-    val predIndex = label.intValue
     for (targetIndex <- 0 until domain.size) {
       if (targetIndex == trueIndex) {
         if (trueIndex == predIndex)

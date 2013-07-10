@@ -27,10 +27,15 @@ class Trial[L<:LabeledMutableDiscreteVar[_],F](val classifier: MultiClassClassif
   private val classifications = new ArrayBuffer[LabeledClassification[L]]
   def length = classifications.length
   def apply(i:Int) = classifications(i)
-  def +=(label:L): Unit = { classifications += LabeledClassification(label, classifier.classification(l2f(label))); super.+=(label) }
+  def +=(label:L): Unit = {
+    val c = LabeledClassification(label, classifier.classification(l2f(label)))
+    classifications += c
+    super.+=(label, c.classification.bestLabelIndex)
+  }
   def ++=(labels:Iterable[L]): this.type = { labels.foreach(+=(_)); this }
   def +=(c:LabeledClassification[L]): Unit = {
     classifications += c
+    super.+=(c.label, c.classification.bestLabelIndex)
   }
   override def toString: String = "OVERALL: " + overallEvalString + "\n" +  evalString
 }

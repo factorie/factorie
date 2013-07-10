@@ -160,7 +160,17 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         }
         result
       }
-      case t: Tensor => var dot = 0.0
+      case t: DenseTensor => {
+        var dot = 0.0
+        foreachActiveElement((i, v) => dot += t(i)*v)
+        dot
+      }
+      case t: Tensor =>
+        if (!SparseIndexedTensor.hasLogged) {
+          SparseIndexedTensor.hasLogged = true
+          println("Warning: SparseIndexedTensor slow dot with type " + t.getClass.getName)
+        }
+        var dot = 0.0
         t.foreachActiveElement((i, v) => dot += apply(i)*v)
         dot
     }
@@ -352,7 +362,12 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         }
         case _ => throw new Error("types are " + t.tensor1.getClass.getName + " and " + t.tensor2.getClass.getName) }
       }
-    case t:Tensor => t.foreachActiveElement((i, v) => this += (i, v * f))
+    case t:Tensor =>
+      if (!SparseIndexedTensor.hasLogged) {
+        SparseIndexedTensor.hasLogged = true
+        println("Warning: SparseIndexedTensor slow += with type " + t.getClass.getName)
+      }
+      t.foreachActiveElement((i, v) => this += (i, v * f))
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < __npos) { a(__indices(i)+offset) += f * __values(i); i += 1 }}
@@ -415,5 +430,9 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
   }
 
   def sizeHint(size: Int): Unit = ensureCapacity(size)
+}
+
+object SparseIndexedTensor {
+  var hasLogged = false
 }
 

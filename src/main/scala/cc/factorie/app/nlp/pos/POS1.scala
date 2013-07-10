@@ -79,7 +79,7 @@ class POS1 extends DocumentAnnotator {
     def take(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(0,n) }
     def takeRight(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(l-n,l) }
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
-    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor._appendUnsafe(i) }
+    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor += i }
     // Original word, with digits replaced, no @
     val Wm3 = if (lemmaIndex > 2) lemmas(lemmaIndex-3) else ""
     val Wm2 = if (lemmaIndex > 1) lemmas(lemmaIndex-2) else ""
@@ -230,7 +230,7 @@ class POS1 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
-    val sparseEvidenceWeights = new la.DenseLayeredTensor2(PTBPosDomain.size, FeatureDomain.dimensionSize, new la.SparseIndexedTensor1(_))
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
@@ -344,7 +344,13 @@ object POS1Trainer extends HyperparameterMain {
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
     pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
-    if (opts.saveModel.value) pos.serialize(opts.modelFile.value)
+    if (opts.saveModel.value) {
+      println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
+      pos.serialize(opts.modelFile.value)
+      val pos2 = new POS1
+      pos2.deserialize(new java.io.File(opts.modelFile.value))
+      println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
+    }
     pos.accuracy(testDocs.flatMap(_.sentences))
   }
 

@@ -53,7 +53,11 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     BinarySerializer.deserialize(config, stream)
     options.setConfigHash(config)
     println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    BinarySerializer.deserialize(model, stream)
+    //BinarySerializer.deserialize(model, stream)
+    model.deserialize(stream)
+    model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+    println("model weights 1norm = " + model.parameters.oneNorm)
+    println("domain = " + model.MentionPairFeaturesDomain.dimensionDomain.iterator.take(20).mkString(" "))
     stream.close()
   }
 
@@ -66,7 +70,9 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
     val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
     BinarySerializer.serialize(options.getConfigHash, stream)
-    BinarySerializer.serialize(model, stream)
+    model.serialize(stream)
+    println("model weights 1norm = " + model.parameters.oneNorm)
+    println("domain = " + model.MentionPairFeaturesDomain.dimensionDomain.iterator.take(20).mkString(" "))
     stream.close()
   }
 
@@ -180,8 +186,10 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       val predMap = getPredMap(doc, model)
 
       val gtMentions = trueMap.entities.values.flatten.toSet
-      val predMention = predMap.entities.values.flatten.toSet
-      gtMentions.diff(predMention).foreach(predMap.addMention(_,predMap.numMentions + 1))
+      val predMentions = predMap.entities.values.flatten.toSet
+
+      val nm = predMap.numMentions
+      gtMentions.diff(predMentions).seq.toSeq.zipWithIndex.foreach(mi =>  predMap.addMention(mi._1, mi._2+ nm))
       val pw = CorefEvaluator.Pairwise.evaluate(predMap, trueMap)
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
@@ -409,7 +417,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     val tester = if (options.useEntityLR) new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTesterFromEntities
       else new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTester
-    tester.runParallel(testDocs)
+    tester.runSequential(testDocs)  //todo: change back to parallel
     println("-----------------------")
     println("  * Overall scores")
     scorer.printInhouseScore(name)
