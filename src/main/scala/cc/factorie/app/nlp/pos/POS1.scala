@@ -40,26 +40,24 @@ class POS1 extends DocumentAnnotator {
     val ambiguityClassThreshold = 0.7
     val wordInclusionThreshold = 1
 
-    def preProcess(documents: Seq[Document]) {
+    def preProcess(tokens: Iterable[Token]) {
       val wordCounts = collection.mutable.HashMap[String,Int]()
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       var tokenCount = 0
-      documents.foreach(doc => {
-        doc.tokens.foreach(t => {
-          tokenCount += 1
-          if (t.attr[PTBPosLabel] eq null) {
-            println("POS3.WordData.preProcess tokenCount "+tokenCount)
-            println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
-            println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
-          }
-          val lemma = lemmatize(t.string).toLowerCase
-          if (!wordCounts.contains(lemma)) {
-            wordCounts(lemma) = 0
-            posCounts(lemma) = Array.fill(PTBPosDomain.size)(0)
-          }
-          wordCounts(lemma) += 1
-          posCounts(lemma)(t.attr[PTBPosLabel].intValue) += 1
-        })
+      tokens.foreach(t => {
+        tokenCount += 1
+        if (t.attr[PTBPosLabel] eq null) {
+          println("POS3.WordData.preProcess tokenCount "+tokenCount)
+          println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+          println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
+        }
+        val lemma = lemmatize(t.string).toLowerCase
+        if (!wordCounts.contains(lemma)) {
+          wordCounts(lemma) = 0
+          posCounts(lemma) = Array.fill(PTBPosDomain.size)(0)
+        }
+        wordCounts(lemma) += 1
+        posCounts(lemma)(t.attr[PTBPosLabel].intValue) += 1
       })
       wordCounts.keys.foreach(w => {
         if (wordCounts(w) >= wordInclusionThreshold) {
@@ -267,30 +265,24 @@ class POS1 extends DocumentAnnotator {
     correct/total
   }
   
-
-  
-  def train(trainDocs:Seq[Document], testDocs:Seq[Document], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
-    for (doc <- (trainDocs ++ testDocs)) {
-      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process1(doc)
-    }
-    WordData.preProcess(trainDocs)
-    val sentences = trainDocs.flatMap(_.sentences)
-    val testSentences = testDocs.flatMap(_.sentences)
+    for (sentence <- (trainSentences ++ testSentences); token <- sentence.tokens) cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.processToken(token)
+    WordData.preProcess(trainSentences.flatMap(_.tokens))
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
-    for (sentence <- sentences) features(sentence.tokens) // just to create and count all features
+    for (sentence <- trainSentences) features(sentence.tokens) // just to create and count all features
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    println("POS1.train\n"+sentences(3).tokens.map(_.string).zip(features(sentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    println("POS1.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
     def evaluate() {
       exampleSetsToPrediction = doBootstrap
-      println("Train accuracy: "+accuracy(sentences))
+      println("Train accuracy: "+accuracy(trainSentences))
       println("Test  accuracy: "+accuracy(testSentences))
       println(s"Sparsity: ${model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length}")
     }
-    val examples = sentences.shuffle.par.map(sentence =>
+    val examples = trainSentences.shuffle.par.map(sentence =>
       new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass)).seq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
@@ -350,7 +342,7 @@ object POS1Trainer extends HyperparameterMain {
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-    pos.train(trainDocs, testDocs,
+    pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) pos.serialize(opts.modelFile.value)
     pos.accuracy(testDocs.flatMap(_.sentences))
