@@ -180,6 +180,15 @@ class ID3DecisionTreeTrainer
   val minSampleSize = 4
 }
 
+class CARTDecisionTreeTrainer
+  extends DecisionTreeTrainer
+  with TensorSumStatsAndLabels
+  with GiniSplitting
+  with SampleSizeStopping
+  with NoPruning {
+  val minSampleSize = 4
+}
+
 object DecisionTreeTrainer {
   case class Instance[Label](feats: Tensor1, label: Label, weight: Double)
   // helper to do sparse sampling of features - instead of sorting all indices by some random number and picking the first N,
@@ -438,6 +447,21 @@ trait DiagonalCovarianceSplitting {
     val pctWithout = withoutFeature.mult * 1.0 / numInstances
     val infoGain = baseStdDev - (pctWith * getStdDev(withFeature) + pctWithout * getStdDev(withoutFeature))
     infoGain
+  }
+}
+
+trait GiniSplitting {
+  this: DecisionTreeTrainer with TensorSumStatsAndLabels =>
+  type State = Double
+  def samePred(labels: Seq[Label]): Boolean = labels.map(_.maxIndex).distinct.length == 1
+  def getBucketState(instances: Iterable[Instance]): Double = getGini(getBucketStats(instances))
+  def getGini(stats: BucketStats): Double = (stats.sum / stats.mult).toSeq.foldLeft(0.0)((acc, p) => acc + p * (1 - p))
+  def evaluateSplittingCriteria(baseGini: Double, withFeature: MutableBucketStats, withoutFeature: MutableBucketStats): Double = {
+    if (!(withFeature.mult > 0.0 && withoutFeature.mult > 0.0)) return Double.NegativeInfinity
+    val numInstances = withFeature.mult + withoutFeature.mult
+    val pctWith = withFeature.mult * 1.0 / numInstances
+    val pctWithout = withoutFeature.mult * 1.0 / numInstances
+    baseGini - (pctWith * getGini(withFeature) + pctWithout * getGini(withoutFeature))
   }
 }
 
