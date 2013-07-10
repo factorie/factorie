@@ -330,10 +330,13 @@ trait DecisionTreeTrainer {
     for (inst <- instances)
       inst.feats.foreachActiveElement((i, v) => {
         possibleFeatureThresholds.get(i) match {
-          case Some(featureValues) =>
-            val split = featureValues.length - featureValues.count(fv => fv > v) - 1
-            val stats = withFeatureStats(i)(split)
-            accumulate(stats, inst)
+          case Some(thresholds) =>
+            val split = thresholds.length - thresholds.count(fv => fv > v) - 1
+            // if we are lower than all the thresholds, then we don't need to accumulate stats for this split
+            if (split > -1) {
+              val stats = withFeatureStats(i)(split)
+              accumulate(stats, inst)
+            }
           case None =>
         }
       })
@@ -389,21 +392,24 @@ trait DecisionTreeTrainer {
             val idx = sIndices(i)
             splitBuilders.get(idx) match {
               case None =>
-                if (DecisionTreeTrainer.shouldIncludeFeature(idx, salt, numFeatures, numFeaturesToChoose))
+                if (DecisionTreeTrainer.shouldIncludeFeature(idx, salt, numFeatures, numFeaturesToChoose)) {
                   splitBuilders(idx) = mutable.ArrayBuilder.make[Double]()
-              case Some(_) =>
+                  splitBuilders(idx) += sValues(i)
+                }
+              case Some(_) => splitBuilders(idx) += sValues(i)
+
             }
-            splitBuilders(idx) += sValues(i)
             i += 1
           }
         case sT => sT.foreachActiveElement((f, v) => {
           splitBuilders.get(f) match {
             case None =>
-              if (DecisionTreeTrainer.shouldIncludeFeature(f, salt, numFeatures, numFeaturesToChoose))
+              if (DecisionTreeTrainer.shouldIncludeFeature(f, salt, numFeatures, numFeaturesToChoose)) {
                 splitBuilders(f) = mutable.ArrayBuilder.make[Double]()
-            case Some(_) =>
+                splitBuilders(f) += v
+              }
+            case Some(_) => splitBuilders(f) += v
           }
-          splitBuilders(f) += v
         })
       }
       s += 1
