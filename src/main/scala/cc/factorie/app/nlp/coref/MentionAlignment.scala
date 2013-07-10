@@ -58,38 +58,13 @@ object MentionAlignment {
     (documentsToBeProcessed  , entityMaps)
   }
 
-  def printDocPOS(d: Document, out: PrintWriter): Unit = {
-    out.println("#begin document (" + d.name + ")")
-    var tokenCount = 0
-    d.sentences.foreach(s => {
-      s.tokens.zipWithIndex.foreach(ti => {
-        val stuffToPrint = mutable.Seq(d.name,"0",tokenCount,ti._2,ti._1.string,ti._1.attr[PTBPosLabel].categoryValue)
-        out.println(stuffToPrint.mkString("\t"))
-        tokenCount += 1
-      })
-      out.println()
-    })
-    d.tokens.zipWithIndex.foreach(ti => {
-
-      val stuffToPrint = mutable.Seq(d.name,"0",ti._2,ti._1.string,ti._1.attr[PTBPosLabel].categoryValue)
-      out.println(stuffToPrint.mkString("\t"))
-    })
-    out.println()
-  }
-
-  def printDoc(d: Document, out: PrintWriter): Unit = {
-    out.println("#begin document (" + d.name + ")")
-    d.attr[MentionList].filter(m => m.attr.contains[EntityType]).foreach(m => {
-      out.println(m.start + "\t" + m.length + "\t" + m.headTokenIndex + "\t" + m.attr[EntityType].categoryValue + "\t" + m.attr[EntityKey].name)
-    })
-    out.println()
-  }
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
   def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref2Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
+
     val name = detectedDoc.name
 
     val gtSpanHash = mutable.HashMap[(Int,Int),Mention]()
@@ -130,27 +105,12 @@ object MentionAlignment {
       }
     })
 
-    if(debug){
-      def mentionString(m: Mention): String = {
-        m.span.string
-      }
-      val missedDetections =  gtAligned.filter(x => !x._2).map(_._1)
-      val falsePositives =  detectedMentions.filter(m => !entityHash.contains(m.attr[Entity]))
-      println("\n\nMissed Detections\n" + missedDetections.map(mentionString(_)).mkString("\n") )
-      println("\n\nRelevant Missed Detections\n" + missedDetections.filter(m => entityHash(m.attr[Entity]).length > 1).map(mentionString(_)).mkString("\n") )
-      println("\nFalse Positives\n"     + falsePositives.map(mentionString(_)).mkString("\n") )
-    }
-
-    //first, we add everything as a corefmention to the detectedDoc
-    val cml = new MentionList
-    cml ++= detectedDoc.attr[MentionList]
-    detectedDoc.attr += cml
-
     //now, we make a generic entity map
     val entityMap = new GenericEntityMap[Mention]
 
     val unAlignedGTMentions = gtAligned.filter(kv => !kv._2).map(_._1)
     val allCorefMentions =  detectedDoc.attr[MentionList] ++ unAlignedGTMentions
+
     allCorefMentions.foreach(m => entityMap.addMention(m, entityMap.numMentions.toLong))
 
     val corefEntities = allCorefMentions.groupBy(_.attr[Entity])
@@ -164,7 +124,6 @@ object MentionAlignment {
   }
 
   def getHeadTokenInDoc(m: Mention): Int = {
-    //todo: a better way to do this is to get the head from the dependency parse produced on the detected mentions
     m.start + m.headTokenIndex
   }
   def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options, shifts: Seq[Int]): Option[Mention] = {

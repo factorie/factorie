@@ -24,6 +24,7 @@ object Mention{
 case class Mention(span: TokenSpan, headTokenIndex: Int = -1) extends Attr{
   def document: Document = span.document
   def section: Section = span.section
+  def string = span.string
   /** The Token position in its Section. */
   def start: Int = span.start
   /** The number of Tokens in the mention's span. */
