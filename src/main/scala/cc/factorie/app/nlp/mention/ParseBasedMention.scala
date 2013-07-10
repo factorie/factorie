@@ -130,7 +130,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       .groupBy( m => m.headToken )
       .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
       .toSeq
-      .sortBy(m => (m.start,m.length))    //todo: this won't properly handle sections?
+      .sortBy(m => (m.span.tokens.head.stringStart, m.length))
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
     // Note: equality is only in the first set of arguments for case classes
@@ -142,7 +142,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       .toSet
       .map { m: MentionStartLength => m.mention }
       .toSeq
-      .sortBy(m => (m.start,m.length))    //todo: this won't properly handle sections?
+      .sortBy(m => (m.span.tokens.head.stringStart, m.length))
+
   }
 
 
