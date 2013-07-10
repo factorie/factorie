@@ -90,6 +90,19 @@ class TestTensor extends cc.factorie.util.FastLogging {
         test(t1, t2)
     }
   }
+  
+  @Test def testDot() {
+    val dim1 = 10; val dim2 = 1000
+    val random = new scala.util.Random(0)
+    val dense = new DenseTensor2(dim1, dim2)
+    val sparse = new DenseLayeredTensor2(dim1, dim2, new SparseIndexedTensor1(_))
+    for (i <- 0 until 1000) dense(random.nextInt(dim1*dim2)) = random.nextDouble
+    sparse += dense
+    val features = new SparseBinaryTensor1(dim2)
+    for (i <- 0 until 20) features.+=(random.nextInt(dim2))
+    val statistics = new SingletonLayeredTensor2(dim1, dim2, 3, 0.3, features)
+    assertEquals(dense dot statistics, sparse dot statistics, 0.0001)
+  }
 
   @Test def testPlusEqual() {
 
