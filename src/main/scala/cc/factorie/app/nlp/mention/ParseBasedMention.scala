@@ -184,7 +184,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
           if(t.hasNext) {
             var lookFor = t.next
             while (lookFor.hasNext && lookFor.attr[T].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection + 1)(null)
+            new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection)(null)
           } else {
             new NerSpan(s, attr(1), t.positionInSection, 1)(null)
           }
