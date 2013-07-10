@@ -98,7 +98,7 @@ class Document extends DocumentSubstring with Attr {
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
   val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
-  private var _sections: mutable.Buffer[Section] = new ArrayBuffer
+  private var _sections: mutable.Buffer[Section] = new ArrayBuffer[Section]
   def sections: Seq[Section] = if (_sections.length == 0) return Seq(asSection) else _sections
   def +=(s: Section) = _sections += s
 
