@@ -299,6 +299,13 @@ limitations under the License.
     </profile>
     <profile>
       <id>nlp-jar-with-dependencies</id>
+      <repositories>
+        <repository>
+          <id>dev-iesl.cs.umass.edu</id>
+          <name>dev-iesl.cs.umass.edu</name>
+          <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/</url>
+        </repository>
+      </repositories>
       <dependencies>
         <dependency>
           <groupId>cc.factorie.app.nlp</groupId>
