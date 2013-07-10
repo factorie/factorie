@@ -4,7 +4,7 @@ import cc.factorie._
 import scala.collection.mutable
 import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
 import cc.factorie.optimize.Example
-import java.io.{File, FileInputStream, DataInputStream}
+import java.io.{DataOutputStream, File, FileInputStream, DataInputStream}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.mention.Mention
 import cc.factorie.util.coref.GenericEntityMap
@@ -46,8 +46,12 @@ trait PairwiseCorefModel extends Parameters {
     deserialize(new DataInputStream(new FileInputStream(filename)))
   }
 
-  def serialize(filename: String) {
-    BinarySerializer.serialize(MentionPairLabelThing.tokFreq, MentionPairFeaturesDomain, new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]}, this, new File(filename))
+  def serialize(stream: DataOutputStream) {
+    BinarySerializer.serialize(MentionPairLabelThing.tokFreq,stream)
+    MentionPairFeaturesDomain.freeze()
+    BinarySerializer.serialize(MentionPairFeaturesDomain , stream)
+    BinarySerializer.serialize(new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
+    BinarySerializer.serialize(this,stream)
   }
 
   def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
