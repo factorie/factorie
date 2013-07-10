@@ -16,7 +16,7 @@ class TestDecisionTree extends JUnitSuite {
     val ys = xs.map(x => x * x)
     xs.zip(ys).foreach({case (x, y) => println(f"x: $x%f y: $y%f")})
     val instances = xs.zip(ys).map({
-      case (x, y) => DecisionTreeTrainer.Instance[Tensor1](new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
+      case (x, y) => DecisionTreeTrainer.Instance(new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
     })
     val trainer = new RegressionTreeTrainer { minSampleSize = 1 }
     val tree = trainer.train(instances)
@@ -34,7 +34,7 @@ class TestDecisionTree extends JUnitSuite {
     val ys = xs.map(x => x * x * x)
     xs.zip(ys).foreach({case (x, y) => println(f"x: $x%f y: $y%f")})
     val instances = xs.zip(ys).map({
-      case (x, y) => DecisionTreeTrainer.Instance[Tensor1](new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
+      case (x, y) => DecisionTreeTrainer.Instance(new SingletonTensor1(1, 0, x), new SingletonTensor1(1, 0, y), 1.0)
     })
     val trainer = new RegressionTreeTrainer { minSampleSize = 1 }
     val tree = trainer.train(instances)
