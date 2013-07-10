@@ -20,6 +20,12 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   private def isProperNoun     (t: Token) = PROPER_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
   private def isNoun           (t: Token) = ALL_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
 
+  def predictMentionType(t: Token): Option[String] =
+    if(isPersonalPronoun(t)) Some("PRO")
+    else if(isCommonNoun(t)) Some("NOM")
+    else if(isProperNoun(t)) Some("NAM")
+    else None
+
   var FILTER_APPOS = true /* This flag is so that appositive filtering can be turned off.
                             If the mentions that we are extracting do not include the appositives as part of a mention
                             we want to make sure that we are extracting the appositives separately
