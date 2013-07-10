@@ -7,13 +7,13 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.StoreFetchCubbie
 import scala.util.Random
 
-class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer with TensorLabels = new ID3DecisionTreeTrainer)
+class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)
   extends MultiClassTrainerBase[DecisionTreeMultiClassClassifier] {
 
   def baseTrain(classifier: DecisionTreeMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (DecisionTreeMultiClassClassifier) => Unit) {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
     val dtree = treeTrainer.train(instances)
     classifier.tree = dtree
@@ -22,7 +22,7 @@ class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer with
 
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: DecisionTreeMultiClassClassifier => Unit): DecisionTreeMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
     val dtree = treeTrainer.train(instances)
     val classifier = new DecisionTreeMultiClassClassifier(dtree, labelSize)
@@ -33,13 +33,13 @@ class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer with
 
 // TODO this threading stuff makes it non-deterministic, fix -luke
 class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25,
-  useParallel: Boolean = true, numThreads: Int = Runtime.getRuntime.availableProcessors(), treeTrainer: DecisionTreeTrainer with TensorLabels = new ID3DecisionTreeTrainer)
+  useParallel: Boolean = true, numThreads: Int = Runtime.getRuntime.availableProcessors(), treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)
   extends MultiClassTrainerBase[RandomForestMultiClassClassifier] {
 
   def baseTrain(classifier: RandomForestMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (RandomForestMultiClassClassifier) => Unit) {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
     val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
       val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
@@ -52,7 +52,7 @@ class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
 
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: RandomForestMultiClassClassifier => Unit): RandomForestMultiClassClassifier = {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance[Tensor1](feat, label, weight)
+      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
     val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
       val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
@@ -190,7 +190,7 @@ class CARTDecisionTreeTrainer
 }
 
 object DecisionTreeTrainer {
-  case class Instance[Label](feats: Tensor1, label: Label, weight: Double)
+  case class Instance(feats: Tensor1, label: Tensor1, weight: Double)
   // helper to do sparse sampling of features - instead of sorting all indices by some random number and picking the first N,
   // for each feature we see, compute a hash + per-node salt, mod into the domain and if it falls in the first N then we include it...
   def shouldIncludeFeature(featIdx: Int, salt: Int, domainSize: Int, numFeaturesToUse: Int): Boolean =
@@ -487,6 +487,7 @@ trait InfoGainSplitting {
   }
 }
 
+// FIXME this is bugged (at least it's giving terrible results) - make sure we're not dividing by zero, etc -luke
 trait GainRatioSplitting {
   this: DecisionTreeTrainer with TensorSumStatsAndLabels =>
   type State = Double
@@ -523,7 +524,7 @@ trait NoPruning {
 }
 
 trait RMSEBasedPruning {
-  this: DecisionTreeTrainer with DTreeBucketStats with TensorLabels =>
+  this: DecisionTreeTrainer with DTreeBucketStats =>
   def prune(tree: DTree, pruningSet: Seq[Instance]): DTree = tree match {
     case l: DTLeaf => l
     case DTBranch(yes, no, featureIndex, threshold) =>
@@ -542,7 +543,7 @@ trait RMSEBasedPruning {
 }
 
 trait AccuracyBasedPruning {
-  this: DecisionTreeTrainer with DTreeBucketStats with TensorLabels =>
+  this: DecisionTreeTrainer with DTreeBucketStats =>
   def prune(tree: DTree, pruningSet: Seq[Instance]): DTree = tree match {
     case l: DTLeaf => l
     case DTBranch(yes, no, featureIndex, threshold) =>
@@ -560,11 +561,10 @@ trait AccuracyBasedPruning {
   }
 }
 
-trait DTreeBucketStats extends TensorLabels {
-// TODO make this work with non tensor labels
-//  type Label
+trait DTreeBucketStats {
   type BucketStats
-//  type Instance = DecisionTreeTrainer.Instance[Label]
+  type Instance = DecisionTreeTrainer.Instance
+  type Label = Tensor1
   def getEmptyBucketStats(inst: Instance): BucketStats
   def getBucketStats(labels: Iterable[Instance]): BucketStats
   def +=(left: BucketStats, right: BucketStats): Unit
@@ -574,7 +574,7 @@ trait DTreeBucketStats extends TensorLabels {
   def makeLeaf(stats: BucketStats): DTree
 }
 
-trait TensorSumSqFullStatsAndLabels extends DTreeBucketStats with TensorLabels {
+trait TensorSumSqFullStatsAndLabels extends DTreeBucketStats {
   this: DecisionTreeTrainer =>
   type BucketStats = MutableBucketStats
   class MutableBucketStats(size: Int) {
@@ -620,7 +620,7 @@ trait TensorSumSqFullStatsAndLabels extends DTreeBucketStats with TensorLabels {
   def makeLeaf(stats: BucketStats): DTree = DTLeaf(getPrediction(stats))
 }
 
-trait TensorSumSqDiagStatsAndLabels extends DTreeBucketStats with TensorLabels {
+trait TensorSumSqDiagStatsAndLabels extends DTreeBucketStats {
   this: DecisionTreeTrainer =>
   type BucketStats = MutableBucketStats
   class MutableBucketStats(size: Int) {
@@ -666,12 +666,7 @@ trait TensorSumSqDiagStatsAndLabels extends DTreeBucketStats with TensorLabels {
   def makeLeaf(stats: BucketStats): DTree = DTLeaf(getPrediction(stats))
 }
 
-trait TensorLabels {
-  type Instance = DecisionTreeTrainer.Instance[Label]
-  type Label = Tensor1
-}
-
-trait TensorSumStatsAndLabels extends DTreeBucketStats with TensorLabels {
+trait TensorSumStatsAndLabels extends DTreeBucketStats {
   this: DecisionTreeTrainer =>
   type BucketStats = MutableBucketStats
   class MutableBucketStats(size: Int) {
@@ -716,6 +711,7 @@ sealed trait DTree {
     case DTBranch(yes, no, _, _) => yes.leaves ++ no.leaves
   }
 }
+
 case class DTBranch(yes: DTree, no: DTree, featureIndex: Int, threshold: Double) extends DTree
 case class DTLeaf(pred: Tensor1) extends DTree
 
@@ -723,7 +719,7 @@ object DTree {
   @inline def hasFeature(featureIdx: Int, features: Tensor1, threshold: Double): Boolean = features(featureIdx) > threshold
   def score(features: Tensor1, node: DTree): Tensor1 = node match {
     // returns -Infinity for prob 0, which is still uniform, so I guess its ok...
-    case DTLeaf(logProbs) if logProbs.isInstanceOf[Tensor1] => logProbs.asInstanceOf[Tensor1] // todo take the log here
+    case DTLeaf(logProbs) => logProbs // todo take the log here
     case DTBranch(yes, no, idx, threshold) => score(features, if (hasFeature(idx, features, threshold)) yes else no)
   }
 }
