@@ -12,7 +12,7 @@ import cc.factorie.app.nlp.coref.EntityTypeAnnotator1
     @author Andrew McCallum */
 object NLP {
   val annotators = new scala.collection.mutable.ArrayBuffer[DocumentAnnotator]
-  annotators += EntityTypeAnnotator1
+  //annotators += EntityTypeAnnotator1
   var logStream = System.err
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
