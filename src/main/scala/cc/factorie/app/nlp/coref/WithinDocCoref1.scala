@@ -474,7 +474,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     }
   }
 
-  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
+  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int): Double = {
     import CorefEvaluator.Metric
     // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
     val ceafEEval = new CorefEvaluator.CeafE()
@@ -516,6 +516,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       println(f"$name%s   C-E  ${100*ceafE.precision}%2.2f ${100*ceafE.recall}%2.2f ${100*ceafE.f1}%2.2f ")
       println(f"$name%s   C-M  ${100*ceafM.precision}%2.2f ${100*ceafM.recall}%2.2f ${100*ceafM.f1}%2.2f ")
       println(f"$name%s BLANC  ${100*blanc.precision}%2.2f ${100*blanc.recall}%2.2f ${100*blanc.f1}%2.2f ")
+      b3Score.f1
     } finally {
       pool.shutdown()
     }

@@ -39,7 +39,7 @@ object LinearObjectives {
         val grad = new SparseIndexedTensor1(prediction.size)
         grad(label) += 1.0
         grad(maxLabel) -= 1.0
-        val value = prediction(label) - prediction(maxLabel)
+        val value = lossAugmented(label) - lossAugmented(maxLabel)
         (value, grad)
       }
     }
@@ -52,7 +52,7 @@ object LinearObjectives {
       if (maxLabel == label)
         (0.0, new SparseIndexedTensor1(prediction.size))
       else {
-        val violation = prediction(label) - prediction(maxLabel)
+        val violation = lossAugmented(label) - lossAugmented(maxLabel)
         val grad = new SparseIndexedTensor1(prediction.size)
         grad(label) += 2 * -violation
         grad(maxLabel) += 2 * violation

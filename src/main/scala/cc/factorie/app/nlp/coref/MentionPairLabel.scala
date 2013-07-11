@@ -19,13 +19,12 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
   var conjunctionCalculated = false
   val mergeableFeatures = collection.mutable.Set[String]()
   def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
+  val pfx =  mentType(mention1) +":" + mentType(mention2)
+  def mentType(ment: CorefMention): String = if(ment.isPRO) "pro" else "non"
 
   def addFeature(f: String) {
     if(options.trainSeparatePronounWeights){
-      if(mention1.isPRO)
-        features += "pro-"+f
-      else
-        features += "npro-"+f
+      features += pfx + "-" +  f
     }else
       features += f
   }

@@ -47,9 +47,10 @@ class POS1 extends DocumentAnnotator {
       tokens.foreach(t => {
         tokenCount += 1
         if (t.attr[PTBPosLabel] eq null) {
-          println("POS3.WordData.preProcess tokenCount "+tokenCount)
-          println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
-          println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
+          println("POS1.WordData.preProcess tokenCount "+tokenCount)
+          println("POS1.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+          println("POS1.WordData.preProcess token "+t.string+" "+t.attr)
+          throw new Error("Found training token with no PTBPosLabel.")
         }
         val lemma = lemmatize(t.string).toLowerCase
         if (!wordCounts.contains(lemma)) {

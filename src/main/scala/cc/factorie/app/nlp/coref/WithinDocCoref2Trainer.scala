@@ -41,6 +41,8 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val mergeAppositions = new CmdOption("mergeAppositions",false,"BOOLEAN","whether to merge appositions as a rule")
   val usePronounRules = new CmdOption("use-pronoun-rules",false,"BOOLEAN","whether to do deterministic assigning of pronouns and not consider pronouns for training")
   val trainSeparatePronounWeights = new CmdOption("separate-pronoun-weights",false,"BOOLEAN","train a separate weight vector for pronoun-pronoun comparison")
+  val numCompareToTheLeft = new CmdOption("num-compare-to-the-left",75,"INT","number of mentions to compare to the left before backing off to only looking at non-pronouns and those in entities (only used if entityLR == true)")
+  val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
 }
 
 object WithinDocCoref2Trainer {
@@ -103,8 +105,10 @@ object WithinDocCoref2Trainer {
     options.useNonGoldBoundaries = opts.useNonGoldBoundaries.value
     options.mergeMentionWithApposition = opts.mergeAppositions.value
     options.setConfig("usePronounRules",opts.usePronounRules.value)
+    options.numCompareToTheLeft = opts.numCompareToTheLeft.value
     // options still in flux
     options.mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
+    options.learningRate = opts.learningRate.value
     options.conjunctionStyle = opts.conjunctionStyle.value match {
       case "NONE" => options.NO_CONJUNCTIONS
       case "HASH" => options.HASH_CONJUNCTIONS
@@ -127,8 +131,13 @@ object WithinDocCoref2Trainer {
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
+
+        //copy over options that are tweakable at test time
+        lr.options.useEntityLR = options.useEntityLR
+        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
 	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
+
         lr.model.MentionPairFeaturesDomain.freeze()
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
@@ -136,13 +145,15 @@ object WithinDocCoref2Trainer {
       else{
         val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
         lr.options.setConfigHash(options.getConfigHash)
-        lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value)
+        lr.options.useEntityLR = options.useEntityLR
+        lr.options.learningRate = options.learningRate
+        lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, lr.options.learningRate)
         lr
       }
 
 
     if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
-      mentPairClsf.serialize(opts.serialize.value + "-final")
+      mentPairClsf.serialize(opts.serialize.value)
 
     if (opts.writeConllFormat.value) {
       val conllFormatPrinter = new CorefScorer[CorefMention]
