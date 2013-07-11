@@ -57,7 +57,6 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     model.deserialize(stream)
     model.MentionPairFeaturesDomain.dimensionDomain.freeze()
     println("model weights 1norm = " + model.parameters.oneNorm)
-    println("domain = " + model.MentionPairFeaturesDomain.dimensionDomain.iterator.take(20).mkString(" "))
     stream.close()
   }
 
@@ -72,7 +71,6 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     BinarySerializer.serialize(options.getConfigHash, stream)
     model.serialize(stream)
     println("model weights 1norm = " + model.parameters.oneNorm)
-    println("domain = " + model.MentionPairFeaturesDomain.dimensionDomain.iterator.take(20).mkString(" "))
     stream.close()
   }
 
@@ -144,9 +142,9 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     }
   }
 
-  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String) {
+  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0) {
     val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
-    val optimizer = if (options.useAverageIterate) new AdaGrad(1.0) with ParameterAveraging else if (options.useMIRA) new AdaMira(1.0) with ParameterAveraging else new AdaGrad(rate = 1.0)
+    val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     try {
@@ -212,17 +210,26 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       mergeables.take(1).diff(mergeLeft).foreach(l.features ++= _.features.mergeableAllFeatures.map("NBRR_" + _))
     }
   }
+  def assertSorted(ments: Seq[Mention]): Unit = {
+     val len = ments.length
+     var i = 1
+     while(i < len){
+       assert(ments(i).span.tokens.head.stringStart >= ments(i-1).span.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
+       i +=1
+     }
+  }
 
   def processDocumentOneModel(doc: Document): GenericEntityMap[Mention] = {
     val ments = doc.attr[MentionList]
+    assertSorted(ments)
     val corefMentions = ments.map(CorefMention.mentionToCorefMention)
     val map = processDocumentOneModelFromMentions(corefMentions)
     map
   }
 
   def processDocumentOneModelFromMentions(ments: Seq[CorefMention]): GenericEntityMap[Mention] = {
-
     val predMap = new GenericEntityMap[Mention]
+    assertSorted(ments.map(_.mention))
     ments.foreach(m => predMap.addMention(m.mention, predMap.numMentions.toLong))
     for (i <- 0 until ments.size) {
       val m1 = ments(i)
@@ -237,7 +244,6 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
     val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention)
     val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
-
 
     val predMap = new GenericEntityMap[CorefMention]
     allMents.foreach(m => predMap.addMention(m, predMap.numMentions.toLong))
@@ -347,7 +353,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
       //val proPro = m1.isPRO && m2.isPRO       //uncomment this and the !proPro part below if you want to prohibit
       //pronoun-pronoun comparison
 
-      if (/*!proPro &&*/ (!cataphora || options.allowTestCataphora)) {
+      if (/*!proPro && */ (!cataphora || options.allowTestCataphora)) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)
@@ -415,9 +421,10 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     val scorer = new CorefScorer[Mention]
     object ScorerMutex
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    if(options.usePronounRules) assert(options.useEntityLR)
     val tester = if (options.useEntityLR) new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTesterFromEntities
       else new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTester
-    tester.runSequential(testDocs)  //todo: change back to parallel
+    tester.runParallel(testDocs)
     println("-----------------------")
     println("  * Overall scores")
     scorer.printInhouseScore(name)
