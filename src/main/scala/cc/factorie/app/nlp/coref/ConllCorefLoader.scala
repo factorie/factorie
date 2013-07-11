@@ -13,6 +13,7 @@ import cc.factorie.app.nlp.pos.{PTBPosDomain, PTBPosLabel}
 import mention.{MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
+import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
@@ -60,8 +61,12 @@ object ConllCorefLoader {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
+<<<<<<< HEAD
   // disperseEntityTypes optionally gives entity type information to all things that are coreferent with something that has entity type annotation
   def loadWithParse(f: String, loadSIngletons: Boolean = true, disperseEntityTypes: Boolean = false): Seq[Document] = {
+=======
+  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1): Seq[Document] = {
+>>>>>>> f9ae1a495903c9d844d46565ee77120401f827c1
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
     val tokenizer = """(\(|\||\)|\d+)""".r
@@ -93,8 +98,9 @@ object ConllCorefLoader {
     var exactTypeMatches = 0
     var totalTypeCounts  = 0
 
-    for (l <- source.getLines()) {
+    breakable { for (l <- source.getLines()) {
       if (l.startsWith("#begin document ")) {
+        if (docs.length == limitNumDocuments) break
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
@@ -169,7 +175,7 @@ object ConllCorefLoader {
         }
 
         val foo = fields(5).split("\\*")
-        if (foo.length >= 1 && loadSIngletons) {
+        if (foo.length >= 1 && loadSingletons) {
           val bracketOpens = foo(0)
           val bracketCloses = if (foo.length > 1) foo(1) else ""
           for (nonTerminal <- bracketOpens.split("\\(").drop(1)) {
@@ -246,7 +252,8 @@ object ConllCorefLoader {
         }
         prevWord = word
       }
-    }
+
+    }} // closing "breakable"
     if(disperseEntityTypes){
       for(doc <- docs){
         val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity])
@@ -262,8 +269,6 @@ object ConllCorefLoader {
         }
       }
     }
-
-
     source.close()
     docs
   }

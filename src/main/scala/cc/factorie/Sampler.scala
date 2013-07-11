@@ -317,54 +317,54 @@ trait AlternativeFactorQueue extends Sampler[C forSome {type C <: Variable}] {
 */
 
 
+class SamplingFactorMarginal(val factor: DotFamily#Factor) extends FactorMarginal {
+  val sumStatistics = Tensor.newSparse(factor.currentStatistics)
+  var t = 0
+  var haveComputedMarginals = false
+  def accumulate() {
+    assert(!haveComputedMarginals)
+    sumStatistics += factor.currentStatistics
+    t += 1
+  }
+  def tensorStatistics = {
+    assert(t > 0)
+    haveComputedMarginals = true
+    sumStatistics *= 1.0/t
+    sumStatistics
+  }
+}
+class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMarginal1[MutableDiscreteVar[_]] {
+  val sumStatistics = Tensor.newSparse(_1.tensor.asInstanceOf[Tensor])
+  var t = 0
+  var haveComputedMarginals = false
+  def accumulate() {
+    assert(!haveComputedMarginals)
+    sumStatistics += _1.tensor.asInstanceOf[Tensor]
+    t += 1
+  }
+  def proportions = new DenseTensorProportions1(tensorStatistics.toArray)
+  def tensorStatistics = {
+    assert(t > 0)
+    haveComputedMarginals = true
+    sumStatistics *= 1.0/t
+    sumStatistics
+  }
+}
+class SamplingSummary(variables: Iterable[Var], factors: Iterable[Factor]) extends Summary {
+  val variableMap = variables.flatMap({ case v: MutableDiscreteVar[DiscreteValue @unchecked] => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
+  val marginalMap = factors.flatMap({ case f: DotFamily#Factor => Some(f -> new SamplingFactorMarginal(f)) case _ => None }).toMap
+  /** The collection of all Marginals available in this Summary */
+  def marginals = variableMap.values
+  def marginal(v: Var) = v match { case v: MutableDiscreteVar[DiscreteValue @unchecked] => variableMap(v); case _ => null }
+
+  /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
+    return the Marginal with the maximally-available subset. */
+  def marginal(factor: Factor) = factor match { case f: DotFamily#Factor => marginalMap(f); case _ => null }
+  var logZ = Double.NegativeInfinity
+  def factorMarginals = marginalMap.values
+}
+
 class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) extends Infer[(Iterable[C],Iterable[Var],Iterable[Factor]),(Sampler[C],Model)] {
-  class SamplingFactorMarginal(val factor: DotFamily#Factor) extends FactorMarginal {
-    val sumStatistics = Tensor.newSparse(factor.currentStatistics)
-    var t = 0
-    var haveComputedMarginals = false
-    def accumulate() {
-      assert(!haveComputedMarginals)
-      sumStatistics += factor.currentStatistics
-      t += 1
-    }
-    def tensorStatistics = {
-      assert(t > 0)
-      haveComputedMarginals = true
-      sumStatistics *= 1.0/t
-      sumStatistics
-    }
-  }
-  class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMarginal1[MutableDiscreteVar[_]] {
-    val sumStatistics = Tensor.newSparse(_1.tensor.asInstanceOf[Tensor])
-    var t = 0
-    var haveComputedMarginals = false
-    def accumulate() {
-      assert(!haveComputedMarginals)
-      sumStatistics += _1.tensor.asInstanceOf[Tensor]
-      t += 1
-    }
-    def proportions = new DenseTensorProportions1(tensorStatistics.toArray)
-    def tensorStatistics = {
-      assert(t > 0)
-      haveComputedMarginals = true
-      sumStatistics *= 1.0/t
-      sumStatistics
-    }
-  }
-  class SamplingSummary(variables: Iterable[Var], factors: Iterable[Factor]) extends Summary {
-    val variableMap = variables.flatMap({ case v: MutableDiscreteVar[DiscreteValue @unchecked] => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
-    val marginalMap = factors.flatMap({ case f: DotFamily#Factor => Some(f -> new SamplingFactorMarginal(f)) case _ => None }).toMap
-    /** The collection of all Marginals available in this Summary */
-    def marginals = variableMap.values
-    def marginal(v: Var) = v match { case v: MutableDiscreteVar[DiscreteValue @unchecked] => variableMap(v); case _ => null }
-
-    /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
-      return the Marginal with the maximally-available subset. */
-    def marginal(factor: Factor) = factor match { case f: DotFamily#Factor => marginalMap(f); case _ => null }
-    var logZ = Double.NegativeInfinity
-    def factorMarginals = marginalMap.values
-  }
-
   def infer(variables: (Iterable[C], Iterable[Var], Iterable[Factor]), m: (Sampler[C],Model)) = {
     val summary = new SamplingSummary(variables._2, variables._3)
     for (i <- 0 until samplesToCollect) {
@@ -377,7 +377,7 @@ class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) extends I
 }
 
 class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model): Summary = {
+  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model) = {
     val sampler = new VariableSettingsSampler[MutableDiscreteVar[_]](model)
     val baseInfer = new InferBySampling[MutableDiscreteVar[_]](samplesToCollect, samplingInterval)
     baseInfer.infer((variables, variables, model.factors(variables)), (sampler, model))
