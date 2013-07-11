@@ -128,6 +128,7 @@ object OntonotesNerDomain extends CategoricalDomain[String] {
       "TIME",
       "WORK_OF_ART"
   )
+
   freeze()
 }
 class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }

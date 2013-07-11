@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.coref
 import cc.factorie.app.nlp._
 import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
 import mention.{MentionType, MentionList, Mention}
+import ner.OntonotesNerDomain
 
 /**
  * Created with IntelliJ IDEA.
@@ -17,25 +18,37 @@ import mention.{MentionType, MentionList, Mention}
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
 class EntityType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesEntityTypeDomain
+  def domain = OntonotesNerDomain
+}
+
+object EntityTypeAnnotator2 extends DocumentAnnotator {
+  def main(args: Array[String]){
+    val docs = ConllCorefLoader.loadWithParse(args(0),false,true)
+
+  }
+
+
+  def process1(document:Document): Document = {
+    document.attr[MentionList].foreach(predictEntityType(_))
+    document
+  }
+  def predictEntityType(m: Mention): Unit = {
+    //todo: implement this
+  }
+  override def tokenAnnotationString(token:Token): String = {
+    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[EntityType].categoryValue + ":" + m.span.indexOf(token)).mkString(","); case _ => "_" }
+  }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
+  def postAttrs: Iterable[Class[_]] = List(classOf[EntityType])
+
 }
 
 
-
-object OntonotesEntityTypeDomain extends CategoricalDomain[String] {
-  this ++= Seq(
-    "PERSON", "ORG", "GPE", "UKN", "DATE", "CARDINAL", "EVENT", "FAC", "LANGUAGE", "LAW", "LOC", "MONEY", "NORP", "ORDINAL", "PERCENT", "PRODUCT", "QUANTITY", "TIME", "WORK_OF_ART"
-  )
-
-  freeze()
-}
 
 
 //this gives each Mention and EntityType. This is a very simple rule-based annotator that can not even produce predictions
 //for many of the categories in  OntonotesEntityTypeDomain, only PERSON, ORG, GPE, and EVENT.
-object EntityTypeAnnotator1 extends EntityTypeAnnotator1(null)  //the constructor for CorefGazetteers is such that if you pass it null, it reads from the classpath
-
-class EntityTypeAnnotator1(lexDir: String) extends DocumentAnnotator {
+object EntityTypeAnnotator1 extends DocumentAnnotator {
   import EntityTypeAnnotator1Util._
   def process1(document:Document): Document = {
     document.attr[MentionList].foreach(predictEntityType(_))
