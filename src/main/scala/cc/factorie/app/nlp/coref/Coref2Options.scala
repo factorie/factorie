@@ -60,4 +60,5 @@ class Coref2Options {
   var numPositivePairsTest = 100
 
   var mentionAlignmentShiftWidth = 0
+  var learningRate = 1.0
 }
