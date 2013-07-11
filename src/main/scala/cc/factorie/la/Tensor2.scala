@@ -46,6 +46,7 @@ trait Tensor2 extends Tensor {
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
+  // TODO This method should be overriden in DenseLayeredTensor2 to use inner.dot for efficiency -akm
   def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
     val newT = new DenseTensor1(dim1)
@@ -378,7 +379,7 @@ trait Tensor2ElementIterator extends DoubleSeqIterator with Iterator[Tensor2Elem
 }
 
 class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with ArraySparseIndexedTensor {
-  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain1: IntSeq = new RangeIntSeq(0, dim1) // TODO Implement this so that it is really sparse -akm 
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeElements2: Tensor2ElementIterator = {
     _makeReadable
