@@ -142,7 +142,7 @@ object WithinDocCoref2Trainer {
 
 
     if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
-      mentPairClsf.serialize(opts.serialize.value + "-final")
+      mentPairClsf.serialize(opts.serialize.value)
 
     if (opts.writeConllFormat.value) {
       val conllFormatPrinter = new CorefScorer[CorefMention]
