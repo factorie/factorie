@@ -23,7 +23,7 @@ class EntityType(val mention:Mention, targetValue:String) extends LabeledCategor
 
 object EntityTypeAnnotator2 extends DocumentAnnotator {
   def main(args: Array[String]){
-    val docs = ConllCorefLoader.loadWithParse(args(0),false,true)
+    val docs = ConllCorefLoader.loadWithParse(args(0),disperseEntityTypes = true)
 
   }
 

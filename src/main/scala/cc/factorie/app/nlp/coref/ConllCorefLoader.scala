@@ -61,12 +61,8 @@ object ConllCorefLoader {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-<<<<<<< HEAD
   // disperseEntityTypes optionally gives entity type information to all things that are coreferent with something that has entity type annotation
-  def loadWithParse(f: String, loadSIngletons: Boolean = true, disperseEntityTypes: Boolean = false): Seq[Document] = {
-=======
-  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1): Seq[Document] = {
->>>>>>> f9ae1a495903c9d844d46565ee77120401f827c1
+  def loadWithParse(f: String, loadSIngletons: Boolean = true, limitNumDocuments:Int = -1,disperseEntityTypes: Boolean = false): Seq[Document] = {
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
     val tokenizer = """(\(|\||\)|\d+)""".r
