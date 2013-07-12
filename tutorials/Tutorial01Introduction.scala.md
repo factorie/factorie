@@ -2,6 +2,7 @@
 title: "Tutorial 0: Introduction"
 layout: default
 group: tutorial
+weight: 0
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;

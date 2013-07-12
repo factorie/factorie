@@ -2,6 +2,7 @@
 title: "Tutorial 4: Inference and Learning"
 layout: default
 group: tutorial
+weight: 40
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;

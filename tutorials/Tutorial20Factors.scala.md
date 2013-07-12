@@ -2,6 +2,7 @@
 title: "Tutorial 2: Factor"
 layout: default
 group: tutorial
+weight: 20
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;

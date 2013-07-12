@@ -2,6 +2,7 @@
 title: "Tutorial 1: Variables"
 layout: default
 group: tutorial
+weight: 10
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
