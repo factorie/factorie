@@ -40,9 +40,9 @@ Step-by-step Installation
         $ ls
         LICENSE.txt pom.xml src
 
-    Alternatively you can get the most recent FACTORIE source directly from the Mercurial (hg) source code revision control system. Mercurial is freely available from its download page.
+    Alternatively you can get the most recent FACTORIE source directly from the git source code revision control system. Git is freely available from its download page.
 
-        $ hg clone https://factorie.googlecode.com/hg/ factorie
+        $ git clone https://github.com/factorie/factorie.git factorie
         $ cd factorie
 
 3. Tell Maven to compile the project. In this step might take several minutes because not only must it compile all of FACTORIE, but it will also download many dependent packages. This step will print many messages; no need to be concerned about them unless they start with [ERROR]
@@ -55,7 +55,7 @@ Step-by-step Installation
 
     Sometimes the tests fail if you are using the latest Mercurial version. However, if tests fail for a release version, please contact the mailing list.
 
-Next we recommend reading the [tutorials](tutorials.html), and looking at the example code in `src/main/scala/cc/factorie/example`.
+Next we recommend reading the [tutorials](tutorial.html), and looking at the example code in `src/main/scala/cc/factorie/example`.
 
 Factorie as a Library
 ---
