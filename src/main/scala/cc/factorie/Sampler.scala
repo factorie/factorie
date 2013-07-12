@@ -369,6 +369,7 @@ class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) extends I
     val summary = new SamplingSummary(variables._2, variables._3)
     for (i <- 0 until samplesToCollect) {
       for (j <- 0 until samplingInterval) variables._1.foreach(m._1.process)
+      summary.marginals.foreach(_.accumulate())
       summary.factorMarginals.foreach(_.accumulate())
       summary.logZ = maths.sumLogProb(summary.logZ, m._2.currentScore(variables._2))
     }
