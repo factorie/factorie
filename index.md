@@ -25,7 +25,7 @@ FACTORIE has been successfully applied to various tasks in natural language proc
 *  ontology alignment
 *  latent-variable generative models, including latent Dirichlet allocation.
 
-The current recommended FACTORIE source code is version **1.0.0-M4**, available for download [here](download.html).  You can also obtain our latest code changes through the [Mercurial repository](http://code.google.com/p/factorie/source/checkout). Although pre-1.0, it is already extremely useful and quite stable. You can also browse our [list of outstanding issues](http://code.google.com/p/factorie/issues/list).
+The current recommended FACTORIE source code is version **1.0.0-M5**, available for download [here](download.html).  You can also obtain our latest code changes through the [Mercurial repository](http://code.google.com/p/factorie/source/checkout). Although pre-1.0, it is already extremely useful and quite stable. You can also browse our [list of outstanding issues](http://code.google.com/p/factorie/issues/list).
 
 Citation
 ---
