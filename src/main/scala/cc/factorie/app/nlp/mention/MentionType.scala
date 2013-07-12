@@ -50,16 +50,19 @@ class MentionTypeLabeler extends DocumentAnnotator {
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[EntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[EntityType])
-  
+ 
+  def filterMentions(mentions:Seq[Mention]): Iterable[Mention] = mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten
+
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
     val trainMentions = trainDocs.flatMap(_.attr[MentionList])
     FeatureDomain.dimensionDomain.gatherCounts = true
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
-    val examples = for (doc <- trainDocs; mention <- doc.attr[MentionList]) yield
+    //val entityMentions = allMentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten
+    val examples = for (doc <- trainDocs; mention <- filterMentions(doc.attr[MentionList])) yield
       new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[EntityType].intValue, LinearObjectives.hingeMultiClass)
-    val testMentions = testDocs.flatMap(_.attr[MentionList])
+    val testMentions = testDocs.flatMap(doc => filterMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
       println("TRAIN\n"+(new cc.factorie.app.classify.Trial[EntityType,la.Tensor1](model, OntonotesNerDomain, (t:EntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[EntityType])).toString)
@@ -105,12 +108,12 @@ object MentionTypeLabelerTrainer {
     println("usage: trainfile [modelfile]")
     var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
-    for (mention <- testDocs.flatMap(_.attr[MentionList]))
+    val labeler = new MentionTypeLabeler
+    for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[EntityType].target.categoryValue, mention.span.phrase))
     trainDocs = trainDocs.dropRight(20)
-    val labeler = new MentionTypeLabeler
     labeler.train(trainDocs, testDocs)
-    for (mention <- testDocs.flatMap(_.attr[MentionList]))
+    for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s %-20s  %s".format(mention.attr[EntityType].target.categoryValue, mention.attr[EntityType].categoryValue, mention.span.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
