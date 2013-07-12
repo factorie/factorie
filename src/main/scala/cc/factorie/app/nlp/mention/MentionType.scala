@@ -111,6 +111,7 @@ object MentionTypeLabelerTrainer {
     val labeler = new MentionTypeLabeler
     for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[EntityType].target.categoryValue, mention.span.phrase))
+
     trainDocs = trainDocs.dropRight(20)
     labeler.train(trainDocs, testDocs)
     for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))

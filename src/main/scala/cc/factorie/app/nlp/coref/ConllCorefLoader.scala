@@ -252,14 +252,14 @@ object ConllCorefLoader {
     }} // closing "breakable"
     if(disperseEntityTypes){
       for(doc <- docs){
-        val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity])
+        val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1)
         for(ent <- entities){
           val entityTypes = ent._2.map(m => m.attr[EntityType].categoryValue).filter(t => t != "O").distinct
-          if(entityTypes.length > 1)
-            println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
-          else if(entityTypes.length == 1){
+          if(entityTypes.length > 1){
+           // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
+          }else if(entityTypes.length == 1){
             val newType = entityTypes(0)
-            ent._2.foreach(m => m.attr[EntityType].setCategory(newType)(null))
+            ent._2.foreach(m => m.attr[EntityType].target.setCategory(newType)(null))
           }
 
         }
