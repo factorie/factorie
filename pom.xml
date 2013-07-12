@@ -302,16 +302,21 @@ limitations under the License.
       <id>nlp-jar-with-dependencies</id>
       <repositories>
         <repository>
-          <id>dev-iesl.cs.umass.edu</id>
+          <id>dev-iesl.cs.umass.edu-snapshots</id>
           <name>dev-iesl.cs.umass.edu</name>
           <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+          <id>dev-iesl.cs.umass.edu-releases</id>
+          <name>dev-iesl.cs.umass.edu</name>
+          <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/</url>
         </repository>
       </repositories>
       <dependencies>
         <dependency>
           <groupId>cc.factorie.app.nlp</groupId>
           <artifactId>factorie-nlp-resources</artifactId>
-          <version>0.1-SNAPSHOT</version>
+          <version>0.0.1</version>
         </dependency>
       </dependencies>
       <build>
