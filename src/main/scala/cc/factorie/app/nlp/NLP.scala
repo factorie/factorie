@@ -38,7 +38,9 @@ object NLP {
       val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
       val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference using a simple left-to-right system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
       val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += EntityTypeAnnotator1; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
-
+      val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionGenderLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionGenderLabeler } } 
+      val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionNumberLabeler } } 
+      val mentiontype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionTypeLabeler } } 
     }
     opts.parse(args)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
@@ -65,11 +67,21 @@ object NLP {
       var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
       import Implicits.defaultDocumentAnnotatorMap
-      for (processor <- annotators)
-        document = processor.process(document)
+      for (annotator <- annotators)
+        document = annotator.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
+      val mentions = document.attr[mention.MentionList]
+      if (mentions ne null) {
+        out.println("Mentions:")
+        for (mention <- mentions) {
+          out.print(mention.span.phrase)
+          for (annotator <- annotators) { val s = annotator.mentionAnnotationString(mention); if (s.length > 0) { out.print('\t'); out.print(s) } }
+          out.println()
+        }
+      }
+      for (annotator <- annotators) out.print(annotator.documentAnnotationString(document))
       out.close();
       in.close();
       socket.close()

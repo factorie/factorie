@@ -46,6 +46,7 @@ class MentionNumberLabeler extends DocumentAnnotator {
     document
   }
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionNumberLabel].categoryValue).mkString(",") }
+  override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionNumberLabel]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel], classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionNumberLabel])
 }

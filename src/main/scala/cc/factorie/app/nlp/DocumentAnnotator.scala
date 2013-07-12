@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp
 import cc.factorie._
+import cc.factorie.app.nlp.mention._
 
 trait DocumentAnnotator {
   def process1(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
@@ -32,6 +33,11 @@ trait DocumentAnnotator {
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token:Token): String
+  
+  /** How the annotation of this DocumentAnnotator should be printed as extra information after a one-word-per-line (OWPL) format.
+      If there is no document annotation, return the empty string.  Used in Document.owplString. */
+  def documentAnnotationString(document:Document): String = ""
+  def mentionAnnotationString(mention:Mention): String = ""
   
   def preProcess(doc: Document, annotatorMap: DocumentAnnotatorLazyMap): Unit = {
     for (prereq <- prereqAttrs) if (!doc.hasAnnotation(prereq)) {

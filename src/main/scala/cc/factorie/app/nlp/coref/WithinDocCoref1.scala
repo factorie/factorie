@@ -189,7 +189,10 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       case _ => "_"
     }
   }
-  
+  override def mentionAnnotationString(mention:Mention): String = { 
+    val emap = mention.document.attr[GenericEntityMap[Mention]]
+    "e"+emap.getEntity(mention)
+  }
   
 
   def process1(document: Document) = {
