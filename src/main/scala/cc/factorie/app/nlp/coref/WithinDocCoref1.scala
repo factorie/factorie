@@ -305,7 +305,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val nonDeterminerWords: Seq[String] =
       span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
     // TODO David: Why is attr[EntityType] sometimes null here? -akm  
-    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "UKN" else et.categoryValue }
+    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "O" else et.categoryValue }
     val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
     val capitalization: Char = {
