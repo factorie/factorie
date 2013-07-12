@@ -21,6 +21,7 @@ import cc.factorie._
 import app.classify
 import cc.factorie.optimize._
 import language.postfixOps
+import scala.collection.mutable.ArrayBuffer
 
 /**A document classifier that uses Decision Trees.
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
@@ -49,7 +50,7 @@ object DocumentClassifier4 {
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var docLabels = new classify.LabelList[Label, Document](_.document)
+    var docLabels = new ArrayBuffer[Label]()
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")

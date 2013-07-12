@@ -2,7 +2,6 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
-import cc.factorie.app.classify.{LogLinearTemplate2, LogLinearModel}
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
@@ -41,26 +40,25 @@ class POS1 extends DocumentAnnotator {
     val ambiguityClassThreshold = 0.7
     val wordInclusionThreshold = 1
 
-    def preProcess(documents: Seq[Document]) {
+    def preProcess(tokens: Iterable[Token]) {
       val wordCounts = collection.mutable.HashMap[String,Int]()
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       var tokenCount = 0
-      documents.foreach(doc => {
-        doc.tokens.foreach(t => {
-          tokenCount += 1
-          if (t.attr[PTBPosLabel] eq null) {
-            println("POS3.WordData.preProcess tokenCount "+tokenCount)
-            println("POS3.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
-            println("POS3.WordData.preProcess token "+t.string+" "+t.attr)
-          }
-          val lemma = lemmatize(t.string).toLowerCase
-          if (!wordCounts.contains(lemma)) {
-            wordCounts(lemma) = 0
-            posCounts(lemma) = Array.fill(PTBPosDomain.size)(0)
-          }
-          wordCounts(lemma) += 1
-          posCounts(lemma)(t.attr[PTBPosLabel].intValue) += 1
-        })
+      tokens.foreach(t => {
+        tokenCount += 1
+        if (t.attr[PTBPosLabel] eq null) {
+          println("POS1.WordData.preProcess tokenCount "+tokenCount)
+          println("POS1.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
+          println("POS1.WordData.preProcess token "+t.string+" "+t.attr)
+          throw new Error("Found training token with no PTBPosLabel.")
+        }
+        val lemma = lemmatize(t.string).toLowerCase
+        if (!wordCounts.contains(lemma)) {
+          wordCounts(lemma) = 0
+          posCounts(lemma) = Array.fill(PTBPosDomain.size)(0)
+        }
+        wordCounts(lemma) += 1
+        posCounts(lemma)(t.attr[PTBPosLabel].intValue) += 1
       })
       wordCounts.keys.foreach(w => {
         if (wordCounts(w) >= wordInclusionThreshold) {
@@ -82,7 +80,7 @@ class POS1 extends DocumentAnnotator {
     def take(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(0,n) }
     def takeRight(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(l-n,l) }
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
-    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor._appendUnsafe(i) }
+    def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor += i }
     // Original word, with digits replaced, no @
     val Wm3 = if (lemmaIndex > 2) lemmas(lemmaIndex-3) else ""
     val Wm2 = if (lemmaIndex > 1) lemmas(lemmaIndex-2) else ""
@@ -233,6 +231,9 @@ class POS1 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+    model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
@@ -243,6 +244,7 @@ class POS1 extends DocumentAnnotator {
     import CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
+    model.weights.set(new la.DenseLayeredTensor2(PTBPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
@@ -264,37 +266,29 @@ class POS1 extends DocumentAnnotator {
     correct/total
   }
   
-
-  
-  def train(trainDocs:Seq[Document], testDocs:Seq[Document], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.00001)(implicit random: scala.util.Random) {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
-    for (doc <- (trainDocs ++ testDocs)) {
-      cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.process1(doc)
-    }
-    WordData.preProcess(trainDocs)
-    val sentences = trainDocs.flatMap(_.sentences)
-    val testSentences = testDocs.flatMap(_.sentences)
+    for (sentence <- (trainSentences ++ testSentences); token <- sentence.tokens) cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.processToken(token)
+    WordData.preProcess(trainSentences.flatMap(_.tokens))
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
-    for (sentence <- sentences) features(sentence.tokens) // just to create and count all features
+    for (sentence <- trainSentences) features(sentence.tokens) // just to create and count all features
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    println("POS1.train\n"+sentences(3).tokens.map(_.string).zip(features(sentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    println("POS1.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
     def evaluate() {
       exampleSetsToPrediction = doBootstrap
-      println("Train accuracy: "+accuracy(sentences))
+      println("Train accuracy: "+accuracy(trainSentences))
       println("Test  accuracy: "+accuracy(testSentences))
       println(s"Sparsity: ${model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length}")
     }
-    val examples = sentences.shuffle.map(sentence =>
-      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass))
+    val examples = trainSentences.shuffle.par.map(sentence =>
+      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass)).seq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
-    //val l1Factor = 0.000001
-    //val l2Factor = 0.0000001
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
-    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate)
-    if (true) {
+    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)
+    if (false) {
       // Print test results to file
       val source = new java.io.PrintStream(new File("pos1-test-output.txt"))
       for (s <- testSentences) {
@@ -311,24 +305,29 @@ class POS1 extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
 
-/** The default POS1 with parameters loaded from resources in the classpath. */
-object POS1 extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
+// object POS1 is defined in app/nlp/pos/package.scala
+
+/** The default POS1, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
+object POS1WSJ extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
+
+/** The default POS1, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
+object POS1Ontonotes extends POS1(cc.factorie.util.ClasspathURL[POS1]("-Ontonotes.factorie"))
 
 class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
-      val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
-      val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
-      val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
-      val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
-      val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-      val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
-      val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
-      val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
-      val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
-      val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
-      val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
-      val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
-    }
- 
+  val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
+  val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
+  val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
+  val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
+  val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
+  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
+  val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
+  val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
+  val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
+  val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
+  val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
+}
+
 
 object POS1Trainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
@@ -344,9 +343,15 @@ object POS1Trainer extends HyperparameterMain {
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-    pos.train(trainDocs, testDocs,
+    pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
-    if (opts.saveModel.value) pos.serialize(opts.modelFile.value)
+    if (opts.saveModel.value) {
+      println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
+      pos.serialize(opts.modelFile.value)
+      val pos2 = new POS1
+      pos2.deserialize(new java.io.File(opts.modelFile.value))
+      println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
+    }
     pos.accuracy(testDocs.flatMap(_.sentences))
   }
 
@@ -389,3 +394,4 @@ object POS1Optimizer {
     println("Done")
   }
 }
+

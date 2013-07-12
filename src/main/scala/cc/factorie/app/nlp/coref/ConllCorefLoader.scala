@@ -13,6 +13,7 @@ import cc.factorie.app.nlp.pos.{PTBPosDomain, PTBPosLabel}
 import mention.{MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
+import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
@@ -60,7 +61,8 @@ object ConllCorefLoader {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-  def loadWithParse(f: String, loadSIngletons: Boolean = true): Seq[Document] = {
+  // disperseEntityTypes optionally gives entity type information to all things that are coreferent with something that has entity type annotation
+  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1, disperseEntityTypes:Boolean = false): Seq[Document] = {
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
     val tokenizer = """(\(|\||\)|\d+)""".r
@@ -92,8 +94,9 @@ object ConllCorefLoader {
     var exactTypeMatches = 0
     var totalTypeCounts  = 0
 
-    for (l <- source.getLines()) {
+    breakable { for (l <- source.getLines()) {
       if (l.startsWith("#begin document ")) {
+        if (docs.length == limitNumDocuments) break
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
@@ -168,7 +171,7 @@ object ConllCorefLoader {
         }
 
         val foo = fields(5).split("\\*")
-        if (foo.length >= 1 && loadSIngletons) {
+        if (foo.length >= 1 && loadSingletons) {
           val bracketOpens = foo(0)
           val bracketCloses = if (foo.length > 1) foo(1) else ""
           for (nonTerminal <- bracketOpens.split("\\(").drop(1)) {
@@ -188,11 +191,11 @@ object ConllCorefLoader {
                 if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
                   m.attr += new EntityType(m,currentEntityTypeStr)
                 }else{
-                  m.attr += new EntityType(m,"UKN")
+                  m.attr += new EntityType(m,"O")
                 }
                 currentlyUnresolvedClosedEntityTypeBracket = false
               }else
-                m.attr += new EntityType(m,"UKN")
+                m.attr += new EntityType(m,"O")
 
               var i = 0
               var found = false
@@ -232,10 +235,10 @@ object ConllCorefLoader {
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
               m.attr += new EntityType(m,currentEntityTypeStr)
             }else
-              m.attr += new EntityType(m,"UKN")
+              m.attr += new EntityType(m,"O")
             currentlyUnresolvedClosedEntityTypeBracket = false
           }else
-            m.attr += new EntityType(m,"UKN")
+            m.attr += new EntityType(m,"O")
 
           numMentions += 1
           val key = fields(0) + "-" + number
@@ -244,6 +247,22 @@ object ConllCorefLoader {
           m.attr += ent
         }
         prevWord = word
+      }
+
+    }} // closing "breakable"
+    if(disperseEntityTypes){
+      for(doc <- docs){
+        val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1)
+        for(ent <- entities){
+          val entityTypes = ent._2.map(m => m.attr[EntityType].categoryValue).filter(t => t != "O").distinct
+          if(entityTypes.length > 1){
+           // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
+          }else if(entityTypes.length == 1){
+            val newType = entityTypes(0)
+            ent._2.foreach(m => m.attr[EntityType].target.setCategory(newType)(null))
+          }
+
+        }
       }
     }
     source.close()

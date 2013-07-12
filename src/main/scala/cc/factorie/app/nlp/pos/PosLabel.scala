@@ -75,7 +75,6 @@ object PTBPosDomain extends CategoricalDomain[String] {
       "NFP", // in Ontonotes, but not WSJ
       "XX" // in Ontonotes, but not WSJ
   )
-      
   freeze()
 
   def isNoun(pos:String): Boolean = pos(0) == 'N' 

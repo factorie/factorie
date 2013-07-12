@@ -2,6 +2,7 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import cc.factorie.la.{Tensor2, DenseTensor2, Tensor1, DenseTensor1}
+import cc.factorie.util.{TensorCubbie, Cubbie}
 
 /**
  * User: apassos
@@ -115,6 +116,25 @@ class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) exten
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
     val weights = self.weights
+  }
+}
+
+class LinearMultiClassClassifierCubbie extends Cubbie {
+  val labelSize = IntSlot("labelSize")
+  val featureSize = IntSlot("featureSize")
+  val parameters = CubbieSlot("parameters", () => null.asInstanceOf[TensorCubbie[Tensor2]])
+  store(new LinearMultiClassClassifier(1, 1))
+
+  def store(model: LinearMultiClassClassifier) {
+    labelSize := model.labelSize
+    featureSize := model.featureSize
+    parameters := new TensorCubbie[Tensor2]
+    parameters.value.store(model.weights.value)
+  }
+  def fetch: LinearMultiClassClassifier = {
+    val model = new LinearMultiClassClassifier(labelSize.value, featureSize.value)
+    model.weights.set(parameters.value.fetch())
+    model
   }
 }
 

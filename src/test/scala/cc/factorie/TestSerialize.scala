@@ -9,6 +9,7 @@ import java.io._
 import cc.factorie.app.nlp
 import cc.factorie.util.{TensorCubbie, BinarySerializer}
 import scala.language.postfixOps
+import scala.collection.mutable.ArrayBuffer
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
@@ -204,7 +205,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    implicit val random = new scala.util.Random(0)
    import app.classify._
    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
-   val ll = new LabelList[app.classify.Label, Features](_.features)
+   val ll = new ArrayBuffer[app.classify.Label]()
    val labelDomain = new CategoricalDomain[String] { }
    val featuresDomain = new CategoricalTensorDomain[String] { }
    for (i <- 1 to 100) {

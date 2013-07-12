@@ -15,13 +15,13 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
+import scala.collection.mutable.ArrayBuffer
 
 /** Calculate the information gain between all features of Instances and the Instances' labels.
     @author Andrew McCallum
     @since 0.10
  */
 class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DenseDoubleSeq {
-  def this(labels:LabelList[L,F]) = this(labels, labels.labelToFeatures)
   def apply(i:Int): Double = infogains(i)
   def length = infogains.length
   val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain

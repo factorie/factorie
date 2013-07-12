@@ -5,12 +5,6 @@ import cc.factorie._
 import cc.factorie.util.Cubbie
 import collection.mutable.ArrayBuffer
 
-class ModelBasedClassifierCubbie(cls: Classifier[Label]) extends Cubbie {
-//  val labelDomain = CubbieSlot[CategoricalDomainCubbie]("labelDomain", () => throw new Error)
-//  labelDomain := new CategoricalDomainCubbie(cls.labelDomain.asInstanceOf[CategoricalDomain[String]])
-  val model = CubbieSlot[WeightsSetCubbie]("model", () => throw new Error)
-  model := new WeightsSetCubbie(cls.asInstanceOf[ModelBasedClassifier[Label, Model with Parameters]].model.parameters)
-}
 
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require
 // preexisting tensors to be passed in.. Currently this is quite slow. -luke
@@ -23,7 +17,7 @@ class LabelListCubbie(
   labels := Seq[String]()
   val features = new CubbieListSlot[FeaturesCubbie]("features", () => new FeaturesCubbie)
   features := Seq[FeaturesCubbie]()
-  def store(ll: LabelList[Label, Features]): Unit = {
+  def store(ll: ArrayBuffer[Label]): Unit = {
     labels := ll.map(_.labelName)
     features := ll.map(l => {
       val indices = new ArrayBuffer[Int]
@@ -35,8 +29,8 @@ class LabelListCubbie(
       fc
     })
   }
-  def fetch(): LabelList[Label, Features] = {
-    val ll = new LabelList[Label, Features](_.features)
+  def fetch(): ArrayBuffer[Label] = {
+    val ll = new ArrayBuffer[Label]()
     for ((l, f) <- labels.value.zip(features.value)) {
       val features =
         if (isBinary) new BinaryFeatures(l, "", featuresDomain, labelDomain)
@@ -57,11 +51,6 @@ class FeaturesCubbie extends Cubbie {
 }
 
 object Serialize {
-  def writeClassification(toSerialize: Classification[Label], str: PrintStream) = {
-    val writer = new PrintWriter(str)
-    writer.println(toSerialize.label)
-    writer.flush()
-  }
   def writeInstancesSVMLight(labels: Iterable[Label], out: PrintStream): Unit = {
     for (label <- labels) {
       val labelStr = new StringBuilder
@@ -74,8 +63,8 @@ object Serialize {
       out.append(labelStr)
     }
   }
-  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalTensorDomain[String], labelDomain: CategoricalDomain[String]): LabelList[Label, Features] = {
-    val instances = new LabelList[Label, Features](_.features)
+  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalTensorDomain[String], labelDomain: CategoricalDomain[String]): ArrayBuffer[Label] = {
+    val instances = new ArrayBuffer[Label]()
     var i = 0
     for (rawInstStr <- instancesString.split("(\r\n)|\n")) {
       i += 1

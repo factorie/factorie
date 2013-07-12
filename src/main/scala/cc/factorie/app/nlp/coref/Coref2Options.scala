@@ -18,9 +18,10 @@ class Coref2Options {
   }
 
   def setConfig(key:String,value: Boolean) = {configHash(key) = value}
-  protected val configHash = mutable.HashMap[String,Boolean]() ++= Seq(("useEntityType",true))
-
+  protected val configHash = mutable.HashMap[String,Boolean]() ++= Seq(("useEntityType",true),("usePronounRules",false),("trainSeparatePronounWeights",false))
   def useEntityType = configHash("useEntityType")
+  def trainSeparatePronounWeights = configHash("trainSeparatePronounWeights")
+  def usePronounRules = configHash("usePronounRules")
 
   var mergeMentionWithApposition = false
   var useMIRA = true
@@ -59,4 +60,5 @@ class Coref2Options {
   var numPositivePairsTest = 100
 
   var mentionAlignmentShiftWidth = 0
+  var learningRate = 1.0
 }

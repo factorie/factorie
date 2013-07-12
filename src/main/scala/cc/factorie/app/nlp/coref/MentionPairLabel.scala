@@ -9,6 +9,7 @@ import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
  * Time: 12:23 PM
  */
 
+//here, mention1 is the mention to the right
 class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], options: Coref2Options) extends BinaryFeatureVectorVariable[String] {
   {val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain); t.sizeHint(if (options.conjunctionStyle == options.SLOW_CONJUNCTIONS) 650 else 70); set(t)(null)}
   def domain = model.MentionPairFeaturesDomain
@@ -18,8 +19,17 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
   var conjunctionCalculated = false
   val mergeableFeatures = collection.mutable.Set[String]()
   def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
+  val pfx =  mentType(mention1) +":" + mentType(mention2)
+  def mentType(ment: CorefMention): String = if(ment.isPRO) "pro" else "non"
 
-  def addFeature(f: String) { features += f }
+  def addFeature(f: String) {
+    if(options.trainSeparatePronounWeights){
+      features += pfx + "-" +  f
+    }else
+      features += f
+  }
+
+
 
   computeFeatures()
   def computeConjunctionFeatures() {
@@ -32,7 +42,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
           for (b <- a + 1 until activeDomainSize) {
             val sb = new StringBuilder
             sb.append(basicFeats(a)); sb.append("_&&_"); sb.append(basicFeats(b))
-            features += sb.toString
+            addFeature(sb.toString)
           }
         }
       }
@@ -122,7 +132,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
     addMergeableFeature("etm" + entityTypeMatch)
     addMergeableFeature("lhp" + CorefFeatures.headWordsCross(mention1, mention2, model))
     if (mention1.span.sentence == mention2.span.sentence) addMergeableFeature("ss") // false values of this feature are not included in Roth's system
-    CorefFeatures.matchingTokensRelations(mention1, mention2, mention1.corefGazetteers).foreach(r => addMergeableFeature("apr" + r))
+    CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
 
     if (mention1.span.head.string.toLowerCase == mention2.span.head.string.toLowerCase)
       addMergeableFeature("bM")

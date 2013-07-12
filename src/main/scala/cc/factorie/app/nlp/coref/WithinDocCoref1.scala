@@ -29,8 +29,8 @@ object WithinDocCoref1Helper {
   val proSet = Set("PRP", "PRP$", "WP", "WP$")
   val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
 
-  val maleHonors = Set("mr", "mister")
-  val femaleHonors = Set("ms", "mrs", "miss", "misses")
+  val maleHonors = Set("mr.", "mr", "mister")
+  val femaleHonors = Set("ms.", "ms", "mrs.", "mrs", "miss", "misses")
   val neuterWN = Set("artifact", "location", "group")
   val singPron = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
   val pluPron = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
@@ -43,8 +43,34 @@ object WithinDocCoref1Helper {
   val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
   val LastNames = new lexicon.UnionLexicon("LastNames", lexicon.iesl.PersonLast, lexicon.uscensus.PersonLast)
   
-  // a guess at the gender of a nominal mention
+  // a guess at the gender/type of a nominal mention
   def namGender(m: Mention): Char = {
+    val unknown = 'u'; val person = 'p'; val male = 'm'; val female = 'f'; val org = 'n'
+    var result = unknown
+    if (m.span.length > 0) {
+      val firstWord = m.span(0).string.toLowerCase
+      val lastWord = m.span.last.string.toLowerCase
+      var firstName = firstWord
+      if (lexicon.iesl.PersonHonorific.containsWord(firstWord)) {
+        result = person
+        if (maleHonors.contains(firstWord)) result = male
+        else if (femaleHonors.contains(firstWord)) result = female
+        if (m.span.length >= 3) firstName = m.span(1).string.toLowerCase
+      }
+      if (result != male && result != female) {
+        if (lexicon.iesl.Month.containsWord(firstWord)) result = unknown
+        else if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) result = male
+        else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName) && firstName != "an") result = female
+        else if (result == unknown && lexicon.iesl.PersonLast.containsWord(lastWord)) result = person
+        if (lexicon.iesl.City.contains(m.span) || lexicon.iesl.Country.contains(m.span) || lexicon.iesl.OrgSuffix.containsWord(lastWord)) 
+          if (result == unknown) result = org else result = unknown // Could be either person or org; mark it unknown
+      }
+    }
+    println(s"WithinDocCoref1 gender=$result mention ${m.span.phrase}")
+    result
+  }
+    
+  def namGenderOld(m: Mention): Char = {
     val fullhead = m.span.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
@@ -80,7 +106,7 @@ object WithinDocCoref1Helper {
       if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
-
+    println(s"WithinDocCoref1 gender=$g mention $fullhead")
     g
   }
 
@@ -148,6 +174,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
   def this(stream:InputStream) = { this (); deserialize(stream) }
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  def this(file:File) = this(new java.io.FileInputStream(file))
     
   object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 2e6.toInt; dimensionDomain.growPastMaxSize = true }
   // We want to start training before reading all features, so we need to depend only on the domain's max size
@@ -162,7 +189,10 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       case _ => "_"
     }
   }
-  
+  override def mentionAnnotationString(mention:Mention): String = { 
+    val emap = mention.document.attr[GenericEntityMap[Mention]]
+    "e"+emap.getEntity(mention)
+  }
   
 
   def process1(document: Document) = {
@@ -197,7 +227,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
 
   def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2)(implicit random: scala.util.Random) {
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad //with ParameterAveraging
+    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
     // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
     for (it <- 0 until trainIterations) {
       val batches = rng.shuffle(docs).grouped(batchSize).toSeq
@@ -205,7 +235,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         println("Generating training examples batch "+ batch + " of " + batches.length)
         val examples = generateTrainingExamples(documents, nThreads)
         println("Training ")
-        Trainer.onlineTrain(model.parameters, examples, maxIterations=2)
+        Trainer.onlineTrain(model.parameters, examples, maxIterations=1, optimizer=opt)
       }
       domain.freeze()
       // opt.setWeightsToAverage(model.parameters)  // TODO with ParameterAveraging above, and this was causing null pointer exception in Parameters.scala:100
@@ -453,7 +483,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         if (label) numAntecedent += 1
         if (!(m2.isPRO && !m1.isPRO) && (label || (numAntecedent < 3))) {
           examplesList += new LinearBinaryExample(model.weights,
-            getFeatures(m1, m2).value.asInstanceOf[Tensor1],
+            getFeatures(m1, m2).value,
             if (label) 1 else -1,
             LinearObjectives.hingeScaledBinary(negSlackRescale=3.0))
         }
@@ -474,7 +504,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     }
   }
 
-  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int) {
+  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int): Double = {
     import CorefEvaluator.Metric
     // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
     val ceafEEval = new CorefEvaluator.CeafE()
@@ -485,8 +515,8 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       val predMap = doc.attr[GenericEntityMap[Mention]]
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      val ce = ceafEEval.evaluate(predMap, trueMap)
-      val cm = ceafMEval.evaluate(predMap, trueMap)
+      val ce = null //ceafEEval.evaluate(predMap, trueMap)
+      val cm = null //ceafMEval.evaluate(predMap, trueMap)
       val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
       (b3,muc,ce,cm,bl)
       //(b3,muc,new Metric,new Metric,bl)
@@ -505,8 +535,8 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
         results.foreach(eval => {
           b3Score.microAppend(eval._1)
           mucScore.microAppend(eval._2)
-          ceafE.microAppend(eval._3)
-          ceafM.microAppend(eval._4)
+          //ceafE.microAppend(eval._3) // TODO Commenting out temporarily since it is crashing.
+          //ceafM.microAppend(eval._4)
           blanc.macroAppend(eval._5)
         })
       }
@@ -516,6 +546,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       println(f"$name%s   C-E  ${100*ceafE.precision}%2.2f ${100*ceafE.recall}%2.2f ${100*ceafE.f1}%2.2f ")
       println(f"$name%s   C-M  ${100*ceafM.precision}%2.2f ${100*ceafM.recall}%2.2f ${100*ceafM.f1}%2.2f ")
       println(f"$name%s BLANC  ${100*blanc.precision}%2.2f ${100*blanc.recall}%2.2f ${100*blanc.f1}%2.2f ")
+      b3Score.f1
     } finally {
       pool.shutdown()
     }

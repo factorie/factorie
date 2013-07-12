@@ -14,6 +14,11 @@ import cc.factorie.app.strings.RegexSegmenter
     @author martin 
     */
 class RegexTokenizer extends RegexSegmenter(RegexTokenizerHelper.tokenRegex) with DocumentAnnotator {
+
+  /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
+      If there is no per-token annotation, return null.  Used in Document.owplString. */
+  def tokenAnnotationString(token: Token) = token.string + "\t"
+
   def process1(document: Document): Document = {
     for (section <- document.sections) {
       val tokenIterator = RegexTokenizer.this.apply(section.string)
@@ -149,7 +154,7 @@ gal"""
   val briefAbbrevs = "[A-Z][a-z]?\\." // A. Mr. but not Mrs. Calif. or Institute.
   val finalPunc = "[.?!][\\p{Pf}\\p{Pe}]?" // ending/final punctuation
   val finalPunc2 = "[\\p{Pf}\\p{Pe}]?[.?!]" // ending/final punctuation followed by [.?!]
-  val quotes = "[`'\"]+" // mid-sentence quotes
+  val quotes = "[`'\"“”’]+" // mid-sentence quotes
   val symbols = """[,-:;$?&@\(\)]+""" // other symbols
   val words = "[\\w\\-0-9]+(?='([tT]|[lL]+|[sS]|[mM]|re|RE|ve|VE))" // any combo of word-chars, numbers, and hyphens
   val briefDashedWords = "[\\p{L}0-9]+(-[\\p{L}0-9\\.]+)*" // words with sequences of single dashes in them

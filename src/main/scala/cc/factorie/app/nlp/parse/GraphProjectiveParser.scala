@@ -4,9 +4,9 @@ import cc.factorie.app.nlp._
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import cc.factorie.util.DoubleAccumulator
+import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
-import java.io.File
+import java.io._
 
 /**
  * User: apassos
@@ -40,6 +40,13 @@ class GraphProjectiveParser extends DocumentAnnotator {
     f += "PARENTID="+pPos+"&"+pWord
     assert(f ne null)
     f
+  }
+
+  override def tokenAnnotationString(token:Token): String = {
+    val sentence = token.sentence
+    val pt = if (sentence ne null) sentence.attr[ParseTree] else null
+    if (pt eq null) "_\t_"
+    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"
   }
 
   def getPairwiseFeatureVector(t: Token, p: Token): TensorVar = {
@@ -249,6 +256,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     cc.factorie.util.BinarySerializer.serialize(DependencyModel, file)
   }
   def deserialize(file: String) = cc.factorie.util.BinarySerializer.deserialize(DependencyModel, new File(file))
+  def deserialize(url: java.net.URL) = cc.factorie.util.BinarySerializer.deserialize(DependencyModel, new DataInputStream(url.openConnection().getInputStream))
 
   def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], file: String, nThreads: Int, nIters: Int = 10) {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
@@ -286,7 +294,11 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[ParseTree])
 }
 
-object GraphProjectiveParser {
+object GraphProjectiveParser extends GraphProjectiveParser {
+  deserialize(ClasspathURL[GraphProjectiveParser](".factorie"))
+}
+
+object GraphProjectiveParserTrainer {
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")

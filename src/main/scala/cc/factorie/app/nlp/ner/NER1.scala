@@ -172,11 +172,11 @@ class NER1 extends DocumentAnnotator {
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
-      trainDocs.foreach(process1(_))
+      trainDocs.par.foreach(process1(_))
       println("Train accuracy "+objective.accuracy(trainLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
       if (!testDocs.isEmpty) {
-        testDocs.foreach(process1(_))
+        testDocs.par.foreach(process1(_))
         println("Test  accuracy "+objective.accuracy(testLabels))
         println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       }
@@ -212,9 +212,8 @@ class NER1 extends DocumentAnnotator {
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.evidence.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.evidence.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.evidence.weights.set(sparseEvidenceWeights)
-    println("NER1.serialize evidence "+model.evidence.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)

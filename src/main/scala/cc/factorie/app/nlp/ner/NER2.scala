@@ -258,10 +258,10 @@ class NER2 extends DocumentAnnotator {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
-    val examples = labelChains.map(v => new LikelihoodExample(v, model3, InferByBPChainSum))
+    val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChainSum)).seq.toSeq
     def evaluate() {
-      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.par.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.par.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -269,7 +269,7 @@ class NER2 extends DocumentAnnotator {
       println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println(segmentEvaluationString(labels(testDocs).toIndexedSeq))
     }
-    Trainer.onlineTrain(model3.parameters, examples.toSeq, evaluate=evaluate)
+    Trainer.onlineTrain(model3.parameters, examples, evaluate=evaluate)
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
   
@@ -280,7 +280,6 @@ class NER2 extends DocumentAnnotator {
       case model:Model2 => trainModel2(trainDocs, testDocs)
       case model:Model3 => trainModel3(trainDocs, testDocs)
     }
-    
   }
   
   // Serialization
@@ -294,6 +293,9 @@ class NER2 extends DocumentAnnotator {
   }
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    model3.evidence.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+    model3.evidence.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model3, dstream)
@@ -303,8 +305,10 @@ class NER2 extends DocumentAnnotator {
     import CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
+    model3.evidence.weights.set(new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model3, dstream)
-    model3.parameters.densify()
+    //model3.parameters.densify()
+    println("NER2 model parameters oneNorm "+model3.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }  
   
@@ -365,7 +369,8 @@ class NER2 extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object NER2 extends NER2(cc.factorie.util.ClasspathURL[NER2](".factorie"))
+object NER2WSJ extends NER2(cc.factorie.util.ClasspathURL[NER2]("-WSJ.factorie"))
+object NER2Ontonotes extends NER2(cc.factorie.util.ClasspathURL[NER2]("-Ontonotes.factorie"))
 
 object NER2Trainer {
   def main(args:Array[String]): Unit = {

@@ -16,7 +16,6 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.classify.{LabelList}
 import cc.factorie.app.nlp.lemma.TokenLemma
 import collection.mutable.ArrayBuffer
 import java.io.File
@@ -65,7 +64,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   val nullLemma = new TokenLemma(null, "null")
   class Features(val label: Action, stack: ParserStack, input: ParserStack, tree: ParseTree) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
-    override def skipNonCategories = featuresSkipNonCategories
+    override def skipNonCategories = FeaturesDomain.dimensionDomain.frozen // TODO was: featuresSkipNonCategories -akm
     import cc.factorie.app.strings.simplifyDigits
     // assumes all locations > 0
     def formFeatures(s: String, seq: ParserStack, locations: Seq[Int], tree: ParseTree): Seq[String] =
@@ -185,7 +184,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   def serialize(stream: java.io.OutputStream): Unit = {
     import CubbieConversions._
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(ActionDomain.size, FeaturesDomain.dimensionSize, new la.SparseIndexedTensor1(_))
-    sparseEvidenceWeights += model.weights.value.copy // Copy because += does not know how to handle AdaGradRDA tensor types
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     println("DepParser1.serialize evidence "+model.weights.value.getClass.getName)
     val dstream = new java.io.DataOutputStream(stream)
@@ -258,11 +257,18 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   }
 
   case class TrainOptions(val l2: Double, val l1: Double, val lrate: Double, val optimizer: String)  
-  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 10): Unit = {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], devSentences:Seq[Sentence], name: String, nThreads: Int, options: TrainOptions, numIteration: Int = 3): Unit = {
     featuresSkipNonCategories = false
     println("Generating trainActions...")
-    val trainActions = new LabelList[Action, Features]((action: Action) => action.features)
-    val testActions = new LabelList[Action, Features]((action: Action) => action.features)
+    val trainActions = new ArrayBuffer[Action]()
+    val testActions = new ArrayBuffer[Action]()
+    FeaturesDomain.dimensionDomain.gatherCounts = true
+    for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
+    println("Before pruning # features " + FeaturesDomain.dimensionDomain.size)
+    println("DepParser1.train first 20 feature counts: "+FeaturesDomain.dimensionDomain.counts.toSeq.take(20))
+    FeaturesDomain.dimensionDomain.trimBelowCount(3)
+    println(" After pruning # features " + FeaturesDomain.dimensionDomain.size)
+    trainActions.clear()
     for (s <- trainSentences) trainActions ++= generateTrainingLabels(s)
     for (s <- testSentences) testActions ++= generateTrainingLabels(s)
     println("%d actions.  %d input features".format(ActionDomain.size, FeaturesDomain.dimensionSize))
@@ -317,7 +323,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     val pt = token.sentence.attr[ParseTree]
     if (pt eq null) "_\t_"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+(pt.targetParentIndex(token.sentencePosition)+1)+"\t"+pt.label(token.sentencePosition).categoryValue+"\t"+pt.label(token.sentencePosition).targetCategory
+    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
   }
 }
 

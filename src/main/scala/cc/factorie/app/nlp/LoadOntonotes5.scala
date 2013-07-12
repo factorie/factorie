@@ -55,7 +55,49 @@ object LoadOntonotes5 {
         if (sentence eq null)
           sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
-        assert(fields.length >= 10)
+        assert(fields.length >= 10, "Fewer than 10 fields in file "+filename+"\nOffending line:\n"+line)
+        val currTokenIdx = fields(0).toInt - 1
+        val word = fields(1)
+        val lemma = fields(2) // was 3
+        val partOfSpeech = fields(4)
+        val parentIdx = fields(8).toInt - 1
+        val depLabel = fields(10)
+        var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
+        document.appendString(" ")
+        val token = new Token(sentence, word)
+        if (loadPos) token.attr += new PTBPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
+        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerLabel(token, ner) else new BioOntonotesNerLabel(token, ner))
+        if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
+        depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
+      }
+    }
+    if (sentence ne null) addDepInfo(sentence, depInfoSeq)
+    if (nerBilou) convertBioBilou(document.asSection)
+
+    println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
+    Seq(document)
+  }
+  
+  // TODO Use this method in method above, to avoid redundancy.
+  def fromLines(lines:Iterator[String], filename:String = "?UNKNOWN?", loadLemma:Boolean = true, loadPos:Boolean = true, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
+    val document: Document = new Document()
+    document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
+    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
+    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator
+    var sentence: Sentence = new Sentence(document)(null)
+    var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
+    for (line <- lines) {
+      if (line.length < 2) { // Sentence boundary
+        document.appendString("\n")
+        addDepInfo(sentence, depInfoSeq)
+        depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
+        sentence = null
+      } else {
+        if (sentence eq null)
+          sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
+        val fields = line.split('\t')
+        assert(fields.length >= 10, "Fewer than 10 fields in file "+filename+"\nOffending line:\n"+line)
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
         val lemma = fields(2) // was 3

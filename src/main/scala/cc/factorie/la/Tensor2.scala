@@ -46,6 +46,7 @@ trait Tensor2 extends Tensor {
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
   // TODO This method should have a better name -akm
+  // TODO This method should be overriden in DenseLayeredTensor2 to use inner.dot for efficiency -akm
   def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
     val newT = new DenseTensor1(dim1)
@@ -378,7 +379,7 @@ trait Tensor2ElementIterator extends DoubleSeqIterator with Iterator[Tensor2Elem
 }
 
 class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with ArraySparseIndexedTensor {
-  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain1: IntSeq = new RangeIntSeq(0, dim1) // TODO Implement this so that it is really sparse -akm 
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeElements2: Tensor2ElementIterator = {
     _makeReadable
@@ -724,6 +725,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case _ => assert(false, t.getClass.getName + " doesn't have a match"); 0.0
   }
 }
+
 class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor1) extends DenseLayeredTensorLike2 {
   def this(dim1:Int, dim2:Int) = this(dim1, dim2, new SparseTensor1(_)) // TODO Keep methods like this, or avoid the magic of filling in the last argument?
   override def blankCopy: DenseLayeredTensor2 = new DenseLayeredTensor2(dim1, dim2, newTensor1)
@@ -740,7 +742,7 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq with Read
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = inner.activeDomain1
-  def activeDomain = { val offset = innerOffset; inner.activeDomain1.map(_ + offset) }
+  def activeDomain = { val offset = innerOffset; inner.activeDomain1.map((i: Int) => i + offset) }
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner(j) * singleValue1 else 0.0
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
   override def foreachActiveElement(f: (Int, Double) => Unit): Unit = {
@@ -768,7 +770,7 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq wit
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = inner.activeDomain1
-  def activeDomain = { val offset = innerOffset; inner.activeDomain1.map(_ + offset) }
+  def activeDomain = { val offset = innerOffset; inner.activeDomain1.map((i: Int) => i + offset) }
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner(j) else 0.0
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
   override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v) else throw new Error("Outer index out of bounds: "+i)

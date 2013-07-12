@@ -46,7 +46,7 @@ class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
   )
 
   /* checks if string is WordNet comment (line starts with 2 spaces) */
-  private def isComment(s: String): Boolean = s.subSequence(0,2) == "  "
+  private def isComment(s: String): Boolean = s.isEmpty || s.subSequence(0,2) == "  "
 
   /* INITIALIZE WordNet */
   var synsetsBuilder       = new HashMap[String, Synset]()
