@@ -90,14 +90,14 @@ object EntityTypeAnnotator1Util {
       else if(isEvent) return "EVENT"
       else if(isOrganization) return "ORG"
       else
-        return "UKN"
+        return "O"
     }else{
       if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
         return "GPE"
       else if(isPlace && isPerson)
         return "GPE"
       else
-        return "UKN"
+        return "O"
     }
   }
 
