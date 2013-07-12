@@ -61,7 +61,8 @@ object ConllCorefLoader {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1): Seq[Document] = {
+  // disperseEntityTypes optionally gives entity type information to all things that are coreferent with something that has entity type annotation
+  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1, disperseEntityTypes:Boolean = false): Seq[Document] = {
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
     val tokenizer = """(\(|\||\)|\d+)""".r
@@ -190,11 +191,11 @@ object ConllCorefLoader {
                 if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
                   m.attr += new EntityType(m,currentEntityTypeStr)
                 }else{
-                  m.attr += new EntityType(m,"UKN")
+                  m.attr += new EntityType(m,"O")
                 }
                 currentlyUnresolvedClosedEntityTypeBracket = false
               }else
-                m.attr += new EntityType(m,"UKN")
+                m.attr += new EntityType(m,"O")
 
               var i = 0
               var found = false
@@ -234,10 +235,10 @@ object ConllCorefLoader {
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
               m.attr += new EntityType(m,currentEntityTypeStr)
             }else
-              m.attr += new EntityType(m,"UKN")
+              m.attr += new EntityType(m,"O")
             currentlyUnresolvedClosedEntityTypeBracket = false
           }else
-            m.attr += new EntityType(m,"UKN")
+            m.attr += new EntityType(m,"O")
 
           numMentions += 1
           val key = fields(0) + "-" + number
@@ -247,7 +248,23 @@ object ConllCorefLoader {
         }
         prevWord = word
       }
+
     }} // closing "breakable"
+    if(disperseEntityTypes){
+      for(doc <- docs){
+        val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1)
+        for(ent <- entities){
+          val entityTypes = ent._2.map(m => m.attr[EntityType].categoryValue).filter(t => t != "O").distinct
+          if(entityTypes.length > 1){
+           // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
+          }else if(entityTypes.length == 1){
+            val newType = entityTypes(0)
+            ent._2.foreach(m => m.attr[EntityType].target.setCategory(newType)(null))
+          }
+
+        }
+      }
+    }
     source.close()
     docs
   }

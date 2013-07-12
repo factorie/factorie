@@ -29,8 +29,8 @@ object WithinDocCoref1Helper {
   val proSet = Set("PRP", "PRP$", "WP", "WP$")
   val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
 
-  val maleHonors = Set("mr", "mister")
-  val femaleHonors = Set("ms", "mrs", "miss", "misses")
+  val maleHonors = Set("mr.", "mr", "mister")
+  val femaleHonors = Set("ms.", "ms", "mrs.", "mrs", "miss", "misses")
   val neuterWN = Set("artifact", "location", "group")
   val singPron = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
   val pluPron = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
@@ -43,8 +43,34 @@ object WithinDocCoref1Helper {
   val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
   val LastNames = new lexicon.UnionLexicon("LastNames", lexicon.iesl.PersonLast, lexicon.uscensus.PersonLast)
   
-  // a guess at the gender of a nominal mention
+  // a guess at the gender/type of a nominal mention
   def namGender(m: Mention): Char = {
+    val unknown = 'u'; val person = 'p'; val male = 'm'; val female = 'f'; val org = 'n'
+    var result = unknown
+    if (m.span.length > 0) {
+      val firstWord = m.span(0).string.toLowerCase
+      val lastWord = m.span.last.string.toLowerCase
+      var firstName = firstWord
+      if (lexicon.iesl.PersonHonorific.containsWord(firstWord)) {
+        result = person
+        if (maleHonors.contains(firstWord)) result = male
+        else if (femaleHonors.contains(firstWord)) result = female
+        if (m.span.length >= 3) firstName = m.span(1).string.toLowerCase
+      }
+      if (result != male && result != female) {
+        if (lexicon.iesl.Month.containsWord(firstWord)) result = unknown
+        else if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) result = male
+        else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName) && firstName != "an") result = female
+        else if (result == unknown && lexicon.iesl.PersonLast.containsWord(lastWord)) result = person
+        if (lexicon.iesl.City.contains(m.span) || lexicon.iesl.Country.contains(m.span) || lexicon.iesl.OrgSuffix.containsWord(lastWord)) 
+          if (result == unknown) result = org else result = unknown // Could be either person or org; mark it unknown
+      }
+    }
+    println(s"WithinDocCoref1 gender=$result mention ${m.span.phrase}")
+    result
+  }
+    
+  def namGenderOld(m: Mention): Char = {
     val fullhead = m.span.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
@@ -80,7 +106,7 @@ object WithinDocCoref1Helper {
       if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
       g = 'n'
     }
-
+    println(s"WithinDocCoref1 gender=$g mention $fullhead")
     g
   }
 
@@ -148,6 +174,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
   self =>
   def this(stream:InputStream) = { this (); deserialize(stream) }
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  def this(file:File) = this(new java.io.FileInputStream(file))
     
   object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 2e6.toInt; dimensionDomain.growPastMaxSize = true }
   // We want to start training before reading all features, so we need to depend only on the domain's max size
@@ -162,7 +189,10 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
       case _ => "_"
     }
   }
-  
+  override def mentionAnnotationString(mention:Mention): String = { 
+    val emap = mention.document.attr[GenericEntityMap[Mention]]
+    "e"+emap.getEntity(mention)
+  }
   
 
   def process1(document: Document) = {
@@ -275,7 +305,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val nonDeterminerWords: Seq[String] =
       span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
     // TODO David: Why is attr[EntityType] sometimes null here? -akm  
-    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "UKN" else et.categoryValue }
+    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "O" else et.categoryValue }
     val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
     val capitalization: Char = {

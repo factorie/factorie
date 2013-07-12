@@ -135,6 +135,7 @@ object WithinDocCoref2Trainer {
         //copy over options that are tweakable at test time
         lr.options.useEntityLR = options.useEntityLR
         lr.options.numCompareToTheLeft = options.numCompareToTheLeft
+        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
 
@@ -146,8 +147,7 @@ object WithinDocCoref2Trainer {
         val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
         lr.options.setConfigHash(options.getConfigHash)
         lr.options.useEntityLR = options.useEntityLR
-        lr.options.learningRate = options.learningRate
-        lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, lr.options.learningRate)
+        lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
         lr
       }
 

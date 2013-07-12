@@ -89,7 +89,7 @@ object MentionAlignment {
         m.attr +=  gtMention.attr[Entity]
         if(entityHash(gtMention.attr[Entity]).length > 1) relevantExactMatches += 1
         exactMatches += 1
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
+        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
         m.attr += new EntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
         if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
@@ -98,7 +98,7 @@ object MentionAlignment {
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
+        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
         m.attr += new EntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
         falsePositives1 += m
