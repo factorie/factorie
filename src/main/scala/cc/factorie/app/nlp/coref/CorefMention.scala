@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.mention.{Entity, MentionType, Mention}
+import cc.factorie.app.nlp.mention.{MentionGenderLabel, Entity, MentionType, Mention}
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
@@ -121,21 +121,7 @@ class MentionCache(m: CorefMention) {
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
     }
-  lazy val gender: Char = {
-    if (m.isProper) {
-      CorefFeatures.namGender(m.mention)
-    } else if (m.isPossessive) {
-      val gnam = CorefFeatures.namGender(m.mention)
-      val gnom = CorefFeatures.nomGender(m.mention, WordNet)
-      if (gnam == 'u' && gnom != 'u') gnom else gnam
-    } else if (m.isNoun) {
-      CorefFeatures.nomGender(m.mention, WordNet)
-    } else if (m.isPRO) {
-      CorefFeatures.proGender(m.mention)
-    } else {
-      'u'
-    }
-  }
+  lazy val gender: Char = m.mention.attr[MentionGenderLabel].intValue.toString.head
   lazy val number: Char = {
     val fullhead = m.lowerCaseHead
     if (CorefFeatures.singPron.contains(fullhead)) {
