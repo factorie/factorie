@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
-import cc.factorie.app.nlp.mention.{MentionGenderLabel, MentionType, Mention, MentionList}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
@@ -20,7 +20,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
   val options = new Coref2Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs = Seq(classOf[MentionList], classOf[EntityType], classOf[MentionGenderLabel])
+  def prereqAttrs = Seq(classOf[MentionList], classOf[EntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process1(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
@@ -269,7 +269,7 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
     predMap2
   }
 
-  case class CoarseMentionType(gender: Char,number: Char)
+  case class CoarseMentionType(gender: String, number: String)
 
   def doCorefOnPronounsUsingRules(predMap: GenericEntityMap[CorefMention],allMentions: Seq[CorefMention]): Unit = {
 

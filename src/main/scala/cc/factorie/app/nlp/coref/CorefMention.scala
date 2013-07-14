@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.mention.{MentionGenderLabel, Entity, MentionType, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
@@ -77,8 +77,8 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   }
 
   def hasSpeakWord: Boolean = cache.hasSpeakWord
-  def gender: Char = cache.gender
-  def number: Char = cache.number
+  def gender = cache.gender
+  def number = cache.number
   def nonDeterminerWords: Seq[String] = cache.nonDeterminerWords
   def acronym: Set[String] = cache.acronym
   def nounWords: Set[String] = cache.nounWords
@@ -121,44 +121,8 @@ class MentionCache(m: CorefMention) {
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
     }
-  lazy val gender: Char = m.mention.attr[MentionGenderLabel].intValue.toString.head
-  lazy val number: Char = {
-    val fullhead = m.lowerCaseHead
-    if (CorefFeatures.singPron.contains(fullhead)) {
-      's'
-    } else if (CorefFeatures.pluPron.contains(fullhead)) {
-      'p'
-    } else if (CorefFeatures.singDet.exists(fullhead.startsWith)) {
-      's'
-    } else if (CorefFeatures.pluDet.exists(fullhead.startsWith)) {
-      'p'
-    } else if (m.isProper) {
-      if (!fullhead.contains(" and ")) {
-        's'
-      } else {
-        'u'
-      }
-    } else if (m.isNoun || m.isPossessive) {
-        val maybeSing = if (MorphologicalAnalyzer1.isSingular(fullhead)) true else false
-        val maybePlural = if (MorphologicalAnalyzer1.isPlural(fullhead)) true else false
-
-        if (maybeSing && !maybePlural) {
-          's'
-        } else if (maybePlural && !maybeSing) {
-          'p'
-        } else if (m.mType.startsWith("N")) {
-          if (m.mType.endsWith("S")) {
-            'p'
-          } else {
-            's'
-          }
-        } else {
-          'u'
-        }
-    } else {
-      'u'
-    }
-  }
+  lazy val gender = m.mention.attr[MentionGenderLabel].intValue.toString
+  lazy val number = m.mention.attr[MentionNumberLabel].intValue.toString
   lazy val acronym: Set[String] = {
     if (m.span.length == 1)
         Set.empty
