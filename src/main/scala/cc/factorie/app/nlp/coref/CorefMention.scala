@@ -15,7 +15,7 @@ import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 object CorefMention{
   def mentionToCorefMention(m: Mention): CorefMention = {
     val cm = new CorefMention(m,m.start,m.sentence.indexInSection)
-    cm.attr += new EntityType(m, m.attr[EntityType].categoryValue)
+    cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
     cm
   }
 
@@ -57,7 +57,7 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def parentEntity = mention.attr[Entity]
   def mType = headToken.posLabel.categoryValue
   def span = mention.span
-  def entityType: String = mention.attr[EntityType].categoryValue
+  def entityType: String = mention.attr[MentionEntityType].categoryValue
   def document = mention.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
@@ -111,7 +111,7 @@ class MentionCache(m: CorefMention) {
     m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
-  lazy val predictEntityType: String = m.mention.attr[EntityType].categoryValue
+  lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(m.headPhraseTrim, "")
 
   lazy val capitalization: Char = {
