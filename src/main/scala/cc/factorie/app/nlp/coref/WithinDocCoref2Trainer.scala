@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.Document
 import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.app.nlp.mention.{MentionList, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import java.io.File
 
@@ -128,6 +128,7 @@ object WithinDocCoref2Trainer {
       makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain)
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
+    (trainDocs ++ testDocs).foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
@@ -193,6 +194,9 @@ object WithinDocCoref2Trainer {
     import cc.factorie.app.nlp.Implicits._
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
+    trainDocs.foreach(MentionEntityTypeLabeler.process1(_))
+    testDocs.foreach(MentionEntityTypeLabeler.process1(_))
+
     (trainDocs,trainMap,testDocs,testMap)
   }
 }
