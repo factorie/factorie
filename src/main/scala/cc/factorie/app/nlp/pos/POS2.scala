@@ -128,7 +128,7 @@ object POS2Trainer extends HyperparameterMain {
     if (opts.saveModel.value) {
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
       val pos2 = new POS2
-      pos2.deserialize(new java.io.File(opts.modelFile.value))
+      pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
     HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
   }
