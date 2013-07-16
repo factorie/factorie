@@ -69,7 +69,6 @@ object LDA2 {
       for (doc <- documents) sampler.process(doc.zs)
       if (i % 5 == 0) {
         // println("Iteration " + i)
-        sampler.export()
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))

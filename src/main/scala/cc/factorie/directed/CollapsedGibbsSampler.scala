@@ -69,11 +69,6 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
     d
   }
 
-  /** Set variables' values to the mean of their collapsed representation */
-  @deprecated def export(implicit d:DiffList = null): Unit = {
-    //collapsedMap.foreach({case(p:CollapsibleParameter,cp:Parameter) => p.setFrom(cp)})
-  }
-
   /** Convenience for sampling single variable */
   def process(v:MutableVar[_]): DiffList = process(Seq(v))
 
