@@ -128,7 +128,11 @@ object WithinDocCoref2Trainer {
       makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain)
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
-    (trainDocs ++ testDocs).foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+    if(loadTrain)
+      trainDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+
+    testDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
         val lr = new WithinDocCoref2()
@@ -194,8 +198,11 @@ object WithinDocCoref2Trainer {
     import cc.factorie.app.nlp.Implicits._
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
-    trainDocs.foreach(MentionEntityTypeLabeler.process1(_))
-    testDocs.foreach(MentionEntityTypeLabeler.process1(_))
+
+    val labeler = MentionEntityTypeLabeler
+
+    if(loadTrain)  trainDocs.foreach(labeler.process1(_))
+    testDocs.foreach(labeler.process1(_))
 
     (trainDocs,trainMap,testDocs,testMap)
   }

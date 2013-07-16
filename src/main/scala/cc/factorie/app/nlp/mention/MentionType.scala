@@ -46,10 +46,13 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   
   def process1(document:Document): Document = {
     import MentionNumberDomain._
-    for (mention <- document.attr[MentionList])
-      mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := model.classification(features(mention).value).bestLabelIndex
+    for (mention <- document.attr[MentionList]){
+      processMention(mention)
+    }
     document
   }
+  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := model.classification(features(mention).value).bestLabelIndex
+
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
