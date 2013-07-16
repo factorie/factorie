@@ -55,8 +55,7 @@ multibillion
 }
 
 
-// TODO Rename this to simply "Determiner"
-object DeterminerWords extends WordLexicon("DeterminerWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object Determiner extends WordLexicon("Determiner", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++= 
 """the
 a
@@ -76,4 +75,117 @@ every
 either
 neither
 """
+}
+
+object Pronoun extends PhraseLexicon("Pronoun", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  this ++=
+"""all
+another
+any
+anybody
+anyone
+anything
+both
+each
+each other
+either
+everybody
+everyone
+everything
+few
+he
+her
+hers
+herself
+him
+himself
+his
+I
+it
+its
+itself
+many
+me
+mine
+myself
+neither
+no_one
+nobody
+none
+nothing
+one
+one another
+other
+ours
+ourselves
+several
+she
+some
+somebody
+someone
+something
+such
+that
+theirs
+them
+themselves
+these
+they
+this
+those
+us
+we
+what
+whatever
+which
+whichever
+who
+whoever
+whom
+whomever
+whose
+you
+yours
+yourself
+yourselves"""    
+}
+
+object PersonPronoun extends WordLexicon("PersonPronoun", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  this ++=
+"""anybody
+anyone
+everybody
+everyone
+he
+her
+hers
+herself
+him
+himself
+his
+I
+me
+mine
+myself
+nobody
+ours
+ourselves
+she
+somebody
+someone
+theirs
+them
+themselves
+they
+us
+we
+who
+whoever
+whom
+whomever
+whose
+you
+yours
+yourself
+yourselves"""    
 }
