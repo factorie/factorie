@@ -215,6 +215,12 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       val bpm = mapSummary.marginal(v)
       assertEquals(bpm.proportions.maxIndex, mfm.intValue)
     }
+
+    val samplingSummary = InferByGibbsSampling.infer(Seq(l0, l1, l2, l3), model)
+    for ((variable, marginal) <- samplingSummary.variableMap) {
+      variable.value
+      marginal.proportions
+    }
   }
 
   @Test def v2f1VaryingOne {

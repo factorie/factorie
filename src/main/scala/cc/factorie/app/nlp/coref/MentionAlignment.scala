@@ -4,11 +4,12 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorLazyMap}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.app.nlp.mention.{Entity, MentionList, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import collection.mutable.{ArrayBuffer, HashMap}
 import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
+import scala.Some
 
 /**
  * User: apassos
@@ -89,8 +90,8 @@ object MentionAlignment {
         m.attr +=  gtMention.attr[Entity]
         if(entityHash(gtMention.attr[Entity]).length > 1) relevantExactMatches += 1
         exactMatches += 1
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
-        m.attr += new EntityType(m,predictedEntityType)
+        //val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
+        //m.attr += new MentionEntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
         if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
       }else{
@@ -98,8 +99,8 @@ object MentionAlignment {
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
-        m.attr += new EntityType(m,predictedEntityType)
+       // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
+       // m.attr += new MentionEntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
         falsePositives1 += m
       }

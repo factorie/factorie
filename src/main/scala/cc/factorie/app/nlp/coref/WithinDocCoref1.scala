@@ -5,11 +5,10 @@ import cc.factorie.optimize._
 import cc.factorie.la.{Tensor1, DenseTensor1}
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.nlp.{Document,Token}
-import cc.factorie.app.nlp.mention.{MentionList, Mention, Entity}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import cc.factorie.app.nlp.lexicon
-import cc.factorie.app.nlp.mention.MentionType
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
 import java.util.concurrent.Callable
@@ -305,7 +304,7 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     val nonDeterminerWords: Seq[String] =
       span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
     // TODO David: Why is attr[EntityType] sometimes null here? -akm  
-    val predictEntityType: String = { val et = mention.attr[EntityType]; if (et eq null) "O" else et.categoryValue }
+    val predictEntityType: String = { val et = mention.attr[MentionEntityType]; if (et eq null) "O" else et.categoryValue }
     val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
     val capitalization: Char = {

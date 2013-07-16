@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.mention.{Entity, MentionType, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
@@ -15,7 +15,7 @@ import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
 object CorefMention{
   def mentionToCorefMention(m: Mention): CorefMention = {
     val cm = new CorefMention(m,m.start,m.sentence.indexInSection)
-    cm.attr += new EntityType(m, m.attr[EntityType].categoryValue)
+    cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
     cm
   }
 
@@ -57,7 +57,7 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def parentEntity = mention.attr[Entity]
   def mType = headToken.posLabel.categoryValue
   def span = mention.span
-  def entityType: String = mention.attr[EntityType].categoryValue
+  def entityType: String = mention.attr[MentionEntityType].categoryValue
   def document = mention.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
@@ -77,8 +77,8 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   }
 
   def hasSpeakWord: Boolean = cache.hasSpeakWord
-  def gender: Char = cache.gender
-  def number: Char = cache.number
+  def gender = cache.gender
+  def number = cache.number
   def nonDeterminerWords: Seq[String] = cache.nonDeterminerWords
   def acronym: Set[String] = cache.acronym
   def nounWords: Set[String] = cache.nounWords
@@ -111,7 +111,7 @@ class MentionCache(m: CorefMention) {
     m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
-  lazy val predictEntityType: String = m.mention.attr[EntityType].categoryValue
+  lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(m.headPhraseTrim, "")
 
   lazy val capitalization: Char = {
@@ -121,58 +121,8 @@ class MentionCache(m: CorefMention) {
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
     }
-  lazy val gender: Char = {
-    if (m.isProper) {
-      CorefFeatures.namGender(m.mention)
-    } else if (m.isPossessive) {
-      val gnam = CorefFeatures.namGender(m.mention)
-      val gnom = CorefFeatures.nomGender(m.mention, WordNet)
-      if (gnam == 'u' && gnom != 'u') gnom else gnam
-    } else if (m.isNoun) {
-      CorefFeatures.nomGender(m.mention, WordNet)
-    } else if (m.isPRO) {
-      CorefFeatures.proGender(m.mention)
-    } else {
-      'u'
-    }
-  }
-  lazy val number: Char = {
-    val fullhead = m.lowerCaseHead
-    if (CorefFeatures.singPron.contains(fullhead)) {
-      's'
-    } else if (CorefFeatures.pluPron.contains(fullhead)) {
-      'p'
-    } else if (CorefFeatures.singDet.exists(fullhead.startsWith)) {
-      's'
-    } else if (CorefFeatures.pluDet.exists(fullhead.startsWith)) {
-      'p'
-    } else if (m.isProper) {
-      if (!fullhead.contains(" and ")) {
-        's'
-      } else {
-        'u'
-      }
-    } else if (m.isNoun || m.isPossessive) {
-        val maybeSing = if (MorphologicalAnalyzer1.isSingular(fullhead)) true else false
-        val maybePlural = if (MorphologicalAnalyzer1.isPlural(fullhead)) true else false
-
-        if (maybeSing && !maybePlural) {
-          's'
-        } else if (maybePlural && !maybeSing) {
-          'p'
-        } else if (m.mType.startsWith("N")) {
-          if (m.mType.endsWith("S")) {
-            'p'
-          } else {
-            's'
-          }
-        } else {
-          'u'
-        }
-    } else {
-      'u'
-    }
-  }
+  lazy val gender = m.mention.attr[MentionGenderLabel].intValue.toString
+  lazy val number = m.mention.attr[MentionNumberLabel].intValue.toString
   lazy val acronym: Set[String] = {
     if (m.span.length == 1)
         Set.empty

@@ -4,7 +4,7 @@ import java.io._
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.parse._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
-import cc.factorie.app.nlp.coref.EntityTypeAnnotator1
+import cc.factorie.app.nlp.mention.MentionEntityTypeAnnotator1
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -37,10 +37,10 @@ object NLP {
       val parser2 = new CmdOption[String]("parser2", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { if (value ne null) System.setProperty(classOf[DepParser2].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser2 } }
       val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
       val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference using a simple left-to-right system") { override def invoke = { if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
-      val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += EntityTypeAnnotator1; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
+      val coref2 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += mention.MentionEntityTypeLabeler ; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref2].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref2 } }
       val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionGenderLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionGenderLabeler } } 
       val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionNumberLabeler } } 
-      val mentiontype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionTypeLabeler } } 
+      val mentionEntitytype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
