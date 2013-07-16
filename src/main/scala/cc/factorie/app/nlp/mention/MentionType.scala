@@ -119,7 +119,7 @@ object MentionEntityTypeLabelerTrainer {
     for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
 
-    trainDocs = trainDocs.dropRight(20)
+    //trainDocs = trainDocs.dropRight(20)
     labeler.train(trainDocs, testDocs)
     for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, mention.span.phrase))
