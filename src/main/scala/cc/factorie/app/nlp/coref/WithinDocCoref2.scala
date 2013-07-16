@@ -242,7 +242,12 @@ abstract class BaseWithinDocCoref2 extends DocumentAnnotator {
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    val allMents = doc.attr[MentionList].map(CorefMention.mentionToCorefMention)
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.span.tokens.head.stringStart, mention.length)))
+  }
+
+  def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[Mention]): GenericEntityMap[Mention] = {
+
+    val allMents = inputMentions.map(CorefMention.mentionToCorefMention)
     val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
 
     val predMap = new GenericEntityMap[CorefMention]
