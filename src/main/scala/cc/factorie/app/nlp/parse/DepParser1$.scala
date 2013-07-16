@@ -14,7 +14,7 @@ import scala.concurrent.Await
 import scala.Some
 import java.util.concurrent.Executors
 
-class DepParser2 extends DocumentAnnotator {
+class DepParser1 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
@@ -454,13 +454,13 @@ class DepParser2 extends DocumentAnnotator {
   }
 }
 
-object DepParser2 extends DepParser2(cc.factorie.util.ClasspathURL[DepParser2](".factorie"))
+object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1](".factorie"))
 
-object DepParser2Ontonotes extends DepParser2(cc.factorie.util.ClasspathURL[DepParser2]("-Ontonotes.factorie"))
+object DepParser1Ontonotes extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1]("-Ontonotes.factorie"))
 
 
 
-class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
+class DepParser1Args extends cc.factorie.util.DefaultCmdOptions {
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -478,9 +478,9 @@ class DepParser2Args extends cc.factorie.util.DefaultCmdOptions {
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
-object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
+object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
-    val opts = new DepParser2Args
+    val opts = new DepParser1Args
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
@@ -495,7 +495,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
-    def testSingle(c: DepParser2, ss: Seq[Sentence], extraText: String = ""): Unit = {
+    def testSingle(c: DepParser1, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
@@ -507,7 +507,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
       }
     }
 
-    def testAll(c: DepParser2, extraText: String = ""): Unit = {
+    def testAll(c: DepParser1, extraText: String = ""): Unit = {
       println("\n")
       testSingle(c, sentences,     "Train " + extraText)
       testSingle(c, devSentences,  "Dev "   + extraText)
@@ -516,7 +516,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = opts.bootstrapping.value.toInt
-    val c = new DepParser2
+    val c = new DepParser1
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
@@ -544,7 +544,7 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
-      val d = new DepParser2
+      val d = new DepParser1
       d.deserialize(new java.io.File(modelUrl))
       testSentences.foreach(d.process)
       println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
@@ -553,9 +553,9 @@ object DepParser2Trainer extends cc.factorie.util.HyperparameterMain {
   }
 }
 
-object DepParser2Optimizer {
+object DepParser1Optimizer {
   def main(args: Array[String]) {
-    val opts = new DepParser2Args
+    val opts = new DepParser1Args
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -570,7 +570,7 @@ object DepParser2Optimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser2Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser1Trainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
