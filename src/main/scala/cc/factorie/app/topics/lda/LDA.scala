@@ -102,7 +102,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
   /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
-    val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
+    val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.value, beta1, model)
     if(fitAlphaInterval != Int.MaxValue) {
       sampler.initializeHistograms(maxDocSize)
       docLengthCounts = Array.fill[Int](maxDocSize+1)(0)
@@ -133,7 +133,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
       if (timeToEstAlpha){
         LearnDirichletUsingFrequencyHistograms(alphas, sampler.topicDocCounts, docLengthCounts)
-        sampler.resetSmoothing(alphas.tensor, beta1)
+        sampler.resetSmoothing(alphas.value, beta1)
         sampler.initializeHistograms(maxDocSize)
         //println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }
@@ -151,7 +151,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //println("Subsets = "+docSubsets.size)
     for (i <- 1 to iterations) {
       docSubsets.par.foreach(docSubset => {
-        val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
+        val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.value, beta1, model)
         for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
       })
       if (i % diagnosticInterval == 0) {
@@ -163,9 +163,9 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     maximizePhisAndThetas
   }
   
-  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
+  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).value.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas.value(topicIndex))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).value.massTotal.toInt, alphas.value(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
@@ -183,15 +183,15 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
   
   def maximizePhisAndThetas: Unit = {
-    phis.foreach(_.tensor.zero())
+    phis.foreach(_.value.zero())
     // TODO What about the priors on phis and theta?? -akm
     for (doc <- documents) {
       val len = doc.ws.length
       var i = 0
       while (i < len) {
         val zi = doc.zs.intValue(i)
-        phis(zi).tensor.masses.+=(doc.ws.intValue(i), 1.0)
-        doc.theta.tensor.masses.+=(zi, 1.0)
+        phis(zi).value.masses.+=(doc.ws.intValue(i), 1.0)
+        doc.theta.value.masses.+=(zi, 1.0)
         i += 1
       }
     }
@@ -208,9 +208,9 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     reader.mark(512)
     val alphasName = reader.readLine()
     if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
-      val alphasString = reader.readLine(); alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      val alphasString = reader.readLine(); alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
       reader.readLine() // consume delimiting newline
-      println("Read alphas "+alphas.tensor.mkString(" "))
+      println("Read alphas "+alphas.value.mkString(" "))
     } else reader.reset // Put the reader back to the read position when reader.mark was called
     breakable { while (true) {
       val doc = new Document(wordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
@@ -325,9 +325,9 @@ class LDACmd {
       reader.mark(512)
       val alphasName = reader.readLine()
       if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
-        val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+        val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
         reader.readLine() // consume delimiting newline
-        println("Read alphas "+lda.alphas.tensor.mkString(" "))
+        println("Read alphas "+lda.alphas.value.mkString(" "))
       } else reader.reset // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
@@ -347,9 +347,9 @@ class LDACmd {
       val file = new File(opts.readPhis.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
       val alphasName = reader.readLine(); if (alphasName != "/alphas") throw new Error("/alphas not found")
-      val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
       reader.readLine() // consume delimiting newline
-      println("Read alphas "+lda.alphas.tensor.mkString(" "))
+      println("Read alphas "+lda.alphas.value.mkString(" "))
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
@@ -361,7 +361,7 @@ class LDACmd {
           var i = 0
           while (i < len) {
             val zi = doc.zs.intValue(i)
-            lda.phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
+            lda.phis(zi).value.+=(doc.ws.intValue(i), 1.0)
             i += 1
           }
         } else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))  // Skip documents that have only one word because inference can't handle them
@@ -393,7 +393,7 @@ class LDACmd {
       val file = new File(opts.writeDocs.value)
       val pw = new PrintWriter(file)
       pw.println("/alphas")
-      pw.println(lda.alphas.tensor.mkString(" "))
+      pw.println(lda.alphas.value.mkString(" "))
       pw.println()
       lda.documents.foreach(_.writeNameWordsZs(pw))
       pw.close()
@@ -415,7 +415,7 @@ class LDACmd {
         val doc = Document.fromString(lda.wordSeqDomain, "<stdin>"+count, line)
         count += 1
         lda.inferDocumentTheta(doc, opts.thetaServer.value)
-        println(doc.theta.tensor.mkString(" "))
+        println(doc.theta.value.mkString(" "))
         line = reader.readLine
       }
     }

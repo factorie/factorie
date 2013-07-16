@@ -128,7 +128,6 @@ trait Weights extends TensorVar {
   def newBlankTensor: Value
   def value: Value
   def set(t: Tensor): Unit
-  def tensor = value
   //def domain = TensorDomain
 }
 

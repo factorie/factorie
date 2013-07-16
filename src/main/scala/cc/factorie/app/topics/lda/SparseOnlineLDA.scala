@@ -87,7 +87,7 @@ class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
   }
 
   def export(): Unit = {
-    phis.foreach(_.tensor.zero())
+    phis.foreach(_.value.zero())
     for (wi <- 0 until wordDomain.size) {
       val weights = typeWeights(wi)
       val topics = typeTopics(wi)
@@ -301,9 +301,9 @@ class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
     topicsWriter.close()
   }
 
-  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
+  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).value.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt)
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).value.massTotal.toInt)
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def sortAndPrune(cutoff: Double) {

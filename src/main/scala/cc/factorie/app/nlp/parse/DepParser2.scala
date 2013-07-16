@@ -75,7 +75,7 @@ class DepParser2 extends DocumentAnnotator {
     
     
     
-  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category(model.classification(v.features.tensor).bestLabelIndex))
+  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
   lazy val model = new LinearMultiClassClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
 

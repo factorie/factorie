@@ -46,16 +46,16 @@ object Coref1 {
         val mention: Entity = e._1
         val entity: Entity = e._2
         val affinity = new CorefAffinity
-        if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
-        if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch
-        if (entity.string.contains(mention.string)) affinity += CorefAffinityDimensionDomain.EntityContainsMention
+        if (mention.string == entity.string) affinity.value += CorefAffinityDimensionDomain.ExactMatch
+        if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity.value += CorefAffinityDimensionDomain.SuffixMatch
+        if (entity.string.contains(mention.string)) affinity.value += CorefAffinityDimensionDomain.EntityContainsMention
         val editDistance = entity.string.editDistance(mention.string)
         val normalizedEditDistance = editDistance / entity.string.length
-        if (editDistance <= 2) affinity += CorefAffinityDimensionDomain.EditDistance2
-        if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
-        if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
-        if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
-        if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
+        if (editDistance <= 2) affinity.value += CorefAffinityDimensionDomain.EditDistance2
+        if (editDistance <= 4) affinity.value += CorefAffinityDimensionDomain.EditDistance4
+        if (normalizedEditDistance > .5) affinity.value += CorefAffinityDimensionDomain.NormalizedEditDistance5
+        if (normalizedEditDistance > .9) affinity.value += CorefAffinityDimensionDomain.NormalizedEditDistance9
+        if (entity.childEntities.size == 1) affinity.value += CorefAffinityDimensionDomain.Singleton
         val result = affinity.value
         val str = result.toString
         //println("### EntityMentionModel Stat="+str)
@@ -81,16 +81,16 @@ object Coref1 {
           val mention: Entity = e._1
           val entity: Entity = e._2
           val affinity = new CorefAffinity
-          if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
-          if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch
-          if (entity.string.contains(mention.string)) affinity += CorefAffinityDimensionDomain.EntityContainsMention
+          if (mention.string == entity.string) affinity.value += CorefAffinityDimensionDomain.ExactMatch
+          if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity.value += CorefAffinityDimensionDomain.SuffixMatch
+          if (entity.string.contains(mention.string)) affinity.value += CorefAffinityDimensionDomain.EntityContainsMention
           val editDistance = entity.string.editDistance(mention.string)
           val normalizedEditDistance = editDistance / entity.string.length
-          if (editDistance <= 2) affinity += CorefAffinityDimensionDomain.EditDistance2
-          if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
-          if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
-          if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
-          if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
+          if (editDistance <= 2) affinity.value += CorefAffinityDimensionDomain.EditDistance2
+          if (editDistance <= 4) affinity.value += CorefAffinityDimensionDomain.EditDistance4
+          if (normalizedEditDistance > .5) affinity.value += CorefAffinityDimensionDomain.NormalizedEditDistance5
+          if (normalizedEditDistance > .9) affinity.value += CorefAffinityDimensionDomain.NormalizedEditDistance9
+          if (entity.childEntities.size == 1) affinity.value += CorefAffinityDimensionDomain.Singleton
           val result = affinity.value
           val str = result.toString
           //println("### PairwiseModel Stat="+str)

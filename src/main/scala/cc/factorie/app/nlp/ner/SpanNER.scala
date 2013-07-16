@@ -50,7 +50,7 @@ class SpanNerModel extends TemplateModel with Parameters {
         //var vector = new cc.factorie.la.SparseBinaryVector(v._1.head.value.length) with CategoricalVectorValue[String] { val domain = SpanNerFeaturesDomain }
         val firstToken = v1.head
         var vector = firstToken.attr[SpanNerFeatures].value.blankCopy
-        for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].tensor.activeDomain.asSeq)
+        for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].value.activeDomain.asSeq)
           vector += (featureIndex, 1.0) // TODO This is shifing array pieces all over; slow.  Fix it.
         vector outer v2
       }

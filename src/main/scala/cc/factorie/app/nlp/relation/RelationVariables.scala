@@ -107,12 +107,12 @@ object RelationVariables {
     def domain = RelationFeaturesDomain
 
     def +=(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.tensor.activeDomain.toSeq)
-        this.tensor.+=(i, feats.tensor(i)) // TODO Use Tensor.+= to make this much faster
+      for (i <- feats.value.activeDomain.toSeq)
+        this.value.+=(i, feats.value(i)) // TODO Use Tensor.+= to make this much faster
 
     def normalize(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.tensor.activeDomain.toSeq)
-        feats.tensor.update(i, feats.tensor(i) / tensor(i)) // TODO Use Tensor./= to make this much faster
+      for (i <- feats.value.activeDomain.toSeq)
+        feats.value.update(i, feats.value(i) / value(i)) // TODO Use Tensor./= to make this much faster
   }
 
   class Features(val mention: RelationMention) extends FeatureVectorVariable[String] {

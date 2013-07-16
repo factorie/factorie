@@ -70,11 +70,11 @@ object LDA4 {
     println("minYear=%d maxYear=%d".format(minYear, maxYear))
     val numYears = maxYear - minYear + 1
     val histogram = Array.ofDim[Double](numYears, numTopics)
-    for (doc <- lda.documents.asInstanceOf[Iterable[Document]]) maths.ArrayOps.incr(histogram(doc.year - minYear), doc.theta.tensor.toArray, 1.0)
+    for (doc <- lda.documents.asInstanceOf[Iterable[Document]]) maths.ArrayOps.incr(histogram(doc.year - minYear), doc.theta.value.toArray, 1.0)
     for (year <- 0 until histogram.length) maths.ArrayOps.normalize(histogram(year))
     for (phi <- lda.phis) {
       val phiIndex = lda.phis.indexOf(phi)
-      println(phi.tensor.top(20).map(dp => WordSeqDomain.elementDomain.category(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
+      println(phi.value.top(20).map(dp => WordSeqDomain.elementDomain.category(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
     }
     
   }

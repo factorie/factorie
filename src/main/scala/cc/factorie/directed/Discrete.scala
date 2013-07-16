@@ -35,10 +35,10 @@ object Discrete extends DirectedFamily2[DiscreteVariable,ProportionsVariable] {
     def sampledValue(p:Proportions)(implicit random: scala.util.Random): DiscreteValue = _1.domain.apply(p.sampleIndex)
     override def sampledValue(implicit random: scala.util.Random): DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
     def maxIntValue(p:Proportions): Int = p.maxIndex // TODO 
-    override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2.value.masses.+=(_1.intValue, weight); true }
   }
   def newFactor(a:DiscreteVariable, b:ProportionsVariable) = {
-    if (a.domain.size != b.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")
+    if (a.domain.size != b.value.length) throw new Error("Discrete child domain size different from parent Proportions size.")
     Factor(a, b) 
   }
 }
@@ -48,7 +48,7 @@ object MaximizeGeneratedDiscrete extends Maximize[Iterable[DiscreteVariable],Mod
     val dFactors = model.factors(d)
     require(dFactors.size == 1)
     dFactors.head match {
-      case factor:Discrete.Factor => d.set(factor._2.tensor.maxIndex)(null)
+      case factor:Discrete.Factor => d.set(factor._2.value.maxIndex)(null)
       case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
     }
   }
@@ -57,7 +57,7 @@ object MaximizeGeneratedDiscrete extends Maximize[Iterable[DiscreteVariable],Mod
     val dFactors = model.factors(varying)
     require(dFactors.size == 1)
     dFactors.head match {
-      case factor:Discrete.Factor => Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))
+      case factor:Discrete.Factor => Some(new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.value.maxIndex)))
       case _ => None
     }
   }
@@ -85,8 +85,8 @@ class Flip(value:Boolean = false) extends BooleanVariable(value)
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */
 class Coin(p:Double) extends ProportionsVariable(new DenseProportions1(2)) {
   def this() = this(0.5)
-  tensor(0) = 1.0 - p
-  tensor(1) = p
+  value(0) = 1.0 - p
+  value(1) = p
   assert (p >= 0.0 && p <= 1.0)
   //def flip: Flip = { new Flip :~ Discrete(this) }
   //def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip

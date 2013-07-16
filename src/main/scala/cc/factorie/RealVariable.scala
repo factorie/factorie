@@ -54,7 +54,6 @@ trait RealVar extends DiscreteTensorVar with ScalarVar with VarWithValue[RealVal
   def doubleValue: Double
   def domain = RealDomain
   @inline final def value: RealValue = new RealValue(doubleValue)
-  @inline final def tensor: RealValue = value
   def intValue: Int = doubleValue.toInt
   override def toString = printName + "(" + doubleValue.toString + ")"
 }

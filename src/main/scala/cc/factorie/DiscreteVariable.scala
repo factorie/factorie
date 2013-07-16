@@ -88,7 +88,6 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
   //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
   override def intValue = __value
   def value: A = domain.apply(__value).asInstanceOf[A] // TODO Is there a better way to coordinate A and domain?
-  def tensor: Value = domain.apply(__value).asInstanceOf[Value] // TODO Consider removing this "tensor" method everywhere.  Yes! -akm
   //def set(newValue:Value)(implicit d:DiffList): Unit
   //def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[Value])(d)
   @inline final def :=(i:Int): Unit = set(i)(null)

@@ -936,7 +936,7 @@ object LDAUtils{
     val pw = new PrintWriter(file)
     pw.println(lda.phis.size)
     pw.println("/alphas")
-    pw.println(lda.alphas.tensor.mkString(" "))
+    pw.println(lda.alphas.value.mkString(" "))
     pw.println()
     for(phi <- lda.phis){
       pw.println("/topic")
@@ -957,13 +957,13 @@ object LDAUtils{
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
     val numTopics = reader.readLine.toInt
     val lda = new LDA(WordSeqDomain, numTopics)(model,random)
-    lda.phis.foreach(_.tensor.zero())
+    lda.phis.foreach(_.value.zero())
     reader.mark(512)
     val alphasName = reader.readLine()
     if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
-      val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
       reader.readLine() // consume delimiting newline
-      println("Read alphas "+lda.alphas.tensor.mkString(" "))
+      println("Read alphas "+lda.alphas.value.mkString(" "))
     }
     var line = reader.readLine()
     var topicCount= -1

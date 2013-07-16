@@ -201,7 +201,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         java.util.Arrays.fill(distribution, 0.0)
         var i = 0
         while (i < domainSize) {
-          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
+          distribution(i) = gParent.value(i) * mixture(i).value(outcomeIntValue)
           sum += distribution(i)
           i += 1
         }
@@ -255,7 +255,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
         java.util.Arrays.fill(distribution, 0.0)
         var i = 0
         while (i < domainSize) {
-          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
+          distribution(i) = gParent.value(i) * mixture(i).value(outcomeIntValue)
           sum += distribution(i)
           i += 1
         }

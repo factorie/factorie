@@ -26,11 +26,11 @@ class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixtu
     def pr(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], z:DiscreteValue): Double = mixture(z.intValue).apply(child.intValue)
     def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(z.intValue).sampleIndex)
     def prChoosing(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(child.intValue)
-    def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
+    def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).value.apply(_1.intValue)
     def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(mixtureIndex).sampleIndex)
     def prValue(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int, intValue:Int): Double = mixture.apply(mixtureIndex).apply(intValue)
     def prValue(intValue:Int) = prValue(_2.value.asInstanceOf[scala.collection.Seq[Proportions]], _3.intValue, intValue)
-    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).value.masses.+=(_1.intValue, weight); true }
     // _2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
   }
   def newFactor(a: CategoricalVariable[A], b: Mixture[ProportionsVariable], c:DiscreteVariable) = new Factor(a, b, c)
@@ -97,7 +97,7 @@ object MaximizeGate extends Maximize[Iterable[DiscreteVariable],Model] {
     val statistics: CategoricalMixture[A]#Factor#StatisticsType = dmf.currentStatistics //(dmf._1.value, dmf._2.value, dmf._3.value)
     var i = 0; val size = gate.domain.size
     while (i < size) {
-      val pr = df._2.tensor(i) * dmf.prChoosing(i)
+      val pr = df._2.value(i) * dmf.prChoosing(i)
       if (pr > max) { max = pr; maxi = i }
       i += 1
     }

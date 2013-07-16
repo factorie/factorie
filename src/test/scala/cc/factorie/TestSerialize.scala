@@ -226,7 +226,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    assert(newll.zip(ll).forall({
      case (newl, oldl) =>
        newl.labelName == oldl.labelName &&
-       newl.features.tensor.activeElements.sameElements(oldl.features.tensor.activeElements)
+       newl.features.value.activeElements.sameElements(oldl.features.value.activeElements)
    }))
  }
 

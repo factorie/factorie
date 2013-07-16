@@ -38,7 +38,7 @@ class PerLabelLogOdds[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], l
       val labelIndex = label.intValue
       labelCounts(labelIndex) += 1
       //for (featureIndex <- instance.activeDomain) 
-      instance.tensor.foreachActiveElement((featureIndex,featureValue) => {
+      instance.value.foreachActiveElement((featureIndex,featureValue) => {
         labelFeatureCounts(labelIndex)(featureIndex) += 1
         featureCounts(featureIndex) += 1
       })
