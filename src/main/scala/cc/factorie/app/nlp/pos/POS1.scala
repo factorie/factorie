@@ -354,13 +354,6 @@ object POS1Trainer extends HyperparameterMain {
     }
     pos.accuracy(testDocs.flatMap(_.sentences))
   }
-
-  @deprecated("Use POS1(File) constructor instead.")
-  def fromFilename(name: String): POS1 = {
-    val c = new POS1
-    c.deserialize(new File(name))
-    c
-  }
 }
 
 object POS1Optimizer {
