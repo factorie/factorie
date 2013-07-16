@@ -81,7 +81,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PTBPosLabel]
-  def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
+  def nerLabel = attr[cc.factorie.app.nlp.ner.BioConllNerLabel]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
@@ -180,7 +180,7 @@ trait TokenStringCubbieSlot extends TokenCubbie {
 
 trait TokenNerLabelCubbie extends TokenCubbie {
   val ner = StringSlot("ner")
-  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.ChainNerLabel
+  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.BioConllNerLabel
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
     ner := t.nerLabel.categoryValue

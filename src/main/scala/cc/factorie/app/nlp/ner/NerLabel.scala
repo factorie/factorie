@@ -44,10 +44,6 @@ class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")
 }
 
-@deprecated("Use BioConllNerLabel")
-abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
-
-
 object ConllNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
    "O",

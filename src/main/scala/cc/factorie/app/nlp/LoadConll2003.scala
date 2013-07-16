@@ -18,10 +18,7 @@ import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
 
-object Conll2003NerDomain extends CategoricalDomain[String]
-class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerLabel(token, initialValue) {
-  def domain = Conll2003NerDomain
-}
+class Conll2003ChainNerLabel(token:Token, initialValue:String) extends BioConllNerLabel(token, initialValue) {}
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
@@ -102,7 +99,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
             println(token.string)
             println(newLabel)
           }*/
-          token.attr.remove[ChainNerLabel]
+          token.attr.remove[BioConllNerLabel]
           token.attr += new Conll2003ChainNerLabel(token, newLabel)
         }
       }

@@ -1,7 +1,6 @@
 package cc.factorie
 
 import app.chain.ChainModel
-import app.nlp.ner.ChainNerLabel
 import cc.factorie.la._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -10,6 +9,7 @@ import cc.factorie.app.nlp
 import cc.factorie.util.{TensorCubbie, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.ner.NerLabel
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
@@ -18,7 +18,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    override def skipNonCategories = true
  }
 
- class OntoNerLabel(t: nlp.Token, ta: String, override val domain: CategoricalDomain[String]) extends ChainNerLabel(t, ta) {
+ class OntoNerLabel(val token: nlp.Token, ta: String, val domain: CategoricalDomain[String]) extends NerLabel(ta) {
    type ContainedVariableType = this.type
  }
 

@@ -31,23 +31,23 @@ object ChainNER1ML {
   val model = new TemplateModel with Parameters {
     addTemplates(
       // Bias term on each individual label
-      new DotTemplateWithStatistics1[ChainNerLabel] {
+      new DotTemplateWithStatistics1[BioConllNerLabel] {
         //def statisticsDomains = Tuple1(Conll2003NerDomain)
-        val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
+        val weights = Weights(new la.DenseTensor1(BioConllNerDomain.size))
       },
       // Factor between label and observed token
-      new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
+      new DotTemplateWithStatistics2[BioConllNerLabel,TokenFeatures] {
         //def statisticsDomains = ((Conll2003NerDomain, TokenFeaturesDomain))
-        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize))
-        def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
-        def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+        val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, TokenFeaturesDomain.dimensionSize))
+        def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+        def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[BioConllNerLabel], tf)
       },
       // Transition factors between two successive labels
-      new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
+      new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
         //def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
-        def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
-        def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
+        val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
+        def unroll1(label: BioConllNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BioConllNerLabel], label) else Nil
+        def unroll2(label: BioConllNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BioConllNerLabel]) else Nil
       }
     )
   }
@@ -64,8 +64,8 @@ object ChainNER1ML {
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
     
     // Get the variables to be inferred
     val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.tokens.toSeq.map(_.nerLabel))
