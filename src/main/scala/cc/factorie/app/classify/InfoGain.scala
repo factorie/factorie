@@ -50,8 +50,8 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
       //println("InfoGain "+instance.activeDomain.toSeq)
       //for (featureIndex <- instance.activeDomain.asSeq)
       //println("InfoGain "+instance.tensor.asInstanceOf[cc.factorie.la.GrowableSparseBinaryTensor1].toIntArray.toSeq)
-      assert(instance.tensor.activeDomain.toSeq.distinct.length == instance.tensor.activeDomain.toSeq.length, instance.tensor.activeDomain.toSeq.toString)
-      instance.tensor.activeDomain.foreach(featureIndex => {
+      assert(instance.value.activeDomain.toSeq.distinct.length == instance.value.activeDomain.toSeq.length, instance.value.activeDomain.toSeq.toString)
+      instance.value.activeDomain.foreach(featureIndex => {
         featureTargetProportions(featureIndex).masses.+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1
       })

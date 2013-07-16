@@ -96,11 +96,11 @@ class ChainNerBP {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
  
     // Train for 5 iterations
-    val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[BioConllNerLabel])
 //    val trainingInstances = vars.map(ModelExample(model, _))
 //    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
 //    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
@@ -129,9 +129,9 @@ class ChainNerBP {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BioConllNerLabel]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BioConllNerLabel](BioConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BioConllNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -142,7 +142,7 @@ class ChainNerBP {
     if (!hasFeatures(document)) initFeatures(document)
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
-	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
+	    val vars = sentence.tokens.map(_.attr[BioConllNerLabel]).toSeq
 	    BP.inferChainMax(vars, model)
 	    //val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
     	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
@@ -153,7 +153,7 @@ class ChainNerBP {
   
   def printSGML(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = Conll2003NerDomain.index("O")
+    val other = BioConllNerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i
@@ -174,7 +174,7 @@ class ChainNerBP {
   
   def printEntities(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = Conll2003NerDomain.index("O")
+    val other = BioConllNerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i
@@ -221,7 +221,7 @@ object ChainNerBP extends ChainNerBP {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -234,12 +234,12 @@ object ChainNerBP extends ChainNerBP {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
+      BinarySerializer.deserialize(ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelFile.wasInvoked)
-        BinarySerializer.serialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
+        BinarySerializer.serialize(ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
     }
     
 

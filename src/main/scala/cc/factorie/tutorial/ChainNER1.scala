@@ -32,22 +32,22 @@ object ChainNER1a {
   val model = new TemplateModel with Parameters {
     val bias = this += 
       // Bias term on each individual label
-      new DotTemplateWithStatistics1[ChainNerLabel] {
-        val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
+      new DotTemplateWithStatistics1[BioConllNerLabel] {
+        val weights = Weights(new la.DenseTensor1(BioConllNerDomain.size))
       }
     val evidence = this +=
       // Factor between label and observed token
-      new DotTemplateWithStatistics2[ChainNerLabel,TokenFeatures] {
-        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, TokenFeaturesDomain.dimensionSize))
-        def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
-        def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+      new DotTemplateWithStatistics2[BioConllNerLabel,TokenFeatures] {
+        val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, TokenFeaturesDomain.dimensionSize))
+        def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+        def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[BioConllNerLabel], tf)
       }
     val markov = this +=
       // Transition factors between two successive labels
-      new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
-        val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
-        def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
-        def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
+      new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
+        val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
+        def unroll1(label: BioConllNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BioConllNerLabel], label) else Nil
+        def unroll2(label: BioConllNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BioConllNerLabel]) else Nil
       }
   }
 
@@ -61,11 +61,11 @@ object ChainNER1a {
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels : Seq[ChainNerLabel] = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels : Seq[BioConllNerLabel] = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
+    val testLabels : Seq[BioConllNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val pieces = trainLabels.map(l => new SampleRankExample(l, new GibbsSampler(model, HammingObjective)))
-    val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
+    val predictor = new VariableSettingsSampler[BioConllNerLabel](model, null)
     Trainer.onlineTrain(model.parameters, pieces, maxIterations=5, evaluate = ()=> {
       predictor.processAll(testLabels)
       println("Train Acccuracy = "+HammingObjective.accuracy(trainLabels))

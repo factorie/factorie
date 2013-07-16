@@ -79,7 +79,7 @@ object LinearRegressionTrainer {
     val explanatorySize = exampleExplanatory.value.dimensions.product
     val model = new LinearRegressionModel(explanatorySize, dependentSize)
     val trainer = trainerMaker(model.parameters)
-    val trainingExamples = examples.map(e => new LinearMultivariateExample[Tensor1](model.weights, dependant2Explanatory(e).tensor.asInstanceOf[Tensor1], e.tensor.asInstanceOf[Tensor1], objective))
+    val trainingExamples = examples.map(e => new LinearMultivariateExample[Tensor1](model.weights, dependant2Explanatory(e).value.asInstanceOf[Tensor1], e.value.asInstanceOf[Tensor1], objective))
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }

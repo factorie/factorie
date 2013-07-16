@@ -354,36 +354,36 @@ class ProportionsVariable extends MutableProportionsVar[Proportions] {
   // Methods that track modifications on a DiffList
   def updateMasses(index:Int, newValue:Double)(implicit d:DiffList): Unit = {
     if (d ne null) throw new Error("Not yet implemented")
-    tensor.masses.update(index, newValue)
+    value.masses.update(index, newValue)
   }
   def incrementMasses(index:Int, incr:Double)(implicit d:DiffList): Unit = {
     if (d ne null) d += IncrementProportionsMassesIndexDiff(index, incr)
-    tensor.masses.+=(index, incr)
+    value.masses.+=(index, incr)
   }
   def incrementMasses(incr:Tensor)(implicit d:DiffList): Unit = {
-    require(incr.length == tensor.length)
+    require(incr.length == value.length)
     if (d ne null) d += IncrementProportionsMassesDiff(incr)
-    tensor.masses += incr
+    value.masses += incr
   }
   def zeroMasses(implicit d:DiffList): Unit = {
-    if (d ne null) d += ZeroProportionsMassesDiff(tensor.toArray)
-    tensor.masses.zero()
+    if (d ne null) d += ZeroProportionsMassesDiff(value.toArray)
+    value.masses.zero()
   }
   
   case class IncrementProportionsMassesIndexDiff(index:Int, incr:Double) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = tensor.masses.+=(index, -incr)
-    def redo = tensor.masses.+=(index, incr)
+    def undo = value.masses.+=(index, -incr)
+    def redo = value.masses.+=(index, incr)
   }
   case class IncrementProportionsMassesDiff(t: Tensor) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = tensor.masses -= t // Note this relies on Tensor t not having changed.
-    def redo = tensor.masses += t
+    def undo = value.masses -= t // Note this relies on Tensor t not having changed.
+    def redo = value.masses += t
   }
   case class ZeroProportionsMassesDiff(prev: Array[Double]) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = tensor.masses += prev
-    def redo = tensor.masses.zero()
+    def undo = value.masses += prev
+    def redo = value.masses.zero()
   }
 
 }
@@ -423,10 +423,10 @@ object MaximizeProportions extends Maximize[ProportionsVariable,DirectedModel] {
   def apply(p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)
   def maxProportions[A](p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
     // Zero an accumulator
-    val e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
+    val e: DenseProportions1 = new DenseProportions1(p.value.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
     // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
     model.parentFactor(p) match {
-	  case f:Dirichlet.Factor => e.masses := f._2.tensor
+	  case f:Dirichlet.Factor => e.masses := f._2.value
 	  case null => {}
       case _ => throw new Error // TODO Do something more reasonable here?
     }

@@ -139,7 +139,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
 
   def predict(stack: ParserStack, input: ParserStack, tree: ParseTree): (Action, (Int, String)) = {
     val v = new Action((4, ""), stack, input, tree)
-    val prediction = model.classification(v.features.tensor).score
+    val prediction = model.classification(v.features.value).score
     (v, v.domain.categories(v.validTargetList.maxBy(prediction(_))))
   }
 
@@ -290,7 +290,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
     var iter = 0
     def evaluate() {
       trainActions.foreach(a => {
-        a.set(model.classification(a.features.tensor).bestLabelIndex)(null)
+        a.set(model.classification(a.features.value).bestLabelIndex)(null)
       })
       println("Train action accuracy = "+HammingObjective.accuracy(trainActions))
       //opt.setWeightsToAverage(model.weightsSet)
@@ -323,7 +323,7 @@ class DepParser1(val useLabels: Boolean) extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = {
     val pt = token.sentence.attr[ParseTree]
     if (pt eq null) "_\t_"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
+    else (pt.parentIndex(token.positionInSentence)+1).toString+"\t"+pt.label(token.positionInSentence).categoryValue
   }
 }
 
