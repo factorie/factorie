@@ -50,7 +50,7 @@ class DiscreteTensorDomainCubbie extends Cubbie {
 /** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
 trait DiscreteTensorVar extends TypedTensorVar[Tensor1] {
   def domain: DiscreteTensorDomain
-  def contains(index:Int): Boolean = tensor.apply(index) != 0.0
+  def contains(index:Int): Boolean = value.apply(index) != 0.0
 }
 
 /** A concrete variable whose value is a Tensor1 whose length matches the size of a DiscreteDomain. */

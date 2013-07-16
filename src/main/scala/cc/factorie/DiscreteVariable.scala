@@ -88,7 +88,6 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
   //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
   override def intValue = __value
   def value: A = domain.apply(__value).asInstanceOf[A] // TODO Is there a better way to coordinate A and domain?
-  def tensor: Value = domain.apply(__value).asInstanceOf[Value] // TODO Consider removing this "tensor" method everywhere.  Yes! -akm
   //def set(newValue:Value)(implicit d:DiffList): Unit
   //def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[Value])(d)
   @inline final def :=(i:Int): Unit = set(i)(null)
@@ -148,20 +147,7 @@ object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar[_]],Model] 
     maxIntValue
   }
   def intValue(d:DiscreteVar, model:Model): Int = intValue(d, model.factors(d))
-  def caseFactorIntValue(d:MutableDiscreteVar[_], model:Model): Int = maxIndex(d, model)
-  @deprecated("Use MaximizeDiscrete.intValue instead") def maxIndex(d:MutableDiscreteVar[_], model:Model): Int = {
-    val origI = d.intValue
-    var maxScore = Double.MinValue
-    var maxI = -1
-    for (i <- 0 until d.domain.size) {
-      d := i // Careful!  Doesn't properly perform "undos" if d has variable value coordination!
-      val score = model.currentScore(d) // TODO This unrolls each time.  Consider a faster alternative.
-      if (score > maxScore) { maxScore = score; maxI = i }
-    }
-    assert(maxI != -1)
-    d := origI
-    maxI
-  }
+  def caseFactorIntValue(d:MutableDiscreteVar[_], model:Model): Int = MaximizeDiscrete.intValue(d, model)
   def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := intValue(d, model)
   def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer(varying:DiscreteVar, model:Model) =

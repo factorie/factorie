@@ -40,7 +40,7 @@ object PlatedDiscrete extends DirectedFamily2[DiscreteSeqVariable,ProportionsVar
       if (_1.length == 0) IndexedSeq[DiscreteValue]()
       else self.sampledValue(_1.domain.elementDomain, _1.length, p)
     }
-    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
+    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.value.+=(_1(index).intValue, weight); true }
   }
   def newFactor(a:DiscreteSeqVariable, b:ProportionsVariable) = Factor(a, b)
 }
@@ -60,7 +60,7 @@ object PlatedCategorical extends DirectedFamily2[CategoricalSeqVariable[String],
       if (_1.length == 0) IndexedSeq[CategoricalValue[String]]()
       else self.sampledValue(_1.head.domain, _1.length, p)
     }
-    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
+    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.value.+=(_1(index).intValue, weight); true }
   }
   def newFactor(a:CategoricalSeqVariable[String], b:ProportionsVariable) = Factor(a, b)
 }

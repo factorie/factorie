@@ -68,7 +68,6 @@ trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[CategoricalVal
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.
   override val value = domain.value(this)
-  def tensor = value
   override def categoryValue = this
 }
 

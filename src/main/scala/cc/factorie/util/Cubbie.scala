@@ -93,11 +93,6 @@ class Cubbie {
    */
   def _newDefaultMap: MapType = new scala.collection.mutable.HashMap[String, Any]
 
-  @deprecated
-  def _rawGet(name: String): Any = {
-    _map(name)
-  }
-
   /**
    * Prints out the underlying map
    * @return a string representation of the underyling map.
@@ -128,7 +123,7 @@ class Cubbie {
    */
   final def id: Any = {
     // "final" because we need to ensure that the _id gets inserted into the
-    var result = _rawGet(idName) // avoid getOrElseUpdate because it will allocate a closure object
+    var result = _map(idName) // avoid getOrElseUpdate because it will allocate a closure object
     if (result != null) result
     else {
       result = newId

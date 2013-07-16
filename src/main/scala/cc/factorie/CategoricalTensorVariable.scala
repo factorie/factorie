@@ -63,8 +63,8 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
     if (i == CategoricalDomain.NULL_INDEX) {
       if (!skipNonCategories) throw new Error("CategoricalTensorVar.+= " + elt + " not found in domain " + domain)
     } else {
-      if (update) tensor.update(i, v)
-      else tensor.+=(i, v)
+      if (update) value.update(i, v)
+      else value.+=(i, v)
     }
   }
   // Consider re-adding this "update" method if necessary, but reconsider its name; should it have a Diff argument?
@@ -72,8 +72,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   def +=(elt:C, incr:Double): Unit = doWithIndexSafely(elt, incr, update = false)
   def +=(elt:C): Unit = +=(elt, 1.0)
   def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))
-  @deprecated("Use this.tensor.+= instead?") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
-  def activeCategories: Seq[C] = tensor.activeDomain.toSeq.map(i => domain.dimensionDomain.category(i))
+  def activeCategories: Seq[C] = value.activeDomain.toSeq.map(i => domain.dimensionDomain.category(i))
 }
 
 // TODO we should maybe refactor this to not set the Value type to "Tensor", as this makes things require casting down the road when using this for eg classifiers on tensor1 features -luke

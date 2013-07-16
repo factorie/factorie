@@ -44,7 +44,7 @@ abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] wit
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
   override def toString: String = {
     val b = new StringBuilder; b append printName; b append "("
-    tensor.foreachActiveElement((i,v) => {
+    value.foreachActiveElement((i,v) => {
       b append domain.dimensionDomain.category(i)
       b append "="; b append v; b append ","
     })
@@ -80,11 +80,11 @@ abstract class HashFeatureVectorVariable extends DiscreteTensorVariable with Fea
   override def domain: DiscreteDomain
   def this(initVals:Iterable[Any]) = { this(); initVals.map(this.+=_) }
   def +=(c:Any, incr:Double): Unit = {
-    tensor.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c) * incr)
+    value.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c) * incr)
   } 
   def ++=(cs: Iterable[Any]): Unit = cs.foreach(this.+= _)
   def +=(c: Any): Unit = {
-    tensor.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c))
+    value.update(HashFeatureVectorVariable.index(c, domain.size), HashFeatureVectorVariable.sign(c))
   }
   set(new SparseIndexedTensor1(domain.size))(null)
 }

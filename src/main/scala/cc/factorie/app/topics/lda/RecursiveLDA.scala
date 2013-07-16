@@ -146,9 +146,9 @@ object RecursiveLDA {
       reader.mark(512)
       val alphasName = reader.readLine()
       if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
-        val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+        val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
         reader.readLine() // consume delimiting newline
-        println("Read alphas "+lda.alphas.tensor.mkString(" "))
+        println("Read alphas "+lda.alphas.value.mkString(" "))
       } else reader.reset // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break

@@ -120,6 +120,7 @@ Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor);
 
 
 Low Priority Coding:
+Reimplement AROW and CW
 Replace cc.factorie.er with something better that uses Scala 2.10 macros.
 -Implement Forany2 in er
 -Fix IntTerm in er

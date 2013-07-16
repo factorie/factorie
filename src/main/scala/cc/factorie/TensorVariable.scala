@@ -22,7 +22,6 @@ import cc.factorie.la._
 trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var with ValueBound[Tensor] {
   //def domain: TensorDomain
   def value: Tensor
-  @deprecated("Use 'value' instead.", "M4") def tensor: Tensor // TODO I put this here because I wondered if there were some circumstances in which "value" would return a copy of the Tensor; this would always avoid the copy.
 }
 
 /** A TensorVar with a specific Tensor type value. */
@@ -37,8 +36,7 @@ trait TypedTensorVar[+A<:Tensor] extends TensorVar with ValueBound[A] {
 trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
   //def domain: TensorDomain //with Domain[A]
   private var _value: A = null.asInstanceOf[A]
-  def value: A = _value // TODO Should this make a copy?
-  @inline final def tensor: A = _value // This method will definitely not make a copy
+  @inline final def value: A = _value // This method will definitely not make a copy
   // Methods that track modifications on a DiffList
   def set(newValue:A)(implicit d:DiffList): Unit = {
     if (d ne null) d += SetTensorDiff(_value, newValue)
@@ -46,20 +44,20 @@ trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
   }
   def update(index:Int, newValue:Double)(implicit d:DiffList): Unit = {
     if (d ne null) throw new Error("Not yet implemented")
-    tensor.update(index, newValue)
+    value.update(index, newValue)
   }
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
     if (d ne null) d += IncrementTensorIndexDiff(index, incr)
-    tensor.+=(index, incr)
+    value.+=(index, incr)
   }
   def increment(incr:Tensor)(implicit d:DiffList): Unit = {
-    require(incr.length == tensor.length)
+    require(incr.length == value.length)
     if (d ne null) d += IncrementTensorDiff(incr)
-    tensor += incr
+    value += incr
   }
   def zero(implicit d:DiffList): Unit = {
-    if (d ne null) d += ZeroTensorDiff(tensor.toArray)
-    tensor.zero()
+    if (d ne null) d += ZeroTensorDiff(value.toArray)
+    value.zero()
   }
   
   case class SetTensorDiff(oldValue:A, newValue:A) extends Diff {
@@ -84,8 +82,8 @@ trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
   }
   case class ZeroTensorDiff(prev: Array[Double]) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = tensor += prev
-    def redo = tensor.zero()
+    def undo = value += prev
+    def redo = value.zero()
   }}
 
 /** A variable whose value is a cc.factorie.la.Tensor.

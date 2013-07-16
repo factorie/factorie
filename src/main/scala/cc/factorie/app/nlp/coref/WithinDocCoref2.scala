@@ -7,7 +7,7 @@ import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
 import java.io._
-import cc.factorie.util.{ClasspathURL, ClassPathUtils, BinarySerializer}
+import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
 
 /**

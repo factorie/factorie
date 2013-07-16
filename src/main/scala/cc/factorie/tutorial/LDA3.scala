@@ -66,7 +66,7 @@ object LDA3 {
     //collapse ++= documents.map(_.theta)
     //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
     //val sampler = new SparseLDAInferencer(numTopics, documents, alphas.tensor, beta1)
-    val sampler = SparseLDAInferencer(ZDomain, WordDomain, documents, alphas.tensor, beta1, model)
+    val sampler = SparseLDAInferencer(ZDomain, WordDomain, documents, alphas.value, beta1, model)
 
     val startTime = System.currentTimeMillis
     for (i <- 1 to 30) {
@@ -77,7 +77,7 @@ object LDA3 {
         if (fitDirichlet) {
           sampler.exportThetas(documents)
           MaximizeDirichletByMomentMatching(alphas, model)
-          sampler.resetSmoothing(alphas.tensor, beta1)
+          sampler.resetSmoothing(alphas.value, beta1)
           // println("alpha = " + alphas.tensor.toSeq.mkString(" "))
           // phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         } else {

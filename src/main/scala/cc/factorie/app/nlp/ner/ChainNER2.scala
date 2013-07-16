@@ -39,23 +39,23 @@ class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[Str
 class ChainNer21Model extends TemplateModel with Parameters {
   
   // Bias term on each individual label 
-  val biasTemplate = new DotTemplateWithStatistics1[ChainNerLabel] {
+  val biasTemplate = new DotTemplateWithStatistics1[BioConllNerLabel] {
     factorName = "bias"
-    val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
+    val weights = Weights(new la.DenseTensor1(BioConllNerDomain.size))
   }
   // Factor between label and observed token
-  val localTemplate = new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
+  val localTemplate = new DotTemplateWithStatistics2[BioConllNerLabel,ChainNerFeatures] {
     factorName = "markov"
-    val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize))
-    def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
-    def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+    val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, ChainNerFeaturesDomain.dimensionSize))
+    def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
+    def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[BioConllNerLabel], tf)
   }
   // Transition factors between two successive labels
-  val transitionTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
+  val transitionTemplate = new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
     factorName = "observation"
-    val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
-    def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
-    def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
+    val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
+    def unroll1(label: BioConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[BioConllNerLabel], label) else Nil
+    def unroll2(label: BioConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[BioConllNerLabel]) else Nil
   } 
   this += biasTemplate
   this += localTemplate
@@ -64,24 +64,24 @@ class ChainNer21Model extends TemplateModel with Parameters {
 
 class ChainNer2Model extends TemplateModel with Parameters {
   // Bias term on each individual label 
-  val bias = new DotTemplateWithStatistics1[ChainNerLabel] {
+  val bias = new DotTemplateWithStatistics1[BioConllNerLabel] {
     factorName = "bias"
-    val weights = Weights(new la.DenseTensor1(Conll2003NerDomain.size))
+    val weights = Weights(new la.DenseTensor1(BioConllNerDomain.size))
   }
   // Factor between label and observed token
-  val localTemplate = new DotTemplateWithStatistics2[ChainNerLabel,ChainNer2Features] {
+  val localTemplate = new DotTemplateWithStatistics2[BioConllNerLabel,ChainNer2Features] {
     factorName = "markov"
-    val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, ChainNer2FeaturesDomain.dimensionSize))
-    def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNer2Features])
-    def unroll2(tf: ChainNer2Features) = Factor(tf.token.attr[ChainNerLabel], tf)
+    val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, ChainNer2FeaturesDomain.dimensionSize))
+    def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[ChainNer2Features])
+    def unroll2(tf: ChainNer2Features) = Factor(tf.token.attr[BioConllNerLabel], tf)
   }
   // Transition factors between two successive labels
-  val transitionTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
+  val transitionTemplate = new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
     factorName = "observation"
-    val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
+    val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
     //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-    def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
-    def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
+    def unroll1(label: BioConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[BioConllNerLabel], label) else Nil
+    def unroll2(label: BioConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[BioConllNerLabel]) else Nil
   }
   this += bias
   this += localTemplate
@@ -90,7 +90,7 @@ class ChainNer2Model extends TemplateModel with Parameters {
 
 class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token] {
   this.prepend(token)
-  val label : String = token.attr[ChainNerLabel].categoryValue.split("-")(1)
+  val label : String = token.attr[BioConllNerLabel].categoryValue.split("-")(1)
   def key = this.mkString("-")
 } 
 
@@ -200,7 +200,7 @@ class ChainNer2 {
     var sequences = List[TokenSequence]()
     var seq : TokenSequence = null
     for(token <- document.tokens) {
-      val categoryVal = token.attr[ChainNerLabel].categoryValue
+      val categoryVal = token.attr[BioConllNerLabel].categoryValue
       if(categoryVal.length() > 0) {
         categoryVal.substring(0,1) match {
          case "B" => seq = new TokenSequence(token)
@@ -231,12 +231,12 @@ class ChainNer2 {
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
   
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[ChainNerLabel].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[ChainNerLabel].categoryValue+"&"+t.string))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[BioConllNerLabel].categoryValue))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[BioConllNerLabel].categoryValue+"&"+t.string))
     for(t <- document.tokens) {
 	    if(t.sentenceHasPrev) {
-		    t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[ChainNerLabel].categoryValue+"&"+t2._2.string)
-    	  t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[ChainNerLabel].categoryValue+"&"+t2._2.string)
+		    t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[BioConllNerLabel].categoryValue+"&"+t2._2.string)
+    	  t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[BioConllNerLabel].categoryValue+"&"+t2._2.string)
 	    }
     }
    
@@ -249,9 +249,9 @@ class ChainNer2 {
     if(extraFeatures) {
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
-          tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[ChainNerLabel].categoryValue)
+          tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[BioConllNerLabel].categoryValue)
         else
-          tokenToLabelMap(token.string) = List(token.attr[ChainNerLabel].categoryValue)
+          tokenToLabelMap(token.string) = List(token.attr[BioConllNerLabel].categoryValue)
       }
 	    for (seq <- sequences) {
 	      if(sequenceToLabelMap.contains(seq.key))
@@ -287,34 +287,34 @@ class ChainNer2 {
 	  }
 	  for(token <- document.tokens) {
 		  if(extendedPrediction.contains(token.string))
-        Conll2003NerDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
+        BioConllNerDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
 		  if(extendedPrediction.contains(token.string))
-        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[ChainNerLabel].categoryValue)
+        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[BioConllNerLabel].categoryValue)
       else
-        extendedPrediction(token.string) = List(token.attr[ChainNerLabel].categoryValue)
+        extendedPrediction(token.string) = List(token.attr[BioConllNerLabel].categoryValue)
 	  }
 
     for(token <- document.tokens) {
 		  val rawWord = token.string
 		  if(token.hasPrev && clusters.size > 0) {
 			  if(clusters.contains(rawWord))
-		      token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[ChainNerLabel].categoryValue + "&" + prefix(_,clusters(rawWord)))
+		      token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BioConllNerLabel].categoryValue + "&" + prefix(_,clusters(rawWord)))
 			  if(token.hasNext) {
 				  var nextRawWord = token.next.string
 				  if(clusters.contains(nextRawWord))
-					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[ChainNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BioConllNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
 				  if(token.next.hasNext && clusters.contains(token.next.next.string)) {
 					  nextRawWord = token.next.next.string
-					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[ChainNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BioConllNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
 				  }
 			  }
         if(token.hasPrev) {
 				  var prevRawWord = token.prev.string
 				  if(clusters.contains(prevRawWord))
-				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[ChainNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
+				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BioConllNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
 				  if(token.prev.hasPrev && clusters.contains(token.prev.prev.string)) {
 				    prevRawWord = token.prev.prev.string
-				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[ChainNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
+				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BioConllNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
 				  }
 			  }
 		  }
@@ -347,11 +347,11 @@ class ChainNer2 {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(100)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(20)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(100)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(20)
  
 		if(bP) {
-  		val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
+  		val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BioConllNerLabel])
       val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
       val trainer = new ParallelBatchTrainer(model.parameters, new LBFGS with L2Regularization)
 			trainer.trainFromExamples(examples)
@@ -384,7 +384,7 @@ class ChainNer2 {
 		  println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
       (trainLabels ++ testLabels).foreach(_.setRandomly)
 	    if(bP) {
-			  val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
+			  val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BioConllNerLabel])
 
         val examples = vars.map(v => new LikelihoodExample(v.toSeq, model2, InferByBPChainSum))
         val trainer = new ParallelBatchTrainer(model2.parameters, new LBFGS with L2Regularization)
@@ -396,7 +396,7 @@ class ChainNer2 {
 			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
 	  } else {
       	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new AdaGrad())
-      	val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
+      	val predictor = new VariableSettingsSampler[BioConllNerLabel](model2) {temperature=0.01}
 
       	for (iteration <- 1 until 8) {
         	learner.processContexts(trainLabels)
@@ -424,7 +424,7 @@ class ChainNer2 {
 	  (testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNerFeatures(token)))
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
     // Add secondary features to domain before it gets frozen
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel])
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel])
     (testLabels).foreach(_.setRandomly)
 
     if(bP) {
@@ -439,7 +439,7 @@ class ChainNer2 {
 
       }
     } else {
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model) {temperature=0.01}
+      val predictor = new VariableSettingsSampler[BioConllNerLabel](model) {temperature=0.01}
 
       for (iteration <- 1 until 3) {
         predictor.processAll(testLabels)
@@ -453,7 +453,7 @@ class ChainNer2 {
         testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNer2Features]))
         for(document <- (testDocuments)) initSecondaryFeatures(document)
 
-        val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
+        val predictor = new VariableSettingsSampler[BioConllNerLabel](model2) {temperature=0.01}
 
         for (iteration <- 1 until 3) {
           predictor.processAll(testLabels)
@@ -476,9 +476,9 @@ class ChainNer2 {
   
   def evaluationString(documents: Iterable[Document]): Unit = {
     val buf = new StringBuffer
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BioConllNerLabel]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BioConllNerLabel](BioConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BioConllNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -486,7 +486,7 @@ class ChainNer2 {
   def process(document:Document, useModel2 : Boolean = false): Unit = {
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
-	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
+	    val vars = sentence.tokens.map(_.attr[BioConllNerLabel]).toSeq
       BP.inferChainMax(vars, if(useModel2) model2 else model)
     }
   }
@@ -504,8 +504,6 @@ object ChainNer2 extends ChainNer2 {
       modelFile.getParentFile.mkdirs()
     BinarySerializer.serialize(model, modelFile)
     BinarySerializer.serialize(model2, model2File)
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    BinarySerializer.serialize(Conll2003NerDomain, labelDomainFile)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     BinarySerializer.serialize(ChainNerFeaturesDomain.dimensionDomain, featuresDomainFile)
     val featuresDomain2File = new File(prefix + "-featuresDomain2")
@@ -513,10 +511,7 @@ object ChainNer2 extends ChainNer2 {
   }
 
   def deSerialize(prefix: String) {
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinarySerializer.deserialize(Conll2003NerDomain, labelDomainFile)
-    println("Conll2003NerDomain.length " + Conll2003NerDomain.length)
+    println("Conll2003NerDomain.length " + BioConllNerDomain.length)
     val featuresDomainFile = new File(prefix + "-featuresDomain")
     assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
     BinarySerializer.deserialize(ChainNerFeaturesDomain.dimensionDomain, featuresDomainFile)
@@ -531,7 +526,7 @@ object ChainNer2 extends ChainNer2 {
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
     println("model.transitionTemplate.weightsSet.length: " + model.transitionTemplate.weights.value.length)
     println("model.localTemplate.weightsSet.length: " + model.localTemplate.weights.value.length)
-    assertEquals(model.transitionTemplate.weights.value.length, Conll2003NerDomain.length * Conll2003NerDomain.length)
+    assertEquals(model.transitionTemplate.weights.value.length, BioConllNerDomain.length * BioConllNerDomain.length)
     BinarySerializer.deserialize(model, modelFile)
     println("model.transitionTemplate.weightsSet.length: " + model2.transitionTemplate.weights.value.length)
     println("model.localTemplate.weightsSet.length: " + model2.localTemplate.weights.value.length)
@@ -540,7 +535,7 @@ object ChainNer2 extends ChainNer2 {
     assert(model2File.exists(), "Trying to load inexisting model file: '" + prefix + "-model2'")
     println("model.transitionTemplate.weightsSet.length: " + model.transitionTemplate.weights.value.length)
     println("model.localTemplate.weightsSet.length: " + model.localTemplate.weights.value.length)
-    assertEquals(model2.transitionTemplate.weights.value.length, Conll2003NerDomain.length * Conll2003NerDomain.length)
+    assertEquals(model2.transitionTemplate.weights.value.length, BioConllNerDomain.length * BioConllNerDomain.length)
     BinarySerializer.deserialize(model2, model2File)
     println("model.transitionTemplate.weightsSet.length: " + model.transitionTemplate.weights.value.length)
     println("model.localTemplate.weightsSet.length: " + model.localTemplate.weights.value.length)
@@ -603,7 +598,7 @@ object ChainNer2 extends ChainNer2 {
         document.tokens.map(token => token.attr += new ChainNerFeatures(token))
         initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
         // Add secondary features to domain before it gets frozen
-        val testLabels = document.tokens.map(_.attr[ChainNerLabel])
+        val testLabels = document.tokens.map(_.attr[BioConllNerLabel])
 
         process(document)
         document.tokens.map(token => token.attr += new ChainNer2Features(token))
@@ -619,7 +614,7 @@ object ChainNer2 extends ChainNer2 {
 
         for(s <- document.sentences) {
 	   	   for(t <- s.tokens) {
-				val label = t.attr[ChainNerLabel].categoryValue
+				val label = t.attr[BioConllNerLabel].categoryValue
 				if(label.matches("(B-|U-).*")) print ("<" + label + ">")
            		print(" " + t.string + " ")
 				if(label.matches("(L-|U-).*")) print ("</" + label + ">")

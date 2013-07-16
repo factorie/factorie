@@ -22,7 +22,7 @@ class LabelListCubbie(
     features := ll.map(l => {
       val indices = new ArrayBuffer[Int]
       val values = new ArrayBuffer[Double]
-      l.features.tensor.foreachActiveElement((i, v) => { indices += i; values += v })
+      l.features.value.foreachActiveElement((i, v) => { indices += i; values += v })
       val fc = new FeaturesCubbie
       fc.indices := indices
       fc.values := values
@@ -36,7 +36,7 @@ class LabelListCubbie(
         if (isBinary) new BinaryFeatures(l, "", featuresDomain, labelDomain)
         else new NonBinaryFeatures(l, "", featuresDomain, labelDomain)
       for ((i, v) <- f.indices.value.zip(f.values.value))
-        features.tensor(i) = v
+        features.value(i) = v
       ll += new Label(l, features, labelDomain)
     }
     ll
@@ -55,7 +55,7 @@ object Serialize {
     for (label <- labels) {
       val labelStr = new StringBuilder
       labelStr ++= label.features.labelName
-      label.features.tensor.foreachActiveElement((idx, f) => {
+      label.features.value.foreachActiveElement((idx, f) => {
         val str = " " + label.domain.category(idx) + ":" + f.asInstanceOf[Int]
         labelStr ++= str
       })

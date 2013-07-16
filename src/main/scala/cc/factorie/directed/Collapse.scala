@@ -49,8 +49,8 @@ object DenseCountsProportionsCollapser extends Collapser {
           //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
           case f:PlatedDiscrete.Factor => (0 until f._1.length).foreach(i => p.value.masses.+=(f._1(i).intValue, 1.0))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
-          case f:Dirichlet.Factor => p.tensor match {
-            case pt:DenseProportions1 => pt.masses.+=(f._2.tensor)
+          case f:Dirichlet.Factor => p.value match {
+            case pt:DenseProportions1 => pt.masses.+=(f._2.value)
             case pt:SortedSparseCountsProportions1 if (model.parentFactor(p) eq f) => pt.prior = f._2.value
           }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
@@ -71,7 +71,7 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
         m.foreach(p => {
           p.value.masses.zero()
           model.parentFactor(p) match {
-            case f:Dirichlet.Factor => p.value.masses.+=(f._2.tensor)
+            case f:Dirichlet.Factor => p.value.masses.+=(f._2.value)
           }
         })
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 

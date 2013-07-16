@@ -75,7 +75,6 @@ object TopicsOverTime {
       for (doc <- documents; word <- doc) sampler.process(word.z)
       if (i % 5 == 0) {
         println("Iteration " + i)
-        sampler.export()
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
