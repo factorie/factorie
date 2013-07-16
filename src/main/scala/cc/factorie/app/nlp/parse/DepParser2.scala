@@ -167,7 +167,7 @@ class DepParser2 extends DocumentAnnotator {
     val sentence = token.sentence
     val pt = if (sentence ne null) sentence.attr[ParseTree] else null
     if (pt eq null) "_\t_"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"+pt.label(token.sentencePosition).categoryValue
+    else (pt.parentIndex(token.positionInSentence)+1).toString+"\t"+pt.label(token.positionInSentence).categoryValue
   }
   //override def tokenAnnotationString(token:Token): String = { val parse = token.parseParent; if (parse ne null) parse.positionInSentence+"\t"+token.parseLabel.categoryValue else "_\t_" }
 

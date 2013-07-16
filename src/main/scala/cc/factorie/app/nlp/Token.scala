@@ -76,24 +76,22 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def positionInSection: Int = position
   // TODO The ClearSegmenter should set Token._sentence, so the "sentence" method doesn't have to search for it. -akm
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
-  //def positionInSentence = if (_sentence eq null) throw new Error("Token(%s)@%d not in a Sentence.".format(string, position)) else position - sentence.start // TODO Consider throwing an Error here? -akm
-  @deprecated("Use positionInSentence") def sentencePosition = positionInSentence
-  
+
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PTBPosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.BioConllNerLabel]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
-  def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(sentencePosition)
-  def parseParentIndex: Int = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parentIndex(sentencePosition)
-  def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].label(sentencePosition)
-  def parseChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].children(sentencePosition)
-  def parseLeftChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(sentencePosition)
-  def parseRightChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(sentencePosition)
-  def parseChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].childrenLabeled(sentencePosition, label.intValue)
-  def parseLeftChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildrenLabeled(sentencePosition, label.intValue)
-  def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(sentencePosition, label.intValue)
+  def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(positionInSentence)
+  def parseParentIndex: Int = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parentIndex(positionInSentence)
+  def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].label(positionInSentence)
+  def parseChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].children(positionInSentence)
+  def parseLeftChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(positionInSentence)
+  def parseRightChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(positionInSentence)
+  def parseChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].childrenLabeled(positionInSentence, label.intValue)
+  def parseLeftChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildrenLabeled(positionInSentence, label.intValue)
+  def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(positionInSentence, label.intValue)
   
   // Sentence methods
   private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
@@ -101,7 +99,6 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     if (_sentence eq null) _sentence = document.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
     _sentence
   }
-  @deprecated("This method should be removed. use 'positionInSentence'.") def indexInSentence: Int = positionInSentence
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
