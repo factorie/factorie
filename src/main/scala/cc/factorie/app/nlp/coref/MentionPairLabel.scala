@@ -10,7 +10,7 @@ import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
  */
 
 //here, mention1 is the mention to the right
-class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], options: Coref2Options) extends BinaryFeatureVectorVariable[String] {
+class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
   {val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain); t.sizeHint(if (options.conjunctionStyle == options.SLOW_CONJUNCTIONS) 650 else 70); set(t)(null)}
   def domain = model.MentionPairFeaturesDomain
   override def skipNonCategories = true
@@ -165,7 +165,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
   }
 }
 
-class MentionPairLabel(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], val initialValue: Boolean, options: Coref2Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
+class MentionPairLabel(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], val initialValue: Boolean, options: Coref1Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
   def domain = model.MentionPairLabelDomain
   val features = new MentionPairFeatures(model, mention1, mention2, mentions, options)
 }
