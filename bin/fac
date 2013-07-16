@@ -1,25 +1,32 @@
 #!/bin/bash
 
+# Get the full pathname of the 'factorie' source directory
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
+
+cp=$factoriedir/target/classes:
+
+# Look for a sibling directory containing 'factorie-nlp-resources'
+factorienlpdir=`dirname $factoriedir`/factorie-nlp-resources
+if [ -e $factorienlpdir ] ; then 
+  cp=$cp:$factorienlpdir/target/classes:$factorienlpdir/src/main/resources
+fi 
 
 factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
 factorienlpjar=$factoriedir/target/factorie-1.0-SNAPSHOT-nlp-jar-with-dependencies.jar
 
+
 if [ -e $factorienlpjar ] ; then
-  jar=$factorienlpjar
+  cp=$cp:$factorienlpjar
 elif [ -e $factoriejar ] ; then
-  jar=$factoriejar
-else
-  echo Jar not found $factoriejar
-  exit -1
+  cp=$cp:$factoriejar
 fi
 
 # This makes -Xmx value command-line changeable
 MEMORY=3g
 
 # Make this a scala command
-JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -cp $jar"
+JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -cp $cp"
 
 CMD=$1
 shift
