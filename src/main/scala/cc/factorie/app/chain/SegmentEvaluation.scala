@@ -26,7 +26,6 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   //if (labelValueContinue == null) labelValueContinue = labelValueStart // Waiting for Scala 2.8 default parameters
 
   var targetCount, predictedCount, correctCount = 0 // per segment
-  @deprecated("use targetCount instead.") def trueCount = targetCount 
 
   def ++=(tokenseqs:Seq[IndexedSeq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
 
@@ -148,8 +147,6 @@ class SegmentEvaluation[L<:LabeledCategoricalVariable[String]](baseLabelStrings:
   // The rest are per-segment
   def correctCount = evals.values.foldLeft(0)(_+_.correctCount)
   def predictedCount = evals.values.foldLeft(0)(_+_.predictedCount)
-
-  //@deprecated("use targetCount instead.") def trueCount = targetCount 
 
   def targetCount = evals.values.foldLeft(0)(_+_.targetCount)
   def precision = if (predictedCount == 0) 1.0 else correctCount.toDouble / predictedCount
