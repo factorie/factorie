@@ -62,13 +62,13 @@ object CorefMentionsDemo {
     import AffinityDomain._
     def domain = AffinityVectorDomain
     if (s1 equals s2) value += streq else value += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) value += prefix1 else value += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) value += prefix2 else value += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) value += prefix3 else value += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) value += substring else value += nsubstring
-    if (s1.length == s2.length) value += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) value += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) value += containsword)
+    if (s1.substring(0,1) equals s2.substring(0,1)) value.update(prefix1, 1) else value.update(nprefix1, 1)
+    if (s1.substring(0,2) equals s2.substring(0,2)) value.update(prefix2, 1) else value(nprefix2) = 1
+    if (s1.substring(0,3) equals s2.substring(0,3)) value(prefix3) = 1 else value(nprefix3) = 1
+    if (s1.contains(s2) || s2.contains(s1)) value(substring) = 1 else value(nsubstring) = 1
+    if (s1.length == s2.length) value(lengtheq) = 1
+    s1.split(" ").foreach(s => if (s2.contains(s)) value(containsword) = 1)
+    s2.split(" ").foreach(s => if (s1.contains(s)) value(containsword) = 1)
     // Also consider caching mechanisms
   }
   object AffinityDomain extends EnumDomain {
