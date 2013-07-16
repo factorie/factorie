@@ -14,7 +14,6 @@ class MentionEntityType(val mention:Mention, targetValue:String) extends Labeled
   def domain = OntonotesNerDomain
 }
 
-
 class MentionEntityTypeLabeler extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
@@ -36,29 +35,47 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     features += "FIRST="+words.last
     mention.span.tokens.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
     mention.span.tokens.head.nextWindow(3).foreach(token => features += "NEXT="+token.string)
-    for (lexicon <- Seq(lexicon.iesl.PersonFirst, lexicon.iesl.PersonLast, lexicon.iesl.AllPlaces, lexicon.iesl.Company)) {
+    for (lexicon <- lexicons) {
       if (lexicon.contains(mention.span)) features += "LEX="+lexicon.name
       if (lexicon.containsWord(mention.headToken.string)) features += "HEADLEX="+lexicon.name
     }
     // TODO Add more features
     features
   }
+  val lexicons = Seq(
+      lexicon.iesl.PersonFirst,
+      lexicon.iesl.PersonLast,
+      lexicon.iesl.Month,
+      lexicon.iesl.PersonHonorific,
+      lexicon.iesl.Company,
+      lexicon.iesl.Country,
+      lexicon.iesl.City,
+      lexicon.iesl.AllPlaces,
+      lexicon.iesl.USState,
+      lexicon.wikipedia.Person,
+      lexicon.wikipedia.Event,
+      lexicon.wikipedia.Location,
+      lexicon.wikipedia.Organization,
+      lexicon.wikipedia.ManMadeThing,
+      lexicon.wikipedia.Event)
   
+  def entityTypeIndex(mention:Mention): Int = {
+    if (lexicon.PersonPronoun.contains(mention.span)) OntonotesNerDomain.index("PERSON")
+    else model.classification(features(mention).value).bestLabelIndex
+  }
+  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
   def process1(document:Document): Document = {
-    import MentionNumberDomain._
-    for (mention <- document.attr[MentionList]){
-      processMention(mention)
-    }
+    for (mention <- document.attr[MentionList]) processMention(mention)
     document
   }
-  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := model.classification(features(mention).value).bestLabelIndex
 
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
  
-  def filterMentions(mentions:Seq[Mention]): Iterable[Mention] = mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten
+  def filterTrainingMentions(mentions:Seq[Mention]): Iterable[Mention] = 
+    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !lexicon.PersonPronoun.contains(mention.span))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
@@ -66,10 +83,9 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     FeatureDomain.dimensionDomain.gatherCounts = true
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
-    //val entityMentions = allMentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten
-    val examples = for (doc <- trainDocs; mention <- filterMentions(doc.attr[MentionList])) yield
+    val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[MentionList])) yield
       new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMultiClass)
-    val testMentions = testDocs.flatMap(doc => filterMentions(doc.attr[MentionList]))
+    val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
       println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
@@ -116,12 +132,12 @@ object MentionEntityTypeLabelerTrainer {
     var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
     val labeler = new MentionEntityTypeLabeler
-    for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
+    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
 
     //trainDocs = trainDocs.dropRight(20)
     labeler.train(trainDocs, testDocs)
-    for (mention <- labeler.filterMentions(testDocs.flatMap(_.attr[MentionList])))
+    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, mention.span.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
