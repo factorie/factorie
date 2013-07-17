@@ -24,26 +24,43 @@ class MentionGenderLabeler extends DocumentAnnotator {
       val gender = new MentionGenderLabel(mention, UNKNOWN)
       mention.attr += gender
       if (mention.span.length > 0) {
-        val firstWord = mention.span(0).string.toLowerCase
-        val lastWord = mention.span.last.string.toLowerCase
-        var firstName = firstWord
-        if (lexicon.iesl.PersonHonorific.containsWord(firstWord)) {
-          gender := PERSON
-          if (maleHonors.contains(firstWord)) gender := MALE
-          else if (femaleHonors.contains(firstWord)) gender := FEMALE
-          if (mention.span.length >= 3) firstName = mention.span(1).string.toLowerCase
-        }
-        if (gender.intValue != MALE && gender.intValue != FEMALE) {
-          if (lexicon.iesl.Month.containsWord(firstWord)) gender := NEUTER
-          else if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) gender := MALE
-          else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName) && firstName != "an") gender := FEMALE
-          else if (gender.intValue == MentionGenderDomain.UNKNOWN && lexicon.iesl.PersonLast.containsWord(lastWord)) gender := PERSON
-          if (lexicon.iesl.City.contains(mention.span) || lexicon.iesl.Country.contains(mention.span) || lexicon.iesl.OrgSuffix.containsWord(lastWord)) 
-            if (gender.intValue == UNKNOWN) gender := NEUTER else gender := UNKNOWN // Could be either person or other; mark it unknown
+        val prnClassification = classifyPronoun(mention)
+        if(prnClassification.isDefined){
+           gender := prnClassification.get
+        }else{
+          val firstWord = mention.span(0).string.toLowerCase
+          val lastWord = mention.span.last.string.toLowerCase
+          var firstName = firstWord
+          if (lexicon.iesl.PersonHonorific.containsWord(firstWord)) {
+            gender := PERSON
+            if (maleHonors.contains(firstWord)) gender := MALE
+            else if (femaleHonors.contains(firstWord)) gender := FEMALE
+            if (mention.span.length >= 3) firstName = mention.span(1).string.toLowerCase
+          }
+          if (gender.intValue != MALE && gender.intValue != FEMALE) {
+            if (lexicon.iesl.Month.containsWord(firstWord)) gender := NEUTER
+            else if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) gender := MALE
+            else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName) && firstName != "an") gender := FEMALE
+            else if (gender.intValue == MentionGenderDomain.UNKNOWN && lexicon.iesl.PersonLast.containsWord(lastWord)) gender := PERSON
+            if (lexicon.iesl.City.contains(mention.span) || lexicon.iesl.Country.contains(mention.span) || lexicon.iesl.OrgSuffix.containsWord(lastWord))
+              if (gender.intValue == UNKNOWN) gender := NEUTER else gender := UNKNOWN // Could be either person or other; mark it unknown
+          }
         }
       }
     }
     document
+  }
+  def classifyPronoun(mention: Mention): Option[Int] = {
+    if(mention.span.length > 1)
+      return None
+    else{
+      val lemma = mention.span.tokens.head.lemmaString.toLowerCase
+      if(lemma == "he")
+        return Some(MentionGenderDomain.MALE)
+      else if (lemma == "she")
+        return Some(MentionGenderDomain.FEMALE)
+      else return None
+    }
   }
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionGenderLabel].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionGenderLabel]; if (t ne null) t.categoryValue else "_" }

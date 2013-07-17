@@ -155,6 +155,7 @@ object MentionEntityTypeLabelerTrainer {
 
 //this gives each Mention and MentionEntityType. This is a very simple rule-based annotator that can not even produce predictions
 //for many of the categories in  OntonotesMentionEntityTypeDomain, only PERSON, ORG, GPE, and EVENT.
+//todo: this is a candidate for deletion
 object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
   import MentionEntityTypeAnnotator1Util._
   def process1(document:Document): Document = {
