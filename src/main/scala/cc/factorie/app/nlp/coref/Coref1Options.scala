@@ -8,7 +8,7 @@ import scala.collection.mutable
  * Time: 12:20 PM
  */
 
-class Coref2Options {
+class Coref1Options {
   def getConfigHash = mutable.HashMap[String,String]() ++= configHash.map(x => (x._1,x._2.toString))
 
   def setConfigHash(H: mutable.HashMap[String,String]): Unit = {

@@ -13,7 +13,7 @@ import java.io.File
  */
 
 
-trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
+trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val trainFile = new CmdOption("train", "conll-train-clean.txt", "STRING", "File with training data")
   val testFile = new CmdOption("test", "conll-test-clean.txt", "STRING", "File with testing data")
   val numPositivePairsTrain = new CmdOption("prune-train", 2, "INT", "number of positive pairs before pruning instances in training")
@@ -45,7 +45,7 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
 }
 
-object WithinDocCoref2Trainer {
+object WithinDocCoref1Trainer {
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
@@ -78,12 +78,12 @@ object WithinDocCoref2Trainer {
   }
 
 
-  object opts extends WithinDocCoref2TrainerOpts
+  object opts extends WithinDocCoref1TrainerOpts
 
 
   def main(args: Array[String]) {
     opts.parse(args)
-    val options = new Coref2Options
+    val options = new Coref1Options
     //options that get serialized with the model
     options.setConfig("useEntityType",opts.useEntityType.value)
     options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
@@ -135,7 +135,7 @@ object WithinDocCoref2Trainer {
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
-        val lr = new WithinDocCoref2()
+        val lr = new WithinDocCoref1()
 
         //copy over options that are tweakable at test time
 	      println("deserializing from " + opts.deserialize.value)
@@ -151,7 +151,7 @@ object WithinDocCoref2Trainer {
       }
       else{
         //todo: the options handling needs to be overhauled. Currently it isn't copying over to lr.options many of the input options
-        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
+        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref1 else new WithinDocCoref1
         lr.options.setConfigHash(options.getConfigHash)
         lr.options.useEntityLR = options.useEntityLR
 
@@ -197,7 +197,7 @@ object WithinDocCoref2Trainer {
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref2Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
     import cc.factorie.app.nlp.Implicits._
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)

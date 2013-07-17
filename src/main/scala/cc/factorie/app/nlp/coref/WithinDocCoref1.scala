@@ -1,464 +1,334 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.{FeatureVectorVariable, Parameters, CategoricalTensorDomain}
-import cc.factorie.optimize._
-import cc.factorie.la.{Tensor1, DenseTensor1}
-import cc.factorie.app.strings.Stopwords
-import cc.factorie.app.nlp.{Document,Token}
-import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.pos.PTBPosLabel
-import cc.factorie.app.nlp.lexicon
+import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
-import cc.factorie.util.{DefaultCmdOptions, BinarySerializer}
-import java.util.concurrent.Callable
-import java.io.{File,InputStream,FileInputStream}
-import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
+import java.util.concurrent.ExecutorService
+import cc.factorie.optimize._
+import java.io._
+import cc.factorie.util.{ClasspathURL, BinarySerializer}
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * User: apassos
- * Date: 5/30/13
- * Time: 10:07 PM
+ * Date: 6/27/13
+ * Time: 12:25 PM
  */
 
-object WithinDocCoref1Helper {
-  val properSet = Set("NNP", "NNPS")
-  val nounSet = Seq("NN", "NNS")
-  val posSet = Seq("POS")
-  val proSet = Set("PRP", "PRP$", "WP", "WP$")
-  val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
+abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
+  val options = new Coref1Options
+  val model: PairwiseCorefModel
 
-  val maleHonors = Set("mr.", "mr", "mister")
-  val femaleHonors = Set("ms.", "ms", "mrs.", "mrs", "miss", "misses")
-  val neuterWN = Set("artifact", "location", "group")
-  val singPron = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
-  val pluPron = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
-  val singDet = Set("a ", "an ", "this ")
-  val pluDet = Set("those ", "these ", "some ")
-
-  val malePron = Set("he", "him", "his", "himself")
-  val femalePron = Set("she", "her", "hers", "herself")
-  val neuterPron = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
-  val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
-  val LastNames = new lexicon.UnionLexicon("LastNames", lexicon.iesl.PersonLast, lexicon.uscensus.PersonLast)
-  
-  // a guess at the gender/type of a nominal mention
-  def namGender(m: Mention): Char = {
-    val unknown = 'u'; val person = 'p'; val male = 'm'; val female = 'f'; val org = 'n'
-    var result = unknown
-    if (m.span.length > 0) {
-      val firstWord = m.span(0).string.toLowerCase
-      val lastWord = m.span.last.string.toLowerCase
-      var firstName = firstWord
-      if (lexicon.iesl.PersonHonorific.containsWord(firstWord)) {
-        result = person
-        if (maleHonors.contains(firstWord)) result = male
-        else if (femaleHonors.contains(firstWord)) result = female
-        if (m.span.length >= 3) firstName = m.span(1).string.toLowerCase
-      }
-      if (result != male && result != female) {
-        if (lexicon.iesl.Month.containsWord(firstWord)) result = unknown
-        else if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) result = male
-        else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName) && firstName != "an") result = female
-        else if (result == unknown && lexicon.iesl.PersonLast.containsWord(lastWord)) result = person
-        if (lexicon.iesl.City.contains(m.span) || lexicon.iesl.Country.contains(m.span) || lexicon.iesl.OrgSuffix.containsWord(lastWord)) 
-          if (result == unknown) result = org else result = unknown // Could be either person or org; mark it unknown
-      }
-    }
-    println(s"WithinDocCoref1 gender=$result mention ${m.span.phrase}")
-    result
-  }
-    
-  def namGenderOld(m: Mention): Char = {
-    val fullhead = m.span.phrase.trim.toLowerCase
-    var g = 'u'
-    val words = fullhead.split("\\s")
-    if (words.length == 0) return g
-
-    val word0 = words.head
-    val lastWord = words.last
-
-    var firstName = ""
-    var honor = ""
-    if (lexicon.iesl.PersonHonorific.containsWord(word0)) {
-      honor = word0
-      if (words.length >= 3) firstName = words(1)
-      else if (words.length >= 2) firstName = word0
-      else firstName = word0
-    }
-
-    // determine gender using honorifics
-    if (maleHonors.contains(honor)) return 'm'
-    else if (femaleHonors.contains(honor)) return 'f'
-
-    // determine from first name
-    if (lexicon.uscensus.PersonFirstMale.containsWord(firstName)) g = 'm'
-    else if (lexicon.uscensus.PersonFirstFemale.containsWord(firstName)) g = 'f'
-    else if (LastNames.containsWord(lastWord)) g = 'p'
-
-    if (lexicon.iesl.City.contains(m.span) || lexicon.iesl.Country.contains(m.span)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
-      g = 'n'
-    }
-
-    if (lexicon.iesl.OrgSuffix.containsWord(lastWord)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p")) return 'u'
-      g = 'n'
-    }
-    println(s"WithinDocCoref1 gender=$g mention $fullhead")
-    g
-  }
-
-  // a guess at a gender of a mention which is a common noun
-  def nomGender(m: Mention): Char = {
-    val fullhead = m.span.phrase.toLowerCase
-    if (WordNet.isHypernymOf("male", fullhead)) 'm'
-    else if (WordNet.isHypernymOf("female", fullhead)) 'f'
-    else if (WordNet.isHypernymOf("person", fullhead)) 'p'
-    else if (neuterWN.exists(WordNet.isHypernymOf(_, fullhead))) 'n'
-    else 'u'
-  }
-
-  // a guess at a gender of a pronominal mention
-  def proGender(m: Mention): Char = {
-    val pronoun = m.span.phrase.toLowerCase
-    if (malePron.contains(pronoun)) 'm'
-    else if (femalePron.contains(pronoun)) 'f'
-    else if (neuterPron.contains(pronoun)) 'n'
-    else if (personPron.contains(pronoun)) 'p'
-    else 'u'
-  }
-
-  // contructs a ground-truth entity map from a set of Mentions
-  def truthEntityMap(mentions: MentionList) = {
-    val map = new GenericEntityMap[Mention]
-    mentions.foreach(m => map.addMention(m, map.numMentions.toLong))
-    val entities = mentions.groupBy(_.attr[Entity])
-    entities.flatMap(_._2.sliding(2)).foreach(p => {
-      if (p.size == 2) map.addCoreferentPair(p(0), p(1))
-    })
-    map
-  }
-}
-
-object WithinDocCoref1Trainer {
-  def main(args: Array[String]) {
-    implicit val random = new scala.util.Random(0)
-    object CorefOptions extends DefaultCmdOptions {
-      val train = new CmdOption("train", "conll-train-clean.txt", "STRING", "An ontonotes training file")
-      val test = new CmdOption("test", "conll-train-clean.txt", "STRING", "An ontonotes testing file")
-      val trainPortion = new CmdOption("trainPortion", 1.0, "STRING", "Fraction of train / test data to use")
-      val testPortion = new CmdOption("testPortion", 1.0, "STRING", "Fraction of train / test data to use")
-      val model = new CmdOption("model-file", "coref-model", "STRING", "File to which to save the model")
-      val iterations = new CmdOption("iterations", 2, "INT", "Number of iterations for training")
-      val batchSize = new CmdOption("batch-size", 30, "INT", "Number of documents to tokenize at a time")
-    }
-    CorefOptions.parse(args)
-    println("Loading data")
-    val allTrain = ConllCorefLoader.loadWithParse(CorefOptions.train.value)
-    val allTest = ConllCorefLoader.loadWithParse(CorefOptions.test.value)
-    val trainDocs = allTrain.take((allTrain.length*CorefOptions.trainPortion.value).toInt)
-    val testDocs = allTest.take((allTest.length*CorefOptions.testPortion.value).toInt)
-    println("Training on " + trainDocs.length + " with " + (trainDocs.map(_.attr[MentionList].length).sum/trainDocs.length.toFloat) + " mentions per document")
-    println("Training")
-    val coref = new WithinDocCoref1
-    coref.train(trainDocs, testDocs, CorefOptions.iterations.value, CorefOptions.batchSize.value)
-    println("Serializing")
-    coref.serialize(new File(CorefOptions.model.value))
-  }
-}
-
-
-class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
-  self =>
-  def this(stream:InputStream) = { this (); deserialize(stream) }
-  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
-  def this(file:File) = this(new java.io.FileInputStream(file))
-    
-  object domain extends CategoricalTensorDomain[String] { dimensionDomain.maxSize = 2e6.toInt; dimensionDomain.growPastMaxSize = true }
-  // We want to start training before reading all features, so we need to depend only on the domain's max size
-  object model extends Parameters { val weights = Weights(new DenseTensor1(domain.dimensionDomain.maxSize)) }
-
-  def prereqAttrs = Seq(classOf[PTBPosLabel], classOf[MentionList]) // how to specify that we need entity types?
+  def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
-  override def tokenAnnotationString(token:Token): String = {
+  def process1(document: Document) = {
+    if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
+    else document.attr += processDocumentOneModel(document)
+    document
+  }
+  def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[Mention]]
     token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
       case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
-  override def mentionAnnotationString(mention:Mention): String = { 
-    val emap = mention.document.attr[GenericEntityMap[Mention]]
-    "e"+emap.getEntity(mention)
-  }
-  
 
-  def process1(document: Document) = {
-    //println("foo")
-    val facMents = document.attr[MentionList].toSeq
-    val ments = facMents.map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection))
-    val out = new GenericEntityMap[Mention]
-    ments.foreach(m => out.addMention(m.mention, out.numMentions.toLong))
+  trait CorefParallelHelper[T] {
+    def pool: ExecutorService
+    def map(in: Document): T
+    def reduce(states: Iterable[T])
+    def runParallel(ins: Seq[Document]) {
+      reduce(TrainerHelpers.parMap(ins, pool)(map(_)))
+    }
+    def runSequential(ins: Seq[Document]) {
+      reduce(ins.map(map))
+    }
+  }
+
+  def deserialize(stream: DataInputStream) {
+    import cc.factorie.util.CubbieConversions._
+    val config = options.getConfigHash
+    BinarySerializer.deserialize(config, stream)
+    options.setConfigHash(config)
+    println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
+    //BinarySerializer.deserialize(model, stream)
+    model.deserialize(stream)
+    model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+    println("model weights 1norm = " + model.parameters.oneNorm)
+    stream.close()
+  }
+
+  def deserialize(filename: String) {
+    deserialize(new DataInputStream(new FileInputStream(filename)))
+  }
+
+  def serialize(filename: String) {
+    import cc.factorie.util.CubbieConversions._
+    println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
+    val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
+    BinarySerializer.serialize(options.getConfigHash, stream)
+    model.serialize(stream)
+    println("model weights 1norm = " + model.parameters.oneNorm)
+    stream.close()
+  }
+
+
+  def generateTrainingInstances(d: Document, map: GenericEntityMap[Mention]): Seq[MentionPairLabel] = {
+    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
+  }
+
+  protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
+    val labels = new ArrayBuffer[MentionPairLabel]
+    for (i <- 0 until mentions.size){
+      if(!options.usePronounRules || !mentions(i).isPRO)
+        labels ++= generateMentionPairLabelsForOneAnaphor(mentions, i, map)
+    }
+    /*if (Options.debug) println("# of ex = " + labels.size)*/
+    labels
+  }
+
+  protected def generateMentionPairLabelsForOneAnaphor(orderedMentions: Seq[CorefMention], anaphorIndex: Int, map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
+    val labels = new ArrayBuffer[MentionPairLabel]
+    val m1 = orderedMentions(anaphorIndex)
+    var numAntecedent = 0
+    var i = anaphorIndex - 1
+    while (i >= 0 && (numAntecedent < options.numPositivePairsTrain || !options.pruneNegTrain)) {
+      val m2 = orderedMentions(i)
+      val cataphora = m2.isPRO && !m1.isPRO
+      val label = m1.parentEntity == m2.parentEntity
+
+      var skip = false
+      if(options.usePronounRules && m2.isPRO)
+        skip = true
+
+      if (cataphora) {
+        if (label && !options.allowPosCataphora || !label && !options.allowNegCataphora) {
+          skip = true
+        }
+      }
+
+      if (label) {
+        if (numAntecedent > 0 && !options.pruneNegTrain) skip = true
+        else if (!skip) numAntecedent += 1
+      }
+
+      if (!skip) {
+        val cl = new MentionPairLabel(model, m1, m2, orderedMentions, label, options=options)
+
+        // merge features from neighboring mentions that are in the same chain as m2
+        assert(map != null, "Options.mergeNeighborFeatures requires non-null mention-entityID map")
+        val mergeables = labels.filter(l => map.reverseMap(l.mention2.mention) == map.reverseMap(m2.mention))
+        mergeFeatures(cl.features, mergeables.map(_.features))
+
+        labels += cl
+      }
+      i -= 1
+    }
+
+    labels
+  }
+
+  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, trainTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService, miniBatchSize: Int = 1)
+    extends CorefParallelHelper[Seq[Example]] {
+    def map(d: Document): Seq[Example] = MiniBatchExample(miniBatchSize,
+      generateTrainingInstances(d, trainTrueMaps(d.name)).map(i => model.getExample(i, options.slackRescale)))
+    def reduce(states: Iterable[Seq[Example]]) {
+      for (examples <- states) {
+        val trainer = new OnlineTrainer(model.parameters, optimizer, maxIterations = 1, logEveryN = examples.length - 1)
+        trainer.trainFromExamples(examples)
+      }
+    }
+  }
+
+  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0) {
+    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
+    val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
+    model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    try {
+      val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
+      for (iter <- 0 until options.numTrainingIterations) {
+        val shuffledDocs = rng.shuffle(trainDocs)
+        val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
+        for ((batch, b) <- batches.zipWithIndex) {
+          if (options.numThreads > 1) trainer.runParallel(batch)
+          else trainer.runSequential(batch)
+        }
+        if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+        optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+        println("Train docs")
+        doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
+        println("Test docs")
+        doTest(testDocs, wn, testTrueMaps, "Test")
+
+      if(saveModelBetweenEpochs && iter % saveFrequency == 0)
+        serialize(filename + "-" + iter)
+
+        optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+      }
+      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+    } finally {
+      pool.shutdown()
+    }
+  }
+
+  abstract class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService)
+    extends CorefParallelHelper[Null] {
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention]
+    def reduce(states: Iterable[Null]) { }
+    def map(doc: Document): Null = {
+      val fId = doc.name
+      val trueMap = testTrueMaps(fId)
+      val predMap = getPredMap(doc, model)
+
+      val gtMentions = trueMap.entities.values.flatten.toSet
+      val predMentions = predMap.entities.values.flatten.toSet
+
+      val nm = predMap.numMentions
+      gtMentions.diff(predMentions).seq.toSeq.zipWithIndex.foreach(mi =>  predMap.addMention(mi._1, mi._2+ nm))
+      val pw = CorefEvaluator.Pairwise.evaluate(predMap, trueMap)
+      val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
+      val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+
+      scorerMutex.synchronized {
+        scorer.macroMUC.macroAppend(muc)
+        scorer.macroPW.macroAppend(pw)
+        scorer.microB3.microAppend(b3)
+        scorer.microMUC.microAppend(muc)
+        scorer.microPW.microAppend(pw)
+      }
+      null
+    }
+  }
+
+  def mergeFeatures(l: MentionPairFeatures, mergeables: Seq[MentionPairFeatures]) {
+    if (options.mergeFeaturesAtAll) {
+      assert(l.features.activeCategories.forall(!_.startsWith("NBR")))
+      val mergeLeft = ArrayBuffer[MentionPairLabel]()
+      mergeables.take(1).diff(mergeLeft).foreach(l.features ++= _.features.mergeableAllFeatures.map("NBRR_" + _))
+    }
+  }
+  def assertSorted(ments: Seq[Mention]): Unit = {
+     val len = ments.length
+     var i = 1
+     while(i < len){
+       assert(ments(i).span.tokens.head.stringStart >= ments(i-1).span.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
+       i +=1
+     }
+  }
+
+  def processDocumentOneModel(doc: Document): GenericEntityMap[Mention] = {
+    val ments = doc.attr[MentionList]
+    assertSorted(ments)
+    val corefMentions = ments.map(CorefMention.mentionToCorefMention)
+    val map = processDocumentOneModelFromMentions(corefMentions)
+    map
+  }
+
+  def processDocumentOneModelFromMentions(ments: Seq[CorefMention]): GenericEntityMap[Mention] = {
+    val predMap = new GenericEntityMap[Mention]
+    assertSorted(ments.map(_.mention))
+    ments.foreach(m => predMap.addMention(m.mention, predMap.numMentions.toLong))
     for (i <- 0 until ments.size) {
-      val bestCand = processOneMention(ments, i)
-      if (bestCand > -1) {
-        out.addCoreferentPair(ments(i).mention, ments(bestCand).mention)
+      val m1 = ments(i)
+      val bestCand = processOneMention(ments, i, predMap)
+      if (bestCand != null) {
+        predMap.addCoreferentPair(m1.mention, bestCand.mention)
       }
     }
-    document.attr += out
-    document
+    predMap
   }
-  
-  def entityMapString(map: GenericEntityMap[Mention]): String = {
-    val sb = new StringBuffer
-    val entityToNumMap = collection.mutable.HashMap[Entity, Int]()
-    for ((e,i) <- map.getEntities.zipWithIndex) {
-      sb append (s"Entity $i\n")
-      for (m <- e) {
-        val trueEnt = entityToNumMap.getOrElseUpdate(m.attr[Entity], entityToNumMap.size)
-        sb append (s"  mention phrase: '${m.span.phrase}'  headindex: ${m.headTokenIndex}  headpos: ${m.headToken.posLabel.categoryValue} true entity number: $trueEnt\n")
+
+  def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.span.tokens.head.stringStart, mention.length)))
+  }
+
+  def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[Mention]): GenericEntityMap[Mention] = {
+
+    val allMents = inputMentions.map(CorefMention.mentionToCorefMention)
+    val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
+
+    val predMap = new GenericEntityMap[CorefMention]
+    allMents.foreach(m => predMap.addMention(m, predMap.numMentions.toLong))
+    val candidateMentionsToTheLeft = ArrayBuffer[CorefMention]()
+
+    for (i <- 0 until ments.size) {
+      val m1 = ments(i)
+      val bestCand = processOneMentionByEntities(ments, i, candidateMentionsToTheLeft ,predMap)
+      if (bestCand != null) {
+        predMap.addCoreferentPair(m1, bestCand)
+      }
+      if(bestCand != null || m1.isProper){
+        candidateMentionsToTheLeft += m1
       }
     }
-    sb.toString
+    if(options.usePronounRules)
+      doCorefOnPronounsUsingRules(predMap,allMents)
+
+    // we need to convert it into an entity Map of Mentions, rather than CorefMentions
+    val predMap2 = new GenericEntityMap[Mention]
+    predMap2.entities ++= predMap.entities.map(kv => (kv._1,kv._2.map(m => m.mention)))
+    predMap2.reverseMap ++= predMap.reverseMap.map(kv => (kv._1.mention,kv._2))
+    predMap2
   }
 
+  case class CoarseMentionType(gender: String, number: String)
 
-  def train(docs: Seq[Document], testDocs: Seq[Document], trainIterations: Int, batchSize: Int, nThreads: Int = 2)(implicit random: scala.util.Random) {
-    val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGrad with ParameterAveraging
-    // since the main bottleneck is generating the training examples we do that in parallel and train sequentially
-    for (it <- 0 until trainIterations) {
-      val batches = rng.shuffle(docs).grouped(batchSize).toSeq
-      for (batch <- 0 until batches.length; documents = batches(batch)) {
-        println("Generating training examples batch "+ batch + " of " + batches.length)
-        val examples = generateTrainingExamples(documents, nThreads)
-        println("Training ")
-        Trainer.onlineTrain(model.parameters, examples, maxIterations=1, optimizer=opt)
-      }
-      domain.freeze()
-      // opt.setWeightsToAverage(model.parameters)  // TODO with ParameterAveraging above, and this was causing null pointer exception in Parameters.scala:100
-      println("Iteration " + it)
-      // we don't evaluate on the whole training set because it feels wasteful, still it's nice to see some results
-      evaluate("TRAIN MICRO", docs.take((docs.length*0.1).toInt), batchSize, nThreads)
-      evaluate("TEST  MICRO", testDocs, batchSize, nThreads)
-//      for (doc <- testDocs.take(3)) {
-//        println(s"Document ${doc.name}\n"+entityMapString(doc.attr[GenericEntityMap[Mention]]))
-//        evaluate("TEST  MICRO", Seq(doc), batchSize, nThreads)
-//      }
-      //opt.unSetWeightsToAverage(model.parameters)
-    }
-    //opt.setWeightsToAverage(model.parameters)
-  }
+  def doCorefOnPronounsUsingRules(predMap: GenericEntityMap[CorefMention],allMentions: Seq[CorefMention]): Unit = {
 
-  // Serialization
-  def serialize(file: File): Unit = {
-    if (file.getParentFile eq null) file.getParentFile.mkdirs()
-    serialize(new java.io.FileOutputStream(file))
-  }
-  def deserialize(file: File): Unit = {
-    require(file.exists(), "Trying to load non-existent file: '" +file)
-    deserialize(new java.io.FileInputStream(file))
-  }
-  def serialize(stream: java.io.OutputStream): Unit = {
-    import cc.factorie.util.CubbieConversions._
-    val dstream = new java.io.DataOutputStream(stream)
-    BinarySerializer.serialize(domain.dimensionDomain, dstream)
-    BinarySerializer.serialize(model, dstream)
-    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
-  }
-  def deserialize(stream: java.io.InputStream): Unit = {
-    import cc.factorie.util.CubbieConversions._
-    // Get ready to read sparse evidence weights
-    val dstream = new java.io.DataInputStream(stream)
-    BinarySerializer.deserialize(domain.dimensionDomain, dstream)
-    BinarySerializer.deserialize(model, dstream)
-    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
-  }
-  import cc.factorie.util.CubbieConversions._
+    //first, make a map from entity ids in the predMap to sets of CoarseMentionTypes that appear somewhere in the entity.
+    val numGenderSetsForEntities = predMap.entities.map(kv => (kv._1,kv._2.map(m => CoarseMentionType(m.gender,m.number)).toSet))
 
-  private class LRCorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) {
-    import WithinDocCoref1Helper._
-    def parentEntity = mention.attr[Entity]
-    def headPos = mention.headToken.posLabel.categoryValue
-    def span = mention.span
+    //make such a set for every mention. For those mentions that aren't in entities, the set is just a singleton.
+    val numGenderSets = allMentions.map(m => numGenderSetsForEntities.getOrElse(predMap.getEntity(m),Set(CoarseMentionType(m.gender,m.number))))
 
-    // All the code which follows is essentially cached per-mention information used to compute features.
-    // All the pairwise features are simple combinations of these per-mention features, so having them here
-    // removes them from the inner loop.
-    def isPossessive = posSet.contains(headPos)
-    def isNoun = nounSet.contains(headPos)
-    def isProper = properSet.contains(headPos)
-    def isPRO = proSet.contains(headPos)
-    val hasSpeakWord = lexicon.iesl.Say.contains(mention.span.window(2))
-    val wnLemma = WordNet.lemma(mention.headToken.string, "n")
-    val wnSynsets = WordNet.synsets(wnLemma).toSet
-    val wnHypernyms = WordNet.hypernyms(wnLemma)
-    val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
-    val nounWords: Set[String] =
-        span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
-    val lowerCasePhrase: String = span.phrase.toLowerCase
-    val lowerCaseHead: String = mention.headToken.string.toLowerCase
-    val lowerCaseFirst: String = span.head.string.toLowerCase
-    val headPhraseTrim: String = span.phrase.trim
-    val nonDeterminerWords: Seq[String] =
-      span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
-    // TODO David: Why is attr[EntityType] sometimes null here? -akm  
-    val predictEntityType: String = { val et = mention.attr[MentionEntityType]; if (et eq null) "O" else et.categoryValue }
-    val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
-
-    val capitalization: Char = {
-        if (span.length == 1 && span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
-            val s = span.value.filter(_.posLabel.categoryValue.startsWith("N")).map(_.string.trim)
-            if (s.forall(_.forall(_.isUpper))) 'a'
-            else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
-            else 'f'
-      }
-    val gender: Char = {
-      if (isProper) {
-        WithinDocCoref1Helper.namGender(mention)
-      } else if (isPossessive) {
-        val gnam = WithinDocCoref1Helper.namGender(mention)
-        val gnom = WithinDocCoref1Helper.nomGender(mention)
-        if (gnam == 'u' && gnom != 'u') gnom else gnam
-      } else if (isNoun) {
-        WithinDocCoref1Helper.nomGender(mention)
-      } else if (isPRO) {
-        WithinDocCoref1Helper.proGender(mention)
-      } else {
-        'u'
-      }
-    }
-    val number: Char = {
-      val fullhead = lowerCasePhrase
-      if (WithinDocCoref1Helper.singPron.contains(fullhead)) {
-        's'
-      } else if (WithinDocCoref1Helper.pluPron.contains(fullhead)) {
-        'p'
-      } else if (WithinDocCoref1Helper.singDet.exists(fullhead.startsWith)) {
-        's'
-      } else if (WithinDocCoref1Helper.pluDet.exists(fullhead.startsWith)) {
-        'p'
-      } else if (isProper) {
-        if (!fullhead.contains(" and ")) {
-          's'
-        } else {
-          'u'
+    for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
+      val m1 = allMentions(i)
+      assert(numGenderSets(i).size == 1)
+      val numGender1 = numGenderSets(i).head
+      var j = i -1
+      var searching = true
+      while(j > 0 && searching){
+        val m2 = allMentions(j)
+        //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
+        if(!m2.isPRO &&  numGenderSets(j).contains(numGender1)){
+          predMap.addCoreferentPair(m1,m2)
+          searching = false
         }
-      } else if (isNoun || isPossessive) {
-          val maybeSing = if (MorphologicalAnalyzer1.isSingular(fullhead)) true else false
-          val maybePlural = if (MorphologicalAnalyzer1.isPlural(fullhead)) true else false
-
-          if (maybeSing && !maybePlural) {
-            's'
-          } else if (maybePlural && !maybeSing) {
-            'p'
-          } else if (headPos.startsWith("N")) {
-            if (headPos.endsWith("S")) {
-              'p'
-            } else {
-              's'
-            }
-          } else {
-            'u'
-          }
-      } else {
-        'u'
+        j -= 1
       }
     }
-    val possibleAcronyms: Set[String] = {
-      if (span.length == 1)
-          Set.empty
-        else {
-          val alt1 = span.value.map(_.string.trim).filter(_.exists(_.isLetter)) // tokens that have at least one letter character
-          val alt2 = alt1.filterNot(t => Stopwords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
-          val alt3 = alt1.filter(_.head.isUpper) // alt1 tokens that are capitalized
-          val alt4 = alt2.filter(_.head.isUpper)
-          Seq(alt1, alt2, alt3, alt4).map(_.map(_.head).mkString.toLowerCase).toSet
-        }
-    }
-
-    // These are some actual feature functions. Not sure where else to put them.
-    def isRelativeFor(other: LRCorefMention) =
-      (relativizers.contains(lowerCasePhrase) &&
-        ((other.span.head == other.span.last.next) ||
-          ((other.span.head == span.last.next(2) && span.last.next.string.equals(","))
-            || (other.span.head == span.last.next(2) && span.last.next.string.equals(",")))))
-
-
-    def areRelative(m2: LRCorefMention): Boolean = isRelativeFor(m2) || m2.isRelativeFor(this)
-
-    def areAppositive(m2: LRCorefMention): Boolean = {
-        ((m2.isProper || isProper)
-          && ((m2.span.last.next(2) == span.head && m2.span.last.next.string.equals(","))
-              || (span.last.next(2) == m2.span.head && span.last.next.string.equals(","))))
-      }
-
-    def lowerCasePhraseMatch(mention2: LRCorefMention) =
-      lowerCasePhrase.contains(mention2.lowerCasePhrase) || mention2.lowerCasePhrase.contains(lowerCasePhrase)
-
-    def areHyp(mention2: LRCorefMention) =
-      wnSynsets.exists(mention2.wnHypernyms.contains) || mention2.wnSynsets.exists(wnHypernyms.contains)
   }
 
-  private class LeftToRightCorefFeatures extends FeatureVectorVariable[String] { def domain = self.domain; override def skipNonCategories = true }
-  private def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
 
-  private def getFeatures(mention1: LRCorefMention, mention2: LRCorefMention) = {
-    val f = new LeftToRightCorefFeatures
-
-    f += "BIAS"
-    f += "Genders:" + mention1.gender + "" +  mention2.gender
-    f += "Numbers:" + mention1.number + "" + mention2.number
-    f += (if (mention1.nonDeterminerWords == mention2.nonDeterminerWords)  "sameNDwords" else "~sameNDWords")
-    f += "pos1:" + mention1.headPos
-    f += "pos2:" + mention2.headPos
-    f += (if (!mention1.nounWords.intersect(mention2.nounWords).isEmpty) "shareNouns" else "~shareNouns")
-    f += (if (mention1.lowerCasePhraseMatch(mention2)) "phraseMatch" else "~phraseMatch")
-    f += (if (mention1.wnSynsets.exists(mention2.wnSynsets.contains)) "Synonyms" else "~Synonyms")
-    f += (if (mention1.wnSynsets.exists(mention2.wnAntonyms.contains)) "Antonyms" else "~Antonyms")
-    f += (if (mention1.areHyp(mention2)) "AreHypernyms" else "~AreHypernyms")
-    f += (if (mention1.wnHypernyms.exists(mention2.wnHypernyms.contains)) "ShareHypernyms" else "~ShareHypernyms")
-    f += (if (mention1.areAppositive(mention2)) "AreAppositive" else "~AreAppositive")
-    f += (if (mention1.hasSpeakWord && mention2.hasSpeakWord) "BothSpeak" else "~BothSpeak")
-    f += (if (mention1.areRelative(mention2)) "AreRelative" else "~AreRelative")
-    f += "PosPronoun:" + mention2.headPos + (if (mention2.isPRO) mention1.mention.headToken.string else mention1.headPos)
-    f += "PredictedEntityTypes:" + mention1.predictEntityType+mention2.predictEntityType
-    f += "HeadWords:" + mention1.mention.headToken.string+mention2.mention.headToken.string
-    f += (if (mention1.span.sentence == mention2.span.sentence) "SameSentence" else "~SameSentence")
-    f += (if (mention1.lowerCaseFirst == mention2.lowerCaseFirst) "BeginMatchLC" else "~BeginMatchLC")
-    f += (if (mention1.lowerCaseHead == mention2.lowerCaseHead) "EndMatchLC" else "~EndMatchLC")
-    f += (if (mention1.span.head.string == mention2.span.head.string) "BeginMatch" else "~BeginMatch")
-    f += (if (mention1.span.last.string == mention2.span.last.string) "EndMatch" else "~EndMatch")
-    f += (if (mention1.isPRO) "1IsPronoun" else "~1IsPronoun")
-    f += (if (mention1.demonym != "" && mention1.demonym == mention2.demonym) "DemonymMatch" else "~DemonymMatch")
-    f += "Capitalizations:" + mention1.capitalization +"_" +  mention2.capitalization
-    f += "HeadPoss:" + mention2.mention.headToken.posLabel.value + "_" + mention1.mention.headToken.posLabel.value
-    f += (if (mention1.possibleAcronyms.exists(mention2.possibleAcronyms.contains)) "AcronymMatch" else "~AcronymMatch")
-
-    val sdist = bin(mention1.sentenceNum - mention2.sentenceNum, 1 to 10)
-    for (sd <- 1 to sdist) { f += "SentenceDistance>=" + sd}
-    val tdist = bin(mention1.tokenNum - mention2.tokenNum, Seq(1, 2, 3, 4, 5, 10, 20, 50, 100, 200))
-    for (td <- 1 to tdist) f += "TokenDistance>=" + td
-
-    f
-  }
-
-  // processing one mention at testing time
-  private def processOneMention(orderedMentions: Seq[LRCorefMention], mentionIndex: Int): Int = {
+  def processOneMention(orderedMentions: Seq[CorefMention], mentionIndex: Int, predMap: GenericEntityMap[Mention]): CorefMention = {
     val m1 = orderedMentions(mentionIndex)
-    var bestCand = -1
+    val candLabels = ArrayBuffer[MentionPairFeatures]()
+    var bestCand: CorefMention = null
     var bestScore = Double.MinValue
+
     var j = mentionIndex - 1
     var numPositivePairs = 0
-    while (j >= 0 && (numPositivePairs < 100)) { // TODO Consider < 2 instead
+    val m1IsPro = m1.isPRO
+    while (j >= 0 && (numPositivePairs < options.numPositivePairsTest || !options.pruneNegTest)) {
       val m2 = orderedMentions(j)
-      if (!m2.isPRO || m1.isPRO) { // we try to link if either the later mention is a pronoun or the earlier one isn't
-        val score = if (!m1.nounWords.isEmpty && m1.nounWords == m2.nounWords) Double.PositiveInfinity else model.weights.value dot getFeatures(orderedMentions(mentionIndex), orderedMentions(j)).value
-        if (score > 0.0 || m1.isPRO) {
+
+      val cataphora = m2.isPRO && !m1IsPro
+
+      if (!cataphora || options.allowTestCataphora) {
+        val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
+        val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2.mention) == predMap.reverseMap(m2.mention))
+        mergeFeatures(candLabel, mergeables)
+        candLabels += candLabel
+        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains)  || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
+        else model.score(candLabel.value)
+        // Pronouns should always link to something
+        if (score > 0.0) {
           numPositivePairs += 1
           if (bestScore <= score) {
-            bestCand = j
+            bestCand = m2
             bestScore = score
           }
         }
@@ -468,90 +338,115 @@ class WithinDocCoref1 extends cc.factorie.app.nlp.DocumentAnnotator {
     bestCand
   }
 
-  // processing one document at training time
-  private def oneDocExample(doc: Document): Seq[Example] = {
-    val mentions = doc.attr[MentionList].map(m => new LRCorefMention(m, m.start, m.sentence.indexInSection))
-    val examplesList = collection.mutable.ListBuffer[Example]()
-    for (anaphorIndex <- 0 until mentions.length) {
-      val m1 = mentions(anaphorIndex)
-      var numAntecedent = 0
-      var i = anaphorIndex - 1
-      while (i >= 0 && numAntecedent < 2) {
-        val m2 = mentions(i)
-        val label = m1.parentEntity == m2.parentEntity
-        if (label) numAntecedent += 1
-        if (!(m2.isPRO && !m1.isPRO) && (label || (numAntecedent < 3))) {
-          examplesList += new LinearBinaryExample(model.weights,
-            getFeatures(m1, m2).value,
-            if (label) 1 else -1,
-            LinearObjectives.hingeScaledBinary(negSlackRescale=3.0))
+  //this doesn't look at the preceeding mentions, but only the mentions that are in an existing entity or are proper
+  def processOneMentionByEntities(orderedMentions: Seq[CorefMention], mentionIndex: Int, candidateMentionsToTheLeft: ArrayBuffer[CorefMention], predMap: GenericEntityMap[CorefMention]): CorefMention = {
+    val m1 = orderedMentions(mentionIndex)
+    val candLabels = ArrayBuffer[MentionPairFeatures]()
+    var bestCand: CorefMention = null
+    var bestScore = Double.MinValue
+
+    var j = mentionIndex - 1
+    val m1IsPro = m1.isPRO
+    var numPositivePairs = 0
+    val mentionsComparedWith = collection.mutable.HashSet[CorefMention]()
+    //this while loop is the same as in the normal left-right code
+    var numCompared = 0
+    while (j >= 0 && (numPositivePairs < options.numPositivePairsTest || !options.pruneNegTest) && numCompared < options.numCompareToTheLeft){
+      val m2 = orderedMentions(j)
+      numCompared += 1
+      val cataphora = m2.isPRO && !m1IsPro
+      //val proPro = m1.isPRO && m2.isPRO       //uncomment this and the !proPro part below if you want to prohibit
+      //pronoun-pronoun comparison
+
+      if (/*!proPro && */ (!cataphora || options.allowTestCataphora)) {
+        val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
+        val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
+        mergeFeatures(candLabel, mergeables)
+        candLabels += candLabel
+        // Always link exact head matches
+        val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) &&  m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
+             else model.score(candLabel.value)
+        // Pronouns should always link to something
+        if (score > 0.0) {
+          numPositivePairs += 1
+          if (bestScore <= score) {
+            bestCand = m2
+            bestScore = score
+          }
         }
-        i -= 1
+        mentionsComparedWith += m2
+      }
+      j -= 1
+    }
+    //now, look at the list of candidateMentionsToTheLeft and compare to things that you haven't compared to yet
+    //the expectation is that candidateMentionsToTheLeft is sorted
+
+    var candidateIdx = candidateMentionsToTheLeft.length - 1
+    val thereAreMentionsRemaining = j > 0
+    if(thereAreMentionsRemaining){
+      while(candidateIdx >= 0 && numPositivePairs < options.numPositivePairsTest) {
+        val m2 = candidateMentionsToTheLeft(candidateIdx)
+        if(!mentionsComparedWith.contains(m2)){
+          val cataphora = m2.isPRO && !m1.isPRO
+          if(!cataphora || options.allowTestCataphora){
+            val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
+            val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
+            mergeFeatures(candLabel, mergeables)
+            candLabels += candLabel
+            // Always link exact head matches
+            val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
+            else model.score(candLabel.value)
+            // Pronouns should always link to something
+            if (score > 0.0) {
+              numPositivePairs += 1
+              if (bestScore <= score) {
+                bestCand = m2
+                bestScore = score
+              }
+            }
+          }
+        }
+        candidateIdx -= 1
       }
     }
-    examplesList
+    bestCand
   }
 
-  private def generateTrainingExamples(docs: Seq[Document], nThreads: Int): Seq[Example] = {
-    def docToCallable(doc: Document) = new Callable[Seq[Example]] { def call() = oneDocExample(doc) }
-    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
-    try {
-      import collection.JavaConversions._
-      pool.invokeAll(docs.map(docToCallable)).flatMap(_.get)
-    } finally {
-      pool.shutdown()
-    }
+  trait LeftRightTester {
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention] =
+      processDocumentOneModel(doc)
   }
 
-  def evaluate(name: String, docs: Seq[Document], batchSize: Int, nThreads: Int): Double = {
-    import CorefEvaluator.Metric
-    // TODO CEAF temporarily commented out until crash fixed. -akm 12 June 2013
-    val ceafEEval = new CorefEvaluator.CeafE()
-    val ceafMEval = new CorefEvaluator.CeafM()
-    def docToCallable(doc: Document) = new Callable[(Metric,Metric,Metric,Metric,Metric)] { def call() = {
-      process1(doc)
-      val trueMap = WithinDocCoref1Helper.truthEntityMap(doc.attr[MentionList])
-      val predMap = doc.attr[GenericEntityMap[Mention]]
-      val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
-      val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
-      val ce = null //ceafEEval.evaluate(predMap, trueMap)
-      val cm = null //ceafMEval.evaluate(predMap, trueMap)
-      val bl = CorefEvaluator.Blanc.evaluate(predMap, trueMap)
-      (b3,muc,ce,cm,bl)
-      //(b3,muc,new Metric,new Metric,bl)
-    }}
-    val pool = java.util.concurrent.Executors.newFixedThreadPool(nThreads)
-    try {
-      import collection.JavaConversions._
-      val b3Score = new CorefEvaluator.Metric
-      val mucScore = new CorefEvaluator.Metric
-      val ceafE = new CorefEvaluator.Metric
-      val ceafM = new CorefEvaluator.Metric
-      val blanc = new CorefEvaluator.Metric
-      val batched = docs.grouped(batchSize).toSeq
-      for (batch <- batched) {
-        val results = pool.invokeAll(batch.map(docToCallable(_))).map(_.get)
-        results.foreach(eval => {
-          b3Score.microAppend(eval._1)
-          mucScore.microAppend(eval._2)
-          //ceafE.microAppend(eval._3) // TODO Commenting out temporarily since it is crashing.
-          //ceafM.microAppend(eval._4)
-          blanc.macroAppend(eval._5)
-        })
-      }
-      println("                   PR    RE   F1")
-      println(f"$name%s    B3  ${100*b3Score.precision}%2.2f ${100*b3Score.recall}%2.2f ${100*b3Score.f1}%2.2f ")
-      println(f"$name%s   MUC  ${100*mucScore.precision}%2.2f ${100*mucScore.recall}%2.2f ${100*mucScore.f1}%2.2f ")
-      println(f"$name%s   C-E  ${100*ceafE.precision}%2.2f ${100*ceafE.recall}%2.2f ${100*ceafE.f1}%2.2f ")
-      println(f"$name%s   C-M  ${100*ceafM.precision}%2.2f ${100*ceafM.recall}%2.2f ${100*ceafM.f1}%2.2f ")
-      println(f"$name%s BLANC  ${100*blanc.precision}%2.2f ${100*blanc.recall}%2.2f ${100*blanc.f1}%2.2f ")
-      b3Score.f1
-    } finally {
-      pool.shutdown()
-    }
+  trait LeftRightTesterFromEntities {
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention] =
+      processDocumentOneModelFromEntities(doc)
   }
+
+  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[Mention]], name: String) {
+    val scorer = new CorefScorer[Mention]
+    object ScorerMutex
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    try {
+      if(options.usePronounRules) assert(options.useEntityLR)
+      val tester = if (options.useEntityLR) new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTesterFromEntities
+      else new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTester
+      tester.runParallel(testDocs)
+      println("-----------------------")
+      println("  * Overall scores")
+      scorer.printInhouseScore(name)
+    } finally pool.shutdown()
+  }
+
 }
 
-object WithinDocCoref1 extends WithinDocCoref1(cc.factorie.util.ClasspathURL[WithinDocCoref1](".factorie"))
+class WithinDocCoref1 extends BaseWithinDocCoref1 {
+  val model = new BaseCorefModel
+}
 
+class ImplicitConjunctionWithinDocCoref1 extends BaseWithinDocCoref1 {
+  val model = new ImplicitCrossProductCorefModel
+}
 
+object WithinDocCoref1 extends WithinDocCoref1 {
+  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1](".factorie").openConnection().getInputStream))
+}
