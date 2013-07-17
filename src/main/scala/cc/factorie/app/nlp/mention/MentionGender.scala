@@ -55,13 +55,16 @@ class MentionGenderLabeler extends DocumentAnnotator {
       return None
     else{
       val lemma = mention.span.tokens.head.lemmaString.toLowerCase
-      if(lemma == "he")
+      if(maleWords.contains(lemma ))
         return Some(MentionGenderDomain.MALE)
-      else if (lemma == "she")
+      else if (femaleWords.contains(lemma))
         return Some(MentionGenderDomain.FEMALE)
       else return None
     }
   }
+  val maleWords = Seq("he","him","his").toSet
+  val femaleWords = Seq("she","her").toSet
+
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionGenderLabel].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionGenderLabel]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])

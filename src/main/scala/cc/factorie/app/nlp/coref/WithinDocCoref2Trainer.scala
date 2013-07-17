@@ -149,9 +149,11 @@ object WithinDocCoref2Trainer {
         lr
       }
       else{
+        //todo: the options handling needs to be overhauled. Currently it isn't copying over to lr.options many of the input options
         val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
         lr.options.setConfigHash(options.getConfigHash)
         lr.options.useEntityLR = options.useEntityLR
+
         lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
         lr
       }
