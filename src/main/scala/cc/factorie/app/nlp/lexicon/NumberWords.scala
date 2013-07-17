@@ -189,3 +189,13 @@ yours
 yourself
 yourselves"""    
 }
+
+object PosessiveDeterminer extends WordLexicon("PosessiveDeterminer", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  this ++=
+"""my
+your
+his
+her
+its
+their"""
+}

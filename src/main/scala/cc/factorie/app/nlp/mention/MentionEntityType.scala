@@ -28,15 +28,19 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
-    val words = mention.span.tokens.map(token => cc.factorie.app.strings.collapseDigits(token.string))
+    var tokens = mention.span.tokens.toSeq
+    if (tokens.head.string == "the") tokens = tokens.drop(1)
+    if (tokens.last.string == "'s") tokens = tokens.dropRight(1)
+    if (tokens.length == 0) return features // TODO Complain further here? 
+    val words = tokens.map(token => cc.factorie.app.strings.collapseDigits(token.string))
     features ++= words
     features += "HEAD="+mention.headToken.string
     features += "LAST="+words.last
     features += "FIRST="+words.last
-    mention.span.tokens.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
-    mention.span.tokens.head.nextWindow(3).foreach(token => features += "NEXT="+token.string)
+    mention.span.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
+    mention.span.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
     for (lexicon <- lexicons) {
-      if (lexicon.contains(mention.span)) features += "LEX="+lexicon.name
+      if (lexicon.contains(tokens)) features += "LEX="+lexicon.name
       if (lexicon.containsWord(mention.headToken.string)) features += "HEADLEX="+lexicon.name
     }
     // TODO Add more features
@@ -59,8 +63,10 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
       lexicon.wikipedia.ManMadeThing,
       lexicon.wikipedia.Event)
   
+  val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
+  def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Mention): Int = {
-    if (lexicon.PersonPronoun.contains(mention.span)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention.span) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
   def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
@@ -75,7 +81,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
  
   def filterTrainingMentions(mentions:Seq[Mention]): Iterable[Mention] = 
-    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !lexicon.PersonPronoun.contains(mention.span))
+    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention.span))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
@@ -128,17 +134,18 @@ object MentionEntityTypeLabeler extends MentionEntityTypeLabeler(cc.factorie.uti
 
 object MentionEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
-    println("usage: trainfile [modelfile]")
+    if (args.length == 0) println("usage: trainfile [modelfile]")
     var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
+    trainDocs = trainDocs.dropRight(20)
     val labeler = new MentionEntityTypeLabeler
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
 
-    trainDocs = trainDocs.dropRight(20)
     labeler.train(trainDocs, testDocs)
+    (trainDocs ++ testDocs).foreach(labeler.process1(_))
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
-      println("%20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, mention.span.phrase))
+      println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.span.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
     
