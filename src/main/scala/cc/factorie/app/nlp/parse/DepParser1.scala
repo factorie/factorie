@@ -69,7 +69,7 @@ class DepParser1 extends DocumentAnnotator {
     import scala.language.reflectiveCalls
     model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("DepParser2 model parameters oneNorm "+model.parameters.oneNorm)
+    println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
@@ -88,7 +88,7 @@ class DepParser1 extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("DepParser2.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("DepParser1.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionDomain.size)
@@ -567,10 +567,10 @@ object DepParse12Optimizer {
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.DepParser2",
+      "cc.factorie.app.nlp.parse.DepParser1",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser2Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser1Trainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
