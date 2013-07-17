@@ -28,34 +28,35 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     require(value != null, "The SampleRankExample needs a value accumulator")
     //val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
-    val (bestModel1, bestModel2) = proposals.max2ByDouble(_.modelScore)
-    val bestObjective1 = proposals.maxByDouble(_.objectiveScore)
-    var marg = 0.0
-    marg = bestModel1.modelScore - bestModel2.modelScore
-
-    if (bestModel1 ne bestObjective1) {
-      // ...update parameters by adding sufficient stats of truth, and subtracting error
-      bestObjective1.diff.redo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      bestObjective1.diff.undo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel1.diff.redo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel1.diff.undo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      value.accumulate(bestObjective1.modelScore - bestModel1.modelScore - learningMargin)
-    }
-    else if (marg < learningMargin) {
-      // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-      bestObjective1.diff.redo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      bestObjective1.diff.undo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel1.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel2.diff.redo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel2.diff.undo
-      sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      value.accumulate(marg - learningMargin)
+    val bestModel = proposals.maxByDouble(_.modelScore)
+    val bestObjectiveScore = proposals.map(_.objectiveScore).max
+    if (bestModel.objectiveScore != bestObjectiveScore) {
+      val bestObjective = proposals.filter(_.objectiveScore == bestObjectiveScore).maxByDouble(_.modelScore)
+      bestObjective.diff.redo
+      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      bestObjective.diff.undo
+      sampler.model.factorsOfFamilyClass[DotFamily](bestObjective.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      bestModel.diff.redo
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+      bestModel.diff.undo
+      sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+      value.accumulate(bestObjective.modelScore - bestModel.modelScore - learningMargin)
+    } else {
+      val diffProposals = proposals.filter(_.objectiveScore != bestModel.objectiveScore)
+      if (diffProposals.nonEmpty) {
+        val bestModel2 = diffProposals.maxByDouble(_.modelScore)
+        if (bestModel.modelScore - bestModel2.modelScore < learningMargin) {
+          bestModel.diff.redo
+          sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+          bestModel.diff.undo
+          sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+          bestModel2.diff.redo
+          sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
+          bestModel2.diff.undo
+          sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
+          value.accumulate(bestModel.modelScore - bestModel2.modelScore - learningMargin)
+        }
+      }
     }
     sampler.processProposals(proposals)
   }
