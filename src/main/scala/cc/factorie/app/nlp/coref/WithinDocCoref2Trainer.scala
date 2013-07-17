@@ -138,11 +138,12 @@ object WithinDocCoref2Trainer {
         val lr = new WithinDocCoref2()
 
         //copy over options that are tweakable at test time
-        lr.options.useEntityLR = options.useEntityLR
-        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
-        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
+        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
+        lr.options.useEntityLR = options.useEntityLR
+        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
+
 
         lr.model.MentionPairFeaturesDomain.freeze()
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
