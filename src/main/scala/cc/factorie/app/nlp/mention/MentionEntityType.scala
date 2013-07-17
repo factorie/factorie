@@ -30,7 +30,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     val features = new FeatureVariable
     var tokens = mention.span.tokens.toSeq
     if (tokens.head.string == "the") tokens = tokens.drop(1)
-    if (tokens.last.string == "'s") tokens = tokens.dropRight(1)
+    if (tokens.length > 0 && tokens.last.string == "'s") tokens = tokens.dropRight(1)
     if (tokens.length == 0) return features // TODO Complain further here? 
     val words = tokens.map(token => cc.factorie.app.strings.collapseDigits(token.string))
     features ++= words
