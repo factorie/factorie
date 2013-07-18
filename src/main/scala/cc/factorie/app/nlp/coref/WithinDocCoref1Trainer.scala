@@ -129,9 +129,9 @@ object WithinDocCoref1Trainer {
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
-      trainDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+      trainDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
-    testDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+    testDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
@@ -204,8 +204,8 @@ object WithinDocCoref1Trainer {
 
     val labeler = MentionEntityTypeLabeler
 
-    if(loadTrain)  trainDocs.foreach(labeler.process1(_))
-    testDocs.foreach(labeler.process1(_))
+    if(loadTrain)  trainDocs.foreach(labeler.process(_))
+    testDocs.foreach(labeler.process(_))
 
     (trainDocs,trainMap,testDocs,testMap)
   }

@@ -80,7 +80,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     else if (PTBPosDomain.isNoun(pos) && rawlc.endsWith("ful")) this.wordbase(rawlc.dropRight(3), NOUN) + "ful"
     else wordbase(rawlc, pos)
   }
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posLabel.categoryValue))
     document
   }

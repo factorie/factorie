@@ -25,13 +25,13 @@ import scala.util.matching.Regex
 case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: DocumentAnnotatorMap) extends Load with LoadDirectory {
   def fromSource(source:io.Source): Seq[Document] = {
     val string = source.getLines.mkString("\n")
-    if (documentSeparator eq null) Seq(annotator.process(new Document(string).setName(documentName)))
+    if (documentSeparator eq null) Seq(m.process(annotator, new Document(string).setName(documentName)))
     else {
       var docStart = 0
       val matchIterator = documentSeparator.findAllIn(string).matchData
       (for (sepMatch <- matchIterator if sepMatch.start != docStart) yield {
         val doc = new Document(string.substring(docStart, sepMatch.start))
-        annotator.process(doc)
+        m.process(annotator, doc)
         if (sepMatch.group(1) ne null) doc.setName(sepMatch.group(1))
         docStart = sepMatch.end
         doc

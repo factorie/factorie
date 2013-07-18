@@ -12,7 +12,7 @@ object ClearSegmenter extends EnglishSegmenter(ClearTokenizer)
 trait AbstractSegmenter extends DocumentAnnotator {
   def tokenizer: AbstractTokenizer
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]]
-  def process1(d: Document): Document = {
+  def process(d: Document): Document = {
     for (section <- d.sections) {
       val sentences = getSentences(section.string)
       TokenizerHelper.addTokensToDoc(sentences.flatten, section)
@@ -30,7 +30,7 @@ trait AbstractSegmenter extends DocumentAnnotator {
 
 trait AbstractTokenizer extends DocumentAnnotator {
   def getTokenList(str: String): mutable.ArrayBuffer[ClearToken]
-  def process1(d: Document): Document = {
+  def process(d: Document): Document = {
     for (section <- d.sections) TokenizerHelper.addTokensToDoc(getTokenList(section.string), section)
     d
   }

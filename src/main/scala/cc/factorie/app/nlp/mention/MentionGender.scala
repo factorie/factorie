@@ -18,7 +18,7 @@ class MentionGenderLabel(val mention:Mention, initialCategory:String) extends Ca
 class MentionGenderLabeler extends DocumentAnnotator {
   val maleHonors = Set("mr.", "mr", "mister")
   val femaleHonors = Set("ms.", "ms", "mrs.", "mrs", "miss", "misses")
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     import MentionGenderDomain._
     for (mention <- document.attr[MentionList]) {
       val gender = new MentionGenderLabel(mention, UNKNOWN)

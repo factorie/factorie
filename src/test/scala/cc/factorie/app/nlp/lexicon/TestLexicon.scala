@@ -36,8 +36,7 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.containsWord("England"))
     
     val string = "Yesterday I flew from Paris to New York."
-    val doc = new Document(string)
-    segment.RegexTokenizer.process(doc)
+    val doc = defaultDocumentAnnotatorMap.process(segment.RegexTokenizer, new Document(string))
     val section = doc.asSection
     assert(section.tokens(4).string == "Paris")
     assert(lexicon.contains(section.tokens(4)))

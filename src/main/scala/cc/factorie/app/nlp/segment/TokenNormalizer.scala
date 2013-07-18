@@ -30,7 +30,7 @@ class TokenNormalizer(
     else if (twoOneDash && token.string == "Ñ") token.attr += newTokenString(token, "-") // replace m-dash with dash
     else if (americanize && BritishToAmerican.contains(token.string)) token.attr += newTokenString(token, BritishToAmerican(token.string))
   }
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     document.tokens.foreach(processToken(_))
     document
   }

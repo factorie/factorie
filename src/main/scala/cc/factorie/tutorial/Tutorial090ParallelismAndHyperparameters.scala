@@ -82,8 +82,8 @@ object Tutorial090ParallelismAndHyperparameters {
       l => l.token,
       t => t.attr[Label])
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    RegexTokenizer.process1(document)
-    SentenceSegmenter.process1(document)
+    RegexTokenizer.process(document)
+    SentenceSegmenter.process(document)
     document.tokens.foreach(t => t.attr += new Label(t, "A"))
     LabelDomain.index("B")
     document.tokens.foreach(t => {

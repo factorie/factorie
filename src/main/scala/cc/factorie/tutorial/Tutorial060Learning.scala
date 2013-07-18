@@ -3,7 +3,6 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
-import Implicits.defaultDocumentAnnotatorMap
 
 object Tutorial060Learning {
   def main(args:Array[String]): Unit = {

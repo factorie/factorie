@@ -153,7 +153,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   }
 
 
-  def process1(doc: Document): Document = {
+  def process(doc: Document): Document = {
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
 

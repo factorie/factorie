@@ -19,7 +19,7 @@ class RegexTokenizer extends RegexSegmenter(RegexTokenizerHelper.tokenRegex) wit
       If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token: Token) = token.string + "\t"
 
-  def process1(document: Document): Document = {
+  def process(document: Document): Document = {
     for (section <- document.sections) {
       val tokenIterator = RegexTokenizer.this.apply(section.string)
       while (tokenIterator.hasNext) {
@@ -43,7 +43,7 @@ object RegexTokenizer extends RegexTokenizer {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromFile(args(0)).mkString
     val doc = new Document(string)
-    RegexTokenizer.process1(doc)
+    RegexTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

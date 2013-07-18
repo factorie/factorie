@@ -22,7 +22,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
 
   def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
-  def process1(document: Document) = {
+  def process(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
     else document.attr += processDocumentOneModel(document)
     document

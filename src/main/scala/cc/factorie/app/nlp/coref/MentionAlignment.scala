@@ -154,13 +154,7 @@ object MentionAlignment {
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
-    val a = new DocumentAnnotator {
-      def tokenAnnotationString(token: Token) = null
-      def process1(document: Document) = document
-      def prereqAttrs = Seq(classOf[MentionList])
-      def postAttrs = Nil
-    }
-    a.process(d)
+    annotatorMap.process(Seq(classOf[MentionList]), d)
   }
 
   def assertParse(tokens: Seq[Token],parse: ParseTree): Unit = {

@@ -306,7 +306,7 @@ class SpanNER(implicit val random: scala.util.Random) {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
         implicit val m = new DocumentAnnotatorMap
-        documents += cc.factorie.app.nlp.segment.ClearTokenizer.process1(LoadNYTimesXML.fromFile(file).head)
+        documents += cc.factorie.app.nlp.segment.ClearTokenizer.process(LoadNYTimesXML.fromFile(file).head)
         println("  "+documents.last.asSection.length)
         documents.last.asSection.foreach(t=> print(t.string+" ")); println
       }

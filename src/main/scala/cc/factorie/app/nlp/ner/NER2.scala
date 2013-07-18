@@ -108,7 +108,7 @@ class NER2 extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
   def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
@@ -242,8 +242,8 @@ class NER2 extends DocumentAnnotator {
     for (iteration <- 1 until 4) {
       trainDocs.foreach(indepedentPredictDocument(_))
       learner.processContexts(labels(trainDocs))
-      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(iteration*100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(iteration*100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -260,8 +260,8 @@ class NER2 extends DocumentAnnotator {
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
     val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChainSum)).seq.toSeq
     def evaluate() {
-      trainDocs.par.foreach(process1(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.par.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.par.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.par.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))

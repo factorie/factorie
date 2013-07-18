@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 
 class SimplifyDigitsLemmatizer extends DocumentAnnotator {
   def lemmatize(word:String): String = cc.factorie.app.strings.simplifyDigits(word)
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     for (token <- document.tokens) token.attr += new SimplifyDigitsTokenLemma(token, lemmatize(token.string))
     document
   }

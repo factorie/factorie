@@ -41,13 +41,18 @@ object NLP {
       val mentionEntitytype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
+    import Implicits.defaultDocumentAnnotatorMap
+    val map = new DocumentAnnotatorMap
+    defaultDocumentAnnotatorMap.foreach(i => map += i)
+    for (annotator <- annotators) map += annotator
+    val pipeline = map.computePipeline(annotators.flatMap(_.postAttrs))
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
 
     try {
       val listener = new ServerSocket(opts.socket.value)
       println("Listening on port "+opts.socket.value)
       while (true)
-        new ServerThread(listener.accept(), opts.encoding.value).start()
+        new ServerThread(listener.accept(), opts.encoding.value, map, pipeline).start()
       listener.close()
     }
     catch {
@@ -57,16 +62,14 @@ object NLP {
     }
   }
   
-  case class ServerThread(socket: Socket, encoding:String) extends Thread("ServerThread") {
+  case class ServerThread(socket: Socket, encoding:String, map: DocumentAnnotatorMap, pipeline: Seq[DocumentAnnotator]) extends Thread("ServerThread") {
     override def run(): Unit = try {
       val out = new PrintStream(socket.getOutputStream())
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
       var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
-      import Implicits.defaultDocumentAnnotatorMap
-      for (annotator <- annotators)
-        document = annotator.process(document)
+      document = map.applyPipeline(pipeline, document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
