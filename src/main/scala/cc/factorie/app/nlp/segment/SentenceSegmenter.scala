@@ -13,7 +13,7 @@ class SentenceSegmenter extends DocumentAnnotator {
   def tokenAnnotationString(token: Token) = null
 
   val lastTokenRegex = "^[.?!][\\p{Pe}\\p{Pf}]?$|^[\\p{Pe}\\p{Pf}]?[.?!]$".r
-  def process(documents: Seq[Document])(implicit m: DocumentAnnotatorLazyMap): Unit = documents.map(d => process(d))
+  def process(documents: Seq[Document])(implicit m: DocumentAnnotatorMap): Unit = documents.map(d => process(d))
   def process1(document: Document): Document = {
     for (section <- document.sections) {
       val endingIdxs = section.tokens.filter(token => lastTokenRegex.findFirstIn(token.string) != None).map(_.position)

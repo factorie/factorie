@@ -17,7 +17,7 @@ import java.io.File
 import scala.xml._
 
 object LoadNYTimesXML {
-  def fromFile(file:File)(implicit m: DocumentAnnotatorLazyMap): Seq[Document] = {
+  def fromFile(file:File)(implicit m: DocumentAnnotatorMap): Seq[Document] = {
     val article = XML.loadFile(file)
     //println(article \\ "head" \\ "title" text)
     //println(article \ "head" \ "title" text)

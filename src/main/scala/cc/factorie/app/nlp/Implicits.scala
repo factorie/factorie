@@ -7,7 +7,7 @@ package cc.factorie.app.nlp
  */
 
 object Implicits {
-  implicit val defaultDocumentAnnotatorMap = new DocumentAnnotatorLazyMap {
+  implicit val defaultDocumentAnnotatorMap = new DocumentAnnotatorMap {
     this.update(classOf[pos.PTBPosLabel], ()=>pos.POS1)
     this.update(classOf[parse.ParseTree], ()=>parse.DepParser1)
     this.update(classOf[segment.SimplifyPTBTokenString], ()=>segment.SimplifyPTBTokenNormalizer)

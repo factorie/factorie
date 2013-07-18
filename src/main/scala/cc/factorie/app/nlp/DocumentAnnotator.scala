@@ -15,6 +15,8 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.app.nlp.mention._
+import scala.annotation.tailrec
+import cc.factorie.optimize.TrainerHelpers
 
 trait DocumentAnnotator {
   def process1(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
@@ -22,7 +24,7 @@ trait DocumentAnnotator {
   def postAttrs: Iterable[Class[_]]
   
   /** Process the Document, getting any necessary pre-requisites using this DocumentAnnotator's defaultAnnotatorMap. */
-  def process(document: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap): Document = {
+  def process(document: Document)(implicit annotatorMap: DocumentAnnotatorMap): Document = {
     preProcess(document, annotatorMap)
     val doc = process1(document)
     postAttrs.foreach(p => document.annotators(p) = this) // record which attributes this processor added
@@ -39,7 +41,7 @@ trait DocumentAnnotator {
   def documentAnnotationString(document:Document): String = ""
   def mentionAnnotationString(mention:Mention): String = ""
   
-  def preProcess(doc: Document, annotatorMap: DocumentAnnotatorLazyMap): Unit = {
+  def preProcess(doc: Document, annotatorMap: DocumentAnnotatorMap): Unit = {
     for (prereq <- prereqAttrs) if (!doc.hasAnnotation(prereq)) {
       //println("DocumentAnnotator.preProcess needing to add "+prereq)
       if (!annotatorMap.contains(prereq)) throw new Error(getClass.toString+": annotator for prereq "+prereq+" not found.")
@@ -67,6 +69,54 @@ object NoopDocumentAnnotator extends DocumentAnnotator {
   def tokenAnnotationString(token: Token) = null
 }
 
-class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_], DocumentAnnotator]
+class DocumentAnnotatorMap extends scala.collection.mutable.LinkedHashMap[Class[_], ()=>DocumentAnnotator] {
+  def computePipeline(goals: Iterable[Class[_]]): Seq[DocumentAnnotator] = {
+    val pipeSet = collection.mutable.LinkedHashSet[DocumentAnnotator]()
+    def recursiveSatisfyPrereqs(goal: Class[_]) {
+      val provider = this(goal)()
+      if (!pipeSet.contains(provider)) {
+        provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
+        pipeSet += provider
+      }
+    }
+    goals.foreach(recursiveSatisfyPrereqs)
+    checkPipeline(pipeSet.toSeq)
+    pipeSet.toSeq
+  }
 
-class DocumentAnnotatorLazyMap extends scala.collection.mutable.HashMap[Class[_], ()=>DocumentAnnotator]
+  def checkPipeline(pipeline: Seq[DocumentAnnotator]) {
+    val satisfiedSet = collection.mutable.HashSet[Class[_]]()
+    for (annotator <- pipeline) {
+      for (requirement <- annotator.prereqAttrs; if !satisfiedSet.contains(requirement))
+        assert(1 == 0, s"Prerequisite $requirement not satisfied before $annotator gets called in pipeline ${pipeline.mkString(" ")}")
+      for (provision <- annotator.postAttrs) {
+        assert(!satisfiedSet.contains(provision), s"Pipeline attempting to provide $provision twice. Pipeline: ${pipeline.mkString(" ")}")
+        satisfiedSet += provision
+      }
+    }
+  }
+
+  def +=(annotator: DocumentAnnotator) = annotator.postAttrs.foreach(a => this(a) = () => annotator)
+
+  def applyPipeline(annotators: Seq[DocumentAnnotator], document: Document): Document = {
+    var doc = document
+    for (annotator <- annotators if !annotator.postAttrs.forall(!doc.hasAnnotation(_))) doc = annotator.process1(doc)
+    doc
+  }
+
+  def process(goals: Iterable[Class[_]], document: Document): Document = applyPipeline(computePipeline(goals), document)
+  def process(annotator: DocumentAnnotator, document: Document): Document = {
+    val other = new DocumentAnnotatorMap
+    this.foreach(k => other += k)
+    other += annotator
+    other.process(annotator.postAttrs, document)
+  }
+  def processSequential(goals: Iterable[Class[_]], documents: Iterable[Document]): Iterable[Document] = {
+    val pipeline = computePipeline(goals)
+    documents.map(applyPipeline(pipeline, _))
+  }
+  def processParallel(goals: Iterable[Class[_]], documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = {
+    val pipeline = computePipeline(goals)
+    TrainerHelpers.parMap(documents, nThreads) { applyPipeline(pipeline, _) }
+  }
+}

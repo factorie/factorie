@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorLazyMap}
+import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorMap}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
@@ -18,7 +18,7 @@ import scala.Some
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options)(implicit map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -152,7 +152,7 @@ object MentionAlignment {
   }
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
-  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap) {
+  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
     val a = new DocumentAnnotator {
       def tokenAnnotationString(token: Token) = null
