@@ -78,7 +78,7 @@ object PTBPosDomain extends CategoricalDomain[String] {
   freeze()
 
   def isNoun(pos:String): Boolean = pos(0) == 'N' 
-  def isProperNoun(pos:String) = { pos(0) == 'N' && pos.length > 2 && pos(3) == 'S' }
+  def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }
   def isVerb(pos:String) = pos(0) == 'V'
   def isAdjective(pos:String) = pos(0) == 'J'
 }
