@@ -79,7 +79,7 @@ class DocumentAnnotatorMap extends scala.collection.mutable.LinkedHashMap[Class[
 
   def applyPipeline(annotators: Seq[DocumentAnnotator], document: Document): Document = {
     var doc = document
-    for (annotator <- annotators; if annotator.postAttrs.forall(!document.hasAnnotation(_))) doc = annotator.process(doc)
+    for (annotator <- annotators; if annotator.postAttrs.forall(!doc.hasAnnotation(_))) doc = annotator.process(doc)
     doc
   }
 
