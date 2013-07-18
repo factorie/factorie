@@ -34,9 +34,9 @@ Step-by-step Installation
 
 2. Obtain the FACTORIE source. You can do this by downloading and unpacking the FACTORIE tar.gz available from the Download page.
 
-        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M5-src.tar.gz
-        $ tar xzf factorie-1.0.0-M5-src.tar.gz
-        $ cd factorie-1.0.0-M5
+        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M6-src.tar.gz
+        $ tar xzf factorie-1.0.0-M6-src.tar.gz
+        $ cd factorie-1.0.0-M6
         $ ls
         LICENSE.txt pom.xml src
 
@@ -98,7 +98,7 @@ Then add the following in the dependencies section:
       <dependency>
         <groupId>cc.factorie</groupId>
         <artifactId>factorie</artifactId>
-        <version>1.0.0-M5</version>
+        <version>1.0.0-M6</version>
       </dependency>
     <dependencies>
 ```
@@ -109,5 +109,5 @@ In your `build.sbt` file, add the following:
 
 ```
 resolvers += "IESL Release" at "http://dev-iesl.cs.umass.edu/nexus/content/groups/public"
-libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M5"
+libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M6"
 ```

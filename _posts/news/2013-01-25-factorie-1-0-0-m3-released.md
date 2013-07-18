@@ -8,7 +8,7 @@ categories: news
 ## Factorie 1.0.0-M3 released
  &raquo; by {{ site.author_sameer }} on {{ page.date | date_to_string }}
 
-This is the first milestone release for Factorie 1.0. This version comes with many core API changes, complete rewrite of the factorie.la package, reimplemented version of BP, modification to the optimization package, and so on. Detailed changelog attached.
+This is the third milestone release for Factorie 1.0. This version comes with many core API changes, complete rewrite of the factorie.la package, reimplemented version of BP, modification to the optimization package, and so on. Detailed changelog attached.
 
 * Executable Jar: **[factorie-1.0.0-M3.jar](http://factorie.googlecode.com/files/factorie-1.0.0-M3.jar)**
 * Source files: [factorie-1.0.0-M3-src.tar.gz](http://factorie.googlecode.com/files/factorie-1.0.0-M3-src.tar.gz)

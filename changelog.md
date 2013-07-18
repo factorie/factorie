@@ -8,6 +8,25 @@ group: suffix
 Changelog
 ===
 
+New in version 1.0.0-M6:
+---
+
+* Overall
+    - Website hosted on github
+    - removing deprecated code
+
+* NLP
+    - much improved mention annotators
+    - classifier-based mention entity type predictor
+    - deprecated annotators removed: DepParser1, WithinDocCoref1
+    - CorefGazetteers removed
+    - new pronoun lexicons
+    - bugfixes and improvements to coreference
+
+* Learning
+    - removing broken optimizers
+    - bugfix in SampleRank when proposals have same score
+
 New in version 1.0.0-M5:
 ---
 
