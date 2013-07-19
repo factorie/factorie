@@ -16,7 +16,7 @@ class TestDocumentAnnotatorMap {
   @Test def testDefaultPipelines() {
     // this map mirrors the default one without loading the models themselves. There should
     // be a less awkward way of doing this
-    val map = new DocumentAnnotatorMap
+    val map = new AnnotationPipelineFactory
     object pos1 extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.SimplifyPTBTokenString])
       def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
@@ -81,10 +81,10 @@ class TestDocumentAnnotatorMap {
       def process(d: Document) = d
     }
     map += mentionEntityType
-    for (key <- map.keys) {
-      map.computePipeline(Seq(key))
+    for (key <- map.map.keys) {
+      map(Seq(key))
       // println(s"Pipeline for $key is ${pipeline.mkString(" ")}")
     }
-    map.computePipeline(map.keys)
+    map(map.map.keys)
   }
 }

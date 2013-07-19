@@ -22,7 +22,7 @@ import scala.util.matching.Regex
     By default create one Document per file.
     To create multiple Documents from one file, set documentSeparator regex.  
     If the regex specifics a group (via parenthesis) then the Document's name will be set to the match of this first group. */
-case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: DocumentAnnotatorMap) extends Load with LoadDirectory {
+case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: AnnotationPipelineFactory) extends Load with LoadDirectory {
   def fromSource(source:io.Source): Seq[Document] = {
     val string = source.getLines.mkString("\n")
     if (documentSeparator eq null) Seq(m.process(annotator, new Document(string).setName(documentName)))
@@ -51,4 +51,4 @@ case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, do
   }
 }
 
-object LoadPlainText extends LoadPlainText(annotator = NoopDocumentAnnotator, documentName = null, documentSeparator = null)(Implicits.defaultDocumentAnnotatorMap)
+object LoadPlainText extends LoadPlainText(annotator = NoopDocumentAnnotator, documentName = null, documentSeparator = null)(DefaultAnnotationPipelineFactory)

@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.{Document,DefaultAnnotationPipelineFactory}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -198,14 +198,13 @@ object WithinDocCoref1Trainer {
 
 
   def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    import cc.factorie.app.nlp.Implicits._
-    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
-    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
+    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory) else (null,null)
+    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory)
 
     val labeler = MentionEntityTypeLabeler
 
-    if(loadTrain)  trainDocs.foreach(labeler.process(_))
-    testDocs.foreach(labeler.process(_))
+    if(loadTrain)  trainDocs.foreach(labeler.process)
+    testDocs.foreach(labeler.process)
 
     (trainDocs,trainMap,testDocs,testMap)
   }

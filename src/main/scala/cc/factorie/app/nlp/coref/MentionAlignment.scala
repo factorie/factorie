@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorMap}
+import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, AnnotationPipelineFactory}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
@@ -18,7 +18,7 @@ import scala.Some
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options)(implicit map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: AnnotationPipelineFactory): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -32,7 +32,7 @@ object MentionAlignment {
     documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PTBPosLabel]))  //remove the gold POS annotation
     documentsToBeProcessed.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    documentsToBeProcessed.par.foreach(findMentions(_))
+    documentsToBeProcessed.par.foreach(findMentions(_, map))
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist
@@ -152,7 +152,7 @@ object MentionAlignment {
   }
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
-  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
+  def findMentions(d: Document, annotatorMap: AnnotationPipelineFactory) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
     annotatorMap.process(Seq(classOf[MentionList]), d)
   }

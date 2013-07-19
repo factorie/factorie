@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{Implicits, DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
 import cc.factorie.app.strings.RegexSegmenter
 
 // TODO: this still needs testing on more text, contractions, and probably simplification --brian

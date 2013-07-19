@@ -22,7 +22,15 @@ trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
   def prereqAttrs: Iterable[Class[_]]
   def postAttrs: Iterable[Class[_]]
-  
+
+  def processSequential(goals: Iterable[Class[_]], documents: Iterable[Document]): Iterable[Document] = {
+    documents.map(process)
+  }
+  def processParallel(goals: Iterable[Class[_]], documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = {
+    TrainerHelpers.parMap(documents, nThreads) { process(_) }
+  }
+
+
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token:Token): String
@@ -48,25 +56,51 @@ object NoopDocumentAnnotator extends DocumentAnnotator {
   def tokenAnnotationString(token: Token) = null
 }
 
-class DocumentAnnotatorMap extends scala.collection.mutable.LinkedHashMap[Class[_], ()=>DocumentAnnotator] {
-  def computePipeline(goals: Iterable[Class[_]]): Seq[DocumentAnnotator] = {
+class DocumentAnnotationPipeline(val annotators: Seq[DocumentAnnotator], val prereqAttrs: Seq[Class[_]] = Seq()) extends DocumentAnnotator {
+  def postAttrs = annotators.flatMap(_.postAttrs).distinct
+  def process(document: Document) = {
+    var doc = document
+    for (annotator <- annotators; if annotator.postAttrs.forall(!doc.hasAnnotation(_))) {
+      doc = annotator.process(doc)
+      annotator.postAttrs.foreach(a => document.annotators(a) = annotator)
+    }
+    doc
+  }
+  def tokenAnnotationString(token: Token) = annotators.map(_.tokenAnnotationString(token)).mkString("\t")
+}
+
+class AnnotationPipelineFactory {
+  val map = new scala.collection.mutable.LinkedHashMap[Class[_], ()=>DocumentAnnotator]
+  def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal))
+  def apply(annotator: DocumentAnnotator): DocumentAnnotationPipeline = {
+    val other = new AnnotationPipelineFactory
+    map.foreach(k => other.map += k)
+    other += annotator
+    other(annotator.postAttrs)
+  }
+  def apply(goals: Iterable[Class[_]], prereqs: Seq[Class[_]] = Seq()): DocumentAnnotationPipeline = {
     val pipeSet = collection.mutable.LinkedHashSet[DocumentAnnotator]()
+    val preSet = prereqs.toSet
     def recursiveSatisfyPrereqs(goal: Class[_]) {
-      val provider = this(goal)()
-      if (!pipeSet.contains(provider)) {
-        provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
-        pipeSet += provider
+      if (!preSet.contains(goal)) {
+        val provider = map(goal)()
+        if (!pipeSet.contains(provider)) {
+          provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
+          pipeSet += provider
+        }
       }
     }
     goals.foreach(recursiveSatisfyPrereqs)
     checkPipeline(pipeSet.toSeq)
-    pipeSet.toSeq
+    new DocumentAnnotationPipeline(pipeSet.toSeq)
   }
 
   def checkPipeline(pipeline: Seq[DocumentAnnotator]) {
     val satisfiedSet = collection.mutable.HashSet[Class[_]]()
     for (annotator <- pipeline) {
-      for (requirement <- annotator.prereqAttrs; if !satisfiedSet.contains(requirement))
+      for (requirement <- annotator.prereqAttrs
+           if !satisfiedSet.contains(requirement)
+           if !satisfiedSet.exists(c => requirement.isAssignableFrom(c)))
         assert(1 == 0, s"Prerequisite $requirement not satisfied before $annotator gets called in pipeline ${pipeline.mkString(" ")}")
       for (provision <- annotator.postAttrs) {
         assert(!satisfiedSet.contains(provision), s"Pipeline attempting to provide $provision twice. Pipeline: ${pipeline.mkString(" ")}")
@@ -75,27 +109,8 @@ class DocumentAnnotatorMap extends scala.collection.mutable.LinkedHashMap[Class[
     }
   }
 
-  def +=(annotator: DocumentAnnotator) = annotator.postAttrs.foreach(a => this(a) = () => annotator)
+  def +=(annotator: DocumentAnnotator) = annotator.postAttrs.foreach(a => map(a) = () => annotator)
 
-  def applyPipeline(annotators: Seq[DocumentAnnotator], document: Document): Document = {
-    var doc = document
-    for (annotator <- annotators; if annotator.postAttrs.forall(!doc.hasAnnotation(_))) doc = annotator.process(doc)
-    doc
-  }
-
-  def process(goals: Iterable[Class[_]], document: Document): Document = applyPipeline(computePipeline(goals), document)
-  def process(annotator: DocumentAnnotator, document: Document): Document = {
-    val other = new DocumentAnnotatorMap
-    this.foreach(k => other += k)
-    other += annotator
-    other.process(annotator.postAttrs, document)
-  }
-  def processSequential(goals: Iterable[Class[_]], documents: Iterable[Document]): Iterable[Document] = {
-    val pipeline = computePipeline(goals)
-    documents.map(applyPipeline(pipeline, _))
-  }
-  def processParallel(goals: Iterable[Class[_]], documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = {
-    val pipeline = computePipeline(goals)
-    TrainerHelpers.parMap(documents, nThreads) { applyPipeline(pipeline, _) }
-  }
+  def process(goals: Iterable[Class[_]], document: Document): Document = apply(goals).process(document)
+  def process(annotator: DocumentAnnotator, document: Document): Document = apply(annotator).process(document)
 }
