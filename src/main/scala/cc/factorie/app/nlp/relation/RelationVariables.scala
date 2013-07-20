@@ -8,7 +8,6 @@ import cc.factorie.util.Attr
 
 /**
  * @author sameer, brian, sebastian
- * @date 12/22/11
  */
 
 object RelationVariables {
@@ -108,12 +107,12 @@ object RelationVariables {
     def domain = RelationFeaturesDomain
 
     def +=(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.tensor.activeDomain.toSeq)
-        this.tensor.+=(i, feats.tensor(i)) // TODO Use Tensor.+= to make this much faster
+      for (i <- feats.value.activeDomain.toSeq)
+        this.value.+=(i, feats.value(i)) // TODO Use Tensor.+= to make this much faster
 
     def normalize(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.tensor.activeDomain.toSeq)
-        feats.tensor.update(i, feats.tensor(i) / tensor(i)) // TODO Use Tensor./= to make this much faster
+      for (i <- feats.value.activeDomain.toSeq)
+        feats.value.update(i, feats.value(i) / value(i)) // TODO Use Tensor./= to make this much faster
   }
 
   class Features(val mention: RelationMention) extends FeatureVectorVariable[String] {
@@ -145,7 +144,7 @@ object RelationVariables {
       val m2 = arg2.tokens.slice(0, arg2.headToken.position - arg2.start + 1)
       val sentence = arg1.sentence
       val (left, right, forward) = if (arg1.headToken.position < arg2.headToken.position) (m1, m2, true) else (m2, m1, false)
-      val inBetweenMentions = sentence.tokens.slice(left.last.sentencePosition, right.head.sentencePosition)
+      val inBetweenMentions = sentence.tokens.slice(left.last.positionInSentence, right.head.positionInSentence)
 
       if (left.head.sentence != right.last.sentence) {
         this += "IN DIFFERENT SENTENCES!"
@@ -190,7 +189,7 @@ object RelationVariables {
       //overlap
       val mentionsInSentence = sentence.document.asSection.spansOfClass[PairwiseMention].filter(_.sentence == sentence)
       val mentionsInBetween = mentionsInSentence.filter(m =>
-        m.head.sentencePosition > left.last.sentencePosition && m.last.sentencePosition < right.head.sentencePosition)
+        m.head.positionInSentence > left.last.positionInSentence && m.last.positionInSentence < right.head.positionInSentence)
       this += "#MB " + mentionsInBetween.size
       this += "#WB " + inBetweenMentions.size
 
@@ -218,8 +217,8 @@ object RelationVariables {
       val m1 = mention.arg1
       val m2 = mention.arg2
       val sentence = m1.sentence
-      val (left, right, forward) = if (m1.headToken.sentencePosition < m2.headToken.sentencePosition) (m1, m2, true) else (m2, m1, false)
-      val inBetweenHeads = sentence.tokens.slice(left.headToken.sentencePosition + 1, if (right.head.sentencePosition > left.headToken.sentencePosition) right.head.sentencePosition else right.headToken.sentencePosition)
+      val (left, right, forward) = if (m1.headToken.positionInSentence < m2.headToken.positionInSentence) (m1, m2, true) else (m2, m1, false)
+      val inBetweenHeads = sentence.tokens.slice(left.headToken.positionInSentence + 1, if (right.head.positionInSentence > left.headToken.positionInSentence) right.head.positionInSentence else right.headToken.positionInSentence)
       val headDistance = inBetweenHeads.size
 
       this += "Bias " + forward + "-" + bin(headDistance, Seq(0, 5, 10, 50))
@@ -345,7 +344,7 @@ object RelationVariables {
         }
         */
       }
-      this += "DISTANCE_" + bin(m1.headToken.sentencePosition - m2.headToken.sentencePosition, Seq(0, 1, 2, 3, 4, 5, 10, 20))
+      this += "DISTANCE_" + bin(m1.headToken.positionInSentence - m2.headToken.positionInSentence, Seq(0, 1, 2, 3, 4, 5, 10, 20))
 
       for (path <- shortestPath(m1.headToken, m2.headToken)) {
         //this += "PATH " + path.map(_.directedLabel).mkString(" ")

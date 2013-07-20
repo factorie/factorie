@@ -98,7 +98,7 @@ object LDA5 {
     documents.foreach(doc => doc.timeStamp = squeeze((doc.time - minTime) / timeRange, .2))
     estimateTopicTimes(documents)
         
-    val sampler = SparseLDAInferencer(ZDomain, WordDomain, documents, alphas.tensor, beta1, model)
+    val sampler = SparseLDAInferencer(ZDomain, WordDomain, documents, alphas.value, beta1, model)
 
     val startTime = System.currentTimeMillis
     for (i <- 1 to 30) {
@@ -106,7 +106,7 @@ object LDA5 {
         //val timeSmoothing = Tensor.tabulate(numTopics)(i => Beta.pr(doc.timeStamp, timeAlphas(i), timeBetas(i)))
         val timeSmoothing = Tensor.tabulate(numTopics)(i => { val m = timeMeans(i) + 0.5; m*m*m*m*m*m })
         // if (doc == documents.head) println(timeSmoothing)
-        sampler.resetSmoothing(alphas.tensor + (timeSmoothing * 3.0), beta1)
+        sampler.resetSmoothing(alphas.value + (timeSmoothing * 3.0), beta1)
         sampler.process(doc.zs)
       }
       if (i % 5 == 0) {
@@ -115,7 +115,7 @@ object LDA5 {
         if (fitDirichlet) {
           sampler.exportThetas(documents)
           MaximizeDirichletByMomentMatching(alphas, model)
-          sampler.resetSmoothing(alphas.tensor, beta1)
+          sampler.resetSmoothing(alphas.value, beta1)
           //println("alpha = " + alphas.tensor.toSeq.mkString(" "))
           //phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         } else {

@@ -201,7 +201,7 @@ class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1)
   def variables = Seq(_1)
   def setToMaximize(implicit d:DiffList): Unit = {
     if (d ne null) throw new Error("Handling of DiffList here not yet implemented.")
-    _1.tensor := masses
+    _1.value := masses
   }
 }
 

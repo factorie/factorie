@@ -75,7 +75,7 @@ class SparseLDAInferencer(
   }
 
   def export(phis:Seq[ProportionsVar]): Unit = {
-    phis.foreach(_.tensor.zero())
+    phis.foreach(_.value.zero())
     for (wi <- 0 until wordDomain.size)
       phiCounts(wi).forCounts((ti,count) => phis(ti).value.masses.+=(wi, count))
   }
@@ -83,7 +83,7 @@ class SparseLDAInferencer(
   def exportThetas(docs:Iterable[Doc]): Unit = {
     for (doc <- docs) {
       val theta = doc.theta
-      theta.tensor.zero()
+      theta.value.zero()
       for (dv <- doc.zs.discreteValues) theta.value.masses.+=(dv.intValue, 1.0)
     }
   }

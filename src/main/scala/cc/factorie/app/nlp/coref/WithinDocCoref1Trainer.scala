@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.Document
 import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.app.nlp.mention.{MentionList, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import java.io.File
 
@@ -13,7 +13,7 @@ import java.io.File
  */
 
 
-trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
+trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val trainFile = new CmdOption("train", "conll-train-clean.txt", "STRING", "File with training data")
   val testFile = new CmdOption("test", "conll-test-clean.txt", "STRING", "File with testing data")
   val numPositivePairsTrain = new CmdOption("prune-train", 2, "INT", "number of positive pairs before pruning instances in training")
@@ -45,7 +45,7 @@ trait WithinDocCoref2TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
 }
 
-object WithinDocCoref2Trainer {
+object WithinDocCoref1Trainer {
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
@@ -78,12 +78,12 @@ object WithinDocCoref2Trainer {
   }
 
 
-  object opts extends WithinDocCoref2TrainerOpts
+  object opts extends WithinDocCoref1TrainerOpts
 
 
   def main(args: Array[String]) {
     opts.parse(args)
-    val options = new Coref2Options
+    val options = new Coref1Options
     //options that get serialized with the model
     options.setConfig("useEntityType",opts.useEntityType.value)
     options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
@@ -128,25 +128,33 @@ object WithinDocCoref2Trainer {
       makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain)
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
+    if(loadTrain)
+      trainDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+
+    testDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
-        val lr = new WithinDocCoref2()
+        val lr = new WithinDocCoref1()
 
         //copy over options that are tweakable at test time
-        lr.options.useEntityLR = options.useEntityLR
-        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
-        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 	      println("deserializing from " + opts.deserialize.value)
         lr.deserialize(opts.deserialize.value)
+        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
+        lr.options.useEntityLR = options.useEntityLR
+        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
+
 
         lr.model.MentionPairFeaturesDomain.freeze()
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
       }
       else{
-        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref2 else new WithinDocCoref2
+        //todo: the options handling needs to be overhauled. Currently it isn't copying over to lr.options many of the input options
+        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref1 else new WithinDocCoref1
         lr.options.setConfigHash(options.getConfigHash)
         lr.options.useEntityLR = options.useEntityLR
+
         lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
         lr
       }
@@ -189,10 +197,16 @@ object WithinDocCoref2Trainer {
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref2Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
     import cc.factorie.app.nlp.Implicits._
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
+
+    val labeler = MentionEntityTypeLabeler
+
+    if(loadTrain)  trainDocs.foreach(labeler.process1(_))
+    testDocs.foreach(labeler.process1(_))
+
     (trainDocs,trainMap,testDocs,testMap)
   }
 }

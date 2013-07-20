@@ -34,25 +34,25 @@ class ChainNerModel extends TemplateModel with Parameters {
       override def statisticsDomains = Tuple1(Conll2003NerDomain)
     },*/
     // Factor between label and observed token
-    new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
+    new DotTemplateWithStatistics2[BioConllNerLabel,ChainNerFeatures] {
       factorName = "observation"
       //override def statisticsDomains = ((Conll2003NerDomain, ChainNerFeaturesDomain))
-      val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize))
-      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
-      def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+      val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, ChainNerFeaturesDomain.dimensionSize))
+      def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
+      def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[BioConllNerLabel], tf)
     },
     // Transition factors between two successive labels
-    new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
+    new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
       factorName = "markov"
       //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-      val weights = Weights(new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size))
-      def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
-      def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
+      val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
+      def unroll1(label: BioConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[BioConllNerLabel], label) else Nil
+      def unroll2(label: BioConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[BioConllNerLabel]) else Nil
     }
   )
 }
 
-class ChainNerObjective extends HammingTemplate[ChainNerLabel]
+class ChainNerObjective extends HammingTemplate[BioConllNerLabel]
 
   
 class ChainNer(implicit random: scala.util.Random) {
@@ -125,8 +125,8 @@ class ChainNer(implicit random: scala.util.Random) {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
  
     // Train for 5 iterations
     if (false) {
@@ -139,7 +139,7 @@ class ChainNer(implicit random: scala.util.Random) {
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly)
       val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate) //ConfidenceWeightedUpdates { temperature = 0.01 }
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
+      val predictor = new VariableSettingsSampler[BioConllNerLabel](model, null)
       for (iteration <- 1 until 3) {
         learner.processContexts(trainLabels)
         predictor.processAll(testLabels)
@@ -167,9 +167,9 @@ class ChainNer(implicit random: scala.util.Random) {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BioConllNerLabel]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BioConllNerLabel](BioConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BioConllNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -183,18 +183,18 @@ class ChainNer(implicit random: scala.util.Random) {
       throw new Error("BP training not yet implemented.")
       //new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
     } else {
-      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[BioConllNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, BioConllNerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.templates(0), model.templates(1))
       val localPredictor = new IteratedConditionalModes(localModel, null)
-      for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)
+      for (label <- document.tokens.map(_.attr[BioConllNerLabel])) localPredictor.process(label)
+      val predictor = new VariableSettingsSampler[BioConllNerLabel](model, null)
+      for (i <- 0 until 3; label <- document.tokens.map(_.attr[BioConllNerLabel])) predictor.process(label)
     }
   }
   
   def printSGML(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = Conll2003NerDomain.index("O")
+    val other = BioConllNerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i
@@ -215,7 +215,7 @@ class ChainNer(implicit random: scala.util.Random) {
   
   def printEntities(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = Conll2003NerDomain.index("O")
+    val other = BioConllNerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i
@@ -261,7 +261,7 @@ object ChainNer extends ChainNer()(new scala.util.Random(0)) {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+      BinarySerializer.deserialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       for (filename <- opts.runPlainFiles.value) {
         val document = LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -274,12 +274,12 @@ object ChainNer extends ChainNer()(new scala.util.Random(0)) {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinarySerializer.deserialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+      BinarySerializer.deserialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked)
-        BinarySerializer.serialize(Conll2003NerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+        BinarySerializer.serialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
     }
 
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")

@@ -10,14 +10,14 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PTBPosDomain, PTBPosLabel}
-import mention.{MentionList, Mention, Entity}
+import mention.{MentionEntityType, MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
-
+// TODO This should be moved to app.nlp.LoadConll2011 -akm
 object ConllCorefLoader {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader
@@ -189,13 +189,13 @@ object ConllCorefLoader {
               if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
                 val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
                 if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
-                  m.attr += new EntityType(m,currentEntityTypeStr)
+                  m.attr += new MentionEntityType(m,currentEntityTypeStr)
                 }else{
-                  m.attr += new EntityType(m,"O")
+                  m.attr += new MentionEntityType(m,"O")
                 }
                 currentlyUnresolvedClosedEntityTypeBracket = false
               }else
-                m.attr += new EntityType(m,"O")
+                m.attr += new MentionEntityType(m,"O")
 
               var i = 0
               var found = false
@@ -233,12 +233,12 @@ object ConllCorefLoader {
           if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
-              m.attr += new EntityType(m,currentEntityTypeStr)
+              m.attr += new MentionEntityType(m,currentEntityTypeStr)
             }else
-              m.attr += new EntityType(m,"O")
+              m.attr += new MentionEntityType(m,"O")
             currentlyUnresolvedClosedEntityTypeBracket = false
           }else
-            m.attr += new EntityType(m,"O")
+            m.attr += new MentionEntityType(m,"O")
 
           numMentions += 1
           val key = fields(0) + "-" + number
@@ -254,12 +254,12 @@ object ConllCorefLoader {
       for(doc <- docs){
         val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1)
         for(ent <- entities){
-          val entityTypes = ent._2.map(m => m.attr[EntityType].categoryValue).filter(t => t != "O").distinct
+          val entityTypes = ent._2.map(m => m.attr[MentionEntityType].categoryValue).filter(t => t != "O").distinct
           if(entityTypes.length > 1){
            // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
           }else if(entityTypes.length == 1){
             val newType = entityTypes(0)
-            ent._2.foreach(m => m.attr[EntityType].target.setCategory(newType)(null))
+            ent._2.foreach(m => m.attr[MentionEntityType].target.setCategory(newType)(null))
           }
 
         }

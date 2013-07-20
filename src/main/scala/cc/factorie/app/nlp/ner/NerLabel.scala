@@ -25,10 +25,7 @@ abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(
   def cubbieSlotValue = categoryValue
 }
 
-@deprecated("Use ConllNerLabel")
-abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
-
-class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
+class Conll2003SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue) {
   def domain = ConllNerDomain
 }
 // TODO this shouldn't extend hcoref Mention
@@ -46,10 +43,6 @@ class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d
 class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")
 }
-
-@deprecated("Use BioConllNerLabel")
-abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
-
 
 object ConllNerDomain extends CategoricalDomain[String] {
   this ++= Vector(

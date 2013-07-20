@@ -61,14 +61,14 @@ object CorefMentionsDemo {
   class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
     def domain = AffinityVectorDomain
-    if (s1 equals s2) this += streq else this += nstreq
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
-    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
-    if (s1.length == s2.length) this += lengtheq
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
+    if (s1 equals s2) value += streq else value += nstreq
+    if (s1.substring(0,1) equals s2.substring(0,1)) value.update(prefix1, 1) else value.update(nprefix1, 1)
+    if (s1.substring(0,2) equals s2.substring(0,2)) value.update(prefix2, 1) else value(nprefix2) = 1
+    if (s1.substring(0,3) equals s2.substring(0,3)) value(prefix3) = 1 else value(nprefix3) = 1
+    if (s1.contains(s2) || s2.contains(s1)) value(substring) = 1 else value(nsubstring) = 1
+    if (s1.length == s2.length) value(lengtheq) = 1
+    s1.split(" ").foreach(s => if (s2.contains(s)) value(containsword) = 1)
+    s2.split(" ").foreach(s => if (s1.contains(s)) value(containsword) = 1)
     // Also consider caching mechanisms
   }
   object AffinityDomain extends EnumDomain {

@@ -69,11 +69,6 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
     d
   }
 
-  /** Set variables' values to the mean of their collapsed representation */
-  @deprecated def export(implicit d:DiffList = null): Unit = {
-    //collapsedMap.foreach({case(p:CollapsibleParameter,cp:Parameter) => p.setFrom(cp)})
-  }
-
   /** Convenience for sampling single variable */
   def process(v:MutableVar[_]): DiffList = process(Seq(v))
 
@@ -201,7 +196,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         java.util.Arrays.fill(distribution, 0.0)
         var i = 0
         while (i < domainSize) {
-          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
+          distribution(i) = gParent.value(i) * mixture(i).value(outcomeIntValue)
           sum += distribution(i)
           i += 1
         }
@@ -255,7 +250,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
         java.util.Arrays.fill(distribution, 0.0)
         var i = 0
         while (i < domainSize) {
-          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
+          distribution(i) = gParent.value(i) * mixture(i).value(outcomeIntValue)
           sum += distribution(i)
           i += 1
         }

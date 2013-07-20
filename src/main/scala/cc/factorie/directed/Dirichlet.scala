@@ -49,7 +49,7 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
     override def pr: Double = self.pr(_1.value, _2.value)
     def sampledValue(masses:Masses)(implicit random: scala.util.Random): Proportions = self.sampledValue(masses, Nil)
     override def sampledValue(implicit random: scala.util.Random): Proportions = self.sampledValue(_2.value, Nil)
-    override def updateCollapsedChild(): Boolean = { _1.tensor.+=(_2.value); true }
+    override def updateCollapsedChild(): Boolean = { _1.value.+=(_2.value); true }
   }
   def newFactor(a:ProportionsVariable, b:MassesVariable) = Factor(a, b)
 }
@@ -57,12 +57,12 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
 object MaximizeDirichletByMomentMatching {
   def apply(masses:MassesVariable, model:DirectedModel): Unit = {
     // Calculate and set the mean
-    val m = new cc.factorie.DenseMasses1(masses.tensor.length)
+    val m = new cc.factorie.DenseMasses1(masses.value.length)
     val childFactors = model.childFactors(masses)
     val numChildren = childFactors.size; assert(numChildren > 1)
     for (factor <- childFactors) factor match { 
       case f:Dirichlet.Factor => {
-        m += f._1.tensor
+        m += f._1.value
         //assert(!f._1.tensor.contains(Double.PositiveInfinity)) // TODO Remove this line
         //println("tensor.class="+f._1.tensor.getClass.getName+" tensor.sum="+f._1.tensor.sum+" tensor.max="+f._1.tensor.max+" sum="+m.sum+" max="+m.max)
         //forIndex(m.size)(i => m(i) += f._1.tensor(i))
@@ -73,13 +73,13 @@ object MaximizeDirichletByMomentMatching {
     //println("MaximizeDirichletByMomentMatching mean max="+m.max)
     //forIndex(m.size)(m(_) /= numChildren)
     // Calculate variance = E[x^2] - E[x]^2 for each dimension
-    val variance = new cc.factorie.la.DenseTensor1(masses.tensor.length)
+    val variance = new cc.factorie.la.DenseTensor1(masses.value.length)
     for (factor <- childFactors) factor match { 
       case f:Dirichlet.Factor => {
         val len = m.length
         var i = 0
         while (i < len) {
-          val diff = f._1.tensor(i) - m(i); variance(i) += diff * diff
+          val diff = f._1.value(i) - m(i); variance(i) += diff * diff
           i += 1
         }
       }
@@ -104,7 +104,7 @@ object MaximizeDirichletByMomentMatching {
     //assert(!m.containsNaN)
     //forIndex(masses.tensor.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
     // ... alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
-    val precision = math.exp(alphaSum / (masses.tensor.length - 1))
+    val precision = math.exp(alphaSum / (masses.value.length - 1))
     //println("MaximizeDirichletByMomentMatching precision="+precision)
     assert(precision > 0)
     assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.asSeq+" mean="+m.asSeq) // Check for NaN
@@ -130,7 +130,7 @@ object LearnDirichletUsingFrequencyHistograms {
   def apply(masses: MassesVariable, observations: Array[Array[Int]], observationLengths: Array[Int],
             shape: Double, scale: Double, numIters: Int) {
 
-    val parameters = masses.tensor.toArray
+    val parameters = masses.value.toArray
 
     var denominator = 0.0
     var currentDigamma = 0.0
@@ -172,7 +172,7 @@ object LearnDirichletUsingFrequencyHistograms {
       }
     }
 
-    masses := new cc.factorie.DenseMasses1(masses.tensor.length)
+    masses := new cc.factorie.DenseMasses1(masses.value.length)
     for(i <- 0 until parameters.length) masses.increment(i, parameters(i))(null)
     assert(paramSum >= 0.0)
   }

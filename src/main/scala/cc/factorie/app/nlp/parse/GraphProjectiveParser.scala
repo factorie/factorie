@@ -46,7 +46,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     val sentence = token.sentence
     val pt = if (sentence ne null) sentence.attr[ParseTree] else null
     if (pt eq null) "_\t_"
-    else (pt.parentIndex(token.sentencePosition)+1).toString+"\t"
+    else (pt.parentIndex(token.positionInSentence)+1).toString+"\t"
   }
 
   def getPairwiseFeatureVector(t: Token, p: Token): TensorVar = {
@@ -63,8 +63,8 @@ class GraphProjectiveParser extends DocumentAnnotator {
     f += "CHILDPAIRPARENTWORD="+tPos+"&"+tWord+"&"+pWord
     f += "JOINTALL="+tPos+"&"+tWord+"&"+pWord+"&"+pPos
     if ((p ne null) && (t ne null)) {
-      val first = if (p.sentencePosition < t.sentencePosition) p else t
-      val second = if (p.sentencePosition < t.sentencePosition) t else p
+      val first = if (p.positionInSentence < t.positionInSentence) p else t
+      val second = if (p.positionInSentence < t.positionInSentence) t else p
       var x = first
       while (x.sentenceNext ne second) {
         x = x.sentenceNext
@@ -78,7 +78,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       f += "PhHPcC="+prevHeadPos+"&"+pPos+"&"+prevTokPos+"&"+tPos
       f += "HNhCNc="+pPos+"&"+nextHeadPos+"&"+tPos+"&"+nextTokPos
       f += "PhHCNc="+prevHeadPos+"&"+pPos+"&"+tPos+"&"+nextTokPos
-      val distance = math.abs(t.sentencePosition - p.sentencePosition)
+      val distance = math.abs(t.positionInSentence - p.positionInSentence)
       for (i <- 0 to distance) {
         f += "EdgeLength>="+i
       }

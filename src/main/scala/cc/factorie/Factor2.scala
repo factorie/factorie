@@ -59,15 +59,6 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   def valuesScore1(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("Not implemented in Factor "+getClass)
   def valuesScore2(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("Not implemented in Factor "+getClass)
 
-  
-  
-  /** Given the Tensor value of neighbor _2, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
-      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
-      If _1 is not a DiscreteVar then throws an Error. */
-  @deprecated("Will be removed")
-  def valueScores1(tensor2:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores1")
-  def valueScores2(tensor1:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
-
   // For implementing sparsity in belief propagation
   def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
   def limitedDiscreteValues12: SparseBinaryTensor2 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)

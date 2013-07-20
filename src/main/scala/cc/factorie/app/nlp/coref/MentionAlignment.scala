@@ -4,11 +4,12 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorLazyMap}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.app.nlp.mention.{Entity, MentionList, Mention}
+import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import collection.mutable.{ArrayBuffer, HashMap}
 import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
+import scala.Some
 
 /**
  * User: apassos
@@ -17,7 +18,7 @@ import cc.factorie.app.nlp.parse.ParseTree
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -61,7 +62,7 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref2Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
 
@@ -89,8 +90,8 @@ object MentionAlignment {
         m.attr +=  gtMention.attr[Entity]
         if(entityHash(gtMention.attr[Entity]).length > 1) relevantExactMatches += 1
         exactMatches += 1
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
-        m.attr += new EntityType(m,predictedEntityType)
+        //val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
+        //m.attr += new MentionEntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
         if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
       }else{
@@ -98,8 +99,8 @@ object MentionAlignment {
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
-        val predictedEntityType = if(useEntityTypes) EntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "UKN"
-        m.attr += new EntityType(m,predictedEntityType)
+       // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
+       // m.attr += new MentionEntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
         falsePositives1 += m
       }
@@ -126,7 +127,7 @@ object MentionAlignment {
   def getHeadTokenInDoc(m: Mention): Int = {
     m.start + m.headTokenIndex
   }
-  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options, shifts: Seq[Int]): Option[Mention] = {
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
     val start = m.start
     val length = m.length
     val headTokIdxInDoc = m.headTokenIndex + m.start

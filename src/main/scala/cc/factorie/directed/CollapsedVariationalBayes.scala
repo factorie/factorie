@@ -95,7 +95,7 @@ class PlatedGateCollapsedVariationalBayes(val model:DirectedModel, val summary:S
         // Loop over each possible value for this word's gate
         var j = 0
         while (j < gateDomainSize) {
-          q(j) = mFactor._2(i).tensor(j) * gFactor._2.tensor(j)
+          q(j) = mFactor._2(i).value(j) * gFactor._2.value(j)
           j += 1
         }
         q.normalize
