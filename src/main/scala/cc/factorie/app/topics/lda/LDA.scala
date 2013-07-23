@@ -150,59 +150,62 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   def inferTopicsMultithreaded(numThreads:Int, iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     if (fitAlphaInterval != Int.MaxValue) throw new Error("LDA.inferTopicsMultithreaded.fitAlphaInterval not yet implemented.")
     val docSubsets = documents.grouped(documents.size/numThreads + 1).toSeq
-    val numSubsets = docSubsets.size
 
     //Get global Nt and Nw,t for all the documents
     val phiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
     for (doc <- documents) phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
     val numTypes = wordDomain.length
 
-    val phiCountsArray = new Array[DiscreteMixtureCounts[String]](numSubsets)
-    val samplersArray = new Array[SparseLDAInferencer](numSubsets)
+    val phiCountsArray = new Array[DiscreteMixtureCounts[String]](numThreads)
+    val samplersArray = new Array[SparseLDAInferencer](numThreads)
 
     //Copy the counts to each thread
-    val pool = Executors.newFixedThreadPool(numSubsets)
-    for (threadID <- 0 until numSubsets) {
-      phiCountsArray(threadID) = new DiscreteMixtureCounts(wordDomain, ZDomain)
-      val localPhiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
-      for (w <- 0 until numTypes) phiCounts(w).forCounts((t,c) => phiCountsArray(threadID).increment(w, t, c))
+    val pool = Executors.newFixedThreadPool(numThreads)
+    try {
+      TrainerHelpers.parForeach(0 until numThreads, pool)(threadID => {
+        phiCountsArray(threadID) = new DiscreteMixtureCounts(wordDomain, ZDomain)
+        val localPhiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
+        for (w <- 0 until numTypes) phiCounts(w).forCounts((t,c) => phiCountsArray(threadID).increment(w, t, c))
 
-      for (doc <- docSubsets(threadID)) localPhiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
-      samplersArray(threadID) = new SparseLDAInferencer(ZDomain, wordDomain, phiCountsArray(threadID),  alphas.value, beta1, model, random, localPhiCounts)
-    }
-
-    for (iteration <- 1 to iterations) {
-      val startIterationTime = System.currentTimeMillis
-
-      TrainerHelpers.parForeach(0 until numSubsets, pool)(threadID => {
-        samplersArray(threadID).resetCached()
-        for (doc <- docSubsets(threadID)) samplersArray(threadID).process(doc.zs.asInstanceOf[Zs])
+        for (doc <- docSubsets(threadID)) localPhiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
+        samplersArray(threadID) = new SparseLDAInferencer(ZDomain, wordDomain, phiCountsArray(threadID),  alphas.value, beta1, model, random, localPhiCounts)
       })
 
-      //Sum per thread counts
-      java.util.Arrays.fill(phiCounts.mixtureCounts, 0)
-      (0 until numTypes).par.foreach(w => {
-          phiCounts(w).clear()
-          for (threadID <- 0 until numSubsets) samplersArray(threadID).localPhiCounts(w).forCounts((t, c) => phiCounts.increment(w, t, c))
-      })
+      for (iteration <- 1 to iterations) {
+        val startIterationTime = System.currentTimeMillis
 
-      //Copy global counts to per thread counts
-      TrainerHelpers.parForeach(0 until numSubsets, pool) (threadID => {
-        System.arraycopy(phiCounts.mixtureCounts, 0, phiCountsArray(threadID).mixtureCounts, 0, numTopics)
-        for (w <- 0 until numTypes) phiCountsArray(threadID)(w).copyBuffer(phiCounts(w))
-      })
+        TrainerHelpers.parForeach(0 until numThreads, pool)(threadID => {
+          samplersArray(threadID).resetCached()
+          for (doc <- docSubsets(threadID)) samplersArray(threadID).process(doc.zs.asInstanceOf[Zs])
+        })
+
+        //Sum per thread counts
+        java.util.Arrays.fill(phiCounts.mixtureCounts, 0)
+        (0 until numTopics).par.foreach(t => {
+          for (threadID <- 0 until numThreads) phiCounts.mixtureCounts(t) += samplersArray(threadID).localPhiCounts.mixtureCounts(t)
+        })
+        (0 until numTypes).par.foreach(w => {
+            phiCounts(w).clear()
+            for (threadID <- 0 until numThreads) samplersArray(threadID).localPhiCounts(w).forCounts((t, c) => phiCounts(w).incrementCountAtIndex(t, c))
+        })
+
+        //Copy global counts to per thread counts
+        TrainerHelpers.parForeach(0 until numThreads, pool) (threadID => {
+          System.arraycopy(phiCounts.mixtureCounts, 0, phiCountsArray(threadID).mixtureCounts, 0, numTopics)
+          for (w <- 0 until numTypes) phiCountsArray(threadID)(w).copyBuffer(phiCounts(w))
+        })
 
 
-      if (iteration % diagnosticInterval == 0) {
-        println ("Iteration "+iteration)
-        maximizePhisAndThetas
-        if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
+        if (iteration % diagnosticInterval == 0) {
+          println ("Iteration "+iteration)
+          maximizePhisAndThetas
+          if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
+        }
+
+        val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
+        if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
       }
-
-      val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
-      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
-    }
-    pool.shutdown()
+    } finally pool.shutdown()
     maximizePhisAndThetas
   }
   
