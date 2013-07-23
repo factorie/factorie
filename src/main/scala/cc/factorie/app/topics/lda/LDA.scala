@@ -20,6 +20,8 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
 import cc.factorie.directed._
+import cc.factorie.optimize.TrainerHelpers
+import java.util.concurrent.Executors
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
@@ -137,29 +139,70 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         sampler.initializeHistograms(maxDocSize)
         //println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }
-    } 
+    }
     //println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     // Set original uncollapsed parameters to mean of collapsed parameters
     sampler.export(phis)
     sampler.exportThetas(documents)
   }
-  
+
   // Not finished
   def inferTopicsMultithreaded(numThreads:Int, iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     if (fitAlphaInterval != Int.MaxValue) throw new Error("LDA.inferTopicsMultithreaded.fitAlphaInterval not yet implemented.")
     val docSubsets = documents.grouped(documents.size/numThreads + 1).toSeq
-    //println("Subsets = "+docSubsets.size)
-    for (i <- 1 to iterations) {
-      docSubsets.par.foreach(docSubset => {
-        val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.value, beta1, model)
-        for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
+    val numSubsets = docSubsets.size
+
+    //Get global Nt and Nw,t for all the documents
+    val phiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
+    for (doc <- documents) phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
+    val numTypes = wordDomain.length
+
+    val phiCountsArray = new Array[DiscreteMixtureCounts[String]](numSubsets)
+    val samplersArray = new Array[SparseLDAInferencer](numSubsets)
+
+    //Copy the counts to each thread
+    val pool = Executors.newFixedThreadPool(numSubsets)
+    for (threadID <- 0 until numSubsets) {
+      phiCountsArray(threadID) = new DiscreteMixtureCounts(wordDomain, ZDomain)
+      val localPhiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
+      for (w <- 0 until numTypes) phiCounts(w).forCounts((t,c) => phiCountsArray(threadID).increment(w, t, c))
+
+      for (doc <- docSubsets(threadID)) localPhiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
+      samplersArray(threadID) = new SparseLDAInferencer(ZDomain, wordDomain, phiCountsArray(threadID),  alphas.value, beta1, model, random, localPhiCounts)
+    }
+
+    for (iteration <- 1 to iterations) {
+      val startIterationTime = System.currentTimeMillis
+
+      TrainerHelpers.parForeach(0 until numSubsets, pool)(threadID => {
+        samplersArray(threadID).resetCached()
+        for (doc <- docSubsets(threadID)) samplersArray(threadID).process(doc.zs.asInstanceOf[Zs])
       })
-      if (i % diagnosticInterval == 0) {
-        println ("Iteration "+i)
+
+      //Sum per thread counts
+      java.util.Arrays.fill(phiCounts.mixtureCounts, 0)
+      (0 until numTypes).par.foreach(w => {
+          phiCounts(w).clear()
+          for (threadID <- 0 until numSubsets) samplersArray(threadID).localPhiCounts(w).forCounts((t, c) => phiCounts.increment(w, t, c))
+      })
+
+      //Copy global counts to per thread counts
+      TrainerHelpers.parForeach(0 until numSubsets, pool) (threadID => {
+        System.arraycopy(phiCounts.mixtureCounts, 0, phiCountsArray(threadID).mixtureCounts, 0, numTopics)
+        for (w <- 0 until numTypes) phiCountsArray(threadID)(w).copyBuffer(phiCounts(w))
+      })
+
+
+      if (iteration % diagnosticInterval == 0) {
+        println ("Iteration "+iteration)
         maximizePhisAndThetas
         if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
       }
+
+      val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
+      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
     }
+    pool.shutdown()
     maximizePhisAndThetas
   }
   

@@ -298,4 +298,11 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     if (siz == 1 && co(buf(0)) == 0) return false // To catch the siz==1 case 
     true
   }
+
+  def copyBuffer(srcCounts: SortedSparseCounts) {
+    siz = srcCounts.siz
+    if (siz > buf.length) buf = new Array[Int](siz)
+    System.arraycopy(srcCounts.buf, 0 , buf, 0, siz)
+  }
 }
+
