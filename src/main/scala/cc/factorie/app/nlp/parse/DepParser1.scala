@@ -140,21 +140,15 @@ class DepParser1 extends DocumentAnnotator {
   }
 
   def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
-    import scala.concurrent._
-    import scala.concurrent.duration._
-    val pool = Executors.newFixedThreadPool(nThreads)
-    implicit val exc = scala.concurrent.ExecutionContext.fromExecutorService(pool)
-    val futures = ss.map(s => future {
+    val decs = TrainerHelpers.parMap(ss, nThreads)(s => {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
         else new NonprojectiveBoostingOracle(s, classify)
       }
       new NonProjectiveShiftReduce(oracle.predict).parse(s)
-      oracle.instances
+      oracle.instances.toSeq
     })
-    val decisions = futures.flatMap(f => Await.result(f, 100.hours))
-    pool.shutdown()
-    decisions
+    decs.flatten
   }
   def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
