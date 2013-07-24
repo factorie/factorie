@@ -99,8 +99,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
             println(token.string)
             println(newLabel)
           }*/
-          token.attr.remove[BioConllNerLabel]
-          token.attr += new Conll2003ChainNerLabel(token, newLabel)
+          // token.attr.remove[BioConllNerLabel]
+          token.attr += new BilouConllNerLabel(token, newLabel)
         }
       }
     }
