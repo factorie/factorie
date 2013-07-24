@@ -370,9 +370,9 @@ object TrainerHelpers {
   def newFixedThreadPool(numThreads: Int) = Executors.newFixedThreadPool(numThreads)
   def withThreadPool[A](numThreads: Int)(body: ExecutorService => A) = {
     val pool = newFixedThreadPool(numThreads)
-    val res = body(pool)
-    pool.shutdown()
-    res
+    try {
+      body(pool)
+    } finally pool.shutdown()
   }
 }
 
