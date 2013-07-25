@@ -18,8 +18,6 @@ import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
 
-class Conll2003ChainNerLabel(token:Token, initialValue:String) extends BioConllNerLabel(token, initialValue) {}
-
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
 // or LoadConll2003(BILOU = true).fromFilename("foo")
@@ -65,7 +63,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new Conll2003ChainNerLabel(token, ner)
+        token.attr += new BioConllNerLabel(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
       }
     }
