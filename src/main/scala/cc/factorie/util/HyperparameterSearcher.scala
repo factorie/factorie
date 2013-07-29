@@ -1,6 +1,6 @@
 package cc.factorie.util
 
-import scala.util.{Try, Random}
+import scala.util.Random
 import scala.concurrent._
 import akka.actor._
 import cc.factorie.Proportions
@@ -26,7 +26,7 @@ trait ParameterSampler[T] {
 // Samples uniformly one of the values in the sequence.
 class SampleFromSeq[T](seq: Seq[T]) extends ParameterSampler[T] {
   val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
-  def valueToBucket(v: T) = buckets.indexOf(v)
+  def valueToBucket(v: T) = buckets.toSeq.map(_._1).indexOf(v)
   def sample(rng: Random) = seq(rng.nextInt(seq.length))
 }
 
