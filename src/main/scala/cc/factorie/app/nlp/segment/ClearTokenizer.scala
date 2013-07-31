@@ -41,8 +41,8 @@ trait AbstractTokenizer extends DocumentAnnotator {
 class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegmenter {
   /** Patterns of terminal punctuation. */
   private val P_TERMINAL_PUNCTUATION = Pattern.compile("^(\\.|\\?|!)+$")
-  private val L_BRACKETS = Array("\"", "(", "{", "[")
-  private val R_BRACKETS = Array("\"", ")", "}", "]")
+  private val L_BRACKETS = Array("\"", "\u201C", "(", "{", "[")
+  private val R_BRACKETS = Array("\"", "\u201D", ")", "}", "]")
 
   def tokenAnnotationString(token: Token) = null
   def getSentences(fin: String): mutable.ArrayBuffer[mutable.ArrayBuffer[ClearToken]] = {
