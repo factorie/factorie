@@ -62,7 +62,7 @@ class DocumentAnnotationPipeline(val annotators: Seq[DocumentAnnotator], val pre
     var doc = document
     for (annotator <- annotators; if annotator.postAttrs.forall(!doc.hasAnnotation(_))) {
       doc = annotator.process(doc)
-      annotator.postAttrs.foreach(a => document.annotators(a) = annotator)
+      annotator.postAttrs.foreach(a => document.annotators(a) = annotator.getClass)
     }
     doc
   }

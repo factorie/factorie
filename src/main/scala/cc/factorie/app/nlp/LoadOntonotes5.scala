@@ -38,10 +38,10 @@ object LoadOntonotes5 {
 
   def fromFilename(filename:String, loadLemma:Boolean = true, loadPos:Boolean = true, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
     val document: Document = new Document().setName("Ontonotes499/" + filename)
-    document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
-    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
-    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator
+    document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
+    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -81,10 +81,10 @@ object LoadOntonotes5 {
   // TODO Use this method in method above, to avoid redundancy.
   def fromLines(lines:Iterator[String], filename:String = "?UNKNOWN?", loadLemma:Boolean = true, loadPos:Boolean = true, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
     val document: Document = new Document()
-    document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
-    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
-    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator
+    document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+    document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
+    if (loadPos) document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- lines) {

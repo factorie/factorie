@@ -34,9 +34,9 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
       val document = new Document("").setName(name)
-      document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
-      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
+      document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
+      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
       document
     }
 
@@ -54,8 +54,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         // Skip document boundaries
         document.asSection.chainFreeze
         document = new Document().setName("CoNLL2003-"+documents.length)
-        document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
+        document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
         documents += document
       } else {
         val fields = line.split(' ')

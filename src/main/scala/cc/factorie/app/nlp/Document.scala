@@ -122,11 +122,11 @@ class Document extends DocumentSubstring with Attr {
       A Map from the annotation class to the DocumentAnnotator that produced it.
       Note that this map records annotations placed not just on the Document itself, but also its constituents,
       such as TokenSpan, Token, Sentence, etc. */
-  val annotators = new collection.mutable.HashMap[Class[_], DocumentAnnotator]
+  val annotators = new collection.mutable.LinkedHashMap[Class[_], Class[_]]
   /** Has an annotation of class 'c' been placed somewhere within this Document? */
   def hasAnnotation(c:Class[_]): Boolean = annotators.keys.exists(k => c.isAssignableFrom(k))
   /** Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If  */
-  def annotatorFor(c:Class[_]): Option[DocumentAnnotator] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
+  def annotatorFor(c:Class[_]): Option[Class[_]] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
   
   /** Return a String containing the Token strings in the document, with sentence and span boundaries indicated with SGML. */
   def sgmlString: String = {

@@ -152,7 +152,7 @@ class NER2 extends DocumentAnnotator {
   // Feature creation
   def addFeatures(document:Document): Unit = {
     val cow = cc.factorie.app.nlp.lexicon.iesl
-    document.annotators(classOf[FeaturesVariable]) = this
+    document.annotators(classOf[FeaturesVariable]) = this.getClass
     import cc.factorie.app.strings.simplifyDigits
     for (section <- document.sections; token <- section.tokens) {
       val features = new FeaturesVariable(token)
