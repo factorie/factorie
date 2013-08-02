@@ -109,37 +109,39 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
-class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with SparseDoubleSeq with Masses1 {
-  def activeDomainSize = activeIndices.length
+class SortedSparseCountsMasses1(val dim1:Int) extends SparseDoubleSeq with Masses1 {
+  val sparseCounts = new cc.factorie.util.SortedSparseCounts(dim1, 4, false)
+  def activeDomainSize = sparseCounts.activeIndices.length
 
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def isDense = false
-  override def foreachActiveElement(f: (Int, Double) => Unit) { activeIndices.foreach(i => f(i, this(i))) }
-  def activeDomain = activeIndices
+  override def foreachActiveElement(f: (Int, Double) => Unit) { sparseCounts.activeIndices.foreach(i => f(i, this(i))) }
+  def activeDomain = sparseCounts.activeIndices
   //def activeDomain = activeDomain1
   def apply(index:Int): Double = {
-    if (countsTotal == 0) 0.0
-    else countOfIndex(index).toDouble
+    if (sparseCounts.countsTotal == 0) 0.0
+    else sparseCounts.countOfIndex(index).toDouble
   }
   override def +=(index:Int, incr:Double): Unit = {
     assert(incr.floor == incr)
-    incrementCountAtIndex(index, incr.toInt) 
+    sparseCounts.incrementCountAtIndex(index, incr.toInt)
   }
   def update(i: Int, v: Double) = this += (i, v - this(i))
-  override def zero(): Unit = clear()
-  def massTotal = countsTotal.toDouble
+  override def zero(): Unit = sparseCounts.clear()
+  def massTotal = sparseCounts.countsTotal.toDouble
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = {
-    if (countsTotal == 0) r.nextInt(dim1) // If there are no counts, use a uniform distribution
+    if (sparseCounts.countsTotal == 0) r.nextInt(dim1) // If there are no counts, use a uniform distribution
     else {
-      val sampledMass = r.nextInt(countsTotal)
-      var i = 0; var sum = countAtPosition(0)
+      val sampledMass = r.nextInt(sparseCounts.countsTotal)
+      var i = 0; var sum = sparseCounts.countAtPosition(0)
       while (sum < sampledMass) {
         i += 1
-        sum += countAtPosition(i)
+        sum += sparseCounts.countAtPosition(i)
       }
-      indexAtPosition(i)
+      sparseCounts.indexAtPosition(i)
     }
   }
+
 }
 
 
