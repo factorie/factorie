@@ -71,7 +71,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
-      if ((i % logEveryN == 0) && (i != 0)) {
+      if ((logEveryN != 0) && (i % logEveryN == 0) && (i != 0)) {
         logger.info(TrainerHelpers.getOnlineTrainerStatus(i, logEveryN, timePerIteration, valuesSeenSoFar))
         valuesSeenSoFar = 0.0
         timePerIteration = 0
