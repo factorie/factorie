@@ -43,12 +43,12 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
 
   def process1(document: Document) = {
     val nerMentions = getNerSpans(document).map(s => {
-      val m = new Mention(s, s.end)
+      val m = new Mention(s, s.length-1)
       m.attr += new MentionType(m, "NAM")
       m
     })
     val pronounMentions = getPronounSpans(document).map(s => {
-      val m = new Mention(s, s.end)
+      val m = new Mention(s, 0)
       m.attr += new MentionType(m, "PRO")
       m
     })
