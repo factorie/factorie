@@ -65,6 +65,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
+    if (examples.isEmpty) return
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
     var valuesSeenSoFar = 0.0
