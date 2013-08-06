@@ -81,6 +81,7 @@ object PTBPosDomain extends CategoricalDomain[String] {
   def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }
   def isVerb(pos:String) = pos(0) == 'V'
   def isAdjective(pos:String) = pos(0) == 'J'
+  def isPersonalPronoun(pos: String) = pos == "PRP"
 }
 class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = PTBPosDomain
@@ -88,6 +89,7 @@ class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategorica
   def isProperNoun = PTBPosDomain.isProperNoun(categoryValue)
   def isVerb = PTBPosDomain.isVerb(categoryValue)
   def isAdjective = PTBPosDomain.isAdjective(categoryValue)
+  def isPersonalPronoun = PTBPosDomain.isPersonalPronoun(categoryValue)
 }
 
 /** The "A Universal Part-of-Speech Tagset"

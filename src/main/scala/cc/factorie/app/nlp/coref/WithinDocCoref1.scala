@@ -450,3 +450,8 @@ class ImplicitConjunctionWithinDocCoref1 extends BaseWithinDocCoref1 {
 object WithinDocCoref1 extends WithinDocCoref1 {
   deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1](".factorie").openConnection().getInputStream))
 }
+
+// This should only be used when using the NerAndPronounMentionFinder to find mentions
+object WithinDocCoref1Ner extends WithinDocCoref1 {
+  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1]("-NER.factorie").openConnection().getInputStream))
+}
