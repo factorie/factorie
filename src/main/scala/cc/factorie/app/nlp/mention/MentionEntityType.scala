@@ -70,7 +70,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     else model.classification(features(mention).value).bestLabelIndex
   }
   def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     for (mention <- document.attr[MentionList]) processMention(mention)
     document
   }
@@ -143,7 +143,7 @@ object MentionEntityTypeLabelerTrainer {
       println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
 
     labeler.train(trainDocs, testDocs)
-    (trainDocs ++ testDocs).foreach(labeler.process1(_))
+    (trainDocs ++ testDocs).foreach(labeler.process(_))
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.span.phrase))
 
@@ -158,7 +158,7 @@ object MentionEntityTypeLabelerTrainer {
 //todo: this is a candidate for deletion
 object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
   import MentionEntityTypeAnnotator1Util._
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     document.attr[MentionList].foreach(predictMentionEntityType(_))
     document
   }

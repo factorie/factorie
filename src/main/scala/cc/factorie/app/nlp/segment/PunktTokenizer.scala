@@ -108,7 +108,7 @@ class PunktTokenizer extends DocumentAnnotator {
 //  }
 
   def apply(s: String): StringSegmentIterator = new StringSegmentIterator {
-    val tokenIterator = for (section <- process1(new Document(s)).sections.iterator; token <- section.tokens.iterator) yield token
+    val tokenIterator = for (section <- process(new Document(s)).sections.iterator; token <- section.tokens.iterator) yield token
     var token: Token = null
     def hasNext = tokenIterator.hasNext
     def next: String = { token = tokenIterator.next; token.string }
@@ -120,7 +120,7 @@ class PunktTokenizer extends DocumentAnnotator {
   // TODO Fix this to fit better into the DocumentProcessor framework, e.g. setting postAttrs
   def process(documents: Seq[Document]): Unit = processLogic(documents, sentenceBoundaryInference)
 
-  def process1(document: Document): Document = { processLogic(Seq(document), sentenceBoundaryInference); document }
+  def process(document: Document): Document = { processLogic(Seq(document), sentenceBoundaryInference); document }
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Vector[Class[_]](classOf[Token], classOf[Sentence])
 

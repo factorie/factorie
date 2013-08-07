@@ -22,16 +22,16 @@ import scala.util.matching.Regex
     By default create one Document per file.
     To create multiple Documents from one file, set documentSeparator regex.  
     If the regex specifics a group (via parenthesis) then the Document's name will be set to the match of this first group. */
-case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: DocumentAnnotatorLazyMap) extends Load with LoadDirectory {
+class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: DocumentAnnotatorPipeline.DocumentAnnotatorMap) extends Load with LoadDirectory {
   def fromSource(source:io.Source): Seq[Document] = {
     val string = source.getLines.mkString("\n")
-    if (documentSeparator eq null) Seq(annotator.process(new Document(string).setName(documentName)))
+    if (documentSeparator eq null) Seq(DocumentAnnotatorPipeline.process(annotator, new Document(string).setName(documentName), map=m))
     else {
       var docStart = 0
       val matchIterator = documentSeparator.findAllIn(string).matchData
       (for (sepMatch <- matchIterator if sepMatch.start != docStart) yield {
         val doc = new Document(string.substring(docStart, sepMatch.start))
-        annotator.process(doc)
+        DocumentAnnotatorPipeline.process(annotator, doc, map=m)
         if (sepMatch.group(1) ne null) doc.setName(sepMatch.group(1))
         docStart = sepMatch.end
         doc
@@ -51,4 +51,4 @@ case class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, do
   }
 }
 
-object LoadPlainText extends LoadPlainText(annotator = NoopDocumentAnnotator, documentName = null, documentSeparator = null)(Implicits.defaultDocumentAnnotatorMap)
+object LoadPlainText extends LoadPlainText(annotator = NoopDocumentAnnotator, documentName = null, documentSeparator = null)(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap)

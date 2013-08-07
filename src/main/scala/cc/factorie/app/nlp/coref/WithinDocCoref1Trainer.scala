@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, MutableDocumentAnnotatorMap, Document}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -131,9 +131,9 @@ object WithinDocCoref1Trainer {
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
-      trainDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+      trainDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
-    testDocs.foreach(d => { MentionGenderLabeler.process1(d); MentionNumberLabeler.process1(d) } )
+    testDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
@@ -200,18 +200,20 @@ object WithinDocCoref1Trainer {
 
 
   def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    import cc.factorie.app.nlp.Implicits._
+    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
-      defaultDocumentAnnotatorMap(classOf[MentionList]) = () => NerAndPronounMentionFinder
-      defaultDocumentAnnotatorMap(classOf[NerLabel]) = () => NER1
+      map(classOf[MentionList]) = () => NerAndPronounMentionFinder
+      map(classOf[NerLabel]) = () => NER1
+    } else {
+      map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }
-    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options) else (null,null)
-    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options)
+    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, map.toMap) else (null,null)
+    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, map.toMap)
 
     val labeler = MentionEntityTypeLabeler
 
-    if(loadTrain)  trainDocs.foreach(labeler.process1(_))
-    testDocs.foreach(labeler.process1(_))
+    if(loadTrain)  trainDocs.foreach(labeler.process)
+    testDocs.foreach(labeler.process)
 
     (trainDocs,trainMap,testDocs,testMap)
   }

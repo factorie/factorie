@@ -3,7 +3,7 @@ import cc.factorie.app.nlp._
 
 class PorterLemmatizer extends DocumentAnnotator with Lemmatizer {
   def lemmatize(word:String): String = cc.factorie.app.strings.PorterStemmer(word)
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     for (token <- document.tokens) token.attr += new PorterTokenLemma(token, lemmatize(token.string))
     document
   }

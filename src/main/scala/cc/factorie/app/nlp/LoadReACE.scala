@@ -72,9 +72,9 @@ object LoadReACE {
 
   private def makeDoc(xml: String): Document = {
     val doc = new Document().setName(xml)
-    doc.annotators(classOf[Token]) = UnknownDocumentAnnotator
-    doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator
-    doc.annotators(classOf[PTBPosLabel]) = UnknownDocumentAnnotator
+    doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PTBPosLabel]) = UnknownDocumentAnnotator.getClass
 
     doc.attr += new ACEFileIdentifier(xml)
     val xmlText: NodeSeq = XML.loadFile(xml + ".ttt.xml")

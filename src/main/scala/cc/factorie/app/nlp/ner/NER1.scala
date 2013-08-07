@@ -73,7 +73,7 @@ class NER1 extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence])
   def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
@@ -95,7 +95,7 @@ class NER1 extends DocumentAnnotator {
   
   // Feature creation
   def addFeatures(document:Document): Unit = {
-    document.annotators(classOf[FeaturesVariable]) = this
+    document.annotators(classOf[FeaturesVariable]) = this.getClass
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
       val features = new FeaturesVariable(token)
@@ -172,11 +172,11 @@ class NER1 extends DocumentAnnotator {
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
-      trainDocs.par.foreach(process1(_))
+      trainDocs.par.foreach(process(_))
       println("Train accuracy "+objective.accuracy(trainLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
       if (!testDocs.isEmpty) {
-        testDocs.par.foreach(process1(_))
+        testDocs.par.foreach(process(_))
         println("Test  accuracy "+objective.accuracy(testLabels))
         println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       }
@@ -186,8 +186,8 @@ class NER1 extends DocumentAnnotator {
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
     return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     Trainer.batchTrain(model.parameters, examples, optimizer = new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 }, evaluate = () => {
-      trainDocs.foreach(process1(_)); println("Train accuracy "+objective.accuracy(trainLabels))
-      if (!testDocs.isEmpty) testDocs.foreach(process1(_));  println("Test  accuracy "+objective.accuracy(testLabels))
+      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(trainLabels))
+      if (!testDocs.isEmpty) testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(testLabels))
       println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     })
     //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))

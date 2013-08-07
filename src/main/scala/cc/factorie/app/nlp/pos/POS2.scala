@@ -15,7 +15,7 @@ import cc.factorie.la.SmartGradientAccumulator
  * Time: 2:55 PM
  */
 class POS2 extends DocumentAnnotator {
-  def process1(document: Document) = {
+  def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
         s.tokens.foreach(t => if (!t.attr.contains[PTBPosLabel]) t.attr += new PTBPosLabel(t, "NN"))

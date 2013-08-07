@@ -154,7 +154,7 @@ class DepParser1 extends DocumentAnnotator {
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
-  def process1(doc: Document) = { doc.sentences.foreach(process(_)); doc }
+  def process(doc: Document) = { doc.sentences.foreach(process(_)); doc }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {

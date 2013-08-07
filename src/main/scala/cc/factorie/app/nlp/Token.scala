@@ -41,7 +41,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def this(sentence:Sentence, s:Int, e:Int) = {
     this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
     if (sentence.section.sentences.last ne sentence) throw new Error("Can only append Token to the last Sentence of the Document.")
-    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator
+    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     _sentence = sentence
     // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start + 1)(null)
