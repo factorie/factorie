@@ -20,7 +20,8 @@ object Implicits {
     this.update(classOf[lemma.LowercaseTokenLemma], ()=>lemma.LowercaseLemmatizer)
     this.update(classOf[ner.BilouConllNerLabel], ()=>ner.NER1)
     this.update(classOf[ner.BilouOntonotesNerLabel], ()=>ner.NER2)
-    this.update(classOf[mention.MentionList], ()=>mention.ParseBasedMentionFinding)
+    this.update(classOf[mention.ParseBasedMentionList], ()=>mention.ParseBasedMentionFinding)
+    this.update(classOf[mention.NerMentionList], ()=>mention.NerAndPronounMentionFinder)
     this.update(classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]], ()=>coref.WithinDocCoref1)
   }
 }
