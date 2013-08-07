@@ -64,6 +64,9 @@ class EnglishSegmenter(val tokenizer: AbstractTokenizer) extends AbstractSegment
           isTerminal = false
         }
     }
+    if (bIdx != size) {
+      sentences += tokens.slice(bIdx, size)
+    }
     sentences
   }
 
