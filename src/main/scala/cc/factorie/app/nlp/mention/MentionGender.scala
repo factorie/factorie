@@ -55,15 +55,31 @@ class MentionGenderLabeler extends DocumentAnnotator {
       return None
     else{
       val lemma = mention.span.tokens.head.lemmaString.toLowerCase
-      if(maleWords.contains(lemma ))
+      if(maleContains(lemma))
         return Some(MentionGenderDomain.MALE)
-      else if (femaleWords.contains(lemma))
+      else if (femaleContains(lemma))
         return Some(MentionGenderDomain.FEMALE)
       else return None
     }
   }
-  val maleWords = Seq("he","him","his").toSet
-  val femaleWords = Seq("she","her").toSet
+  def femaleContains(s: String): Boolean = {
+    irregularFemaleWords.contains(s) || regularFemaleWords.contains(convertToSingular(s)) //we check in the irregular list first, since this contains really common words like 'she'
+  }
+  def maleContains(s: String): Boolean = {
+    irregularMaleWords.contains(s) || regularMaleWords.contains(convertToSingular(s))
+  }
+
+  def convertToSingular(s: String): String = {
+    s  //the contract above is that we passed in the lemmaString, so we don't need to convert to singular again
+  }
+
+  val irregularMaleWords = Seq("he","him","his","man", "men").toSet
+  val regularMaleWords = Seq("brother","boy", "male","uncle","nephew","grandfather").toSet
+
+  val irregularFemaleWords = Seq("she","her", "woman","women").toSet
+  val regularFemaleWords = Seq("sister","girl","female","aunt","niece","grandmother").toSet
+
+
 
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionGenderLabel].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionGenderLabel]; if (t ne null) t.categoryValue else "_" }
