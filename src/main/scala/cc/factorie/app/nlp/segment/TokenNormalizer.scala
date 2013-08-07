@@ -46,10 +46,7 @@ class TokenNormalizer1[A<:TokenString](
     else if (unescapeAsterisk && string == "\\*") token.attr += newTokenString(token, "*")
     else if (unescapeAsterisk && string == "\\*\\*") token.attr += newTokenString(token, "**")
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "-") // replace all dashes with dash
-    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) { 
-      val m = quoteRegex.findFirstMatchIn(string)
-      println("TokenNormalizer1 match: "+m)
-      println("TokenNormalizer1 before quote "+token.string); token.attr += newTokenString(token, "\"") } // replace all quotes with "
+    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (normalizeCurrency && quoteRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) { println("TokenNormalizer1 before "+token.string); token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")); println("TokenNormalizer1 after "+token.string) } // replace all apostrophes with simple '
     else if (americanize && BritishToAmerican.contains(string)) token.attr += newTokenString(token, BritishToAmerican(string))
