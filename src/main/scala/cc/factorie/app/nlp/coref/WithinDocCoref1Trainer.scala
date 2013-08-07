@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{DocumentAnnotator, MutableDocumentAnnotatorMap, Document}
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, MutableDocumentAnnotatorMap, Document}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -200,7 +200,7 @@ object WithinDocCoref1Trainer {
 
 
   def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotator.defaultDocumentAnnotationMap
+    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
       map(classOf[MentionList]) = () => NerAndPronounMentionFinder
       map(classOf[NerLabel]) = () => NER1

@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.segment
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import cc.factorie.app.nlp.{DocumentAnnotator, Sentence, Document}
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Sentence, Document}
 import java.util.zip.ZipInputStream
 import java.io.{BufferedReader, StringReader, FileInputStream}
 import cc.factorie.util.FastLogging
@@ -27,7 +27,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
       I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
       """.stripMargin
     val d = new Document((1 to 2).map(_ => text).mkString("\n"))
-    DocumentAnnotator.process(seg, d)
+    DocumentAnnotatorPipeline.process(seg, d)
     d.sentences.map(_.string).foreach(s => logger.debug(s.toString))
   }
 
@@ -35,7 +35,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     val seg = ClearSegmenter
     val text = "The quick brown fox jumps over the lazy dog."
     val d = new Document(text)
-    DocumentAnnotator.process(seg, d)
+    DocumentAnnotatorPipeline.process(seg, d)
     assert(d.sentences.size == 1)
     assert(d.tokens.size == 10)
   }
@@ -45,7 +45,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
 
     def check(src: String, trg: String): Unit = {
       val d = new Document(src)
-      val tokens = DocumentAnnotator.process(tok, d).tokens
+      val tokens = DocumentAnnotatorPipeline.process(tok, d).tokens
       for (t <- tokens) {
         assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
       }

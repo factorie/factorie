@@ -25,6 +25,6 @@ object LoadNYTimesXML {
     val content = article \ "head" \ "docdata" \ "identified-content"
     //print("Reading ***"+(article\"head"\"title").text+"***")
     // This does not include the headline, perhaps it should -akm
-    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotator.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
+    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
   }
 }
