@@ -35,7 +35,8 @@ object Build extends sbt.Build {
         Compile.akka,
         Compile.jregex,
         Compile.colt,
-        Test.junit,
+        Compile.compiler,
+        Compile.junit,
         Test.scalatest
       )
     ) 
@@ -56,12 +57,13 @@ object Dependencies {
     val mongodb      = "org.mongodb"               % "mongo-java-driver"  % "2.11.1"
     val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.1.4"
     val jregex = "net.sourceforge.jregex" % "jregex" % "1.2_01"
-    val colt = "net.sourceforge.parallelcolt" % "parallelcolt" % "0.10.0"
+    val colt = "org.jblas" % "jblas" % "1.2.3"
+    val compiler = "org.scala-lang" % "scala-compiler" % "2.10.1"
+    val junit        = "junit"                     %  "junit"             % "4.10"    
   }
 
   object Test {
     val scalatest    = "org.scalatest"             %  "scalatest_2.10"    % "1.9.1"    % "test"
-    val junit        = "junit"                     %  "junit"             % "4.8.1"    % "test"
   }
 }
 

@@ -312,21 +312,21 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
   
   def apply(index:Int): Double = {
     if (prior eq null) {
-      if (masses.countsTotal == 0) 1.0 / length
-      else masses.countOfIndex(index).toDouble / masses.countsTotal
+      if (masses.sparseCounts.countsTotal == 0) 1.0 / length
+      else masses.sparseCounts.countOfIndex(index).toDouble / masses.sparseCounts.countsTotal
     } else {
-      if (masses.countsTotal == 0) prior(index) / prior.massTotal
-      else masses.countOfIndex(index).toDouble / masses.countsTotal
+      if (masses.sparseCounts.countsTotal == 0) prior(index) / prior.massTotal
+      else masses.sparseCounts.countOfIndex(index).toDouble / masses.sparseCounts.countsTotal
     }
   }
   override def zero(): Unit = masses.zero()
   // Note that "def zero()" defined in SortedSparseCountsMasses1 does not zero this.prior
   override def top(n:Int): cc.factorie.util.TopN[String] = {
-    val len = math.min(n, masses.numPositions)
+    val len = math.min(n, masses.sparseCounts.numPositions)
     val result = new cc.factorie.util.TopN[String](len)
     var i = 0
     while (i < len) {
-      result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal)
+      result += (masses.sparseCounts.indexAtPosition(i), masses.sparseCounts.countAtPosition(i).toDouble / masses.sparseCounts.countsTotal)
       i += 1
     }
     result

@@ -169,8 +169,8 @@ object Tutorial060Learning {
 
     // Now we can run inference and see that we have learned
     val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
-    assertStringEquals(summary2.logZ, "48.636078087078786")
-    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897908,6.913211020917962E-5)")
+    assertStringEquals(summary2.logZ, "48.63607808733318")
+    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897901,6.913211020986333E-5)")
 
     /*&
      * Factorie also has support for more efficient learning algorithms than traditional

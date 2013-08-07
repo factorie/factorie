@@ -140,7 +140,7 @@ class ChainNerBP {
   def process(document:Document): Unit = {
     if (document.tokenCount == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
+    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new BioConllNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[BioConllNerLabel]).toSeq
 	    BP.inferChainMax(vars, model)

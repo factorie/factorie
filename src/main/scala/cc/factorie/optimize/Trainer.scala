@@ -70,7 +70,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
-      if ((i % logEveryN == 0) && (i != 0)) {
+      if ((logEveryN != 0) && (i % logEveryN == 0) && (i != 0)) {
         logger.info(TrainerHelpers.getOnlineTrainerStatus(i, logEveryN, timePerIteration, valuesSeenSoFar))
         valuesSeenSoFar = 0.0
         timePerIteration = 0
@@ -124,13 +124,13 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
 // This parallel batch trainer keeps a per-thread gradient to which examples add weights.
 // It is useful when there is a very large number of examples, processing each example is
 // fast, and the weights are not too big, as it has to keep one copy of the weights per thread.
-class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
+class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, numThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer with FastLogging {
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseMap))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
-    examples.par.foreach(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
+    TrainerHelpers.parForeach(examples, numThreads)(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensorSet
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
@@ -370,9 +370,9 @@ object TrainerHelpers {
   def newFixedThreadPool(numThreads: Int) = Executors.newFixedThreadPool(numThreads)
   def withThreadPool[A](numThreads: Int)(body: ExecutorService => A) = {
     val pool = newFixedThreadPool(numThreads)
-    val res = body(pool)
-    pool.shutdown()
-    res
+    try {
+      body(pool)
+    } finally pool.shutdown()
   }
 }
 

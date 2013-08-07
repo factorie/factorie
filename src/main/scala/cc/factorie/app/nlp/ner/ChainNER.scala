@@ -178,12 +178,12 @@ class ChainNer(implicit random: scala.util.Random) {
   def process(document:Document): Unit = {
     if (document.tokenCount == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
+    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new BioConllNerLabel(token, "O"))
     if (true) {
       throw new Error("BP training not yet implemented.")
       //new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
     } else {
-      for (token <- document.tokens) if (token.attr[BioConllNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, BioConllNerDomain.category(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[BioConllNerLabel] == null) token.attr += new BioConllNerLabel(token, BioConllNerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.templates(0), model.templates(1))
       val localPredictor = new IteratedConditionalModes(localModel, null)
       for (label <- document.tokens.map(_.attr[BioConllNerLabel])) localPredictor.process(label)
