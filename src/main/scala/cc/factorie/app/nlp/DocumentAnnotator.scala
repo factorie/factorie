@@ -15,6 +15,8 @@
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.mention._
 import cc.factorie.optimize.TrainerHelpers
+import cc.factorie.util.Threading
+import scala.collection.MapLike
 
 trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
@@ -22,7 +24,7 @@ trait DocumentAnnotator {
   def postAttrs: Iterable[Class[_]]
 
   def processSequential(documents: Iterable[Document]): Iterable[Document] = documents.map(process)
-  def processParallel(documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = TrainerHelpers.parMap(documents, nThreads)(process)
+  def processParallel(documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = Threading.parMap(documents, nThreads)(process)
 
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
@@ -68,7 +70,7 @@ class MutableDocumentAnnotatorMap extends collection.mutable.HashMap[Class[_], (
 }
 
 object DocumentAnnotator {
-  type DocumentAnnotatorMap = Map[Class[_], () => DocumentAnnotator]
+  type DocumentAnnotatorMap = collection.Map[Class[_], () => DocumentAnnotator]
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = Seq(classOf[pos.PTBPosLabel] -> (() => pos.POS1),
     classOf[parse.ParseTree] -> (() => parse.DepParser1),
     classOf[segment.SimplifyPTBTokenString] -> (() => segment.SimplifyPTBTokenNormalizer),
@@ -108,11 +110,11 @@ object DocumentAnnotator {
     new DocumentAnnotationPipeline(pipeSet.toSeq)
   }
 
-  def apply(annotator: DocumentAnnotator, map: Map[Class[_], () => DocumentAnnotator] = defaultDocumentAnnotationMap): DocumentAnnotationPipeline = {
+  def apply(annotator: DocumentAnnotator, map: DocumentAnnotatorMap = defaultDocumentAnnotationMap): DocumentAnnotationPipeline = {
     val other = new MutableDocumentAnnotatorMap
     map.foreach(k => other += k)
     other += annotator
-    apply(annotator.postAttrs, prereqs=Seq(), map=other.toMap)
+    apply(annotator.postAttrs, prereqs=Seq(), map=other)
   }
 
   def process(goals: Iterable[Class[_]], document: Document): Document = apply(goals, map=defaultDocumentAnnotationMap).process(document)
