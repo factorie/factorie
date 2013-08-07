@@ -140,7 +140,7 @@ class DepParser1 extends DocumentAnnotator {
   }
 
   def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
-    val decs = TrainerHelpers.parMap(ss, nThreads)(s => {
+    val decs = cc.factorie.util.Threading.parMap(ss, nThreads)(s => {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
         else new NonprojectiveBoostingOracle(s, classify)

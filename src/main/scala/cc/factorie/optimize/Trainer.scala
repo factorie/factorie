@@ -113,7 +113,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
     gradientAccumulator.l.tensorSet.zero()
     valueAccumulator.l.value = 0
     val startTime = System.currentTimeMillis
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
+    util.Threading.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.l.tensorSet.oneNorm, valueAccumulator.l.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.l.value)
@@ -130,7 +130,7 @@ class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: Gradien
     val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseMap))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
-    TrainerHelpers.parForeach(examples, numThreads)(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
+    util.Threading.parForeach(examples, numThreads)(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensorSet
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
@@ -180,7 +180,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     accumulatedValue = 0.0
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
 
   def isConverged = iteration >= maxIterations
@@ -289,7 +289,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
     t0 = System.currentTimeMillis()
     examplesProcessed = 0
     accumulatedValue = 0.0
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
   def isConverged = iteration >= maxIterations
 }
@@ -336,44 +336,19 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
     t0 = System.currentTimeMillis()
     examplesProcessed = 0
     accumulatedValue = 0.0
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
   def isConverged = iteration >= maxIterations
 }
 
 
 object TrainerHelpers {
-  import scala.collection.JavaConversions._
-
   def getTimeString(ms: Long): String =
     if (ms > 120000) f"${ms/60000}%d minutes" else if (ms> 5000) f"${ms/1000}%d seconds" else s"$ms milliseconds"
   def getBatchTrainerStatus(gradNorm: => Double, value: => Double, ms: => Long) =
     f"GradientNorm: $gradNorm%-10g  value $value%-10g ${getTimeString(ms)}%s"
   def getOnlineTrainerStatus(examplesProcessed: Int, logEveryN: Int, accumulatedTime: Long, accumulatedValue: Double) =
     f"$examplesProcessed%20s examples at ${1000.0*logEveryN/accumulatedTime}%5.2f examples/sec. Average objective: ${accumulatedValue / logEveryN}%5.5f"
-
-  def parForeach[In](xs: Iterable[In], numThreads: Int)(body: In => Unit): Unit = withThreadPool(numThreads)(p => parForeach(xs, p)(body))
-  def parForeach[In](xs: Iterable[In], pool: ExecutorService)(body: In => Unit): Unit = {
-    val futures = xs.map(x => javaAction(body(x)))
-    pool.invokeAll(futures).toSeq
-  }
-
-  def parMap[In, Out](xs: Iterable[In], numThreads: Int)(body: In => Out): Iterable[Out] = withThreadPool(numThreads)(p => parMap(xs, p)(body))
-  def parMap[In, Out](xs: Iterable[In], pool: ExecutorService)(body: In => Out): Iterable[Out] = {
-    val futures = xs.map(x => javaClosure(body(x)))
-    pool.invokeAll(futures).toSeq.map(_.get())
-  }
-
-  def javaAction(in: => Unit): Callable[Object] = new Callable[Object] { def call(): Object = {in; null} }
-  def javaClosure[A](in: => A): Callable[A] = new Callable[A] { def call(): A = in }
-
-  def newFixedThreadPool(numThreads: Int) = Executors.newFixedThreadPool(numThreads)
-  def withThreadPool[A](numThreads: Int)(body: ExecutorService => A) = {
-    val pool = newFixedThreadPool(numThreads)
-    try {
-      body(pool)
-    } finally pool.shutdown()
-  }
 }
 
 object Trainer {

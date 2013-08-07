@@ -41,7 +41,7 @@ class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
       case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
-    val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
+    val trees = util.Threading.parMap(0 until numTrees, numThreads)(_ => {
       val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
       treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
       treeTrainer.train(bootstrap, numFeaturesToUse = numFeaturesToUse)
@@ -54,7 +54,7 @@ class RandomForestMultiClassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
       case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
     })
-    val trees = TrainerHelpers.parMap(0 until numTrees, numThreads)(_ => {
+    val trees = util.Threading.parMap(0 until numTrees, numThreads)(_ => {
       val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
       treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
       treeTrainer.train(bootstrap, numFeaturesToUse = numFeaturesToUse)

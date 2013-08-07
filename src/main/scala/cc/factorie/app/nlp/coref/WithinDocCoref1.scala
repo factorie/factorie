@@ -40,7 +40,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
     def map(in: Document): T
     def reduce(states: Iterable[T])
     def runParallel(ins: Seq[Document]) {
-      reduce(TrainerHelpers.parMap(ins, pool)(map(_)))
+      reduce(cc.factorie.util.Threading.parMap(ins, pool)(map(_)))
     }
     def runSequential(ins: Seq[Document]) {
       reduce(ins.map(map))

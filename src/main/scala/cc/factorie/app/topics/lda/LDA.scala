@@ -162,7 +162,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //Copy the counts to each thread
     val pool = Executors.newFixedThreadPool(numThreads)
     try {
-      TrainerHelpers.parForeach(0 until numThreads, pool)(threadID => {
+      util.Threading.parForeach(0 until numThreads, pool)(threadID => {
         phiCountsArray(threadID) = new DiscreteMixtureCounts(wordDomain, ZDomain)
         val localPhiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
         for (w <- 0 until numTypes) phiCounts(w).forCounts((t,c) => phiCountsArray(threadID).increment(w, t, c))
@@ -174,7 +174,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       for (iteration <- 1 to iterations) {
         val startIterationTime = System.currentTimeMillis
 
-        TrainerHelpers.parForeach(0 until numThreads, pool)(threadID => {
+        util.Threading.parForeach(0 until numThreads, pool)(threadID => {
           samplersArray(threadID).resetCached()
           for (doc <- docSubsets(threadID)) samplersArray(threadID).process(doc.zs.asInstanceOf[Zs])
         })
@@ -190,7 +190,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         })
 
         //Copy global counts to per thread counts
-        TrainerHelpers.parForeach(0 until numThreads, pool) (threadID => {
+        util.Threading.parForeach(0 until numThreads, pool) (threadID => {
           System.arraycopy(phiCounts.mixtureCounts, 0, phiCountsArray(threadID).mixtureCounts, 0, numTopics)
           for (w <- 0 until numTypes) phiCountsArray(threadID)(w).copyBuffer(phiCounts(w))
         })
