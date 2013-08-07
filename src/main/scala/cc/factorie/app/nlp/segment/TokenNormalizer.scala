@@ -15,11 +15,13 @@ class TokenNormalizer1[A<:TokenString](
     val undoPTBParens:Boolean = true, // Change -LRB- etc to "(" etc.
     val unescapeSlash:Boolean = true, // Change \/ to /
     val unescapeAsterisk:Boolean = true, // Change \* to *
+    val normalizeMDash:Boolean = true, // Convert all em-dashes to double dash --
     val normalizeDash:Boolean = true, // Convert all dashes to single dash -
     val americanize:Boolean = false
   )(implicit m:Manifest[A]) extends DocumentAnnotator {
   
   val dashRegex = ("\\A("+Tokenizer1.dash+")+\\Z").r
+  val mdashRegex = ("\\A("+Tokenizer1.mdash+")+\\Z").r
   //val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|(?:['\u0092\u2019]|&apos;){1,2}"
   val quoteRegex = ("\\A("+Tokenizer1.quote+")\\Z").r
   val apostropheRegex = ("[\u0092\u2019]|&apos;").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want
@@ -45,6 +47,7 @@ class TokenNormalizer1[A<:TokenString](
     else if (unescapeSlash && string.contains("\\/")) token.attr += newTokenString(token, token.string.replace("\\/", "/")) // this is a simple string replace, not regex-based.
     else if (unescapeAsterisk && string == "\\*") token.attr += newTokenString(token, "*")
     else if (unescapeAsterisk && string == "\\*\\*") token.attr += newTokenString(token, "**")
+    else if (normalizeMDash && mdashRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "--") // replace all em-dashes with two dashes
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "-") // replace all dashes with dash
     else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (normalizeCurrency && quoteRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "

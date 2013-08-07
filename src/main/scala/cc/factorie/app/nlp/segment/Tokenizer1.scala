@@ -57,15 +57,16 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
   val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}\\p{N}]+"; patterns += dashedPrefixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   val dashedSuffixWord = "[\\p{L}\\p{M}\\p{N}]+-"+dashedSuffixes; patterns += dashedSuffixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
-  //val dashedWord = "[\\p{L}\\p{N}]{1,6}(-[\\p{L}\\p{N}]+)+(?![\\p{L}\\p{N}])"; patterns += dashedWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
+  //val dashedWord = "[\\p{L}\\p{N}]{1,6}(-[\\p{L}\\p{N}]{1,6})+(?![\\p{L}\\p{N}])"; patterns += dashedWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,  
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val letter = "&[aeiouAEIOU](acute|grave|uml);"
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(${contraction}))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
   val word = s"\\p{L}[\\p{L}\\p{M}\\p{Nd}]*"; patterns += word // Includes any combination of letters, accent characters and numbers
   val number = "[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number
-  val repeatedPunc = "[-\\*=\\+\\.\\?!#]+"; patterns += repeatedPunc
-  val dash = "&(mdash|ndash|MD);|[\u0096\u0097\\p{Pd}]+"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
+  val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
+  val mdash = "-{2,3}|&(mdash|MD);|[\u2014\u2015]"; patterns += mdash
+  val dash = "&(ndash);|[-\u0096\u0097\\p{Pd}]"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
   val punc = "\\p{P}"; patterns += punc // This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, ---
   val symbol = "\\p{S}"; patterns += symbol
   //val newline = "\n"; patterns += newline
