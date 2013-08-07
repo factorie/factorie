@@ -10,7 +10,7 @@ object Implicits {
   implicit val defaultDocumentAnnotatorMap = new DocumentAnnotatorLazyMap {
     this.update(classOf[pos.PTBPosLabel], ()=>pos.POS1)
     this.update(classOf[parse.ParseTree], ()=>parse.DepParser1)
-    this.update(classOf[segment.SimplifyPTBTokenString], ()=>segment.SimplifyPTBTokenNormalizer)
+    this.update(classOf[segment.PlainNormalizedTokenString], ()=>segment.PlainTokenNormalizer)
     this.update(classOf[Token], ()=>cc.factorie.app.nlp.segment.ClearTokenizer) // If you ask for this first, and then ask for Sentence, you will get a conflict. -akm
     this.update(classOf[Sentence], ()=>cc.factorie.app.nlp.segment.ClearSegmenter)
     this.update(classOf[lemma.WordNetTokenLemma], ()=>cc.factorie.app.nlp.lemma.WordNetLemmatizer)

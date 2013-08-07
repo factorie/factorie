@@ -14,7 +14,8 @@
 
 package cc.factorie
 
-/** A simple version of ChainLink used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
+/** A simple version of ChainLink that has a self-type argument, but not the type of the Chain. 
+    Used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
     @author Andrew McCallum */
 trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   this: This =>
@@ -55,9 +56,9 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   this: This =>
   private var _position: Int = -1
   private var _chain: C = null.asInstanceOf[C]
-  // This method should never be called outside Chain.+=
+  /** This method should never be called outside Chain.+= or Chain.insert or Chain.remove */
   def _setChainPosition(c:C, p:Int): Unit = {
-    require(_chain eq null)
+    //require(_chain eq null)
     require(p >= 0)
     _chain = c
     _position = p
@@ -145,6 +146,21 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
     this
   }
   def ++=(es:Iterable[E]): this.type = { es.foreach(+=(_)); this }
+  /** Use with caution, since this would invalidate indices stored elsewhere */
+  def insert(i:Int, e:E): this.type = {
+    if (_frozen) throw new Error("Cannot insert into a frozen chain "+getClass)
+    e._setChainPosition(this, i)
+    for (x <- _chainseq.drop(i)) x._setChainPosition(this, x.position+1)
+    _chainseq.insert(i, e)
+    this
+  }
+  /** Use with caution, since this would invalidate indices stored elsewhere */
+  def remove(i:Int): this.type = {
+    if (_frozen) throw new Error("Cannot remove from a frozen chain "+getClass)
+    for (x <- _chainseq.drop(i)) x._setChainPosition(this, x.position-1)
+    _chainseq.remove(i)
+    this
+  }
   def asSeq: IndexedSeq[E] = _chainseq
   def chainFrozen: Boolean = _frozen
   def chainFreeze: Unit = _frozen = true

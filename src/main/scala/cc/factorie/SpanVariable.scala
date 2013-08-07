@@ -239,6 +239,16 @@ trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLi
     val mc = m.erasure
     _spans.filter(s => s.start > position && mc.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   }
+  override def insert(i:Int, e:E): this.type = {
+    if (_spans.isEmpty) super.insert(i, e)
+    else throw new Error("Cannot insert into Chain that already has Spans.")
+    this
+  }
+  override def remove(i:Int): this.type = {
+    if (_spans.isEmpty) super.remove(i)
+    else throw new Error("Cannot remove from Chain that already has Spans.")
+    this
+  }
 }
 
 /** A ChainVar that maintains a list of Spans within it.

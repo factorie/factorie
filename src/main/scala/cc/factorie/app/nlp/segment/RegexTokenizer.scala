@@ -98,27 +98,29 @@ Wis
 Wyo"""
     
   val honorific = """
-Capt
-Col
-Com
-Comdr
-Cpl
-Cpt
-Dr
+Capts?
+Cols?
+Comms?
+Comdrs?
+Cpls?
+Cpts?
+Drs?
 Hon
-Gen
-Gov
-Lt
+Gens?
+Govs?
+Lts?
 Mr
 Mrs
 Ms
 Pfc
 Pvt
+Reps?
 Rev
-Sen
+Sens?
 Sgt"""
     
-  val place = """Ave
+  val place = """Ave" +
+Blvd
 St
 Str
 Ln"""
@@ -149,19 +151,23 @@ gal"""
   //println("RegexTokenizerHelper "+abbrevs)
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*" // A.de, A.A.A.I, etc.
   val ordinals = "[0-9]{1,2}[sthnrd]+[\\-\\p{L}]+" // the second part is for 20th-century
-  val numerics = "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/,\\+\\=%]" // is there a better way to say, "doesn't end in '.'"?
+  val numerics = "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/\\+\\=%]" // is there a better way to say, "doesn't end in '.'"?
   val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}" // email
   val briefAbbrevs = "[A-Z][a-z]?\\." // A. Mr. but not Mrs. Calif. or Institute.
-  val finalPunc = "[.?!][\\p{Pf}\\p{Pe}]?" // ending/final punctuation
-  val finalPunc2 = "[\\p{Pf}\\p{Pe}]?[.?!]" // ending/final punctuation followed by [.?!]
-  val quotes = "[`'\"“”’]+" // mid-sentence quotes
+  val quotes = "[`'\"\u201C\u201D\\p{Pf}\\p{Pe}]+" // mid-sentence quotes
+  //val quotes = "[`'\"“”’]+" // mid-sentence quotes
+  //val finalPunc = "[.?!\\p{Pf}\\p{Pe}]?" // ending/final punctuation
+  //val finalPunc = "[\\.?!][\\p{Pf}\\p{Pe}]?" // ending/final punctuation
+  val finalPunc = "[\\.?!]4" // ending/final punctuation
+  //val finalPunc2 = "[\\p{Final_Punctuation}\\p{Close_Punctuation}]?[.?!]" // ending/final punctuation followed by [.?!]
+  //val symbols = """[,\u2019:;$\?&@\[\]{}\(\)\p{Sc}-]""" // other symbols
   val symbols = """[,-:;$?&@\(\)]+""" // other symbols
   val words = "[\\w\\-0-9]+(?='([tT]|[lL]+|[sS]|[mM]|re|RE|ve|VE))" // any combo of word-chars, numbers, and hyphens
   val briefDashedWords = "[\\p{L}0-9]+(-[\\p{L}0-9\\.]+)*" // words with sequences of single dashes in them
   val dashedWords = "[\\w0-9]+(-[\\w0-9]+)*" // words with sequences of single dashes in them
   val combo = "[\\w0-9']+" // any combo of word-chars, numbers, and hyphens
     
-  val tokenRegexString = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, finalPunc, finalPunc2, quotes, symbols, words, briefDashedWords, dashedWords, combo).mkString("|")
+  val tokenRegexString = Seq(contractions, abbrevs, initials, ordinals, numerics, email, briefAbbrevs, quotes, finalPunc, symbols, words, briefDashedWords, dashedWords, combo).mkString("|")
   val tokenRegex = ("(?i)"+tokenRegexString).r // The (?i) makes it case insensitive
   //println("RegexTokenizerHelper "+tokenRegex)
 

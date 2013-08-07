@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.segment.SimplifyPTBTokenString
+import cc.factorie.app.nlp.segment.PlainTokenNormalizer
 import cc.factorie.la._
 import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
@@ -268,7 +268,7 @@ class POS1 extends DocumentAnnotator {
   
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
-    for (sentence <- (trainSentences ++ testSentences); token <- sentence.tokens) cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer.processToken(token)
+    for (sentence <- (trainSentences ++ testSentences); token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
     WordData.preProcess(trainSentences.flatMap(_.tokens))
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
@@ -300,7 +300,7 @@ class POS1 extends DocumentAnnotator {
   }
 
   def process1(d: Document) = { predict(d); d }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.SimplifyPTBTokenString])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }

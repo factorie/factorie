@@ -21,10 +21,10 @@ object NLP {
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
       // TODO All these options should be replaced by something that will interpret object construction code. -akm
       val token = new CmdOption("token", null, "", "Segment Document into Tokens but not Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearTokenizer }
-      val token1 = new CmdOption("token1", null, "", "Segment Document into Tokens (but not Sentences) by simple regex") { override def invoke = annotators += cc.factorie.app.nlp.segment.RegexTokenizer}
+      val token1 = new CmdOption("token1", null, "", "Segment Document into Tokens (but not Sentences) by regex") { override def invoke = annotators += cc.factorie.app.nlp.segment.Tokenizer1 }
       val sentence = new CmdOption("sentence", null, "", "Segment Document into Tokens and Sentences") { override def invoke = annotators += cc.factorie.app.nlp.segment.ClearSegmenter }
-      val sentence1 = new CmdOption("sentence1", null, "", "Segment pre-tokenized Document into Sentences by simpler regex") { override def invoke = annotators += cc.factorie.app.nlp.segment.SentenceSegmenter }
-      val tnorm = new CmdOption("tnorm", null, "", "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.SimplifyPTBTokenNormalizer }
+      val sentence1 = new CmdOption("sentence1", null, "", "Segment pre-tokenized Document into Sentences by simpler regex") { override def invoke = annotators += cc.factorie.app.nlp.segment.SentenceSegmenter1 }
+      val tnorm = new CmdOption("tnorm", null, "", "Normalize token strings") { override def invoke = annotators += cc.factorie.app.nlp.segment.PlainTokenNormalizer }
       val pos1 = new CmdOption[String]("pos1", null, "URL", "Annotate POS") { override def invoke = { if (value ne null) System.setProperty(classOf[pos.POS1].getName, value);
         annotators += cc.factorie.app.nlp.pos.POS1 } }
       val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma using WordNet's lemmatizer.") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
@@ -59,7 +59,7 @@ object NLP {
   
   case class ServerThread(socket: Socket, encoding:String) extends Thread("ServerThread") {
     override def run(): Unit = try {
-      val out = new PrintStream(socket.getOutputStream())
+      val out = new PrintStream(socket.getOutputStream(), false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
       var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head

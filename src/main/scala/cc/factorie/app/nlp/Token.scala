@@ -20,9 +20,8 @@ import cc.factorie.util.{Cubbie, Attr}
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
-// TODO Why are stringStart and stringEnd "var" instead of "val"? -akm
 
-class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
+class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
   /** Create a Token and also append it to the list of Tokens in the Section.
       There must not already be Tokens in the document with higher stringStart indices.
@@ -39,17 +38,15 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
   def this(doc:Document, s:Int, e:Int) = this(doc.asSection, s, e)
   def this(sentence:Sentence, s:Int, e:Int) = {
-    this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
+    this(sentence.section, s, e)
     if (sentence.section.sentences.last ne sentence) throw new Error("Can only append Token to the last Sentence of the Document.")
     if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator
     _sentence = sentence
-    // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
     this(doc.asSection, doc.stringLength, doc.stringLength + tokenString.length)
     doc.appendString(tokenString)
-    //doc.appendString(" ") // TODO Make this configurable
   }
   def this(s:Sentence, tokenString:String) = {
     this(s.document, tokenString)
@@ -204,22 +201,3 @@ trait TokenPTBPosLabelCubbie extends TokenCubbie {
     t
   }
 }
-
-
-
-
-
-
-  /** Given some String features read from raw data, in which the first feature is always the word String itself, add some more features.  */
-/*
-  def standardFeatureFunction(inFeatures:Seq[String]): Seq[String] = {
-    val result = new scala.collection.mutable.ArrayBuffer[String]
-    // Assume the first feature is the word
-    result += "W="+inFeatures(0)
-    result += "SHAPE="+wordShape(inFeatures(0), 2)
-    result ++= charNGrams(inFeatures(0), 2, 5)
-    result ++= inFeatures.drop(1)
-    result
-  }
-*/
-
