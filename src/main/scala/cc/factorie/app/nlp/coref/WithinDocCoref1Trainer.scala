@@ -204,6 +204,8 @@ object WithinDocCoref1Trainer {
     if (useNerMentions) {
       pipelineFactory.map(classOf[MentionList]) = () => NerAndPronounMentionFinder
       pipelineFactory.map(classOf[NerLabel]) = () => NER1
+    } else {
+      pipelineFactory.map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory)
