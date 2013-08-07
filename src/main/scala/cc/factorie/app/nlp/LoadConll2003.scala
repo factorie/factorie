@@ -18,8 +18,6 @@ import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
 
-class Conll2003ChainNerLabel(token:Token, initialValue:String) extends BioConllNerLabel(token, initialValue) {}
-
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
 // or LoadConll2003(BILOU = true).fromFilename("foo")
@@ -34,9 +32,9 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
       val document = new Document("").setName(name)
-      document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
-      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator // register that we have POS tags
+      document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
+      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
       document
     }
 
@@ -54,8 +52,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         // Skip document boundaries
         document.asSection.chainFreeze
         document = new Document().setName("CoNLL2003-"+documents.length)
-        document.annotators(classOf[Token]) = UnknownDocumentAnnotator // register that we have token boundaries
-        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator // register that we have sentence boundaries
+        document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
         documents += document
       } else {
         val fields = line.split(' ')
@@ -65,7 +63,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new Conll2003ChainNerLabel(token, ner)
+        token.attr += new BioConllNerLabel(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
       }
     }
@@ -99,8 +97,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
             println(token.string)
             println(newLabel)
           }*/
-          token.attr.remove[BioConllNerLabel]
-          token.attr += new Conll2003ChainNerLabel(token, newLabel)
+          // token.attr.remove[BioConllNerLabel]
+          token.attr += new BilouConllNerLabel(token, newLabel)
         }
       }
     }

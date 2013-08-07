@@ -286,7 +286,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     for (i <- 0 until sent.length) tree.setParent(i, parents(i))
   }
 
-  def process1(document: Document) = {
+  def process(document: Document) = {
     document.sentences.foreach(parse)
     document
   }
@@ -319,8 +319,8 @@ object GraphProjectiveParserTrainer {
     // Test
 
     // Print accuracy diagnostics
-    println("Predicting train set..."); parser.process1(trainDoc)
-    println("Predicting test set...");  parser.process1(testDoc)
+    println("Predicting train set..."); parser.process(trainDoc)
+    println("Predicting test set...");  parser.process(testDoc)
     println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
     println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
     println()

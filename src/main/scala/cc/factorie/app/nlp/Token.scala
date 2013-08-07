@@ -40,7 +40,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def this(sentence:Sentence, s:Int, e:Int) = {
     this(sentence.section, s, e)
     if (sentence.section.sentences.last ne sentence) throw new Error("Can only append Token to the last Sentence of the Document.")
-    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator
+    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     _sentence = sentence
     sentence.setLength(this.position - sentence.start + 1)(null)
   }

@@ -590,11 +590,11 @@ object ChainNer2 extends ChainNer2 {
       for (filename <- opts.runPlainFiles.value) {
         val file = new File(filename)
         val document = new Document(io.Source.fromFile(file).mkString).setName(file.getAbsolutePath)
-	    cc.factorie.app.nlp.segment.ClearSegmenter.process1(document)
+	    cc.factorie.app.nlp.segment.ClearSegmenter.process(document)
         //LoadPlainText.fromFile(new java.io.File(filename))
         //println("ChainNer plain document: <START>"+document.string+"<END>")
         //println(document.map(_.string).mkString(" "))
-        document.tokens.map(token => token.attr += new Conll2003ChainNerLabel(token, "O")) 
+        document.tokens.map(token => token.attr += new BioConllNerLabel(token, "O"))
         document.tokens.map(token => token.attr += new ChainNerFeatures(token))
         initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
         // Add secondary features to domain before it gets frozen

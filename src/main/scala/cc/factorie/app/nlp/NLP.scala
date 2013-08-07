@@ -35,19 +35,22 @@ object NLP {
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
       val parser1 = new CmdOption[String]("parser1", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke = { if (value ne null) System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
       val parser3 = new CmdOption[String]("parser3", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke = { if (value ne null) System.setProperty(classOf[GraphProjectiveParser].getName, value); annotators += cc.factorie.app.nlp.parse.GraphProjectiveParser } }
-      val coref1 = new CmdOption[String]("coref2", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += mention.MentionEntityTypeLabeler ; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
+      val coref1 = new CmdOption[String]("coref1", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke = { annotators += mention.MentionEntityTypeLabeler ; if (value ne null) System.setProperty(classOf[coref.WithinDocCoref1].getName, value); annotators += cc.factorie.app.nlp.coref.WithinDocCoref1 } }
       val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionGenderLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionGenderLabeler } } 
       val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionNumberLabeler } } 
       val mentionEntitytype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
+    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
+    for (annotator <- annotators) map += annotator
+    val pipeline = DocumentAnnotatorPipeline(annotators.flatMap(_.postAttrs), prereqs=Seq(), map=map.toMap)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
 
     try {
       val listener = new ServerSocket(opts.socket.value)
       println("Listening on port "+opts.socket.value)
       while (true)
-        new ServerThread(listener.accept(), opts.encoding.value).start()
+        new ServerThread(listener.accept(), opts.encoding.value, pipeline).start()
       listener.close()
     }
     catch {
@@ -57,16 +60,14 @@ object NLP {
     }
   }
   
-  case class ServerThread(socket: Socket, encoding:String) extends Thread("ServerThread") {
+  case class ServerThread(socket: Socket, encoding:String, pipeline: DocumentAnnotator) extends Thread("ServerThread") {
     override def run(): Unit = try {
       val out = new PrintStream(socket.getOutputStream(), false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
       var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
-      import Implicits.defaultDocumentAnnotatorMap
-      for (annotator <- annotators)
-        document = annotator.process(document)
+      document = pipeline.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))

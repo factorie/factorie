@@ -20,9 +20,9 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   val options = new Coref1Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
-  def process1(document: Document) = {
+  def process(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
     else document.attr += processDocumentOneModel(document)
     document
@@ -40,7 +40,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
     def map(in: Document): T
     def reduce(states: Iterable[T])
     def runParallel(ins: Seq[Document]) {
-      reduce(TrainerHelpers.parMap(ins, pool)(map(_)))
+      reduce(cc.factorie.util.Threading.parMap(ins, pool)(map))
     }
     def runSequential(ins: Seq[Document]) {
       reduce(ins.map(map))
@@ -448,5 +448,12 @@ class ImplicitConjunctionWithinDocCoref1 extends BaseWithinDocCoref1 {
 }
 
 object WithinDocCoref1 extends WithinDocCoref1 {
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[ParseBasedMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1](".factorie").openConnection().getInputStream))
+}
+
+// This should only be used when using the NerAndPronounMentionFinder to find mentions
+object WithinDocCoref1Ner extends WithinDocCoref1 {
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1]("-NER.factorie").openConnection().getInputStream))
 }

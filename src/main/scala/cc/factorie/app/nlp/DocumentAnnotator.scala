@@ -13,23 +13,18 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
 import cc.factorie.app.nlp.mention._
+import cc.factorie.util.Threading
 
 trait DocumentAnnotator {
-  def process1(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
+  def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
   def prereqAttrs: Iterable[Class[_]]
   def postAttrs: Iterable[Class[_]]
-  
-  /** Process the Document, getting any necessary pre-requisites using this DocumentAnnotator's defaultAnnotatorMap. */
-  def process(document: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap): Document = {
-    preProcess(document, annotatorMap)
-    val doc = process1(document)
-    postAttrs.foreach(p => document.annotators(p) = this) // record which attributes this processor added
-    //println("DocumentAnnotator.process adding attrs "+postAttrs.mkString(" "))
-    doc
-  }
-  
+
+  def processSequential(documents: Iterable[Document]): Iterable[Document] = documents.map(process)
+  def processParallel(documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Iterable[Document] = Threading.parMap(documents, nThreads)(process)
+
+
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token:Token): String
@@ -38,35 +33,20 @@ trait DocumentAnnotator {
       If there is no document annotation, return the empty string.  Used in Document.owplString. */
   def documentAnnotationString(document:Document): String = ""
   def mentionAnnotationString(mention:Mention): String = ""
-  
-  def preProcess(doc: Document, annotatorMap: DocumentAnnotatorLazyMap): Unit = {
-    for (prereq <- prereqAttrs) if (!doc.hasAnnotation(prereq)) {
-      //println("DocumentAnnotator.preProcess needing to add "+prereq)
-      if (!annotatorMap.contains(prereq)) throw new Error(getClass.toString+": annotator for prereq "+prereq+" not found.")
-      val annotator = annotatorMap(prereq)()
-      // Make sure we won't over-write some pre-existing annotation
-      for (a <- annotator.postAttrs) 
-        if (doc.annotators.contains(a)) throw new Error(getClass.toString+": annotation collision conflict: prereq "+prereq+" would be satisfied by "+annotator.getClass+", but it provides "+a+" which has already been added by "+doc.annotators(a)+".  If the conflict is for Sentence, you may simply need to ask for Sentence segmentation before Token segmentation.")
-      annotator.process(doc)(annotatorMap)
-    }
-  }
 }
 
 /** Used as a stand-in dummy DocumentAnnotator in the DocumentAnnotatorMap when an annotation was added but not by a real DocumentAnnotator. */
 object UnknownDocumentAnnotator extends DocumentAnnotator {
-  def process1(document: Document): Document = document
+  def process(document: Document): Document = document
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Nil
   def tokenAnnotationString(token: Token) = null
 }
 
 object NoopDocumentAnnotator extends DocumentAnnotator {
-  def process1(document: Document): Document = document
+  def process(document: Document): Document = document
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = Nil
   def tokenAnnotationString(token: Token) = null
 }
 
-class DocumentAnnotatorMap extends scala.collection.mutable.HashMap[Class[_], DocumentAnnotator]
-
-class DocumentAnnotatorLazyMap extends scala.collection.mutable.HashMap[Class[_], ()=>DocumentAnnotator]

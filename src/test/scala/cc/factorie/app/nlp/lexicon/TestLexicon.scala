@@ -3,7 +3,6 @@ package cc.factorie.app.nlp.lexicon
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import cc.factorie.app.nlp._
-import Implicits._
 
 class TestLexicon extends JUnitSuite {
   
@@ -36,8 +35,7 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.containsWord("England"))
     
     val string = "Yesterday I flew from Paris to New York."
-    val doc = new Document(string)
-    segment.RegexTokenizer.process(doc)
+    val doc = DocumentAnnotatorPipeline.process(segment.RegexTokenizer, new Document(string))
     val section = doc.asSection
     assert(section.tokens(4).string == "Paris")
     assert(lexicon.contains(section.tokens(4)))

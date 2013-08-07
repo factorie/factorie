@@ -8,6 +8,9 @@ import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import scala.Some
 
+
+class ParseBasedMentionList extends MentionList
+
 object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private final val PERSONAL_PRONOUNS = Seq("PRP", "PRP$")
@@ -153,7 +156,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   }
 
 
-  def process1(doc: Document): Document = {
+  def process(doc: Document): Document = {
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
 
@@ -171,13 +174,13 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)
+    doc.attr += (new ParseBasedMentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)
 
     doc
   }
 
   def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
-  def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
+  def postAttrs: Iterable[Class[_]] = Seq(classOf[ParseBasedMentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
 
   def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {

@@ -24,7 +24,7 @@ class MentionNumberLabeler extends DocumentAnnotator {
   def isProper(pos:String): Boolean = pos.startsWith("NNP")
   def isNoun(pos:String): Boolean = pos(0) == 'N'
   def isPossessive(pos:String): Boolean = pos == "POS"
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     import MentionNumberDomain._
     for (mention <- document.attr[MentionList]) {
       val number = new MentionNumberLabel(mention, UNKNOWN)
