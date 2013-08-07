@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{AnnotationPipelineFactory, Document, DefaultAnnotationPipelineFactory}
+import cc.factorie.app.nlp.{DocumentAnnotator, MutableDocumentAnnotatorMap, Document}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -200,15 +200,15 @@ object WithinDocCoref1Trainer {
 
 
   def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
-    val pipelineFactory = new AnnotationPipelineFactory()
+    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotator.defaultDocumentAnnotationMap
     if (useNerMentions) {
-      pipelineFactory.map(classOf[MentionList]) = () => NerAndPronounMentionFinder
-      pipelineFactory.map(classOf[NerLabel]) = () => NER1
+      map(classOf[MentionList]) = () => NerAndPronounMentionFinder
+      map(classOf[NerLabel]) = () => NER1
     } else {
-      pipelineFactory.map(classOf[MentionList]) = () => ParseBasedMentionFinding
+      map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }
-    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory) else (null,null)
-    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory)
+    val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, map.toMap) else (null,null)
+    val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, map.toMap)
 
     val labeler = MentionEntityTypeLabeler
 

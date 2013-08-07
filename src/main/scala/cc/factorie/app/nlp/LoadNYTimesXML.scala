@@ -17,7 +17,7 @@ import java.io.File
 import scala.xml._
 
 object LoadNYTimesXML {
-  def fromFile(file:File)(implicit m: AnnotationPipelineFactory): Seq[Document] = {
+  def fromFile(file:File): Seq[Document] = {
     val article = XML.loadFile(file)
     //println(article \\ "head" \\ "title" text)
     //println(article \ "head" \ "title" text)
@@ -25,7 +25,6 @@ object LoadNYTimesXML {
     val content = article \ "head" \ "docdata" \ "identified-content"
     //print("Reading ***"+(article\"head"\"title").text+"***")
     // This does not include the headline, perhaps it should -akm
-    LoadPlainText(documentName = file.getCanonicalPath).fromString((article \ "body" \ "body.content").text)
+    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotator.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
   }
-
 }

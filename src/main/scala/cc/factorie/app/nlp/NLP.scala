@@ -41,10 +41,9 @@ object NLP {
       val mentionEntitytype = new CmdOption[String]("mention-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke = { if (value ne null) System.setProperty(classOf[mention.MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
-    val map = new AnnotationPipelineFactory
-    DefaultAnnotationPipelineFactory.map.foreach(i => map.map += i)
+    val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotator.defaultDocumentAnnotationMap
     for (annotator <- annotators) map += annotator
-    val pipeline = map(annotators.flatMap(_.postAttrs))
+    val pipeline = DocumentAnnotator(annotators.flatMap(_.postAttrs), prereqs=Seq(), map=map.toMap)
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
 
     try {
