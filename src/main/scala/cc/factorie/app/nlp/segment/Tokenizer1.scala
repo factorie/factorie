@@ -37,9 +37,10 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val honorific = "Adm|Attys?|Brig|Capts?|Cols?|Comms?|Co?mdrs?|Cpls?|Cpts?|Det|Drs?|Hon|Gens?|Govs?|Lieuts?|Lts?|Majs?|Miss|Messrs|Mr|Mrs|Ms|Pfc|Pres|Profs?|Pvts?|Reps?|Revs?|Sens?|Sgts?|Spc|Supts?"
   val suffix = "Bros?|Esq|Jr|Ph\\.?[Dd]|Sr"
   val place = "Ave|Blvd|Ste?|Str|Ln|Mt"
+  val units = "in|fur|mi|lea|drc|oz|qtr|cwt|am" // not covered by "two consonants" in abbrev below
   val org = "Alt|Assns?|Bancorp|Bhd|Cos?|Comm|Comp|Corps?|Depts?|Elec|Inc|Inst|Intl|Lib|Ltd|M[ft]g|Mus|Natl|Plc|Pty|Sci|Ser|Sys|Univ"
   val abbrev = "etc|vol|rev|dea|est|gal|[bcdfghjklmnpqrstvwx][bcdfghjklmnpqrstvwx]"
-  val abbrevs = Seq(month, day, state, state2, honorific, suffix, place, org, abbrev).flatMap(_.split('|').map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
+  val abbrevs = Seq(month, day, state, state2, honorific, suffix, place, units, org, abbrev).flatMap(_.split('|').map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
   patterns += abbrevs
     
   val ap = "(?:['\u0092\u2019]|&apos;)" // apostrophe and open single quotes
