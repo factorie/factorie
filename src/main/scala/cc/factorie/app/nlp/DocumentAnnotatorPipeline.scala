@@ -45,6 +45,7 @@ object DocumentAnnotatorPipeline {
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
+    classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1)
   ).toMap
 
