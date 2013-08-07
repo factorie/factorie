@@ -24,9 +24,10 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}"; patterns += email
   val usphone = "(\\+?1)?.(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
   val date = "\\p{N}{1,2}[\\-/]\\p{N}{1,2}[\\-/]\\p{N}{2,4}"; patterns += date
-  val currency = "[A-Z]*\\$|\\p{Sc}"; patterns += currency
+  val currency = "[A-Z]*\\$|\\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])"; patterns += currency
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag
   val atuser  = "@[A-Za-z][A-Za-z0-9]+"; patterns += atuser
+  val emoticon = "[#<%\\*]?[:;!#\\$%@=\\|][-\\+\\*=o^<]?[\\(\\)oODPQX\\*3{}\\[\\]][#><\\)\\(]?|'\\.'"; patterns += emoticon
 
   val month = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
   val day = "Mon|Tue|Tues|Wed|Thu|Thurs|Fri" 
@@ -37,7 +38,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val suffix = "Bros?|Esq|Jr|Ph\\.?[Dd]|Sr"
   val place = "Ave|Blvd|Ste?|Str|Ln|Mt"
   val org = "Alt|Assns?|Bancorp|Bhd|Cos?|Comm|Comp|Corps?|Depts?|Elec|Inc|Inst|Intl|Lib|Ltd|M[ft]g|Mus|Natl|Plc|Pty|Sci|Ser|Sys|Univ"
-  val abbrev = "etc|vol|rev|dea|est|gal"
+  val abbrev = "etc|vol|rev|dea|est|gal|[bcdfghjklmnpqrstvwx][bcdfghjklmnpqrstvwx]"
   val abbrevs = Seq(month, day, state, state2, honorific, suffix, place, org, abbrev).flatMap(_.split('|').map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
   patterns += abbrevs
     
@@ -51,8 +52,10 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   //val numerics = "[\\p{N}\\-.\\:/,\\+\\=%]+[\\p{N}\\-:/\\+\\=%]"; patterns += numerics // is there a better way to say, "doesn't end in '.'"?
   val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|" + ap + "{1,2}"; patterns += quote
   // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples
-  val prefixes = "(?i:a|anti|arch|be|co|counter|de|dis|en|em|ex|fore|hind|mal|mid|midi|mini|mis|out|over|post|pre|pro|re|self|step|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
-  val dashedWord = prefixes+"(-[\\p{L}\\p{N}]+)+(?![\\p{L}\\p{N}])"; patterns += dashedWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
+  val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|en|em|ex|fore|hind|mal|mid|midi|mini|mis|out|over|post|pre|pro|re|self|step|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
+  val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
+  val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}\\p{N}]+"; patterns += dashedPrefixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
+  val dashedSuffixWord = "[\\p{L}\\p{M}\\p{N}]+-"+dashedSuffixes; patterns += dashedSuffixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   //val dashedWord = "[\\p{L}\\p{N}]{1,6}(-[\\p{L}\\p{N}]+)+(?![\\p{L}\\p{N}])"; patterns += dashedWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,  
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
@@ -94,13 +97,16 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   }
   def prereqAttrs: Iterable[Class[_]] = Nil
   def postAttrs: Iterable[Class[_]] = List(classOf[Token])
+  
+  /** Convenience function to run the tokenizer on an arbitrary String.  The implementation builds a Document internally, then maps to token strings. */
+  def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
 object Tokenizer1 extends Tokenizer1(true, true) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)
-    RegexTokenizer.process(doc)
+    Tokenizer1.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

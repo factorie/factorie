@@ -277,10 +277,10 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   
   
   @Test def testRegexTokenizer(): Unit = {
-    assert(RegexTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
-    assert(RegexTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
-    assert(RegexTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
-    assert(RegexTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
+    assert(Tokenizer1("Washington D.C.").toSeq == Seq("Washington", "D.C."))
+    assert(Tokenizer1("Acme Inc.").toSeq == Seq("Acme", "Inc."))
+    assert(Tokenizer1("Oct. 24").toSeq == Seq("Oct.", "24"))
+    assert(Tokenizer1("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
     //println(RegexTokenizer("MR. SMITH.").mkString(" "))
     //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
     //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm

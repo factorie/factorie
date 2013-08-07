@@ -29,6 +29,8 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   /** Whitespace that should not be allowed between a closingRegex and closingContinuationRegex for a sentence continuation.  For example:  He ran.  "You shouldn't run!" */
   val spaceRegex = "[ \n\r\t\u00A0\\p{Z}]+".r
   
+  val emoticonRegex = ("\\A("+Tokenizer1.emoticon+")\\Z").r
+  
   /** Returns true for strings that probably start a sentence after a word that ends with a period. */
   def possibleSentenceStart(s:String): Boolean = java.lang.Character.isUpperCase(s(0)) && (cc.factorie.app.nlp.lexicon.StopWords.containsWord(s) || s == "Mr." || s == "Mrs." || s == "Ms." || s == "\"" || s == "''") // Consider adding more honorifics and others here. -akm
   
@@ -53,6 +55,11 @@ class SentenceSegmenter1 extends DocumentAnnotator {
         else if (doubleNewlineBoundary && i > 0 && document.string.substring(tokens(i-1).stringEnd, token.stringStart).contains("\n\n")) {
           //println("SentenceSegmenter1 i="+i+" doubleNewline")
           newSentence(i)
+        }
+        // Emoticons are single-token sentences
+        else if (emoticonRegex.findFirstMatchIn(string) != None) {
+          if (i > 0) newSentence(i)
+          newSentence(i+1)
         }
         // Sentence boundary from sentence-terminating punctuation
         else if (closingRegex.findFirstMatchIn(string) != None) {
@@ -91,7 +98,7 @@ object SentenceSegmenter1 extends SentenceSegmenter1 {
   def main(args: Array[String]): Unit = {
     for (filename <- args) {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      RegexTokenizer.process(doc)
+      Tokenizer1.process(doc)
       this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)

@@ -42,9 +42,9 @@ object Tutorial060Learning {
 
     // The Document class implements documents as sequences of sentences and tokens.
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    val tokenizer = new app.nlp.segment.RegexTokenizer
+    val tokenizer = new app.nlp.segment.Tokenizer1
     tokenizer.process(document)
-    val segmenter = new app.nlp.segment.SentenceSegmenter
+    val segmenter = new app.nlp.segment.SentenceSegmenter1
     segmenter.process(document)
     assertStringEquals(document.tokenCount, "10")
     assertStringEquals(document.sentenceCount, "1")
