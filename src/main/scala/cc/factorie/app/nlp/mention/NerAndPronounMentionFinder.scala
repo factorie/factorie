@@ -10,9 +10,12 @@ import scala.collection.mutable.ArrayBuffer
  * Date: 8/6/13
  * Time: 3:34 PM
  */
+
+class NerMentionList extends MentionList
+
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[NerLabel], classOf[PTBPosLabel])
-  def postAttrs = Seq(classOf[MentionList])
+  def postAttrs = Seq(classOf[NerMentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
 
   def getNerSpans(doc: Document): Seq[TokenSpan] = {
@@ -52,7 +55,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
       m.attr += new MentionType(m, "PRO")
       m
     })
-    document.attr += new MentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => m.span.end)
+    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => m.span.end)
     document
   }
 }
