@@ -55,29 +55,17 @@ class MentionGenderLabeler extends DocumentAnnotator {
       return None
     else{
       val lemma = mention.span.tokens.head.lemmaString.toLowerCase
-      if(maleContains(lemma))
+      if(maleWords.contains(lemma))
         return Some(MentionGenderDomain.MALE)
-      else if (femaleContains(lemma))
+      else if (femaleWords.contains(lemma))
         return Some(MentionGenderDomain.FEMALE)
       else return None
     }
   }
-  def femaleContains(s: String): Boolean = {
-    irregularFemaleWords.contains(s) || regularFemaleWords.contains(convertToSingular(s)) //we check in the irregular list first, since this contains really common words like 'she'
-  }
-  def maleContains(s: String): Boolean = {
-    irregularMaleWords.contains(s) || regularMaleWords.contains(convertToSingular(s))
-  }
 
-  def convertToSingular(s: String): String = {
-    s  //the contract above is that we passed in the lemmaString, so we don't need to convert to singular again
-  }
-
-  val irregularMaleWords = Seq("he","him","his","man", "men").toSet
-  val regularMaleWords = Seq("brother","boy", "male","uncle","nephew","grandfather").toSet
-
-  val irregularFemaleWords = Seq("she","her", "woman","women").toSet
-  val regularFemaleWords = Seq("sister","girl","female","aunt","niece","grandmother").toSet
+  //since lemmaString is singular, we don't need to hard code in the plural form of these words
+  val maleWords = Seq("he","him","his","man", "men","brother","boy", "male","uncle","nephew","father","grandfather", "king","lord","husband","boyfriend", "pope","priest").toSet
+  val femaleWords = Seq("she","her", "woman","women","sister","girl","female","aunt","mother","niece","grandmother","queen","lady","wife","mistress","girlfriend","actress","nun").toSet
 
 
 
