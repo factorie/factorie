@@ -4,10 +4,12 @@
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
 
-cp=$factoriedir/target/classes:
+cp=$factoriedir/target/classes:$factoriedir/src/main/resources
 
 # Look for a sibling directory containing 'factorie-nlp-resources'
-factorienlpdir=`dirname $factoriedir`/factorie-nlp-resources
+#echo factoriedir $factoriedir
+factorienlpdir=$factoriedir/../factorie-nlp-resources
+#echo factorinlpdir $factorienlpdir
 if [ -e $factorienlpdir ] ; then 
   cp=$cp:$factorienlpdir/target/classes:$factorienlpdir/src/main/resources
 fi 
@@ -15,18 +17,19 @@ fi
 factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
 factorienlpjar=$factoriedir/target/factorie-1.0-SNAPSHOT-nlp-jar-with-dependencies.jar
 
-
 if [ -e $factorienlpjar ] ; then
   cp=$cp:$factorienlpjar
 elif [ -e $factoriejar ] ; then
   cp=$cp:$factoriejar
+else
+  echo $factoriejar not found
+  exit -1
 fi
 
 # This makes -Xmx value command-line changeable
 MEMORY=3g
 
-# Make this a scala command
-JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -cp $cp"
+JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath $cp"
 
 CMD=$1
 shift
@@ -34,7 +37,7 @@ shift
 help()
 {
 cat <<EOF
-Factorie commands: 
+FACTORIE commands: 
 
   nlp                run NLP server listening on a socket (pos, ner, parse, coref,... available)
   lda                train and use a latent Dirichlet allocation model
