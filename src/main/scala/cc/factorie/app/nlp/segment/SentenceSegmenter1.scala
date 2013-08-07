@@ -33,7 +33,7 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   def possibleSentenceStart(s:String): Boolean = java.lang.Character.isUpperCase(s(0)) && (cc.factorie.app.nlp.lexicon.StopWords.containsWord(s) || s == "Mr." || s == "Mrs." || s == "Ms." || s == "\"" || s == "''") // Consider adding more honorifics and others here. -akm
   
   
-  def process1(document: Document): Document = {
+  def process(document: Document): Document = {
     def safeDocSubstring(start:Int, end:Int): String = if (start < 0 || end > document.stringLength) "" else document.string.substring(start, end)
     def safeDocChar(i:Int): Char = if (i < 0 || i >= document.stringLength) '\u0000' else document.string(i)
     //println("SentenceSegmenter1 possibleClosingRegex "+possibleClosingRegex.findPrefixMatchOf("\u2014"))
@@ -91,8 +91,8 @@ object SentenceSegmenter1 extends SentenceSegmenter1 {
   def main(args: Array[String]): Unit = {
     for (filename <- args) {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      RegexTokenizer.process1(doc)
-      this.process1(doc)
+      RegexTokenizer.process(doc)
+      this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)
         print("\n\n" + sentence.tokens.map(_.string).mkString(" | "))

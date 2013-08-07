@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{Implicits, DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
 import cc.factorie.app.strings.RegexSegmenter
 
 /** Split a String into Tokens.  Aims to adhere to CoNLL 2003 tokenization rules.
@@ -70,7 +70,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val tokenRegexString = patterns.filter(_.length != 0).mkString("|")
   val tokenRegex = if (caseInsensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
 
-  def process1(document: Document): Document = {
+  def process(document: Document): Document = {
     for (section <- document.sections) {
       var prevTokenPeriod = false
       val tokenIterator = tokenRegex.findAllIn(section.string)
@@ -100,7 +100,7 @@ object Tokenizer1 extends Tokenizer1(true, true) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)
-    RegexTokenizer.process1(doc)
+    RegexTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

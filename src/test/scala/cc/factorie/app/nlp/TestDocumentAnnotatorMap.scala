@@ -18,7 +18,7 @@ class TestDocumentAnnotatorMap {
     // be a less awkward way of doing this
     val map = new MutableDocumentAnnotatorMap
     object pos1 extends DocumentAnnotator {
-      def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.SimplifyPTBTokenString])
+      def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
       def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
       def process(document: Document) = document
       def tokenAnnotationString(token: Token) = ""
@@ -31,7 +31,7 @@ class TestDocumentAnnotatorMap {
       def tokenAnnotationString(t: Token) = ""
     }
     map += parser1
-    map += segment.SimplifyPTBTokenNormalizer
+    map += segment.PlainTokenNormalizer
     map += cc.factorie.app.nlp.segment.ClearSegmenter
     object wnLemma extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
