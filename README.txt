@@ -31,7 +31,7 @@ $ echo "I told Mr. Smith to take a job at IBM in Raleigh." | nc localhost 3228
 You can also run a latent Dirichlet allocation (LDA) topic model.
 Assume that "mytextdir" is a directory name containing many plain text documents
 each in its own file.  Then typing 
-$ bin/fac lda --read-dirds mytextdir --num-topics 20 --num-iterations 100
+$ bin/fac lda --read-dirs mytextdir --num-topics 20 --num-iterations 100
 will run 100 iterations of a sparse collapsed Gibbs sampling on all
 the documents, and print out the results every 10 iterations.
 FACTORIE's LDA implementation is faster than MALLET's.
@@ -47,4 +47,3 @@ it in the file "mymodel.factorie".
 The above are simply a few simple command-line options.  Internally
 the FACTORIE library contains extensive and general facilities for
 factor graphs: data representation, model structure, inference, learning.
- 
