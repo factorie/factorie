@@ -1,6 +1,6 @@
 package cc.factorie.util
 
-import scala.util.{Try, Random}
+import scala.util.Random
 import scala.concurrent._
 import akka.actor._
 import cc.factorie.Proportions
@@ -14,25 +14,25 @@ import java.text.SimpleDateFormat
 
 trait ParameterSampler[T] {
   def sample(rng: scala.util.Random): T
-  def buckets: Array[(T,Double,Double,Int)]
+  def buckets: Array[(T,Double,Double,Double,Int)]
   def valueToBucket(v: T): Int
   def accumulate(value: T, d: Double) {
     val v = math.max(0, math.min(valueToBucket(value), buckets.length-1))
-    val (_, sum, sumSq, count) = buckets(v)
-    buckets(v) = (value, sum+d, sumSq+d*d, count+1)
+    val (_, sum, sumSq, max, count) = buckets(v)
+    buckets(v) = (value, sum+d, sumSq+d*d, math.max(max, d), count+1)
   }
 }
 
 // Samples uniformly one of the values in the sequence.
 class SampleFromSeq[T](seq: Seq[T]) extends ParameterSampler[T] {
-  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
-  def valueToBucket(v: T) = buckets.indexOf(v)
+  val buckets = seq.map(s => (s,0.0,0.0,0.0,0)).toArray
+  def valueToBucket(v: T) = buckets.toSeq.map(_._1).indexOf(v)
   def sample(rng: Random) = seq(rng.nextInt(seq.length))
 }
 
 // Samples non-uniformly one of the values in the sequence.
 class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends ParameterSampler[T] {
-  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
+  val buckets = seq.map(s => (s,0.0,0.0,0.0,0)).toArray
   def valueToBucket(v: T) = (0 until buckets.length).filter(i => buckets(i)._1 == v).head
   def sample(rng: Random) = seq(prop.sampleIndex(rng))
 }
@@ -40,7 +40,7 @@ class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends Parameter
 // Samples uniformly a Double in the range
 class UniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
   val dif = upper - lower
-  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0.0,0)).toArray
   def valueToBucket(d: Double) = (numBuckets*(d - lower)/dif).toInt
   def sample(rng: Random) = rng.nextDouble()*dif + lower
 }
@@ -51,7 +51,7 @@ class UniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) e
 class LogUniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
   val inner = new UniformDoubleSampler(math.log(lower), math.log(upper), numBuckets)
   def valueToBucket(v: Double) = inner.valueToBucket(math.log(v))
-  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0.0, 0)).toArray
   def sample(rng: Random) = math.exp(inner.sample(rng))
 }
 
@@ -65,12 +65,12 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
   def accumulate(objective: Double) { sampler.accumulate(option.value, objective) }
   def report() {
     println("Parameter " + option.name + "      mean   stddev  count")
-    for ((value, sum, sumSq, count) <- sampler.buckets) {
+    for ((value, sum, sumSq, max, count) <- sampler.buckets) {
       val mean = sum/count
       val stdDev = math.sqrt(sumSq/count - mean*mean)
       value match {
-        case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f  ($count)")
-        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f  ($count)")
+        case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f max $max ($count)")
+        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f max $max ($count)")
       }
     }
     println()

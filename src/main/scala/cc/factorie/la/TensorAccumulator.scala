@@ -36,10 +36,6 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
       case SINGLE_TENSOR =>
         val newTensor = map(key) match {
           case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense => new DenseTensor2(t.dim1, t.dim2)
-          case t: DenseTensor1 => new DenseTensor1(t.dim1)
-          case t: DenseTensor2 => new DenseTensor2(t.dim1, t.dim2)
-          case t: DenseTensor3 => new DenseTensor3(t.dim1, t.dim2, t.dim3)
-          case t: DenseTensor4 => new DenseTensor4(t.dim1, t.dim2, t.dim3, t.dim3)
           case t: Tensor1 => new SparseIndexedTensor1(t.dim1)
           case t: Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
           case t: Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
@@ -51,18 +47,24 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
         map(key) = newTensor
         stateMap(key) = ACCUMULATOR
       case EMPTY =>
-        stateMap(key) = SINGLE_TENSOR
         t match {
           case t: SparseTensor if !t.isInstanceOf[SparseIndexedTensor] =>
+            stateMap(key) = SINGLE_TENSOR
             // This again suggests we really want more tensors supporting *=
             val newT = Tensor.newSparse(t)
             newT += (t,d)
             map(key) = newT
           case t: Singleton2BinaryLayeredTensor3 =>
+            stateMap(key) = ACCUMULATOR
             val newT = Tensor.newSparse(t)
             newT += (t,d)
             map(key) = newT
+          case t: DenseTensor =>
+            stateMap(key) = ACCUMULATOR
+            t *= d
+            map(key) = t
           case t: Tensor =>
+            stateMap(key) = SINGLE_TENSOR
             t *= d
             map(key) = t
         }

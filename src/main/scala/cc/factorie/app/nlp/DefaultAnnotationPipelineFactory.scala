@@ -19,6 +19,7 @@ object DefaultAnnotationPipelineFactory extends AnnotationPipelineFactory {
     map.update(classOf[lemma.LowercaseTokenLemma], ()=>lemma.LowercaseLemmatizer)
     map.update(classOf[ner.BilouConllNerLabel], ()=>ner.NER1)
     map.update(classOf[ner.BilouOntonotesNerLabel], ()=>ner.NER2)
-    map.update(classOf[mention.MentionList], ()=>mention.ParseBasedMentionFinding)
+    map.update(classOf[mention.ParseBasedMentionList], ()=>mention.ParseBasedMentionFinding)
+    map.update(classOf[mention.NerMentionList], ()=>mention.NerAndPronounMentionFinder)
     map.update(classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]], ()=>coref.WithinDocCoref1)
 }

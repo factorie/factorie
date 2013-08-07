@@ -69,7 +69,7 @@ class DepParser1 extends DocumentAnnotator {
     import scala.language.reflectiveCalls
     model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("DepParser2 model parameters oneNorm "+model.parameters.oneNorm)
+    println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
@@ -88,7 +88,7 @@ class DepParser1 extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("DepParser2.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("DepParser1.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionDomain.size)
@@ -110,7 +110,7 @@ class DepParser1 extends DocumentAnnotator {
       println(" TRAIN "+testString(trainSentences))
       println(" TEST  "+testString(testSentences))
     }
-    new OnlineLinearMultiClassTrainer(optimizer=optimizer).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
+    new OnlineLinearMultiClassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
@@ -140,21 +140,15 @@ class DepParser1 extends DocumentAnnotator {
   }
 
   def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
-    import scala.concurrent._
-    import scala.concurrent.duration._
-    val pool = Executors.newFixedThreadPool(nThreads)
-    implicit val exc = scala.concurrent.ExecutionContext.fromExecutorService(pool)
-    val futures = ss.map(s => future {
+    val decs = TrainerHelpers.parMap(ss, nThreads)(s => {
       val oracle: NonProjectiveOracle = {
         if (mode == ParserConstants.TRAINING) new NonprojectiveGoldOracle(s)
         else new NonprojectiveBoostingOracle(s, classify)
       }
       new NonProjectiveShiftReduce(oracle.predict).parse(s)
-      oracle.instances
+      oracle.instances.toSeq
     })
-    val decisions = futures.flatMap(f => Await.result(f, 100.hours))
-    pool.shutdown()
-    decisions
+    decs.flatten
   }
   def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
@@ -567,10 +561,10 @@ object DepParse12Optimizer {
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.DepParser2",
+      "cc.factorie.app.nlp.parse.DepParser1",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser2Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser1Trainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

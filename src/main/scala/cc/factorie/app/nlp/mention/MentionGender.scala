@@ -55,15 +55,19 @@ class MentionGenderLabeler extends DocumentAnnotator {
       return None
     else{
       val lemma = mention.span.tokens.head.lemmaString.toLowerCase
-      if(maleWords.contains(lemma ))
+      if(maleWords.contains(lemma))
         return Some(MentionGenderDomain.MALE)
       else if (femaleWords.contains(lemma))
         return Some(MentionGenderDomain.FEMALE)
       else return None
     }
   }
-  val maleWords = Seq("he","him","his").toSet
-  val femaleWords = Seq("she","her").toSet
+
+  //since lemmaString is singular, we don't need to hard code in the plural form of these words
+  val maleWords = Seq("he","him","his","man", "men","brother","boy", "male","uncle","nephew","father","grandfather", "king","lord","husband","boyfriend", "pope","priest").toSet
+  val femaleWords = Seq("she","her", "woman","women","sister","girl","female","aunt","mother","niece","grandmother","queen","lady","wife","mistress","girlfriend","actress","nun").toSet
+
+
 
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionGenderLabel].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionGenderLabel]; if (t ne null) t.categoryValue else "_" }

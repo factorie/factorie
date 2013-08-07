@@ -17,7 +17,7 @@ import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
-
+// TODO This should be moved to app.nlp.LoadConll2011 -akm
 object ConllCorefLoader {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader

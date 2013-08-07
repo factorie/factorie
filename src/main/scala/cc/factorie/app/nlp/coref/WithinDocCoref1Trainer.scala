@@ -1,10 +1,11 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{Document,DefaultAnnotationPipelineFactory}
+import cc.factorie.app.nlp.{AnnotationPipelineFactory, Document, DefaultAnnotationPipelineFactory}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import java.io.File
+import cc.factorie.app.nlp.ner.{NER1, NerLabel}
 
 /**
  * User: apassos
@@ -43,6 +44,7 @@ trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val trainSeparatePronounWeights = new CmdOption("separate-pronoun-weights",false,"BOOLEAN","train a separate weight vector for pronoun-pronoun comparison")
   val numCompareToTheLeft = new CmdOption("num-compare-to-the-left",75,"INT","number of mentions to compare to the left before backing off to only looking at non-pronouns and those in entities (only used if entityLR == true)")
   val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
+  val useNerMentions = new CmdOption("use-ner-mentions", false, "BOOLEAN", "Whether to use NER mentions instead of noun phrase mentions")
 }
 
 object WithinDocCoref1Trainer {
@@ -125,7 +127,7 @@ object WithinDocCoref1Trainer {
     val rng = new scala.util.Random(opts.randomSeed.value)
     val loadTrain = !opts.deserialize.wasInvoked
     val (trainDocs,trainPredMaps,testDocs,testTrueMaps) =  if(opts.useNonGoldBoundaries.value )
-      makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain)
+      makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain, opts.useNerMentions.value)
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
@@ -197,7 +199,12 @@ object WithinDocCoref1Trainer {
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+    val pipelineFactory = new AnnotationPipelineFactory()
+    if (useNerMentions) {
+      pipelineFactory.map(classOf[MentionList]) = () => NerAndPronounMentionFinder
+      pipelineFactory.map(classOf[NerLabel]) = () => NER1
+    }
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, DefaultAnnotationPipelineFactory)
 
