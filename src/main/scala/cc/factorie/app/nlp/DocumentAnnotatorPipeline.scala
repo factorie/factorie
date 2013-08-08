@@ -68,7 +68,7 @@ object DocumentAnnotatorPipeline {
     val preSet = prereqs.toSet
     def recursiveSatisfyPrereqs(goal: Class[_]) {
       if (!preSet.contains(goal)) {
-        val provider = map(goal)()
+        val provider = map.getOrElse(goal, map(map.keys.filter(k => goal.isAssignableFrom(k)).head))()
         if (!pipeSet.contains(provider)) {
           provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
           pipeSet += provider
