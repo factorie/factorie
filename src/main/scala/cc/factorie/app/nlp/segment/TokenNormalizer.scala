@@ -18,6 +18,7 @@ class TokenNormalizer1[A<:TokenString](
     val normalizeMDash:Boolean = true, // Convert all em-dashes to double dash --
     val normalizeDash:Boolean = true, // Convert all dashes to single dash -
     val normalizeHtmlSymbol:Boolean = true, // Convert &lt; to <, etc
+    val normalizeHtmlAccent:Boolean = true, // Convert Beyonc&eacute; to Beyonce
     val americanize:Boolean = false
   )(implicit m:Manifest[A]) extends DocumentAnnotator {
   
@@ -25,12 +26,13 @@ class TokenNormalizer1[A<:TokenString](
   val mdashRegex = ("\\A("+Tokenizer1.mdash+")+\\Z").r
   //val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|(?:['\u0092\u2019]|&apos;){1,2}"
   val quoteRegex = ("\\A("+Tokenizer1.quote+")\\Z").r
-  val apostropheRegex = ("[\u0092\u2019]|&apos;").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want
+  val apostropheRegex = ("[\u0092\u2019]|&(apos|rsquo);").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want
   val currencyRegex = ("\\A("+Tokenizer1.currency+")\\Z").r // Responsible for all cases, except "cents"
+  val htmlAccentRegex = ("&([aeiouAEIOU])(acute|grave|uml);").r
   val htmlSymbolRegex = ("\\A"+Tokenizer1.htmlSymbol+"\\Z").r
   val htmlSymbolMap = new scala.collection.mutable.HashMap[String,String] {
     override def default(s:String) = s
-  } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)")
+  } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'")
   
   def processToken(token:Token): Unit = {
     val string = token.string
@@ -54,6 +56,7 @@ class TokenNormalizer1[A<:TokenString](
     else if (unescapeAsterisk && string == "\\*\\*") token.attr += newTokenString(token, "**")
     else if (normalizeMDash && mdashRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "--") // replace all em-dashes with two dashes
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
+    else if (normalizeHtmlAccent && htmlAccentRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlAccentRegex.replaceSomeIn(string, m => Some(m.group(1)))) // replace all dash with dash
     else if (normalizeHtmlSymbol && htmlSymbolRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all dash with dash
     else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")) // replace all apostrophes with simple '
     else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
