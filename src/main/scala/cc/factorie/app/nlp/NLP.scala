@@ -30,6 +30,7 @@ object NLP {
       val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma using WordNet's lemmatizer.") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
       val npchunk1 = new CmdOption("mention1", null, "", "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.NPChunker1 }
       val mention2 = new CmdOption("mention2", null, "", "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.ParseBasedMentionFinding }
+      val mention3 = new CmdOption("mention3", null, "", "Annotate noun mentions") { override def invoke = annotators += cc.factorie.app.nlp.mention.NerAndPronounMentionFinder }
       val ner1 = new CmdOption[String]("ner1", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke = { if (value ne null) System.setProperty(classOf[ner.NER1].getName, value); annotators += cc.factorie.app.nlp.ner.NER1 } }
       val ner2 = new CmdOption[String]("ner2", null, "URL", "Annotate Ontonotes NER")  { override def invoke = { if (value ne null) System.setProperty(classOf[ner.NER2].getName, value); annotators += cc.factorie.app.nlp.ner.NER2 } }
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
