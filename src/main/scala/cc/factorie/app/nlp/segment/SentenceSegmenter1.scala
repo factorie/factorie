@@ -31,6 +31,8 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   
   val emoticonRegex = ("\\A("+Tokenizer1.emoticon+")\\Z").r
   
+  val charOffsetBoundary = 10 // If there are more than this number of characters between the end of the previous token and the beginning of this one, force a sentence start
+  
   /** Returns true for strings that probably start a sentence after a word that ends with a period. */
   def possibleSentenceStart(s:String): Boolean = java.lang.Character.isUpperCase(s(0)) && (cc.factorie.app.nlp.lexicon.StopWords.containsWord(s) || s == "Mr." || s == "Mrs." || s == "Ms." || s == "\"" || s == "''") // Consider adding more honorifics and others here. -akm
   
@@ -82,6 +84,9 @@ class SentenceSegmenter1 extends DocumentAnnotator {
             //println("SentenceSegmenter1 i="+i+" possibleClosingRegex "+tokens(i+1).string)
             newSentence(i+1)
           }
+        } else if (charOffsetBoundary > 0 && token.hasPrev && token.stringStart - token.prev.stringEnd > charOffsetBoundary && document.string.substring(token.prev.stringEnd, token.prev.stringEnd+2).toLowerCase != "<a") {
+            // TODO The main way this can break a sentence incorrectly is when there is a long "<a href...>" tag.
+            newSentence(i)          
         }
         i += 1
       }

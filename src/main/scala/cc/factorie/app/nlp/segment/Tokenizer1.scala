@@ -7,23 +7,25 @@ import cc.factorie.app.strings.RegexSegmenter
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
     */
-class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extends DocumentAnnotator {
+class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
-  def tokenAnnotationString(token: Token) = null
+  def tokenAnnotationString(token: Token) = token.stringStart.toString+'\t'+token.stringEnd.toString
   
   val patterns = new scala.collection.mutable.ArrayBuffer[String]
   
-  val sgml = "</?[A-Za-z!][^>]*>"; patterns += sgml
-  val html = "(<script[^>]*>[^<]+</script>)|(<style[^>]*>[^<]+</style>)"; patterns += sgml
-  val htmlSymbol = "&(HT|TL|UR|LR|QC|QL|QR|amp|odq|cdq|lt|gt|#[0-9]+);"; patterns += htmlSymbol
+  val html = "(<script[^>]*>[^<]+</script>)|(<style[^>]*>[^<]+</style>)"; if (!tokenizeSgml) patterns += html
+  val htmlComment = "(<|&lt;)!--(.(?!-->))*.?--(>|&gt;)"; patterns += htmlComment
+  val sgml2 = "<%(.(?!%>))*.?%>"; patterns += sgml2 // Some HTML contains "<% blah %>" tags.
+  val sgml = "</?[A-Za-z!]([^>]|%>)*(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
+  val htmlSymbol = "&(HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|cdq|lt|gt|#[0-9]+);"; patterns += htmlSymbol
   val htmlAccentedLetter = "&[aeiouAEIOU](acute|grave|uml);"; patterns += htmlAccentedLetter
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
   val url2 = "((www\\.([^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(([^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(com|org|net|edu|cc|info)))(/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2
   val url3 = "[A-Z]*[a-z0-9]+\\.(com|org|net|edu)"; patterns += url3
   val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}"; patterns += email
-  val usphone = "(\\+?1\\p{Z}?)?(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
+  val usphone = "(\\+?1[-\\. \u00A0]?)?(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
   val date = "\\p{N}{1,2}[\\-/]\\p{N}{1,2}[\\-/]\\p{N}{2,4}"; patterns += date
   val currency = "[A-Z]*\\$|\\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])"; patterns += currency
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag
@@ -48,7 +50,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
     
   val ap = "(?:['\u0092\u2019]|&apos;)" // apostrophe and open single quotes
   val ap2 = s"(?:${ap}|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes
-  val contraction = s"(?:n${ap}t|${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction
+  val contraction = s"(?:n${ap}t|(?=\\p{L})${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions   
   val apword = s"${ap}n(${ap})?|${ap2}em|O${ap}[A-Z][a-z]+|[Oo]${ap2}clock|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|somethin${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*"; patterns += initials // A.  A.A.A.I.  etc.
   //val briefAbbrevs = "[A-Z][a-z]?\\."; patterns += briefAbbrevs // and initials; so includes A. and Mr. but not Mrs. Calif. or Institute.  Removed because otherwise we get "me." and "it."
@@ -72,15 +74,15 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val dash = "&(ndash);|[-\u0096\u0097\\p{Pd}]"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
   val punc = "\\p{P}"; patterns += punc // This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, ---
   val symbol = "\\p{S}"; patterns += symbol
-  //val newline = "\n"; patterns += newline
+  val newline = "\n"; if (tokenizeNewline) patterns += newline
   //val space = "\\p{Z}+"
 
   val tokenRegexString = patterns.filter(_.length != 0).mkString("|")
-  val tokenRegex = if (caseInsensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
+  val tokenRegex = if (!caseSensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      var prevTokenPeriod = false
+      var prevTokenPeriod = false // Does the previous Token.string consist entirely of .
       val tokenIterator = tokenRegex.findAllIn(section.string)
       while (tokenIterator.hasNext) {
         tokenIterator.next()
@@ -92,7 +94,12 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
           section.remove(section.length-1); section.remove(section.length-1)
           new Token(section, lastTwoTokens(0).stringStart, lastTwoTokens(1).stringEnd)
           new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-        } else if (!skipSgml || string(0) != '<' || string(string.length-1) != '>') {
+        } else if (tokenizeNewline && string == "\n") {
+          new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
+        } else if (tokenizeSgml || 
+            !((string(0) == '<' && string(string.length-1) == '>') // We have an SGML tag 
+              || (string(0) == '&' && string(string.length-1) == ';'))) // We have an odd escaped SGML tag &gt;...&lt;
+        {
           new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
         }
         if (string == ".") prevTokenPeriod = true else prevTokenPeriod = false
@@ -107,7 +114,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object Tokenizer1 extends Tokenizer1(true, true) {
+object Tokenizer1 extends Tokenizer1(false, false, false) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)
