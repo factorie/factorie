@@ -17,7 +17,7 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   var doubleNewlineBoundary = true
 
   /** Matches the Token.string of punctuation that always indicates the end of a sentence.  It does not include possible additional tokens that may be appended to the sentence such as quotes and closing parentheses. */
-  val closingRegex = "\\A([!\\?]+|[\\.:;])\\Z".r // We allow repeated "!" and "?" to end a sentence, but not repeated "."
+  val closingRegex = "\\A([!\\?]+|[\\.;])\\Z".r // We allow repeated "!" and "?" to end a sentence, but not repeated "."
   
   /** Matches the Token.string of tokens that may extend a sentence, such as quotes, closing parentheses, and even additional periods. */
   val closingContinuationRegex = "^''|[\\.\"!\\?\\p{Pf}\\p{Pe}]+$".r

@@ -23,13 +23,15 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val url2 = "((www\\.([^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(([^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(com|org|net|edu|cc|info)))(/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2
   val url3 = "[A-Z]*[a-z0-9]+\\.(com|org|net|edu)"; patterns += url3
   val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}"; patterns += email
-  val usphone = "(\\+?1)?.(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
+  val usphone = "(\\+?1\\p{Z}?)?(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
   val date = "\\p{N}{1,2}[\\-/]\\p{N}{1,2}[\\-/]\\p{N}{2,4}"; patterns += date
   val currency = "[A-Z]*\\$|\\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])"; patterns += currency
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag
   val atuser  = "@[A-Za-z][A-Za-z0-9]+"; patterns += atuser
   val emoticon = "[#<%\\*]?[:;!#\\$%@=\\|][-\\+\\*=o^<]?[\\(\\)oODPQX\\*3{}\\[\\]][#><\\)\\(]?|'\\.'"; patterns += emoticon
 
+  // Abbreviation handling
+  val consonantNonAbbrevs = "(Ng|cwm|nth)(?=\\.)"; patterns += consonantNonAbbrevs // the "val abbrev" below matches all sequences of consonants followed by a period; these are exception to that rule
   val month = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
   val day = "Mon|Tue|Tues|Wed|Thu|Thurs|Fri" 
   val state = "Ala|Alab|Ariz|Ark|Calif|Colo|Conn|Del|Fla|Ill|Ind|Kans|Kan|Ken|Kent|Mass|Mich|Minn|Miss|Mont|Nebr|Neb|Nev|Dak|Okla|Oreg|Tenn|Tex|Virg|Wash|Wis|Wyo"
@@ -45,14 +47,14 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   patterns += abbrevs
     
   val ap = "(?:['\u0092\u2019]|&apos;)" // apostrophe and open single quotes
-  val ap2 = s"(?:${ap}|[\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes
+  val ap2 = s"(?:${ap}|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes
   val contraction = s"(?:n${ap}t|${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction
-  val apword = s"${ap}n(${ap})?|${ap2}em|[Oo]${ap2}clock|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|somethin${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like C'mon, 'n', Shi'ite, 20's, N'goma
+  val apword = s"${ap}n(${ap})?|${ap2}em|O${ap}[A-Z][a-z]+|[Oo]${ap2}clock|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|somethin${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*"; patterns += initials // A.  A.A.A.I.  etc.
   //val briefAbbrevs = "[A-Z][a-z]?\\."; patterns += briefAbbrevs // and initials; so includes A. and Mr. but not Mrs. Calif. or Institute.  Removed because otherwise we get "me." and "it."
   val ordinals = "[0-9]{1,2}(st|nd|rd|th)"; patterns += ordinals // like 1st and 22nd
   //val numerics = "[\\p{N}\\-.\\:/,\\+\\=%]+[\\p{N}\\-:/\\+\\=%]"; patterns += numerics // is there a better way to say, "doesn't end in '.'"?
-  val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|" + ap + "{1,2}"; patterns += quote
+  val quote = "[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\\p{Pf}]|$quot;|" + ap2 + "{2}"; patterns += quote
   // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples
   val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|en|em|ex|fore|hind|mal|mid|midi|mini|mis|out|over|post|pre|pro|re|self|step|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
   val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
@@ -64,7 +66,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val letter = "&[aeiouAEIOU](acute|grave|uml);"
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(${contraction}))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
   val word = "[\\p{L}\\p{M}][\\p{L}\\p{M}\\p{Nd}_]*"; patterns += word // Includes any combination of letters, accent characters ,numbers and underscores
-  val number = "[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number
+  val number = "(?<!\\p{Nd})[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional +/- and a number, followed by numbers or .:, punc.  Cannot be preceded by number, in order to separate "1989-1990" into three tokens.
   val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
   val mdash = "-{2,3}|&(mdash|MD);|[\u2014\u2015]"; patterns += mdash
   val dash = "&(ndash);|[-\u0096\u0097\\p{Pd}]"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
