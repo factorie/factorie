@@ -44,6 +44,8 @@ object DocumentAnnotatorPipeline {
     classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
     classOf[mention.MentionList] -> (() => mention.ParseBasedMentionFinding),
+    classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
+    classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1)
   ).toMap
@@ -67,7 +69,11 @@ object DocumentAnnotatorPipeline {
     val preSet = prereqs.toSet
     def recursiveSatisfyPrereqs(goal: Class[_]) {
       if (!preSet.contains(goal) && (!preSet.exists(x => goal.isAssignableFrom(x)))) {
-        val provider = map.getOrElse(goal, map(map.keys.filter(k => goal.isAssignableFrom(k)).head))()
+        val provider = if (map.contains(goal)) map(goal)() else {
+          val list = map.keys.filter(k => goal.isAssignableFrom(k))
+          assert(list.nonEmpty, s"Could not find annotator for goal $goal , map includes ${map.keys.mkString(", ")}")
+          map(list.head)()
+        }
         if (!pipeSet.contains(provider)) {
           provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
           pipeSet += provider
