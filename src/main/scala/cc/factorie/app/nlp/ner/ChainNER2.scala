@@ -32,7 +32,7 @@ class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token]
   def key = this.mkString("-")
 } 
 
-class ChainNer2 extends DocumentAnnotator {
+class NER3 extends DocumentAnnotator {
 
   def process(document:Document): Document = {
     if (document.tokenCount == 0) return document
@@ -460,7 +460,7 @@ class ChainNer2 extends DocumentAnnotator {
 
 }
 
-object ChainNer2Trainer  {
+object NER3Trainer  {
   import cc.factorie.util.DefaultCmdOptions
 
   def main(args: Array[String]): Unit = {
@@ -482,7 +482,7 @@ object ChainNer2Trainer  {
       val twoagg = new CmdOption("twoagg", "Turn on second stage aggreggation features.")
     }
     opts.parse(args)
-    val ner = new ChainNer2
+    val ner = new NER3
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
     ner.twoStage = opts.extended.wasInvoked
