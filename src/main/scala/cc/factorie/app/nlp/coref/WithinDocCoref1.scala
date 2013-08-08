@@ -448,7 +448,7 @@ class ImplicitConjunctionWithinDocCoref1 extends BaseWithinDocCoref1 {
 }
 
 object WithinDocCoref1 extends WithinDocCoref1 {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[ParseBasedMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
   deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1](".factorie").openConnection().getInputStream))
 }
 

@@ -43,8 +43,7 @@ object DocumentAnnotatorPipeline {
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
     classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
-    classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
-    classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
+    classOf[mention.MentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1)
   ).toMap
