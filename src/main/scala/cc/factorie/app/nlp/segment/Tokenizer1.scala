@@ -16,6 +16,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val patterns = new scala.collection.mutable.ArrayBuffer[String]
   
   val sgml = "</?[A-Za-z!][^>]*>"; patterns += sgml
+  val html = "(<script[^>]*>[^<]+</script>)|(<style[^>]*>[^<]+</style>)"; patterns += sgml
   val htmlSymbol = "&(HT|TL|UR|LR|QC|QL|QR|amp|odq|cdq|lt|gt|#[0-9]+);"; patterns += htmlSymbol
   val htmlAccentedLetter = "&[aeiouAEIOU](acute|grave|uml);"; patterns += htmlAccentedLetter
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
@@ -32,14 +33,14 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val month = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
   val day = "Mon|Tue|Tues|Wed|Thu|Thurs|Fri" 
   val state = "Ala|Alab|Ariz|Ark|Calif|Colo|Conn|Del|Fla|Ill|Ind|Kans|Kan|Ken|Kent|Mass|Mich|Minn|Miss|Mont|Nebr|Neb|Nev|Dak|Okla|Oreg|Tenn|Tex|Virg|Wash|Wis|Wyo"
-  val state2 = "AK|AS|AZ|AR|CA|CO|CT|DE|FM|FL|GA|GU|HI|ID|IL|IA|KS|KY|LA|MH|MD|MA|MI|MN|MS|MO|MT|NE|NV|MP|PW|PA|PR|TN|TX|UT|VT|VI|VA|WA|WI|WY"
+  val state2 = "Ak|As|Az|Ar|Ca|Co|Ct|De|Fm|Fl|Ga|Gu|Hi|Id|Il|Ia|Ks|Ky|La|Mh|Md|Ma|Mi|Mn|Ms|Mo|Mt|Ne|Nv|Mp|Pw|Pa|Pr|Tn|Tx|Ut|Vt|Vi|Va|Wa|Wi|Wy"
   // Removed two-word state abbreviations and also ME, OK, OR, OH
   val honorific = "Adm|Attys?|Brig|Capts?|Cols?|Comms?|Co?mdrs?|Cpls?|Cpts?|Det|Drs?|Hon|Gens?|Govs?|Lieuts?|Lts?|Majs?|Miss|Messrs|Mr|Mrs|Ms|Pfc|Pres|Profs?|Pvts?|Reps?|Revs?|Sens?|Sgts?|Spc|Supts?"
   val suffix = "Bros?|Esq|Jr|Ph\\.?[Dd]|Sr"
-  val place = "Ave|Blvd|Ste?|Str|Ln|Mt"
-  val units = "in|fur|mi|lea|drc|oz|qtr|cwt|am" // not covered by "two consonants" in abbrev below
+  val place = "Aly|Anx|Ave?|Avn|Blvd|Boul|Byp|Cir|Cor|Rd|Squ|Sta|Ste?|Str|Ln|Mt|Xing"
+  val units = "in|fur|mi|lea|drc|oz|qtr|cwt|am" // not covered by "sequence of consonants" in abbrev below
   val org = "Alt|Assns?|Bancorp|Bhd|Cos?|Comm|Comp|Corps?|Depts?|Elec|Inc|Inst|Intl|Lib|Ltd|M[ft]g|Mus|Natl|Plc|Pty|Sci|Ser|Sys|Univ"
-  val abbrev = "etc|vol|rev|dea|est|gal|[bcdfghjklmnpqrstvwx][bcdfghjklmnpqrstvwx]"
+  val abbrev = "etc|vol|rev|dea|div|ests?|exp|exts?|gal|[BCDFGHJKLMNPQRSTVWX][bcdfghjklmnpqrstvwx]+"
   val abbrevs = Seq(month, day, state, state2, honorific, suffix, place, units, org, abbrev).flatMap(_.split('|').map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
   patterns += abbrevs
     
@@ -62,7 +63,7 @@ class Tokenizer1(caseInsensitive:Boolean = true, skipSgml:Boolean = true) extend
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val letter = "&[aeiouAEIOU](acute|grave|uml);"
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(${contraction}))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
-  val word = s"\\p{L}[\\p{L}\\p{M}\\p{Nd}]*"; patterns += word // Includes any combination of letters, accent characters and numbers
+  val word = "[\\p{L}\\p{M}][\\p{L}\\p{M}\\p{Nd}_]*"; patterns += word // Includes any combination of letters, accent characters ,numbers and underscores
   val number = "[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number
   val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
   val mdash = "-{2,3}|&(mdash|MD);|[\u2014\u2015]"; patterns += mdash
