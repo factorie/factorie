@@ -54,8 +54,8 @@ class TokenNormalizer1[A<:TokenString](
     else if (unescapeAsterisk && string == "\\*\\*") token.attr += newTokenString(token, "**")
     else if (normalizeMDash && mdashRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "--") // replace all em-dashes with two dashes
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
-    else if (normalizeHtmlSymbol && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
-    else if (normalizeApostrophe && htmlSymbolRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all apostrophes with simple '
+    else if (normalizeHtmlSymbol && htmlSymbolRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all dash with dash
+    else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")) // replace all apostrophes with simple '
     else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (normalizeCurrency && quoteRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (americanize && BritishToAmerican.contains(string)) token.attr += newTokenString(token, BritishToAmerican(string))

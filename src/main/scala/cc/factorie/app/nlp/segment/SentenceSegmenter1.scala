@@ -84,7 +84,7 @@ class SentenceSegmenter1 extends DocumentAnnotator {
             //println("SentenceSegmenter1 i="+i+" possibleClosingRegex "+tokens(i+1).string)
             newSentence(i+1)
           }
-        } else if (charOffsetBoundary > 0 && token.hasPrev && token.stringStart - token.prev.stringEnd > charOffsetBoundary && document.string.substring(token.prev.stringEnd, token.prev.stringEnd+2).toLowerCase != "<a") {
+        } else if (charOffsetBoundary > 0 && token.hasPrev && token.stringStart - token.prev.stringEnd > charOffsetBoundary && document.string.substring(token.prev.stringEnd, token.prev.stringEnd+3).trim.toLowerCase != "<a") {
             // TODO The main way this can break a sentence incorrectly is when there is a long "<a href...>" tag.
             newSentence(i)          
         }
