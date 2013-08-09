@@ -57,10 +57,11 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
   def process(document: Document) = {
     val nerMentions = getNerSpans(document).map(labelSpan => {
       val label = labelSpan._1
+      val mappedLabel = if(label == "PER") "PERSON" else label    //this is important if you do conll NER, since MentionEntityType expects Ontonotes NER Labels
       val s = labelSpan._2
       val m = new Mention(s, s.length-1)
       m.attr += new MentionType(m, "NAM")
-      m.attr += new MentionEntityType(m,label)
+      m.attr += new MentionEntityType(m,mappedLabel)
       m
     })
     val pronounMentions = getPronounSpans(document).map(s => {
