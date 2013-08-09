@@ -17,7 +17,7 @@ class NerMentionList extends MentionList
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[NerLabel], classOf[PTBPosLabel])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.span.indexOf(token)).mkString(","); case _ => "_" }
 
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
     val spans = ArrayBuffer[(String,TokenSpan)]()
