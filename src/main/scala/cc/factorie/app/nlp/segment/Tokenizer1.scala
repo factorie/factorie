@@ -42,7 +42,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   // Removed two-word state abbreviations and also ME, OK, OR, OH
   val honorific = "Adm|Attys?|Brig|Capts?|Cols?|Comms?|Co?mdrs?|Cpls?|Cpts?|Det|Drs?|Hon|Gens?|Govs?|Lieuts?|Lts?|Majs?|Miss|Messrs|Mr|Mrs|Ms|Pfc|Pres|Profs?|Pvts?|Reps?|Revs?|Sens?|Sgts?|Spc|Supts?"
   val suffix = "Bros?|Esq|Jr|Ph\\.?[Dd]|Sr"
-  val place = "Aly|Anx|Ave?|Avn|Blvd|Boul|Byp|Cir|Cor|Rd|Squ|Sta|Ste?|Str|Ln|Mt|Xing"
+  val place = "Aly|Anx|Ave?|Avn|Blvd|Boul|Byp|Cir|Cor|Rd|Squ|Sta|Ste?|Str|Ln|Mt"
   val units = "in|fur|mi|lea|drc|oz|qtr|cwt|am" // not covered by "sequence of consonants" in abbrev below
   val org = "Alt|Assns?|Bancorp|Bhd|Cos?|Comm|Comp|Corps?|Depts?|Elec|Inc|Inst|Intl|Lib|Ltd|M[ft]g|Mus|Natl|Plc|Pty|Sci|Ser|Sys|Univ"
   val abbrev = "etc|vol|rev|dea|div|ests?|exp|exts?|gal|[BCDFGHJKLMNPQRSTVWX][bcdfghjklmnpqrstvwx]+"
@@ -55,7 +55,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val ap2 = s"(?:${ap}|&lsquo;|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes, but not double quotes
   val contraction = s"(?:n${ap}t|(?<=\\p{L})${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions   
   //val contraction = s"(?:n${ap}t|${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions   
-  val apword = s"${ap}n(${ap})?|${ap2}em|[ODd]${ap}${letter}+|[Oo]${ap2}clock|add${ap2}l|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|[A-Za-z]{3,}in${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma, fishin'
+  val apword = s"${ap}n(${ap})?|${ap2}em|[OoDdLl]${ap}${letter}+|[Oo]${ap2}clock|add${ap2}l|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|[A-Za-z]{3,}in${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma, fishin'
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*"; patterns += initials // A.  A.A.A.I.  etc.
   //val briefAbbrevs = "[A-Z][a-z]?\\."; patterns += briefAbbrevs // and initials; so includes A. and Mr. but not Mrs. Calif. or Institute.  Removed because otherwise we get "me." and "it."
   val ordinals = "[0-9]{1,2}(st|nd|rd|th)"; patterns += ordinals // like 1st and 22nd
@@ -70,7 +70,8 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,  
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(${contraction}))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
-  val word = s"(${letter})([\\p{L}\\p{M}\\p{Nd}_]|${letter}|&(?!(${htmlSymbol}|${htmlLetter}))\\p{L}|-\\p{Nd}+)*"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding
+  val caps = s"\\p{Lu}+([&+](?!(${htmlSymbol}|${htmlLetter}))(\\p{Lu}(?!\\p{L}))+)+"; patterns += caps // For "AT&T" but don't grab "LAT&Eacute;" and be sure not to grab "PE&gym"
+  val word = s"(${letter})([\\p{L}\\p{M}\\p{Nd}_]|${letter}|-\\p{Nd}+)*"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding
   // TODO Not sure why the pattern above is not getting the last character of of a word ending in \u00e9 -akm
   val number = "(?<![\\p{Nd}])[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional [+-.,] and a number, followed by numbers or .:, punc.  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens.
   val number2 = ap+"\\p{Nd}{2}"; patterns += number2 // For years, like '91
