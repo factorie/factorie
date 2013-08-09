@@ -4,14 +4,14 @@
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
 
-cp=$factoriedir/target/classes:$factoriedir/src/main/resources
+cp=$factoriedir/src/main/resources:$factoriedir/target/classes
 
 # Look for a sibling directory containing 'factorie-nlp-resources'
 #echo factoriedir $factoriedir
 factorienlpdir=$factoriedir/../factorie-nlp-resources
 #echo factorinlpdir $factorienlpdir
 if [ -e $factorienlpdir ] ; then 
-  cp=$cp:$factorienlpdir/target/classes:$factorienlpdir/src/main/resources
+  cp=$cp:$factorienlpdir/src/main/resources:$factorienlpdir/target/classes
 fi 
 
 factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
