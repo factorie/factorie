@@ -17,7 +17,13 @@ import java.util.concurrent.Executors
 class DepParser1 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
-  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  def this(url:java.net.URL) = {
+    this()
+    val stream = url.openConnection.getInputStream
+    if (stream.available <= 0) throw new Error("Could not open "+url)
+    println("DepParser1 loading from "+url)
+    deserialize(stream)
+  }
 
   case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
