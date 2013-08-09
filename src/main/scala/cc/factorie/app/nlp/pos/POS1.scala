@@ -311,6 +311,9 @@ class POS1 extends DocumentAnnotator {
 object POS1WSJ extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
 
 /** The default POS1, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
+// TODO Set up so that POS1WSJ and POS1Ontonotes parameter loading locations can be set independently. 
+//class POS1Ontonotes(url:java.net.URL) extends POS1(url)
+//object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
 object POS1Ontonotes extends POS1(cc.factorie.util.ClasspathURL[POS1]("-Ontonotes.factorie"))
 
 class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
