@@ -19,8 +19,8 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val htmlComment = "(<|&lt;)!--([^\u0000](?!-->))*[^\u0000]?--(>|&gt;)"; patterns += htmlComment
   val sgml2 = "<%([^\u0000](?!%>))*[^\u0000]?%>"; patterns += sgml2 // Some HTML contains "<% blah %>" tags.
   val sgml = "</?[A-Za-z!]([^>]|%>)*(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
-  val htmlSymbol = "&(HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);"; patterns += htmlSymbol
-  val htmlAccentedLetter = "&[aeiouAEIOU](acute|grave|uml);"; patterns += htmlAccentedLetter
+  val htmlSymbol = "&(HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);"; patterns += htmlSymbol // TODO Make this list complete
+  val htmlAccentedLetter = "&[aeiouAEIOU](acute|grave|uml);"; patterns += htmlAccentedLetter // TODO Make this list complete
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
   val url2 = "((www\\.([^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(([^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(com|org|net|edu|gov|cc|info|uk|de|fr|ca)))(/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2
   val url3 = "[A-Z]*[a-z0-9]+\\.(com|org|net|edu|gov|co\\.uk|ac\\.uk|de|fr|ca)"; patterns += url3
@@ -31,6 +31,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag
   val atuser  = "@[A-Za-z][A-Za-z0-9]+"; patterns += atuser
   val emoticon = "[#<%\\*]?[:;!#\\$%@=\\|][-\\+\\*=o^<]?[\\(\\)oODPQX\\*3{}\\[\\]][#><\\)\\(]?|'\\.'"; patterns += emoticon
+  val filename = "\\S+\\.(3gp|7z|ace|ai(f){0,2}|amr|asf|asp(x)?|asx|avi|bat|bin|bmp|bup|cab|cbr|cd(a|l|r)|chm|dat|divx|dll|dmg|doc|dss|dvf|dwg|eml|eps|exe|fl(a|v)|gif|gz|hqx|(s)?htm(l)?|ifo|indd|iso|jar|jsp|jp(e)?g|lnk|log|m4(a|b|p|v)|mcd|mdb|mid|mov|mp(2|3|4)|mp(e)?g|ms(i|wmm)|ogg|pdf|php|png|pps|ppt|ps(d|t)?|ptb|pub|qb(b|w)|qxd|ra(m|r)|rm(vb)?|rtf|se(a|s)|sit(x)?|sql|ss|swf|tgz|tif|torrent|ttf|txt|vcd|vob|wav|wm(a|v)|wp(d|s)|xls|xml|xtm|zip)"; patterns += filename
 
   // Abbreviation handling
   val consonantNonAbbrevs = "(Ng|cwm|nth)(?=\\.)"; patterns += consonantNonAbbrevs // the "val abbrev" below matches all sequences of consonants followed by a period; these are exception to that rule
@@ -48,35 +49,36 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val abbrevs = Seq(month, day, state, state2, honorific, suffix, place, units, org, abbrev).flatMap(_.split('|').map(_.trim).filter(_.length > 0).map(_ + "\\.")).mkString("|")
   patterns += abbrevs
     
-  val letter = "([\\p{L}\\p{M}]|&[aeiounyAEIOUNY](acute|grave|uml|circ|ring|tilde);)"
-  val ap = "(?:['\u0092\u2019]|&(apos|rsquo);)" // apostrophe and open single quotes
-  val ap2 = s"(?:${ap}|&lsquo;|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes
+  val htmlLetter = "(?:&[aeiounyAEIOUNY](acute|grave|uml|circ|ring|tilde);)"
+  val letter = s"([\\p{L}\\p{M}]|${htmlLetter})"
+  val ap = "(?:['\u0092\u2019]|&(apos|rsquo|#00?39|#00?92|#2019);)" // apostrophe and open single quotes
+  val ap2 = s"(?:${ap}|&lsquo;|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes, but not double quotes
   val contraction = s"(?:n${ap}t|(?<=\\p{L})${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions   
   //val contraction = s"(?:n${ap}t|${ap}(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions   
-  val apword = s"${ap}n(${ap})?|${ap2}em|[ODd]${ap}${letter}+|[Oo]${ap2}clock|add${ap2}l|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|somethin${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma
+  val apword = s"${ap}n(${ap})?|${ap2}em|[ODd]${ap}${letter}+|[Oo]${ap2}clock|add${ap2}l|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol${ap}|[A-Za-z]{3,}in${ap}|Dunkin${ap}|${ap}[1-9]0s|N${ap}|\\p{L}\\p{Ll}*[aeiou]${ap}[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma, fishin'
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*"; patterns += initials // A.  A.A.A.I.  etc.
   //val briefAbbrevs = "[A-Z][a-z]?\\."; patterns += briefAbbrevs // and initials; so includes A. and Mr. but not Mrs. Calif. or Institute.  Removed because otherwise we get "me." and "it."
   val ordinals = "[0-9]{1,2}(st|nd|rd|th)"; patterns += ordinals // like 1st and 22nd
   //val numerics = "[\\p{N}\\-.\\:/,\\+\\=%]+[\\p{N}\\-:/\\+\\=%]"; patterns += numerics // is there a better way to say, "doesn't end in '.'"?
   val quote = "[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\\p{Pf}]|&(quot|raquo|laquo);|" + ap2 + "{2}"; patterns += quote
-  patterns += ap
-  // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples
-  val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|en|em|ex|fore|hi|hind|mal|mid|midi|mini|mis|out|over|post|pre|pro|re|self|step|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
+  // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples.
+  val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|e|en|em|ex|fore|hi|hind|mal|mid|midi|mini|mis|out|over|part|post|pre|pro|re|self|step|t|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
   val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fi|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
-  val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}\\p{N}]+"; patterns += dashedPrefixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
+  val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}][\\p{L}\\p{M}\\p{Nd}]*"; patterns += dashedPrefixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   val dashedSuffixWord = "[\\p{L}\\p{M}\\p{N}]+-"+dashedSuffixes+"[^\\p{L}]"; patterns += dashedSuffixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   //val dashedWord = "[\\p{L}\\p{N}]{1,6}(-[\\p{L}\\p{N}]{1,6})+(?![\\p{L}\\p{N}])"; patterns += dashedWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
   // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,  
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(${contraction}))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
-  val word = s"(${letter})([\\p{L}\\p{M}\\p{Nd}_]|-\\p{Nd}+|${letter})*"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20")
+  val word = s"(${letter})([\\p{L}\\p{M}\\p{Nd}_]|${letter}|&(?!(${htmlSymbol}|${htmlLetter}))\\p{L}|-\\p{Nd}+)*"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding
   // TODO Not sure why the pattern above is not getting the last character of of a word ending in \u00e9 -akm
-  val number = "(?<![\\p{Nd}\\p{L}])[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional [+-.,] and a number, followed by numbers or .:, punc.  Cannot be preceded by number (or letter), in order to separate "1989-1990" into three tokens.
+  val number = "(?<![\\p{Nd}])[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional [+-.,] and a number, followed by numbers or .:, punc.  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens.
   val number2 = ap+"\\p{Nd}{2}"; patterns += number2 // For years, like '91
   val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
   val mdash = "-{2,3}|&(mdash|MD);|[\u2014\u2015]"; patterns += mdash
   val dash = "&(ndash);|[-\u0096\u0097\\p{Pd}]"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
   val punc = "\\p{P}"; patterns += punc // This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, ---
+  patterns += ap
   val symbol = "\\p{S}"; patterns += symbol
   val newline = "\n"; if (tokenizeNewline) patterns += newline
   val space = "(\\p{Z}|&nbsp;)+"
