@@ -10,8 +10,12 @@ import java.io._
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
 
+object MentionEntityTypeDomain extends CategoricalDomain[String]{
+  this ++= OntonotesNerDomain.categories
+  this += "MISC"
+}
 class MentionEntityType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNerDomain
+    def domain =  MentionEntityTypeDomain
 }
 
 class MentionEntityTypeLabeler extends DocumentAnnotator {
