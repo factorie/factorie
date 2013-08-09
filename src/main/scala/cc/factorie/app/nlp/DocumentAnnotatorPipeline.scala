@@ -41,6 +41,7 @@ object DocumentAnnotatorPipeline {
     classOf[lemma.CollapseDigitsTokenLemma] -> (() => lemma.CollapseDigitsLemmatizer),
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
+    classOf[ner.NerLabel] -> (() => ner.NER1), // TODO Should there be a different default?
     classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
     classOf[mention.MentionList] -> (() => mention.ParseBasedMentionFinding),
