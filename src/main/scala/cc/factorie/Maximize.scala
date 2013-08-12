@@ -38,7 +38,7 @@ class MaximizeSuite extends Maximize[Any,Any] {
       MaximizeGate.asInstanceOf[Maximize[Any,Any]],
       MaximizeProportions.asInstanceOf[Maximize[Any,Any]],
       MaximizeGaussianMean.asInstanceOf[Maximize[Any,Any]],
-      MaximizeGaussianMeanNoSummary.asInstanceOf[Maximize[Any,Any]],
+      MaximizeGaussianMeansNoSummary.asInstanceOf[Maximize[Any,Any]],
       MaximizeGaussianVariance.asInstanceOf[Maximize[Any,Any]],
       MaximizeByBPChain.asInstanceOf[Maximize[Any,Any]])
   val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Any,Any]]
@@ -64,6 +64,9 @@ class MaximizeSuite extends Maximize[Any,Any] {
     summary.setToMaximize(null)
     summary
   }
+  // A convenient pretty interface, especially for tutorials and beginner users
+  def apply(varying:Any)(implicit model:DirectedModel): Summary = apply(varying, model)
+  def apply(varying:Any*)(implicit model:DirectedModel): Summary = apply(varying, model)
 }
 object Maximize extends MaximizeSuite // A default instance of this class
 

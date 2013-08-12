@@ -84,8 +84,12 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(Directe
   }
 }
 
-object MaximizeGaussianMeanNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
+object MaximizeGaussianMeansNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
+}
+
+object MaximizeGaussianMeanNoSummary extends Maximize[MutableDoubleVar,DirectedModel] {
+  def infer(variable: MutableDoubleVar, model: DirectedModel) = MaximizeGaussianMean.infer(Seq(variable), (model,new DiscreteSummary1[DiscreteVar]))
 }
 
 object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
