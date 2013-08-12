@@ -50,7 +50,7 @@ object DocumentAnnotatorPipeline {
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1)
+    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1Ner)
   )
 
   def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
