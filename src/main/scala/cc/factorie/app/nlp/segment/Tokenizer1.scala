@@ -95,7 +95,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
       while (tokenIterator.hasNext) {
         tokenIterator.next()
         val string = document.string.substring(section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-        if (prevTokenPeriod && java.lang.Character.isLowerCase(string(0)) && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
+        if (prevTokenPeriod && java.lang.Character.isLowerCase(string(0)) && section.length > 1 && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
           // If we have a pattern like "Abbrev. is" with token strings "Abbrev", ".", "is" (currently looking at "is")
           // then assume that the previous-previous word is actually an abbreviation; patch it up to become "Abbrev.", "is"
           val lastTwoTokens = section.takeRight(2).toIndexedSeq

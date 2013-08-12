@@ -157,7 +157,7 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   /** Use with caution, since this would invalidate indices stored elsewhere */
   def remove(i:Int): this.type = {
     if (_frozen) throw new Error("Cannot remove from a frozen chain "+getClass)
-    for (x <- _chainseq.drop(i)) x._setChainPosition(this, x.position-1)
+    for (x <- _chainseq.drop(i+1)) x._setChainPosition(this, x.position-1)
     _chainseq.remove(i)
     this
   }
