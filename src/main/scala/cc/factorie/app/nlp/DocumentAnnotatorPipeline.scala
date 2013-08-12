@@ -30,7 +30,8 @@ class MutableDocumentAnnotatorMap extends collection.mutable.HashMap[Class[_], (
 /** A factory for creating DocumentAnnotatorPipelines given requirements about which annotations or which DocumentAnnotators are desired. */
 object DocumentAnnotatorPipeline {
   type DocumentAnnotatorMap = collection.Map[Class[_], () => DocumentAnnotator]
-  val defaultDocumentAnnotationMap: DocumentAnnotatorMap = Seq(
+  val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
+    // Note that order matters here
     classOf[pos.PTBPosLabel] -> (() => pos.POS1),
     classOf[parse.ParseTree] -> (() => parse.DepParser1),
     classOf[segment.PlainNormalizedTokenString] -> (() => segment.PlainTokenNormalizer),
@@ -44,12 +45,13 @@ object DocumentAnnotatorPipeline {
     classOf[ner.NerLabel] -> (() => ner.NER1), // TODO Should there be a different default?
     classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
-    classOf[mention.MentionList] -> (() => mention.ParseBasedMentionFinding),
+    classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
+    classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1)
-  ).toMap
+  )
 
   def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
   def apply[A](implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(m.erasure)
@@ -67,7 +69,7 @@ object DocumentAnnotatorPipeline {
   def apply(goals: Iterable[Class[_]], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(goals, Seq(), map)
   def apply(goals: Iterable[Class[_]], prereqs: Seq[Class[_]], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = {
     val pipeSet = collection.mutable.LinkedHashSet[DocumentAnnotator]()
-    val preSet = prereqs.toSet
+    val preSet = new scala.collection.mutable.HashSet[Class[_]] ++= prereqs
     def recursiveSatisfyPrereqs(goal: Class[_]) {
       if (!preSet.contains(goal) && (!preSet.exists(x => goal.isAssignableFrom(x)))) {
         val provider = if (map.contains(goal)) map(goal)() else {
@@ -77,6 +79,7 @@ object DocumentAnnotatorPipeline {
         }
         if (!pipeSet.contains(provider)) {
           provider.prereqAttrs.foreach(recursiveSatisfyPrereqs)
+          provider.postAttrs.foreach(preSet += _)
           pipeSet += provider
         }
       }
