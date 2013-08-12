@@ -4,11 +4,16 @@ import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
+import cc.factorie.app.nlp.segment.PlainNormalizedTokenString
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
 class NER2 extends DocumentAnnotator {
-  def this(url:java.net.URL) = { this(); deserialize(url.openConnection.getInputStream) }
+  def this(url:java.net.URL) = {
+    this()
+    println("NER2 loading from "+url)
+    deserialize(url.openConnection.getInputStream)
+  }
 
   object FeaturesDomain extends CategoricalTensorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -106,7 +111,7 @@ class NER2 extends DocumentAnnotator {
 
   // Methods of DocumentAnnotator
   override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
   def process(document:Document): Document = {
     if (document.tokenCount > 0) {
