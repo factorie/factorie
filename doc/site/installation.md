@@ -19,7 +19,7 @@ Compilation of FACTORIE relies on [Apache Maven](http://maven.apache.org/), a so
 
 * [Java](http://www.java.com/getjava/) >= 1.5
 * [Apache Maven](http://maven.apache.org/) >= 2.2
-* [Scala](http://www.scala-lang.org/) >= 2.9.1 -- Maven will install Scala for you, so no need to install separately.
+* [Scala](http://www.scala-lang.org/) >= 2.10.2 -- Maven will install Scala for you, so no need to install separately.
 
 Step-by-step Installation
 ---
@@ -32,17 +32,9 @@ Step-by-step Installation
         Java home: /usr/lib/jvm/java-6-sun-1.6.0.15/jre
         ...
 
-2. Obtain the FACTORIE source. You can do this by downloading and unpacking the FACTORIE tar.gz available from the Download page.
+2. Obtain the FACTORIE source. You can do this by cloning the FACTORIE github repo
 
-        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M4-src.tar.gz
-        $ tar xzf factorie-1.0.0-M4-src.tar.gz
-        $ cd factorie-1.0.0-M4
-        $ ls
-        LICENSE.txt pom.xml src
-
-    Alternatively you can get the most recent FACTORIE source directly from the Mercurial (hg) source code revision control system. Mercurial is freely available from its download page.
-
-        $ hg clone https://factorie.googlecode.com/hg/ factorie
+        $ git clone https://github.com/factorie/factorie.git
         $ cd factorie
 
 3. Tell Maven to compile the project. In this step might take several minutes because not only must it compile all of FACTORIE, but it will also download many dependent packages. This step will print many messages; no need to be concerned about them unless they start with [ERROR]
@@ -109,5 +101,6 @@ In your `build.sbt` file, add the following:
 
 ```
 resolvers += "IESL Release" at "http://dev-iesl.cs.umass.edu/nexus/content/groups/public"
-libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M4"
+
+libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M6"
 ```
