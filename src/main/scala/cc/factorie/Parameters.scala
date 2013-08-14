@@ -70,8 +70,8 @@ class WeightsSet extends TensorSet {
 class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
   private val _map = new mutable.LinkedHashMap[Weights, Tensor]
   // Note that for sparse tensor hash sets, "keys" only gives you the keys that have been added thus far
-  def keys: Seq[Weights] = _map.keys.toSeq
-  def tensors: Seq[Tensor] = _map.values.toSeq
+  def keys: Iterable[Weights] = _map.keys
+  def tensors: Iterable[Tensor] = _map.values
   def containts(key: Weights) = _map.contains(key)
   def clear() = _map.clear()
   def apply(key: Weights): Tensor = _map.getOrElseUpdate(key, defaultTensor(key))
@@ -86,8 +86,8 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
 
 /** A collection of Tensors each associated with a Weights key. */
 trait TensorSet {
-  def keys: Seq[Weights]
-  def tensors: Seq[Tensor]
+  def keys: Iterable[Weights]
+  def tensors: Iterable[Tensor]
 
   def update(key: Weights, value:Tensor)
   def copy: TensorSet
@@ -110,7 +110,7 @@ trait TensorSet {
   def containsNaN(): Boolean = tensors.exists(_.containsNaN)
   def :=(other: TensorSet): Unit = other.keys.foreach(k => this(k) := other(k))
   def *=(other: Double): Unit = keys.foreach(k => this(k) *= other)
-  def toSeq: Seq[(Weights, Tensor)] = keys.zip(tensors)
+  def toSeq: Iterable[(Weights, Tensor)] = keys.zip(tensors)
   def length = tensors.map(_.length).sum
   def toArray: Array[Double] = {
     val arr = new Array[Double](tensors.map(_.length).sum)
