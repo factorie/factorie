@@ -61,7 +61,6 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
  * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
  */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
-  var gradientAccumulator = new SmartGradientAccumulator
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -70,6 +69,7 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
     examples.zipWithIndex.foreach({ case (example, i) => {
+      val gradientAccumulator = new SmartGradientAccumulator
       if ((logEveryN != 0) && (i % logEveryN == 0) && (i != 0)) {
         logger.info(TrainerHelpers.getOnlineTrainerStatus(i, logEveryN, timePerIteration, valuesSeenSoFar))
         valuesSeenSoFar = 0.0
