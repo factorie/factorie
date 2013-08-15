@@ -133,7 +133,6 @@ limitations under the License.
       <id>dev-iesl.cs.umass.edu</id>
       <name>dev-iesl.cs.umass.edu</name>
       <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots</url>
-      <uniqueVersion>true</uniqueVersion>
     </snapshotRepository>
 
     <site>
