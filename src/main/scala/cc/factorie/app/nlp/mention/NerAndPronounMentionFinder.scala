@@ -37,6 +37,10 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
             spans += (lab -> new TokenSpan(s, t.positionInSection, 1)(null))
           }
         }
+      } else {
+        if ( t.string.length > 2 && !t.containsLowerCase && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
+          spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1)(null))
+        }
       }
     }
     spans.toSeq
