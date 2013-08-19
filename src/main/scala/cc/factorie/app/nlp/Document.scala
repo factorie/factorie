@@ -101,6 +101,7 @@ class Document extends DocumentSubstring with Attr {
   private var _sections: mutable.Buffer[Section] = new ArrayBuffer[Section]
   def sections: Seq[Section] = if (_sections.length == 0) return Seq(asSection) else _sections
   def +=(s: Section) = _sections += s
+  def clearSections(): Unit = _sections.clear()
 
   // A few iterators that combine the results from the Sections
   //def tokens: Iterator[Token] = for (section <- sections.iterator; token <- section.tokens.iterator) yield token
