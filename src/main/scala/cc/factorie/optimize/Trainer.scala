@@ -225,6 +225,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
 
   private class LockingTensor1(val base: Tensor1) extends Tensor1 with LockingTensor {
     def dim1 = base.dim1
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor2(val base: Tensor2) extends Tensor2 with LockingTensor {
     def dim1 = base.dim1
@@ -232,6 +233,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     override def *(other: Tensor1) = lock.withReadLock(base * other)
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {
     def dim1 = base.dim1
@@ -240,6 +242,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     def activeDomain3 = lock.withReadLock(base.activeDomain3)
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor4(val base: Tensor4) extends Tensor4 with LockingTensor {
     def dim1 = base.dim1
@@ -250,6 +253,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     def activeDomain3 = lock.withReadLock(base.activeDomain3)
     def activeDomain4 = lock.withReadLock(base.activeDomain4)
+    override def copy = lock.withReadLock { base.copy }
   }
 }
 
