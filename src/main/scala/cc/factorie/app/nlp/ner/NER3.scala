@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import optimize._
 import cc.factorie.app.nlp._
@@ -23,7 +23,6 @@ import cc.factorie.app.chain._
 import scala.io._
 import java.io._
 import scala.math.round
-
 
 
 class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token] {
@@ -343,7 +342,7 @@ class NER3 extends DocumentAnnotator {
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(trainFilename:String, testFilename:String): Unit = {
+  def train(trainFilename:String, testFilename:String, l1: Double, l2: Double, rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
     val trainDocuments = LoadConll2003(BILOU=true).fromFilename(trainFilename)
@@ -358,97 +357,60 @@ class NER3 extends DocumentAnnotator {
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
     
-    println("Example Token features")
-    println(trainDocuments(3).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    println("Example Test Token features")
-    println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
+    //println("Example Token features")
+    //println(trainDocuments(3).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
+    //println("Example Test Token features")
+    //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
+    //println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BilouConllNerLabel]) //.take(100)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BilouConllNerLabel]) //.take(20)
  
-		if(bP) {
-  		val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
-      val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
-      val trainer = new ParallelBatchTrainer(model.parameters, new LBFGS with L2Regularization)
-			trainer.trainFromExamples(examples)
-      (trainLabels ++ testLabels).foreach(_.setRandomly)
-      trainDocuments.foreach(process)
-      testDocuments.foreach(process)
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
-	  } else {
-      (trainLabels ++ testLabels).foreach(_.setRandomly)
-      val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new AdaGrad)
-      val predictor = new IteratedConditionalModes(model) // {temperature=0.01}
-      println("Example Token features")
-      for (iteration <- 1 until 8) {
-        learner.processContexts(trainLabels)
-        predictor.processAll(trainLabels)
-        predictor.processAll(testLabels)
-        printEvaluation(trainDocuments, testDocuments, iteration.toString)
-        //learner.learningRate *= 0.9
-      }
-      for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-		}
-    if(twoStage) {
-		 
-		  (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
-		
-	    for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
-  		for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
-		  println(trainDocuments(3).tokens.map(token => token.nerLabel.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
-		  println("Example Test Token features")
-		  println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
-      (trainLabels ++ testLabels).foreach(_.setRandomly)
-	    if(bP) {
-			  val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
+    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
+    println("Training with " + examples.length + " examples")
+    Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
+    trainDocuments.foreach(process(_, false))
+    testDocuments.foreach(process(_, false))
+    printEvaluation(trainDocuments, testDocuments, "FINAL 1")
 
-        val examples = vars.map(v => new LikelihoodExample(v.toSeq, model2, InferByBPChainSum))
-        val trainer = new ParallelBatchTrainer(model2.parameters, new LBFGS with L2Regularization)
-			  trainer.trainFromExamples(examples)
-			  (trainLabels ++ testLabels).foreach(_.setRandomly)
-	    
-		    trainDocuments.foreach(process)
-		    testDocuments.foreach(process)
-			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
-	  } else {
-      	val learner = new SampleRankTrainer(new GibbsSampler(model2, objective), new AdaGrad())
-      	val predictor = new VariableSettingsSampler[BilouConllNerLabel](model2) {temperature=0.01}
+    (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
 
-      	for (iteration <- 1 until 8) {
-        	learner.processContexts(trainLabels)
+    for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
+    for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
+    //println(trainDocuments(3).tokens.map(token => token.nerLabel.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
+    //println("Example Test Token features")
+    //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
+    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
 
-        	predictor.processAll(trainLabels)
-          predictor.processAll(testLabels)
-          printEvaluation(trainDocuments, testDocuments, iteration.toString)
-        	//learner.learningRate *= 0.9
-      	}
-	
-      	for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-    	  printEvaluation(trainDocuments, testDocuments, "1st")
-     }
-	  }
+    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChainSum))
+    Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
+
+    trainDocuments.foreach(process)
+    testDocuments.foreach(process)
     printEvaluation(trainDocuments, testDocuments, "FINAL")
-
   }
 
 
-   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Unit = {
+   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Double = {
      println("TRAIN")
      println(evaluationString(trainDocuments))
      println("TEST")
-     println(evaluationString(testDocuments))
-     println("Iteration "+iteration)
+     val test = evaluationString(testDocuments)
+     println(test)
+     test
    }
   
-  def evaluationString(documents: Iterable[Document]): Unit = {
+  def evaluationString(documents: Iterable[Document]): Double = {
     val buf = new StringBuffer
     buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BilouConllNerLabel]))))
     val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BilouConllNerLabel](BilouConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
     for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BilouConllNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
+    segmentEvaluation.f1
   }
   def process(document:Document, useModel2 : Boolean): Unit = {
     if (document.tokenCount == 0) return
@@ -460,34 +422,29 @@ class NER3 extends DocumentAnnotator {
 
 }
 
-object NER3Trainer  {
-  import cc.factorie.util.DefaultCmdOptions
+class NER3Opts extends CmdOptions {
+  val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
+  val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
+  val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
+  val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
+  val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
+  val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
+  val l1 =  new CmdOption("l1", 0.01, "DOUBLE", "L1 regularization")
+  val l2 =  new CmdOption("l2", 0.01, "DOUBLE", "L2 regularization")
+  val rate =  new CmdOption("rate", 0.18, "DOUBLE", "Learning rate")
+  val delta =  new CmdOption("delta", 0.066, "DOUBLE", "Learning delta")
+  val saveModel = new CmdOption("save-model", false, "BOOLEAN", "Whether to save the model")
+}
 
-  def main(args: Array[String]): Unit = {
+
+object NER3Trainer extends HyperparameterMain {
+  def evaluateParameters(args: Array[String]): Double = {
     // Parse command-line
-
-    object opts extends DefaultCmdOptions {
-      val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
-      val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
-      val sigmaSq  =     new CmdOption("sigmaSq",  "10", "REAL", "Value for regularization constant for BP.")
-      val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
-      val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
-      val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
-      val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
-      val aggregateTokens = new CmdOption("aggregate", "Turn on context aggregation feature.")
-      val extended = new CmdOption("extended", "Turn on 2 stage feature.")
-      val verbose =       new CmdOption("verbose", "Turn on verbose output")
-      val yesbp = new CmdOption("bp", "Turn on BP.")
-      val justTest = new CmdOption("justTest", "No Training, only Testing.")
-      val twoagg = new CmdOption("twoagg", "Turn on second stage aggreggation features.")
-    }
+    val opts = new NER3Opts
     opts.parse(args)
     val ner = new NER3
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
-    ner.twoStage = opts.extended.wasInvoked
-    ner.bP = opts.yesbp.wasInvoked
-    ner.ss = opts.sigmaSq.value.toDouble
 
     if( opts.brownClusFile.wasInvoked) {
           println("Reading brown cluster file " + opts.brownClusFile.value)
@@ -497,10 +454,42 @@ object NER3Trainer  {
           }
     }
     
-    ner.train(opts.trainFile.value, opts.testFile.value)
-    if (opts.modelDir.wasInvoked) {
+    val result = ner.train(opts.trainFile.value, opts.testFile.value, opts.l1.value, opts.l2.value, opts.rate.value, opts.delta.value)
+    if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
+    result
+  }
+}
+
+object NER3Optimizer {
+  def main(args: Array[String]) {
+    val opts = new NER3Opts
+    opts.parse(args)
+    opts.saveModel.setValue(false)
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
+    val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    /*
+    val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
+      Seq("avon1", "avon2"),
+      "/home/apassos/canvas/factorie-test",
+      "try-log/",
+      "cc.factorie.app.nlp.parse.DepParser2",
+      10, 5)
+      */
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.NER3Trainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    opts.saveModel.setValue(true)
+    println("Running best configuration...")
+    import scala.concurrent.duration._
+    import scala.concurrent.Await
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
+    println("Done")
   }
 }
 
