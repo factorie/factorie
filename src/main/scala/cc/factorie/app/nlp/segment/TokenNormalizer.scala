@@ -16,7 +16,7 @@ class TokenNormalizer1[A<:TokenString](
     val unescapeSlash:Boolean = true, // Change \/ to /
     val unescapeAsterisk:Boolean = true, // Change \* to *
     val normalizeMDash:Boolean = true, // Convert all em-dashes to double dash --
-    val normalizeDash:Boolean = true, // Convert all dashes to single dash -
+    val normalizeDash:Boolean = true, // Convert all other dashes to single dash -
     val normalizeHtmlSymbol:Boolean = true, // Convert &lt; to <, etc
     val normalizeHtmlAccent:Boolean = true, // Convert Beyonc&eacute; to Beyonce
     val americanize:Boolean = false
@@ -26,13 +26,14 @@ class TokenNormalizer1[A<:TokenString](
   val mdashRegex = ("\\A("+Tokenizer1.mdash+")+\\Z").r
   //val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|(?:['\u0092\u2019]|&apos;){1,2}"
   val quoteRegex = ("\\A("+Tokenizer1.quote+")\\Z").r
+  val ellipsisRegex = ("\\A("+Tokenizer1.ellipsis+")\\Z").r
   val apostropheRegex =  Tokenizer1.ap2.replace("'", "").r // ("[\u0092\u2019`\u0091\u2018\u201B]|&(apos|rsquo|#00?39|#00?92|#2019);").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want; but we do include the single back quotes here
   val currencyRegex = ("\\A("+Tokenizer1.currency+")\\Z").r // Responsible for all cases, except "cents"
-  val htmlAccentRegex = ("&([aeiouAEIOU])(acute|grave|uml);").r
+  val htmlAccentRegex = Tokenizer1.htmlAccentedLetter.r
   val htmlSymbolRegex = ("\\A"+Tokenizer1.htmlSymbol+"\\Z").r
   val htmlSymbolMap = new scala.collection.mutable.HashMap[String,String] {
     override def default(s:String) = s
-  } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'")
+  } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'") // TODO complete this collection
   
   def processToken(token:Token): Unit = {
     val string = token.string
@@ -47,7 +48,7 @@ class TokenNormalizer1[A<:TokenString](
     else if (normalizeFractions && string == "\u00BE") token.attr += newTokenString(token, "3/4")
     else if (normalizeFractions && string == "\u2153") token.attr += newTokenString(token, "1/3")
     else if (normalizeFractions && string == "\u2154") token.attr += newTokenString(token, "2/3")
-    else if (normalizeEllipsis && string == "\u2026") token.attr += newTokenString(token, "...")
+    else if (normalizeEllipsis && ellipsisRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "...")
     else if (normalizeAmpersand && string == "&amp;") token.attr += newTokenString(token, "&")
     else if (normalizeCurrency && string == "\u00A2") token.attr += newTokenString(token, "cents")
     else if (normalizeCurrency && currencyRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "$")
@@ -86,5 +87,5 @@ object OntonotesTokenNormalizer extends TokenNormalizer1((t:Token, s:String) => 
 
 object BritishToAmerican extends scala.collection.mutable.HashMap[String,String] {
   this("colour") = "color"
-  // TODO Add more
+  // TODO Add more, e.g. see http://oxforddictionaries.com/us/words/british-and-american-spelling
 }
