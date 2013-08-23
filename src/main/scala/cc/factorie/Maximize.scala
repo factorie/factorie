@@ -21,31 +21,38 @@ import cc.factorie.directed.{MaximizeGaussianVariance, MaximizeGaussianMean, Max
     The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.
     By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
     this convention differs from other Infer instances, which do not typically change variable values.  */
-trait Maximize[-A,-B] extends Infer[A,B] {
-  def maximize(vs:A, model:B) = infer(vs, model).setToMaximize(null)
+trait Maximize[-A<:Iterable[Var],-B<:Model] extends Infer[A,B] {
+  def maximize(vs:A, model:B, marginalizing:Summary = null): Unit = infer(vs, model, marginalizing).setToMaximize(null)
+  //def maximize(vs:A, model:B): Unit = maximize(vs, model, null)
   // TODO Consider adding the following
   //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
 }
 
+//trait MaximizeMarginalizing[-A<:Iterable[Var],-B<:Model,-C<:Summary] extends InferMarginalizing[A,B,C] {
+//  def maximize(vs:A, model:B, marginalizing:C) = infer(vs, model, marginalizing).setToMaximize(null)
+//  // TODO Consider adding the following
+//  //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
+//}
+
 
 
 /* A suite containing various recipes to maximize the value of variables to maximize some objective, 
-   usually maximum likelihood. 
+   usually maximum likelihood.  The suite tries each recipe in turn until it finds one that succeeds.
    @author Andrew McCallum */
-class MaximizeSuite extends Maximize[Any,Any] {
-  def defaultSuite: Seq[Maximize[Any,Any]] =
-    Seq(MaximizeGeneratedDiscrete.asInstanceOf[Maximize[Any,Any]],
-      MaximizeGate.asInstanceOf[Maximize[Any,Any]],
-      MaximizeProportions.asInstanceOf[Maximize[Any,Any]],
-      MaximizeGaussianMean.asInstanceOf[Maximize[Any,Any]],
-      MaximizeGaussianMeansNoSummary.asInstanceOf[Maximize[Any,Any]],
-      MaximizeGaussianVariance.asInstanceOf[Maximize[Any,Any]],
-      MaximizeByBPChain.asInstanceOf[Maximize[Any,Any]])
-  val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Any,Any]]
+class MaximizeSuite extends Maximize[Iterable[Var],Model] {
+  def defaultSuite: Seq[Maximize[Iterable[Var],Model]] =
+    Seq(MaximizeGeneratedDiscrete.asInstanceOf[Maximize[Iterable[Var],Model]],
+      MaximizeGate.asInstanceOf[Maximize[Iterable[Var],Model]],
+      MaximizeProportions.asInstanceOf[Maximize[Iterable[Var],Model]],
+      MaximizeGaussianMean.asInstanceOf[Maximize[Iterable[Var],Model]],
+      //MaximizeGaussianMeansNoSummary,
+      MaximizeGaussianVariance.asInstanceOf[Maximize[Iterable[Var],Model]],
+      MaximizeByBPChain.asInstanceOf[Maximize[Iterable[Var],Model]])
+  val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Iterable[Var],Model]]
 
   suite ++= defaultSuite
   //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
-  def infer(varying:Any, model:Any): Summary = {
+  def infer(varying:Iterable[Var], model:Model, marginalizing:Summary): Summary = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
     var summary = null.asInstanceOf[Summary]
@@ -59,14 +66,15 @@ class MaximizeSuite extends Maximize[Any,Any] {
     }
     summary
   }
-  def apply(varying:Any, model:Any): Summary = {
+  def apply(varying:Iterable[Var], model:Model): Summary = {
     val summary = infer(varying, model)
+    if (summary eq null) throw new Error("No maximizing method found.")
     summary.setToMaximize(null)
     summary
   }
   // A convenient pretty interface, especially for tutorials and beginner users
-  def apply(varying:Any)(implicit model:DirectedModel): Summary = apply(varying, model)
-  def apply(varying:Any*)(implicit model:DirectedModel): Summary = apply(varying, model)
+  def apply(varying:Var)(implicit model:DirectedModel): Summary = apply(Seq(varying), model)
+  //def apply(varying:Any*)(implicit model:DirectedModel): Summary = apply(varying, model)
 }
 object Maximize extends MaximizeSuite // A default instance of this class
 

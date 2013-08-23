@@ -58,7 +58,7 @@ object MiniBatchExample {
  * @tparam A The type of the labels
  * @tparam B The type of the model
  */
-class LikelihoodExample[A,B](labels: A, model: B, val infer: Infer[A,B]) extends Example {
+class LikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, model: B, val infer: Infer[A,B]) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val summary = infer.infer(labels, model)
     if (value != null)
@@ -334,7 +334,7 @@ class DominationLossExampleAllGood(model: Model with Parameters, goodCandidates:
  * @tparam A The type of the labels
  * @tparam B The type of the model
  */
-class StructuredPerceptronExample[A,B](labels: A, model: B, infer: Maximize[A,B]) extends LikelihoodExample(labels, model, infer)
+class StructuredPerceptronExample[A<:Iterable[Var],B<:Model](labels: A, model: B, infer: Maximize[A,B]) extends LikelihoodExample(labels, model, infer)
 
 /**
  * Implements the structured SVM objective function, by doing loss-augmented inference.
@@ -348,7 +348,7 @@ class StructuredPerceptronExample[A,B](labels: A, model: B, infer: Maximize[A,B]
  * @param infer The inference routine
  * @tparam A The type of the labels
  */
-class StructuredSVMExample[A](labels: A, model: Model with Parameters, loss: Model = HammingLoss, infer: Maximize[A,Model])
+class StructuredSVMExample[A<:Iterable[Var]](labels: A, model: Model with Parameters, loss: Model = HammingLoss, infer: Maximize[A,Model])
   extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer) {
   override def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     if (value != null) {
@@ -371,7 +371,7 @@ class StructuredSVMExample[A](labels: A, model: Model with Parameters, loss: Mod
  * @tparam A The type of the labels
  * @tparam B The type of the model
  */
-class SemiSupervisedLikelihoodExample[A,B](labels: A, model: B, inferConstrained: Infer[A,B], inferUnconstrained: Infer[A,B]) extends Example {
+class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, model: B, inferConstrained: Infer[A,B], inferUnconstrained: Infer[A,B]) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val constrainedSummary = inferConstrained.infer(labels, model)
     val unconstrainedSummary = inferUnconstrained.infer(labels, model)

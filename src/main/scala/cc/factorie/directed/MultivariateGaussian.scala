@@ -62,16 +62,15 @@ object MultivariateGaussianMixture
     Factor(a, b, c, d)
 }
 
-object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],(DirectedModel,Summary)] {
+object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],DirectedModel] {
   def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: Summary): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
   def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor1]], m: (DirectedModel,Summary)): AssignmentSummary = {
-    val (model,dSummary) = m
+  def infer(variables: Iterable[MutableTensorVar[Tensor1]], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     val assignment = new HashMapAssignment
     for (v <- variables) {
-      val m = maxMean(v, model, dSummary)
+      val m = maxMean(v, model, marginalizing)
       m.foreach(assignment(v) = _)
     }
     new AssignmentSummary(assignment)
@@ -149,11 +148,10 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
   }
   def apply(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxCovariance(covarianceVar, model, summary).foreach(covarianceVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor2]], model: DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  def infer(variables: Iterable[MutableTensorVar[Tensor2]], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     lazy val assignment = new HashMapAssignment
     for (v <- variables) {
-      val m = maxCovariance(v, model, dSummary)
+      val m = maxCovariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]])
       m.foreach(assignment(v) = _)
     }
     new AssignmentSummary(assignment)

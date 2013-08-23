@@ -23,7 +23,7 @@ case class ModelWithInference[M,V](vars: V, model: M)(implicit val infer: (V,M) 
   def summary = infer(vars, model)
 }
 
-class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.LearningRates.expDualIncrease(1.0, 0.9)) extends Infer[Seq[WarmStartWeightedSummary], Seq[(Int,DiscreteVar,Int,DiscreteVar)]] with cc.factorie.util.GlobalLogging {
+class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.LearningRates.expDualIncrease(1.0, 0.9)) extends /*Infer[Seq[WarmStartWeightedSummary], Seq[(Int,DiscreteVar,Int,DiscreteVar)]] with*/ cc.factorie.util.GlobalLogging {
   def infer(summaries: Seq[WarmStartWeightedSummary], constraints: Seq[(Int, DiscreteVar, Int, DiscreteVar)]): MAPSummary = {
     var dual = summaries.map(_.summary.logZ).sum
     var updated = true

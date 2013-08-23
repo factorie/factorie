@@ -415,9 +415,11 @@ class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions)
 }
 
 
-object MaximizeProportions extends Maximize[ProportionsVariable,DirectedModel] {
-  def infer(variable: ProportionsVariable, model:DirectedModel) = {
-    new SingletonSummary(new ProportionsAssignment(variable, maxProportions(variable, model, null)))
+object MaximizeProportions extends Maximize[Iterable[ProportionsVariable],DirectedModel] {
+  def infer(variables:Iterable[ProportionsVariable], model:DirectedModel, marginalizing:Summary): Summary = {
+    def maxProp(v:ProportionsVariable, model:DirectedModel, marginalizing:Summary): Proportions = maxProportions(v, model, marginalizing match { case m:DiscreteSummary1[DiscreteVar] => m; case null => null })
+    if (variables.size == 1) new SingletonSummary(new ProportionsAssignment(variables.head, maxProp(variables.head, model, marginalizing)))
+    else throw new Error("Multivariate case yet implemented.")
   }
   def apply(p:ProportionsVariable, model:DirectedModel): Unit = apply(p, model, null)
   def apply(p:ProportionsVariable, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)

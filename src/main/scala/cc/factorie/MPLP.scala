@@ -138,9 +138,15 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
 }
 
 object InferByMPLP extends Maximize[Iterable[DiscreteVar],Model] {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = new MPLP(variables.toSeq, model).infer
+  override def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary = null): MAPSummary = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
+    new MPLP(variables.toSeq, model).infer
+  }
 }
 
 class InferByMPLP(maxIterations: Int) extends Maximize[Iterable[DiscreteVar],Model] {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = new MPLP(variables.toSeq, model, maxIterations=maxIterations).infer
+  override def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary = null) = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
+    new MPLP(variables.toSeq, model, maxIterations=maxIterations).infer
+  }
 }

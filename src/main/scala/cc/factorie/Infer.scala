@@ -38,12 +38,18 @@ import cc.factorie.optimize.Example
 // An Inferencer is specific to a model and some variables and may be run incrementally;
 //  it may also hold on to or be initialized with a Summary (which is a container for Marginals)
 
-trait Infer[-A,-B] {
-  /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
-      If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
-      and return Some Summary on success, or None on failure. */
-  def infer(variables: A, model: B): Summary
+
+trait Infer[-A<:Iterable[Var], -B<:Model] {
+  def infer(variables:A, model:B, marginalizing:Summary = null): Summary
+  //def infer(variables:A, model:B): Summary = infer(variables, model, null)
+//  def infer(variables:A, model:B): Summary
 }
+
+//trait InferMarginalizing[-A<:Iterable[Var], -B<:Model, -C<:Summary] extends Infer[A,B] {
+//  def infer(variables:A, model:B, marginalizing:C): Summary
+//  def infer(variables:A, model:B) = infer(variables, model, null.asInstanceOf[C])
+//}
+
 // TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 => DiscretesSummary also. -akm
 object InferDiscrete1 extends Infer[Iterable[DiscreteVariable],Model] {
   // TODO Consider renaming this "asArray"
@@ -71,7 +77,8 @@ object InferDiscrete1 extends Infer[Iterable[DiscreteVariable],Model] {
     summary += new SimpleDiscreteMarginal1(varying, proportions(varying, model))
     summary
   }
-  def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+  def infer(variables:Iterable[DiscreteVariable], model:Model, marginalizing:Summary): DiscreteSummary1[DiscreteVariable] = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     apply(variables, model)
   }
 }

@@ -66,5 +66,8 @@ object InferByMeanField extends Infer[Iterable[DiscreteVar],Model] {
     for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
+    apply(variables, model)
+  }
 }

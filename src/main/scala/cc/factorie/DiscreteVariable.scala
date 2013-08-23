@@ -152,7 +152,8 @@ object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar[_]],Model] 
   def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer(varying:DiscreteVar, model:Model) =
     new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, intValue(varying, model)))
-  override def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model) = {
+  def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     val result = new DiscreteSummary1[DiscreteVar]
     for (v <- variables) result += infer(v, model)
     result

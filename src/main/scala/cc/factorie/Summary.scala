@@ -21,7 +21,9 @@ import cc.factorie
     @author Andrew McCallum */
 trait Summary {
   /** The collection of all Marginals available in this Summary */
-  def marginals: Iterable[Marginal]
+  def marginals: Iterable[Marginal1]
+  /** All the variables for which this Summary has a univariate Marginal. */
+  def variables: Iterable[Var] = marginals.map(_._1)
   /** If this Summary has a univariate Marginal for variable v, return it; otherwise return null. */
   def marginal(v:Var): Marginal1
   /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
@@ -30,8 +32,8 @@ trait Summary {
   def factorMarginals: Iterable[FactorMarginal]
   def logZ: Double
   /** If this summary has a univariate Marginal for variable v, return it in an Option; otherwise return None. */
-  def getMarginal(v:Var): Option[Marginal] = { val m = marginal(v); if (m eq null) None else Some(m) }
-  def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals overlap with each other!
+  def getMarginal(v:Var): Option[Marginal1] = { val m = marginal(v); if (m eq null) None else Some(m) }
+  def setToMaximize(implicit d:DiffList): Unit = marginals.foreach(_.setToMaximize(d)) // Note that order may matter here if Marginals are not Marginal1 and overlap with each other!
 }
 /*
 trait IncrementableInfer[-A,-B] extends Infer[A,B] {
@@ -92,7 +94,7 @@ class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
 
 /** A Summary with all its probability on one variable-value Assignment. */
 class AssignmentSummary(val assignment:Assignment) extends Summary {
-  val _marginals = assignment.variables.map(v=> v -> new Marginal1 {
+  lazy val _marginals = assignment.variables.map(v=> v -> new Marginal1 {
     def _1 = v
     def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
   }).toMap
@@ -104,7 +106,8 @@ class AssignmentSummary(val assignment:Assignment) extends Summary {
   def factorMarginals = Nil
 }
 
-// An AssignmentSummary that can be used as a result of inference.
+/** A Summary with all its probability on one variable-value Assignment,
+    and which can also be used for learning because it includes factors. */
 class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary {
   /** The collection of all Marginals available in this Summary */
   class SingletonMarginal(val _1: Var) extends Marginal1 {
@@ -143,7 +146,7 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary {
   //val variableClass = m.erasure
   val _marginals1 = new scala.collection.mutable.HashMap[V,SimpleDiscreteMarginal1[V]]
   def marginals = _marginals1.values
-  def variables = _marginals1.keys
+  override def variables = _marginals1.keys
   lazy val variableSet = variables.toSet
   def marginal(v1:Var): SimpleDiscreteMarginal1[V] = _marginals1.getOrElse(v1.asInstanceOf[V], null)
   def marginal2(vs:Var*): DiscreteMarginal = vs match {

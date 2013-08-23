@@ -538,7 +538,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
   //def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
-  def marginals: Iterable[DiscreteMarginal] = _bpFactors.values // ++ _bpVariables.values
+  override def marginals: Iterable[DiscreteMarginal1[DiscreteVar]] = _bpVariables.values // ++ _bpVariables.values
   override def marginal(v:Var): BPVariable1 = v match { case v:DiscreteVar => _bpVariables(v); case _ => null }
   //def marginal(f:Factor): DiscreteMarginal = { val vset = f.variables.toSet; val factors = _bpFactors.values.filter(bpf => bpf.variables.toSet == vset); require(factors.size == 1); factors.head } // Need to actually combine if more than one
   //def marginal(vs: Var*): DiscreteMarginal = {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
@@ -770,17 +770,24 @@ object BP {
 }
 
 trait InferByBP extends Infer[Iterable[DiscreteVar],Model] {
-  def infer(variables:Iterable[DiscreteVar], model:Model): BPSummary
+  override def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): BPSummary
+  //override def infer(variables:Iterable[DiscreteVar], model:Model): BPSummary = infer(variables, model, null)
 }
 trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 
 object InferByBPTreeSum extends InferByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables.toSet, model)
+  }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables.toSet, model)
+  }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
     BP.inferLoopy(summary)
@@ -789,14 +796,20 @@ object InferByBPLoopy extends InferByBP {
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables.toSet, model)
+  }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     BP.inferLoopyTreewise(varying, model)
   }
 }
 
 object MaximizeByBPLoopy extends MaximizeByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables.toSet, model)
+  }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)
     BP.inferLoopy(summary)
@@ -805,17 +818,26 @@ object MaximizeByBPLoopy extends MaximizeByBP {
 }
 
 object InferByBPChainSum extends InferByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables, model)
+  }
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying.toSeq, model)
 }
 
 object MaximizeByBPChain extends MaximizeByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): BPSummary = { 
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables, model)
+  }
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainMax(varying.toSeq, model)
 }
 
 object MaximizeByBPTree extends MaximizeByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model) = apply(variables.toSet, model)
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    apply(variables.toSet, model)
+  }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeMarginalMax(varying, model)
 }
 

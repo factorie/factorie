@@ -364,25 +364,27 @@ class SamplingSummary(variables: Iterable[Var], factors: Iterable[Factor]) exten
   def factorMarginals = marginalMap.values
 }
 
-class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) extends Infer[(Iterable[C],Iterable[Var],Iterable[Factor]),(Sampler[C],Model)] {
-  def infer(variables: (Iterable[C], Iterable[Var], Iterable[Factor]), m: (Sampler[C],Model)) = {
-    val summary = new SamplingSummary(variables._2, variables._3)
+class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) {
+  def infer(contexts:Iterable[C], variables:Iterable[Var], factors:Iterable[Factor], sampler:Sampler[C], model:Model): SamplingSummary = {
+    val summary = new SamplingSummary(variables, factors)
     for (i <- 0 until samplesToCollect) {
-      for (j <- 0 until samplingInterval) variables._1.foreach(m._1.process)
+      for (j <- 0 until samplingInterval) contexts.foreach(sampler.process)
       summary.marginals.foreach(_.accumulate())
       summary.factorMarginals.foreach(_.accumulate())
-      summary.logZ = maths.sumLogProb(summary.logZ, m._2.currentScore(variables._2))
+      summary.logZ = maths.sumLogProb(summary.logZ, model.currentScore(variables))
     }
     summary
   }
 }
 
 class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model) = {
+  def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model, marginalizing:Summary): SamplingSummary = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     val sampler = new VariableSettingsSampler[MutableDiscreteVar[_]](model)
     val baseInfer = new InferBySampling[MutableDiscreteVar[_]](samplesToCollect, samplingInterval)
-    baseInfer.infer((variables, variables, model.factors(variables)), (sampler, model))
+    baseInfer.infer(variables, variables, model.factors(variables), sampler, model)
   }
+  //override def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model): SamplingSummary = infer(variables, model, null)
 }
 
 object InferByGibbsSampling extends InferByGibbsSampling(10, 10, new scala.util.Random(0))

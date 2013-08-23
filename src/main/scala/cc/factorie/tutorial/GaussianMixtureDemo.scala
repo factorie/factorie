@@ -49,7 +49,7 @@ object GaussianMixtureDemo {
     meanComponents.foreach(_.set(random.nextDouble)(null))
 
     // Estimate means and zs by EM
-    val em = new EMInferencer(meanComponents, zs, InferByMeanField, model, MaximizeGaussianMean)
+    val em = new EMInferencer(meanComponents, zs, model, InferByMeanField, MaximizeGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
       // println("Estimated means at iteration "+i)
@@ -92,7 +92,7 @@ object MultivariateGaussianMixtureDemo {
     varianceComponents.foreach(_.set(new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 10.0 else random.nextDouble() * 0.5)))(null))
 
     // Estimate means and zs by EM
-    val em = new EMInferencer(meanComponents.toIterable, zs, InferByMeanField, model, MaximizeMultivariateGaussianMean)
+    val em = new EMInferencer(meanComponents.toIterable, zs, model, InferByMeanField, MaximizeMultivariateGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
 //      println("Estimated means at iteration " + i)

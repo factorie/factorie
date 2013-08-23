@@ -41,7 +41,7 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
 
 
 
-object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(DirectedModel,Summary)] {
+object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
   def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary): Double = {
     var mean = 0.0
@@ -76,21 +76,20 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(Directe
   def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[MutableDoubleVar], m:(DirectedModel,Summary)): AssignmentSummary = {
-    val (model,dSummary) = m
+  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     val assignment = new HashMapAssignment
-    for (v <- variables) { val m = maxMean(v, model, dSummary); assignment.update(v, m) }
+    for (v <- variables) { val m = maxMean(v, model, marginalizing); assignment.update(v, m) }
     new AssignmentSummary(assignment)
   }
 }
 
-object MaximizeGaussianMeansNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
-  def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
-}
-
-object MaximizeGaussianMeanNoSummary extends Maximize[MutableDoubleVar,DirectedModel] {
-  def infer(variable: MutableDoubleVar, model: DirectedModel) = MaximizeGaussianMean.infer(Seq(variable), (model,new DiscreteSummary1[DiscreteVar]))
-}
+//object MaximizeGaussianMeansNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
+//  def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
+//}
+//
+//object MaximizeGaussianMeanNoSummary extends Maximize[MutableDoubleVar,DirectedModel] {
+//  def infer(variable: MutableDoubleVar, model: DirectedModel) = MaximizeGaussianMean.infer(Seq(variable), (model,new DiscreteSummary1[DiscreteVar]))
+//}
 
 object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
@@ -142,10 +141,9 @@ object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],Dire
   def apply(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
-  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     lazy val assignment = new HashMapAssignment
-    for (v <- variables) { val va = maxVariance(v, model, dSummary); assignment.update[MutableDoubleVar, MutableDoubleVar#Value](v, va) }
+    for (v <- variables) { val va = maxVariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]]); assignment.update[MutableDoubleVar, MutableDoubleVar#Value](v, va) }
     new AssignmentSummary(assignment)
   }
 }

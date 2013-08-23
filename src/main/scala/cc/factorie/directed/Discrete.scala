@@ -61,7 +61,8 @@ object MaximizeGeneratedDiscrete extends Maximize[Iterable[DiscreteVariable],Mod
       case _ => None
     }
   }
-  def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+  def infer(variables:Iterable[DiscreteVariable], model:Model, marginalizing:Summary): DiscreteSummary1[DiscreteVariable] = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
     val result = new DiscreteSummary1[DiscreteVariable]
     for (v <- variables) infer(v, model).foreach(result += _)
     result

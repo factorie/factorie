@@ -48,7 +48,8 @@ trait MutableAssignment extends Assignment {
   def update[V<:Var, U <: V#Value](variable:V, value:U): Unit
 }
 
-/** For LabeledVar return the targetValue, otherwise return the current global assignment. */
+/** For LabeledVar return the targetValue, otherwise return the current global assignment.
+    @author Andrew McCallum */
 object TargetAssignment extends Assignment {
   def variables = throw new Error("Cannot list all variables of the TargetAssignment.")
   def apply[V<:Var](v:V): V#Value = v match {

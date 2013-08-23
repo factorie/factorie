@@ -7,8 +7,8 @@ It provides its users with a succinct language for creating [factor graphs](http
 
 ## Purpose and Capabilities
 
-FACTORIE aims to provide a full-featured framework for probabilistic graphical models (both directed and undirected) that is both flexible and scalable.  
-Thus it supplies infrastructure for representing random variables, 
+FACTORIE aims to provide a full-featured framework for probabilistic graphical models (both directed and undirected) that is both flexible for rapid prototyping and efficient at large scale for deployment in substantial applications.  
+It supplies infrastructure for representing random variables, 
 creating dependencies among them with factors, 
 running a variety of inference procedures on simple or complex dependency structures,
 and estimating parameters by various state-of-the-art methods. 
@@ -35,18 +35,18 @@ FACTORIE's limitations include the following:
 - It is not yet connected to a tool for directly producing graphs or other visualizations.
 For further discussion of FACTORIE's comparison to other related tools see [Tutorial010SimilarTools.scala.html].
 
-FACTORIE comes with pre-built model structures for:
+FACTORIE comes with pre-built model structures and command-line tools for:
 
 - classification (including document classification, with MaxEnt, NaiveBayes, SVMs and DecisionTrees)
 - linear regression
 - linear-chain conditional random fields
 - topic modeling (including latent Dirichlet allocation, as well as several variants)
-- natural language processing, including many standard NLP pipeline components: tokenization, sentence segmentation, part-of-speech tagging, named entity recognition, dependency parsing.
+- natural language processing, including many standard NLP pipeline components, such as tokenization, sentence segmentation, part-of-speech tagging, named entity recognition, dependency parsing.
 
-FACTORIE has been successfully applied to various tasks, including:
+FACTORIE has been successfully applied to many tasks, including:
 
-- cross-document entity resolution (on 100 million mentions, parallelized and distributed)
-- within-document co-reference, supervised
+- cross-document entity resolution on 100 million mentions, parallelized and distributed [(Wick, Singh, McCallum, ACL, 2012)](http://cs.umass.edu/%7Esameer/files/hierar-coref-acl12.pdf)
+- within-document co-reference, supervised [(Zheng, Vilnis, Singh, Choi, McCallum, CoNLL, 2013)](http://ciir-publications.cs.umass.edu/getpdf.php?id=1119)
 - parallel/distributed belief propagation
 - transition-based and graph-based dependency parsing
 - relation extraction, distantly supervised
@@ -58,9 +58,9 @@ FACTORIE has been successfully applied to various tasks, including:
 
 ## First Examples
 
-Before descending into details, here are three brief examples providing a flavor of FACTORIE usage.
+Before descending into details, here are three brief examples providing a taste of FACTORIE usage.
 
-### Topic Modeling and Document Classification on the Command-line
+### Topic Modeling, Document Classification and NLP on the Command-line
 
 FACTORIE come with a pre-built implementation of the [latent Dirichlet allocation (LDA)](https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation) topic model. 
 Assume that "mytextdir" is a directory name containing many plain text documents each in its own file.  Then typing 
@@ -75,8 +75,53 @@ $ bin/fac classify --read-text-dirs sportsdir politicsdir --write-classifier mym
 ```
 will train a log-linear classifier by maximum likelihood (same as maximum entropy) and save it in the file "mymodel.factorie".
 
+If you also have the Maven-supplied factorie-nlp-resources JAR in your classpath, you can run many natural language processing tools.  For example,
+
+```
+$ bin/fac nlp --pos1 --parser1 --ner1
+```
+
+will launch an NLP server that will perform part-of-speech tagging, dependency parsing and named entity recognition in its input.  The server listens for text on a socket, and spawns a parallel document processor on each request.  To feed it input, type in a separate shell
+
+```
+$ echo "Mr. Jones took a job at Google in New York.  He and his Australian wife moved from New South Wales on 4/1/12." | nc localhost 3228
+```
+
+which then produces the output:
+
+```
+1       1       Mr.             NNP     2       nn      O
+2       2       Jones           NNP     3       nsubj   U-PER
+3       3       took            VBD     0       root    O
+4       4       a               DT      5       det     O
+5       5       job             NN      3       dobj    O
+6       6       at              IN      3       prep    O
+7       7       Google          NNP     6       pobj    U-ORG
+8       8       in              IN      7       prep    O
+9       9       New             NNP     10      nn      B-LOC
+10      10      York            NNP     8       pobj    L-LOC
+11      11      .               .       3       punct   O
+
+12      1       He              PRP     6       nsubj   O
+13      2       and             CC      1       cc      O
+14      3       his             PRP$    5       poss    O
+15      4       Australian      JJ      5       amod    U-MISC
+16      5       wife            NN      6       nsubj   O
+17      6       moved           VBD     0       root    O
+18      7       from            IN      6       prep    O
+19      8       New             NNP     9       nn      B-LOC
+20      9       South           NNP     10      nn      I-LOC
+21      10      Wales           NNP     7       pobj    L-LOC
+22      11      on              IN      6       prep    O
+23      12      4/1/12          NNP     11      pobj    O
+24      13      .               .       6       punct   O
+```
+
 
 ### Univariate Gaussian
+
+The following code creates a model for holding factors that connect random variables for holding mean and variance with 1000 samples from a Gaussian.
+Then it re-estimates by maximum likelihood the mean and variance from the sampled data. 
 */
 
 package cc.factorie.tutorial
@@ -93,7 +138,8 @@ object ExampleGaussian extends App {
   //  ":~" does this and also assigns a new value to the child by sampling from the factor
   val data = for (i <- 1 to 1000) yield new DoubleVariable :~ Gaussian(mean, variance) 
   // Set mean and variance to values that maximize the likelihood of the children
-  Maximize(mean, variance)
+  Maximize(mean)
+  Maximize(variance)
   println("estimated mean %f variance %f".format(mean.value, variance.value))
 }
 
@@ -141,3 +187,96 @@ object ExampleLinearChainCRF extends App {
   // Print the inferred tags
   labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }
+
+/*&
+## History
+
+Andrew McCallum began designing and developing FACTORIE in April 2008 as an effort to build an alternative to his [MALLET](http://mallet.cs.umass.edu) toolkit that could represent arbitrarily-structured factor graphs.
+An additional goal was to demonstrate the benefits of mixing declarative and imperative styles in probabilistic programming [(McCallum, Schultz, Singh)](http://people.cs.umass.edu/~mccallum/papers/factorie-nips09.pdf).
+Initial development emphasized discrete data, undirected graphical models, MCMC inference and learning by [SampleRank](http://www.cs.umass.edu/%7Emwick/MikeWeb/Publications_files/wick09samplerank.pdf)
+
+By spring 2009 FACTORIE was hosting research experiments in entity resolution, and was extended to directed graphical models and variational inference.  
+
+In 2010 FACTORIE gained significant infrastructure for representing sequences, spans and tensors, as well as support for gradient based-optimization by conjugate gradient and LBFGS.
+By this time the toolkit was mature enough to support a wide variety of research---the experiments of over ten publications were implemented with FACTORIE.
+The interfaces for variables, factors, factor sufficient statistics, factor templates and models were made more general.  
+Sebastian Riedel, Sameer Singh and Michael Wick all joined McCallum in contributing to FACTORIE, and version 0.9.0 was released.
+
+By 2011-2012 FACTORIE was supporting extensive experiments in natural language processing, including state-of-the-art entity resolution and relation extraction, as well as parallel-distributed belief propagation on general graphs. 
+Serialization and [MongoDB](http://www.mongodb.org) interfaces were added.  
+A general interface for probabilistic inference was improved, including classes for marginals and summaries.
+The support for efficient tensors was improved.
+Alexandre Passos and Luke Vilnis began contributing extensively.
+Version 0.10 was released January 2011.  Version 1.0 milestone 1 was released in fall 2012.
+
+Work in 2013 focused on parameter estimation and preparations for the version 1.0 release.
+A flexible and efficient interface for parameter estimation was refined to separate gradient optimizers (which take a gradient and change parameters, including traditional methods like LBFGS and modern online methods such as AdaGrad), examples (which take data and produce a gradient), and trainers (which take an optimizer and examples and schedule the updates, batch or online, serial or parallel, HogWild, etc).
+Core interfaces for variables, factors, models and inference were minor adjusted for clarity.
+Writing user guide documentation began in earnest in summer 2013.  
+In addition, core natural language processing infrastructure was vastly expanded; 
+FACTORIE now provides state-of-the-art tokenization, sentence segmentation, part-of-speech, NER, dependency parser, and within-document coreference.
+
+FACTORIE version 1.0 is anticipated to be released in fall 2013.
+
+
+
+## Relationship to other toolkits
+
+### Machine learning toolkits
+
+Although at its core FACTORIE is a graphic models toolkit, since classification, clustering and regression can be expressed as trivial graphical models, FACTORIE can also be used as a tool for traditional non-structured machine learning.
+
+[MALLET](http://mallet.cs.umass.edu) provides facilities for classification, finite-state (linear chain) conditional random fields, and a few topic models.
+However, it was not designed to support arbitrarily-structured graphical models.  FACTORIE strives to supersede MALLET in all ways.
+The [GRMM](http://mallet.cs.umass.edu/grmm/) extension to MALLET, written by Charles Sutton, does support graphical models, but not with as flexible an architecture; and in any case it is no longer being developed or supported. 
+
+[SciKit-Learn](http://scikit-learn.org) provides an extensive set of tools for classification, regression, clustering, dimensionality reduction and model selection.  
+It is more mature than FACTORIE, and has been integrated into a graphic package so that it can produce graph outputs directly.
+However, it does not support graphical models.
+SciKit-Learn is implemented in Python, so in many cases it is less efficient than FACTORIE, which is JVM-based.
+
+Weka...
+
+Apache Mahout...
+
+LibLinear...
+
+
+
+### Probabilistic programming and graphical models toolkits
+
+Infer.NET...
+
+Figaro...
+
+Alchemy...
+
+PEBL...
+
+BUGS...
+
+Church...
+
+
+
+### Natural language processing toolkits
+
+OpenNLP...
+
+GATE...
+
+OpenCalais...
+
+Stanford Core NLP...
+
+
+
+### Scalable, parallel and distributed machine learning toolkits
+
+Apache Mahout...
+
+GraphLab...
+
+Vowpal Wabbit...
+
+*/

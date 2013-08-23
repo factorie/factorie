@@ -123,7 +123,8 @@ object MaximizeGate extends Maximize[Iterable[DiscreteVariable],Model] {
   def infer[V<:DiscreteVariable](varying:V, model:Model): SimpleDiscreteMarginal1[V] = {
     new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model)))
   }
-  override def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+  def infer(variables:Iterable[DiscreteVariable], model:Model, marginalizing:Summary): DiscreteSummary1[DiscreteVariable] = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
     val result = new DiscreteSummary1[DiscreteVariable]
     for (v <- variables) result += infer(v, model)
     result

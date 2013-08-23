@@ -20,8 +20,8 @@ object GaussianDemo {
     // println("Original mean=" + origMean)
     // println("Original variance=" + origVariance)
 
-    Maximize(Seq(mean), model)
-    Maximize(Seq(variance), model)
+    Maximize(mean)
+    Maximize(variance)
     // Or alternatively:
     //MaximizeGaussianMean(mean, model)
     //MaximizeGaussianVariance(variance, model)
