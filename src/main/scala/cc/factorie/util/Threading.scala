@@ -21,8 +21,15 @@ object Threading {
     pool.invokeAll(futures).toSeq.map(_.get())
   }
 
-  def javaAction(in: => Unit): Callable[Object] = new Callable[Object] { def call(): Object = {in; null} }
-  def javaClosure[A](in: => A): Callable[A] = new Callable[A] { def call(): A = in }
+  def javaAction(in: => Unit): Callable[Object] = new Callable[Object] { def call(): Object = {
+    try {
+      in
+    } catch {
+      case t: Throwable => t.printStackTrace(); throw new Error("Caught error in parallel computation", t)
+    }
+    null
+  }}
+  def javaClosure[A](in: => A): Callable[A] = new Callable[A] { def call(): A =  try { in } catch { case t: Throwable => t.printStackTrace(); throw new Error(t) } }
 
   def newFixedThreadPool(numThreads: Int) = Executors.newFixedThreadPool(numThreads)
   def withThreadPool[A](numThreads: Int)(body: ExecutorService => A) = {

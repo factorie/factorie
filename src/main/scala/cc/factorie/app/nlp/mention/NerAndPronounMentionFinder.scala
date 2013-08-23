@@ -19,6 +19,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.span.indexOf(token)).mkString(","); case _ => "_" }
 
+  val upperCase = "[A-Z]+".r
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
     val spans = ArrayBuffer[(String,TokenSpan)]()
     for (s <- doc.sections;t <- s.tokens) {
@@ -38,7 +39,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
           }
         }
       } else {
-        if ( t.string.length > 2 && !t.containsLowerCase && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
+        if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
           spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1)(null))
         }
       }
