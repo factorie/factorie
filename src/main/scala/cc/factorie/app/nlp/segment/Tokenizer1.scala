@@ -74,8 +74,8 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val number = "(?<![\\p{Nd}])[-\\+\\.,]?\\p{Nd}+([\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional [+-.,] and a number, followed by numbers or .:, punc.  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens.
   val number2 = ap+"\\p{Nd}{2}"; patterns += number2 // For years, like '91
   patterns += ap2
-  val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
   val ellipsis = "\\.{2,5}|(\\.[ \u00A0]){2,4}\\.|[\u0085\u2026]"; patterns += ellipsis // catch the ellipsis not captured in repeatedPunc, such as ". . ." and unicode ellipsis.  Include \\.{2,5} for use in TokenNormalizer1
+  val repeatedPunc = "[\\*=\\+\\.\\?!#]+|-{4,}"; patterns += repeatedPunc // probably used as ASCII art
   val mdash = "-{2,3}|&(mdash|MD);|[\u2014\u2015]"; patterns += mdash
   val dash = "&(ndash);|[-\u0096\u0097\\p{Pd}]"; patterns += dash // I think \p{Pd} should include \u2013\u2014\u2015
   val punc = "\\p{P}"; patterns += punc // This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, ---
