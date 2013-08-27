@@ -42,8 +42,9 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
         if (discreteMarginal1.proportions.maxIndex != discreteMarginal2.proportions.maxIndex) {
           updated = true
           val t = new SparseIndexedTensor1(discreteMarginal1.proportions.length)
-          t += (discreteMarginal1.proportions.maxIndex, -1.0)
-          t += (discreteMarginal2.proportions.maxIndex, 1.0)
+          val rate = 1.0/(1 + dualIncreases)
+          t += (discreteMarginal1.proportions.maxIndex, -rate)
+          t += (discreteMarginal2.proportions.maxIndex, rate)
           val step = stepSize(iterations, dualIncreases)
           summaries(i1).incrementWeights(v1, t, step)
           summaries(i2).incrementWeights(v2, t, -step)
@@ -74,6 +75,7 @@ object DualDecomposition {
     class WeightedFactor(v: DiscreteVar, t: Tensor, d: Double) extends Factor1[DiscreteVar](v) {
       def score(v1: DiscreteVar#Value) = d*(v1 dot t)
       override def valuesScore(v1: Tensor) = d*(v1 dot t)
+      override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
     }
     def incrementWeights(v: DiscreteVar, t: Tensor, d: Double) { weightedModel += new WeightedFactor(v, t, d)}
   }
