@@ -68,7 +68,7 @@ object WordSegmenterDemo2 {
       result
     }
     def factors(variables:Iterable[Var]): Iterable[Factor] = variables match {
-      case variables:IndexedSeq[Label] => factorsWithContext(variables)
+      case variables:IndexedSeq[Label @unchecked] => factorsWithContext(variables)
     }
     override def factors(v:Var) = {
       val label = v.asInstanceOf[Label]

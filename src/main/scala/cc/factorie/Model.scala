@@ -168,7 +168,11 @@ class CombinedModel(theSubModels:Model*) extends Model {
   val subModels = new ArrayBuffer[Model] ++= theSubModels
   def +=(model:Model): Unit = subModels += model
   def ++=(models:Iterable[Model]): Unit = subModels ++= models
-  def factors(variables:Iterable[Var]): Iterable[Factor] = { val result = newFactorsCollection; subModels.foreach(_.addFactors(variables, result)); result }
+  def factors(variables:Iterable[Var]): Iterable[Factor] = {
+    val result = newFactorsCollection
+    subModels.foreach(_.addFactors(variables, result))
+    result
+  }
   //override def factors(variable:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(variable, result); result }
   //override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
 }
