@@ -171,10 +171,9 @@ object ExampleLinearChainCRF extends App {
     val markov = new DotFamilyWithStatistics2[Label,Label] { val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size)) }
     val observ = new DotFamilyWithStatistics2[Label,Token] { val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.size)) }
     // Given some variables, return the collection of factors that neighbor them.
-    override def factors(labels:Iterable[Var]) = labels match {
+    def factors(labels:Iterable[Var]) = labels match {
       case labels:LabelSeq => labels.map(label => new observ.Factor(label, label.token)) ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
     }
-    def factors(v:Var) = throw new Error("This model does not implement unrolling from a single variable.")
   }
   // Learn parameters
   val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)

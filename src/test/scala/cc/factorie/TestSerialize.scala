@@ -135,7 +135,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
        val weights = Weights(new DenseTensor1(d.length))
      }
      def families: Seq[DotFamily] = Seq(family1)
-     def factors(v: Var) = Nil
+     def factors(v: Iterable[Var]) = Nil
    }
    val model = new Model1(domain1)
    model.family1.weights.value(6) = 12
@@ -307,7 +307,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
      Seq.empty[Factor]
    }
-   def factors(v:Var) = throw new Error("Not yet implemented.")
+   def factors(v:Iterable[Var]) = throw new Error("Not yet implemented.")
  }
 
  val data = Array(

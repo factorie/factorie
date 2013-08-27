@@ -67,7 +67,10 @@ object WordSegmenterDemo2 {
       }
       result
     }
-    def factors(v:Var) = {
+    def factors(variables:Iterable[Var]): Iterable[Factor] = variables match {
+      case variables:IndexedSeq[Label] => factorsWithContext(variables)
+    }
+    override def factors(v:Var) = {
       val label = v.asInstanceOf[Label]
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)
