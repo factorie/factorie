@@ -32,12 +32,12 @@ trait Model {
   // TODO Consider adding "type FactorType <: Factor" here so that Template2.factors can return the right type. -akm
   
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
-  def factors(variables:Iterable[Var]): Iterable[Factor]// = { val set = newFactorsCollection; addFactors(variables, set); set }
+  def factors(variables:Iterable[Var]): Iterable[Factor]
   /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-  def factors(variable:Var): Iterable[Factor] = factors(new SingletonIndexedSeq(variable)) //{ val set = newFactorsCollection; addFactors(variable, set); set }
+  def factors(variable:Var): Iterable[Factor] = factors(new SingletonIndexedSeq(variable))
   /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors.
       By default returns just the factors that neighbor Diff.variable, but this method may be overridden for special handling of the Diff */
-  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else factors(d.variable) //{ val set = newFactorsCollection; addFactors(d, set); set }
+  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else factors(d.variable)
   /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors.
       By default returns just the factors that neighbor the DiffList.variables, but this method may be overridden for special handling of the DiffList */
   def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else factors(dl.foldLeft(List[Var]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
@@ -46,7 +46,7 @@ trait Model {
   /** Append to "result" all Factors in this Model that touch any of the given "variables".  This method must not append duplicates. */
   def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit = result ++= factors(variables)
   /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
-  def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= factors(new SingletonIndexedSeq(variable)) // result ++= factors(variable)
+  def addFactors(variable:Var, result:Set[Factor]): Unit = addFactors(new SingletonIndexedSeq(variable), result)
   /** Append to "result" all Factors in this Model that are affected by the given Diff.  This method must not append duplicates. */
   def addFactors(d:Diff, result:Set[Factor]): Unit = if (d.variable ne null) addFactors(d.variable, result)
   /** Append to "result" all Factors in this Model that are affected by the given DiffList.  This method must not append duplicates. */
@@ -143,6 +143,7 @@ class ItemizedModel(initialFactors:Factor*) extends Model {
   }
   this ++= initialFactors
   override def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= _factors(variable) // This is new primitive
+  override def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit = variables.foreach(addFactors(_, result))
   override def factors(variable:Var): Iterable[Factor] = _factors(variable)
   def factors(variables:Iterable[Var]): Iterable[Factor] = { val set = newFactorsCollection; variables.foreach(v => addFactors(v, set)); set }
   def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
@@ -170,7 +171,7 @@ class CombinedModel(theSubModels:Model*) extends Model {
   def ++=(models:Iterable[Model]): Unit = subModels ++= models
   def factors(variables:Iterable[Var]): Iterable[Factor] = { val result = newFactorsCollection; subModels.foreach(_.addFactors(variables, result)); result }
   //override def factors(variable:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(variable, result); result }
-  //override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
+  override def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variables, result))
 }
 
 /** A Model whose Factors come from Templates.

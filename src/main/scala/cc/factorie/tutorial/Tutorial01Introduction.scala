@@ -1,5 +1,12 @@
 /*&
 
+# FACTORIE User Guide
+
+Version 1.0
+
+Andrew McCallum, Alexandre Passos, Sameer Singh,... 
+
+
 # Introduction
 
 [FACTORIE](http://factorie.cs.umass.edu) is a toolkit for deployable probabilistic modeling, implemented as a software library in [Scala](http://scala-lang.org).
@@ -60,16 +67,16 @@ FACTORIE has been successfully applied to many tasks, including:
 
 Before descending into details, here are three brief examples providing a taste of FACTORIE usage.
 
-### Topic Modeling, Document Classification and NLP on the Command-line
+### Topic Modeling, Document Classification, and NLP on the Command-line
 
-FACTORIE come with a pre-built implementation of the [latent Dirichlet allocation (LDA)](https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation) topic model. 
-Assume that "mytextdir" is a directory name containing many plain text documents each in its own file.  Then typing 
+FACTORIE comes with a pre-built implementation of the [latent Dirichlet allocation (LDA)](https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation) topic model. 
+If "mytextdir" is a directory name containing many plain text documents each in its own file, then typing 
 ```
 $ bin/fac lda --read-dirs mytextdir --num-topics 20 --num-iterations 100
 ```
 will run 100 iterations of a sparse collapsed Gibbs sampling on all the documents, and print out the results every 10 iterations. FACTORIE's LDA implementation is faster than [MALLET](http://mallet.cs.umass.edu)'s.
 
-You can also train a document classifier. Assume that "sportsdir" and "politicsdir" are each directories that  contain plan text files in the categories sports and politics. Typing
+You can also train a document classifier. If "sportsdir" and "politicsdir" are each directories that contain plan text files in the categories sports and politics, then typing
 ```
 $ bin/fac classify --read-text-dirs sportsdir politicsdir --write-classifier mymodel.factorie
 ```
