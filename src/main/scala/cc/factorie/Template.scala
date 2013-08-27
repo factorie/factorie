@@ -16,6 +16,7 @@ package cc.factorie
 
 import collection.mutable.HashSet
 import scala.collection.mutable.Set
+import cc.factorie.util.SingletonIndexedSeq
 
 // Factor Templates are able to create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies:
@@ -60,10 +61,19 @@ trait Template extends FamilyWithNeighborDomains with FamilyWithNeighborClasses 
   //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   
   /** Users should call this method to create and return all Factors of this Template touching the given Var. */
-  final def factors(v:Var): Iterable[FactorType] = {
+  override final def factors(v:Var): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]
+  }
+  
+  final def factors(variables:Iterable[Var]): Iterable[FactorType] = variables match {
+    case variables:SingletonIndexedSeq[Var] => factors(variables.elt)
+    case variables => {
+      val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
+      variables.foreach(v => addFactors(v, result))
+      result.asInstanceOf[Iterable[FactorType]]
+    }
   }
     
   /** A Factor Template has just one Factor Family: itself. */

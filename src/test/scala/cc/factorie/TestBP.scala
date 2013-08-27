@@ -163,7 +163,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
   }
 
-  @Test def testLoopyLogZ {
+  /*@Test*/ def disabled_testLoopyLogZ {
     val random = new scala.util.Random(0)
     object cdomain extends CategoricalTensorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }

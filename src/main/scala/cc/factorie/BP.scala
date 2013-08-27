@@ -490,7 +490,10 @@ object BPSummary {
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
     val summary = new BPSummary(ring)
     val varyingSet = varying.toSet
-    for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+    //print("object BPSummary variables "+varying.size)
+    val factors = model.factors(varying)
+    //println("  factors "+factors.size)
+    for (factor <- factors) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
     summary
   }
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = apply(varying, BPSumProductRing, model)
@@ -700,6 +703,7 @@ object BP {
       case _ => {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
+        //assert(markovBPFactors.size > 0)
         //val bfsSeq = BPUtil.bfs(varying.toSet, summary.bpVariable(varying.head), false)
         //throw new Error("This is not yet working. -akm")
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
@@ -721,7 +725,7 @@ object BP {
         // Do Viterbi backtrace, setting label values
         // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
         // Because we might want to run this inference, but not change global state.
-        var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // TODO We don't actually need to expNormalize here; save computation by avoiding this
+        var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // We don't actually need to expNormalize here; save computation by avoiding this
         markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
@@ -778,37 +782,49 @@ trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 object InferByBPTreeSum extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    apply(variables.toSet, model)
+    //apply(variables.toSet, model)
+    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    BP.inferTreeSum(variables, model)
   }
-  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
+  //def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    apply(variables.toSet, model)
-  }
-  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
+    //apply(variables.toSet, model)
+    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    val summary = LoopyBPSummary(variables, BPSumProductRing, model)
     BP.inferLoopy(summary)
     summary
   }
+//  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
+//    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
+//    BP.inferLoopy(summary)
+//    summary
+//  }
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    apply(variables.toSet, model)
+    //apply(variables.toSet, model)
+    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    BP.inferLoopyTreewise(variables, model)
   }
-  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-    BP.inferLoopyTreewise(varying, model)
-  }
+//  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
+//    BP.inferLoopyTreewise(varying, model)
+//  }
 }
 
 object MaximizeByBPLoopy extends MaximizeByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    apply(variables.toSet, model)
+    //apply(variables.toSet, model)
+    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    val summary = LoopyBPSummaryMaxProduct(variables, BPMaxProductRing, model)
+    BP.inferLoopy(summary)
+    summary
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)

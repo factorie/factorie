@@ -94,11 +94,12 @@ with Parameters
     }
     result
   }
-  override def factors(variables: Iterable[Var]): Iterable[Factor] = variables match {
+  def factors(variables: Iterable[Var]): Iterable[Factor] = variables match {
     case variables: IndexedSeq[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) => factorsWithContext(variables)
-    case _ => super.factors(variables)
+    case variables: Seq[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) => factorsWithContext(variables.toIndexedSeq)
+    case _ => { val result = newFactorsCollection; variables.foreach(v => result ++= factors(v)); result }
   }
-  def factors(v: Var) = v match {
+  override def factors(v: Var) = v match {
     case label:Label if label.getClass eq labelClass => {
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)

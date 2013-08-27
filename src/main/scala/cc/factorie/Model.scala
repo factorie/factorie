@@ -14,19 +14,16 @@
 
 package cc.factorie
 import cc.factorie.la._
+import cc.factorie.util.SingletonIndexedSeq
 import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet,ListBuffer}
 import scala.collection.immutable.ListSet
 import scala.collection.mutable.Set
 import scala.collection.generic.Growable
 
-// TODO In the future, consider things like:
-// POSTagger extends TemplateModel with Inferencer[POSLabel]
-// ConcreteLinearChainPOS extends POSTemplateModel with BPInferencer[POSLabel]
-
 /** In FACTORIE a Model is a source of factors.
     In particular, it can return the collection of factors that touch a collection of variables.
-    (Variables do not know directly about the factors that touch them.
-    This allows us to consider multiple different Models applied to the same set of data.)
+    Variables do not know directly about the factors that touch them.
+    This allows us to consider multiple different Models applied to the same data.
     @author Andrew McCallum
     @since 0.11
  */
@@ -34,20 +31,22 @@ import scala.collection.generic.Growable
 trait Model {
   // TODO Consider adding "type FactorType <: Factor" here so that Template2.factors can return the right type. -akm
   
-  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-  def factors(variable:Var): Iterable[Factor] // = { val set = newFactorsCollection; addFactors(variable, set); set }
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
-  def factors(variables:Iterable[Var]): Iterable[Factor] = { val set = newFactorsCollection; addFactors(variables, set); set }
-  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
-  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set }
-  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
-  def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
+  def factors(variables:Iterable[Var]): Iterable[Factor]// = { val set = newFactorsCollection; addFactors(variables, set); set }
+  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
+  def factors(variable:Var): Iterable[Factor] = factors(new SingletonIndexedSeq(variable)) //{ val set = newFactorsCollection; addFactors(variable, set); set }
+  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors.
+      By default returns just the factors that neighbor Diff.variable, but this method may be overridden for special handling of the Diff */
+  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else factors(d.variable) //{ val set = newFactorsCollection; addFactors(d, set); set }
+  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors.
+      By default returns just the factors that neighbor the DiffList.variables, but this method may be overridden for special handling of the DiffList */
+  def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else factors(dl.foldLeft(List[Var]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
 
-  // TODO Make these addFactors protected. -akm
-  /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
-  def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= factors(variable)
+  // TODO Make these addFactors protected?  Perhaps not because they could be reasonably useful to outside users. -akm
   /** Append to "result" all Factors in this Model that touch any of the given "variables".  This method must not append duplicates. */
-  def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit  = for (v <- variables) addFactors(v, result)
+  def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit = result ++= factors(variables)
+  /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
+  def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= factors(new SingletonIndexedSeq(variable)) // result ++= factors(variable)
   /** Append to "result" all Factors in this Model that are affected by the given Diff.  This method must not append duplicates. */
   def addFactors(d:Diff, result:Set[Factor]): Unit = if (d.variable ne null) addFactors(d.variable, result)
   /** Append to "result" all Factors in this Model that are affected by the given DiffList.  This method must not append duplicates. */
@@ -143,8 +142,9 @@ class ItemizedModel(initialFactors:Factor*) extends Model {
     override def default(v:Var) = ListSet.empty[Factor]
   }
   this ++= initialFactors
-  override def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= _factors(variable)
-  def factors(variable:Var): Iterable[Factor] = _factors(variable)
+  override def addFactors(variable:Var, result:Set[Factor]): Unit = result ++= _factors(variable) // This is new primitive
+  override def factors(variable:Var): Iterable[Factor] = _factors(variable)
+  def factors(variables:Iterable[Var]): Iterable[Factor] = { val set = newFactorsCollection; variables.foreach(v => addFactors(v, set)); set }
   def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) match {
     case h:ListSet[Factor] => 
@@ -168,8 +168,9 @@ class CombinedModel(theSubModels:Model*) extends Model {
   val subModels = new ArrayBuffer[Model] ++= theSubModels
   def +=(model:Model): Unit = subModels += model
   def ++=(models:Iterable[Model]): Unit = subModels ++= models
-  def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-  override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
+  def factors(variables:Iterable[Var]): Iterable[Factor] = { val result = newFactorsCollection; subModels.foreach(_.addFactors(variables, result)); result }
+  //override def factors(variable:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(variable, result); result }
+  //override def addFactors(variable:Var, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
 }
 
 /** A Model whose Factors come from Templates.
@@ -181,10 +182,12 @@ class TemplateModel(theTemplates:Template*) extends Model {
   def ++=[T<:Template](templates:Iterable[T]): Iterable[T] = { this.templates ++= templates; templates }
   // Just a method name aliase, aiming to make use inside the TemplateModel subclass prettier.
   def addTemplate[T<:Template](template:T): T = { templates += template; template }
-  // Just a method name aliase, aiming to make use inside the TemplateModel subclass prettier.
+  // Just a method name alias, aiming to make use inside the TemplateModel subclass prettier.
   def addTemplates[T<:Template](templates:T*): Iterable[T] = { this.templates ++= templates; templates }
-  def factors(context:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
-  override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result))
+  override def addFactors(variable:Var, result:Set[Factor]): Unit = templates.foreach(_.addFactors(variable, result)) // This is the new primitive
+  def factors(variables:Iterable[Var]): Iterable[Factor] = { val result = newFactorsCollection; addFactors(variables, result); result }
+  override def factors(variable:Var): Iterable[Factor] = { val result = newFactorsCollection; addFactors(variable, result); result }
+  override def addFactors(variables:Iterable[Var], result:Set[Factor]): Unit = variables.foreach(v => addFactors(v, result))
   def families: Seq[Template] = templates
   def familiesOfClass[F<:Template](fclass:Class[F]): Iterable[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = templates.foreach(_.limitDiscreteValuesAsIn(vars)) 

@@ -48,27 +48,8 @@ class ItemizedDirectedModel extends MutableDirectedModel {
 //    result ++= set
 //    result
 //  }
-  def factors(v:Var): Iterable[Factor] = { val result = new collection.mutable.HashSet[Factor]; addFactors(v, result); result }
-//  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
-//    val result = new ArrayBuffer[DirectedFactor]
-//    variables.foreach(v => {
-//      if (_parentFactor.contains(v)) result += _parentFactor(v)
-//      // TODO Do we need to use extendedParentFactors also?
-//      //if (_childFactors.contains(v)) result ++= _childFactors(v)
-//      if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
-//      // TODO special handling of ContainerVariable[_]??
-//    })
-//    result
-//  }
-//  def factorsWithDuplicates(v:Variable): Iterable[Factor] = {
-//    val result = new ArrayBuffer[DirectedFactor]
-//    if (_parentFactor.contains(v)) result += _parentFactor(v)
-//    // TODO Do we need to use extendedParentFactors also?
-//    //if (_childFactors.contains(v)) result ++= _childFactors(v)
-//    if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
-//    // TODO special handling of ContainerVariable[_]??
-//    result
-//  }
+  def factors(variables:Iterable[Var]): Iterable[Factor] = { val result = new collection.mutable.HashSet[Factor]; variables.foreach(v => addFactors(v, result)); result }
+  override def factors(v:Var): Iterable[Factor] = { val result = new collection.mutable.HashSet[Factor]; addFactors(v, result); result }
   def allFactors: Iterable[Factor] = _parentFactor.values ++ _childFactors.values.flatten
   def getParentFactor(v:Var): Option[DirectedFactor] = _parentFactor.get(v)
   def getChildFactors(v:Var): Option[Iterable[DirectedFactor]] = _childFactors.get(v)
