@@ -41,6 +41,8 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
       } else {
         if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
           spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1)(null))
+        } else if (t.posLabel.categoryValue == "NNP") {
+          spans += ("PER" -> new TokenSpan(s, t.positionInSection, 1)(null))
         }
       }
     }
