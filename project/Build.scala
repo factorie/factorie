@@ -44,7 +44,6 @@ object Build extends sbt.Build {
 
 object Dependencies {
   val resolutionRepos = Seq(
-    ScalaToolsSnapshots,
     "IESL repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/groups/public/",
     "Scala tools" at "https://oss.sonatype.org/content/groups/scala-tools",
     "Third party" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/"
