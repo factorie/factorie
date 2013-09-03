@@ -4,7 +4,7 @@ This directory contains the source of FACTORIE, a toolkit for probabilistic mode
 
 ## Installation
 
-Installation relies on Maven, version 2.  If you don't already have maven, install it from http://maven.apache.org/download.html.  
+Installation relies on Maven, version 3.  If you don't already have maven, install it from http://maven.apache.org/download.html.  
 
 To compile type
 
