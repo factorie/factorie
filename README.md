@@ -24,6 +24,26 @@ To create a similar self-contained .jar that also contains all resources needed 
 $ mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
 ```
 
+### Alternative installation using [sbt](http://scala-sbt.org)
+
+To compile type
+
+```
+$ ./sbt compile
+```
+
+To create a self-contained .jar, that contains FACTORIE plus all its dependencies, including the Scala runtime, type 
+
+```
+$ ./sbt assembly
+```
+
+To create a similar self-contained .jar that also contains all resources needed for NLP (including our lexicons and pre-trained model parameters), type  
+
+```
+$ ./sbt -J-Xmx2G with-nlp-resources:assembly
+```
+
 ## Try it out
 
 Then you can run some FACTORIE tools from the command-line. For example, you can run many natural language processing tools.
