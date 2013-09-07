@@ -45,7 +45,7 @@ object NLP {
     opts.parse(args)
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     for (annotator <- annotators) map += annotator
-    val pipeline = DocumentAnnotatorPipeline(annotators.flatMap(_.postAttrs), prereqs=Seq(), map=map.toMap)
+    val pipeline = DocumentAnnotatorPipeline(map=map.toMap, prereqs=Nil, annotators.flatMap(_.postAttrs))
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
 
     try {
