@@ -4,12 +4,19 @@ This directory contains the source of FACTORIE, a toolkit for probabilistic mode
 
 ## Installation
 
-Installation relies on Maven, version 2.  If you don't already have maven, install it from http://maven.apache.org/download.html.  
+Installation relies on Maven, version 3.  If you don't already have maven, install it from http://maven.apache.org/download.html.
+Alternatively, you can use [sbt](http://scala-sbt.org) as outlined below (a script for running sbt comes bundled with Factorie).
 
 To compile type
 
 ```
 $ mvn compile
+```
+
+To accomplish the same with sbt, type
+
+```
+$ ./sbt compile
 ```
 
 To create a self-contained .jar, that contains FACTORIE plus all its dependencies, including the Scala runtime, type 
@@ -18,10 +25,22 @@ To create a self-contained .jar, that contains FACTORIE plus all its dependencie
 $ mvn -Dmaven.test.skip=true package -Pjar-with-dependencies
 ```
 
+To accomplish the same with sbt, type
+
+```
+$ ./sbt assembly
+```
+
 To create a similar self-contained .jar that also contains all resources needed for NLP (including our lexicons and pre-trained model parameters), type  
 
 ```
 $ mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
+```
+
+To accomplish the same with sbt, type
+
+```
+$ ./sbt -J-Xmx2G with-nlp-resources:assembly
 ```
 
 ## Try it out
