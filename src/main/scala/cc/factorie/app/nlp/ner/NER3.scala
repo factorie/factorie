@@ -54,12 +54,12 @@ class NER3 extends DocumentAnnotator {
   def postAttrs = Seq(classOf[BilouConllNerLabel])
   def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
 
-  object ChainNer2FeaturesDomain extends CategoricalTensorDomain[String]
+  object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = ChainNer2FeaturesDomain
     override def skipNonCategories = true
   }
-  object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+  object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = ChainNerFeaturesDomain
     override def skipNonCategories = true
@@ -133,7 +133,7 @@ class NER3 extends DocumentAnnotator {
 
   def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
 
-  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
     vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
     vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
     for(t2 <- prevWindowNum(from,2)) {
@@ -148,7 +148,7 @@ class NER3 extends DocumentAnnotator {
     }
   }
   
-  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
     var count = 0
     var compareToken : Token = token
     while(count < 200 && compareToken.hasPrev) {
@@ -168,7 +168,7 @@ class NER3 extends DocumentAnnotator {
   }
   
 
-  def initFeatures(document:Document, vf:Token=>CategoricalTensorVar[String]): Unit = {
+  def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {

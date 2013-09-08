@@ -23,7 +23,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
   
-  object FeatureDomain extends CategoricalTensorDomain[String]
+  object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable extends BinaryFeatureVectorVariable[String] {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen

@@ -28,7 +28,7 @@ import java.io.File
 object ChainNER2b {
 
   // The variable classes
-  object TokenDomain extends CategoricalTensorDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenDomain
   }

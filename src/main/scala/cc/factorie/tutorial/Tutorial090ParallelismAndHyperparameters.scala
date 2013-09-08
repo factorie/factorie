@@ -51,7 +51,7 @@ object Tutorial090ParallelismAndHyperparameters {
 
     /*&
      * Other objects which also use CategoricalDomains as their back ends, such as the
-     * CategoricalTensorDomain are then also thread-safe.
+     * CategoricalVectorDomain are then also thread-safe.
      *
      * Also for all DocumentAnnotators calling annotator.process in multiple threads
      * is safe.
@@ -71,7 +71,7 @@ object Tutorial090ParallelismAndHyperparameters {
     class Label(val token: Token, s: String) extends LabeledCategoricalVariable(s) {
       def domain = LabelDomain
     }
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalVectorDomain[String]
     class Features(val token: Token) extends BinaryFeatureVectorVariable[String] {
       def domain = FeaturesDomain
     }

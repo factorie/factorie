@@ -16,7 +16,7 @@ class POS1 extends DocumentAnnotator {
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
   
-  object FeatureDomain extends CategoricalTensorDomain[String]
+  object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable(t:Tensor1) extends BinaryFeatureVectorVariable[String] { def domain = FeatureDomain; set(t)(null) } // Only used for printing diagnostics
   lazy val model = new LinearMultiClassClassifier(PennPosDomain.size, FeatureDomain.dimensionSize)
   

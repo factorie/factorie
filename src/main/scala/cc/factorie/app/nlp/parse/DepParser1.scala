@@ -38,7 +38,7 @@ class DepParser1 extends DocumentAnnotator {
     val features = new NonProjDependencyParserFeatures(this)
     features ++= featureGenerators.map(_.apply(state))
   }
-  object featuresDomain extends CategoricalTensorDomain[String]
+  object featuresDomain extends CategoricalVectorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen

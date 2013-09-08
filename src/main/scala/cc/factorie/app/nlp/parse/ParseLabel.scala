@@ -24,7 +24,7 @@ import cc.factorie.util.Cubbie
 //object ParseLabelDomain extends CategoricalDomain[String]
 //class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = ParseLabelDomain }
 //
-//object ParseFeaturesDomain extends CategoricalTensorDomain[String]
+//object ParseFeaturesDomain extends CategoricalVectorDomain[String]
 //class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
 //
 //class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable[Token,Token](theChild, initialParent) {

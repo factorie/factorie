@@ -16,11 +16,11 @@ import cc.factorie.util.coref.GenericEntityMap
  */
 
 trait PairwiseCorefModel extends Parameters {
-  val MentionPairFeaturesDomain = new CategoricalTensorDomain[String] {
+  val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
   }
-  val MentionPairCrossFeaturesDomain = new DiscreteTensorDomain {
+  val MentionPairCrossFeaturesDomain = new VectorDomain {
     def dimensionDomain: DiscreteDomain = new DiscreteDomain(5e6.toInt + 1)
   }
 
@@ -36,7 +36,7 @@ trait PairwiseCorefModel extends Parameters {
   def deserialize(stream: DataInputStream) {
     BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)
     BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
-    BinarySerializer.deserialize(new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
+    BinarySerializer.deserialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
     BinarySerializer.deserialize(this, stream)
     stream.close()
     MentionPairFeaturesDomain.freeze()
@@ -50,7 +50,7 @@ trait PairwiseCorefModel extends Parameters {
     BinarySerializer.serialize(MentionPairLabelThing.tokFreq,stream)
     MentionPairFeaturesDomain.freeze()
     BinarySerializer.serialize(MentionPairFeaturesDomain , stream)
-    BinarySerializer.serialize(new CategoricalTensorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
+    BinarySerializer.serialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
     BinarySerializer.serialize(this,stream)
   }
 

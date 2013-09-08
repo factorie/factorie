@@ -19,9 +19,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.SynchronizedMap
 
-/** A super trait for feature vectors, both those based on CategoricalDomain[C] and 
-    those without explicitly stored categories in their domains, such as HashFeatureVectorVariable. */
-trait FeatureVectorVar[-C] extends DiscreteTensorVar {
+/** A super trait for feature vectors, both (a) those based on CategoricalDomain[C] and 
+    (b) those without explicitly stored categories in their domains, such as HashFeatureVectorVariable. */
+trait FeatureVectorVar[-C] extends VectorVar {
   def +=(elt:C, incr:Double): Unit
   def +=(elt:C): Unit
   def ++=(elts:Iterable[C]): Unit
@@ -30,7 +30,7 @@ trait FeatureVectorVar[-C] extends DiscreteTensorVar {
 /** The standard variable for holding binary feature vectors.
     It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
     @author Andrew McCallum */
-abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[C] with FeatureVectorVar[C] {
+abstract class BinaryFeatureVectorVariable[C] extends CategoricalVectorVariable[C] with FeatureVectorVar[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
   override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
@@ -39,7 +39,7 @@ abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[
 /** The standard variable for holding feature vectors with non-binary values.
     It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
     @author Andrew McCallum */
-abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] with FeatureVectorVar[C] {
+abstract class FeatureVectorVariable[C] extends CategoricalVectorVariable[C] with FeatureVectorVar[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
   override def toString: String = {
@@ -76,7 +76,7 @@ object HashFeatureVectorVariable {
     These can be used as feature vectors where one wants to avoid a large or growing CategoricalDomain.
     The 'dimensionDomain' is abstract.
     @author Andrew McCallum */
-abstract class HashFeatureVectorVariable extends DiscreteTensorVariable with FeatureVectorVar[Any] {
+abstract class HashFeatureVectorVariable extends VectorVariable with FeatureVectorVar[Any] {
   override def domain: DiscreteDomain
   def this(initVals:Iterable[Any]) = { this(); initVals.map(this.+=_) }
   def +=(c:Any, incr:Double): Unit = {

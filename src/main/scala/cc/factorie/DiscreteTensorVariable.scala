@@ -24,7 +24,7 @@ import cc.factorie.util.Cubbie
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait DiscreteTensorDomain extends Domain[Tensor1] {
+trait VectorDomain extends Domain[Tensor1] {
   def dimensionDomain: DiscreteDomain
   /** A convenience method to get the size of the dimensionDomain.
       This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
@@ -33,27 +33,30 @@ trait DiscreteTensorDomain extends Domain[Tensor1] {
   def freeze(): Unit = dimensionDomain.freeze()
 }
 
-/** A Cubbie for serializing a DiscreteTensorDomain.
+// TODO Consider instead
+// class VectorDomain(val dimensionDomain:DiscreteDomain) extends Domain[Tensor1]
+//   def this(size:Int) = this(new DiscreteDomain(size))
+//   def this(sizeProxy:Iterable[_]) = this(new DiscreteDomain(sizeProxy))
+
+/** A Cubbie for serializing a VectorDomain.
     It only saves the dimensionDomain.size. */
-class DiscreteTensorDomainCubbie extends Cubbie {
+class VectorDomainCubbie extends Cubbie {
   val size = IntSlot("size")
-  def store(d: DiscreteTensorDomain): Unit = size := d.dimensionDomain.size
-  def fetch(): DiscreteTensorDomain = new DiscreteTensorDomain {
+  def store(d: VectorDomain): Unit = size := d.dimensionDomain.size
+  def fetch(): VectorDomain = new VectorDomain {
     def dimensionDomain = new DiscreteDomain(size.value)
     type Value = Tensor1
   }
 }
 
-// TODO Consider renaming this to DiscreteVectorVar or DiscreteTensorVar1? -akm
-// No, for now, saying "Discrete" and "Categorical" will be enough to indicate that it does not have higher rank.
 
-/** An abstract variable whose value is a Tensor whose length matches the size of a DiscreteDomain. */
-trait DiscreteTensorVar extends TypedTensorVar[Tensor1] {
-  def domain: DiscreteTensorDomain
+/** An abstract variable whose value is a one-dimensional Tensor whose length matches the size of a DiscreteDomain. */
+trait VectorVar extends TypedTensorVar[Tensor1] {
+  def domain: VectorDomain
   def contains(index:Int): Boolean = value.apply(index) != 0.0
 }
 
-/** A concrete variable whose value is a Tensor1 whose length matches the size of a DiscreteDomain. */
-abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor1] with DiscreteTensorVar {
+/** A concrete variable whose value is a one-dimensional Tensor whose length matches the size of a DiscreteDomain. */
+abstract class VectorVariable extends MutableTensorVar[Tensor1] with VectorVar {
   def this(initialValue:Tensor1) = { this(); set(initialValue)(null) }
 }

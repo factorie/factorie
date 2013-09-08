@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DenseDoubleSeq {
+class InfoGain[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DenseDoubleSeq {
   def apply(i:Int): Double = infogains(i)
   def length = infogains.length
   val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain
@@ -42,7 +42,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
     val featureCount = new Array[Double](numFeatures)
     val targetProportions = new DenseProportions1(numLabels)
     for (label <- labels) {
-      val instance: DiscreteTensorVar = f(label)
+      val instance: VectorVar = f(label)
       assert(instance.domain == instanceDomain)
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue

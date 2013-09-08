@@ -20,7 +20,7 @@ import cc.factorie.optimize.Trainer
     The set of features is impoverished in this demonstration, so the accuracy is not high */
 object ForwardBackwardPOS {
   
-  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
   object PosModel extends TemplateModel with Parameters {

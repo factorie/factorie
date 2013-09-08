@@ -62,7 +62,7 @@ class POS2 extends DocumentAnnotator {
   }
 
 
-  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
 

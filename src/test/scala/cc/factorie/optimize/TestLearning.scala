@@ -16,7 +16,7 @@ class TestLearning {
 
   object LabelDomain extends CategoricalDomain[String]
 
-  object FeatureDomain extends CategoricalTensorDomain[String]
+  object FeatureDomain extends CategoricalVectorDomain[String]
 
   class Features(val label: Label) extends BinaryFeatureVectorVariable[String] {
     def domain = FeatureDomain

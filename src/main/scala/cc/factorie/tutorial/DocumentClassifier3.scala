@@ -27,7 +27,7 @@ import cc.factorie.optimize.Trainer
     By contrast, see example/DocumentClassifier2. */
 object DocumentClassifier3 {
 
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
