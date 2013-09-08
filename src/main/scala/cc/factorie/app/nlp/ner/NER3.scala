@@ -16,7 +16,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
 import cc.factorie.util.{CmdOptions, HyperparameterMain, BinarySerializer}
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
@@ -50,7 +50,7 @@ class NER3 extends DocumentAnnotator {
     process(document,useModel2 = true)
     document
   }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel])
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
   def postAttrs = Seq(classOf[BilouConllNerLabel])
   def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
 

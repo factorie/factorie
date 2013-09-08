@@ -5,7 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.parse.ParseTree
 import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import scala.Some
 
 

@@ -25,7 +25,7 @@ import cc.factorie.util.FastLogging
 object LoadConll2003 extends LoadConll2003(false)
 
 case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
-  val conllToPTBMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
+  val conllToPennMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
 
   def fromSource(source:io.Source): Seq[Document] = {
     import scala.io.Source
@@ -34,7 +34,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       val document = new Document("").setName(name)
       document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
       document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-      document.annotators(classOf[pos.PTBPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+      document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
       document
     }
 
@@ -59,12 +59,12 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         val fields = line.split(' ')
         assert(fields.length == 4)
         val word = fields(0)
-        val partOfSpeech = conllToPTBMap.getOrElse(fields(1), fields(1))
+        val partOfSpeech = conllToPennMap.getOrElse(fields(1), fields(1))
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new BioConllNerLabel(token, ner)
-        token.attr += new cc.factorie.app.nlp.pos.PTBPosLabel(token, partOfSpeech)
+        token.attr += new cc.factorie.app.nlp.pos.PennPosLabel(token, partOfSpeech)
       }
     }
     if (BILOU) convertToBILOU(documents)

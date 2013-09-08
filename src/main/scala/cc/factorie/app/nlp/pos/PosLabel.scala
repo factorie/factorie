@@ -17,11 +17,11 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 
 
-// TODO Consider renaming PTBPosDomain to PPosDomain, just because it is shorter and easier to pronounce
+// TODO Consider renaming PennPosDomain to PPosDomain, just because it is shorter and easier to pronounce
 // TODO Consider renaming classes POS1... to Pos1
 
 /** Penn Treebank part-of-speech tag domain. */
-object PTBPosDomain extends CategoricalDomain[String] {
+object PennPosDomain extends CategoricalDomain[String] {
   this ++= Vector(
       "#", // In WSJ but not in Ontonotes
       "$",
@@ -83,13 +83,13 @@ object PTBPosDomain extends CategoricalDomain[String] {
   def isAdjective(pos:String) = pos(0) == 'J'
   def isPersonalPronoun(pos: String) = pos == "PRP"
 }
-class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = PTBPosDomain
-  def isNoun = PTBPosDomain.isNoun(categoryValue)
-  def isProperNoun = PTBPosDomain.isProperNoun(categoryValue)
-  def isVerb = PTBPosDomain.isVerb(categoryValue)
-  def isAdjective = PTBPosDomain.isAdjective(categoryValue)
-  def isPersonalPronoun = PTBPosDomain.isPersonalPronoun(categoryValue)
+class PennPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = PennPosDomain
+  def isNoun = PennPosDomain.isNoun(categoryValue)
+  def isProperNoun = PennPosDomain.isProperNoun(categoryValue)
+  def isVerb = PennPosDomain.isVerb(categoryValue)
+  def isAdjective = PennPosDomain.isAdjective(categoryValue)
+  def isPersonalPronoun = PennPosDomain.isPersonalPronoun(categoryValue)
 }
 
 /** The "A Universal Part-of-Speech Tagset"
@@ -113,7 +113,7 @@ class PTBPosLabel(val token:Token, targetValue:String) extends LabeledCategorica
 object UniversalPosDomain extends EnumDomain {
   this ++= Vector("VERB", "NOUN", "PRON", "ADJ", "ADV", "ADP", "CONJ", "DET", "NUM", "PRT", "X", ".")
   freeze()
-  private val ptb2universal = new scala.collection.mutable.HashMap[String,String] ++= Vector(
+  private val Penn2universal = new scala.collection.mutable.HashMap[String,String] ++= Vector(
       "!" -> ".",
       "#" -> ".",
       "$" -> ".",
@@ -182,10 +182,10 @@ object UniversalPosDomain extends EnumDomain {
       "WP$" -> "PRON",
       "WRB" -> "ADV",
       "``" -> ".")
-  def categoryFromPTB(ptbPosCategory:String): String = ptb2universal(ptbPosCategory)
+  def categoryFromPenn(PennPosCategory:String): String = Penn2universal(PennPosCategory)
 }
 
 class UniversalPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def this(token:Token, other:PTBPosLabel) = this(token, UniversalPosDomain.categoryFromPTB(other.categoryValue))
+  def this(token:Token, other:PennPosLabel) = this(token, UniversalPosDomain.categoryFromPenn(other.categoryValue))
   def domain = UniversalPosDomain
 }
