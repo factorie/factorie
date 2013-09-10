@@ -23,6 +23,8 @@ import cc.factorie.app.chain._
 import scala.io._
 import java.io._
 import scala.math.round
+import scala.collection.mutable.ListBuffer
+import java.util.zip.GZIPInputStream
 
 
 class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token] {
@@ -31,7 +33,20 @@ class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token]
   def key = this.mkString("-")
 } 
 
-class NER3 extends DocumentAnnotator {
+class NER3(useEmbedding: Boolean,
+           embeddingPath: String,
+           embeddingDim: Int,
+           scale: Double,
+           useOffsetEmbedding: Boolean, url: java.net.URL=null) extends DocumentAnnotator {
+  object NERModelOpts {
+    val argsList = new scala.collection.mutable.HashMap[String, String]()
+    argsList += ("scale" -> scale.toString)
+    argsList += ("embeddingDim" -> embeddingDim.toString)
+  }
+
+  if (url != null) {
+    deSerialize(url.openConnection.getInputStream)
+  }
 
   def process(document:Document): Document = {
     if (document.tokenCount == 0) return document
@@ -65,10 +80,53 @@ class NER3 extends DocumentAnnotator {
     override def skipNonCategories = true
   }
 
+  class NER3EModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
+  (val labelDomain1:CategoricalDomain[String],
+   val featuresDomain1:CategoricalTensorDomain[String],
+   val labelToFeatures1:Label=>Features,
+   val labelToToken1:Label=>Token,
+   val tokenToLabel1:Token=>Label)
+  (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
+    extends ChainModel(labelDomain1, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) {
 
-  val model = new ChainModel[BilouConllNerLabel,ChainNerFeatures,Token](BilouConllNerDomain, ChainNerFeaturesDomain, l => l.token.attr[ChainNerFeatures], l => l.token, t => t.attr[BilouConllNerLabel])
-  val model2 = new ChainModel[BilouConllNerLabel,ChainNer2Features,Token](BilouConllNerDomain, ChainNer2FeaturesDomain, l => l.token.attr[ChainNer2Features], l => l.token, t => t.attr[BilouConllNerLabel])
+    // Factor for embedding of observed token
+    val embedding = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+    }
+
+    val embeddingPrev = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+    }
+
+    val embeddingNext = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+    }
+
+    override def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
+      val result = new ListBuffer[Factor]
+      for (i <- 0 until labels.length) {
+        result += bias.Factor(labels(i))
+        result += obs.Factor(labels(i), labelToFeatures(labels(i)))
+        if (i > 0) {
+          result += markov.Factor(labels(i-1), labels(i))
+          if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
+        }
+        val l = labels(i)
+        val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
+
+        if (useEmbedding && Embedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(Embedding(label.token.string)))
+        if (useEmbedding && useOffsetEmbedding && label.token.sentenceHasPrev && Embedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(Embedding(label.token.prev.string)))
+        if (useEmbedding && useOffsetEmbedding && label.token.sentenceHasNext && Embedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(Embedding(label.token.next.string)))
+      }
+      result
+    }
+  }
+
+  val model = new NER3EModel[BilouConllNerLabel,ChainNerFeatures,Token](BilouConllNerDomain, ChainNerFeaturesDomain, l => l.token.attr[ChainNerFeatures], l => l.token, t => t.attr[BilouConllNerLabel])
+  val model2 = new NER3EModel[BilouConllNerLabel,ChainNer2Features,Token](BilouConllNerDomain, ChainNer2FeaturesDomain, l => l.token.attr[ChainNer2Features], l => l.token, t => t.attr[BilouConllNerLabel])
+
   val objective = new ChainNerObjective
+
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
@@ -77,6 +135,12 @@ class NER3 extends DocumentAnnotator {
     BinarySerializer.serialize(ChainNer2FeaturesDomain.dimensionDomain, is)
     BinarySerializer.serialize(model, is)
     BinarySerializer.serialize(model2, is)
+
+
+    //map += ("scale" -> scale)
+    //map += ("embeddingDim" -> embeddingDim)
+
+    BinarySerializer.serialize(NERModelOpts.argsList, is)
     is.close()
   }
 
@@ -87,6 +151,8 @@ class NER3 extends DocumentAnnotator {
     BinarySerializer.deserialize(ChainNer2FeaturesDomain.dimensionDomain, is)
     BinarySerializer.deserialize(model, is)
     BinarySerializer.deserialize(model2, is)
+    BinarySerializer.deserialize(NERModelOpts.argsList, is)
+
     is.close()
   }
 
@@ -176,8 +242,11 @@ class NER3 extends DocumentAnnotator {
       val rawWord = token.string
       val word = simplifyDigits(rawWord).toLowerCase
       features += "W="+word
-      if (token.isCapitalized) features += "CAPITALIZED"
-      else features += "NOTCAPITALIZED"
+      //if (token.isCapitalized) features += "CAPITALIZED"
+      //else features += "NOTCAPITALIZED"
+      features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
+      if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
+
       if (token.isPunctuation) features += "PUNCTUATION"
       if(lexicons != null) for (lexicon <- lexicons; if lexicon.containsWord(token.string)) features += "LEX="+lexicon.name
       if (clusters.size > 0 && clusters.contains(rawWord)) {
@@ -338,15 +407,46 @@ class NER3 extends DocumentAnnotator {
 	  }
   }
 
+  object EmbeddingDomain extends DiscreteDomain(NERModelOpts.argsList("embeddingDim").toInt)
+  class EmbeddingVariable(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain }
+  object EmbeddingDomain2 extends DiscreteDomain(EmbeddingDomain.size * EmbeddingDomain.size)
+  class EmbeddingVariable2(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain2 }
+  object Embedding extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
+    //val numTypes = 100000
+    def dim1 = EmbeddingDomain.size
+    if (useEmbedding) {
+      println("NER1e Embedding reading size: %d".format(dim1))
+      val source = io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(new File(embeddingPath))))
+      var count = 0
+      for (line <- source.getLines()) {
+        val fields = line.split("\\s+")
+        val tensor = new la.DenseTensor1(fields.drop(1).map(_.toDouble))
+        tensor *= NERModelOpts.argsList("scale").toDouble
+        assert(tensor.dim1 == dim1)
+        this(fields(0)) = tensor
+        count += 1
+        //if (count % 1000 == 0) println(fields(0)+"  "+tensor)
+      }
+      source.close()
+    }
+    def close(string:String): Seq[String] = {
+      val t = this(string)
+      if (t eq null) return Nil
+      val top = new cc.factorie.util.TopN[String](10)
+      for ((s,t2) <- this) top.+=(0, t.dot(t2), s)
+      top.map(_.category)
+    }
+  }
+
   def history(list : List[String], category : String) : String = {
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(trainFilename:String, testFilename:String, l1: Double, l2: Double, rate: Double, delta: Double): Double = {
+  def train(dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
-    val trainDocuments = LoadConll2003(BILOU=true).fromFilename(trainFilename)
-    val testDocuments = LoadConll2003(BILOU=true).fromFilename(testFilename)
+    val trainDocuments = LoadConll2003(BILOU=true).fromFilename(dataDir + trainFilename)
+    val testDocuments = LoadConll2003(BILOU=true).fromFilename(dataDir + testFilename)
 
     // Add features for NER                 \
     println("Initializing training features")
@@ -393,7 +493,6 @@ class NER3 extends DocumentAnnotator {
     printEvaluation(trainDocuments, testDocuments, "FINAL")
   }
 
-
    def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Double = {
      println("TRAIN")
      println(evaluationString(trainDocuments))
@@ -421,36 +520,38 @@ class NER3 extends DocumentAnnotator {
   }
 
 }
-
-object NER3 extends NER3 {
-  deSerialize(ClasspathURL[NER3](".factorie").openStream())
-}
+object NER3 extends NER3(false, "", 100, 1.0, false, ClasspathURL[NER3](".factorie"))
 
 class NER3Opts extends CmdOptions {
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
-  val modelDir =      new CmdOption("model", "chainner.factorie", "FILE", "File for saving or loading model.")
+  val modelDir =      new CmdOption("model", "NER3.factorie", "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
   val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
-  val l1 =  new CmdOption("l1", 0.01, "DOUBLE", "L1 regularization")
-  val l2 =  new CmdOption("l2", 0.01, "DOUBLE", "L2 regularization")
   val rate =  new CmdOption("rate", 0.18, "DOUBLE", "Learning rate")
   val delta =  new CmdOption("delta", 0.066, "DOUBLE", "Learning delta")
   val saveModel = new CmdOption("save-model", false, "BOOLEAN", "Whether to save the model")
-}
+  val runOnlyHere = new CmdOption("runOnlyHere", false, "BOOLEAN", "Run Experiments only on this machine")
 
+  val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
+  val embeddingPath = new CmdOption("embeddingPath", "/Users/mccallum/research/data/vineet/d50-best.embeddings.gz", "STRING", "The path of the embeddings file")
+  val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
+  val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
+  val useEmbeddings = new CmdOption("useEmbeddings", true, "BOOLEAN", "Whether to use embeddings")
+  val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", false, "BOOLEAN", "Whether to use offset embeddings")
+}
 
 object NER3Trainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new NER3
+    val ner = new NER3(opts.useEmbeddings.value, opts.embeddingPath.value, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
-    if( opts.brownClusFile.wasInvoked) {
+    if (opts.brownClusFile.wasInvoked) {
           println("Reading brown cluster file " + opts.brownClusFile.value)
           for(line <- Source.fromFile(opts.brownClusFile.value).getLines()){
             val splitLine = line.split("\t")
@@ -458,7 +559,7 @@ object NER3Trainer extends HyperparameterMain {
           }
     }
     
-    val result = ner.train(opts.trainFile.value, opts.testFile.value, opts.l1.value, opts.l2.value, opts.rate.value, opts.delta.value)
+    val result = ner.train(opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
@@ -471,29 +572,32 @@ object NER3Optimizer {
     val opts = new NER3Opts
     opts.parse(args)
     opts.saveModel.setValue(false)
-    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
-    val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
-    val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
-    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
-    /*
-    val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
-      Seq("avon1", "avon2"),
-      "/home/apassos/canvas/factorie-test",
-      "try-log/",
-      "cc.factorie.app.nlp.parse.DepParser2",
-      10, 5)
-      */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.NER3Trainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
-    val result = optimizer.optimize()
-    println("Got results: " + result.mkString(" "))
-    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
-    opts.saveModel.setValue(true)
-    println("Running best configuration...")
-    import scala.concurrent.duration._
-    import scala.concurrent.Await
-    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
-    println("Done")
+
+    if (opts.runOnlyHere.value == true) {
+      val result = NER3Trainer.evaluateParameters(args)
+      println("result: "+ result)
+    }
+    else {
+      val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+      val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+      /*
+      val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
+        Seq("avon1", "avon2"),
+        "/home/apassos/canvas/factorie-test",
+        "try-log/",
+        "cc.factorie.app.nlp.parse.DepParser2",
+        10, 5)
+        */
+      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.NER3Trainer")
+      val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 200, 180, 60)
+      val result = optimizer.optimize()
+      println("Got results: " + result.mkString(" "))
+      opts.saveModel.setValue(true)
+      println("Running best configuration...")
+      import scala.concurrent.duration._
+      import scala.concurrent.Await
+      Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
+      println("Done")
+    }
   }
 }
-
