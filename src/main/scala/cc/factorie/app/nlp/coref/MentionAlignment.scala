@@ -4,6 +4,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Token, Document}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import collection.mutable.{ArrayBuffer, HashMap}
@@ -18,7 +19,7 @@ import scala.Some
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorPipeline.DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -32,7 +33,7 @@ object MentionAlignment {
     documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PTBPosLabel]))  //remove the gold POS annotation
     documentsToBeProcessed.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    documentsToBeProcessed.par.foreach(findMentions(_, map))
+    documentsToBeProcessed.par.foreach(findMentions(_)(map))
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist
@@ -152,9 +153,9 @@ object MentionAlignment {
   }
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
-  def findMentions(d: Document, annotatorMap: DocumentAnnotatorPipeline.DocumentAnnotatorMap) {
+  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
-    DocumentAnnotatorPipeline.process(Seq(classOf[MentionList]), d, map=annotatorMap)
+    DocumentAnnotatorPipeline[MentionList](annotatorMap).process(d)
   }
 
   def assertParse(tokens: Seq[Token],parse: ParseTree): Unit = {

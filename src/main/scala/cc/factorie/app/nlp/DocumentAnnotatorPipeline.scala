@@ -29,22 +29,21 @@ class DocumentAnnotationPipeline(val annotators: Seq[DocumentAnnotator], val pre
     }
     doc
   }
-  def reportProfile(): Unit = {
-    println(s"Processed $tokensProcessed tokens in ${msProcessed/1000.0} seconds, at ${tokensProcessed.toDouble*1000.0/msProcessed} tokens / second ")
-    println("Speeds of individual components:\n" + timePerAnnotator.map(i => f"   ${i._1.getClass.getSimpleName}%30s: ${tokensProcessed.toDouble*1000.0/i._2}%4.4f tokens/sec ").mkString("\n"))
+  def profileReport: String = {
+    s"Processed $tokensProcessed tokens in ${msProcessed/1000.0} seconds, at ${tokensProcessed.toDouble*1000.0/msProcessed} tokens / second " +
+    "Speeds of individual components:\n" + timePerAnnotator.map(i => f"   ${i._1.getClass.getSimpleName}%30s: ${tokensProcessed.toDouble*1000.0/i._2}%4.4f tokens/sec ").mkString("\n")
   }
-  def tokenAnnotationString(token: Token) = annotators.map(_.tokenAnnotationString(token)).mkString("\t")
+  def tokenAnnotationString(token: Token): String = annotators.map(_.tokenAnnotationString(token)).mkString("\t")
 }
 
 /** A Map from annotation class to DocumentAnnotator that provides that annotation. 
     Used to store default ways of getting certain prerequisite annotations. */
-class MutableDocumentAnnotatorMap extends collection.mutable.HashMap[Class[_], () => DocumentAnnotator] {
+class MutableDocumentAnnotatorMap extends collection.mutable.LinkedHashMap[Class[_], () => DocumentAnnotator] {
   def +=(annotator: DocumentAnnotator) = annotator.postAttrs.foreach(a => this(a) = () => annotator)
 }
 
 /** A factory for creating DocumentAnnotatorPipelines given requirements about which annotations or which DocumentAnnotators are desired. */
 object DocumentAnnotatorPipeline {
-  type DocumentAnnotatorMap = collection.Map[Class[_], () => DocumentAnnotator]
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
     classOf[pos.PTBPosLabel] -> (() => pos.POS1),
@@ -68,28 +67,28 @@ object DocumentAnnotatorPipeline {
     classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1Ner)
   )
 
-  def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
-  def apply[A](implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(m.erasure)
-  def apply[A,B](implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure))
-  def apply[A,B,C](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure, m3.erasure))
-  def apply[A,B,C,D](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
-  def apply(goal: Class[_], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(Seq(goal), map)
-  def apply[A](map: DocumentAnnotatorMap)(implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(m.erasure, map)
-  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure), map)
-  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure, m3.erasure), map)
-  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure), map)
+  //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
+  def apply[A](implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m.erasure))
+  def apply[A,B](implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure))
+  def apply[A,B,C](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
+  def apply[A,B,C,D](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
+  //def apply(goal: Class[_], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(Seq(goal), map)
+  def apply[A](map: DocumentAnnotatorMap)(implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m.erasure))
+  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure))
+  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
+  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
 
-  def apply(goals: Iterable[Class[_]]): DocumentAnnotationPipeline = apply(goals, Seq(), defaultDocumentAnnotationMap)
-  def apply(goals: Iterable[Class[_]], prereqs: Seq[Class[_]]): DocumentAnnotationPipeline = apply(goals, prereqs, defaultDocumentAnnotationMap)
-  def apply(goals: Iterable[Class[_]], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(goals, Seq(), map)
-  def apply(goals: Iterable[Class[_]], prereqs: Seq[Class[_]], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = {
+  //def apply(goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, goals:_*)
+  //def apply(prereqs: Seq[Class[_]], goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, prereqs, goals)
+  //def forGoals(map:DocumentAnnotatorMap, goals:Class[_]*): DocumentAnnotationPipeline = forGoals(map, Nil, goals)
+  def apply(map:DocumentAnnotatorMap, prereqs:Seq[Class[_]], goals:Iterable[Class[_]]): DocumentAnnotationPipeline = {
     val pipeSet = collection.mutable.LinkedHashSet[DocumentAnnotator]()
     val preSet = new scala.collection.mutable.HashSet[Class[_]] ++= prereqs
     def recursiveSatisfyPrereqs(goal: Class[_]) {
       if (!preSet.contains(goal) && (!preSet.exists(x => goal.isAssignableFrom(x)))) {
         val provider = if (map.contains(goal)) map(goal)() else {
           val list = map.keys.filter(k => goal.isAssignableFrom(k))
-          assert(list.nonEmpty, s"Could not find annotator for goal $goal , map includes ${map.keys.mkString(", ")}")
+          assert(list.nonEmpty, s"Could not find annotator for goal ${goal}, map includes ${map.keys.mkString(", ")}")
           map(list.head)()
         }
         if (!pipeSet.contains(provider)) {
@@ -104,17 +103,14 @@ object DocumentAnnotatorPipeline {
     new DocumentAnnotationPipeline(pipeSet.toSeq)
   }
 
-  def apply(annotator: DocumentAnnotator, map: DocumentAnnotatorMap = defaultDocumentAnnotationMap): DocumentAnnotationPipeline = {
+  def apply(annotators:DocumentAnnotator*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, annotators:_*)
+  def apply(map:DocumentAnnotatorMap, annotators:DocumentAnnotator*): DocumentAnnotationPipeline = apply(map, Nil, annotators:_*)
+  def apply(map:DocumentAnnotatorMap, prereqs:Seq[Class[_]], annotators: DocumentAnnotator*): DocumentAnnotationPipeline = {
     val other = new MutableDocumentAnnotatorMap
     map.foreach(k => other += k)
-    other += annotator
-    apply(annotator.postAttrs, prereqs=Seq(), map=other)
+    annotators.foreach(a => other += a) // By being added later, these annotators will overwrite the default ones when there is an overlap
+    apply(map=other, prereqs, annotators.flatMap(_.postAttrs))
   }
-
-  def process(goals: Iterable[Class[_]], document: Document): Document = apply(goals, map=defaultDocumentAnnotationMap).process(document)
-  def process(annotator: DocumentAnnotator, document: Document): Document = apply(annotator, map=defaultDocumentAnnotationMap).process(document)
-  def process(goals: Iterable[Class[_]], document: Document, map: DocumentAnnotatorMap): Document = apply(goals, map=map).process(document)
-  def process(annotator: DocumentAnnotator, document: Document, map: DocumentAnnotatorMap): Document = apply(annotator, map=map).process(document)
 
   def checkPipeline(pipeline: Seq[DocumentAnnotator]) {
     val satisfiedSet = collection.mutable.HashSet[Class[_]]()

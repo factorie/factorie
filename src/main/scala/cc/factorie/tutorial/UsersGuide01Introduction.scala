@@ -1,6 +1,6 @@
 /*&
 
-# FACTORIE User Guide
+# FACTORIE User's Guide
 
 Version 1.0
 
@@ -74,9 +74,11 @@ If "mytextdir" is a directory name containing many plain text documents each in 
 ```
 $ bin/fac lda --read-dirs mytextdir --num-topics 20 --num-iterations 100
 ```
-will run 100 iterations of a sparse collapsed Gibbs sampling on all the documents, and print out the results every 10 iterations. FACTORIE's LDA implementation is faster than [MALLET](http://mallet.cs.umass.edu)'s.
+will run 100 iterations of a sparse collapsed Gibbs sampling on all the documents, and print out the results every 10 iterations. 
+FACTORIE's LDA implementation is faster than [MALLET](http://mallet.cs.umass.edu)'s.
 
-You can also train a document classifier. If "sportsdir" and "politicsdir" are each directories that contain plan text files in the categories sports and politics, then typing
+You can also train a document classifier. 
+If "sportsdir" and "politicsdir" are each directories that contain plan text files in the categories sports and politics, then typing
 ```
 $ bin/fac classify --read-text-dirs sportsdir politicsdir --write-classifier mymodel.factorie
 ```
@@ -88,7 +90,9 @@ If you also have the Maven-supplied factorie-nlp-resources JAR in your classpath
 $ bin/fac nlp --pos1 --parser1 --ner1
 ```
 
-will launch an NLP server that will perform part-of-speech tagging, dependency parsing and named entity recognition in its input.  The server listens for text on a socket, and spawns a parallel document processor on each request.  To feed it input, type in a separate shell
+will launch an NLP server that will perform part-of-speech tagging, dependency parsing and named entity recognition on its input.  
+The server listens for text on a socket, and spawns a parallel document processor on each request.  
+To feed it input, type in a separate shell
 
 ```
 $ echo "Mr. Jones took a job at Google in New York.  He and his Australian wife moved from New South Wales on 4/1/12." | nc localhost 3228
@@ -230,7 +234,7 @@ FACTORIE version 1.0 is anticipated to be released in fall 2013.
 
 ### Machine learning toolkits
 
-Although at its core FACTORIE is a graphic models toolkit, since classification, clustering and regression can be expressed as trivial graphical models, FACTORIE can also be used as a tool for traditional non-structured machine learning.
+Although at its core FACTORIE is a graphical models toolkit, since classification, clustering and regression can be expressed as trivial graphical models, FACTORIE can also be used as a tool for traditional non-structured machine learning.
 
 [MALLET](http://mallet.cs.umass.edu) provides facilities for classification, finite-state (linear chain) conditional random fields, and a few topic models.
 However, it was not designed to support arbitrarily-structured graphical models.  FACTORIE strives to supersede MALLET in all ways.

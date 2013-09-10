@@ -38,6 +38,9 @@ object TutorialVariables {
     assert(i === j)
     assert(!(i == j))
 
+    // The Scala type of a variable's value is represented by the variable class' inner type `Value`....
+
+
     // We can also track changes with a DiffList and undo them. // TODO Move this material about DiffLists to a separate Tutorial file.
     val d = new DiffList
     i.set(3)(d) // This method will create a Diff object and append it to the DiffList d.
