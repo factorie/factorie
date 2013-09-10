@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
-import cc.factorie.util.{CmdOptions, HyperparameterMain, BinarySerializer}
+import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PTBPosLabel
 import optimize._
 import cc.factorie.app.nlp._
@@ -420,6 +420,10 @@ class NER3 extends DocumentAnnotator {
     }
   }
 
+}
+
+object NER3 extends NER3 {
+  deSerialize(ClasspathURL[NER3](".factorie").openStream())
 }
 
 class NER3Opts extends CmdOptions {
