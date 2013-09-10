@@ -179,7 +179,7 @@ class NER3 extends DocumentAnnotator {
       if (token.isCapitalized) features += "CAPITALIZED"
       else features += "NOTCAPITALIZED"
       if (token.isPunctuation) features += "PUNCTUATION"
-      if(lexicons != null) for (lexicon <- lexicons; if lexicon.containsWord(token.string)) features += "LEX="+lexicon
+      if(lexicons != null) for (lexicon <- lexicons; if lexicon.containsWord(token.string)) features += "LEX="+lexicon.name
       if (clusters.size > 0 && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
         features += "CLUS="+prefix(6,clusters(rawWord))
