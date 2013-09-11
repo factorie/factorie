@@ -111,9 +111,10 @@ class NER3(embeddingDim: Int,
         val l = labels(i)
         val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
 
-        if (Embedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(Embedding(label.token.string)))
-        if (useOffsetEmbedding && label.token.sentenceHasPrev && Embedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(Embedding(label.token.prev.string)))
-        if (useOffsetEmbedding && label.token.sentenceHasNext && Embedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(Embedding(label.token.next.string)))
+        val scale = NERModelOpts.argsList("scale").toDouble
+        if (SkipGramEmbedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.string) * scale))
+        if (useOffsetEmbedding && label.token.sentenceHasPrev && SkipGramEmbedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.prev.string) * scale))
+        if (useOffsetEmbedding && label.token.sentenceHasNext && SkipGramEmbedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.next.string) * scale))
       }
       result
     }
@@ -407,42 +408,6 @@ class NER3(embeddingDim: Int,
   object EmbeddingDomain2 extends DiscreteDomain(EmbeddingDomain.size * EmbeddingDomain.size)
   class EmbeddingVariable2(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain2 }
 
-  val Embedding = SkipGramEmbedding(NERModelOpts.argsList("scale").toDouble)
-
-  /*
-  object Embedding extends Embedding(s => ClasspathURL.fromDirectory[NER3](s).openConnection().getInputStream)
-
-  class Embedding(val inputStreamFactory: String=> java.io.InputStream) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
-    def sourceFactory(string:String): io.Source = io.Source.fromInputStream(new GZIPInputStream(inputStreamFactory(string)))
-
-    //val numTypes = 100000
-    def dim1 = EmbeddingDomain.size
-    if (useEmbedding) {
-      println("NER1e Embedding reading size: %d".format(dim1))
-      //val source = io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(new File(embeddingPath))))
-      //val source = io.Source.fromInputStream(new GZIPInputStream(is))
-      val source = sourceFactory("skip-gram-d100.W.gz")
-      var count = 0
-      for (line <- source.getLines()) {
-        val fields = line.split("\\s+")
-        val tensor = new la.DenseTensor1(fields.drop(1).map(_.toDouble))
-        tensor *= NERModelOpts.argsList("scale").toDouble
-        assert(tensor.dim1 == dim1)
-        this(fields(0)) = tensor
-        count += 1
-        if (count % 100000 == 0) println("word vector count: %d".format(count))
-      }
-      source.close()
-    }
-    def close(string:String): Seq[String] = {
-      val t = this(string)
-      if (t eq null) return Nil
-      val top = new cc.factorie.util.TopN[String](10)
-      for ((s,t2) <- this) top.+=(0, t.dot(t2), s)
-      top.map(_.category)
-    }
-  }*/
-
   def history(list : List[String], category : String) : String = {
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
@@ -462,7 +427,7 @@ class NER3(embeddingDim: Int,
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !Embedding.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !SkipGramEmbedding.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
     //println("Example Token features")

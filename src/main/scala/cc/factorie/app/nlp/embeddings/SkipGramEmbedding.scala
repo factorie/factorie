@@ -11,11 +11,9 @@ import java.util.zip.GZIPInputStream
  * Time: 5:03 PM
  * To change this template use File | Settings | File Templates.
  */
-object SkipGramEmbedding  {
-  def apply(scale: Double) = new SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, scale, 100)
-}
+object SkipGramEmbedding extends SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, 100)
 
-class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, scale: Double, dimensionSize: Int) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
+class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, dimensionSize: Int) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
   def sourceFactory(string:String): io.Source = io.Source.fromInputStream(new GZIPInputStream(inputStreamFactory(string)))
 
   println("Embedding reading size: %d".format(dimensionSize))
@@ -24,7 +22,6 @@ class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, sc
   for (line <- source.getLines()) {
     val fields = line.split("\\s+")
     val tensor = new la.DenseTensor1(fields.drop(1).map(_.toDouble))
-    tensor *= scale
     assert(tensor.dim1 == dimensionSize)
     this(fields(0)) = tensor
     count += 1
