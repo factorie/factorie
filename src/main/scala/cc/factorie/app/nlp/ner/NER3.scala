@@ -526,7 +526,7 @@ class NER3(useEmbedding: Boolean,
   }
 
 }
-object NER3 extends NER3(false, 100, 1.0, false, ClasspathURL[NER3](".factorie"))
+object NER3 extends NER3(true, 100, 1.0, true, ClasspathURL[NER3](".factorie"))
 
 class NER3Opts extends CmdOptions {
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -541,11 +541,10 @@ class NER3Opts extends CmdOptions {
   val runOnlyHere = new CmdOption("runOnlyHere", false, "BOOLEAN", "Run Experiments only on this machine")
 
   val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
-  val embeddingPath = new CmdOption("embeddingPath", "/Users/mccallum/research/data/vineet/d50-best.embeddings.gz", "STRING", "The path of the embeddings file")
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
   val useEmbeddings = new CmdOption("useEmbeddings", true, "BOOLEAN", "Whether to use embeddings")
-  val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", false, "BOOLEAN", "Whether to use offset embeddings")
+  val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
 }
 
 object NER3Trainer extends HyperparameterMain {
