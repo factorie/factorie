@@ -26,6 +26,7 @@ import scala.math.round
 import scala.collection.mutable.ListBuffer
 import java.util.zip.GZIPInputStream
 import scala.collection.mutable
+import cc.factorie.app.nlp.embeddings._
 
 
 class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token] {
@@ -34,8 +35,7 @@ class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token]
   def key = this.mkString("-")
 } 
 
-class NER3(useEmbedding: Boolean,
-           embeddingDim: Int,
+class NER3(embeddingDim: Int,
            scale: Double,
            useOffsetEmbedding: Boolean, url: java.net.URL=null) extends DocumentAnnotator {
   object NERModelOpts {
@@ -43,7 +43,6 @@ class NER3(useEmbedding: Boolean,
     argsList += ("scale" -> scale.toString)
     argsList += ("embeddingDim" -> embeddingDim.toString)
   }
-
 
   def process(document:Document): Document = {
 
@@ -89,15 +88,15 @@ class NER3(useEmbedding: Boolean,
 
     // Factor for embedding of observed token
     val embedding = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
-      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
     val embeddingPrev = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
-      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
     val embeddingNext = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
-      val weights = Weights(new la.DenseTensor2(labelDomain.size, Embedding.dim1))
+      val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
     override def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
@@ -112,9 +111,9 @@ class NER3(useEmbedding: Boolean,
         val l = labels(i)
         val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
 
-        if (useEmbedding && Embedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(Embedding(label.token.string)))
-        if (useEmbedding && useOffsetEmbedding && label.token.sentenceHasPrev && Embedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(Embedding(label.token.prev.string)))
-        if (useEmbedding && useOffsetEmbedding && label.token.sentenceHasNext && Embedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(Embedding(label.token.next.string)))
+        if (Embedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(Embedding(label.token.string)))
+        if (useOffsetEmbedding && label.token.sentenceHasPrev && Embedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(Embedding(label.token.prev.string)))
+        if (useOffsetEmbedding && label.token.sentenceHasNext && Embedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(Embedding(label.token.next.string)))
       }
       result
     }
@@ -408,6 +407,9 @@ class NER3(useEmbedding: Boolean,
   object EmbeddingDomain2 extends DiscreteDomain(EmbeddingDomain.size * EmbeddingDomain.size)
   class EmbeddingVariable2(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain2 }
 
+  val Embedding = SkipGramEmbedding(NERModelOpts.argsList("scale").toDouble)
+
+  /*
   object Embedding extends Embedding(s => ClasspathURL.fromDirectory[NER3](s).openConnection().getInputStream)
 
   class Embedding(val inputStreamFactory: String=> java.io.InputStream) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
@@ -439,7 +441,7 @@ class NER3(useEmbedding: Boolean,
       for ((s,t2) <- this) top.+=(0, t.dot(t2), s)
       top.map(_.category)
     }
-  }
+  }*/
 
   def history(list : List[String], category : String) : String = {
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
@@ -526,7 +528,7 @@ class NER3(useEmbedding: Boolean,
   }
 
 }
-object NER3 extends NER3(true, 100, 1.0, true, ClasspathURL[NER3](".factorie"))
+object NER3 extends NER3(100, 1.0, true, ClasspathURL[NER3](".factorie"))
 
 class NER3Opts extends CmdOptions {
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -543,7 +545,6 @@ class NER3Opts extends CmdOptions {
   val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
-  val useEmbeddings = new CmdOption("useEmbeddings", true, "BOOLEAN", "Whether to use embeddings")
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
 }
 
@@ -552,16 +553,16 @@ object NER3Trainer extends HyperparameterMain {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new NER3(opts.useEmbeddings.value, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new NER3(opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
     if (opts.brownClusFile.wasInvoked) {
-          println("Reading brown cluster file " + opts.brownClusFile.value)
-          for(line <- Source.fromFile(opts.brownClusFile.value).getLines()){
-            val splitLine = line.split("\t")
-            ner.clusters(splitLine(1)) = splitLine(0)
-          }
+      println("Reading brown cluster file " + opts.brownClusFile.value)
+      for(line <- Source.fromFile(opts.brownClusFile.value).getLines()){
+        val splitLine = line.split("\t")
+        ner.clusters(splitLine(1)) = splitLine(0)
+      }
     }
     
     val result = ner.train(opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
