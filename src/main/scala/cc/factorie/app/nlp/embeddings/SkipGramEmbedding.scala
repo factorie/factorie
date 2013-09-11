@@ -11,7 +11,7 @@ import java.util.zip.GZIPInputStream
  * Time: 5:03 PM
  * To change this template use File | Settings | File Templates.
  */
-object SkipGramEmbedding extends SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, 1.0, 100) {
+object SkipGramEmbedding  {
   def apply(scale: Double) = new SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, scale, 100)
 }
 
