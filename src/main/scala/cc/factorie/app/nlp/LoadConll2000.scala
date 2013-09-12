@@ -17,29 +17,30 @@ import scala.collection.mutable
  */
 object LoadConll2000 extends Load {
   def fromSource(source: Source): Seq[Document] = {
-    var docs = new mutable.ArrayBuffer[Document]()
-    var doc = new Document()
+
+    val doc = new Document()
+    doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PTBPosLabel]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[BIOChunkTag]) = UnknownDocumentAnnotator.getClass
+
+    var sent = new Sentence(doc)
     source.getLines().foreach{ line =>
-      val resDoc = processWordLine(doc, line)
-      if(resDoc != doc) {
-        docs += doc
-        doc = resDoc
-      }
+      sent = processWordLine(doc, sent, line)
     }
-    docs
+    Seq(doc)
   }
 
-  val LineSplit = """([^\s]+) ([^\s]+) ([^\s]+)""".r
+  val lineSplit = """([^\s]+) ([^\s]+) ([^\s]+)""".r
   val posTranslations = Map("(" -> "-LRB-", ")" -> "-RRB-")
-  private def processWordLine(doc:Document, line:String):Document = line match {
-    case LineSplit(tokenType, posTagString, chunkTagString) => {
-      println(s"$line split into $tokenType|$posTagString|$chunkTagString")
-      val t = new Token(doc, tokenType + " ")
+  private def processWordLine(doc:Document, sent:Sentence, line:String):Sentence = line match {
+    case lineSplit(tokenType, posTagString, chunkTagString) => {
+      val t = new Token(sent, tokenType + " ")
       t.attr += new PTBPosLabel(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
       t.attr += new BIOChunkTag(t, chunkTagString)
-      doc
+      sent
     }
-    case empty if empty.isEmpty => new Document()
+    case empty if empty.isEmpty => new Sentence(doc)
     case otw => throw new Exception("Expected either a line with token pos tag chunk tag, or an empty line, received: %s".format(otw))
   }
 }
