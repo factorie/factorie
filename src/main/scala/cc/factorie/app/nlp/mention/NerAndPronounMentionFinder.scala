@@ -78,7 +78,8 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
       m.attr += new MentionEntityType(m,label)
       m
     })
-    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => m.span.end)
+    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.span.tokens.head.stringStart, m.length))
+
     document
   }
 }
