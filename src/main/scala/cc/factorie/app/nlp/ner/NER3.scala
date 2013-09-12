@@ -35,7 +35,7 @@ class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token]
   def key = this.mkString("-")
 } 
 
-class NER3(Embedding: SkipGramEmbedding,
+class NER3(embeddingMap: SkipGramEmbedding,
            embeddingDim: Int,
            scale: Double,
            useOffsetEmbedding: Boolean, url: java.net.URL=null) extends DocumentAnnotator {
@@ -113,10 +113,10 @@ class NER3(Embedding: SkipGramEmbedding,
         val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
 
         val scale = NERModelOpts.argsList("scale").toDouble
-        if (Embedding != null ) {
-          if (Embedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(Embedding(label.token.string) * scale))
-          if (useOffsetEmbedding && label.token.sentenceHasPrev && Embedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(Embedding(label.token.prev.string) * scale))
-          if (useOffsetEmbedding && label.token.sentenceHasNext && Embedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(Embedding(label.token.next.string) * scale))
+        if (embeddingMap != null ) {
+          if (embeddingMap.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(label.token.string) * scale))
+          if (useOffsetEmbedding && label.token.sentenceHasPrev && embeddingMap.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(label.token.prev.string) * scale))
+          if (useOffsetEmbedding && label.token.sentenceHasNext && embeddingMap.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(label.token.next.string) * scale))
         }
       }
       result
@@ -431,7 +431,7 @@ class NER3(Embedding: SkipGramEmbedding,
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    if (Embedding != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !Embedding.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
     //println("Example Token features")
