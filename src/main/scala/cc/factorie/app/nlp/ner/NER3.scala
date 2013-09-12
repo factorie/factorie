@@ -424,6 +424,7 @@ class NER3(embeddingDim: Int,
   	(trainDocuments ++ testDocuments).foreach(_.tokens.map(token => token.attr += new ChainNerFeatures(token)))
 
     trainDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
+    ChainNerFeaturesDomain.freeze()
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
@@ -452,6 +453,7 @@ class NER3(embeddingDim: Int,
 
     for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
     for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
+    ChainNer2FeaturesDomain.freeze()
     //println(trainDocuments(3).tokens.map(token => token.nerLabel.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     //println("Example Test Token features")
     //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
