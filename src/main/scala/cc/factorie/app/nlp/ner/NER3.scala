@@ -35,7 +35,8 @@ class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token]
   def key = this.mkString("-")
 } 
 
-class NER3(embeddingDim: Int,
+class NER3(embeddingMap: SkipGramEmbedding,
+           embeddingDim: Int,
            scale: Double,
            useOffsetEmbedding: Boolean, url: java.net.URL=null) extends DocumentAnnotator {
   object NERModelOpts {
@@ -112,9 +113,11 @@ class NER3(embeddingDim: Int,
         val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
 
         val scale = NERModelOpts.argsList("scale").toDouble
-        if (SkipGramEmbedding.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.string) * scale))
-        if (useOffsetEmbedding && label.token.sentenceHasPrev && SkipGramEmbedding.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.prev.string) * scale))
-        if (useOffsetEmbedding && label.token.sentenceHasNext && SkipGramEmbedding.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(SkipGramEmbedding(label.token.next.string) * scale))
+        if (embeddingMap != null ) {
+          if (embeddingMap.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(label.token.string) * scale))
+          if (useOffsetEmbedding && label.token.sentenceHasPrev && embeddingMap.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(label.token.prev.string) * scale))
+          if (useOffsetEmbedding && label.token.sentenceHasNext && embeddingMap.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(label.token.next.string) * scale))
+        }
       }
       result
     }
@@ -428,7 +431,7 @@ class NER3(embeddingDim: Int,
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !SkipGramEmbedding.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
     //println("Example Token features")
@@ -495,7 +498,8 @@ class NER3(embeddingDim: Int,
   }
 
 }
-object NER3 extends NER3(100, 1.0, true, ClasspathURL[NER3](".factorie"))
+object NER3 extends NER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3](".factorie"))
+object NER3NoEmbeddings extends NER3(null, 0, 0.0, false, ClasspathURL[NER3](".factorie-noembeddings"))
 
 class NER3Opts extends CmdOptions {
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -520,7 +524,7 @@ object NER3Trainer extends HyperparameterMain {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new NER3(opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new NER3(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
