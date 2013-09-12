@@ -76,7 +76,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
 
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PTBPosLabel]
-  def nerLabel = attr[cc.factorie.app.nlp.ner.BioConllNerLabel]
+  def nerLabel = attr[cc.factorie.app.nlp.ner.NerLabel]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
@@ -118,7 +118,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
-  def matches(t2:Token): Boolean = string == t2.string
+  def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"
   /** Return true if the first  character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\{Punct}")
@@ -130,7 +130,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   /** Return a string that captures the generic "shape" of the original word, 
       mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
       Skip more than 'maxRepetitions' of the same character class. */
-  def wordShape(maxRepetitions:Int): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
+  def wordShape(maxRepetitions:Int = 2): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
   def hasPrecedingWhitespace: Boolean = stringStart == 0 || java.lang.Character.isWhitespace(document.string(stringStart-1))
   def hasFollowingWhitespace: Boolean = stringEnd == document.stringLength || java.lang.Character.isWhitespace(document.string(stringEnd))

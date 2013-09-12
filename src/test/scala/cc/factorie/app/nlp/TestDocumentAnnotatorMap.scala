@@ -82,9 +82,9 @@ class TestDocumentAnnotatorMap {
     }
     map += mentionEntityType
     for (key <- map.keys) {
-      DocumentAnnotatorPipeline(key, map.toMap)
+      DocumentAnnotatorPipeline(map.toMap, Nil, Seq(key))
       // println(s"Pipeline for $key is ${pipeline.mkString(" ")}")
     }
-    DocumentAnnotatorPipeline(map.keys, map.toMap)
+    DocumentAnnotatorPipeline(map.toMap, Nil, map.keys.toSeq)
   }
 }

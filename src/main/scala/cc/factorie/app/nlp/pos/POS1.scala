@@ -300,7 +300,7 @@ class POS1 extends DocumentAnnotator {
   }
 
   def process(d: Document) = { predict(d); d }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PTBPosLabel]; if (label ne null) label.categoryValue else "(null)" }
 }
