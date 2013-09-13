@@ -132,17 +132,3 @@ object Tokenizer1 extends Tokenizer1(false, false, false, false) {
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }
-
-object Tokenizer1Test {
-  def main(args: Array[String]): Unit = {
-    val tokenizer = new Tokenizer1()
-    val tokenizerConnl = new Tokenizer1(tokenizeConnl03=true)
-    val string = "Al-Queda is in al-truistic methods of state-of-the-art parsing."
-    val doc = new Document(string)
-    val doc2 = new Document(string)
-    tokenizer.process(doc)
-    tokenizerConnl.process(doc2)
-    println(doc.tokens.map(_.string).mkString("\n"))
-    println(doc2.tokens.map(_.string).mkString("\n"))
-  }
-}
