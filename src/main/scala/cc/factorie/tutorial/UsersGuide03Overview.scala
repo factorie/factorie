@@ -184,7 +184,7 @@ will throw an error, but an `Assignment1` (or `Assignment2`..`4`) will
 simply return the variable's globally-assigned value.
 
 
-### Many types of variables
+#### Many types of variables
 
 FACTORIE has different subclasses of `Var` for holding values of
 different types.  There are a large number of traits and classes for
@@ -218,18 +218,20 @@ The following is a selection of FACTORIE's most widely-used variable classes.
 : has a value among N possible values, each of type `DiscreteValue`, and each associated with an integer 0 through N-1.  This `DiscreteValue` inherits from `Tensor1` and can also be interpreted as a "one-hot" vector with value 1.0 in one position and 0.0 everywhere else.  Given a `DiscreteValue dv1` its integer value can be obtained by `dv1.intValue`.  The length of the vector (in other words, the value of N) can be obtained by `dv1.length`.
 `CategoricalVariable[A] extends DiscreteVar`
 : has value among N possible values, each of type `CategoricalValue[A]` (which inherits from `DiscreteValue`), each associated with an integer 0 through N-1, and also associated with a "category" (often of type String).  These variables are often used for representing class labels and words, when a mapping from String category names to integer indices is desirable for efficiency (such as indexing into an array of parameters).  Given a `CategoricalValue[String] cv1` its integer value can be obtained by `cv1.intValue` and its categorical (String) value can be obtained by `cv1.categoryValue`.  Its value may be set with an integer: `cv1 := 2` or set by category string: `cv1 := "sports"`.  (The mapping between Strings and integers is stored in a `CategoricalDomain`, which is described below.)
+`CategoricalVectorVariable[A] extends VectorVar`
+: has value of type Tensor1, which is a one-dimensional Tensor.  In addition each `CategoricalVectorVariable` is associated with a `CategoricalDomain[A]`, which stores a mapping between values of type A (e.g. `String`) and integers.  Thus each position in the vector is associated with a category.  This variable type is useful for storing bag-of-words counts, for example.
 `BooleanVariable extends CategoricalVar[Boolean]`
-: has value among two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
+: has one of two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
 `MassesVariable extends TensorVar`
 : has value `Masses`, which are Tensors constrained to contain non-negative values.  `Masses` are useful as the parameters of Dirichlet distributions.
 `ProportionsVariable extends MassesVar`
 : has value `Proportions`, which are `Masses` constrained to sum to 1.0.  `Proportions` are useful as the parameters of discrete or multinomial distributions.
 `RealVariable extends VectorVar`
-: has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleValue` in that it stores a scalar value, however since its value type inherits from Tensor1
+: has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleValue` in that it stores a scalar value, however since its value type inherits from Tensor1, it can be used in dot products.
 
-All of the above variable classes have constructors in which the
-initial value of the variable may be set.  For example, `new
-IntegerVariable(3)` will create a new variable whose current value is 3.
+All of the above variable classes have constructors in which their
+initial value may be set.  For example, `new IntegerVariable(3)` will
+create a new variable whose initial value is 3.
 
 Some of the above variable types have specializations for the case in
 which human-labeled gold-standard target values are known.  These
@@ -255,23 +257,23 @@ Common `LabeledVar` sub-classes include:
 * LabeledRealValue
 
 All the above variable types are common in existing graphical models.
-FACTORIE also has random variables for representing less traditional
-values.  Although these may seem like peculiar value types for a
-graphical model, they nontheless can be scored by a factor, and are
-often useful in FACTORIE programs.
+However, FACTORIE also has random variables for representing less
+traditional values.  Although these may seem like peculiar value types
+for a graphical model, they nontheless can be scored by a factor, and
+are often useful in FACTORIE programs.
 
 `StringVariable`
 : has value with Scala type String.
 `SeqVariable[A]`
 : has value of type `Seq[A]`, that is, a sequence of objects of type `A`.
-`ChainVariable[A] extends SeqVariable[A]`
+`ChainVariable[A] extends SeqVar[A]`
 : has value of type `Seq[A]`, but the elements `A` must inherit from `ChainLink` which have `next` and `prev` methods.
 `SpanVariable[A] extends SeqVar[A]`
-: has value of type `Seq[A]`, and in addition is a subsequence of a `ChainVar[A]`.
+: has value of type `Seq[A]`, and is a subsequence of a `ChainVar[A]`.
 `SetVariable[A]`
-: has value of type `Set[A]`, that is an unordered set of objects of type `A`.
+: has value of type `Set[A]`, that is, an unordered set of objects of type `A`.
 `RefVariable[A]`
-: has value of type A.  In other words it is a variable whose value is a pointer to a Scala object.
+: has value of type A.  In other words, it is a variable whose value is a pointer to a Scala object.
 `EdgeVariable[A,B]`
 : has value of type `Tuple[A,B]`, that is a pair of objects: a "source" of type `A` and a "destination" of type `B`.
 `ArrowVariable[A,B] extends EdgeVar[A,B]
@@ -279,7 +281,7 @@ often useful in FACTORIE programs.
 
 
 
-### Variable domains
+#### Variable domains
 
 Some (but not all) FACTORIE variables have a corresponding domain
 object that contains information about the set of values the variable
@@ -299,8 +301,25 @@ corresponding at index in the domain.  `cd1.index("apple")` returns
 the integer index corresponding to the cateogry value `"apple"`.  If
 `"apple"` is not yet in the domain, it will be added, assigned the
 next integer value, and the size of the domain will be increased by
-one---assuming that `cd1` has not previously been frozen.
+one (assuming that `cd1` has not previously been frozen).
 
+
+#### Undoable changes
+
+FACTORIE also provides the ability to undo a collection of changes to
+variable values.  (This is especially useful in Metropolis-Hastings
+inference, in which a proposed change to variable values is made, but
+may be rejected, requiring a reversion to previous values.)
+
+A `Diff` instance represents a change in value to a single variable.
+It has methods `undo` and `redo`, as well as the `variable` method for
+getting the changed variable.  A `DiffList` stores an ordered list of
+`Diff`s.
+
+An alternative method for changing the value of a `MutableVar` is
+`set`, which, in addition to the new value, also takes a `DiffList` as
+an implicit argument.  The `set` method will then automatically
+construct a `Diff` object and append it to the given `DiffList`.
 
 
 ### Expressing preferences with factors and models
@@ -311,6 +330,8 @@ world over another---or a probability distribution over possible
 worlds---we need a mechanism for scoring the different worlds, such as
 a collection of factors in a factor graph.
 
+#### Factors
+
 In FACTORIE, factors are represented by instances of the trait
 `Factor`.  All `Factor`s have certain basic methods.  The
 `numVariables` method returns the number of variables neighboring the
@@ -320,14 +341,226 @@ score for the neighboring variables' values in the current global
 assignment.  You can obtain the score under alternative assignments by
 calling `assignmentScore(a1)`, where `a1` is some `Assignment`.
 
-Its `variables` method returns the list of variables
-neighboring the factor.  Its `
+Subclasses of the `Factor` trait include `Factor1`, `Factor2`,
+`Factor3`, and `Factor4`, which have one, two, three or four
+neighboring variables respectively.  (FACTORIE does not currently
+support factors with more than four neighbors; if necessary these
+could be added in the future, however, thus far we have not found them
+necessary because (a) the use of `TensorVariable`, `SeqVariable` and
+other composite-valued variables handle cases in which many values are
+necessary, or (b) the use of a "var-args" `ContainerVariable` helps
+similarly.)
+
+The only abstract method in `Factor1` (and its other numbered
+relations) is `score`, which takes as arguments the values of its
+neighbors and returns a `Double`.
+
+Some `Factor` subclasses define a `statistics` method that takes as
+arguments the values of its neighbors and returns the sufficient
+statistics of the factor.  (Often the sufficient statistics will
+simply be the combination of neighbor values, but this method provides
+users with an opportunity to instead perform various useful
+transformations from values to sufficient statistics.)  In these cases
+the `score` method is then defined to be the result of the
+`statisticsScore` method, whose only argument is the statistics, thus
+ensuring that the factor score can be calculated using only the
+sufficient statistics.
+
+For example, in the class `DotFactor2` the abstract method
+`statistics` must return sufficient statistics of type `Tensor`.  The
+`statisticsScore` method is then defined to be the dot-product of the
+sufficient statistics with a `Tensor` of scoring parameters returned
+by the abstract method `weights`.
+
+The `DotFactorWithStatistics2` class inherits from `DotFactor2` but
+requires that both its neighbors inhert frim `TensorVar`.  It then
+defines its `statistics` method to return the outer-product of the
+tensor values of its two neighbors.
+
+The naming convension is that classes having suffix `WithStatistics`
+define the `statistics` method for the user.  Most other classes have
+an abstract `statistics` method that must be defined by the user.
+
+#### Templated Factors
+
+In many situations we want to model "relational data" in which the
+variables and factors appear in repeated patterns of relations to each
+other.
+
+For example, in a hidden Markov model (HMM) there is a sequence of
+observations (random variables with observed values) and a
+corresponding sequence of hidden states (random variables whose value
+is the identity of the state of a finite-state machine that was
+responsible for generating that observation).  Each hidden state
+variable has "next" and "previous" relations in the chain of hidden
+states.  Each also has a corresponding observation variable (the one
+that generated it, and occurs in the same sequence position).  
+
+The standard HMM is "time invariant" (sometimes called "stationary"),
+meaning that the hidden state-transition probabilities and the
+observation-from-state generation probabilities do not dependent on
+their position in the sequence.  Thus, although each transition needs
+its own factor in the factor graph (because each factor has different
+neighboring variables), each of these factors can share the same
+scoring function.
+
+In FACTORIE factors that share the same sufficient statistics
+function, score function, and other similar attributes are said to
+belong the same "family" of factors.  The trait `Family` defines a
+`Factor` inner class such that its instances rely on methods in the
+`Family` class for various shared functionality.  ((We should explain
+here why subclassing Factor was not sufficient.  If Scala had "static"
+members, I think we might have considered this.))
+
+For example, the `DotFamily` provides a `weights` method from which
+the dot-product parameters shared by all member factors can be
+accessed.
+
+In parallel to the numbered `Factor` subclasses there are numbered
+families, `Family1`, `Family2`, `Family3`, `Family4`, each defining an
+inner factor classes with the corresponding number of neighbors.
+
+A `Template` is a subclass of `Family` that is also able to
+automatically construct its factors on the fly in response to requests
+to "unroll" part of the graphical model.  A `Template`'s `unroll`
+method takes as input a variable, and uses its knowledge about the
+"pattern of relational data" to create and return the `Template`'s
+factors that neighbor the given variable.  
+
+Note that for multi-neighbored factors this requires traversing some
+relational pattern to find the *other* variables that are also
+neighbors of these factors.  This knowledge is flexibly encoded in the
+implementation of numbered "unroll" methods.  For example `Template2`
+implements its `unroll` method in terms of two abstract methods:
+`unroll1` and `unroll2`.  The `unroll1` method takes as input a
+variable with type matching the first neighbor of the factor, and is
+responsible creating and returning a (possibly empty) collection of
+templated factors that touch this variable---finding the second
+neighbor in each case by traversing some relational structure among
+the variables.  
+
+Specifying the templated unrolling of a graphical model by
+implementing position-specific `unroll` methods may seem cumbersome,
+but in most cases these methods are extremely succinct, and moreover
+the ability to specify the relational pattern through arbitrary
+Turing-complete code provides a great deal of flexibility.
+Nonetheless, in the future, we plan to implement a simpler template
+language on top of this unroll framework.
+
+As with `Family` there are numerous specialized subclasses of
+`Template`.  For example a `DotTemplateWithStatistics3` is a template
+for a factor with three neighboring variables, each of which must
+inherit from `TensorVar`; the template defines a factor scoring
+function by the dot-product between the outer-product of the three
+variables and the template's `weights`.  The only abstract methods are
+`unroll1`, `unroll2`, `unroll3` and `weights`.
+
+#### Models
+
+For the sake of flexible modularity, in FACTORIE, a "model" does not
+include the data, or inference method, or learning mechanism---a model
+is purely a source of factors.  The key method of the `Model` class is
+`factors` which takes as input a collection of variables, and returns
+a collection of `Factor`s that neighbor those variables.  (This
+definition allows efficient implementation of large relational models
+in which factors are created on-the-fly in response to specific
+requests instead of needing to be "unrolled" entirely in advance.)
+
+The `Model` trait also provides alternative `factors` methods for
+obtaining the factors that neighbor an individual variable, a `Diff`
+or a `DiffList`.  There are also methods providing a filtered
+collection of factors, such as `factorsOfClass`, `factorsOfFamily` or
+`factorsOfFamilyClass`.  For example, the later may be used to obtain
+only those factors that are members of the `DotFamily` class, and thus
+conducive to gradient ascent parameter estimation.
+
+`Model` also has convenience methods that return the total score of
+all factors neighboring the method arguments.  For example, its
+`assignmentScore` method returns the sum of the factors' scores
+according to the given assignment.  Similarly `currentScore` does so
+for the global assignment.
+
+There are several concrete subclasses of `Model`.  A `TemplateModel`'s
+factors come entirely from a collection of `Template`s.  By contrast,
+an `ItemizedModel`
+
+#### Parameters and Weights
+
+The case in which templated factor scores are calculated by
+dot-products is so common (and so relevant to our typical parameter
+estimation procedures) that FACTORIE provides special support for this
+case.
+
+In a templated model the parameters are a set of weights tensors, one
+per factor template.  The `Weights` trait is a `TensorVar` that holds
+the parameters of one family.  For example, `DotFamily` has a
+`weights` method that returns the `Weights` used to calculate its
+factor scores.
+
+A `WeightsSet` is then a collection of `Weights`, typically holding
+all the parameters of a model based on dot-products.
+
+To declare that an object has a `WeightsSet` holding parameters we use
+the `Parameters` trait, which defines a `parameters` method returning
+the `WeightsSet`.  (Thus this trait should not be thought of as
+"being" parameters, but "holding" parameters.)  Its typical use-case
+is `Model with Parameters`, declaring that the object is a source of
+factors, and also has a `WeightsSet` available through its
+`parameters` method.
+
+During parameter estimation one typically needs additional tensors
+having the same structure as the parameters, but that hold other
+quantities, such as gradients or expectations.  For example the
+`blankSparseMap` method on `WeightsSet` will create a "blank"
+(initially zero-filled) `WeightsMap`, which is a collection of tensors
+having the same structure as the `WeightsSet` that created it.  This
+`WeightsMap` can then be filled with a gradient through some
+computation on training data.  It is called a "map" because the
+parameter-value-containing `Weights` objects are used as "keys" to
+obtain the gradient tensor corresponding to that `Weights` object.
+
+In summary, both `WeightsSet` and `WeightsMap` make available a
+collection of `Tensor`s.  In `WeightsSet` the tensors are stored inside
+the constituent `Weights` (`TensorVar`s) themselves.  In `WeightsMap`
+the tensors are stored in a map internal to the `WeightsMap`; they are
+accessible by lookup using the corresponding `Weights` as keys.
+
+The absract superclass of both `WeightsSet` and `WeightsMap` is
+`TensorSet`.  Although a `TensorSet` is not a single tensor but a
+collection of tensors, it has a variety of useful methods allowing it
+to be treated somewhat like a single tensor.  These methods include
+`oneNorm` and `twoNorm` for calculating norms, `+=` for incremental
+addition, `dot` for the sum of dot-product of all constituent tensors,
+and `different` to determine if the element-wise distance between two
+`WeightsSet`s is larger than a threshold.
+
+
 
 ### Searching for solutions with inference
+
 
 
 ### Estimating parameters 
 
 
 
+
+## Application packages
+
+### Classification
+
+### Regression
+
+### Clustering
+
+This package is not yet implemented, but will be in the future.
+
+### Strings
+
+### Natural language processing
+
+### Topic Modeling
+
  */
+
+// TODO We should explain why Family is needed rather than just defining a Factor subclass. -akm

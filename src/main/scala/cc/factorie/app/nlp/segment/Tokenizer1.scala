@@ -7,7 +7,7 @@ import cc.factorie.app.strings.RegexSegmenter
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
     */
-class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false) extends DocumentAnnotator {
+class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeConnl03:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -61,6 +61,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val ordinals = "[0-9]{1,2}(st|nd|rd|th)"; patterns += ordinals // like 1st and 22nd
   val quote = "[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\\p{Pf}]|&(quot|[rl][ad]quo);|" + ap2 + "{2}"; patterns += quote
   // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples.
+  if(tokenizeConnl03) { val dashedWord = s"(${letter})([\\p{L}\\p{M}\\p{Nd}_]*(-[\\p{L}\\p{M}\\p{Nd}_]*)*)"; patterns += dashedWord }
   val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|e|en|em|ex|fore|hi|hind|mal|mid|midi|mini|mis|out|over|part|post|pre|pro|re|self|step|t|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
   val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fi|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
   val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}][\\p{L}\\p{M}\\p{Nd}]*"; patterns += dashedPrefixWord // Dashed words are tokenized as one word, like "co-ed" as long as the first component is 6 characters or less (but this misses "counter" and "eastern..."), but longer ones are split
@@ -123,7 +124,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object Tokenizer1 extends Tokenizer1(false, false, false) {
+object Tokenizer1 extends Tokenizer1(false, false, false, false) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)

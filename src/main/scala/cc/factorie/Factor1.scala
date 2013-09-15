@@ -87,11 +87,11 @@ abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
 //  }
 }
 
-/** A 1-neighbor Factor whose statistics have type Tuple2.
+/** A 1-neighbor Factor whose statistics have type Tuple1.
     Only "score" method is abstract. */
 abstract class FactorWithStatistics1[N1<:Var](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = N1#Value
-  final override def statistics(v1:N1#Value) = v1
+  final override def statistics(v1:N1#Value): N1#Value = v1
   final override def statisticsAreValues: Boolean = true
 }
 

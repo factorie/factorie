@@ -17,7 +17,8 @@ trait Parameters {
 }
 
 /** A TensorSet used for holding parameters.
-    Here the actually Tensors are the ones stored in the Weights key themselves. */
+    Here the actual Tensors are the ones stored in the Weights key themselves
+    This is used to store the weights (parameter) value themselves. */
 class WeightsSet extends TensorSet {
   self =>
   private val _keys = mutable.ArrayBuffer[Weights]()
@@ -66,7 +67,8 @@ class WeightsSet extends TensorSet {
   }
 }
 
-/** A TensorSet in which the Tensors themselves are stored in a map inside this object. */
+/** A TensorSet in which the Tensors are not stored in the Weights objects, but in a map inside this object.
+    This is used to store gradients and expectations---tensors that have the same structure as the WeightsSet, but are not the parameter values themselves. */
 class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
   private val _map = new mutable.LinkedHashMap[Weights, Tensor]
   // Note that for sparse tensor hash sets, "keys" only gives you the keys that have been added thus far
