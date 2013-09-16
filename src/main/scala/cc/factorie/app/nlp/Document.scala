@@ -145,7 +145,7 @@ class Document extends DocumentSubstring with Attr {
   
   /** Return a String containing the Token strings in the document, with one-word-per-line 
       and various tab-separated attributes appended on each line. */
-  def owplString(attributes:Iterable[(Token)=>Any] = List((t:Token) => t.lemmaString)): String = {
+  def owplString(attributes:Iterable[(Token)=>Any]): String = {
     val buf = new StringBuffer
     for (section <- sections; token <- section.tokens) {
       if (token.isSentenceStart) buf.append("\n")
@@ -163,6 +163,10 @@ class Document extends DocumentSubstring with Attr {
       buf.append("\n")
     }
     buf.toString
+  }
+  def owplString(annotator:DocumentAnnotator): String = annotator match {
+    case pipeline:DocumentAnnotationPipeline => owplString(pipeline.annotators.map(a => a.tokenAnnotationString(_)))
+    case annotator:DocumentAnnotator => owplString(Seq(annotator.tokenAnnotationString(_)))
   }
 
 }
