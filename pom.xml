@@ -20,7 +20,7 @@ limitations under the License.
   <name>Factorie</name>
   <groupId>cc.factorie</groupId>
   <artifactId>factorie</artifactId>
-  <version>1.0.0-M7</version>
+  <version>1.0-SNAPSHOT</version>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
@@ -33,7 +33,7 @@ limitations under the License.
     <connection>scm:git:https://github.com/factorie/factorie.git</connection>
     <developerConnection>scm:git:git@github.com:factorie/factorie.git</developerConnection>
     <url>https://github.com/factorie/factorie</url>
-    <tag>factorie-1.0.0-M7</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <licenses>
