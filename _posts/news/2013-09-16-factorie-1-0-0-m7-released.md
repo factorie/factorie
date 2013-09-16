@@ -11,7 +11,7 @@ categories: news
 This is the seventh milestone release for Factorie 1.0. This version includes an improved NLP pipeline with many new components and fixes. Detailed changelog attached.
 
 * Executable Jar: **[factorie-1.0.0-M7.jar](http://factorie.googlecode.com/files/factorie-1.0.0-M7.jar)**
-* Source files: [factorie-1.0.0-M7-src.tar.gz](http://factorie.googlecode.com/files/factorie-1.0.0-M7-sources.jar)
+* Source files: [factorie-1.0.0-M7-sources.jar](http://factorie.googlecode.com/files/factorie-1.0.0-M7-sources.jar)
 
 New in version 1.0.0-M7:
 ---
