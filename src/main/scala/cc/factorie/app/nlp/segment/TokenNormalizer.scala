@@ -59,9 +59,8 @@ class TokenNormalizer1[A<:TokenString](
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
     else if (normalizeHtmlAccent && htmlAccentRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlAccentRegex.replaceSomeIn(string, m => Some(m.group(1)))) // replace all dash with dash
     else if (normalizeHtmlSymbol && htmlSymbolRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all dash with dash
+    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with ".  This must come before normalizeApostrophe
     else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")) // replace all apostrophes with simple '
-    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
-    else if (normalizeCurrency && quoteRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (americanize && BritishToAmerican.contains(string)) token.attr += newTokenString(token, BritishToAmerican(string))
   }
   def process(document:Document): Document = {
