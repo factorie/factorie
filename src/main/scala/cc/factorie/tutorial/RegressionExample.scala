@@ -5,7 +5,7 @@ import java.io.File
 import collection.mutable
 import io.Source
 
-import cc.factorie.{DiffList, TensorVariable, CategoricalTensorDomain, BinaryFeatureVectorVariable}
+import cc.factorie.{DiffList, TensorVariable, CategoricalVectorDomain, BinaryFeatureVectorVariable}
 import cc.factorie.app.regress.LinearRegressionTrainer
 import cc.factorie.la.{DenseTensor1, Tensor1}
 
@@ -15,7 +15,7 @@ import cc.factorie.la.{DenseTensor1, Tensor1}
 object RegressionExample {
 
   // input features
-  object InputDomain extends CategoricalTensorDomain[String]
+  object InputDomain extends CategoricalVectorDomain[String]
   class Input(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = InputDomain
 

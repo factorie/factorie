@@ -100,9 +100,11 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
     while (i <= math.min(_position+n, _chain.length-1)) {res.append(chain(i)) ;i += 1}
     res
   }
+  // TODO currently the size of the window is actually 2*n; perhaps this should be changed! -akm
   def window(n:Int): Seq[This] = {
     for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
   }
+  // TODO currently the size of the window is actually 2*n; perhaps this should be changed! -akm
   def windowWithoutSelf(n:Int): Seq[This] = {
     for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
   }

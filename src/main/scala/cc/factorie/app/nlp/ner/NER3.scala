@@ -16,7 +16,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
@@ -63,24 +63,24 @@ class NER3(embeddingMap: SkipGramEmbedding,
     process(document,useModel2 = true)
     document
   }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel])
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
   def postAttrs = Seq(classOf[BilouConllNerLabel])
   def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
 
-  object ChainNer2FeaturesDomain extends CategoricalTensorDomain[String]
+  object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = ChainNer2FeaturesDomain
     override def skipNonCategories = true
   }
-  object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+  object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = ChainNerFeaturesDomain
     override def skipNonCategories = true
   }
 
-  class NER3EModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalTensorVar[String], Token<:Observation[Token]]
+  class NER3EModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
   (val labelDomain1:CategoricalDomain[String],
-   val featuresDomain1:CategoricalTensorDomain[String],
+   val featuresDomain1:CategoricalVectorDomain[String],
    val labelToFeatures1:Label=>Features,
    val labelToToken1:Label=>Token,
    val tokenToLabel1:Token=>Label)
@@ -201,7 +201,7 @@ class NER3(embeddingMap: SkipGramEmbedding,
 
   def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
 
-  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
     vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
     vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
     for(t2 <- prevWindowNum(from,2)) {
@@ -216,7 +216,7 @@ class NER3(embeddingMap: SkipGramEmbedding,
     }
   }
   
-  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
+  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
     var count = 0
     var compareToken : Token = token
     while(count < 200 && compareToken.hasPrev) {
@@ -235,7 +235,7 @@ class NER3(embeddingMap: SkipGramEmbedding,
     }
   }
 
-  def initFeatures(document:Document, vf:Token=>CategoricalTensorVar[String]): Unit = {
+  def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
@@ -407,9 +407,9 @@ class NER3(embeddingMap: SkipGramEmbedding,
   }
 
   object EmbeddingDomain extends DiscreteDomain(NERModelOpts.argsList("embeddingDim").toInt)
-  class EmbeddingVariable(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain }
+  class EmbeddingVariable(t:la.Tensor1) extends VectorVariable(t) { def domain = EmbeddingDomain }
   object EmbeddingDomain2 extends DiscreteDomain(EmbeddingDomain.size * EmbeddingDomain.size)
-  class EmbeddingVariable2(t:la.Tensor1) extends DiscreteTensorVariable(t) { def domain = EmbeddingDomain2 }
+  class EmbeddingVariable2(t:la.Tensor1) extends VectorVariable(t) { def domain = EmbeddingDomain2 }
 
   def history(list : List[String], category : String) : String = {
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString

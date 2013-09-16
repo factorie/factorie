@@ -73,6 +73,6 @@ object TutorialDomain {
 
     /*& CategoricalDomain */
 
-    /*& DiscreteTensorDomain and CategoricalTensorDomain */
+    /*& VectorDomain and CategoricalVectorDomain */
   }
 }

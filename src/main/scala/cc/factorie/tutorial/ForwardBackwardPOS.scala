@@ -4,7 +4,7 @@ import cc.factorie._
 import java.io.File
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PTBPosLabel, PTBPosDomain}
+import cc.factorie.app.nlp.pos.{PennPosLabel, PennPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 import cc.factorie.optimize.Trainer
 
@@ -20,23 +20,23 @@ import cc.factorie.optimize.Trainer
     The set of features is impoverished in this demonstration, so the accuracy is not high */
 object ForwardBackwardPOS {
   
-  object PosFeaturesDomain extends CategoricalTensorDomain[String]
+  object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
   object PosModel extends TemplateModel with Parameters {
     // Factor between label and observed token
-    val localTemplate = this += new DotTemplateWithStatistics2[PTBPosLabel,PosFeatures] {
+    val localTemplate = this += new DotTemplateWithStatistics2[PennPosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
-      val weights = Weights(new la.DenseTensor2(PTBPosDomain.size, PosFeaturesDomain.dimensionSize))
-      def unroll1(label: PTBPosLabel) = Factor(label, label.token.attr[PosFeatures])
+      val weights = Weights(new la.DenseTensor2(PennPosDomain.size, PosFeaturesDomain.dimensionSize))
+      def unroll1(label: PennPosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
     }
     // Transition factors between two successive labels
-    val transTemplate = this += new DotTemplateWithStatistics2[PTBPosLabel, PTBPosLabel] {
+    val transTemplate = this += new DotTemplateWithStatistics2[PennPosLabel, PennPosLabel] {
       //override def statisticsDomains = ((PosDomain, PosDomain))
-      val weights = Weights(new la.DenseTensor2(PTBPosDomain.size, PTBPosDomain.size))
-      def unroll1(label: PTBPosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
-      def unroll2(label: PTBPosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
+      val weights = Weights(new la.DenseTensor2(PennPosDomain.size, PennPosDomain.size))
+      def unroll1(label: PennPosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
+      def unroll2(label: PennPosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
   }
 
@@ -69,7 +69,7 @@ object ForwardBackwardPOS {
   }
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
-  def predictSentence(vs: Seq[PTBPosLabel], oldBp: Boolean = false): Unit =
+  def predictSentence(vs: Seq[PennPosLabel], oldBp: Boolean = false): Unit =
     BP.inferChainMax(vs, PosModel)
     //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
@@ -116,7 +116,7 @@ object ForwardBackwardPOS {
     if (!modelLoaded) throw new Error("The model should be loaded before documents are processed.")
 
     // add the labels and features if they aren't there already.
-    if (document.tokens.head.attr.get[PTBPosLabel] == None) {
+    if (document.tokens.head.attr.get[PennPosLabel] == None) {
       document.tokens.foreach(t => t.attr += labelMaker(t))
       initPosFeatures(document)
     }
@@ -125,10 +125,10 @@ object ForwardBackwardPOS {
   }
 
   lazy val defaultCategory = {
-    try { PTBPosDomain.categories.head }
+    try { PennPosDomain.categories.head }
     catch { case e: NoSuchElementException => throw new Error("The domain must be loaded before it is accessed.") }
   }
-  def labelMaker(t: Token, l: String = defaultCategory) = new PTBPosLabel(t, l)
+  def labelMaker(t: Token, l: String = defaultCategory) = new PennPosLabel(t, l)
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {

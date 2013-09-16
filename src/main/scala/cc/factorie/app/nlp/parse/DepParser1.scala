@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
 import cc.factorie._
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
@@ -38,7 +38,7 @@ class DepParser1 extends DocumentAnnotator {
     val features = new NonProjDependencyParserFeatures(this)
     features ++= featureGenerators.map(_.apply(state))
   }
-  object featuresDomain extends CategoricalTensorDomain[String]
+  object featuresDomain extends CategoricalVectorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
@@ -161,7 +161,7 @@ class DepParser1 extends DocumentAnnotator {
 
   // For DocumentAnnotator trait
   def process(doc: Document) = { doc.sentences.foreach(process(_)); doc }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PTBPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
     val sentence = token.sentence

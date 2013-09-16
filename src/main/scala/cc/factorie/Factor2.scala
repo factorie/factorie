@@ -227,8 +227,8 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
     override def statisticsScore(tensor:Tensor): Double = Family2.this.statisticsScore(tensor)
     override def valuesStatistics(tensor:Tensor): Tensor = Family2.this.valuesStatistics(tensor)
     override def statisticsAreValues: Boolean = Family2.this.statisticsAreValues
-    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.limitedDiscreteValues12 //(this.asInstanceOf[Factor2[DiscreteTensorVar,DiscreteTensorVar]])
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1 //(this.asInstanceOf[Factor2[DiscreteTensorVar,N2]])
+    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family2.this.limitedDiscreteValues12 //(this.asInstanceOf[Factor2[VectorVar,VectorVar]])
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1 //(this.asInstanceOf[Factor2[VectorVar,N2]])
   }
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
@@ -263,15 +263,15 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   // For implementing sparsity in belief propagation
   
   def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
-  //protected def getLimitedDiscreteValues12(factor:Factor2[DiscreteTensorVar,DiscreteTensorVar]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
+  //protected def getLimitedDiscreteValues12(factor:Factor2[VectorVar,VectorVar]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
   var limitedDiscreteValues12: SparseBinaryTensor2 = null
   
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
-  //protected def getLimitedDiscreteValues1(factor:Factor2[DiscreteTensorVar,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
+  //protected def getLimitedDiscreteValues1(factor:Factor2[VectorVar,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
 
   def hasLimitedDiscreteValues2 = limitedDiscreteValues2 != null && limitedDiscreteValues2.activeDomainSize < limitedDiscreteValues2.length
-  //protected def getLimitedDiscreteValues2(factor:Factor2[_, DiscreteTensorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues2 eq null) limitedDiscreteValues2 = new SparseBinaryTensor1(factor._2.domain.dimensionSize); limitedDiscreteValues2 }
+  //protected def getLimitedDiscreteValues2(factor:Factor2[_, VectorVar]): SparseBinaryTensor1 = { if (limitedDiscreteValues2 eq null) limitedDiscreteValues2 = new SparseBinaryTensor1(factor._2.domain.dimensionSize); limitedDiscreteValues2 }
   var limitedDiscreteValues2: SparseBinaryTensor1 = null
 
 //  // Cached Statistics
@@ -289,7 +289,7 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
 //          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = values.statistics
 //          cachedStatisticsArray(i)
 //        }
-//        case v2:DiscreteTensorValue if (true /*v2.isConstant*/) => {
+//        case v2:VectorValue if (true /*v2.isConstant*/) => {
 //          //println("Template2.cachedStatistics")
 //          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType] { override protected def initialSize = 512 }
 //          val i = ((v1.intValue,v2))
@@ -298,7 +298,7 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
 //        case _ => values.statistics
 //      }
 //    }
-//    case v1:DiscreteTensorValue if (true /*v1.isConstant*/) => {
+//    case v1:VectorValue if (true /*v1.isConstant*/) => {
 //      values._2 match {
 //        case v2:DiscreteValue => {
 //          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
@@ -417,7 +417,7 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
 //trait TensorStatistics2[S1<:Tensor,S2<:Tensor] extends TensorFamily {
 //  self =>
 //  type StatisticsType = Statistics
-//  //override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
+//  //override def statisticsDomains: Tuple2[VectorDomain with Domain[S1], VectorDomain with Domain[S2]]
 //  final case class Statistics(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
 //    val score = self.score(this)
 //  }
@@ -433,12 +433,12 @@ trait DotFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily
 //  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
 //}
 //
-//trait FamilyWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
+//trait FamilyWithTensorStatistics2[N1<:VectorVar,N2<:VectorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
 ////  def statistics(values:Values) = Stat(values._1, values._2)
 //  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
 //}
 //
-//trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+//trait FamilyWithDotStatistics2[N1<:VectorVar,N2<:VectorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
 ////  def statistics(values:Values) = Stat(values._1, values._2)
 //  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
 //  override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)

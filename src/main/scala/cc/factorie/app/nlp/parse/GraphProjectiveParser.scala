@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
 import cc.factorie._
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
 import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
@@ -24,7 +24,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getTokenFeatureVector(t: Token): TensorVar = {
     val f = new FeatureVector
     val tWord = t.string
-    val tPos = t.attr[PTBPosLabel].categoryValue
+    val tPos = t.attr[PennPosLabel].categoryValue
     f += "TOKENPOS="+tPos
     f += "TOKENWORD="+tWord
     f += "TOKENID="+tPos+"&"+tWord
@@ -34,7 +34,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getParentFeatureVector(p: Token): TensorVar = {
     val f = new FeatureVector
     val pWord = if (p ne null) p.string else "ROOT"
-    val pPos = if (p ne null) p.attr[PTBPosLabel].categoryValue else "ROOTPOS"
+    val pPos = if (p ne null) p.attr[PennPosLabel].categoryValue else "ROOTPOS"
     f += "PARENTPOS="+pPos
     f += "PARENTWORD="+pWord
     f += "PARENTID="+pPos+"&"+pWord
@@ -52,9 +52,9 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getPairwiseFeatureVector(t: Token, p: Token): TensorVar = {
     val f = new FeatureVector
     val tWord = t.string
-    val tPos = t.attr[PTBPosLabel].categoryValue
+    val tPos = t.attr[PennPosLabel].categoryValue
     val pWord = if (p ne null) p.string else "ROOT"
-    val pPos = if (p ne null) p.attr[PTBPosLabel].categoryValue else "ROOTPOS"
+    val pPos = if (p ne null) p.attr[PennPosLabel].categoryValue else "ROOTPOS"
     f += "WORDPAIR="+tWord+"&"+pWord
     f += "POSPAIR="+tPos+"&"+pPos
     f += "PARENTPAIRCHILDPOS="+pPos+"&"+pWord+"&"+tPos
@@ -68,12 +68,12 @@ class GraphProjectiveParser extends DocumentAnnotator {
       var x = first
       while (x.sentenceNext ne second) {
         x = x.sentenceNext
-        f += "BETWEENPOS="+pPos+"&"+x.attr[PTBPosLabel].categoryValue+"&"+tPos
+        f += "BETWEENPOS="+pPos+"&"+x.attr[PennPosLabel].categoryValue+"&"+tPos
       }
-      val prevHeadPos = if (p.sentenceHasPrev) p.sentencePrev.attr[PTBPosLabel].categoryValue else "NOPREV"
-      val prevTokPos = if (t.sentenceHasPrev) t.sentencePrev.attr[PTBPosLabel].categoryValue else "NOPREV"
-      val nextHeadPos = if (p.sentenceHasNext) p.sentenceNext.attr[PTBPosLabel].categoryValue else "NONEXT"
-      val nextTokPos = if (t.sentenceHasNext) t.sentenceNext.attr[PTBPosLabel].categoryValue else "NONEXT"
+      val prevHeadPos = if (p.sentenceHasPrev) p.sentencePrev.attr[PennPosLabel].categoryValue else "NOPREV"
+      val prevTokPos = if (t.sentenceHasPrev) t.sentencePrev.attr[PennPosLabel].categoryValue else "NOPREV"
+      val nextHeadPos = if (p.sentenceHasNext) p.sentenceNext.attr[PennPosLabel].categoryValue else "NONEXT"
+      val nextTokPos = if (t.sentenceHasNext) t.sentenceNext.attr[PennPosLabel].categoryValue else "NONEXT"
       f += "HNhPcC="+pPos+"&"+nextHeadPos+"&"+prevTokPos+"&"+tPos
       f += "PhHPcC="+prevHeadPos+"&"+pPos+"&"+prevTokPos+"&"+tPos
       f += "HNhCNc="+pPos+"&"+nextHeadPos+"&"+tPos+"&"+nextTokPos
@@ -290,7 +290,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
     document.sentences.foreach(parse)
     document
   }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[pos.PTBPosLabel]) // TODO Also TokenLemma?  But we don't have a lemmatizer that matches the training data
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[pos.PennPosLabel]) // TODO Also TokenLemma?  But we don't have a lemmatizer that matches the training data
   def postAttrs: Iterable[Class[_]] = List(classOf[ParseTree])
 }
 

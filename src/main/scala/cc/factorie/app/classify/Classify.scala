@@ -30,17 +30,17 @@ class Label(val labelName: String, val features: Features, val domain: Categoric
   override def toString = "instance=%s label=%s" format (features.instanceName, categoryValue)
   override val skipNonCategories = true
 }
-trait Features extends DiscreteTensorVar {
-  this: CategoricalTensorVariable[String] =>
+trait Features extends VectorVar {
+  this: CategoricalVectorVariable[String] =>
   def labelName: String
   def instanceName: String
-  def domain: CategoricalTensorDomain[String]
+  def domain: CategoricalVectorDomain[String]
   def labelDomain: CategoricalDomain[String]
   var label = new Label(labelName, this, labelDomain)
 }
-class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalVectorDomain[String], val labelDomain: CategoricalDomain[String])
   extends BinaryFeatureVectorVariable[String] with Features { override val skipNonCategories = true }
-class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalVectorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features { override val skipNonCategories = true }
 
 // A TUI for training, running and diagnosing classifiers
@@ -121,7 +121,7 @@ object Classify {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalVectorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
@@ -157,7 +157,7 @@ object Classify {
     val testingLabels = new ArrayBuffer[Label]()
 
     // Helper functions
-    def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
+    def textIntoFeatures(text: String, features: CategoricalVectorVariable[String]): Unit = {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
       val text2 = if (opts.readTextSkipHeader.value) Some(text.indexOf("\n\n"))
           .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))

@@ -174,7 +174,7 @@ class Assignment4[A<:Var,B<:Var,C<:Var,D<:Var](val _1:A, var value1:A#Value, val
 
 
 
-
+// TODO Consider making this inherit from MutableAssignment
 /** An Assignment whose values are those stored inside the variables themselves. 
     @author Andrew McCallum */
 object GlobalAssignment extends Assignment {

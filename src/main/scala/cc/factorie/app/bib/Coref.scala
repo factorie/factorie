@@ -2330,7 +2330,7 @@ class WeightedChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](m
   extends WeightedChildParentTemplate[B](model){
   def statistics(eref:EntityRef#Value,childBow:B#Value,parentBow:B#Value) = new ChildParentBagsFeatureVector(name:String,childBow,parentBow).value
 }
-object ChildParentFeatureDomain extends CategoricalTensorDomain[String]{dimensionDomain.maxSize=10000}
+object ChildParentFeatureDomain extends CategoricalVectorDomain[String]{dimensionDomain.maxSize=10000}
 class ChildParentFeatureVector[A<:EntityAttr](child:A#Value,parent:A#Value) extends FeatureVectorVariable[String]{
   def domain = ChildParentFeatureDomain
 }
@@ -2390,7 +2390,7 @@ class ChildParentBagsFeatureVector[B<:BagOfWordsVariable with EntityAttr](name:S
   object CorefAffinityDimensionDomain extends EnumDomain {
     val Bias, ExactMatch, SuffixMatch, EntityContainsMention, EditDistance2, EditDistance4, NormalizedEditDistance9, NormalizedEditDistance5, Singleton = Value
   }
-  object CorefAffinityDomain extends CategoricalTensorDomain[String] {
+  object CorefAffinityDomain extends CategoricalVectorDomain[String] {
     override lazy val dimensionDomain = CorefAffinityDimensionDomain
   }
   class CorefAffinity extends BinaryFeatureVectorVariable[String] {

@@ -47,7 +47,7 @@ trait CategoricalValue[C] extends DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalTensorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
+class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalVectorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
   def _indices = __indices
@@ -140,7 +140,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     def dim1 = CategoricalDomain.this.size
   }
 
-  /** If type T is not string, this should be overridden to provide deserialization */
+  /** If type T is not string, this should be overridden to provide de-serialization */
   override def stringToCategory(s:String): C = s.asInstanceOf[C]
 
   // Code for managing occurrence counts

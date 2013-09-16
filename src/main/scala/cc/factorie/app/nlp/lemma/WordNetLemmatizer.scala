@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.lemma
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PTBPosLabel,PTBPosDomain}
+import cc.factorie.app.nlp.pos.{PennPosLabel,PennPosDomain}
 import java.io.{FileInputStream,InputStream}
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -65,9 +65,9 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   def lemma(raw:String, partOfSpeech:String): String = {
     val rawlc = raw.toLowerCase
     val pos = {
-      if (PTBPosDomain.isAdjective(partOfSpeech)) ADJC
-      else if (PTBPosDomain.isNoun(partOfSpeech)) NOUN
-      else if (PTBPosDomain.isVerb(partOfSpeech)) VERB
+      if (PennPosDomain.isAdjective(partOfSpeech)) ADJC
+      else if (PennPosDomain.isNoun(partOfSpeech)) NOUN
+      else if (PennPosDomain.isVerb(partOfSpeech)) VERB
       else ADVB
     }
 
@@ -76,8 +76,8 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     else if (pos == ADVB && rawlc.endsWith("ly")) rawlc.dropRight(2)  /* this rule does not appear in wordnet */
     else if (pos == ADVB) rawlc                                       /* wordnet contains many unlemmatized adverbs */
     else if (rawlc.length <= 2) rawlc
-    else if (PTBPosDomain.isNoun(pos) && rawlc.endsWith("ss")) rawlc
-    else if (PTBPosDomain.isNoun(pos) && rawlc.endsWith("ful")) this.wordbase(rawlc.dropRight(3), NOUN) + "ful"
+    else if (PennPosDomain.isNoun(pos) && rawlc.endsWith("ss")) rawlc
+    else if (PennPosDomain.isNoun(pos) && rawlc.endsWith("ful")) this.wordbase(rawlc.dropRight(3), NOUN) + "ful"
     else wordbase(rawlc, pos)
   }
   def process(document:Document): Document = {
@@ -85,7 +85,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     document
   }
   override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; l.value }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
   def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
 
   private def wordbase(w: String, pos: String): String = {

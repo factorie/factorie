@@ -20,19 +20,20 @@ import cc.factorie.util.Cubbie
 /** A domain over Tensor values, where the dimensions of the Tensor correspond to a CategoricalDomain.
     This trait is often used for the domain of feature vectors.
     @author Andrew McCallum */
-trait CategoricalTensorDomain[C] extends DiscreteTensorDomain { thisDomain =>
+trait CategoricalVectorDomain[C] extends VectorDomain { thisDomain =>
   type CategoryType = C
   def dimensionDomain: CategoricalDomain[C] = _dimensionDomain
+  /** Use for de-serialization */
   def stringToCategory(s:String): C = s.asInstanceOf[C]
   lazy val _dimensionDomain: CategoricalDomain[C] = new CategoricalDomain[C] {
-    final override def stringToCategory(s:String): C = CategoricalTensorDomain.this.stringToCategory(s)
+    final override def stringToCategory(s:String): C = CategoricalVectorDomain.this.stringToCategory(s)
   }
 }
 
-/** A Cubbie for serializing CategoricalTensorDomain.
+/** A Cubbie for serializing CategoricalVectorDomain.
     It stores the sequence of categories.
     @author Luke Vilnis */
-class CategoricalTensorDomainCubbie[T](val cdtd: CategoricalTensorDomain[T]) extends Cubbie {
+class CategoricalVectorDomainCubbie[T](val cdtd: CategoricalVectorDomain[T]) extends Cubbie {
   val dimensionDomainCubbie = new CategoricalDomainCubbie[T](cdtd.dimensionDomain)
   setMap(new mutable.Map[String, Any] {
     override def update(key: String, value: Any): Unit = {
@@ -53,15 +54,15 @@ class CategoricalTensorDomainCubbie[T](val cdtd: CategoricalTensorDomain[T]) ext
 /** An abstract variable whose value is a Tensor whose length matches the size of a CategoricalDomain,
     and whose dimensions each correspond to a category.
     These are commonly used for feature vectors, with String categories. */
-trait CategoricalTensorVar[C] extends DiscreteTensorVar {
-  def domain: CategoricalTensorDomain[C]
+trait CategoricalVectorVar[C] extends VectorVar {
+  def domain: CategoricalVectorDomain[C]
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
   protected def doWithIndexSafely(elt:C, v:Double, update:Boolean): Unit = {
     val i = domain.dimensionDomain.index(elt)
     if (i == CategoricalDomain.NULL_INDEX) {
-      if (!skipNonCategories) throw new Error("CategoricalTensorVar.+= " + elt + " not found in domain " + domain)
+      if (!skipNonCategories) throw new Error("CategoricalVectorVar.+= " + elt + " not found in domain " + domain)
     } else {
       if (update) value.update(i, v)
       else value.+=(i, v)
@@ -82,7 +83,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
     These are commonly used for feature vectors, with String categories.
     The 'dimensionDomain' is abstract.
     @author Andrew McCallum */
-abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor1] with CategoricalTensorVar[C] {
+abstract class CategoricalVectorVariable[C] extends MutableTensorVar[Tensor1] with CategoricalVectorVar[C] {
   def this(initialValue:Tensor1) = { this(); set(initialValue)(null) }
 }
 

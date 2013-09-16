@@ -15,7 +15,7 @@ class NER2 extends DocumentAnnotator {
     deserialize(url.openConnection.getInputStream)
   }
 
-  object FeaturesDomain extends CategoricalTensorDomain[String]
+  object FeaturesDomain extends CategoricalVectorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
     override def skipNonCategories = true
