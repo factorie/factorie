@@ -4,7 +4,7 @@ import cc.factorie.la._
 object TestSampleRank  extends cc.factorie.util.FastLogging{
   object LabelDomain extends CategoricalDomain[String]
   class Label(s:String, val instance:Instance) extends LabeledCategoricalVariable(s) { def domain = LabelDomain }
-  object InstanceDomain extends CategoricalTensorDomain[String]
+  object InstanceDomain extends CategoricalVectorDomain[String]
   class Instance(labelString:String) extends BinaryFeatureVectorVariable[String] {
     def domain = InstanceDomain
     val label = new Label(labelString, this)

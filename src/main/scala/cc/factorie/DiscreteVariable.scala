@@ -17,7 +17,7 @@ import cc.factorie.la._
 import scala.util.Random
 
 /** A single discrete variable */
-trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] with VarWithDomain[DiscreteValue] {
+trait DiscreteVar extends VectorVar with ValueBound[DiscreteValue] with VarWithDomain[DiscreteValue] {
   def domain: DiscreteDomain
   def value: DiscreteValue
   def intValue = value.intValue

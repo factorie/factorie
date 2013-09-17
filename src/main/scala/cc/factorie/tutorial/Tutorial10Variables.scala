@@ -223,7 +223,7 @@ object TutorialVariables {
     println("bv integer value is "+bv.intValue)
     
     // TODO FeatureVectors
-    val fvd = new CategoricalTensorDomain[String] { def dimensionsDomain = cd }
+    val fvd = new CategoricalVectorDomain[String] { def dimensionsDomain = cd }
     class MyFeatureVector extends BinaryFeatureVectorVariable[String] { def domain = fvd }  
 
     /*&

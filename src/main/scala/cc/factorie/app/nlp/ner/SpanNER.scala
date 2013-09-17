@@ -23,7 +23,7 @@ import java.io.File
 
 
 
-object SpanNerFeaturesDomain extends CategoricalTensorDomain[String]
+object SpanNerFeaturesDomain extends CategoricalVectorDomain[String]
 class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = SpanNerFeaturesDomain
   override def skipNonCategories = true

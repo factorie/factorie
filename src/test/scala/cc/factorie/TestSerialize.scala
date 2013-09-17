@@ -13,7 +13,7 @@ import cc.factorie.app.nlp.ner.NerLabel
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
- class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalTensorDomain[String])
+ class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalVectorDomain[String])
    extends BinaryFeatureVectorVariable[String] {
    override def skipNonCategories = true
  }
@@ -41,7 +41,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
   @Test def testOutOfOrderDomainSerialization(): Unit = {
     val random = new scala.util.Random(0)
     val file = java.io.File.createTempFile("foo", "multi")
-      object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+      object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
       MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
       object OntoNerLabelDomain extends CategoricalDomain[String]
@@ -54,7 +54,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
       BinarySerializer.serialize(model, MyChainNerFeaturesDomain, OntoNerLabelDomain, file)
 
-      object featDomain2 extends CategoricalTensorDomain[String]
+      object featDomain2 extends CategoricalVectorDomain[String]
       object labelDomain2 extends CategoricalDomain[String]
       val model2 = makeModel(featDomain2, labelDomain2)
 
@@ -71,7 +71,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    logger.debug("creating toy model with random weights")
 
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
    object OntoNerLabelDomain extends CategoricalDomain[String]
@@ -109,7 +109,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    }
  }
 
- def makeModel(featuresDomain: CategoricalTensorDomain[String],
+ def makeModel(featuresDomain: CategoricalVectorDomain[String],
    labelDomain: CategoricalDomain[String]): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
    object model extends ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token](
      labelDomain, featuresDomain, l => l.token.attr[MyChainNerFeatures], l => l.token, t => t.attr[OntoNerLabel])
@@ -118,7 +118,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
  def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    object OntoNerLabelDomain extends CategoricalDomain[String]
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
    model.deSerialize(fileName)
@@ -167,7 +167,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  @Test def testMultipleSerialization(): Unit = {
    val random = new scala.util.Random(0)
    val file = java.io.File.createTempFile("foo", "multi")
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
    object OntoNerLabelDomain extends CategoricalDomain[String]
@@ -180,7 +180,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    BinarySerializer.serialize(MyChainNerFeaturesDomain, OntoNerLabelDomain, model, file)
 
-   object featDomain2 extends CategoricalTensorDomain[String]
+   object featDomain2 extends CategoricalVectorDomain[String]
    object labelDomain2 extends CategoricalDomain[String]
    val model2 = makeModel(featDomain2, labelDomain2)
 
@@ -207,7 +207,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
    val ll = new ArrayBuffer[app.classify.Label]()
    val labelDomain = new CategoricalDomain[String] { }
-   val featuresDomain = new CategoricalTensorDomain[String] { }
+   val featuresDomain = new CategoricalVectorDomain[String] { }
    for (i <- 1 to 100) {
      val labelName = (i % 2).toString
      val features = new BinaryFeatures(labelName, i.toString, featuresDomain, labelDomain)
@@ -265,7 +265,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    val domainFile = new File(fileName2)
 
-   BinarySerializer.serialize(new CategoricalTensorDomainCubbie(TokenDomain), domainFile)
+   BinarySerializer.serialize(new CategoricalVectorDomainCubbie(TokenDomain), domainFile)
 
    logger.debug("Original model family weightsSet: ")
    getWeights(model).foreach(s => logger.debug(s.toString))
@@ -277,8 +277,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    logger.debug("Original domain:")
    logger.debug(TokenDomain.dimensionDomain.toSeq.mkString(","))
    logger.debug("Deserialized domain:")
-   val newDomain = new CategoricalTensorDomain[String] { }
-   val cubbie = new CategoricalTensorDomainCubbie(newDomain)
+   val newDomain = new CategoricalVectorDomain[String] { }
+   val cubbie = new CategoricalVectorDomainCubbie(newDomain)
    BinarySerializer.deserialize(cubbie, domainFile)
    logger.debug(newDomain.dimensionDomain.toSeq.mkString(","))
 
@@ -286,7 +286,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
  class Label(b: Boolean, val token: Token) extends LabeledBooleanVariable(b)
- object TokenDomain extends CategoricalTensorDomain[String]
+ object TokenDomain extends CategoricalVectorDomain[String]
  class Token(val char: Char, isWordStart: Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token, Sentence] {
    def domain = TokenDomain
    val label = new Label(isWordStart, this)

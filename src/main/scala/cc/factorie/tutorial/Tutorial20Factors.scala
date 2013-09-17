@@ -238,8 +238,8 @@ object TutorialFactors {
      * WordDomain is the object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
      **/
     object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
-    // TODO Consider interface improvements to CategoricalTensorDomain initialization.
-    object ArticleDomain extends CategoricalTensorDomain[String] { override def dimensionDomain = WordDomain }
+    // TODO Consider interface improvements to CategoricalVectorDomain initialization.
+    object ArticleDomain extends CategoricalVectorDomain[String] { override def dimensionDomain = WordDomain }
     class Article(ws:Iterable[String]) extends BinaryFeatureVectorVariable[String](ws) {
       def domain = ArticleDomain
     }

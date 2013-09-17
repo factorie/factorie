@@ -12,7 +12,7 @@ class TokenNormalizer1[A<:TokenString](
     val normalizeAmpersand:Boolean = true, // Convert all ampersand symbols (including "&amp;" to "&"
     val normalizeFractions:Boolean = true, // Convert unicode fraction characters to their spelled out analogues, like "3/4"
     val normalizeEllipsis:Boolean = true, // Convert unicode ellipsis character to spelled out analogue, "..."
-    val undoPTBParens:Boolean = true, // Change -LRB- etc to "(" etc.
+    val undoPennParens:Boolean = true, // Change -LRB- etc to "(" etc.
     val unescapeSlash:Boolean = true, // Change \/ to /
     val unescapeAsterisk:Boolean = true, // Change \* to *
     val normalizeMDash:Boolean = true, // Convert all em-dashes to double dash --
@@ -37,12 +37,12 @@ class TokenNormalizer1[A<:TokenString](
   
   def processToken(token:Token): Unit = {
     val string = token.string
-    if (undoPTBParens && string == "-LRB-") token.attr += newTokenString(token, "(")
-    else if (undoPTBParens && string == "-RRB-") token.attr += newTokenString(token, ")")
-    else if (undoPTBParens && string == "-LCB-") token.attr += newTokenString(token, "{")
-    else if (undoPTBParens && string == "-RCB-") token.attr += newTokenString(token, "}")
-    else if (undoPTBParens && string == "-LSB-") token.attr += newTokenString(token, "[")
-    else if (undoPTBParens && string == "-RSB-") token.attr += newTokenString(token, "]")
+    if (undoPennParens && string == "-LRB-") token.attr += newTokenString(token, "(")
+    else if (undoPennParens && string == "-RRB-") token.attr += newTokenString(token, ")")
+    else if (undoPennParens && string == "-LCB-") token.attr += newTokenString(token, "{")
+    else if (undoPennParens && string == "-RCB-") token.attr += newTokenString(token, "}")
+    else if (undoPennParens && string == "-LSB-") token.attr += newTokenString(token, "[")
+    else if (undoPennParens && string == "-RSB-") token.attr += newTokenString(token, "]")
     else if (normalizeFractions && string == "\u00BC") token.attr += newTokenString(token, "1/4")
     else if (normalizeFractions && string == "\u00BD") token.attr += newTokenString(token, "1/2")
     else if (normalizeFractions && string == "\u00BE") token.attr += newTokenString(token, "3/4")
@@ -59,9 +59,8 @@ class TokenNormalizer1[A<:TokenString](
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
     else if (normalizeHtmlAccent && htmlAccentRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlAccentRegex.replaceSomeIn(string, m => Some(m.group(1)))) // replace all dash with dash
     else if (normalizeHtmlSymbol && htmlSymbolRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all dash with dash
+    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with ".  This must come before normalizeApostrophe
     else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")) // replace all apostrophes with simple '
-    else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
-    else if (normalizeCurrency && quoteRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with "
     else if (americanize && BritishToAmerican.contains(string)) token.attr += newTokenString(token, BritishToAmerican(string))
   }
   def process(document:Document): Document = {

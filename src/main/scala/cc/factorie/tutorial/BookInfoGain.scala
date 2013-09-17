@@ -9,7 +9,7 @@ import la.Tensor
 import cc.factorie.optimize.OnlineLinearMultiClassTrainer
 
 object BookInfoGain {
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(labelString: String, words:Seq[String]) extends BinaryFeatureVectorVariable[String](words) {
     def domain = DocumentDomain
     var label = new Label(labelString, this)

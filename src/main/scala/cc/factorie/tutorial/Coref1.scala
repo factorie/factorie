@@ -22,7 +22,7 @@ object Coref1 {
   object CorefAffinityDimensionDomain extends EnumDomain {
     val Bias, ExactMatch, SuffixMatch, EntityContainsMention, EditDistance2, EditDistance4, NormalizedEditDistance9, NormalizedEditDistance5, Singleton = Value
   }
-  object CorefAffinityDomain extends CategoricalTensorDomain[String] {
+  object CorefAffinityDomain extends CategoricalVectorDomain[String] {
     override lazy val dimensionDomain = CorefAffinityDimensionDomain
   }
   class CorefAffinity extends BinaryFeatureVectorVariable[String] {

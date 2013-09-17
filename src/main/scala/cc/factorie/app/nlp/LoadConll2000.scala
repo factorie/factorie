@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp
 
 import scala.io.Source
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.{LabeledCategoricalVariable, CategoricalDomain}
 import scala.collection.mutable
 
@@ -21,7 +21,7 @@ object LoadConll2000 extends Load {
     val doc = new Document()
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
-    doc.annotators(classOf[PTBPosLabel]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PennPosLabel]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[BIOChunkTag]) = UnknownDocumentAnnotator.getClass
 
     var sent = new Sentence(doc)
@@ -36,7 +36,7 @@ object LoadConll2000 extends Load {
   private def processWordLine(doc:Document, sent:Sentence, line:String):Sentence = line match {
     case lineSplit(tokenType, posTagString, chunkTagString) => {
       val t = new Token(sent, tokenType + " ")
-      t.attr += new PTBPosLabel(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
+      t.attr += new PennPosLabel(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
       t.attr += new BIOChunkTag(t, chunkTagString)
       sent
     }

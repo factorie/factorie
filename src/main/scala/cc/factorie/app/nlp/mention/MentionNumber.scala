@@ -31,7 +31,7 @@ class MentionNumberLabeler extends DocumentAnnotator {
       mention.attr += number
       if (mention.span.length > 0) {
         val firstWord = mention.span(0).string.toLowerCase
-        val headPos = mention.headToken.attr[PTBPosLabel].categoryValue
+        val headPos = mention.headToken.attr[PennPosLabel].categoryValue
         if (singularPronoun.contains(firstWord) || singularDeterminer.contains(firstWord)) number := SINGULAR
         else if (pluralPronoun.contains(firstWord) || pluralDeterminer.contains(firstWord)) number := PLURAL
         else if (isProper(headPos) && mention.span.exists(token => token.string.toLowerCase == "and")) number := PLURAL
@@ -47,7 +47,7 @@ class MentionNumberLabeler extends DocumentAnnotator {
   }
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionNumberLabel].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionNumberLabel]; if (t ne null) t.categoryValue else "_" }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel], classOf[MentionList])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel], classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionNumberLabel])
 }
 

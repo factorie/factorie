@@ -1,6 +1,32 @@
 Changelog
 ===
 
+New in version 1.0.0-M7
+---
+
+* Overall
+    - Removed deprecated code
+    - Improved tutorials and documentation
+    - Improved command line tools
+
+* NLP
+    - New tokenizers and sentence segmenter
+    - Reworked DocumentAnnotator annotation pipeline
+    - Parallel LDA implementation
+    - Improved NER
+    - Conll2000 loader
+    - Support for loading NER3 models from classpath (NER3 requires dependency on factorie-nlp-resources-ner project)
+    - Added support for word embeddings in NER3
+    - Bugfixes and improvement to mention finders, new NerAndPronounMentionFinder
+
+* Learning
+    - Efficiency improvements to accumulators, trainers, and weights maps
+    - Small bugfixes to OnlineTrainer and hyperparameter optimization
+
+* Inference
+    - Changed Infer API
+    - Bugfix to dual decomposition
+
 New in version 1.0.0-M6:
 ---
 

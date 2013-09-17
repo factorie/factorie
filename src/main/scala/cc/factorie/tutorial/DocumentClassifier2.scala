@@ -28,7 +28,7 @@ import cc.factorie.HammingObjective
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
 object DocumentClassifier2 {
 
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)

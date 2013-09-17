@@ -8,8 +8,8 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], labelToFeatures:L=>F) {
-  val instanceDomain: DiscreteTensorDomain = labelToFeatures(labels.head).domain
+class PerLabelInfoGain[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], labelToFeatures:L=>F) {
+  val instanceDomain: VectorDomain = labelToFeatures(labels.head).domain
   val featureDomain: DiscreteDomain = instanceDomain.dimensionDomain
   val labelDomain: DiscreteDomain = labels.head.domain
   private val infogains = Array.ofDim[Double](labelDomain.size, featureDomain.size)

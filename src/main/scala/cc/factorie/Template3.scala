@@ -52,7 +52,7 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2
 
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = 
     for (v <- vars; factor <- factors(v)) factor.asInstanceOf[cc.factorie.Factor] match { 
-      case factor:Factor3[DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked,DiscreteTensorVar @unchecked] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
+      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
         case (true, true, true) => getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
         case (true, true, false) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
         case (true, false, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)

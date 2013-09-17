@@ -723,15 +723,15 @@ object BagOfWordsTests{
 }
 */
 
-object DefaultBagOfWordsDomain extends CategoricalTensorDomain[String]
+object DefaultBagOfWordsDomain extends CategoricalVectorDomain[String]
 /*
-object TokenFeaturesDomain extends CategoricalTensorDomain[String]
+object TokenFeaturesDomain extends CategoricalVectorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
  def domain = AffinityVectorDomain
  */
-class BagOfWordsTensorVariable(val domain:CategoricalTensorDomain[String]=DefaultBagOfWordsDomain) extends FeatureVectorVariable[String]{
+class BagOfWordsTensorVariable(val domain:CategoricalVectorDomain[String]=DefaultBagOfWordsDomain) extends FeatureVectorVariable[String]{
   //final def ++=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)increment(k,v)(null)
 }
 object BagOfWordsUtil{

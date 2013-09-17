@@ -27,7 +27,7 @@ import scala.collection.mutable.ArrayBuffer
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
 object DocumentClassifier4 {
 
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)

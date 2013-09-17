@@ -17,7 +17,7 @@ class NER1 extends DocumentAnnotator {
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
 
-  object FeaturesDomain extends CategoricalTensorDomain[String]
+  object FeaturesDomain extends CategoricalVectorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = FeaturesDomain
     override def skipNonCategories = true

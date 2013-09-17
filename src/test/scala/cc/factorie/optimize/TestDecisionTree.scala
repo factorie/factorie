@@ -47,7 +47,7 @@ class TestDecisionTree extends JUnitSuite {
   }
   @Test def testClassification(): Unit = {
     implicit val random = new scala.util.Random(0)
-    object featuresDomain extends DiscreteTensorDomain {
+    object featuresDomain extends VectorDomain {
       val dimensionDomain = new DiscreteDomain(100)
     }
     object labelDomain extends DiscreteDomain(2)

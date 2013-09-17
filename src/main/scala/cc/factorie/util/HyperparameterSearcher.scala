@@ -5,6 +5,7 @@ import scala.concurrent._
 import akka.actor._
 import cc.factorie.Proportions
 import java.text.SimpleDateFormat
+import java.io.{FileOutputStream, OutputStreamWriter}
 
 /**
  * User: apassos
@@ -231,8 +232,12 @@ object QSubExecutor {
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
     println("---- END OF JOB -----")
     println("Result was: " + result)
-    import sys.process._
-    (("echo " + result.toString) #> new java.io.File(opts.outFile.value)).!
+    //import sys.process._
+    //(("echo " + result.toString) #> new java.io.File(opts.outFile.value)).!
+    val resFile = new OutputStreamWriter(new FileOutputStream(opts.outFile.value))
+    resFile.write(result.toString + "\n")
+    resFile.write("END OF RESULTS\n")
+    resFile.close()
     println(s"Done, file ${opts.outFile.value} written")
   }
 }
