@@ -66,8 +66,8 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     document
   }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
-  def postAttrs = Seq(classOf[BilouConllNerLabel])
-  def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+  def postAttrs = Seq(m.runtimeClass)
+  def tokenAnnotationString(token:Token): String = token.attr[L].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -125,7 +125,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
   val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new NER3EModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
-  val objective = new ChainNerObjective
+  val objective = new HammingTemplate[L]()
 
   if (url != null) {
     deSerialize(url.openConnection.getInputStream)
