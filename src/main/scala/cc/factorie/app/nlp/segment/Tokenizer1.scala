@@ -25,7 +25,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val url3 = "[A-Z]*[a-z0-9]+\\.(com|org|net|edu|gov|co\\.uk|ac\\.uk|de|fr|ca)"; patterns += url3
   val email = "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}"; patterns += email
   val usphone = "(\\+?1[-\\. \u00A0]?)?(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
-  val date = "\\p{N}{1,2}[\\-/]\\p{N}{1,2}[\\-/]\\p{N}{2,4}"; patterns += date
+  val date = "((((19|20)?[0-9]{2}[\\-/][0-3]?[0-9][\\-/][0-3]?[0-9])|([0-3]?[0-9][\\-/][0-3]?[0-9][\\-/](19|20)?[0-9]{2}))(?![0-9]))"; patterns += date // e.g. 3/4/1992 or 2012-04-05, but don't match just the first 8 chars of 12-25-1112
   val currency = "[A-Z]*\\$|&(euro|cent|pound);|\\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])"; patterns += currency
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag
   val atuser  = "@[A-Za-z][A-Za-z0-9]+"; patterns += atuser
@@ -83,6 +83,7 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   val punc = "\\p{P}"; patterns += punc // This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, ---
   val symbol = "\\p{S}|&(degree|plusmn|times|divide|infin);"; patterns += symbol
   val htmlChar = "&[a-z]{3,6};"; patterns += htmlChar // Catch-all, after the more specific cases above, including htmlSymbol
+  val catchAll = "\\S"; patterns += catchAll // Any non-space character.  Sometimes, due to contextual restrictions above, some printed characters can slip through.  It will probably be an error, but at least the users will see them with this pattern.
   val newline = "\n"; if (tokenizeNewline) patterns += newline
   val space = "(\\p{Z}|&nbsp;)+" // but not tokenized here
 
