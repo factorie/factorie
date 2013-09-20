@@ -2,28 +2,28 @@
 
 # Overview
 
-At its heart FACTORIE is a toolkit for graphical models.  All its more
-specific models, all its data representation, inference and learning
-methods are built on top of a small set of common graphical model
-primitives.
+At its heart FACTORIE is a toolkit for graphical models.  All its
+specific applications, including their data representation, inference
+and learning methods are built on a small set of common graphical
+model primitives.
 
 ## Introduction to Graphical Models
   
 Graphical models are a formalism in which a graph denotes the
 conditional dependence structure between random variables.  The
-formalism is the marriage between probability theory and graph
-theory---providing an elegant framework that combines uncertainty (or
-probabilities) and logical structure (or independence constraints)
-such that complex joint probability distributions over multiple
-variables that would have otherwise been intractable to represent or
-manipulate can instead be represented compactly and often manipulated
-efficiently.  Since graphical models can coherently express so many
-different probabilistic models, they have become a lingua-frana for
-statistics, machine learning, and data mining.
+formalism is the marriage between probability theory and graph theory.
+It provides an elegant framework that combines uncertainty
+(probabilities) and logical structure (independence constraints) such
+that complex joint probability distributions over multiple variables
+that would have otherwise been intractable to represent or manipulate
+can instead be represented compactly and often manipulated
+efficiently.  Since graphical models can straightforwardly express so
+many different probabilistic models, they have become a lingua-frana
+for statistics, machine learning, and data mining.
 
-In graphical models variables are depicted by the nodes a graph (drawn
-as circles), and dependencies among variables are depicted by edges
-(drawn either as directed, with arrows, or undirected, without
+In graphical models, variables are depicted by the nodes a graph,
+drawn as circles, and dependencies among variables are depicted by
+edges, drawn either as directed (with arrows), or undirected (without
 arrows).
 
 There are two main types of graphical models.
@@ -42,7 +42,7 @@ represent a joint distribution over random variables by a product of
 unnormalized non-negative values (one value for each clique in the
 graph).  They are convenient models for data in which it is not
 intuitive to impose an ordering on the variables' generative process.
-They can represent different patterns independence constraints than
+They can represent different patterns of independence constraints than
 directed models can, and vice versa---neither one is strictly more
 expressive than the other.
 
@@ -54,24 +54,25 @@ graph (just as in directed and undirected graphical models), however
 rather than having edges that connect variables directly to each
 other, edges instead connect variables to factors (which are drawn as
 black squares).  In other words, variables are connected to other
-variables only through factors.  The variables connected to a factor
+variables only *through* factors.  The variables connected to a factor
 are called the "neighbors" of the factor.
 
 Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
 value for each factor in the graph.  The factors can be understood as
 "compatibility functions" that take as input the values of the
-variables to which they are connected by edges, and outputing a
-"compatibility score" such that higher scores indicate the combination
-of values is more likely, and lower scores indicate the combination of
-values is less likely.  A score of 0 indicates the combination is impossible.
+variables which they neighbor, and outputing a "compatibility score"
+such that higher scores indicate the combination of values is more
+likely, and lower scores indicate the combination of values is less
+likely.  A score of 0 indicates the combination is impossible.
 
-Directed graphical models can be represented with one factor for each
-(child) variable, where the factor is also connected to the other
+Directed graphical models can be represented by having one factor for
+each (child) variable, where the factor is also connected to the other
 (parent) variables on whose values we must condition when generating
-the child's value; the factor's scores are normalized probabilities.
+the child's value.  The factor's scores are normalized probabilities.
+
 Undirected graphical models can be represented with one factor per
-clique (or some other arbitary subset of clique members); the factors
+clique (or other arbitary subsets of clique members).  The factors'
 scores are unnormalized non-negative values, and thus in order to
 obtain a normalized joint probability distribution over all the
 variables in the model, we must normalize the product of factor scores
@@ -80,7 +81,7 @@ by the proper normalization value (called the "partition function").
 In practice, most implementations of graphical models use the log of
 the score values so that they can be summed rather than multiplied,
 and a larger dynamic range of scores can be represented with limited
-hardware floating-point precision.  Naturally these log-scores can
+floating-point precision in hardware.  Naturally these log-scores can
 then vary from negative infinity (indicating an impossible combination
 of values in the neighbors) to positive infinity (indicating an
 obligatory combination of values in the neighbors).  Since the use of
@@ -93,15 +94,15 @@ remainder of this documentation we will now simply use the term
 
 The FACTORIE library defines Scala classes for representing the
 elements of a factor graph.  Usually the names of our Scala classes
-and methods are simply the standard names for the elements in English
-machine learning or statistics vocabulary.
+and methods are simply the standard names used in English
+machine-learning or statistics vocabulary.
 
 In this section we further describe factor graphs while introducing
-FACTORIE class and method names indicated `in mono-space font`.  Class
+FACTORIE class and method names indicated in `mono-space font`.  Class
 (and trait) names are capitalized.  Method names begin with a
 lowercase letter.
 
-Wwe provide here a high-level introduction to FACTORIE's identifiers.
+We provide here a high-level introduction to FACTORIE's identifiers.
 Detailed explanations with code examples are given in subsequent chapters.
 
 ### FACTORIE modular design philosophy
@@ -110,7 +111,7 @@ FACTORIE is explicitly designed to support independent,
 non-intertwined definitions of
 
 1. data representations with variables,
-2. models (value preferences, distributions) with factors, 
+2. models (value preferences, distributions, dependencies) with factors, 
 3. inference methods, and
 4. parameter estimation.
 
@@ -133,21 +134,21 @@ sequence of part-of-speech tags).  FACTORIE has many classes for
 representing different types of variables.  The root of this class
 hierarchy is the abstract trait `Var`.
 
-An `Assignment` stores a mapping from variables to values, and can be
-treated as a function.  The value of a variable `v1` in assignment
-`a2` can be obtained by `a2(v1)`.  
+An `Assignment` represents a mapping from variables to values, and can
+be treated as a function.  The value of a variable `v1` in assignment
+`a2` can be obtained by `a2(v1)`.
 
 Note that an assignment stores a single value for a variable, not a
 probability distribution over values.  (Of course FACTORIE has
 extensive facilities for representing distributions over values, but
 these are not intrinsic to a variable definition or
-assignment---rather they are the purvue of inference, because
+assignment---rather they are the purview of inference, because
 different inference methods may choose to use different distribution
 representations for the same variable.)
 
 There are multiple concrete sub-classes of `Assignment`.  A
 `MutableAssignment` can be modified.  A `TargetAssignment` returns the
-desired gold-standard (e.g. human-labeler-provided) value for a
+gold-standard (e.g. human-labeler-provided) value for a
 variable when such a labeled value is available.  An `Assignment1` is
 a compact efficient representation for the value assignment of a
 single variable (similarly `Assignment2..4` also exist).  A
@@ -159,10 +160,10 @@ variables have relatively static value or unique assignments (because
 they are observed, or because they are being sampled in a single MCMC
 inference process) FACTORIE also has the `GlobalAssignment` object.
 There may exist multiple instances of the other assignment classes,
-each with its own values; however, there is only one GlobalAssignment.
-For efficiency the GlobalAssignment values are not stored in the
-GlobalAssignment, but rather in the corresponding variable instances
-themselves.
+each with its own values; however, there is only one
+`GlobalAssignment`.  For efficiency the `GlobalAssignment` values are
+not stored in the `GlobalAssignment`, but rather in the corresponding
+variable instances themselves.
 
 All variables have a `value` method that returns the variable's
 currently assigned global value.  In other words for variable `v1`
@@ -194,15 +195,20 @@ classes end in `Variable`.  Almost all classes ending in `Variable`
 have an abstract `Var` counterpart that does not necessarily specify
 the mechanism by which the variable stores its value in memory.
 
+The type of the value is named immediately before the `Var` or
+`Variable` suffix (for example, `IntegerVariable` has values of type
+Int).  Further modifiers may appear as prefixes.
+
+All variables also have a member type `Value` indicating the Scala
+type returned by its `value` method.  In some variables the `Value`
+type is bound, but not assigned.  In other cases it is assigned.
+
 Some variables have mutable value (inheriting from the trait
 `MutableVar`).  Almost all classes ending in `Variable` are mutable.
 Mutable variable values can be set with the `:=` method.  For example,
 if `v1` has integer values, we can set the value of `v1` to 3 by `v1
 := 3`.
 
-The type of the value is named immediately before the `Var` or
-`Variable` suffix (for example, `IntegerVariable` has values of type
-Int).  Further modifiers may appear as prefixes.
 
 The following is a selection of FACTORIE's most widely-used variable classes.
 
@@ -408,13 +414,10 @@ In FACTORIE factors that share the same sufficient statistics
 function, score function, and other similar attributes are said to
 belong the same "family" of factors.  The trait `Family` defines a
 `Factor` inner class such that its instances rely on methods in the
-`Family` class for various shared functionality.  ((We should explain
-here why subclassing Factor was not sufficient.  If Scala had "static"
-members, I think we might have considered this.))
+`Family` class for various shared functionality.
 
-For example, the `DotFamily` provides a `weights` method from which
-the dot-product parameters shared by all member factors can be
-accessed.
+For example, the `DotFamily` provides a `weights` method for accessing
+the dot-product parameters shared by all member factors.
 
 In parallel to the numbered `Factor` subclasses there are numbered
 families, `Family1`, `Family2`, `Family3`, `Family4`, each defining an
@@ -439,11 +442,10 @@ templated factors that touch this variable---finding the second
 neighbor in each case by traversing some relational structure among
 the variables.  
 
-Specifying the templated unrolling of a graphical model by
-implementing position-specific `unroll` methods may seem cumbersome,
-but in most cases these methods are extremely succinct, and moreover
-the ability to specify the relational pattern through arbitrary
-Turing-complete code provides a great deal of flexibility.
+Implementing position-specific `unroll` methods may seem cumbersome,
+but in most cases these method definitions are extremely succinct, and
+moreover the ability to specify the relational pattern through
+arbitrary Turing-complete code provides a great deal of flexibility.
 Nonetheless, in the future, we plan to implement a simpler template
 language on top of this unroll framework.
 
@@ -525,7 +527,7 @@ the constituent `Weights` (`TensorVar`s) themselves.  In `WeightsMap`
 the tensors are stored in a map internal to the `WeightsMap`; they are
 accessible by lookup using the corresponding `Weights` as keys.
 
-The absract superclass of both `WeightsSet` and `WeightsMap` is
+The abstract superclass of both `WeightsSet` and `WeightsMap` is
 `TensorSet`.  Although a `TensorSet` is not a single tensor but a
 collection of tensors, it has a variety of useful methods allowing it
 to be treated somewhat like a single tensor.  These methods include

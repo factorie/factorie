@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import scala.Some
 import java.util.concurrent.Executors
 
+/** Default transition-based dependency parser. */
 class DepParser1 extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
