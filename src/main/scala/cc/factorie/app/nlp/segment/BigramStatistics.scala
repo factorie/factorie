@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
  * Time: 2:00 PM
  */
 class BigramStatistics {
-  val wordCounts = new collection.mutable.HashMap[String, Int]()
+  val wordCounts = new collection.mutable.LinkedHashMap[String, Int]()
   val bigramCounts = new collection.mutable.LinkedHashMap[(String,String),Int]()
   var totalTokens = 0
 
@@ -22,6 +22,26 @@ class BigramStatistics {
     }
   }
   def process(documents: Iterable[Document]): Unit = documents.foreach(process)
+
+  def aggregateCounts(others: Iterable[BigramStatistics]): Unit = {
+    for (other <- others) {
+      for ((unigram,value) <- other.wordCounts) {
+        wordCounts(unigram) = wordCounts.getOrElse(unigram, 0) + value
+      }
+      for ((bigram,value) <- other.bigramCounts) {
+        bigramCounts(bigram) = bigramCounts.getOrElse(bigram, 0) + value
+      }
+      totalTokens += other.totalTokens
+    }
+  }
+
+  def processParallel(documents: Iterable[Document], nThreads: Int = Runtime.getRuntime.availableProcessors()): Unit = {
+    val others = new cc.factorie.util.ThreadLocal[BigramStatistics](new BigramStatistics)
+    cc.factorie.util.Threading.parForeach(documents, nThreads) { doc =>
+      others.get.process(doc)
+    }
+    aggregateCounts(others.instances)
+  }
 
   def getLikelyPhrases(countThreshold: Int = 5, scoreThreshold: Double = 100.0): Seq[Seq[String]] = {
     val bigramPhrases = collection.mutable.LinkedHashSet[Seq[String]]()
