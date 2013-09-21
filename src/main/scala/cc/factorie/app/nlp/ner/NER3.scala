@@ -226,22 +226,45 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
 
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
       if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.iesl.Day.containsLemmatizedWord(word)) features += "DAY"
+
+      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.iesl.PersonFirstHigh.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGH"
+      if (lexicon.iesl.PersonFirstHighest.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGHEST"
+      if (lexicon.iesl.PersonFirstMedium.containsLemmatizedWord(word)) features += "PERSON-FIRST-MEDIUM"
+
       if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.iesl.PersonLastHigh.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGH"
+      if (lexicon.iesl.PersonLastHighest.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGHEST"
+      if (lexicon.iesl.PersonLastMedium.containsLemmatizedWord(word)) features += "PERSON-LAST-MEDIUM"
+
       if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+
       if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+      if (lexicon.iesl.JobTitle.contains(token)) features += "JOB-TITLE"
+      if (lexicon.iesl.OrgSuffix.contains(token)) features += "ORG-SUFFIX"
+
       if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
       if (lexicon.iesl.City.contains(token)) features += "CITY"
       if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
       if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
+      if (lexicon.iesl.Continents.contains(token)) features += "CONTINENT"
+
       if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
       if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
       if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
       if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
       if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
-      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
       if (Demonyms.contains(token)) features += "DEMONYM"
+
+      if (lexicon.wikipedia.Book.contains(token)) features += "WIKI-BOOK"
+      if (lexicon.wikipedia.Business.contains(token)) features += "WIKI-BUSINESS"
+      if (lexicon.wikipedia.Film.contains(token)) features += "WIKI-FILM"
+
+      if (lexicon.wikipedia.LocationAndRedirect.contains(token)) features += "WIKI-LOCATION-REDIRECT"
+      if (lexicon.wikipedia.PersonAndRedirect.contains(token)) features += "WIKI-PERSON-REDIRECT"
+      if (lexicon.wikipedia.OrganizationAndRedirect.contains(token)) features += "WIKI-ORG-REDIRECT"
 
       if (clusters.size > 0 && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
