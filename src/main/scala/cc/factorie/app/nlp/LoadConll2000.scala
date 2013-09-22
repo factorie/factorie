@@ -61,6 +61,7 @@ object BIOChunkDomain extends CategoricalDomain[String] {
     "I-ADVP",
     "I-CONJP",
     "I-INTJ",
+    "I-LST",
     "I-NP",
     "I-PP",
     "I-PRT",
