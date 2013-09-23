@@ -137,9 +137,6 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
     assertEquals(0.5, fg.marginal(v1).proportions(0), eps)
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
 
@@ -253,10 +250,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
-    
+
     val v1Marginal = fg.marginal(v1).proportions
     for ((_, i) <- v1.settings.zipWithIndex if v1.value == v2.value)
       assertEquals(v1Marginal(i), 0.0, eps)
