@@ -84,7 +84,6 @@ class BPEdge(val bpVariable: BPVariable1) {
   // TODO Eventually we should not require that this is a BPVariable1, but work for general BPVariable
   bpVariable.addEdge(this)
   var bpFactor: BPFactor = null
-  var factorNeighborIndex: Int = -1 // TODO Is this necessary?
   // Note:  For Bethe cluster graphs with BPVariable1, these messages will be Tensor1, but for other cluster graphs they could have higher dimensionality
   var messageFromVariable: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0)
   var messageFromFactor: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0)
@@ -223,7 +222,7 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Simp
   override def scores: Tensor1
   def hasLimitedDiscreteValues1: Boolean
   def limitedDiscreteValues1: SparseBinaryTensor1
-  edge1.bpFactor = this; edge1.factorNeighborIndex = 0
+  edge1.bpFactor = this
   val edges = Seq(edge1)
   def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1() }
   override def updateOutgoing(): Unit = updateOutgoing1()
@@ -294,8 +293,8 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
   def calculateOutgoing2: Tensor
   def hasLimitedDiscreteValues12: Boolean
   def limitedDiscreteValues12: SparseBinaryTensor2
-  edge1.bpFactor = this; edge1.factorNeighborIndex = 0
-  edge2.bpFactor = this; edge1.factorNeighborIndex = 1
+  edge1.bpFactor = this
+  edge2.bpFactor = this
   val edges = Seq(edge1, edge2)
   override def updateOutgoing(): Unit = { updateOutgoing1(); updateOutgoing2() }
   def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1(); case this.edge2 => updateOutgoing2() }
