@@ -699,32 +699,23 @@ object BP {
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): MAPSummary = {
-    val summary = BPSummary(varying, BPMaxProductRing, model)
-    summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorSumProduct]))
     varying.size match {
       case 0 => new MAPSummary(new HashMapAssignment(), Seq())
       case 1 =>
-        summary.bpFactors.foreach(_.updateOutgoing())
-        summary.bpVariables.head.updateOutgoing()
-        val domain = summary.variables.head.asInstanceOf[DiscreteVar].domain
-        new MAPSummary(new Assignment1[DiscreteVar](summary.bpVariables.head.variable, domain(summary.bpVariables.head.proportions.maxIndex).asInstanceOf[DiscreteVar#Value]), summary.factors.get.toSeq)
+        val factors =  model.factors(varying.head)
+        val value = varying.head.proportions(factors).maxIndex
+        new MAPSummary(new Assignment1[DiscreteVar](varying.head, varying.head.domain(value).asInstanceOf[DiscreteVar#Value]), factors.toSeq)
       case _ =>
+        val summary = BPSummary(varying, BPMaxProductRing, model)
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
-        //assert(markovBPFactors.size > 0)
-        //val bfsSeq = BPUtil.bfs(varying.toSet, summary.bpVariable(varying.head), false)
-        //throw new Error("This is not yet working. -akm")
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
-        //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
-        // Send all messages from observations to labels in parallel
         obsBPFactors.foreach(_.updateOutgoing())
-        // Send forward Viterbi messages
         for (f <- markovBPFactors) {
-          f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
-          f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
+          f.edge1.bpVariable.updateOutgoing(f.edge1)
+          f.updateOutgoing(f.edge2)
         }
-        // obsBPFactors.foreach(f => f.edges.foreach(e => e.bpVariable.updateOutgoing(e)))
-        var maxIndex = markovBPFactors.last.edge2.bpVariable.calculateBelief.maxIndex // We don't actually need to expNormalize here; save computation by avoiding this
+        var maxIndex = markovBPFactors.last.edge2.bpVariable.calculateBelief.maxIndex
         val assignment = new HashMapAssignment()
         assignment.update(varying.last, varying.last.domain(maxIndex).asInstanceOf[DiscreteVar#Value])
         var n = varying.length - 2
