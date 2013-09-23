@@ -124,7 +124,7 @@ object ChainNER4 {
         println("---SumProduct---")
         printTokenMarginals(sentence.asSeq, BP.inferChainSum(sentence.asSeq.map(_.label), model))
         println("---MaxProduct---")
-        printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
+        // printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
         println("---Gibbs Sampling---")
         predictor.processAll(testLabels, 2)
         sentence.asSeq.foreach(token => printLabel(token.label))
