@@ -136,6 +136,8 @@ Then it re-estimates by maximum likelihood the mean and variance from the sample
 */
 
 package cc.factorie.tutorial
+import scala.language.reflectiveCalls
+
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
   import cc.factorie.directed._                    // Factors for directed graphical models
