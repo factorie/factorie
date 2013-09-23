@@ -29,8 +29,8 @@ trait BPRing {
 }
 
 // TODO this code duplication is why mixins are usually a bad way to factor stuff -luke
-object BPSumProductRing extends BPRingDefaults[BPFactorSumProduct, BPFactor2SumProduct, BPVariableSumProduct] {
-  def newBPVariable(v: DiscreteVar) = new BPVariable1(v) with BPVariableSumProduct
+object BPSumProductRing extends BPRingDefaults[BPFactorSumProduct, BPFactor2SumProduct] {
+  def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
   def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum) with BPFactorSumProduct
   def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum) with BPFactorSumProduct
   def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2SumProduct
@@ -38,8 +38,8 @@ object BPSumProductRing extends BPRingDefaults[BPFactorSumProduct, BPFactor2SumP
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2SumProduct
 }
 
-object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxProduct, BPVariableMaxProduct] {
-  def newBPVariable(v: DiscreteVar) = new BPVariable1(v) with BPVariableMaxProduct
+object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxProduct] {
+  def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
   def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum) with BPFactorMaxProduct
   def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum) with BPFactorMaxProduct
   def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2MaxProduct
@@ -47,8 +47,8 @@ object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxP
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2MaxProduct
 }
 
-trait BPRingDefaults[F1 <: BPFactor, F2 <: BPFactor2 with F1, V <: BPVariable] extends BPRing {
-  def newBPVariable(v: DiscreteVar): BPVariable1 with V
+trait BPRingDefaults[F1 <: BPFactor, F2 <: BPFactor2 with F1] extends BPRing {
+  def newBPVariable(v: DiscreteVar): BPVariable1
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor with F1 = {
     if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
     factor match {
@@ -111,9 +111,9 @@ trait BPVariable {
     }
     bethe * (edges.length-1)
   }
-  def calculateMarginal: Tensor
+  def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
 }
-abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[DiscreteVar] with BPVariable {
+class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[DiscreteVar] with BPVariable {
   val variable = _1
   private var _edges: List[BPEdge] = Nil
   def addEdge(e:BPEdge): Unit = _edges = e :: _edges
@@ -147,14 +147,6 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
   }
 }
 
-trait BPVariableMaxProduct extends BPVariable {
-  def calculateMarginal: Tensor = { val t = calculateBelief; t.maxNormalize(); t }
-}
-
-trait BPVariableSumProduct extends BPVariable {
-  def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
-}
-// TODO class BPVariable{2,3,4} would be used for cluster graphs
 
 trait BPFactor extends DiscreteMarginal with FactorMarginal {
   def factor: Factor
@@ -521,22 +513,11 @@ object LoopyBPSummaryMaxProduct {
     }
 }
 
-// Just in case we want to create different BPSummary implementations
-// TODO Consider removing this
-trait AbstractBPSummary extends Summary {
-  def ring: BPRing
-  //def factors: Iterable[Factor]
-  def bpVariable(v:DiscreteVar): BPVariable1
-  def bpFactors: Iterable[BPFactor]
-  def bpVariables: Iterable[BPVariable1]
-  def marginal(v: DiscreteVar): BPVariable1
-  def expNormalize(t: Tensor)
-}
 
 /** A collection of marginals inferred by belief propagation.  
     Do not call this constructor directly; instead use the companion object apply methods, 
     which add the appropriate BPFactors, BPVariables and BPEdges. */
-class BPSummary(val ring:BPRing) extends AbstractBPSummary {
+class BPSummary(val ring:BPRing) extends Summary {
   protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   protected val _bpVariables = new LinkedHashMap[VectorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
