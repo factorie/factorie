@@ -31,12 +31,14 @@ object BPSumProductRing extends BPRingDefaults[BPFactor2SumProduct] {
   def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
   def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2SumProduct
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2SumProduct
+  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum) with BPFactor3Factor3SumProduct
 }
 
 object BPMaxProductRing extends BPRingDefaults[BPFactor2MaxProduct] {
   def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
   def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2MaxProduct
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2MaxProduct
+  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum) with BPFactor3Factor3MaxProduct
 }
 
 trait BPRingDefaults[F2 <: BPFactor2] extends BPRing {
@@ -51,11 +53,13 @@ trait BPRingDefaults[F2 <: BPFactor2] extends BPRing {
         else if (varying.contains(factor._1)) newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
         else newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
       case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
-        val neighbors = factor.variables.toSet.intersect(varying.toSet)
+        val neighbors = factor.variables.toSet.intersect(varying.toSet).toSeq
         if (neighbors.size == 2)
           newBPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary)
         else if (neighbors.size == 1)
           newBPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary)
+        else if (neighbors.size == 3)
+          newBPFactor3Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteVar]], new BPEdge(summary.bpVariable(neighbors(0).asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(neighbors(1).asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(neighbors(2).asInstanceOf[DiscreteVar])), summary)
         else throw new Error("Can't create the factor")
     }
   }
@@ -65,11 +69,9 @@ trait BPRingDefaults[F2 <: BPFactor2] extends BPRing {
   def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor2 with F2
   def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor3(factor, edge1, sum)
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor3 with F2
+  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary): BPFactor3Factor3
 }
 
-// TODO
-// object BPSumProductBeamRing extends BPRing
-// object BPSumProductNonLogRing extends BPRing // Not in log space, avoiding maths.logSum
 
 /** A dumb container for messages factor->variable and variable->factor */
 class BPEdge(val bpVariable: BPVariable1) {
@@ -277,8 +279,6 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
       }
       j += 1
     }
-//    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
-//      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
     result
   }
 }
@@ -287,8 +287,6 @@ trait BPFactor2SumProduct extends BPFactor2 {
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
-      //throw new Error("This code path leads to incorrect marginals")
-      //println("BPFactor2SumProduct calculateOutgoing1")
       val indices = limitedDiscreteValues12._indices.toSet
       val len = edge1.variable.domain.size * edge2.variable.domain.size;  /* require(len > 0, "limitedDiscreteValues12 can't everything"); */ var ii = 0
       while (ii < len) {
@@ -310,16 +308,13 @@ trait BPFactor2SumProduct extends BPFactor2 {
         i += 1
       }
     }
-//    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
-//      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
     result
   }
   def calculateOutgoing2: Tensor = {
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
-      //throw new Error("This code path leads to incorrect marginals")
       val indices = limitedDiscreteValues12._indices.toSet
-      val len = edge1.variable.domain.size * edge2.variable.domain.size //limitedDiscreteValues12.activeDomainSize; /* require(len > 0, "limitedDiscreteValues12 limits everything"); */
+      val len = edge1.variable.domain.size * edge2.variable.domain.size
       var ii = 0
       while (ii < len) {
         val i = scores.index1(ii)
@@ -341,8 +336,6 @@ trait BPFactor2SumProduct extends BPFactor2 {
         j += 1
       }
     }
-//    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
-//      result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
     result
   }
 }
@@ -367,7 +360,7 @@ trait BPFactor2MaxProduct extends BPFactor2 {
         while (i < leni) {
           j = 0; while (j < lenj) {
             val s = scores(i,j) + edge2.messageFromVariable(j)
-            if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+            if (s > result(i)) { result(i) = s; edge1Max2(i) = j }
             j += 1
           }
           i += 1
@@ -383,15 +376,11 @@ trait BPFactor2MaxProduct extends BPFactor2 {
       i = 0
       while (i < leni) {
         val s = scores(i,j) + edge1.messageFromVariable(i)
-        if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+        if (s > result(j)) { result(j) = s; edge2Max1(j) = i }
         i += 1
       }
       j += 1
     }
-//    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size) {
-//      val s = scores(i,j) + edge1.messageFromVariable(i)
-//      if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-//    }
     result
   }
 }
@@ -454,8 +443,77 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Vecto
   }
 }
 
+abstract class BPFactor3Factor3(val factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], val edges: Seq[BPEdge], val summary: BPSummary) extends DiscreteMarginal3[DiscreteVar, DiscreteVar, DiscreteVar](factor._1, factor._2, factor._3) with BPFactor with DiscreteMarginal3Factor3[DiscreteVar, DiscreteVar, DiscreteVar] {
+  def scores = factor.asInstanceOf[DotFamily3[DiscreteVar, DiscreteVar, DiscreteVar]#Factor].family.weights.value.asInstanceOf[Tensor3]
+  val Seq(edge1, edge2, edge3) = edges
+  edges.foreach(e => e.bpFactor = this)
+  val v1 = edge1.variable
+  val v2 = edge2.variable
+  val v3 = edge3.variable
+  val d1 = v1.domain
+  val d2 = v2.domain
+  val d3 = v3.domain
+  /** Unnormalized log scores over values of varying neighbors */
+  def calculateBeliefsTensor = {
+    val beliefs = new DenseTensor3(d1.size, d2.size, d3.size)
+    for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+      beliefs(i, j, k) = scores(i, j, k) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j) + edge3.messageFromVariable(k)
+    }
+    beliefs
+  }
+}
 
-object BPSummary {
+trait BPFactor3Factor3SumProduct { this: BPFactor3Factor3 =>
+  /** Re-calculate the message from this factor to edge "e" and set e.messageFromFactor to the result. */
+  def updateOutgoing(e: BPEdge) {
+    if (e eq edge1) {
+      val newMessage = new DenseTensor1(d1.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(i) = maths.sumLogProb(newMessage(i), edge2.messageFromVariable(j) + edge3.messageFromVariable(k) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else if (e eq edge2) {
+      val newMessage = new DenseTensor1(d2.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(j) = maths.sumLogProb(newMessage(j), edge1.messageFromVariable(i) + edge3.messageFromVariable(k) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else if (e eq edge3) {
+      val newMessage = new DenseTensor1(d3.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(k) = maths.sumLogProb(newMessage(k), edge1.messageFromVariable(i) + edge2.messageFromVariable(j) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else { throw new Error("Can't send messages through edge not in the factor.")}
+  }
+}
+
+trait BPFactor3Factor3MaxProduct { this: BPFactor3Factor3 =>
+  /** Re-calculate the message from this factor to edge "e" and set e.messageFromFactor to the result. */
+  def updateOutgoing(e: BPEdge) {
+    if (e eq edge1) {
+      val newMessage = new DenseTensor1(d1.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(i) = math.max(newMessage(i), edge2.messageFromVariable(j) + edge3.messageFromVariable(k) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else if (e eq edge2) {
+      val newMessage = new DenseTensor1(d2.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(j) = math.max(newMessage(j), edge1.messageFromVariable(i) + edge3.messageFromVariable(k) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else if (e eq edge3) {
+      val newMessage = new DenseTensor1(d3.size, Double.NegativeInfinity)
+      for (i <- 0 until d1.size; j <- 0 until d2.size; k <- 0 until d3.size) {
+        newMessage(k) = math.max(newMessage(k), edge1.messageFromVariable(i) + edge2.messageFromVariable(j) + scores(i, j, k))
+      }
+      e.messageFromFactor = newMessage
+    } else { throw new Error("Can't send messages through edge not in the factor.")}
+  }
+}
+
+  object BPSummary {
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
     val summary = new BPSummary(ring)
     val varyingSet = varying.toSet
