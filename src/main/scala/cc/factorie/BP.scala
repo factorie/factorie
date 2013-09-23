@@ -15,10 +15,8 @@
 package cc.factorie
 
 import cc.factorie.la._
-import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHashSet}
-import scala.collection.{Set}
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.Queue
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.{mutable, Set}
 import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
 
 /** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. 
@@ -96,7 +94,7 @@ trait BPVariable {
   def edges: Seq[BPEdge]
   def calculateOutgoing(e:BPEdge): Tensor
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
-  def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
+  def updateOutgoing(): Unit = edges.foreach(updateOutgoing)
   def calculateBelief: Tensor
   def betheObjective: Double = {
     var bethe = 0.0
@@ -154,7 +152,7 @@ trait BPFactor extends DiscreteMarginal with FactorMarginal {
   def summary: BPSummary
   /** Re-calculate the message from this factor to edge "e" and set e.messageFromFactor to the result. */
   def updateOutgoing(e: BPEdge): Unit
-  def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
+  def updateOutgoing(): Unit = edges.foreach(updateOutgoing)
   def scores: Tensor // All local scores across all dimensions of varying neighbors; does not use messages from variables
   /** Unnormalized log scores over values of varying neighbors */
   def calculateBeliefsTensor: Tensor
@@ -230,7 +228,7 @@ abstract class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, 
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = factor match {
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.value.asInstanceOf[Tensor1]
+    case factor:DotFamily#Factor if factor.family.isInstanceOf[DotFamily] => factor.family.weights.value.asInstanceOf[Tensor1]
     case _ => {
       val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
       val result = new DenseTensor1(edge1.variable.domain.size)
@@ -249,7 +247,7 @@ abstract class BPFactor1Factor2(val factor: Factor2[DiscreteVar,VectorVar], edge
   def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
   def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
   val scores: Tensor1 = {
-    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
+    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value)
     val len = edge1.variable.domain.size
     val result = new DenseTensor1(len)
     var i = 0; while (i < len) {
@@ -431,7 +429,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   val scores: Tensor2 = factor match {
     // This only works if statistics has not been overridden.  Hence factor.statisticsAreValues.  (See TestBP.loop2 for an example where this fails.)
     // TODO Try to be more efficient even when statisticsAreValues is false. -akm
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.statisticsAreValues && factor.family.weights.value.isInstanceOf[Tensor2]) => {
+    case factor:DotFamily#Factor if factor.family.isInstanceOf[DotFamily] && factor.statisticsAreValues && factor.family.weights.value.isInstanceOf[Tensor2] => {
       assert(factor.family.weights.value.isInstanceOf[Tensor2], "Expected Tensor2, got "+factor.family.weights.value.getClass+" from family "+factor.family.getClass)
       factor.family.weights.value.asInstanceOf[Tensor2]
     }
@@ -462,7 +460,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Vecto
   val hasLimitedDiscreteValues12: Boolean = factor.hasLimitedDiscreteValues12
   def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = {
-    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
+    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value)
     val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
     val leni = edge1.variable.domain.size; val lenj = edge2.variable.domain.size; var i = 0; var j = 0
     while (i < leni) {
@@ -518,21 +516,17 @@ object LoopyBPSummaryMaxProduct {
     Do not call this constructor directly; instead use the companion object apply methods, 
     which add the appropriate BPFactors, BPVariables and BPEdges. */
 class BPSummary(val ring:BPRing) extends Summary {
-  protected val _bpFactors = new LinkedHashMap[Factor, BPFactor]
-  protected val _bpVariables = new LinkedHashMap[VectorVar, BPVariable1]
+  protected val _bpFactors = new mutable.LinkedHashMap[Factor, BPFactor]
+  protected val _bpVariables = new mutable.LinkedHashMap[VectorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   def factorMarginals = factors.head.map(marginal)
   def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
-  //def factors: Iterable[Factor] = _bpFactors.values.map(_.factor)
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   override def marginals: Iterable[DiscreteMarginal1[DiscreteVar]] = _bpVariables.values // ++ _bpVariables.values
   override def marginal(v:Var): BPVariable1 = v match { case v:DiscreteVar => _bpVariables(v); case _ => null }
-  //def marginal(f:Factor): DiscreteMarginal = { val vset = f.variables.toSet; val factors = _bpFactors.values.filter(bpf => bpf.variables.toSet == vset); require(factors.size == 1); factors.head } // Need to actually combine if more than one
-  //def marginal(vs: Var*): DiscreteMarginal = {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); require(factors.size == 1); factors.head} // Need to actually combine if more than one
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   def marginal(f: Factor): BPFactor = _bpFactors(f)
-  // TODO I think we are calculating logZ many time redundantly, including in BPFactor.calculateMarginalTensor.
   var _logZ = Double.NaN
   override def logZ: Double = {
     if (_logZ != _logZ) _logZ = _bpFactors.values.head.calculateLogZ
@@ -578,10 +572,10 @@ class LoopyBPSummaryMaxProduct(val rng: BPRing) extends BPSummary(rng) {
 object BPUtil {
   
   def bfs(varying: Set[DiscreteVar], root: BPVariable, checkLoops: Boolean): Seq[(BPEdge, Boolean)] = {
-    val visited: HashSet[BPEdge] = new HashSet
+    val visited = new mutable.HashSet[BPEdge]
     val result = new ArrayBuffer[(BPEdge, Boolean)]
-    val toProcess = new Queue[(BPEdge, Boolean)]
-    val visitedVariables = HashSet[DiscreteVar]()
+    val toProcess = new mutable.Queue[(BPEdge, Boolean)]
+    val visitedVariables = new mutable.HashSet[DiscreteVar]
     root.edges foreach (e => toProcess += Pair(e, true))
     while (!toProcess.isEmpty) {
       val (edge, v2f) = toProcess.dequeue()
@@ -599,16 +593,16 @@ object BPUtil {
         edges.foreach(ne => toProcess += Pair(ne, !v2f))
       }
     }
-    require(varying.forall(visitedVariables.contains(_)), "Treewise BP assumes the graph is connected")
+    require(varying.forall(visitedVariables.contains), "Treewise BP assumes the graph is connected")
     result
   }
 
   def loopyBfs(varying: Set[DiscreteVar], summary: BPSummary): Seq[(BPEdge, Boolean)] = {
-    val visited: HashSet[BPEdge] = new HashSet
+    val visited = new mutable.HashSet[BPEdge]
     val result = new ArrayBuffer[(BPEdge, Boolean)]
-    val toProcess = new Queue[(BPEdge, Boolean)]
-    val visitedVariables = HashSet[DiscreteVar]()
-    while (!varying.forall(visitedVariables.contains(_))) {
+    val toProcess = new mutable.Queue[(BPEdge, Boolean)]
+    val visitedVariables = mutable.HashSet[DiscreteVar]()
+    while (!varying.forall(visitedVariables.contains)) {
       val root = summary.bpVariable(varying.collectFirst({case v if !visitedVariables.contains(v) => v}).head)
       root.edges foreach (e => toProcess += Pair(e, true))
       while (!toProcess.isEmpty) {
