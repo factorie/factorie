@@ -314,10 +314,10 @@ object RelationVariables {
         }
         */
       }
-      if (m2.start > m1.end) {
+      if (m2.start >= m1.end) {
         this += "ARG1_IS_BEFORE"
         // intermediate tokens
-        if (m2.start - m1.end < 3) {
+        if (m2.start - m1.end - 1 < 3) {
           for (tok <- sentence.tokens.slice(m1.end, m2.start)) {
             addTokenFeatures(tok, "ARG1_IS_BEFORE_TOK_")
           }
@@ -329,10 +329,10 @@ object RelationVariables {
         }
         */
       }
-      if (m1.start > m2.end) {
+      if (m1.start >= m2.end) {
         this += "ARG2_IS_BEFORE"
         // intermediate tokens
-        if (m1.start - m2.end < 3) {
+        if (m1.start - m2.end - 1 < 3) {
           for (tok <- sentence.tokens.slice(m2.end, m1.start)) {
             addTokenFeatures(tok, "ARG2_IS_BEFORE_TOK_")
           }

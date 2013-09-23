@@ -96,13 +96,13 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
     if (_sentence eq null) _sentence = document.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
     _sentence
   }
-  def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
+  def sentenceHasNext: Boolean = (sentence ne null) && position+1 < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
   def sentencePrev: Token = if (sentenceHasPrev) prev else null
   def isInSentence: Boolean = sentence ne null
   def isSentenceStart: Boolean = (sentence ne null) && sentence.start == position
-  def isSentenceEnd: Boolean = (sentence ne null) && sentence.end == position
+  def isSentenceEnd: Boolean = (sentence ne null) && sentence.end-1 == position
   
 
   // Span methods

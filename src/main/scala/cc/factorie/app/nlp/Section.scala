@@ -69,7 +69,7 @@ trait Section extends ChainWithSpansVar[Section,TokenSpan,Token] with DocumentSu
     case s:Sentence => {
       s._chain = this // not already done in += be cause += is not on ChainWithSpans
       s._indexInSection = _sentences.length
-      if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
+      if (_sentences.length == 0 || _sentences.last.end <= s.start) _sentences += s
       else throw new Error("Sentences must be added in order and not overlap.")
     }
     case s:TokenSpan => super.+=(s)

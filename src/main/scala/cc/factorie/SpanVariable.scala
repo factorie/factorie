@@ -50,13 +50,12 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   /** The number of elements in this Span. */
   override def length: Int = _length
   /** The position within the Chain at which this Span is over.  The last element of this Span is at 'end-1'. */
-  def end = start + length - 1
-  // TODO Have this create and return a new immutable SpanValue
-  /** The current start/length of this Span as a SpanValue. */
-  val value: SpanValue[C,E] = new SpanValue[C,E] {
-    def chain: C = _chain
-    def start = _start
-    def length = _length
+  def end = start + length
+  /** The current start/length of this Span as a SpanValue.  Creates and returns an immutable SpanValue. */
+  def value: SpanValue[C,E] = new SpanValue[C,E] {
+    val chain: C = _chain
+    val start = _start
+    val length = _length
   }
   /** The Chain of which this Span is a subsequence. */
   def chain: C = _chain
@@ -67,20 +66,26 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   override def apply(i: Int): E = _chain(i + _start)
   // Other Seq-related methods, such as "head" and "iterator" are provided by IndexedSeqVar inherited in SpanVar.
   def isAtStart = start == 0
+  /** Given a span within the same chain as this one, return true if the two spans overlap by at least one element. */
   def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]): Boolean = {
     assert(this.chain eq that.chain)
-    (that.start <= this.start && that.end >= this.start) ||
-    (this.start <= that.start && this.end >= that.start)
+    (that.start <= this.start && that.end-1 >= this.start) ||
+    (this.start <= that.start && this.end-1 >= that.start)
   }
+  /** Return true if the last element of this span is also the last element of the chain that contains the span. */
   def isAtEnd: Boolean = start + length == chain.length
+  /** Return a sequence of n elements before the beginning of this span.  May return a sequence of length less than n if there are insufficient elements. */
   def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
-  def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(chain.length-1,end+n)) yield chain(i)
-  def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n)) yield chain(i)
-  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n); if (i < start || i > end)) yield chain(i)
+  /** Return a sequence of n elements after the last element of this span.  May return a sequence of length less than n if there are insufficient elements. */
+  def nextWindow(n:Int): Seq[E] = for (i <- end until math.min(chain.length,end+n)) yield chain(i)
+  def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n)) yield chain(i)
+  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n); if (i < start || i > end)) yield chain(i)
   // Support for next/prev of elements within a span
-  @inline private def checkInSpan(elt:E): Unit = { require(elt.chain eq chain); require(elt.position >= start && elt.position <= end) } 
-  def hasNext(elt:E): Boolean = { checkInSpan(elt); elt.position < end }
-  def hasPrev(elt:E): Boolean = { checkInSpan(elt); elt.position > start }
+  @inline private def requireInSpan(elt:E): Unit = { require(elt.chain eq chain, "Element not in chain."); require(elt.position >= start && elt.position < end, "Element outside span.") }
+  /** Given an elt in the Span, return true if the span contains an additional element after elt. */
+  def hasNext(elt:E): Boolean = { requireInSpan(elt); elt.position+1 < end }
+  /** Given an elt in the Span, return true if the span contains an additional element before elt. */
+  def hasPrev(elt:E): Boolean = { requireInSpan(elt); elt.position > start }
   def next(elt:E): E = if (hasNext(elt)) elt.next else null.asInstanceOf[E]
   def prev(elt:E): E = if (hasPrev(elt)) elt.prev else null.asInstanceOf[E]
 }
@@ -88,7 +93,7 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
 /** An abstract variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] /*with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]]*/ with VarWithValue[SpanValue[C,E]] {
+trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarWithValue[SpanValue[C,E]] {
   this: This =>
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
