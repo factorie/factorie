@@ -499,6 +499,7 @@ object BPSummary {
     for (factor <- factors) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
     summary
   }
+
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = apply(varying, BPSumProductRing, model)
 }
 
@@ -697,15 +698,16 @@ object BP {
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
-  def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): BPSummary = {
+  def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): MAPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
     summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorSumProduct]))
     varying.size match {
-      case 0 => {}
+      case 0 => new MAPSummary(new HashMapAssignment(), Seq())
       case 1 =>
         summary.bpFactors.foreach(_.updateOutgoing())
         summary.bpVariables.head.updateOutgoing()
-        summary.bpVariables.head.setToMaximize(null)
+        val domain = summary.variables.head.asInstanceOf[DiscreteVar].domain
+        new MAPSummary(new Assignment1[DiscreteVar](summary.bpVariables.head.variable, domain(summary.bpVariables.head.proportions.maxIndex).asInstanceOf[DiscreteVar#Value]), summary.factors.get.toSeq)
       case _ =>
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
@@ -721,28 +723,18 @@ object BP {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
           f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
-
-        // TODO we shouldn't be doing a backwards pass at all in viterbi -luke
-        // factor marginals need to come from the consistent MAP assignment from backtrace, this won't handle ties
-        for (f <- markovBPFactors.reverse) {
-          f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
-          f.updateOutgoing(f.edge1)   // send message from factor to neighbor2
-        }
-
-        obsBPFactors.foreach(f => f.edges.foreach(e => e.bpVariable.updateOutgoing(e)))
-
-        // TODO this looks broken since we set values here, but then we also set them in setToMaximize based on beliefs, not backpointers -luke
-        // Do Viterbi backtrace, setting label values
-        // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
-        // Because we might want to run this inference, but not change global state.
-        var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // We don't actually need to expNormalize here; save computation by avoiding this
-        markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
+        // obsBPFactors.foreach(f => f.edges.foreach(e => e.bpVariable.updateOutgoing(e)))
+        var maxIndex = markovBPFactors.last.edge2.bpVariable.calculateBelief.maxIndex // We don't actually need to expNormalize here; save computation by avoiding this
+        val assignment = new HashMapAssignment()
+        assignment.update(varying.last, varying.last.domain(maxIndex).asInstanceOf[DiscreteVar#Value])
+        var n = varying.length - 2
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
-          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
+          assignment.update(varying(n), varying(n).domain(maxIndex).asInstanceOf[DiscreteVar#Value])
+          n -= 1
         }
+        new MAPSummary(assignment, summary.factors.get.toSeq)
     }
-    summary
   }
   
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
@@ -782,8 +774,7 @@ object BP {
 }
 
 trait InferByBP extends Infer[Iterable[DiscreteVar],Model] {
-  override def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): BPSummary
-  //override def infer(variables:Iterable[DiscreteVar], model:Model): BPSummary = infer(variables, model, null)
+  override def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): Summary
 }
 trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 
@@ -850,11 +841,11 @@ object InferByBPChainSum extends InferByBP {
 }
 
 object MaximizeByBPChain extends MaximizeByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): BPSummary = { 
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary): MAPSummary = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     apply(variables, model)
   }
-  def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainMax(varying.toSeq, model)
+  def apply(varying:Iterable[DiscreteVar], model:Model): MAPSummary = BP.inferChainMax(varying.toSeq, model)
 }
 
 object MaximizeByBPTree extends MaximizeByBP {
