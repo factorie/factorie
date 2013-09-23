@@ -385,6 +385,11 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       // max product
       
       val mfg = BP.inferChainMax(vars, model)
+      val mfg2 = BP.inferTreeMarginalMax(vars, model)
+      assertEquals(mfg.logZ, mfg2.logZ, 0.001)
+      for (v <- vars) {
+        assertEquals(mfg.mapAssignment(v).intValue, mfg2.mapAssignment(v).intValue)
+      }
       mfg.setToMaximize(null)
       logger.debug("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {

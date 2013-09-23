@@ -682,20 +682,36 @@ object BP {
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
   }
-  def inferTreeMarginalMax(varying:Iterable[DiscreteVar], model:Model, root:DiscreteVar = null): BPSummary = {
+  def inferTreeMarginalMax(varying:Iterable[DiscreteVar], model:Model, root:DiscreteVar = null): MAPSummary = {
+    if (varying.size == 0) return new MAPSummary(new HashMapAssignment(ignoreNonPresent = true), Seq())
     val summary = BPSummary(varying, BPMaxProductRing, model)
-    if (varying.size == 0) return summary 
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
     val bfsSeq = BPUtil.bfs(varying.toSet, _root, checkLoops = true)
     BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
-    BPUtil.sendAccordingToOrdering(bfsSeq)
-    summary
+    val assignment = new HashMapAssignment(ignoreNonPresent = true)
+    val rt = _root.variable
+    val rootValue = _root.calculateBelief.maxIndex
+    assignment.update(rt, rt.domain(rootValue).asInstanceOf[DiscreteVar#Value])
+    for ((edge, v2f) <- bfsSeq; if v2f) {
+      edge.bpFactor match {
+        case f: BPFactor2MaxProduct =>
+          if (edge eq f.edge2) {
+            val value = f.edge2Max1(assignment(f.edge2.variable).intValue)
+            assignment.update(f.edge1.variable, f.edge1.variable.domain(value).asInstanceOf[DiscreteVar#Value])
+          } else {
+            val value = f.edge1Max2(assignment(f.edge1.variable).intValue)
+            assignment.update(f.edge2.variable, f.edge2.variable.domain(value).asInstanceOf[DiscreteVar#Value])
+          }
+        case _ => println(edge.factor.getClass.getName)
+      }
+    }
+    new MAPSummary(assignment, summary.factors.get.toSeq)
   }
 
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): MAPSummary = {
     varying.size match {
-      case 0 => new MAPSummary(new HashMapAssignment(), Seq())
+      case 0 => new MAPSummary(new HashMapAssignment(ignoreNonPresent = true), Seq())
       case 1 =>
         val factors =  model.factors(varying.head)
         val value = varying.head.proportions(factors).maxIndex
@@ -711,7 +727,7 @@ object BP {
           f.updateOutgoing(f.edge2)
         }
         var maxIndex = markovBPFactors.last.edge2.bpVariable.calculateBelief.maxIndex
-        val assignment = new HashMapAssignment()
+        val assignment = new HashMapAssignment(ignoreNonPresent = true)
         assignment.update(varying.last, varying.last.domain(maxIndex).asInstanceOf[DiscreteVar#Value])
         var n = varying.length - 2
         for (f <- markovBPFactors.reverse) {
@@ -839,7 +855,7 @@ object MaximizeByBPTree extends MaximizeByBP {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     apply(variables.toSet, model)
   }
-  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeMarginalMax(varying, model)
+  def apply(varying:Set[DiscreteVar], model:Model): MAPSummary = BP.inferTreeMarginalMax(varying, model)
 }
 
 //object InferByBPIndependent extends InferByBP {

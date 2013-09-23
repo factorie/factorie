@@ -68,7 +68,7 @@ class HashMapAssignment(val ignoreNonPresent: Boolean=true) extends MutableAssig
   def this(variables:Var*) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def this(variables:Iterable[Var]) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def variables = map.keys
-  def apply[V<:Var](v:V): V#Value = { get(v) match { case Some(v) => v; case None => throw new Error("Variable not in assignment: " + v)} }
+  def apply[V<:Var](v:V): V#Value = { get(v) match { case Some(v) => v; case None => if (!ignoreNonPresent) throw new Error("Variable not in assignment: " + v) else v.value.asInstanceOf[V#Value] } }
   def get[V<:Var](v:V): Option[V#Value] = if (ignoreNonPresent) map.get(v).map(_.asInstanceOf[V#Value]) else Some(map.getOrElse(v, v.value).asInstanceOf[V#Value])
   def update[V<:Var, U <: V#Value](variable:V, value:U): Unit = map(variable) = value
   def contains(v:Var) = map.contains(v)
