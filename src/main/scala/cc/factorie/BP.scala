@@ -703,8 +703,11 @@ object BP {
     summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorSumProduct]))
     varying.size match {
       case 0 => {}
-      case 1 => { summary.bpFactors.foreach(_.updateOutgoing()); summary.bpVariables.head.setToMaximize(null) }
-      case _ => {
+      case 1 =>
+        summary.bpFactors.foreach(_.updateOutgoing())
+        summary.bpVariables.head.updateOutgoing()
+        summary.bpVariables.head.setToMaximize(null)
+      case _ =>
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
         //assert(markovBPFactors.size > 0)
@@ -735,7 +738,6 @@ object BP {
           maxIndex = f.edge2Max1(maxIndex)
           f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]].set(maxIndex)(null)
         }
-      }
     }
     summary
   }
@@ -745,8 +747,10 @@ object BP {
     val summary = BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
-      case 1 => summary.bpFactors.foreach(_.updateOutgoing())
-      case _ => {
+      case 1 =>
+        summary.bpFactors.foreach(_.updateOutgoing())
+        summary.bpVariables.head.updateOutgoing()
+      case _ =>
         // TODO There is a tricky dependency here: "varying" comes in order, and we are relying on the summary.bpFactors returning factors in chain order also!  Make this safer. -akm  
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]).asInstanceOf[Seq[BPFactor1]].toArray // this includes both Factor1[Label], Factor2[Label,Features]
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]].toArray
@@ -770,7 +774,6 @@ object BP {
         })
         // Update marginals    //summary.bpVariables.foreach(_.updateProportions)
         // TODO Also update BPFactor marginals
-      }
     }
     summary
   }

@@ -96,7 +96,21 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
   }
-  
+
+  @Test def v1f2ChainLogZ {
+    // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
+    // one variable, two factors
+    val v = new BinVar(0)
+    val model = new ItemizedModel(newFactor1(v, 0.5, 1.3), newFactor1(v, -0.3, 4.0))
+    val s = BP.inferChainMax(Seq(v), model)
+    val s2 = BP.inferChainSum(Seq(v), model)
+    // make sure all factors have the same logz
+    val szs = s.bpFactors.to[Vector].map(_.calculateLogZ)
+    val s2zs = s2.bpFactors.to[Vector].map(_.calculateLogZ)
+    assert(szs.distinct.length == 1)
+    assert(s2zs.distinct.length == 1)
+  }
+
   @Test def v2f1VaryingBoth {
     logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
