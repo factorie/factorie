@@ -32,17 +32,17 @@ object BPSumProductRing extends BPRing {
   def newBPVariable(v: DiscreteVar) = new BPVariable1(v) with BPVariableSumProduct
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
     case factor:Factor1[DiscreteVar @unchecked] =>
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorTreeSumProduct
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorSumProduct
     case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
       if (varying == null || (varying.contains(factor._1) && varying.contains(factor._2))) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2SumProduct
-      else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorTreeSumProduct
-      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactorTreeSumProduct
+      else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorSumProduct
+      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactorSumProduct
     case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
       val neighbors = factor.variables.toSet.intersect(varying.toSet)
       if (neighbors.size == 2)
         new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2SumProduct
       else if (neighbors.size == 1)
-        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorTreeSumProduct
+        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorSumProduct
       else throw new Error("Can't create the factor")
   }
 }
@@ -187,7 +187,7 @@ trait BPFactor extends DiscreteMarginal with FactorMarginal {
   def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
 }
 
-trait BPFactorTreeSumProduct extends BPFactor {
+trait BPFactorSumProduct extends BPFactor {
   override def calculateMarginalTensor: Tensor = {
     val v = calculateBeliefsTensor
     summary.expNormalize(v)
@@ -309,7 +309,7 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
   override def proportions: Proportions2 = new DenseTensorProportions2(calculateMarginalTensor.asArray, scores.dim1, scores.dim2, false)
 }
 
-trait BPFactor2SumProduct extends BPFactorTreeSumProduct { this: BPFactor2 =>
+trait BPFactor2SumProduct extends BPFactorSumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
@@ -696,7 +696,7 @@ object BP {
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): BPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
-    summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorTreeSumProduct]))
+    summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorSumProduct]))
     varying.size match {
       case 0 => {}
       case 1 => { summary.bpFactors.foreach(_.updateOutgoing()); summary.bpVariables.head.setToMaximize(null) }
