@@ -691,12 +691,7 @@ object BP {
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
   }
-  // TODO: add inferTreewiseMax and associated test
-  def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model): BPSummary = {
-    val summary = BPSummary(Seq(v), BPSumProductRing, model)
-    summary.bpFactors.foreach(_.updateOutgoing())
-    summary
-  }
+
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): MAPSummary = {
     varying.size match {
