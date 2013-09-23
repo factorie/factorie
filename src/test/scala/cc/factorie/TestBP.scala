@@ -83,7 +83,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), e(3) / (e(3) + e(3)), eps)
+    assertEquals(fg.marginal(v).proportions(0), 1.0, eps)
+    assertEquals(fg.marginal(v).proportions(1), 0.0, eps)
   }
 
   @Test def v1f2MAP2 {
@@ -94,7 +95,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
+    assertEquals(fg.marginal(v).proportions(0), 0.0, eps)
+    assertEquals(fg.marginal(v).proportions(1), 1.0, eps)
   }
 
   @Test def v1f2ChainLogZ {

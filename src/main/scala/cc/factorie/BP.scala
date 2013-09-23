@@ -47,7 +47,7 @@ object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxP
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2MaxProduct
 }
 
-trait BPRingDefaults[F1 <: BPFactor, F2 <: F1, V] extends BPRing {
+trait BPRingDefaults[F1 <: BPFactor, F2 <: BPFactor2 with F1, V <: BPVariable] extends BPRing {
   def newBPVariable(v: DiscreteVar): BPVariable1 with V
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor with F1 = {
     if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
@@ -147,12 +147,11 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
   }
 }
 
-trait BPVariableMaxProduct { self: BPVariable =>
-  // TODO BUG FIXME: I set this to return max-marginals instead of MAP assignment. This is to keep unit tests from breaking, but is inconsistent with factor marginals -luke
-  def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
+trait BPVariableMaxProduct extends BPVariable {
+  def calculateMarginal: Tensor = { val t = calculateBelief; t.maxNormalize(); t }
 }
 
-trait BPVariableSumProduct { self: BPVariable =>
+trait BPVariableSumProduct extends BPVariable {
   def calculateMarginal: Tensor = { val t = calculateBelief; t.expNormalize(); t }
 }
 // TODO class BPVariable{2,3,4} would be used for cluster graphs
@@ -318,7 +317,7 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
   override def proportions: Proportions2 = new DenseTensorProportions2(calculateMarginalTensor.asArray, scores.dim1, scores.dim2, false)
 }
 
-trait BPFactor2SumProduct extends BPFactorSumProduct { this: BPFactor2 =>
+trait BPFactor2SumProduct extends BPFactor2 with BPFactorSumProduct { this: BPFactor2 =>
   def calculateOutgoing1: Tensor = {
     val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
     if (hasLimitedDiscreteValues12) {
@@ -697,7 +696,7 @@ object BP {
     summary.bpFactors.foreach(_.updateOutgoing())
     summary
   }
-  // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
+  // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model)(implicit d: DiffList=null): BPSummary = {
     val summary = BPSummary(varying, BPMaxProductRing, model)
     summary.bpFactors.foreach(f => assert(f.isInstanceOf[BPFactorMaxProduct] && !f.isInstanceOf[BPFactorSumProduct]))
@@ -723,12 +722,16 @@ object BP {
           f.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
 
+        // TODO we shouldn't be doing a backwards pass at all in viterbi -luke
+        // factor marginals need to come from the consistent MAP assignment from backtrace, this won't handle ties
         for (f <- markovBPFactors.reverse) {
           f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
           f.updateOutgoing(f.edge1)   // send message from factor to neighbor2
         }
 
         obsBPFactors.foreach(f => f.edges.foreach(e => e.bpVariable.updateOutgoing(e)))
+
+        // TODO this looks broken since we set values here, but then we also set them in setToMaximize based on beliefs, not backpointers -luke
         // Do Viterbi backtrace, setting label values
         // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
         // Because we might want to run this inference, but not change global state.
@@ -772,8 +775,6 @@ object BP {
         obsBPFactors.foreach(f => {
           f.edge1.bpVariable.updateOutgoing(f.edge1)
         })
-        // Update marginals    //summary.bpVariables.foreach(_.updateProportions)
-        // TODO Also update BPFactor marginals
     }
     summary
   }
