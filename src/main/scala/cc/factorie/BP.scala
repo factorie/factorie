@@ -131,8 +131,7 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
   override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
   def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
   override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
-  def updateOutgoingMAP() {
-    val maxValue = variable.intValue
+  def updateOutgoingMAP(maxValue: Int) {
     for (e <- edges) {
       e.messageFromVariable = new Tensor1 with SparseDoubleSeq with ReadOnlyTensor {
         def isDense = false
@@ -143,6 +142,7 @@ abstract class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[Discre
         def apply(i: Int) = if (i == maxValue) 0 else Double.NegativeInfinity
         def foreachActiveElement(f: (Int, Double) => Unit) = foreachElement(f)
       }
+      e.bpFactor.updateOutgoing()
     }
   }
 }
@@ -563,8 +563,19 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
     case BPMaxProductRing => bpVariables.foreach(v => {
       v.setToMaximize(d)
-      v.updateOutgoingMAP()
+      v.updateOutgoingMAP(v.variable.value.intValue)
     })
+    case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
+  }
+  def maximizingAssignment: Assignment = ring match {
+    case BPMaxProductRing =>
+      val assignment = new HashMapAssignment(true)
+      bpVariables.foreach(v => {
+        val value = v.calculateBelief.maxIndex
+        assignment.update(v.variable, v.variable.domain(value).asInstanceOf[DiscreteVar#Value])
+        v.updateOutgoingMAP(value.intValue)
+    })
+      assignment
     case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
   }
   def expNormalize(t: Tensor) {
@@ -664,6 +675,17 @@ object BP {
     }
   }
 
+  def inferLoopyMax(summary: BPSummary, numIterations: Int = 10): Unit = {
+    for (iter <- 0 to numIterations) { // TODO Make a more clever convergence detection
+      for (bpf <- summary.bpFactors) {
+        for (e <- bpf.edges) e.bpVariable.updateOutgoing(e)  // get all the incoming messages
+        for (e <- bpf.edges) e.bpFactor.updateOutgoing(e)    // send messages
+      }
+    }
+    val assignment = summary.maximizingAssignment
+    new MAPSummary(assignment, summary.factors.get.toVector)
+  }
+
   def inferLoopyTreewise(varying: Iterable[DiscreteVar], model: Model, numIterations: Int = 2) = {
     val summary = LoopyBPSummary(varying, BPSumProductRing, model)
     val bfsSeq = BPUtil.loopyBfs(varying.toSet, summary)
@@ -672,6 +694,17 @@ object BP {
       BPUtil.sendAccordingToOrdering(bfsSeq)
     }
     summary
+  }
+
+  def inferLoopyTreewiseMax(varying: Iterable[DiscreteVar], model: Model, numIterations: Int = 2) = {
+    val summary = LoopyBPSummary(varying, BPMaxProductRing, model)
+    val bfsSeq = BPUtil.loopyBfs(varying.toSet, summary)
+    for (i <- 0 to numIterations) {
+      BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
+      BPUtil.sendAccordingToOrdering(bfsSeq)
+    }
+    val assignment = summary.maximizingAssignment
+    new MAPSummary(assignment, summary.factors.get.toVector)
   }
 
   def inferTreeSum(varying:Iterable[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
@@ -783,53 +816,45 @@ trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 object InferByBPTreeSum extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    //apply(variables.toSet, model)
-    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    assert(variables.size == variables.toSet.size)
     BP.inferTreeSum(variables, model)
   }
-  //def apply(varying:Set[DiscreteVar], model:Model): BPSummary = BP.inferTreeSum(varying, model)
 }
 
 object InferByBPLoopy extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    //apply(variables.toSet, model)
-    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
+    assert(variables.size == variables.toSet.size)
     val summary = LoopyBPSummary(variables, BPSumProductRing, model)
     BP.inferLoopy(summary)
     summary
   }
-//  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-//    val summary = LoopyBPSummary(varying, BPSumProductRing, model)
-//    BP.inferLoopy(summary)
-//    summary
-//  }
 }
 
 object InferByBPLoopyTreewise extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    //apply(variables.toSet, model)
-    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
     BP.inferLoopyTreewise(variables, model)
   }
-//  def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
-//    BP.inferLoopyTreewise(varying, model)
-//  }
+}
+
+object MaximizeByBPLoopyTreewise extends MaximizeByBP {
+  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
+    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
+    BP.inferLoopyTreewiseMax(variables, model)
+  }
 }
 
 object MaximizeByBPLoopy extends MaximizeByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    //apply(variables.toSet, model)
-    assert(variables.size == variables.toSet.size) // If this becomes a problem, use "variables.distinct" in the next line instead.
     val summary = LoopyBPSummaryMaxProduct(variables, BPMaxProductRing, model)
-    BP.inferLoopy(summary)
+    BP.inferLoopyMax(summary)
     summary
   }
   def apply(varying:Set[DiscreteVar], model:Model): BPSummary = {
     val summary = LoopyBPSummaryMaxProduct(varying, BPMaxProductRing, model)
-    BP.inferLoopy(summary)
+    BP.inferLoopyMax(summary)
     summary
   }
 }
@@ -857,11 +882,3 @@ object MaximizeByBPTree extends MaximizeByBP {
   }
   def apply(varying:Set[DiscreteVar], model:Model): MAPSummary = BP.inferTreeMarginalMax(varying, model)
 }
-
-//object InferByBPIndependent extends InferByBP {
-//  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
-//    case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
-//    case _ => None
-//  }
-//  def apply(varying:Seq[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying, model)
-//}
