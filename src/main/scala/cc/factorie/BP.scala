@@ -47,7 +47,7 @@ object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxP
   def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2MaxProduct
 }
 
-trait BPRingDefaults[F1 <: BPFactor, F2 <: F1, V <: BPVariable] extends BPRing {
+trait BPRingDefaults[F1 <: BPFactor, F2 <: F1, V] extends BPRing {
   def newBPVariable(v: DiscreteVar): BPVariable1 with V
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor with F1 = {
     if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
