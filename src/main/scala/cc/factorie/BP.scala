@@ -28,41 +28,51 @@ trait BPRing {
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor
 }
 
-object BPSumProductRing extends BPRing {
+// TODO this code duplication is why mixins are usually a bad way to factor stuff -luke
+object BPSumProductRing extends BPRingDefaults[BPFactorSumProduct, BPFactor2SumProduct, BPVariableSumProduct] {
   def newBPVariable(v: DiscreteVar) = new BPVariable1(v) with BPVariableSumProduct
-  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
-    case factor:Factor1[DiscreteVar @unchecked] =>
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorSumProduct
-    case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
-      if (varying == null || (varying.contains(factor._1) && varying.contains(factor._2))) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2SumProduct
-      else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorSumProduct
-      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactorSumProduct
-    case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
-      val neighbors = factor.variables.toSet.intersect(varying.toSet)
-      if (neighbors.size == 2)
-        new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2SumProduct
-      else if (neighbors.size == 1)
-        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorSumProduct
-      else throw new Error("Can't create the factor")
-  }
+  def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum) with BPFactorSumProduct
+  def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum) with BPFactorSumProduct
+  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2SumProduct
+  def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor3(factor, edge1, sum) with BPFactorSumProduct
+  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2SumProduct
 }
 
-object BPMaxProductRing extends BPRing {
-  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v) with BPVariableMaxProduct
-  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
-    case factor:Factor1[DiscreteVar @unchecked] =>
-      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorMaxProduct
-    case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
-      if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary) with BPFactor2MaxProduct
-      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary) with BPFactorMaxProduct
-    case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
-      val neighbors = factor.variables.toSet.intersect(varying.toSet)
-      if (neighbors.size == 2)
-        new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary) with BPFactor2MaxProduct
-      else if (neighbors.size == 1)
-        new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary) with BPFactorMaxProduct
-      else throw new Error("Can't create the factor")
+object BPMaxProductRing extends BPRingDefaults[BPFactorMaxProduct, BPFactor2MaxProduct, BPVariableMaxProduct] {
+  def newBPVariable(v: DiscreteVar) = new BPVariable1(v) with BPVariableMaxProduct
+  def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum) with BPFactorMaxProduct
+  def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum) with BPFactorMaxProduct
+  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum) with BPFactor2MaxProduct
+  def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor3(factor, edge1, sum) with BPFactorMaxProduct
+  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum) with BPFactor2MaxProduct
+}
+
+trait BPRingDefaults[F1 <: BPFactor, F2 <: F1, V <: BPVariable] extends BPRing {
+  def newBPVariable(v: DiscreteVar): BPVariable1 with V
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor with F1 = {
+    if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
+    factor match {
+      case factor:Factor1[DiscreteVar @unchecked] =>
+        newBPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary)
+      case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
+        if (varying.contains(factor._1) && varying.contains(factor._2)) newBPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary)
+        else if (varying.contains(factor._1)) newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
+        else newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
+        val neighbors = factor.variables.toSet.intersect(varying.toSet)
+        if (neighbors.size == 2)
+          newBPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary)
+        else if (neighbors.size == 1)
+          newBPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary)
+        else throw new Error("Can't create the factor")
+    }
   }
+
+  def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary): BPFactor1Factor1 with F1
+  def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary): BPFactor1Factor2 with F1
+  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor2 with F2
+  def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary): BPFactor1Factor3 with F1
+  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor3 with F2
 }
 
 // TODO
@@ -482,11 +492,6 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Vecto
 
 
 object BPSummary {
-  def apply[C](context:C, ring:BPRing, model:ModelWithContext[C]): BPSummary = {
-    val summary = new BPSummary(ring)
-    for (factor <- model.factorsWithContext(context)) summary._bpFactors(factor) = ring.newBPFactor(factor, null, summary)
-    summary
-  }
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
     val summary = new BPSummary(ring)
     val varyingSet = varying.toSet
