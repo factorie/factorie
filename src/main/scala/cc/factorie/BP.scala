@@ -530,7 +530,7 @@ class BPSummary(val ring:BPRing) extends Summary {
   def marginal(f: Factor): BPFactor = _bpFactors(f)
   var _logZ = Double.NaN
   override def logZ: Double = {
-    if (_logZ != _logZ) _logZ = _bpFactors.values.head.calculateLogZ
+    if (_logZ != _logZ) { _logZ = if (_bpFactors.size > 0) _bpFactors.values.head.calculateLogZ else 0 }
     _logZ
   }
   
