@@ -83,8 +83,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), 1.0, eps)
-    assertEquals(fg.marginal(v).proportions(1), 0.0, eps)
+    assertEquals(fg.marginal(v).proportions.maxIndex, 0)
   }
 
   @Test def v1f2MAP2 {
@@ -95,8 +94,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), 0.0, eps)
-    assertEquals(fg.marginal(v).proportions(1), 1.0, eps)
+    assertEquals(fg.marginal(v).proportions.maxIndex, 1)
   }
 
   @Test def v1f2ChainLogZ {
@@ -139,9 +137,6 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
     assertEquals(0.5, fg.marginal(v1).proportions(0), eps)
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
 
@@ -255,10 +250,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
-    
+
     val v1Marginal = fg.marginal(v1).proportions
     for ((_, i) <- v1.settings.zipWithIndex if v1.value == v2.value)
       assertEquals(v1Marginal(i), 0.0, eps)
@@ -385,6 +377,11 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       // max product
       
       val mfg = BP.inferChainMax(vars, model)
+      val mfg2 = BP.inferTreeMarginalMax(vars, model)
+      assertEquals(mfg.logZ, mfg2.logZ, 0.001)
+      for (v <- vars) {
+        assertEquals(mfg.mapAssignment(v).intValue, mfg2.mapAssignment(v).intValue)
+      }
       mfg.setToMaximize(null)
       logger.debug("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {
