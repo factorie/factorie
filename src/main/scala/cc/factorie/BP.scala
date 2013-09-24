@@ -484,9 +484,7 @@ object BPSummary {
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
     val summary = new BPSummary(ring)
     val varyingSet = varying.toSet
-    //print("object BPSummary variables "+varying.size)
     val factors = model.factors(varying)
-    //println("  factors "+factors.size)
     for (factor <- factors) summary._bpFactors(factor) = BPFactorFactory.newBPFactor(factor, varyingSet, summary)
     summary
   }
@@ -711,7 +709,7 @@ object BP {
             val value = f.edge1Max2(assignment(f.edge1.variable).intValue)
             assignment.update(f.edge2.variable, f.edge2.variable.domain(value).asInstanceOf[DiscreteVar#Value])
           }
-        case _ => println(edge.factor.getClass.getName)
+        case _ => 
       }
     }
     new MAPSummary(assignment, summary.factors.get.toSeq)
