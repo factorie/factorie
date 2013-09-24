@@ -19,35 +19,20 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{mutable, Set}
 import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
 
-/** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. 
-    "Ring" refers to whether we are using sum/product or max/product. */
 trait BPRing {
   def sum(a: Double, b: Double): Double
-  def newBPVariable(v:DiscreteVar): BPVariable1
-  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor
 }
 
-// TODO this code duplication is why mixins are usually a bad way to factor stuff -luke
-object BPSumProductRing extends BPRingDefaults {
+object BPSumProductRing extends BPRing {
   def sum(a: Double, b: Double) = maths.sumLogProb(a, b)
-  def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
-  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum, this)
-  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum, this)
-  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum, this)
-  def newBPFactor4Factor4(factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, edge4: BPEdge, sum: BPSummary) = new BPFactor4Factor4(factor, Seq(edge1, edge2, edge3, edge4), sum, this)
 }
 
-object BPMaxProductRing extends BPRingDefaults {
+object BPMaxProductRing extends BPRing {
   def sum(a: Double, b: Double) = math.max(a, b)
-  def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
-  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum, this)
-  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum, this)
-  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum, this)
-  def newBPFactor4Factor4(factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, edge4: BPEdge, sum: BPSummary) = new BPFactor4Factor4(factor, Seq(edge1, edge2, edge3, edge4), sum, this)
 }
 
-trait BPRingDefaults extends BPRing {
-  def newBPVariable(v: DiscreteVar): BPVariable1
+object BPFactorFactory {
+  def newBPVariable(v: DiscreteVar) = new BPVariable1(v)
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary) = {
     if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
     factor match {
@@ -73,14 +58,13 @@ trait BPRingDefaults extends BPRing {
         newBPFactor4Factor4(factor, edge1, edge2, edge3, edge4, summary)
     }
   }
-
   def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum)
   def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum)
-  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor2
   def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor3(factor, edge1, sum)
-  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary): BPFactor2Factor3
-  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary): BPFactor3Factor3
-  def newBPFactor4Factor4(factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, edge4: BPEdge, sum: BPSummary): BPFactor4Factor4
+  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum, sum.ring)
+  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum, sum.ring)
+  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum, sum.ring)
+  def newBPFactor4Factor4(factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, edge4: BPEdge, sum: BPSummary) = new BPFactor4Factor4(factor, Seq(edge1, edge2, edge3, edge4), sum, sum.ring)
 }
 
 
@@ -506,7 +490,7 @@ object BPSummary {
     //print("object BPSummary variables "+varying.size)
     val factors = model.factors(varying)
     //println("  factors "+factors.size)
-    for (factor <- factors) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+    for (factor <- factors) summary._bpFactors(factor) = BPFactorFactory.newBPFactor(factor, varyingSet, summary)
     summary
   }
 
@@ -517,7 +501,7 @@ object LoopyBPSummary {
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
       val summary = new LoopyBPSummary(ring)
       val varyingSet = varying.toSet
-      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = BPFactorFactory.newBPFactor(factor, varyingSet, summary)
       summary
     }
 }
@@ -526,7 +510,7 @@ object LoopyBPSummaryMaxProduct {
   def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model): BPSummary = {
       val summary = new LoopyBPSummaryMaxProduct(ring)
       val varyingSet = varying.toSet
-      for (factor <- model.factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+      for (factor <- model.factors(varying)) summary._bpFactors(factor) = BPFactorFactory.newBPFactor(factor, varyingSet, summary)
       summary
     }
 }
@@ -538,7 +522,7 @@ object LoopyBPSummaryMaxProduct {
 class BPSummary(val ring:BPRing) extends Summary {
   protected val _bpFactors = new mutable.LinkedHashMap[Factor, BPFactor]
   protected val _bpVariables = new mutable.LinkedHashMap[VectorVar, BPVariable1]
-  def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
+  def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, BPFactorFactory.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   def factorMarginals = factors.head.map(marginal)
   def factors: Option[Iterable[Factor]] = Some(_bpFactors.values.map(_.factor))
