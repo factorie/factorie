@@ -142,7 +142,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     }
     //println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     // Set original uncollapsed parameters to mean of collapsed parameters
-    sampler.export(phis)
+    sampler.export(phis, beta1, numTopics)
     sampler.exportThetas(documents)
   }
 

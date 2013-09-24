@@ -78,10 +78,12 @@ class SparseLDAInferencer(
     sm
   }
 
-  def export(phis:Seq[ProportionsVar]): Unit = {
+  def export(phis:Seq[ProportionsVar], beta1:Double = 0.0, numTopics: Int=0): Unit = {
     phis.foreach(_.value.zero())
-    for (wi <- 0 until wordDomain.size)
+    for (wi <- 0 until wordDomain.size)  {
+      (0 until numTopics).foreach(ti => phis(ti).value.masses.+=(wi, beta1))
       phiCounts(wi).forCounts((ti,count) => phis(ti).value.masses.+=(wi, count))
+    }
   }
 
   def exportThetas(docs:Iterable[Doc]): Unit = {
