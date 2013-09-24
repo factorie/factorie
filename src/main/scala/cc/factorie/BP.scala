@@ -43,7 +43,7 @@ object BPFactorFactory {
         else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
         else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
       case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
-        val neighbors = factor.variables.toSet.intersect(varying.toSet).toSeq
+        val neighbors = factor.variables.filter(v => v.isInstanceOf[DiscreteVar] && varying.contains(v.asInstanceOf[DiscreteVar]))
         if (neighbors.size == 2)
           new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar]))), summary, summary.ring)
         else if (neighbors.size == 1)
@@ -52,7 +52,7 @@ object BPFactorFactory {
           new BPFactor3Factor3(factor.asInstanceOf[Factor3[DiscreteVar, DiscreteVar, DiscreteVar]], neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar]))), summary, summary.ring)
         else throw new Error("Can't create the factor")
       case factor: Factor4[DiscreteVar @unchecked, DiscreteVar @unchecked, DiscreteVar @unchecked, DiscreteVar @unchecked] =>
-        val neighbors = factor.variables.toSet.intersect(varying.toSet).toSeq
+        val neighbors = factor.variables.filter(v => v.isInstanceOf[DiscreteVar] && varying.contains(v.asInstanceOf[DiscreteVar]))
         assert(neighbors.size == 4)
         val edges = neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar])))
         new BPFactor4Factor4(factor, edges, summary, summary.ring)
@@ -175,7 +175,7 @@ trait BPFactor extends FactorMarginal {
 }
 
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
-abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends SimpleDiscreteMarginal1(edge1.bpVariable.variable, new DenseTensorProportions1(new DenseTensor1(edge1.variable.domain.dimensionSize))) with BPFactor {
+abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends SimpleDiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
   override def scores: Tensor1
   def hasLimitedDiscreteValues1: Boolean
   def limitedDiscreteValues1: SparseBinaryTensor1
@@ -187,6 +187,7 @@ abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends Simp
   // TODO See about caching this when possible
   def calculateBeliefsTensor: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
   def calculateOutgoing1: Tensor1 = scores
+  override def proportions: Proportions1 = new DenseTensorProportions1(calculateMarginalTensor.asArray, false)
 }
 
 
@@ -324,6 +325,7 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSu
     }
     result
   }
+  override def proportions: Proportions2 = new DenseTensorProportions2(calculateMarginalTensor.asArray, edge1.variable.domain.dimensionSize, edge2.variable.domain.dimensionSize, false)
 }
 
 // A BPFactor2 with underlying model Factor2, with both neighbors varying
@@ -423,6 +425,7 @@ class BPFactor3Factor3(val factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar
       e.messageFromFactor = newMessage
     } else { throw new Error("Can't send messages through edge not in the factor.")}
   }
+  override def proportions: Proportions3 = new DenseTensorProportions3(calculateMarginalTensor.asArray, factor._1.domain.dimensionSize, factor._2.domain.dimensionSize, factor._3.domain.dimensionSize, false)
 }
 
 
@@ -474,6 +477,7 @@ class BPFactor4Factor4(val factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar
       e.messageFromFactor = newMessage
     } else { throw new Error("Can't send messages through edge not in the factor.")}
   }
+  override def proportions: Proportions4 = new DenseTensorProportions4(calculateMarginalTensor.asArray, factor._1.domain.dimensionSize, factor._2.domain.dimensionSize, factor._3.domain.dimensionSize, factor._4.domain.dimensionSize, false)
 }
 
 object BPSummary {
