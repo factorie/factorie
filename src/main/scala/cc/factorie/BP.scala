@@ -175,7 +175,7 @@ trait BPFactor extends FactorMarginal {
 }
 
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
-abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends SimpleDiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
+abstract class BPFactor1(val edge1: BPEdge, val summary: BPSummary) extends SimpleDiscreteMarginal1(edge1.bpVariable.variable, new DenseTensorProportions1(new DenseTensor1(edge1.variable.domain.dimensionSize))) with BPFactor {
   override def scores: Tensor1
   def hasLimitedDiscreteValues1: Boolean
   def limitedDiscreteValues1: SparseBinaryTensor1
