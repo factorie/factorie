@@ -37,34 +37,27 @@ object BPFactorFactory {
     if (varying == null) sys.error("Can't call newBPFactor with null list of varying variables.")
     factor match {
       case factor:Factor1[DiscreteVar @unchecked] =>
-        newBPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary)
+        new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)), summary)
       case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
-        if (varying.contains(factor._1) && varying.contains(factor._2)) newBPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary)
-        else if (varying.contains(factor._1)) newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
-        else newBPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+        if (varying.contains(factor._1) && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary, summary.ring)
+        else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
+        else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
       case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
         val neighbors = factor.variables.toSet.intersect(varying.toSet).toSeq
         if (neighbors.size == 2)
-          newBPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1.asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(factor._2.asInstanceOf[DiscreteVar])), summary)
+          new BPFactor2Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,VectorVar]], neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar]))), summary, summary.ring)
         else if (neighbors.size == 1)
-          newBPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary)
+          new BPFactor1Factor3(factor, new BPEdge(summary.bpVariable(neighbors.head.asInstanceOf[DiscreteVar])), summary)
         else if (neighbors.size == 3)
-          newBPFactor3Factor3(factor.asInstanceOf[Factor3[DiscreteVar,DiscreteVar,DiscreteVar]], new BPEdge(summary.bpVariable(neighbors(0).asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(neighbors(1).asInstanceOf[DiscreteVar])), new BPEdge(summary.bpVariable(neighbors(2).asInstanceOf[DiscreteVar])), summary)
+          new BPFactor3Factor3(factor.asInstanceOf[Factor3[DiscreteVar, DiscreteVar, DiscreteVar]], neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar]))), summary, summary.ring)
         else throw new Error("Can't create the factor")
       case factor: Factor4[DiscreteVar @unchecked, DiscreteVar @unchecked, DiscreteVar @unchecked, DiscreteVar @unchecked] =>
         val neighbors = factor.variables.toSet.intersect(varying.toSet).toSeq
         assert(neighbors.size == 4)
-        val Seq(edge1, edge2, edge3, edge4) = neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar])))
-        newBPFactor4Factor4(factor, edge1, edge2, edge3, edge4, summary)
+        val edges = neighbors.map(v => new BPEdge(summary.bpVariable(v.asInstanceOf[DiscreteVar])))
+        new BPFactor4Factor4(factor, edges, summary, summary.ring)
     }
   }
-  def newBPFactor1Factor1(factor: Factor1[DiscreteVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor1(factor, edge1, sum)
-  def newBPFactor1Factor2(factor: Factor2[DiscreteVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor2(factor, edge1, sum)
-  def newBPFactor1Factor3(factor: Factor3[VectorVar, VectorVar, VectorVar], edge1: BPEdge, sum: BPSummary) = new BPFactor1Factor3(factor, edge1, sum)
-  def newBPFactor2Factor2(factor: Factor2[DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor2(factor, edge1, edge2, sum, sum.ring)
-  def newBPFactor2Factor3(factor: Factor3[DiscreteVar, DiscreteVar, VectorVar], edge1: BPEdge, edge2: BPEdge, sum: BPSummary) = new BPFactor2Factor3(factor, edge1, edge2, sum, sum.ring)
-  def newBPFactor3Factor3(factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, sum: BPSummary) = new BPFactor3Factor3(factor, Seq(edge1, edge2, edge3), sum, sum.ring)
-  def newBPFactor4Factor4(factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], edge1: BPEdge, edge2: BPEdge, edge3: BPEdge, edge4: BPEdge, sum: BPSummary) = new BPFactor4Factor4(factor, Seq(edge1, edge2, edge3, edge4), sum, sum.ring)
 }
 
 
@@ -250,7 +243,7 @@ class BPFactor1Factor3(val factor: Factor3[VectorVar,VectorVar,VectorVar], edge1
 
 
 // An abstract class for BPFactors that have 2 varying neighbors.  They may have additional constant neighbors.
-abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSummary, ring: BPRing) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
+abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val summary: BPSummary, final val ring: BPRing) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
   lazy val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable
   lazy val edge2Max1 = new Array[Int](edge2.variable.domain.size)
   override def scores: Tensor2
@@ -369,7 +362,7 @@ class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edge1:BPEdge
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
 // Note that the varying neighbors are assumed to be factor._1 and factor._2, and the constant neighbor factor._3
-class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,VectorVar], edge1:BPEdge, edge2:BPEdge, sum: BPSummary, ring: BPRing) extends BPFactor2(edge1, edge2, sum, ring) with DiscreteMarginal2Factor3[DiscreteVar, DiscreteVar, VectorVar] {
+class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,VectorVar], edges: Seq[BPEdge], sum: BPSummary, ring: BPRing) extends BPFactor2(edges(0), edges(1), sum, ring) with DiscreteMarginal2Factor3[DiscreteVar, DiscreteVar, VectorVar] {
   val hasLimitedDiscreteValues12: Boolean = factor.hasLimitedDiscreteValues12
   def limitedDiscreteValues12: SparseBinaryTensor2 = factor.limitedDiscreteValues12
   val scores: Tensor2 = {
@@ -391,7 +384,7 @@ class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,VectorVar], ed
   }
 }
 
-class BPFactor3Factor3(val factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], val edges: Seq[BPEdge], val summary: BPSummary, ring: BPRing) extends DiscreteMarginal3[DiscreteVar, DiscreteVar, DiscreteVar](factor._1, factor._2, factor._3) with BPFactor with DiscreteMarginal3Factor3[DiscreteVar, DiscreteVar, DiscreteVar] {
+class BPFactor3Factor3(val factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar], val edges: Seq[BPEdge], val summary: BPSummary, final val ring: BPRing) extends DiscreteMarginal3[DiscreteVar, DiscreteVar, DiscreteVar](factor._1, factor._2, factor._3) with BPFactor with DiscreteMarginal3Factor3[DiscreteVar, DiscreteVar, DiscreteVar] {
   def scores = factor.asInstanceOf[DotFamily3[DiscreteVar, DiscreteVar, DiscreteVar]#Factor].family.weights.value.asInstanceOf[Tensor3]
   val Seq(edge1, edge2, edge3) = edges
   edges.foreach(e => e.bpFactor = this)
@@ -434,7 +427,7 @@ class BPFactor3Factor3(val factor: Factor3[DiscreteVar, DiscreteVar, DiscreteVar
 
 
 
-class BPFactor4Factor4(val factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], val edges: Seq[BPEdge], val summary: BPSummary, ring: BPRing) extends DiscreteMarginal4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar](factor._1, factor._2, factor._3, factor._4) with BPFactor with DiscreteMarginal4Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar] {
+class BPFactor4Factor4(val factor: Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar], val edges: Seq[BPEdge], val summary: BPSummary, final val ring: BPRing) extends DiscreteMarginal4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar](factor._1, factor._2, factor._3, factor._4) with BPFactor with DiscreteMarginal4Factor4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar] {
   def scores = factor.asInstanceOf[DotFamily4[DiscreteVar, DiscreteVar, DiscreteVar, DiscreteVar]#Factor].family.weights.value.asInstanceOf[Tensor4]
   val Seq(edge1, edge2, edge3, edge4) = edges
   edges.foreach(e => e.bpFactor = this)
