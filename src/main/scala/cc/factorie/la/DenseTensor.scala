@@ -127,22 +127,13 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
 
   // A little faster than the MutableDoubleSeq implementation because it can access the __values array directly
   override def expNormalize(): Double = {
-    var max = Double.MinValue
-    var i = 0; val l = length
-    while (i < l) { if (max < __values(i)) max = __values(i); i += 1 }
-    var sum = 0.0
-    i = 0
-    while (i < l) {
-      val e = math.exp(__values(i) - max)  //update(i, math.exp(apply(i) - max))
-      __values(i) = e
-      sum += e
+    var sum = maths.sumLogProbs(this)
+    this -= sum
+    var i = 0
+    while (i < length) {
+      this(i) = math.exp(this(i))
       i += 1
     }
-    i = 0; while (i < l) {
-      __values(i) = __values(i) / sum
-      i += 1
-    }
-    //println("DenseTensor.expNormalize "+__values.mkString(" "))
     sum
   }
 
