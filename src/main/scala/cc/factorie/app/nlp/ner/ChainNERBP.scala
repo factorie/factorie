@@ -143,7 +143,7 @@ class ChainNerBP {
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new BioConllNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[BioConllNerLabel]).toSeq
-	    BP.inferChainMax(vars, model)
+	    BP.inferChainMax(vars, model).setToMaximize(null)
 	    //val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
     	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
     	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)

@@ -383,9 +383,9 @@ package object maths {
    *  we would if we calculated <tt>e^a</tt> or <tt>e^b</tt> directly.
    */
   def sumLogProb(a: Double, b: Double) =   {
-    if (a == Double.NegativeInfinity) 
+    if (a.isNegInfinity)
       b
-    else if (b == Double.NegativeInfinity)
+    else if (b.isNegInfinity)
       a
     else if (b < a)
       a + math.log1p(math.exp(b-a))
@@ -426,7 +426,7 @@ package object maths {
   }
 
   def subtractLogProb(a: Double, b: Double) =
-    if (b == Double.NegativeInfinity) a else a + math.log (1 - math.exp(b-a))
+    if (b.isNegInfinity) a else a + math.log (1 - math.exp(b-a))
 
 // Poly
 
