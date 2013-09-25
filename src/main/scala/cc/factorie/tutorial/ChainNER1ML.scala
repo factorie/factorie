@@ -88,7 +88,7 @@ object ChainNER1ML {
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
-      variables => cc.factorie.BP.inferChainMax(variables, model)
+      variables => cc.factorie.BP.inferChainMax(variables, model).setToMaximize(null)
     }
     println("test token accuracy=" + objective.accuracy(testLabelsSentences.flatten))
 

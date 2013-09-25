@@ -79,7 +79,7 @@ class NER1 extends DocumentAnnotator {
       if (!alreadyHadFeatures) addFeatures(document)
       for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
       for (sentence <- document.sentences if sentence.length > 0)
-        BP.inferChainMax(sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq, model)
+        BP.inferChainMax(sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq, model).setToMaximize(null)
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
     }
     document

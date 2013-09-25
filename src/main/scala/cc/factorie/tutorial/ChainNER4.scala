@@ -117,7 +117,7 @@ object ChainNER4 {
     if (false) {
       // Use BP Viterbi for prediction
       for (sentence <- testSentences)
-        BP.inferChainMax(sentence.asSeq.map(_.label), model)
+        BP.inferChainMax(sentence.asSeq.map(_.label), model).setToMaximize(null)
         //BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
       
       for (sentence <- trainSentences.take(10)) {

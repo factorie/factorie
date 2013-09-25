@@ -193,7 +193,7 @@ object ExampleLinearChainCRF extends App {
   trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
-  labelSequences.foreach(labels => BP.inferChainMax(labels, model))
+  labelSequences.foreach(labels => BP.inferChainMax(labels, model).setToMaximize(null))
   // Print the learned parameters on the Markov factors.
   println(model.markov.weights)
   // Print the inferred tags
