@@ -49,6 +49,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
+  def initializeRandomly(mean: Double = 0.0, variance: Double = 1.0)(implicit rng: scala.util.Random): Unit = { (0 until length).foreach(i => _values(i) = rng.nextGaussian()*variance + mean ) }
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f)
   override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }
   override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, __values, 0, length)
