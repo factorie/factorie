@@ -8,7 +8,7 @@ import cc.factorie.app.nlp.segment.Tokenizer1
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   
-  class MySpanList extends SpanList[TokenSpan,Section,Token]
+  class MySpanList extends SpanList[TokenSpan,TokenSpan,Section,Token]
 
   def testDiffLists:Unit = {
      val doc = LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head

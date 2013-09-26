@@ -100,7 +100,7 @@ trait SpanVar[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends S
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}
   def postChange(implicit d:DiffList): Unit = {}
-  def removeFromList(list:SpanList[This,C,E])(implicit d: DiffList): Unit = { preChange; list.remove(this)(d);  postChange }
+  def removeFromList(list:SpanList[This,This,C,E])(implicit d: DiffList): Unit = { preChange; list.remove(this)(d);  postChange }
   def setLength(l: Int)(implicit d: DiffList): Unit = if (l != length) { preChange; new SetLength(_length, l); postChange }
   def trimStart(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new TrimStart(n); postChange }
   def trimEnd(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new TrimEnd(n); postChange }
@@ -181,7 +181,7 @@ class SpanVariable[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]](theC
   //if (d ne null) NewSpan // Add NewSpan diff to the DiffList
 }
 
-class SpanList[S<:SpanVar[S,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] {
+class SpanList[S<:SS,SS<:SpanVar[SS,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] {
   /** Add the span to the list of spans.  Unlike +=, make a DiffList entry for the change. */
   def add(s:S)(implicit d:DiffList): Unit = {
     if (d ne null) d += AddSpanListDiff(s)

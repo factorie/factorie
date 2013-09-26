@@ -48,7 +48,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
 }
 
 /** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanList[S<:TokenSpan] extends SpanList[S, Section, Token]
+class TokenSpanList[S<:TokenSpan] extends SpanList[S, TokenSpan, Section, Token]
 //class TokenSpanList[S<:TokenSpan] extends SpanList[TokenSpan, Section, Token]
 
 object TokenSpan {
