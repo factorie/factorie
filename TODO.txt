@@ -1,8 +1,9 @@
 For Thursday Sprint:
 
-Settle serialization [Luke, Alex]
 Span, SpanList, Mention [Andrew]
 Clean up app.nlp [Andrew]
+Settle serialization [Luke, Alex]
+Consider making not all PosLabels "Labeled" [Andrew, Alex]
 Write app.nlp overview in User Guide [Andrew]
 Make app.Chain command line [Jack?]
 Write app.chain command-line tool overview in User Guide [Jack?]
@@ -11,12 +12,13 @@ Write app.classify command-line tool overview in User Guide [?]
 Use Assignments in more places [Andrew, Alex]
 Write installation instructions in User Guide [Emma, Arvind]
 Write about related packages in User Guide [Alex,_]
+Move TAC/KBP attribute extraction into app.nlp.mention.attribute
 Clean up examples, and make more demos [Ari]
 Clean up within-doc coref? [Belanger]
 Hcoref clean-up [Mike]
 Split factorie-nlp-resources.jar into parts [Belanger?]
 More Scaladoc, more JUnit tests [Mike, Belanger, Arvind, Lakshmi, Caiti,...]
-Web site structure & design [?]
+Web site structure & design, get documentation onto web site, get online demos working [?]
 Discuss "package structure that hides many identifiers from top level" [Andrew]
 New FACTORIE logo and artwork [Andrew,...]
 

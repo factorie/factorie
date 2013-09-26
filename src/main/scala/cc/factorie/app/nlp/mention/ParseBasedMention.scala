@@ -38,7 +38,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   private def nerSpans(doc: Document): Seq[Mention] = {
     (for (span <- doc.attr[NerSpanList]) yield
-      Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
+      new Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
 
@@ -51,24 +51,24 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     }
     if(spans.nonEmpty && spans.last.isEmpty) spans.remove(spans.length-1)
     (for(span <- spans) yield
-      Mention(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection)).toSeq
+      new Mention(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection)).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
   private def personalPronounSpans(doc: Document): Seq[Mention] = {
     (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        Mention(section, s.start + i, 1,0)
+        new Mention(section, s.start + i, 1,0)
       ).toSeq
   }
 
   private def getHeadTokenIdx(m: Mention): Int = {
    val tokenIdxInSection =  getHead(
-      m.span.head.sentence.parse,
+      m.head.sentence.parse,
       m.start until (m.start + m.length) //these are section-level offsets
     )
-    val tokenIdxInSpan = tokenIdxInSection - m.span.start
-    assert(tokenIdxInSpan >= 0 && tokenIdxInSpan <= m.span.length)
+    val tokenIdxInSpan = tokenIdxInSection - m.start
+    assert(tokenIdxInSpan >= 0 && tokenIdxInSpan <= m.length)
     tokenIdxInSpan
   }
   //this expects as input indices in the **document section** not the sentence
@@ -127,7 +127,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
         }
         val commaLength = if(subtree.last.string == ",") length-1 else length
         val headTokenIndexInSpan = t.position - start
-        val res = Some(Mention(section, start, commaLength, headTokenIndexInSpan))
+        val res = Some(new Mention(section, start, commaLength, headTokenIndexInSpan))
 
         res
       }
@@ -140,7 +140,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       .groupBy( m => m.headToken )
       .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
       .toSeq
-      .sortBy(m => (m.span.tokens.head.stringStart, m.length))
+      .sortBy(m => (m.tokens.head.stringStart, m.length))
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
     // Note: equality is only in the first set of arguments for case classes
@@ -152,7 +152,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
       .toSet
       .map { m: MentionStartLength => m.mention }
       .toSeq
-      .sortBy(m => (m.span.tokens.head.stringStart, m.length))
+      .sortBy(m => (m.tokens.head.stringStart, m.length))
 
   }
 
@@ -182,7 +182,7 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)).mkString(","); case _ => "_" }
 
   def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
     val nerSpans = doc.attr += new NerSpanList

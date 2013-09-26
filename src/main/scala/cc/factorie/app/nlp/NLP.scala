@@ -77,7 +77,7 @@ object NLP {
       if (mentions ne null) {
         out.println("Mentions:")
         for (mention <- mentions) {
-          out.print(mention.span.phrase)
+          out.print(mention.phrase)
           for (annotator <- annotators) { val s = annotator.mentionAnnotationString(mention); if (s.length > 0) { out.print('\t'); out.print(s) } }
           out.println()
         }

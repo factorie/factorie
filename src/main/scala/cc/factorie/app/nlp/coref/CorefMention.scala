@@ -36,7 +36,7 @@ object CorefMention{
         headTokenIndex
     }
 
-    val docMention = new Mention(span,headInd)
+    val docMention = new Mention(span, headInd)
     docMention.attr += new MentionType(docMention,mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
@@ -52,11 +52,11 @@ object CorefMention{
 
 //basically, this is a wrapper around factorie Mention, with some extra stuff
 class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
-  val _head =  mention.span.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
+  val _head =  mention.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
   def parentEntity = mention.attr[Entity]
   def mType = headToken.posLabel.categoryValue
-  def span = mention.span
+  def span = mention
   def entityType: String = mention.attr[MentionEntityType].categoryValue
   def document = mention.document
 
@@ -98,7 +98,7 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
 
 class MentionCache(m: CorefMention) {
   import cc.factorie.app.nlp.lexicon
-  lazy val hasSpeakWord = m.mention.span.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val hasSpeakWord = m.mention.exists(s => lexicon.iesl.Say.contains(s.string))
   lazy val wnLemma = WordNet.lemma(m.headToken.string, "n")
   lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
@@ -198,7 +198,7 @@ object CorefFeatures {
   // val cache = scala.collection.mutable.Map[String, Char]()
   import cc.factorie.app.nlp.lexicon
   def namGender(m: Mention): Char = {
-    val fullhead = m.span.phrase.trim.toLowerCase
+    val fullhead = m.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
     if (words.length == 0) return g
@@ -249,7 +249,7 @@ object CorefFeatures {
   }
 
   def nomGender(m: Mention, wn: WordNet): Char = {
-    val fullhead = m.span.phrase.toLowerCase
+    val fullhead = m.phrase.toLowerCase
     if (wn.isHypernymOf("male", fullhead))
       'm'
     else if (wn.isHypernymOf("female", fullhead))
@@ -264,7 +264,7 @@ object CorefFeatures {
 
 
   def proGender(m: Mention): Char = {
-    val pronoun = m.span.phrase.toLowerCase
+    val pronoun = m.phrase.toLowerCase
     if (malePron.contains(pronoun))
       'm'
     else if (femalePron.contains(pronoun))

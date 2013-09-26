@@ -61,7 +61,7 @@ class TestDocumentAnnotatorMap {
     object parseBasedMentionFinding extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
       def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
-      override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
+      override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)).mkString(","); case _ => "_" }
       def process(d: Document) = d
     }
     map += parseBasedMentionFinding
@@ -75,7 +75,7 @@ class TestDocumentAnnotatorMap {
     map += MentionGenderLabeler
     map += MentionNumberLabeler
     object mentionEntityType extends DocumentAnnotator {
-      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
+      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
       def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
       def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
       def process(d: Document) = d

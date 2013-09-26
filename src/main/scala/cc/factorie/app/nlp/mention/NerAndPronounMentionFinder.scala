@@ -17,7 +17,7 @@ class NerMentionList extends MentionList
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[NerLabel], classOf[PennPosLabel])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.span.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
@@ -73,12 +73,12 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
     })
     val pronounMentions = getPronounSpans(document).map(s => {
       val m = new Mention(s, 0)
-      val label = getMentionEntityTypeLabelForPronoun(m.span)
+      val label = getMentionEntityTypeLabelForPronoun(m)
       m.attr += new MentionType(m, "PRO")
       m.attr += new MentionEntityType(m,label)
       m
     })
-    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.span.tokens.head.stringStart, m.length))
+    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.head.stringStart, m.length))
 
     document
   }
