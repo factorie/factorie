@@ -38,8 +38,7 @@ trait SpanValue[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeq[E] {
     This trait does not inherit from Var, but SpanVar does.
     @see cc.factorie.app.nlp.TokenSpan
     @author Andrew McCallum */   
-trait Span[This<:Span[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ThisType[This] with IndexedSeqSimilar[E] {
-  this: This =>
+trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
   protected var _start = 0
   protected var _length = 0
   private[factorie] var _chain: C = null.asInstanceOf[C]
@@ -68,7 +67,7 @@ trait Span[This<:Span[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ThisTyp
   // Other Seq-related methods, such as "head" and "iterator" are provided by IndexedSeqVar inherited in SpanVar.
   def isAtStart = start == 0
   /** Given a span within the same chain as this one, return true if the two spans overlap by at least one element. */
-  def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]): Boolean = {
+  def overlaps(that: Span[_<:AnyRef,_<:AnyRef]): Boolean = {
     assert(this.chain eq that.chain)
     (that.start <= this.start && that.end-1 >= this.start) ||
     (this.start <= that.start && this.end-1 >= that.start)
@@ -94,13 +93,12 @@ trait Span[This<:Span[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ThisTyp
 /** An abstract variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-trait SpanVar[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarWithValue[SpanValue[C,E]] {
-  this: This =>
+trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeqVar[E] with VarWithValue[SpanValue[C,E]] {
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}
   def postChange(implicit d:DiffList): Unit = {}
-  def removeFromList(list:SpanList[This,C,E])(implicit d: DiffList): Unit = { preChange; list.remove(this)(d);  postChange }
+  def removeFromList(list:SpanList[SpanVar[C,E],C,E])(implicit d: DiffList): Unit = { preChange; list.remove(this)(d);  postChange }
   def setLength(l: Int)(implicit d: DiffList): Unit = if (l != length) { preChange; new SetLength(_length, l); postChange }
   def trimStart(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new TrimStart(n); postChange }
   def trimEnd(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new TrimEnd(n); postChange }
@@ -172,8 +170,7 @@ trait SpanVar[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends S
 /** A variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-class SpanVariable[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]](theChain:C, initialStart:Int, initialLength:Int) extends SpanVar[This,C,E] {
-  this: This =>
+class SpanVariable[C<:Chain[C,E],E<:ChainLink[E,C]](theChain:C, initialStart:Int, initialLength:Int) extends SpanVar[C,E] {
   _start = initialStart
   _length = initialLength
   _chain = theChain //null.asInstanceOf[C] // It will get set in _chain.addSpan below.
@@ -181,7 +178,7 @@ class SpanVariable[This<:SpanVar[This,C,E],C<:Chain[C,E],E<:ChainLink[E,C]](theC
   //if (d ne null) NewSpan // Add NewSpan diff to the DiffList
 }
 
-class SpanList[S<:SpanVar[S,C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] {
+class SpanList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] {
   /** Add the span to the list of spans.  Unlike +=, make a DiffList entry for the change. */
   def add(s:S)(implicit d:DiffList): Unit = {
     if (d ne null) d += AddSpanListDiff(s)
