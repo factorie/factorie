@@ -17,7 +17,7 @@ import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
-class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[TokenSpan,Section,Token](theSection, initialStart, initialLength) with Attr {
+class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
   final def section = chain  // Just a convenient alias
   final def document = chain.document
   final def tokens = value
@@ -48,7 +48,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
 }
 
 /** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanList[S<:TokenSpan] extends SpanList[S, TokenSpan, Section, Token]
+class TokenSpanList[S<:TokenSpan] extends SpanList[S, Section, Token]
 //class TokenSpanList[S<:TokenSpan] extends SpanList[TokenSpan, Section, Token]
 
 object TokenSpan {
