@@ -44,15 +44,17 @@ import scala.collection.mutable.ArrayBuffer
     computation of re-tokenizing.)  
     
     @author Andrew McCallum */
-trait Section extends ChainWithSpansVar[Section,TokenSpan,Token] with DocumentSubstring with Attr {
-  /** The sub-string of the Document string encompased by this Section.
+trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
+  /** The sub-string of the Document string encompassed by this Section.
       Note that the returned string will not include any Token.string substitutions 
-      (e.g. WSJ normalization of quotation styles or de-hyphenation, typically implemented using TokenString) 
+      (e.g. WSJ normalization of quotation styles or de-hyphenation, typically implemented using TokenString in the Token.attr) 
       from the Document's original raw string  */
   def string: String = document.string.substring(stringStart, stringEnd)
   
-  /** The sequence of Tokens inside this Section.  Just a clearly-named alias for Chain.links. */
+  /** The sequence of Tokens inside this Section.  This method is just a convenient alias for Chain.links. */
   def tokens: IndexedSeq[Token] = links
+  /** Find the Token the encompasses the character at "charOffset" beyond the start of this Section's string. */
+  def tokenAtCharOffset(charOffset:Int): Option[Token] = links.find(token => token.stringStart <= charOffset && token.stringEnd > charOffset)
   
   // Managing Sentences
   private var _sentences = new ArrayBuffer[Sentence]
@@ -62,25 +64,41 @@ trait Section extends ChainWithSpansVar[Section,TokenSpan,Token] with DocumentSu
   /** Does this Section have a non-zero number of Sentences?
       Note that a Section can have Tokens but no Sentences. */
   def hasSentences: Boolean = _sentences.length > 0
-
-  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
-  /** Add a new TokenSpan to this Section.  Since a Sentence is a TokenSpan, this is also used to add new Sentences. */
-  override def +=(s:TokenSpan): Unit = s match {
-    case s:Sentence => {
-      s._chain = this // not already done in += be cause += is not on ChainWithSpans
-      s._indexInSection = _sentences.length
-      if (_sentences.length == 0 || _sentences.last.end <= s.start) _sentences += s
-      else throw new Error("Sentences must be added in order and not overlap.")
-    }
-    case s:TokenSpan => super.+=(s)
+  /** Create and return a new Sentence starting at token index "start" and continuing for "length" tokens. */
+//  def addSentence(start:Int, length:Int): Sentence = {
+//    if (_sentences.length > 0 && _sentences.last.end > start) throw new Error("Sentences must be added in order and not overlap.")
+//    if (start+length > this.length + 1) throw new Error("Trying to create a Sentence beyond the end of the Section.")
+//    val s = new Sentence(this, start, length); _sentences += s; s._indexInSection = _sentences.length - 1;  s
+//  }
+//  /** Create and return a new Sentence of length zero, starting at token index immediately beyond the end of the existing last Sentence.
+//      (The Document, Section and Sentence can grow later, as Tokens are added; this is used when reading annotated training data with one token per line.) */
+//  def addSentence(): Sentence = addSentence(if (_sentences.length == 0) 0 else _sentences.last.end, 0)
+  def addSentence(s:Sentence): Sentence = {
+    if (s.section ne this) throw new Error("Trying to add Sentence to Section to which it does not belong.")
+    if (sentences.length > 0 && _sentences.last.end > s.start) throw new Error("Sentences must be added in order and not overlap.")
+    if (s.start+s.length > this.length + 1) throw new Error("Trying to add a Sentence beyond the end of the Section.")
+    _sentences += s; s
   }
-  /** Remove a TokenSpan from this Section.  Note that Sentences cannot be removed. */
-  override def -=(s:TokenSpan): Unit = s match {
-    case s:Sentence => throw new Error("Once added Sentences cannot be removed from a Section.") // _sentences -= s
-    case s:TokenSpan => super.-=(s)
-  }
+  
+//  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
+//  /** Add a new TokenSpan to this Section.  Since a Sentence is a TokenSpan, this is also used to add new Sentences. */
+//  override def +=(s:TokenSpan): Unit = s match {
+//    case s:Sentence => {
+//      s._chain = this // not already done in += be cause += is not on ChainWithSpans
+//      s._indexInSection = _sentences.length
+//      if (_sentences.length == 0 || _sentences.last.end <= s.start) _sentences += s
+//      else throw new Error("Sentences must be added in order and not overlap.")
+//    }
+//    case s:TokenSpan => super.+=(s)
+//  }
+//  /** Remove a TokenSpan from this Section.  Note that Sentences cannot be removed. */
+//  override def -=(s:TokenSpan): Unit = s match {
+//    case s:Sentence => throw new Error("Once added Sentences cannot be removed from a Section.") // _sentences -= s
+//    case s:TokenSpan => super.-=(s)
+//  }
 }
 
+// TODO Just make Section a class, and remove this "BasicSection"
 /** A simple concrete implementation of Section. */
 class BasicSection(val document:Document, val stringStart:Int, val stringEnd:Int) extends Section
 

@@ -19,7 +19,7 @@ object Mention{
   def apply(sec: Section, start: Int, length: Int, headTokenIndex: Int) =  new Mention(new TokenSpan(sec, start, length),headTokenIndex)
 }
 
-
+// TODO Rename this to "Chunk".  Then "Mention" will be a trait that has to do with coref, and which can be folded into lots of things.
 //note that headTokenIndex has a span-level offset
 case class Mention(span: TokenSpan, headTokenIndex: Int = -1) extends Attr{
   def document: Document = span.document

@@ -10,6 +10,7 @@ import scala.Some
 
 
 class ParseBasedMentionList extends MentionList
+class NerSpanList extends TokenSpanList[NerSpan]
 
 object ParseBasedMentionFinding extends DocumentAnnotator {
 
@@ -36,8 +37,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
 
   private def nerSpans(doc: Document): Seq[Mention] = {
-    (for (section <- doc.sections; span <- section.spansOfClass[NerSpan]) yield
-      Mention(section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
+    (for (span <- doc.attr[NerSpanList]) yield
+      Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
 
@@ -184,18 +185,19 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)).mkString(","); case _ => "_" }
 
   def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
-    for (s <- doc.sections;t <- s.tokens) {
+    val nerSpans = doc.attr += new NerSpanList
+    for (s <- doc.sections; t <- s.tokens) {
       if (t.attr[T].categoryValue != "O") {
         val attr = t.attr[T].categoryValue.split("-")
         if (attr(0) == "U") {
-          new NerSpan(s, attr(1), t.positionInSection, 1)(null)
+          nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
         } else if (attr(0) == "B") {
           if(t.hasNext) {
             var lookFor = t.next
             while (lookFor.hasNext && lookFor.attr[T].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection)(null)
+            nerSpans += new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection)(null)
           } else {
-            new NerSpan(s, attr(1), t.positionInSection, 1)(null)
+            nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
           }
         }
       }

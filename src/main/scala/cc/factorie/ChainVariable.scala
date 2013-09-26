@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-/** A simple version of ChainLink that has a self-type argument, but not the type of the Chain. 
+/** A simple superclass of ChainLink that has a self-type argument, but (unlike ChainLink) not the type of the Chain. 
     Used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
     @author Andrew McCallum */
 trait AbstractChainLink[+This<:AbstractChainLink[This]] {
@@ -50,7 +50,7 @@ trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   def chainLast: This = { var result = this; while (result.hasPrev) result = prev; result }
 }
 
-/** An element or "link" of a Chain, having methods "next", "prev", etc. 
+/** An element or "link" of a Chain sequence.  ChainLink provides methods such as "next" and "prev". 
     @author Andrew McCallum */
 trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainLink[This] with ThisType[This] {
   this: This =>
@@ -167,10 +167,6 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   def chainFrozen: Boolean = _frozen
   def chainFreeze: Unit = _frozen = true
 }
-
-// TODO Use this in ChainVar instead of VarAndValueGenericDomain -akm
-/** The domain of a ChainVar */
-object ChainDomain extends Domain[IndexedSeq[ChainLink[_,_]]]
 
 /** An abstract variable that is a Chain, with value IndexedSeq[ElementType].
     @author Andrew McCallum */

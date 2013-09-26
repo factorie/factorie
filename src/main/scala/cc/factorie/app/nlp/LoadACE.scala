@@ -49,7 +49,7 @@ class ACEFileIdentifier(val fileId: String)
 class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention with PairwiseMention {
   override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
 }
-
+class ACEMentionSpanList extends TokenSpanList[ACEMentionSpan]
 
 object LoadACE {
 
@@ -67,7 +67,7 @@ object LoadACE {
     // trailing tokens should be in a sentence
     val end = doc.asSection.sentences.last.end
     if (end != doc.asSection.length - 1)
-      new Sentence(doc.asSection, end + 1, doc.asSection.length - 1 - end)(null)
+      new Sentence(doc.asSection, end + 1, doc.asSection.length - 1 - end)
     doc
   }
 
@@ -100,28 +100,22 @@ object LoadACE {
       val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
       e.attr += new ACEEntityIdentifiers {
         def eId = getAttr(entity, "ID")
-
         def eType = getAttr(entity, "TYPE")
-
         def eSubtype = getAttr(entity, "SUBTYPE")
-
         def eClass = getAttr(entity, "CLASS")
       }
-
+      
+      val spanList = doc.attr += new ACEMentionSpanList 
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
         val m = new ACEMentionSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)
-        if (m.sentence == null)
-          println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
+        spanList += m
+        if (m.sentence == null) println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
         m.attr += new ACEMentionIdentifiers {
           def mId = getAttr(mention, "ID")
-
           def mType = getAttr(mention, "TYPE")
-
           def ldcType = getAttr(mention, "LDCTYPE")
-
           def offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt
-
           def offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt
         }
         m.attr += new EntityRef(m, e)
@@ -148,11 +142,11 @@ object LoadACE {
   }
 
   private def lookupEntityMention(id: String, doc: Document): PairwiseMention =
-    doc.spans.filter {
+    doc.attr[ACEMentionSpanList].find {
       s =>
         val a = s.attr[ACEMentionIdentifiers]
         a != null && a.mId == id
-    }.toSeq.head.asInstanceOf[PairwiseMention]
+    }.get.asInstanceOf[PairwiseMention]
 
   def addRelationsFromApf(apf: NodeSeq, doc: Document): Unit = {
     doc.attr += new RelationMentions
@@ -202,7 +196,7 @@ object LoadACE {
     val docs = fromDirectory(args(0))
     println("docs: " + docs.size)
     for (d <- docs)
-      d.sections.foreach(_.spansOfClass[TokenSpanMention].foreach(s => println(s)))
+      d.attr[ACEMentionSpanList].foreach(s => println(s))
   }
 
 }

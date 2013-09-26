@@ -27,22 +27,22 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
         val attr = t.attr[NerLabel].categoryValue.split("-")
         if (attr(0) == "U") {
           val lab = attr(1)
-          spans += (lab -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += (lab -> new TokenSpan(s, t.positionInSection, 1))
         } else if (attr(0) == "B") {
           val lab = attr(1)
           if(t.hasNext) {
             var lookFor = t.next
             while (lookFor.hasNext && lookFor.attr[NerLabel].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            spans += (lab -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection)(null))
+            spans += (lab -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
           } else {
-            spans += (lab -> new TokenSpan(s, t.positionInSection, 1)(null))
+            spans += (lab -> new TokenSpan(s, t.positionInSection, 1))
           }
         }
       } else {
         if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
-          spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1))
         } else if (t.posLabel.categoryValue == "NNP") {
-          spans += ("PER" -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += ("PER" -> new TokenSpan(s, t.positionInSection, 1))
         }
       }
     }

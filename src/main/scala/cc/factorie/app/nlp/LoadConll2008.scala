@@ -49,7 +49,7 @@ object LoadConll2008 {
     document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadLemma) document.annotators(classOf[TokenLemma]) = UnknownDocumentAnnotator.getClass // register that we have lemma
     val source = Source.fromFile(filename)
-    var sentence: Sentence = new Sentence(document)(null)
+    var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
@@ -59,7 +59,7 @@ object LoadConll2008 {
         sentence = null
       } else {
         if (sentence eq null)
-          sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
+          sentence = new Sentence(document) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
         assert(fields.length >= 10)
         val currTokenIdx = fields(0).toInt - 1

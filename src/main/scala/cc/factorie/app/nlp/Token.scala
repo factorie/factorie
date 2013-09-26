@@ -21,6 +21,11 @@ import cc.factorie.util.{Cubbie, Attr}
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
 
+/** A word in a document, covering a substring of the Document.
+    A Token is also a ChainLink in a Chain sequence; thus Tokens have "next" and "prev" methods returning neighboring Tokens.
+    Token constructors that include a Section automatically add the Token to the Section (which is the Chain).
+    Token constructors that include a Sentence automatically add the Token to the Sentence and its Section.
+    Token constructors that include a tokenString automatically append the tokenString to the Document's string. */
 class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
   /** Create a Token and also append it to the list of Tokens in the Section.
@@ -31,8 +36,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
     assert(sec ne null)
     assert(sec.document ne null)
     assert(sec.document.annotators ne null)
-    if (!sec.document.annotators.contains(classOf[Token]))
-      sec.document.annotators(classOf[Token]) = null
+    // if (!sec.document.annotators.contains(classOf[Token])) sec.document.annotators(classOf[Token]) = null // Is this really necessary?  Can we remove it for efficiency? -akm
     sec += this
   }
   /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
@@ -54,10 +58,11 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }
-  /** Just an alias for this.chain */
+  /** Just an alias for the "chain" method. */
   def section: Section = chain
+  /** The Document containing this Token's Section. */
   def document: Document = chain.document
-  /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
+  /** Return the substring of the original Document string covered by the character indices stringStart to stringEnd.
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
   def docSubstring = document.string.substring(stringStart, stringEnd)
@@ -91,9 +96,9 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(positionInSentence, label.intValue)
   
   // Sentence methods
-  private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
-  def sentence = {
-    if (_sentence eq null) _sentence = document.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
+  private[nlp] var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
+  def sentence: Sentence = {
+    if (_sentence eq null) _sentence = section.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
     _sentence
   }
   def sentenceHasNext: Boolean = (sentence ne null) && position+1 < sentence.end
@@ -106,16 +111,16 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   
 
   // Span methods
-  def inSpan: Boolean = chain.hasSpanContaining(position) 
-  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
-  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
-  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
-  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
-  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
-  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
-  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
-  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
-  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
+//  def inSpan: Boolean = chain.hasSpanContaining(position) 
+//  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
+//  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
+//  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
+//  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
+//  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
+//  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
+//  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"
