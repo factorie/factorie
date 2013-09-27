@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.optimize.{MultiClassTrainerBase, LinearMultiClassClassifier}
 import cc.factorie.la.Tensor1
 import cc.factorie.variable.DenseProportions1
 

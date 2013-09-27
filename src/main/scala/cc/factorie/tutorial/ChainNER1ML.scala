@@ -18,13 +18,13 @@ package cc.factorie.tutorial
 
 import java.io.File
 import cc.factorie._
-import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}
 import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
-import cc.factorie.infer.InferByBPChainSum
+import cc.factorie.infer.InferByBPChain
+import cc.factorie.optimize.{Trainer, LikelihoodExample}
 
 object ChainNER1ML {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
@@ -85,7 +85,7 @@ object ChainNER1ML {
     val start = System.currentTimeMillis
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
-    val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChainSum))
+    val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChain))
     Trainer.batchTrain(model.parameters, examples)
     val objective = HammingObjective
     // slightly more memory efficient - kedarb

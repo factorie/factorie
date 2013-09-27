@@ -2,14 +2,10 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.Token
-import la.{LocalWeightsMapAccumulator}
-import optimize._
-import scala.collection.mutable.Stack
 import org.junit.Assert._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
-import util.LocalDoubleAccumulator
 import cc.factorie.variable._
 import cc.factorie.model._
 import cc.factorie.infer._
@@ -197,12 +193,12 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
     val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
     model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-    val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).logZ
+    val trueLogZ = InferByBPChain.infer(Seq(l0, l1, l2, l3), model).logZ
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
     val fastSum = BP.inferChainSumFast(Seq(l0, l1, l2, l3), model)
-    val sum = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model)
+    val sum = InferByBPChain.infer(Seq(l0, l1, l2, l3), model)
     assertEquals(sum.logZ, fastSum.logZ, 0.001)
     for (label <- Seq(l0, l1, l2, l3)) {
       assertArrayEquals(sum.marginal(label).proportions.toArray, fastSum.marginal(label).asInstanceOf[DiscreteMarginal1[DiscreteVar]].proportions.toArray, 0.001)
@@ -212,7 +208,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     }
 
     val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
-    val BPSummary = InferByBPChainSum(Seq(l0, l1, l2, l3), model)
+    val BPSummary = InferByBPChain(Seq(l0, l1, l2, l3), model)
     for (v <- meanFieldSummary.variables) {
       val mfm = meanFieldSummary.marginal(v)
       val bpm = BPSummary.marginal(v)

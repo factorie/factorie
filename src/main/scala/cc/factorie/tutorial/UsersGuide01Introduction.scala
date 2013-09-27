@@ -137,9 +137,10 @@ Then it re-estimates by maximum likelihood the mean and variance from the sample
 
 package cc.factorie.tutorial
 import scala.language.reflectiveCalls
-import cc.factorie.variable._
-import cc.factorie.model.{Parameters, Model, DotFamilyWithStatistics2}
-import cc.factorie.infer.{BP, InferByBPChainSum, Maximize}
+import cc.factorie.{infer, variable, model}
+import model._
+import variable._
+import infer._
 
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
@@ -154,8 +155,8 @@ object ExampleGaussian extends App {
   //  ":~" does this and also assigns a new value to the child by sampling from the factor
   val data = for (i <- 1 to 1000) yield new DoubleVariable :~ Gaussian(mean, variance) 
   // Set mean and variance to values that maximize the likelihood of the children
-  Maximize(mean)
-  Maximize(variance)
+  infer.Maximize(mean)
+  infer.Maximize(variance)
   println("estimated mean %f variance %f".format(mean.value, variance.value))
 }
 
@@ -167,7 +168,7 @@ The following code declares data, model, inference and learning for a linear-cha
  */
 
 object ExampleLinearChainCRF extends App {
-  import cc.factorie._            // The base library: variables, factors
+  // The base library: variables, factors
   import cc.factorie.la           // Linear algebra: tensors, dot-products, etc.
   import cc.factorie.optimize._   // Gradient-based optimization and training
   // Declare random variable types
@@ -193,7 +194,7 @@ object ExampleLinearChainCRF extends App {
   }
   // Learn parameters
   val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
-  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChain)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model).setToMaximize(null))

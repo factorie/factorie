@@ -32,6 +32,6 @@ class EMInferencer[V<:Var,W<:DiscreteVar,M<:Model](val maximizing:Iterable[V], v
 }
 
 object EMInferencer {
-  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize[Iterable[V],Model] = Maximize, infer:Infer[Iterable[DiscreteVar],Model] = InferByBPTreeSum) =
+  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize[Iterable[V],Model] = Maximize, infer:Infer[Iterable[DiscreteVar],Model] = InferByBPTree) =
     new EMInferencer(maximizing, varying, model, infer, maximizer)
 }

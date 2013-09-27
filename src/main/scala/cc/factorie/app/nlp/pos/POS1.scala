@@ -1,15 +1,13 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.segment.PlainTokenNormalizer
 import cc.factorie.la._
-import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
-import scala.collection.mutable.HashMap
 import java.io.{File,InputStream,FileInputStream}
-import org.junit.Assert._
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.Trainer
 
 class POS1 extends DocumentAnnotator {
   // Different ways to load saved parameters

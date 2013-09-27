@@ -17,9 +17,8 @@ package cc.factorie.tutorial
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
-import cc.factorie.optimize._
-import cc.factorie.app.classify
-import cc.factorie.variable._
+import variable._
+import cc.factorie.app.classify.OnlineLinearMultiClassTrainer
 
 object DocumentClassifier1 {
   

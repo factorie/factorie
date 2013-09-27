@@ -14,11 +14,12 @@
 
 package cc.factorie.tutorial
 import cc.factorie._
-import cc.factorie.optimize._
 import java.io.File
-import cc.factorie.variable._
-import cc.factorie.model._
-import cc.factorie.infer.{MaximizeByBPChain, InferByBPChainSum}
+import model._
+import variable._
+import optimize._
+import cc.factorie.infer.{MaximizeByBPChain, InferByBPChain}
+import cc.factorie.variable.{BooleanValue, BooleanDomain, ChainLink}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's low-level "imperative" language to define model structure.
@@ -41,7 +42,7 @@ object ChainNER2 {
     val token = new Token(word, this)
     def domain = LabelDomain
   }
-  class Sentence extends Chain[Sentence,Label]
+  class Sentence extends variable.Chain[Sentence,Label]
   
   // The model
   val excludeSkipEdges = true
@@ -77,7 +78,7 @@ object ChainNER2 {
   }
   
   // The training objective
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
   
 
   def main(args: Array[String]): Unit = {
@@ -96,9 +97,9 @@ object ChainNER2 {
     // Train for 5 iterations
     //val pieces = trainLabels.map(l => new SampleRankExample[Variable](l, new GibbsSampler(model, HammingLossObjective)))
     //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
-    val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChainSum))
+    val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChain))
     val predictor = MaximizeByBPChain // new VariableSettingsSampler[ChainNerLabel](model, null)
-    Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
+    optimize.Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
       (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
     })
     println ("Train accuracy = "+ objective.accuracy(trainLabels))

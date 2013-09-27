@@ -28,7 +28,7 @@ package object factorie extends CubbieConversions {
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
     def cast[U](implicit m: ClassTag[U]): Option[U] = if (m >:> ClassTag(a.getClass)) Some(a.asInstanceOf[U]) else None
-    def toNotNull: Option[T] = if (a != null) Some(a) else None
+    def toNotNull: Option[T] = Option(a)
   }
 
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
@@ -36,4 +36,5 @@ package object factorie extends CubbieConversions {
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
 
   def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
+
 }

@@ -916,7 +916,7 @@ trait InferByBP extends Infer[Iterable[DiscreteVar],Model] {
 }
 trait MaximizeByBP extends InferByBP with Maximize[Iterable[DiscreteVar],Model]
 
-object InferByBPTreeSum extends InferByBP {
+object InferByBPTree extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     assert(variables.size == variables.toSet.size)
@@ -962,7 +962,7 @@ object MaximizeByBPLoopy extends MaximizeByBP {
   }
 }
 
-object InferByBPChainSum extends InferByBP {
+object InferByBPChain extends InferByBP {
   def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     apply(variables, model)

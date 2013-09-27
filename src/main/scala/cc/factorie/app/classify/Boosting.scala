@@ -1,4 +1,4 @@
-package cc.factorie.optimize
+package cc.factorie.app.classify
 
 import cc.factorie.la.{SingletonBinaryTensor1, DenseTensor2, DenseTensor1, Tensor1}
 import cc.factorie._

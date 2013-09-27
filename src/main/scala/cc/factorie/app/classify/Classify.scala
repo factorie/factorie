@@ -21,8 +21,8 @@ import java.io._
 import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.optimize.{LinearMultiClassClassifier, LinearMultiClassClassifierCubbie, MultiClassClassifier, MultiClassTrainerBase}
 import cc.factorie.la.Tensor1
+import scala.Some
 import cc.factorie.variable._
 import scala.Some
 
@@ -242,7 +242,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val cubbie = new cc.factorie.optimize.LinearMultiClassClassifierCubbie
+      val cubbie = new LinearMultiClassClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
       val classifications = labels.map(l => classifier.classification(l.features.value))

@@ -6,8 +6,8 @@ import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConver
 import scala.concurrent.Await
 import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{Var, HammingTemplate, BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.model._
-import cc.factorie.infer.{InferByBPChainSum, BP}
+import cc.factorie.infer.{InferByBPChain, BP}
+import cc.factorie.model.{DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
@@ -27,7 +27,7 @@ class NER1 extends DocumentAnnotator {
   } 
   
   // The model
-  class NER1Model extends TemplateModel with Parameters {
+  class NER1Model extends TemplateModel with cc.factorie.model.Parameters {
     // Bias term on each individual label
     val bias = this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
       override def neighborDomain1 = BilouConllNerDomain
@@ -50,9 +50,9 @@ class NER1 extends DocumentAnnotator {
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }
     // More efficient unrolling if given the sequence of labels
-    override def factors(vars:Iterable[Var]): Iterable[Factor] = vars match {
+    override def factors(vars:Iterable[Var]): Iterable[cc.factorie.model.Factor] = vars match {
       case vars:Seq[BilouConllNerLabel @unchecked] if vars.forall(_.isInstanceOf[BilouConllNerLabel]) => {
-        val result = new scala.collection.mutable.ArrayBuffer[Factor](vars.length*3)
+        val result = new scala.collection.mutable.ArrayBuffer[cc.factorie.model.Factor](vars.length*3)
         var prev: BilouConllNerLabel = null
         for (v <- vars) {
           result += bias.Factor(v); result += evidence.Factor(v, v.token.attr[FeaturesVariable])
@@ -172,7 +172,7 @@ class NER1 extends DocumentAnnotator {
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
-    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChain))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
       trainDocs.par.foreach(process(_))

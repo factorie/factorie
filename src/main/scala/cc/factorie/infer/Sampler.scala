@@ -267,6 +267,18 @@ class IteratedConditionalModes(model:Model, objective:Model = null) extends Sett
   def settings(v:Var with IterableSettings): SettingIterator = v.settings
 }
 
+object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscreteVar[_]], Model] {
+  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model, marginalizing: Summary) = {
+    val icm = new IteratedConditionalModes(model)
+    val d0 = icm.processAll(variables, returnDiffs = true)
+    val d1 = icm.processAll(variables, returnDiffs = true)
+    val as = new HashMapAssignment
+    variables.foreach(v => as.update(v.asInstanceOf[DiscreteVar], v.value.asInstanceOf[DiscreteVar#Value]))
+    d1.undo
+    d0.undo
+    new MAPSummary(as, model.factors(variables).toSeq)
+  }
+}
 
 /** Manage and use a queue to more often revisit low-scoring factors and re-sample their variables. */
 // Consider FactorQueue { this: Sampler[_] => ... abstract override postProcessHook(C,DiffList).  But what to do about C?  

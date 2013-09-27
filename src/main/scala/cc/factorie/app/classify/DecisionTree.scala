@@ -1,4 +1,4 @@
-package cc.factorie.optimize
+package cc.factorie.app.classify
 
 import cc.factorie._
 import cc.factorie.la._
