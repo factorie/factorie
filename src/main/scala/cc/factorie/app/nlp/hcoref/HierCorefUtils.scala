@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.hcoref
 import cc.factorie._
-import cc.factorie.DiffList
 import collection.mutable.{HashMap, ArrayBuffer}
+import cc.factorie.variable.DiffList
 
 object HierEntityUtils{
   val shortDecimal = new java.text.DecimalFormat("0.0#")

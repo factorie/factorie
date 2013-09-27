@@ -5,6 +5,7 @@ import cc.factorie.la._
 import org.junit.Test
 import org.junit.Assert._
 import cc.factorie.optimize.LinearObjectives
+import cc.factorie.variable.{TensorVariable, DiffList}
 
 /**
  * Created by IntelliJ IDEA.

@@ -3,6 +3,9 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la.WeightsMapAccumulator
 import cc.factorie.util.DoubleAccumulator
+import cc.factorie.variable.{Var, LabeledMutableVar, DiffList}
+import cc.factorie.model.{Parameters, Model, DotFamily}
+import cc.factorie.infer.Sampler
 
 /**
   * A training example for using contrastive divergence.

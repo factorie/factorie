@@ -10,6 +10,7 @@ import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.util.DoubleSeq
 import cc.factorie.directed._
+import cc.factorie.variable._
 
 object LDA3 {
   val numTopics = 15

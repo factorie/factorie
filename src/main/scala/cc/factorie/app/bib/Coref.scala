@@ -17,6 +17,12 @@ import java.text.DecimalFormat
 import scala.Some
 import scala.language.reflectiveCalls
 import Utils.random
+import cc.factorie.variable._
+import cc.factorie.model._
+import scala.Some
+import scala.Some
+import cc.factorie.infer.Proposal
+
 trait BibEntity{
   var dataSource:String=""
   var paperMentionId:String=null

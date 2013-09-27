@@ -3,6 +3,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import la._
 import util._
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * User: apassos

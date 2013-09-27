@@ -18,6 +18,9 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import java.io.File
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{VariableSettingsSampler, GibbsSampler}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition.
     Demonstrates model creation, training and testing.

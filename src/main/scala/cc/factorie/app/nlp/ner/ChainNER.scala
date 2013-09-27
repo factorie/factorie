@@ -19,6 +19,9 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import java.io.File
 import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.{LabeledDiscreteEvaluation, HammingTemplate, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel, CombinedModel}
+import cc.factorie.infer.{IteratedConditionalModes, VariableSettingsSampler, GibbsSampler}
 
 object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {

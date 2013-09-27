@@ -6,6 +6,9 @@ import org.junit.Assert._
 import scala.util.Random
 import cc.factorie.la._
 import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.InferByBPTree
 
 /**
  * @author sameer
@@ -71,7 +74,7 @@ class TestLearning {
     val plgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
     val plvalue = new LocalDoubleAccumulator(0.0)
 
-    val llExamples = data.map(d => new LikelihoodExample(Seq(d), model, InferByBPTreeSum))
+    val llExamples = data.map(d => new LikelihoodExample(Seq(d), model, InferByBPTree))
     val llgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
     val llvalue = new LocalDoubleAccumulator(0.0)
 

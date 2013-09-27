@@ -20,6 +20,9 @@ import cc.factorie._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.MHSampler
 
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */

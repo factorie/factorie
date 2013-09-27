@@ -1,9 +1,9 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.Weights1
 import cc.factorie.optimize.{Example, LinearObjectives, LinearBinaryExample}
 import cc.factorie.la.{WeightsMapAccumulator, SparseBinaryTensor}
 import cc.factorie.util.DoubleAccumulator
+import cc.factorie.model.Weights1
 
 /**
  * User: apassos

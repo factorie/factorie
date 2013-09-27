@@ -19,6 +19,7 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer,LinkedList}
 import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
 import annotation.tailrec
+import cc.factorie.variable.{Var, SetVariable, ArrowVariable, DiffList}
 
 /** A pointer from a child Entity (or Mention) to its parent Entity in an coreference problem. */
 class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {

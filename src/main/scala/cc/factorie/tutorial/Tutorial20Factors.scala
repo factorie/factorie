@@ -11,6 +11,10 @@ package cc.factorie.tutorial
 import org.junit.Assert._
 import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.variable._
+import scala.Tuple2
+import cc.factorie.model._
+import scala.Tuple2
 
 object TutorialFactors {
   def main(args:Array[String]): Unit = {

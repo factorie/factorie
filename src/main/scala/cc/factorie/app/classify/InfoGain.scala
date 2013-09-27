@@ -16,6 +16,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable._
 
 /** Calculate the information gain between all features of Instances and the Instances' labels.
     @author Andrew McCallum

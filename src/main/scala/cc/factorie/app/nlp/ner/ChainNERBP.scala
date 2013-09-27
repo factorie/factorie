@@ -14,19 +14,15 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
-import app.strings._
 import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.LabeledDiscreteEvaluation
+import cc.factorie.infer.{BP, InferByBPChain}
+import cc.factorie.optimize.{Trainer, LikelihoodExample}
 
 //import bp._
-import optimize._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.LoadConll2003._
-import scala.io.Source
-import cc.factorie.app.chain._
-import scala.io._
-import java.io.{FileWriter, BufferedWriter, File}
-import scala.math.round
-  
+import java.io.File
+
 class ChainNerBP {
 
   val model = new ChainNerModel
@@ -110,7 +106,7 @@ class ChainNerBP {
 //    trainDocuments.foreach(process(_))
 //    testDocuments.foreach(process(_))
 //    printEvaluation(trainDocuments, testDocuments, "FINAL")
-    val examples = vars.map(v => new LikelihoodExample(v, model, InferByBPChainSum))
+    val examples = vars.map(v => new LikelihoodExample(v, model, InferByBPChain))
     Trainer.batchTrain(model.parameters, examples)
     //(1 to 100).foreach(i => trainer.processExamples(pieces))
 

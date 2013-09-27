@@ -1,6 +1,9 @@
 package cc.factorie.tutorial
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
+import cc.factorie.variable._
+import cc.factorie.model.{TupleTemplateWithStatistics1, CombinedModel}
+import cc.factorie.infer.{SamplingInferencer, VariableSettingsSampler, DiscreteSummary1}
 
 object Cards4 {
 

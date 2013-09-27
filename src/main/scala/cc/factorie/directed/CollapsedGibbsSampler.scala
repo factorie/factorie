@@ -14,8 +14,11 @@
 
 package cc.factorie.directed
 
+import cc.factorie.infer._
 import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import cc.factorie.variable._
+import cc.factorie.model.Factor
 
 /** A GibbsSampler that can also collapse some Parameters. */
 class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(implicit val random: scala.util.Random) extends Sampler[Iterable[MutableVar[_]]] {

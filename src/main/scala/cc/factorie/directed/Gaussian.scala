@@ -16,6 +16,9 @@ package cc.factorie.directed
 
 import cc.factorie._
 import cc.factorie.util.DoubleSeq
+import cc.factorie.variable.{MutableDoubleVar, DoubleVar, DiscreteVar, HashMapAssignment}
+import cc.factorie.model.Factor
+import cc.factorie.infer._
 
 object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>

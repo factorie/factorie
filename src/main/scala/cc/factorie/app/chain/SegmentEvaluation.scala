@@ -17,6 +17,7 @@ import cc.factorie._
 import scala.util.matching.Regex
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.language.reflectiveCalls
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 
 /** Evaluate in terms of correct entire segments.
     The field start and end boundaries must be perfect to count as correct.  No partial credit.

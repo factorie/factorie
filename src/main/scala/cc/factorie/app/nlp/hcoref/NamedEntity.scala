@@ -18,6 +18,7 @@ import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
+import cc.factorie.variable.StringVariable
 
 // TODO Consider not having NamedEntity at all, but just adding a EntityName attribute to any Entity that needs it. -akm
 

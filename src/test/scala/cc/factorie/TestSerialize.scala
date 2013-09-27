@@ -10,6 +10,8 @@ import cc.factorie.util.{TensorCubbie, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.ner.NerLabel
+import cc.factorie.variable._
+import cc.factorie.model._
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 

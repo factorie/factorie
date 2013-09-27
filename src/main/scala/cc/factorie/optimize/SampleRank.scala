@@ -17,8 +17,9 @@
 package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
-import collection.mutable.HashMap
 import util.DoubleAccumulator
+import cc.factorie.model.{WeightsSet, Parameters, Model, DotFamily}
+import cc.factorie.infer.ProposalSampler
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {

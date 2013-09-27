@@ -23,6 +23,7 @@ import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.directed._
+import cc.factorie.variable._
 
 object LDA2 {
   

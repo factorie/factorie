@@ -4,9 +4,9 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import app.classify
-import classify._
+import cc.factorie.app.classify._
 import la.Tensor
-import cc.factorie.optimize.OnlineLinearMultiClassTrainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 
 object BookInfoGain {
   object DocumentDomain extends CategoricalVectorDomain[String]

@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.app.nlp.ner.{NerSpan, NerLabel}
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.Span
+import cc.factorie.variable.Span
 
 /**
  * User: apassos
@@ -42,7 +42,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
         if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
           spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1))
         } else if (t.posLabel.categoryValue == "NNP") {
-          spans += ("PER" -> new TokenSpan(s, t.positionInSection, 1))
+          spans += ("MISC" -> new TokenSpan(s, t.positionInSection, 1))
         }
       }
     }

@@ -13,6 +13,8 @@ import cc.factorie.optimize._
 import scala.concurrent.Await
 import scala.Some
 import java.util.concurrent.Executors
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
 
 /** Default transition-based dependency parser. */
 class DepParser1 extends DocumentAnnotator {

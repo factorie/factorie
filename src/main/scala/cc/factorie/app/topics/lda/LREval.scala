@@ -2,6 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import java.io.File
 import collection.mutable.{ArrayBuffer, HashMap}
+import cc.factorie.variable.{DiscreteSeqDomain, DiscreteSeqVariable, DiscreteDomain, CategoricalSeqDomain}
 
 /**
  *  Left-to-right evaluation algorithm described on page 65 in Wallach's PhD thesis.

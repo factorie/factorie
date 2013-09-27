@@ -6,13 +6,13 @@ import collection.mutable.{HashSet, LinkedHashSet,LinkedHashMap,HashMap, ArrayBu
 import java.lang.StringBuffer
 import cc.factorie.util.{DefaultCmdOptions, Cubbie}
 import cc.factorie.app.topics.lda.{Document, LDA,SparseLDAInferencer}
-import cc.factorie.{CategoricalSeqDomain, DiffList}
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import cc.factorie.la.SparseIndexedTensor
 import cc.factorie.db.mongo.{MongoCubbieCollection, MutableCubbieCollection}
 import collection.mutable
 import cc.factorie.directed.DirectedModel
 import Utils.random
+import cc.factorie.variable.{DiffList, CategoricalSeqDomain}
 
 object Utils{
   implicit val random = new scala.util.Random(0)

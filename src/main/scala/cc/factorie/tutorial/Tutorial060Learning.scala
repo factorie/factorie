@@ -1,8 +1,10 @@
 package cc.factorie.tutorial
 import cc.factorie._
+import variable._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
+import cc.factorie.infer.{GibbsSampler, InferByBPChain}
 
 object Tutorial060Learning {
   def main(args:Array[String]): Unit = {
@@ -77,7 +79,7 @@ object Tutorial060Learning {
      * The most commonly used Infer objects are those in the BP package.
      **/
 
-    val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model)
+    val summary = InferByBPChain.infer(document.tokens.toSeq.map(_.attr[Label]), model)
     assertStringEquals(summary.logZ, "6.931471805599453")
     assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.49999999999999994,0.49999999999999994)")
 
@@ -110,7 +112,7 @@ object Tutorial060Learning {
      * gradient for maximum likelihood training. Here's how to construct one for this sentence
      * using Factorie's BP inferencer.
      **/
-    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
+    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChain)
 
     /*& In this tutorial let's use the AdaGrad optimizer, which is efficient and has
      * per-coordinate learning rates but is not regularized
@@ -167,7 +169,7 @@ object Tutorial060Learning {
      **/
 
     // Now we can run inference and see that we have learned
-    val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
+    val summary2 = InferByBPChain(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
     assertStringEquals(summary2.logZ, "48.63607808733318")
     assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897892,6.913211020986328E-5)")
 

@@ -1,6 +1,7 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
+import cc.factorie.variable._
 
 /** Calculate the weighted log-odds ratio:
     p(w|c) * log(p(w|c)/p(w|!c)) for each word w and label c.

@@ -16,6 +16,7 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * Base trait for optimizers whose operational form can be described as

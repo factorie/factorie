@@ -4,6 +4,8 @@ import cc.factorie._
 import cc.factorie.la._
 import collection.mutable.ListBuffer
 import maths.ArrayOps
+import cc.factorie.variable.{VectorVar, TensorVar, MutableDiscreteVar}
+import cc.factorie.model.{DotFamilyWithStatistics2, DotFamilyWithStatistics1}
 
 /**
  * Author: martin

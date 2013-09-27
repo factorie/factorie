@@ -4,8 +4,10 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
-import cc.factorie.optimize._
 import java.io._
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 

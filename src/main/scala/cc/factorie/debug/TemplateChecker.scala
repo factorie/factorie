@@ -1,6 +1,7 @@
 package cc.factorie.debug
 
-import cc.factorie.{Factor, Template2, Var}
+import cc.factorie.model.{Template2, Factor}
+import cc.factorie.variable.Var
 
 /**
  * A tool for debugging models and template

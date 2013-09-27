@@ -9,6 +9,7 @@ package cc.factorie.tutorial
 
 import org.junit.Assert._
 import cc.factorie._
+import cc.factorie.variable._
 
 object TutorialVariables {
   def main(args:Array[String]): Unit = {

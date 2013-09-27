@@ -16,6 +16,8 @@ package cc.factorie.directed
 
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.model.{Family, Factor}
+import cc.factorie.variable.{Var, ProportionsVar, SortedSparseCountsProportions1, DenseProportions1}
 
 /* Contains various recipes that "collapse" variables
    by setting the value of variables to an internal state 

@@ -3,6 +3,8 @@ package cc.factorie
 import org.scalatest.junit._
 import org.junit.Test
 import junit.framework.TestCase
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplate2, DotTemplateWithStatistics1}
 
 /**
  * @author sriedel

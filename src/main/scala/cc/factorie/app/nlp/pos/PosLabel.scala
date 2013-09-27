@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
+import cc.factorie.variable.{LabeledCategoricalVariable, EnumDomain, CategoricalDomain}
 
 
 // TODO Consider renaming PennPosDomain to PPosDomain, just because it is shorter and easier to pronounce

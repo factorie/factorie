@@ -5,6 +5,7 @@ import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
 import cc.factorie.app.nlp.segment.Tokenizer1
+import cc.factorie.variable.{SpanList, DiffList}
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   

@@ -3,10 +3,12 @@ package cc.factorie.util
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import collection.mutable
-import cc.factorie._
 import cc.factorie.la._
 import scala.language.implicitConversions
-import cc.factorie.optimize.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie, RandomForestMultiClassClassifier}
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.model.{WeightsSetCubbie, Parameters}
+import cc.factorie.app.classify.{DecisionTreeCubbie, RandomForestCubbie, BoostedTreeCubbie}
 
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
@@ -34,6 +36,7 @@ trait CubbieConversions {
 object CubbieConversions extends CubbieConversions
 
 object BinarySerializer extends GlobalLogging {
+  import cc.factorie._
   private def getLazyCubbieSeq(vals: Seq[() => Cubbie]): Seq[Cubbie] = vals.view.map(_())
   // We lazily create the cubbies because, for example, model cubbies will force their model's weightsSet lazy vals
   // so we need to control the order of cubbie creation and serialization (domains are deserialized before model cubbies are even created)

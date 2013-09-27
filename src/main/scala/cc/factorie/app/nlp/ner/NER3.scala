@@ -14,10 +14,11 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import variable._
+import optimize._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PennPosLabel
-import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import scala.io._
@@ -25,6 +26,10 @@ import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
+import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
+import cc.factorie.infer.{BP, InferByBPChain}
+import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
+import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -164,7 +169,6 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     is.close()
   }
 
-  import cc.factorie.app.nlp.lexicon._
   var aggregate = false
   var twoStage = false
   val clusters = new scala.collection.mutable.HashMap[String,String]
@@ -461,7 +465,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
  
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
-    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
+    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChain))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
     trainDocuments.foreach(process(_, useModel2=false))
@@ -479,7 +483,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
 
-    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChainSum))
+    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChain))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
 
     trainDocuments.foreach(process)

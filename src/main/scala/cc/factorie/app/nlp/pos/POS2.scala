@@ -8,6 +8,8 @@ import java.io._
 import cc.factorie.util.{LocalDoubleAccumulator, HyperparameterMain, ClasspathURL, BinarySerializer}
 import cc.factorie.optimize.{StructuredSVMExample, LikelihoodExample, Trainer}
 import cc.factorie.la.SmartGradientAccumulator
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.infer.MaximizeByBPChain
 
 /**
  * User: apassos

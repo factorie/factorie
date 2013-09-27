@@ -3,7 +3,8 @@ package cc.factorie.directed
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-import cc.factorie.{DiffList, MutableVar, Var, Model}
+import cc.factorie.variable.{MutableVar, VarWithDeterministicValue, Var, DiffList}
+import cc.factorie.model.{Model, Factor}
 
 trait DirectedModel extends Model {
   def getParentFactor(v:Var): Option[DirectedFactor]

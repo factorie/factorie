@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
 import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
 
 /**
  * User: apassos

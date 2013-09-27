@@ -14,7 +14,9 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
+import cc.factorie.infer._
+import cc.factorie.variable.{Var, DiscreteVar, DiscreteVariable}
+import cc.factorie.model.Model
 
 /** The expectation-maximization method of inference.
     maximizing is the collection of variables that will be maximized.   
@@ -30,6 +32,6 @@ class EMInferencer[V<:Var,W<:DiscreteVar,M<:Model](val maximizing:Iterable[V], v
 }
 
 object EMInferencer {
-  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize[Iterable[V],Model] = Maximize, infer:Infer[Iterable[DiscreteVar],Model] = InferByBPTreeSum) =
+  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize[Iterable[V],Model] = Maximize, infer:Infer[Iterable[DiscreteVar],Model] = InferByBPTree) =
     new EMInferencer(maximizing, varying, model, infer, maximizer)
 }

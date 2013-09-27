@@ -17,6 +17,9 @@
 package cc.factorie.tutorial
 import cc.factorie._
 import java.io.File
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{BPSummary, BP, IteratedConditionalModes, GibbsSampler}
 
 object ChainNER4 {
 

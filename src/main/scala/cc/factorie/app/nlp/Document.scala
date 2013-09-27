@@ -17,6 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.CategoricalVar
 
 /** A portion of the string contents of a Document.
     @author Andrew McCallum */

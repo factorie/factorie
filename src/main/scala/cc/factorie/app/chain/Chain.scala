@@ -14,6 +14,7 @@
 
 package cc.factorie.app.chain
 import cc.factorie._
+import cc.factorie.variable.{CategoricalVectorDomain, CategoricalDomain}
 
 object Chain {
   def main(args: Array[String]): Unit = {

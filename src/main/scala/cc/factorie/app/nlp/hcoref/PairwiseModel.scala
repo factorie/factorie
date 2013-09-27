@@ -16,6 +16,7 @@ package cc.factorie.app.nlp.hcoref
 import cc.factorie._
 import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer}
+import cc.factorie.variable.LabeledBooleanVariable
 
 class PairwiseLabel(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends LabeledBooleanVariable(b) {
   def other(m:PairwiseMention): Option[PairwiseMention] = if(m == m1) Some(m2) else if (m == m2) Some(m1) else None

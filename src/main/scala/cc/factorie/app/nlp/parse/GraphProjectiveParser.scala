@@ -7,6 +7,8 @@ import cc.factorie.la.{Tensor, WeightsMapAccumulator}
 import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
+import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
+import cc.factorie.model.Parameters
 
 /**
  * User: apassos

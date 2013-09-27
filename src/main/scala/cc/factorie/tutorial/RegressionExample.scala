@@ -5,9 +5,9 @@ import java.io.File
 import collection.mutable
 import io.Source
 
-import cc.factorie.{DiffList, TensorVariable, CategoricalVectorDomain, BinaryFeatureVectorVariable}
 import cc.factorie.app.regress.LinearRegressionTrainer
 import cc.factorie.la.{DenseTensor1, Tensor1}
+import cc.factorie.variable.{TensorVariable, BinaryFeatureVectorVariable, DiffList, CategoricalVectorDomain}
 
 /**
  * An example of Linear Regression.  Tries to predict the hash value

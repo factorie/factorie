@@ -1,13 +1,14 @@
 package cc.factorie.directed
 
 import cc.factorie._
-import cc.factorie.DiscreteValue
-import cc.factorie.DiscreteVariable
 import cc.factorie.la._
 import cc.factorie.maths
-import cc.factorie.MutableTensorVar
 import scala.util.Random
 import org.jblas.DoubleMatrix
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.infer._
+import scala.Some
 
 object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
   self =>

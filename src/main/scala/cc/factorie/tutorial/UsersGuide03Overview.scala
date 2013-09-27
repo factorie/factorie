@@ -18,7 +18,7 @@ that complex joint probability distributions over multiple variables
 that would have otherwise been intractable to represent or manipulate
 can instead be represented compactly and often manipulated
 efficiently.  Since graphical models can straightforwardly express so
-many different probabilistic models, they have become a lingua-frana
+many different probabilistic models, they have become a lingua-franca
 for statistics, machine learning, and data mining.
 
 In graphical models, variables are depicted by the nodes a graph,
@@ -55,7 +55,8 @@ rather than having edges that connect variables directly to each
 other, edges instead connect variables to factors (which are drawn as
 black squares).  In other words, variables are connected to other
 variables only *through* factors.  The variables connected to a factor
-are called the "neighbors" of the factor.
+are called the "neighbors" of the factor. Factor graph is a bipartite 
+graph connecting variables and factors. 
 
 Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
