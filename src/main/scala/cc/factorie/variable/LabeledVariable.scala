@@ -52,7 +52,7 @@ trait LabeledVar extends Var {
     @author Andrew McCallum */
 trait LabeledVarWithTarget extends LabeledVar {
   self =>
-  type TargetType <: TargetVar
+  type TargetType = TargetVar
   /** Stores the intended true "target" value for this variable. */
   def target: TargetType { type Value = self.Value }
   override def valueIsTarget: Boolean = value == target.value
@@ -99,7 +99,7 @@ trait LabeledMutableDiscreteVar extends LabeledDiscreteVar with MutableDiscreteV
     separate from its current value. 
     @author Andrew McCallum */
 trait LabeledMutableDiscreteVarWithTarget extends LabeledVarWithTarget with LabeledMutableDiscreteVar {
-  type TargetType = DiscreteTargetVar with MutableDiscreteVar
+  def target: DiscreteTargetVar with MutableDiscreteVar
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   @inline final def targetIntValue: Int = if (target eq null) -1 else target.asInstanceOf[DiscreteVar].intValue // TODO Work on removing this cast
   def targetIntValue_=(newValue:Int): Unit = target.asInstanceOf[DiscreteTargetVar with MutableDiscreteVar].set(newValue)(null) // TODO Work on removing this cast
