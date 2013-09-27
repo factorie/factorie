@@ -28,7 +28,7 @@ object NLP {
       val pos1 = new CmdOption[String]("pos1", null, "URL", "Annotate Penn-Treebank-style POS with model trained on WSJ") { override def invoke = { if (value ne null) System.setProperty(classOf[pos.POS1].getName, value); annotators += cc.factorie.app.nlp.pos.POS1WSJ } }
       val pos1o = new CmdOption[String]("pos1o", null, "URL", "Annotate Penn-Treebank-style POS with model trained on Ontonotes") { override def invoke = { if (value ne null) System.setProperty(classOf[pos.POS1].getName, value); annotators += cc.factorie.app.nlp.pos.POS1Ontonotes } }
       val wnlemma = new CmdOption("wnlemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma using WordNet's lemmatizer.") { override def invoke = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
-      val npchunk1 = new CmdOption("mention1", null, "", "Annotate noun mention boundaries using simple rules on POS tag sequences.  Low quality.") { override def invoke = annotators += cc.factorie.app.nlp.mention.NPChunker1 }
+      val npchunk1 = new CmdOption("mention1", null, "", "Annotate noun mention boundaries using simple rules on POS tag sequences.  Low quality.") { override def invoke = annotators += cc.factorie.app.nlp.mention.NounChunker1 }
       val mention2 = new CmdOption("mention2", null, "", "Annotate noun mention boundaries using a dependency parser.") { override def invoke = annotators += cc.factorie.app.nlp.mention.ParseBasedMentionFinding }
       val mention3 = new CmdOption("mention3", null, "", "Annotate noun mention boundaries using NER tagger and pronoun patterns.") { override def invoke = annotators += cc.factorie.app.nlp.mention.NerAndPronounMentionFinder }
       val ner1 = new CmdOption[String]("ner1", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke = { if (value ne null) System.setProperty(classOf[ner.NER1].getName, value); annotators += cc.factorie.app.nlp.ner.NER1 } }
@@ -77,7 +77,7 @@ object NLP {
       if (mentions ne null) {
         out.println("Mentions:")
         for (mention <- mentions) {
-          out.print(mention.span.phrase)
+          out.print(mention.phrase)
           for (annotator <- annotators) { val s = annotator.mentionAnnotationString(mention); if (s.length > 0) { out.print('\t'); out.print(s) } }
           out.println()
         }

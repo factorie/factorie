@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.relation
 
 import cc.factorie._
 import app.nlp.hcoref.PairwiseMention
-import cc.factorie.app.nlp.{ACEMentionIdentifiers, Token, Document}
+import cc.factorie.app.nlp.{ACEMentionSpan,ACEMentionSpanList,ACEMentionIdentifiers, Token, Document}
 import collection.mutable.{HashMap, ArrayBuffer}
 import cc.factorie.util.Attr
 
@@ -187,7 +187,7 @@ object RelationVariables {
       this += "ML12 " + arg1.attr[ACEMentionIdentifiers] + "-" + arg2.attr[ACEMentionIdentifiers]
 
       //overlap
-      val mentionsInSentence = sentence.document.asSection.spansOfClass[PairwiseMention].filter(_.sentence == sentence)
+      val mentionsInSentence = sentence.document.attr[ACEMentionSpanList].filter(_.sentence == sentence)
       val mentionsInBetween = mentionsInSentence.filter(m =>
         m.head.positionInSentence > left.last.positionInSentence && m.last.positionInSentence < right.head.positionInSentence)
       this += "#MB " + mentionsInBetween.size
@@ -314,10 +314,10 @@ object RelationVariables {
         }
         */
       }
-      if (m2.start > m1.end) {
+      if (m2.start >= m1.end) {
         this += "ARG1_IS_BEFORE"
         // intermediate tokens
-        if (m2.start - m1.end < 3) {
+        if (m2.start - m1.end - 1 < 3) {
           for (tok <- sentence.tokens.slice(m1.end, m2.start)) {
             addTokenFeatures(tok, "ARG1_IS_BEFORE_TOK_")
           }
@@ -329,10 +329,10 @@ object RelationVariables {
         }
         */
       }
-      if (m1.start > m2.end) {
+      if (m1.start >= m2.end) {
         this += "ARG2_IS_BEFORE"
         // intermediate tokens
-        if (m1.start - m2.end < 3) {
+        if (m1.start - m2.end - 1 < 3) {
           for (tok <- sentence.tokens.slice(m2.end, m1.start)) {
             addTokenFeatures(tok, "ARG2_IS_BEFORE_TOK_")
           }
@@ -369,7 +369,7 @@ object RelationVariables {
   // add the relation variables that don't appear yet
   def addAllVars(doc: Document): Unit = {
     val docRelations = doc.attr.getOrElseUpdate(new RelationMentions)
-    val mentions = doc.asSection.spansOfClass[PairwiseMention]
+    val mentions = doc.attr[ACEMentionSpanList]
     var total = 0
     var added = 0
     mentions.foreach(_.attr.getOrElseUpdate(new RelationMentions))

@@ -29,8 +29,8 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   }
   def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[Mention]]
-    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+    token.document.attr[MentionList].filter(mention => mention.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
@@ -214,7 +214,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
      val len = ments.length
      var i = 1
      while(i < len){
-       assert(ments(i).span.tokens.head.stringStart >= ments(i-1).span.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
+       assert(ments(i).tokens.head.stringStart >= ments(i-1).tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
        i +=1
      }
   }
@@ -242,7 +242,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.span.tokens.head.stringStart, mention.length)))
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.tokens.head.stringStart, mention.length)))
   }
 
   def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[Mention]): GenericEntityMap[Mention] = {

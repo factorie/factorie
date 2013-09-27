@@ -25,7 +25,7 @@ import cc.factorie.util.FastLogging
 object LoadConll2003 extends LoadConll2003(false)
 
 case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
-  val conllToPennMap = Map("\"" -> "''", "(" -> "PUNC", ")" -> "PUNC", "NN|SYM" -> "NN")
+  val conllToPennMap = Map("\"" -> "''", "(" -> "-LRB-", ")" -> "-RRB-", "NN|SYM" -> "NN")
 
   def fromSource(source:io.Source): Seq[Document] = {
     import scala.io.Source
@@ -41,13 +41,13 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
     val documents = new ArrayBuffer[Document]
     var document = newDocument("CoNLL2003-"+documents.length)
     documents += document
-    var sentence = new Sentence(document)(null)
+    var sentence = new Sentence(document)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
         //sentence.stringLength = document.stringLength - sentence.stringStart
         //document += sentence
         document.appendString("\n")
-        sentence = new Sentence(document)(null)
+        sentence = new Sentence(document)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
         document.asSection.chainFreeze

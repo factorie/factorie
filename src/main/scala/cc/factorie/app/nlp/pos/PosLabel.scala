@@ -18,7 +18,7 @@ import cc.factorie.app.nlp._
 
 
 // TODO Consider renaming PennPosDomain to PPosDomain, just because it is shorter and easier to pronounce
-// TODO Consider renaming classes POS1... to Pos1
+// TODO Consider renaming classes POS1... to Pos1 to be consistent with PosLabel
 
 /** Penn Treebank part-of-speech tag domain. */
 object PennPosDomain extends CategoricalDomain[String] {

@@ -43,7 +43,7 @@ object LoadOntonotes5 {
     if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
     val source = Source.fromFile(filename)
-    var sentence: Sentence = new Sentence(document)(null)
+    var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
@@ -53,7 +53,7 @@ object LoadOntonotes5 {
         sentence = null
       } else {
         if (sentence eq null)
-          sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
+          sentence = new Sentence(document) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
         assert(fields.length >= 10, "Fewer than 10 fields in file "+filename+"\nOffending line:\n"+line)
         val currTokenIdx = fields(0).toInt - 1
@@ -85,7 +85,7 @@ object LoadOntonotes5 {
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
     if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
-    var sentence: Sentence = new Sentence(document)(null)
+    var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- lines) {
       if (line.length < 2) { // Sentence boundary
@@ -95,7 +95,7 @@ object LoadOntonotes5 {
         sentence = null
       } else {
         if (sentence eq null)
-          sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
+          sentence = new Sentence(document) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
         assert(fields.length >= 10, "Fewer than 10 fields in file "+filename+"\nOffending line:\n"+line)
         val currTokenIdx = fields(0).toInt - 1

@@ -51,10 +51,10 @@ object WithinDocCoref1Trainer {
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
-    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.span.length == 1)
-    val beginningTokMap = multiTokMents.groupBy(_.span.head)
-    val endingTokMap = multiTokMents.groupBy(_.span.last)
-    val singleTokMap = singleTokMents.groupBy(_.span.head)
+    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.length == 1)
+    val beginningTokMap = multiTokMents.groupBy(_.head)
+    val endingTokMap = multiTokMents.groupBy(_.last)
+    val singleTokMap = singleTokMents.groupBy(_.head)
     val fId = doc.name
     val docName = fId.substring(0, fId.length() - 4)
     val partNum = fId.takeRight(3)

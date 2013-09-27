@@ -1,12 +1,38 @@
+For Thursday Sprint:
+
+Span, SpanList, Phrase, Mention, Entity [Andrew]
+Clean up app.nlp [Andrew]
+ Move app.nlp.Load* to app.nlp.load.Load* [Andrew]
+ Remove ClearTokenizer
+Settle serialization [Luke, Alex]
+Consider making not all PosLabels "Labeled" [Andrew, Alex]
+Write app.nlp overview in User Guide [Andrew]
+Make app.Chain command line [Jack?]
+Write app.chain command-line tool overview in User Guide [Jack?]
+Finish app.Classify command line. [?]
+Write app.classify command-line tool overview in User Guide [?]
+Use Assignments in more places [Andrew, Alex]
+Write installation instructions in User Guide [Emma, Arvind]
+Write about related packages in User Guide [Alex,_]
+Move TAC/KBP attribute extraction into app.nlp.mention.attribute
+Clean up examples, and make more demos [Ari]
+Clean up within-doc coref? [David]
+Move ConllCorefLoader to app.nlp.LoadConll2011 [David]
+Hcoref clean-up [Mike, Ari]
+Split factorie-nlp-resources.jar into parts [Belanger?, Luke?, Emma?]
+More Scaladoc, more JUnit tests [Mike, Belanger, Arvind, Lakshmi, Caiti,...]
+Web site structure & design, get documentation onto web site, get online demos working [?]
+Discuss "package structure that hides many identifiers from top level" [Andrew, Luke, Alex]  cc.factorie.{var,model,infer}
+New FACTORIE logo and artwork [Andrew,...]
+
+
+
 Pre 1.0 release:
 
 Implement sparse iteration through values for BP [McCallum, Singh]
 Redesign app.classify for better access to underlying optimize goodness. [McCallum, Passos]
 In BP, for factors that have the same set of varying neighbors, cache the marginal distribution
 Improve LDA speed and multi-threading [Vineet]
-Consider removing the implicit DiffList from the arguments to the TokenSpan constructor [Andrew]
-Consider again making Mentions inherit from TokenSpan, with the option to simply initialize from a TokenSpan constructor argument [Andrew] [Passos: please don't!]
-Rename ClearTokenizer and ClearSegmenter [Andrew]
 
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Finish app.chain.Chain command-line tool [McCallum, Vilnis]
@@ -45,6 +71,9 @@ Tutorial coverage:
 
 Missing?
 Regression, Matrix Factorization,
+
+
+ADMM
 
 
 

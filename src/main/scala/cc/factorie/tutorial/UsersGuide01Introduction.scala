@@ -269,6 +269,9 @@ BUGS...
 
 Church...
 
+Irma... (Eisner)
+
+
 
 
 ### Natural language processing toolkits
