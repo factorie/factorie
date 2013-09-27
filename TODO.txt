@@ -4,14 +4,15 @@ Span, SpanList, Phrase, Mention, Entity [Andrew]
 Clean up app.nlp [Andrew]
  Move app.nlp.Load* to app.nlp.load.Load* [Andrew]
  Remove ClearTokenizer
-Settle serialization [Luke, Alex]
+*Settle serialization [Luke, Alex]
 Consider making not all PosLabels "Labeled" [Andrew, Alex]
 Write app.nlp overview in User Guide [Andrew]
 Make app.Chain command line [Jack?]
 Write app.chain command-line tool overview in User Guide [Jack?]
+Consider Classifier -> ValueClassifier? [Andrew]
 Finish app.Classify command line. [?]
 Write app.classify command-line tool overview in User Guide [?]
-Use Assignments in more places [Andrew, Alex]
+*Use Assignments in more places [Andrew, Alex]
 Write installation instructions in User Guide [Emma, Arvind]
 Write about related packages in User Guide [Alex,_]
 Move TAC/KBP attribute extraction into app.nlp.mention.attribute
@@ -24,8 +25,13 @@ More Scaladoc, more JUnit tests [Mike, Belanger, Arvind, Lakshmi, Caiti,...]
 Web site structure & design, get documentation onto web site, get online demos working [?]
 Discuss "package structure that hides many identifiers from top level" [Andrew, Luke, Alex]  cc.factorie.{var,model,infer}
 New FACTORIE logo and artwork [Andrew,...]
+Make random forest awesome [Luke]
+Binary classifier infrastructure [Luke]
 
-
+Move to infer package: MaximizeDiscrete
+Move to model package: HammingLoss, DecisionTree?, Boosting?
+Remove util.Index
+Move to app.classify: Classifier
 
 Pre 1.0 release:
 
