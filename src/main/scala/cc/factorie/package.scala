@@ -18,6 +18,7 @@ import cc.factorie.util.CubbieConversions
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import cc.factorie.model.{IterableSingleFactor, Factor}
+import cc.factorie.variable.TensorVar
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -37,4 +38,47 @@ package object factorie extends CubbieConversions {
 
   def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
 
+  type DenseTensor1 = cc.factorie.la.DenseTensor1
+  type DenseTensor2 = cc.factorie.la.DenseTensor2
+  type DenseTensor3 = cc.factorie.la.DenseTensor3
+  type DenseTensor4 = cc.factorie.la.DenseTensor4
+
+  type Tensor1 = cc.factorie.la.Tensor1
+  type Tensor2 = cc.factorie.la.Tensor2
+  type Tensor3 = cc.factorie.la.Tensor3
+  type Tensor4 = cc.factorie.la.Tensor4
+
+  type Var = variable.Var
+
+  type Assignment = variable.Assignment
+  type HashMapAssignment = variable.HashMapAssignment
+
+  type BooleanVariable = variable.BooleanVariable
+
+  type Diff = variable.Diff
+  type DiffList = variable.DiffList
+
+  type DiscreteDomain = variable.DiscreteDomain
+
+  type DiscreteVariable = variable.DiscreteVariable
+
+  type HashFeatureVectorVariable = variable.HashFeatureVectorVariable
+
+  type RealVariable = variable.RealVariable
+
+  type Cubbie = util.Cubbie
+
+  type GlobalLogging = util.GlobalLogging
+
+  type Example = optimize.Example
+  type LinearMultiClassExample = optimize.LinearMultiClassExample
+
+  type Factor = model.Factor
+
+  type Model = model.Model
+  type CombinedModel = model.CombinedModel
+  type TemplateModel = model.TemplateModel
+  type Parameters = model.Parameters
+
+  type GibbsSampler = infer.GibbsSampler
 }
