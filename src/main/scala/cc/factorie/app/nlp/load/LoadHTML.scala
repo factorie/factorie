@@ -12,8 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
 import java.io.File
+import cc.factorie.app.nlp.Document
 
 object LoadHTML {
   def fromFile(file:File, segmentSentences:Boolean): Document = throw new Error("Not yet implemented.")

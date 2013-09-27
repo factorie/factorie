@@ -1,12 +1,18 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
 
 import hcoref._
 import ner.NerSpan
 import pos.PennPosLabel
 import relation.RelationVariables.{RelationMention, RelationMentions}
-
 import xml.{XML, NodeSeq}
 import java.io.File
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.Sentence
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.UnknownDocumentAnnotator
+import cc.factorie.app.nlp.pos.PennPosLabel
+import scala.Array.fallbackCanBuildFrom
 
 trait ReACEMentionIdentifiers {
   val mId: Option[String]

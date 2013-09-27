@@ -197,7 +197,7 @@ class NER1 extends DocumentAnnotator {
     new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }
   def loadDocuments(files:Iterable[File]): Seq[Document] = {
-    files.toSeq.flatMap(file => LoadConll2003(BILOU=true).fromFile(file))
+    files.toSeq.flatMap(file => load.LoadConll2003(BILOU=true).fromFile(file))
   }
   
   // Serialization

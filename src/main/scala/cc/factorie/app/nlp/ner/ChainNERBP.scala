@@ -18,10 +18,9 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.variable.LabeledDiscreteEvaluation
 import cc.factorie.infer.{BP, InferByBPChain}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
-
-//import bp._
 import cc.factorie.app.nlp._
 import java.io.File
+import cc.factorie.app.nlp.load.LoadConll2003
 
 class ChainNerBP {
 
@@ -81,8 +80,8 @@ class ChainNerBP {
 
   def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
     // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(trainFilename).take(100)
-    val testDocuments = LoadConll2003.fromFilename(testFilename).take(20)
+    val trainDocuments = load.LoadConll2003.fromFilename(trainFilename).take(100)
+    val testDocuments = load.LoadConll2003.fromFilename(testFilename).take(20)
 
     // Add features for NER
     trainDocuments.foreach(initFeatures(_))
@@ -219,7 +218,7 @@ object ChainNerBP extends ChainNerBP {
     if (opts.runPlainFiles.wasInvoked) {
       BinarySerializer.deserialize(ChainNerFeaturesDomain, model, new File(opts.modelFile.value))
       for (filename <- opts.runPlainFiles.value) {
-        val document = LoadPlainText.fromFile(new java.io.File(filename)).head
+        val document = load.LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
         //println(document.map(_.string).mkString(" "))
         process(document)

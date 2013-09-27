@@ -340,8 +340,8 @@ object POS1Trainer extends HyperparameterMain {
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val pos = new POS1
-    val trainDocs = LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = LoadOntonotes5.fromFilename(opts.testFile.value)
+    val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
+    val testDocs = load.LoadOntonotes5.fromFilename(opts.testFile.value)
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))

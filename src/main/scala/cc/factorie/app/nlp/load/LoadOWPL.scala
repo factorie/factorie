@@ -1,7 +1,11 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
 
 import cc.factorie._
 import cc.factorie.variable.LabeledCategoricalVariable
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.Sentence
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.UnknownDocumentAnnotator
 
 /**
  * Author: martin

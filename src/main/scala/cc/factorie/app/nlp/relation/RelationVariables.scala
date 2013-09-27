@@ -2,7 +2,8 @@ package cc.factorie.app.nlp.relation
 
 import cc.factorie._
 import app.nlp.hcoref.PairwiseMention
-import cc.factorie.app.nlp.{ACEMentionSpan,ACEMentionSpanList,ACEMentionIdentifiers, Token, Document}
+import cc.factorie.app.nlp.{Token, Document}
+import cc.factorie.app.nlp.load.{ACEMentionSpan,ACEMentionSpanList,ACEMentionIdentifiers}
 import collection.mutable.{HashMap, ArrayBuffer}
 import cc.factorie.util.Attr
 import cc.factorie.variable._

@@ -313,8 +313,8 @@ object GraphProjectiveParserTrainer {
 
     val parser = new GraphProjectiveParser
 
-    val trainDoc = LoadOntonotes5.fromFilename(opts.trainFile.value).head
-    val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
+    val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
+    val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
 
     // Train
     parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))

@@ -1,4 +1,6 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 
 import scala.io.Source
 import cc.factorie.app.nlp._

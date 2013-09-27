@@ -10,6 +10,7 @@ import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{LabeledVarWithTarget, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel}
 import cc.factorie.infer.{InferByBPChain, BP}
+import cc.factorie.app.nlp.load.LoadOWPL
 
 /**
  * Author: martin

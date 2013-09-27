@@ -284,8 +284,8 @@ class NER2 extends DocumentAnnotator {
   }
   
   def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
-    val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
-    val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
+    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
+    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
     mainModel match {
       case model:Model2 => trainModel2(trainDocs, testDocs)
       case model:Model3 => trainModel3(trainDocs, testDocs)
