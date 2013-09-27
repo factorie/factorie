@@ -55,7 +55,7 @@ rather than having edges that connect variables directly to each
 other, edges instead connect variables to factors (which are drawn as
 black squares).  In other words, variables are connected to other
 variables only *through* factors.  The variables connected to a factor
-are called the "neighbors" of the factor.
+are called the "neighbors" of the factor. Factor fraph forms a bipartite graph connecting variables and factors.
 
 Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
