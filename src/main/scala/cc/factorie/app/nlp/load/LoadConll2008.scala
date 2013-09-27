@@ -12,7 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PennPosLabel

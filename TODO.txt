@@ -2,7 +2,6 @@ For Thursday Sprint:
 
 Span, SpanList, Phrase, Mention, Entity [Andrew]
 Clean up app.nlp [Andrew]
- Move app.nlp.Load* to app.nlp.load.Load* [Andrew]
  Remove ClearTokenizer
 *Settle serialization [Luke, Alex]
 Consider making not all PosLabels "Labeled" [Andrew, Alex]
@@ -15,9 +14,8 @@ Write app.classify command-line tool overview in User Guide [?]
 *Use Assignments in more places [Andrew, Alex]
 Write installation instructions in User Guide [Emma, Arvind]
 Write about related packages in User Guide [Alex,_]
-Move TAC/KBP attribute extraction into app.nlp.mention.attribute
+Move TAC/KBP attribute extraction into app.nlp.mention.attribute [Ari]
 Clean up examples, and make more demos [Ari]
-Clean up within-doc coref? [David]
 Move ConllCorefLoader to app.nlp.LoadConll2011 [David]
 Hcoref clean-up [Mike, Ari]
 Split factorie-nlp-resources.jar into parts [Belanger?, Luke?, Emma?]
@@ -84,6 +82,8 @@ ADMM
 
 
 DONE:
+Clean up within-doc coref? [David]
+Move app.nlp.Load* to app.nlp.load.Load* [Andrew]
 Wrap-up and clean up Parser, NER and POS  [Belanger]
 Make DocumentAnnotator take lazy values [Andrew]
 Standardize NER2 [Andrew]

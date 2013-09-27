@@ -435,7 +435,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(loader: Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
+  def train(loader: load.Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
     val trainDocuments = loader.fromFilename(dataDir + trainFilename)
@@ -562,7 +562,7 @@ object NER3Trainer extends HyperparameterMain {
       }
     }
     
-    val result = ner.train(LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
+    val result = ner.train(load.LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }

@@ -12,23 +12,21 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
-import cc.factorie._
-import cc.factorie.app.nlp.ner._
+package cc.factorie.app.nlp.load
 import java.io.File
+import scala.xml._
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.DocumentAnnotatorPipeline
 
-// TODO Finish something like this.
-
-//object LoadCharOffsets {
-//  def fromTextAndOffsets(textFile:File, annFile:File, labelDomain:CategoricalDomain[String]): Document = {
-//    val doc = LoadPlainText.fromFile(textFile, segmentSentences=false)
-//    val annSource = scala.io.Source.fromFile(annFile)
-//    val lineRe = "^(\\w+)\\s+(\\d+)\\s+(\\d+)".r
-//    for (line <- annSource.getLines) {
-//      val fields = line.split(' ')
-//      val label = 
-//    }
-//    doc
-//  }
-//
-//}
+object LoadNYTimesXML {
+  def fromFile(file:File): Seq[Document] = {
+    val article = XML.loadFile(file)
+    //println(article \\ "head" \\ "title" text)
+    //println(article \ "head" \ "title" text)
+    //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
+    val content = article \ "head" \ "docdata" \ "identified-content"
+    //print("Reading ***"+(article\"head"\"title").text+"***")
+    // This does not include the headline, perhaps it should -akm
+    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
+  }
+}

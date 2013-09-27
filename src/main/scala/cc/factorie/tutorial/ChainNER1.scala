@@ -13,9 +13,14 @@
    limitations under the License. */
 
 package cc.factorie.tutorial
-import cc.factorie._ 
+
+import cc.factorie._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.load._
 import cc.factorie.app.nlp.ner._
 import java.io.File
 import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
@@ -27,6 +32,8 @@ import cc.factorie.infer.{VariableSettingsSampler, GibbsSampler}
     Overly simple features to not, however, provide very high accuracy.
     See ChainNER3 for a related example with better features. 
     @author Andrew McCallum */
+
+/*
 object ChainNER1a {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -76,19 +83,7 @@ object ChainNER1a {
       println()
     })
   }
-}
-  
-// TODO Consider implementing cc.factorie.app.nlp.Token as a cc.factorie.er.Entity, 
-// so that a model definition like in the following could work again
-/*
-object ChainNER1 {
-  
-  // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
-    val label = new Label(labelString, this)
-    def domain = TokenDomain
-  }
+
   object LabelDomain extends CategoricalDomain[String]
   class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token) {
     def domain = LabelDomain
@@ -127,5 +122,6 @@ object ChainNER1 {
   }
 
 }
+
 */
 

@@ -12,19 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
-import java.io.File
-import scala.xml._
-
-object LoadNYTimesXML {
-  def fromFile(file:File): Seq[Document] = {
-    val article = XML.loadFile(file)
-    //println(article \\ "head" \\ "title" text)
-    //println(article \ "head" \ "title" text)
-    //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
-    val content = article \ "head" \ "docdata" \ "identified-content"
-    //print("Reading ***"+(article\"head"\"title").text+"***")
-    // This does not include the headline, perhaps it should -akm
-    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
-  }
-}
+package cc.factorie.app.nlp.load
+import cc.factorie._
+import cc.factorie.app.nlp.ner._
+//    doc
+//  }
+//
+//}

@@ -1,4 +1,6 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 
 import segment._
 import hcoref._

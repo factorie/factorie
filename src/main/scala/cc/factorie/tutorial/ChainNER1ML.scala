@@ -25,6 +25,7 @@ import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, Cate
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 import cc.factorie.infer.InferByBPChain
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
+import cc.factorie.app.nlp.load.LoadConll2003
 
 object ChainNER1ML {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
@@ -59,8 +60,8 @@ object ChainNER1ML {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
-    val trainDocuments = LoadConll2003.fromFilename(args(0))
-    val testDocuments = LoadConll2003.fromFilename(args(1))
+    val trainDocuments = load.LoadConll2003.fromFilename(args(0))
+    val testDocuments = load.LoadConll2003.fromFilename(args(1))
     for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string

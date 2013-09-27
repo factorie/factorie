@@ -12,7 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
 
 /** The interface common to methods that create Documents from a data source,
     such as plain text files, labeled data from Ontonotes, etc. 

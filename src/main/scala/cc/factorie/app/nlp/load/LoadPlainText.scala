@@ -12,7 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 import java.io.File
 import cc.factorie.app.strings.StringSegmenter
 import scala.util.matching.Regex 

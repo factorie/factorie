@@ -12,7 +12,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   class MySpanList extends SpanList[TokenSpan,Section,Token]
 
   def testDiffLists:Unit = {
-     val doc = LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
+     val doc = load.LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
      val sl = new MySpanList
      doc.attr += sl
        

@@ -1,9 +1,15 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PennPosLabel
-import scala.collection.mutable
-import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
+import cc.factorie.variable._
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.Sentence
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.UnknownDocumentAnnotator
+import cc.factorie.app.nlp.pos.PennPosLabel
 
 /**
  * @author John Sullivan

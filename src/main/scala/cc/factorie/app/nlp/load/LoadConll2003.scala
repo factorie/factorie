@@ -12,11 +12,18 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.load
+import cc.factorie.app.nlp._
+
 import cc.factorie._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.Sentence
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.UnknownDocumentAnnotator
+import cc.factorie.app.nlp.pos.PennPosLabel
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")

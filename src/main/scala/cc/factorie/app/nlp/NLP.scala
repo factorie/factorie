@@ -67,7 +67,7 @@ object NLP {
       val out = new PrintStream(socket.getOutputStream(), false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
-      var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
+      var document = load.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
       document = pipeline.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
