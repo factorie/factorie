@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 
 // TODO Should we rename this to "Chunk"?  Then "NounChunk" and "NounChunker".  (But it is really a "NounPhraseChunk" and "NounPhraseChunker".)
 // TODO What do we do about the name "MentionType"?  I like that we can talk about gender/number/type of noun phrases independently of coref.  Below we have "NounPhraseType".  Is this OK as a substitute for "MentionType"?

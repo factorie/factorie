@@ -1,6 +1,6 @@
 package cc.factorie.optimize
 
-import cc.factorie.{WeightsMap, WeightsSet}
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * Simple efficient l2-regularized SGD with a constant learning rate

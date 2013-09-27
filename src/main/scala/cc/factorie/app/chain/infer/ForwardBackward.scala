@@ -6,6 +6,8 @@ import cc.factorie.util.ArrayDoubleSeq
 import cc.factorie.la._
 import scala.math.exp
 import collection.mutable
+import cc.factorie.variable.{TensorVar, MutableDiscreteVar}
+import cc.factorie.model.{DotFamilyWithStatistics2, DotFamilyWithStatistics1}
 
 /**
  * Author: martin

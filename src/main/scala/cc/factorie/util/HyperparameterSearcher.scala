@@ -3,9 +3,9 @@ package cc.factorie.util
 import scala.util.Random
 import scala.concurrent._
 import akka.actor._
-import cc.factorie.Proportions
 import java.text.SimpleDateFormat
 import java.io.{FileOutputStream, OutputStreamWriter}
+import cc.factorie.variable.Proportions
 
 /**
  * User: apassos

@@ -2,8 +2,8 @@ package cc.factorie.app.nlp
 
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PennPosLabel
-import cc.factorie.{LabeledCategoricalVariable, CategoricalDomain}
 import scala.collection.mutable
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 
 /**
  * @author John Sullivan

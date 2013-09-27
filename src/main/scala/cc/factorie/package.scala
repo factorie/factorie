@@ -17,6 +17,7 @@ import scala.util.Random
 import cc.factorie.util.CubbieConversions
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import cc.factorie.model.{IterableSingleFactor, Factor}
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)

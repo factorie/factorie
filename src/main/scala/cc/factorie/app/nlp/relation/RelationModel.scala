@@ -1,6 +1,7 @@
 package cc.factorie.app.nlp.relation
 
 import cc.factorie._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2}
 
 /**
  * @author sameer

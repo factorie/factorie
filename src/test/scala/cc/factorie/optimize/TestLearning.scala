@@ -6,6 +6,9 @@ import org.junit.Assert._
 import scala.util.Random
 import cc.factorie.la._
 import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.InferByBPTreeSum
 
 /**
  * @author sameer

@@ -2,6 +2,9 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.hcoref._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.SettingsSampler
 
 object Coref1 {
   

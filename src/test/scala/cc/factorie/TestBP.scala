@@ -10,6 +10,9 @@ import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
 import util.LocalDoubleAccumulator
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer._
 
 /**
  * Test for the factorie-1.0 BP framework (that uses WeightsMap)

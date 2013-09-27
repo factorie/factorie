@@ -4,6 +4,9 @@ import cc.factorie._
 import cc.factorie.util._
 import app.classify
 import cc.factorie.la._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
 
 /**
  * Created by IntelliJ IDEA.

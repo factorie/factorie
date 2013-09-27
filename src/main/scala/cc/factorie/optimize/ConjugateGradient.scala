@@ -16,6 +16,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.util.FastLogging
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * A conjugate gradient optimizer. Should not be used unless you know you want it.

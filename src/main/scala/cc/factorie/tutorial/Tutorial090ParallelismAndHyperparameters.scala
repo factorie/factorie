@@ -5,6 +5,8 @@ import cc.factorie.app.nlp.{Document, Token}
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.nlp.segment.{SentenceSegmenter1, Tokenizer1}
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.infer.InferByBPChainSum
 
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {

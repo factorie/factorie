@@ -1,6 +1,7 @@
 package cc.factorie.app.nlp
 
 import cc.factorie._
+import cc.factorie.variable.LabeledCategoricalVariable
 
 /**
  * Author: martin

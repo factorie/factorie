@@ -16,6 +16,9 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.optimize._
 import java.io.File
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{VariableSettingsSampler, GibbsSampler}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's low-level "imperative" language to define model structure.

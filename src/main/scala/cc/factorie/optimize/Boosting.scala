@@ -5,6 +5,8 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.maths.ArrayOps
 import cc.factorie.util.StoreFetchCubbie
+import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar}
+import cc.factorie.model.Template2
 
 class BoostedBinaryClassifier(val weakClassifiers: Seq[(BaseBinaryClassifier[Tensor1], Double)]) extends BaseBinaryClassifier[Tensor1] {
   def score(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.score(features) * t._2)

@@ -137,6 +137,9 @@ Then it re-estimates by maximum likelihood the mean and variance from the sample
 
 package cc.factorie.tutorial
 import scala.language.reflectiveCalls
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, Model, DotFamilyWithStatistics2}
+import cc.factorie.infer.{BP, InferByBPChainSum, Maximize}
 
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library

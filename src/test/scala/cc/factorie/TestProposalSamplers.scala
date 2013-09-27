@@ -2,7 +2,6 @@ package cc.factorie
 
 /**
  * @author sameer
- * @date 2/7/12
  */
 
 import cc.factorie._
@@ -10,6 +9,9 @@ import junit.framework._
 import Assert._
 import scala.util.Random
 import collection.mutable.ArrayBuffer
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
+import cc.factorie.model.{ItemizedModel, TupleFactorWithStatistics2}
+import cc.factorie.infer.VariablesSettingsSampler
 
 /**
  * @author sameer

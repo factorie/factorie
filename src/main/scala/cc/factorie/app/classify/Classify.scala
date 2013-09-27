@@ -23,6 +23,8 @@ import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.optimize.{LinearMultiClassClassifier, LinearMultiClassClassifierCubbie, MultiClassClassifier, MultiClassTrainerBase}
 import cc.factorie.la.Tensor1
+import cc.factorie.variable._
+import scala.Some
 
 // Feature and Label classes
 

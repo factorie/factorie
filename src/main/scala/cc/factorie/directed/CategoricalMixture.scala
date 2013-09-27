@@ -19,6 +19,9 @@ import cc.factorie.util.SortedSparseCounts
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
+import cc.factorie.variable._
+import cc.factorie.model.Model
+import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}
 
 class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
   case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {

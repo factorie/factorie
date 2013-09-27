@@ -20,6 +20,9 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.IteratedConditionalModes
 
 /** A raw document classifier without using any of the facilities of cc.factorie.app.DocumentClassification,
     and without using the entity-relationship language of cc.factorie.er.  

@@ -16,6 +16,7 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document

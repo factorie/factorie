@@ -16,6 +16,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Cubbie
+import cc.factorie.variable.{LabeledCategoricalVariable, DiffList, CategoricalDomain}
 
 /** The abstract class for all named-entity recognition labels. */
 abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {

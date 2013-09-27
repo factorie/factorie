@@ -5,7 +5,7 @@ import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.app.nlp.ner.{NerSpan, NerLabel}
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.Span
+import cc.factorie.variable.Span
 
 class NerPronounPhraseList extends MentionList
 

@@ -16,6 +16,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
+import cc.factorie.variable.{AbstractChainLink, CategoricalVectorVar}
 
 /** A element of the input sequence to a linear-chain (CRF) having a string.  Its corresponding label will be an Attr attribute. */
 trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with Attr {

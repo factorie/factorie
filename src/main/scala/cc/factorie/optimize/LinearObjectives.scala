@@ -6,6 +6,8 @@ import cc.factorie.la._
 import java.io.File
 import io.Source
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.{Weights2, Weights1}
 
 /**
  * Abstract trait for any objective function used in generalized linear models

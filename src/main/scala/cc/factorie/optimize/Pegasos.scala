@@ -1,8 +1,8 @@
 package cc.factorie.optimize
 
 import cc.factorie.la._
-import cc.factorie.{WeightsMap, WeightsSet}
 import cc.factorie.util.{DenseDoubleSeq, TruncatedArrayIntSeq, DoubleSeq, RangeIntSeq}
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 
 /**

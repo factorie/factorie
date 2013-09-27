@@ -5,6 +5,9 @@ import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.app.nlp.segment.PlainNormalizedTokenString
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.{InferByBPChainSum, DiscreteProposalMaximizer, MaximizeByBPChain}
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */

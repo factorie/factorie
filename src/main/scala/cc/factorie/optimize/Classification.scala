@@ -3,6 +3,8 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la.{Tensor2, DenseTensor2, Tensor1, DenseTensor1}
 import cc.factorie.util.{TensorCubbie, Cubbie}
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, Template2}
 
 /**
  * User: apassos

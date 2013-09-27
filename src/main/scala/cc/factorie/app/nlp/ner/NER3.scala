@@ -25,6 +25,9 @@ import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
+import cc.factorie.infer.{BP, InferByBPChainSum}
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {

@@ -15,6 +15,8 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.model._
+import cc.factorie.variable.{MutableVar, Var}
 
 trait DirectedFactor extends Factor {
   type ChildType <: Var

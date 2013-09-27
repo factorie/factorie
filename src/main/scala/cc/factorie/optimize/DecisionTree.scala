@@ -6,6 +6,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.StoreFetchCubbie
 import scala.util.Random
+import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar, HashFeatureVectorVariable}
+import cc.factorie.model.Template2
 
 class DecisionTreeMultiClassTrainer[Label](treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)

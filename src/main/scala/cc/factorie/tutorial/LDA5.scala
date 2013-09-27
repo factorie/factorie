@@ -9,6 +9,7 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.directed._
+import cc.factorie.variable._
 
 // A fast approximation to Topics-over-Time that leverages SparseLDAInferencer.
 // Estimate a per-topic Beta distribution over normalized time stamps.

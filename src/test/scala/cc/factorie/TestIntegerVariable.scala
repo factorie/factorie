@@ -17,6 +17,7 @@ package cc.factorie
 import cc.factorie.la._
 import junit.framework._
 import Assert._
+import cc.factorie.variable.{IntegerVariable, DiffList}
 
 /** @author Pallika Kanani */
 class TestIntegerVariable extends TestCase  with cc.factorie.util.FastLogging {

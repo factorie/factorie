@@ -16,6 +16,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 import cc.factorie.optimize.{MultiClassClassification, MultiClassClassifier}
+import cc.factorie.variable.{LabeledDiscreteEvaluation, LabeledMutableDiscreteVar, CategoricalDomain}
 
 
 case class LabeledClassification[L](label: L, classification: MultiClassClassification)

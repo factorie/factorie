@@ -7,6 +7,7 @@ import cc.factorie.directed._
 import cc.factorie.la.DenseTensor1
 import java.io.{File, PrintWriter}
 import scala.util.matching.Regex
+import cc.factorie.variable._
 
 /**
  * Created with IntelliJ IDEA.

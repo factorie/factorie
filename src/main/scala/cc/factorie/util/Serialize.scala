@@ -7,6 +7,9 @@ import cc.factorie._
 import cc.factorie.la._
 import scala.language.implicitConversions
 import cc.factorie.optimize.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie, RandomForestMultiClassClassifier}
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.model.{WeightsSetCubbie, Parameters}
 
 // TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
 // We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke

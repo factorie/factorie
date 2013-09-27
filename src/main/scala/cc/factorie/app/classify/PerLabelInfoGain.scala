@@ -1,6 +1,7 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
+import cc.factorie.variable._
 
 /** Calculate the information gain between the binary variable "in class" / "not in class" 
     and the binary variable "has feature" / "does not have feature"

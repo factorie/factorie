@@ -20,6 +20,9 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.{MaximizeByBPLoopy, InferByMPLP}
 
 object WordSegmenterDemo2 {
 

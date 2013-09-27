@@ -1,6 +1,8 @@
 package cc.factorie.debug
 
 import cc.factorie._
+import cc.factorie.variable.{Var, DiffList}
+import cc.factorie.model.Model
 
 /**
  * Test whether custom Diff implementations are correct

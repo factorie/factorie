@@ -16,6 +16,8 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
 import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.LabeledDiscreteEvaluation
+import cc.factorie.infer.{BP, InferByBPChainSum}
 
 //import bp._
 import optimize._

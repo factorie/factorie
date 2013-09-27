@@ -7,6 +7,8 @@ import cc.factorie.db.mongo._
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCubbieConverter, MongoCubbieImplicits}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import com.mongodb.Mongo
+import cc.factorie.variable.{StringVariable, DiffList}
+import cc.factorie.model.{Parameters, TemplateModel, Model}
 
 /**
  * Please also see app.bib.Coref.scala for a more in depth example.

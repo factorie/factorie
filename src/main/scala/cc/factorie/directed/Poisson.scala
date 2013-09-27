@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable.{IntegerVar, DoubleVar}
 
 object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
   case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {

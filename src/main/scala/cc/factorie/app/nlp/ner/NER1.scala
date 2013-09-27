@@ -5,6 +5,9 @@ import java.io.{File, InputStream, FileInputStream}
 import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConversions}
 import scala.concurrent.Await
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{Var, HammingTemplate, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model._
+import cc.factorie.infer.{InferByBPChainSum, BP}
 
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.

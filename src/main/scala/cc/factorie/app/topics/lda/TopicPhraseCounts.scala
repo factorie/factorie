@@ -2,6 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.util.{TopN,TopEntry}
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable.CategoricalDomain
 
 class TopicPhraseCounts(numTopics:Int, multiWordOnly:Boolean = true) {
   

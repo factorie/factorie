@@ -5,6 +5,8 @@ import cc.factorie.la._
 import optimize._
 import java.io.File
 import util.DoubleAccumulator
+import cc.factorie.model.{Weights2, Weights1, WeightsSet, Parameters}
+import cc.factorie.variable.TensorVar
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 
 

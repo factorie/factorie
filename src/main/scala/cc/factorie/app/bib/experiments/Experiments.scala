@@ -12,6 +12,9 @@ import io.Source
 import scala.util.Random
 import cc.factorie.util.{Attr,Cubbie}
 import Utils.random
+import cc.factorie.variable.DiffList
+import cc.factorie.model.{TemplateModel, Model}
+import cc.factorie.infer.Proposal
 
 class DebugDiffList extends DiffList{
   override def scoreAndUndo(model:Model): Double = {

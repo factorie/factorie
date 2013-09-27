@@ -2,12 +2,15 @@ package cc.factorie.tutorial
 
 import collection.mutable.{Buffer, ArrayBuffer}
 import cc.factorie._
+import cc.factorie.variable.{HammingTemplate, LabeledCategoricalVariable, DoubleVariable, BooleanDomain}
+import cc.factorie.model.{TupleTemplateWithStatistics2, CombinedModel}
+import cc.factorie.infer.{VariableSettingsSampler, SamplingMaximizer}
+
 //import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
 
 /**
  * Example of synthetic Ising Grid models
  * @author sameer
- * @date 4/19/12
  */
 
 object Grid {

@@ -22,6 +22,9 @@ import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.InferByBPChainSum
 
 object ChainNER1ML {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
@@ -88,7 +91,7 @@ object ChainNER1ML {
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
-      variables => cc.factorie.BP.inferChainMax(variables, model).setToMaximize(null)
+      variables => cc.factorie.infer.BP.inferChainMax(variables, model).setToMaximize(null)
     }
     println("test token accuracy=" + objective.accuracy(testLabelsSentences.flatten))
 

@@ -5,6 +5,11 @@ import db.mongo._
 import la.SparseIndexedTensor
 import collection.mutable.{ArrayBuffer,ListBuffer,HashSet,HashMap,LinkedHashMap}
 import cc.factorie.util.Cubbie
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.model._
+import scala.Some
+import cc.factorie.infer.{Proposal, SettingsSampler}
 
 class BagOfTruths(val entity:Entity, truths:Map[String,Double]=null) extends BagOfWordsVariable(Nil,truths) with EntityAttr
 class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)

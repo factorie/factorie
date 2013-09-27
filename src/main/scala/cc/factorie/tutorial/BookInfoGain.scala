@@ -7,6 +7,7 @@ import app.classify
 import classify._
 import la.Tensor
 import cc.factorie.optimize.OnlineLinearMultiClassTrainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 
 object BookInfoGain {
   object DocumentDomain extends CategoricalVectorDomain[String]

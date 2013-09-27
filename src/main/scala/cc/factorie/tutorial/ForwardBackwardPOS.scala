@@ -7,6 +7,9 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosLabel, PennPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{LabeledVarWithTarget, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel}
+import cc.factorie.infer.{InferByBPChainSum, BP}
 
 /**
  * Author: martin

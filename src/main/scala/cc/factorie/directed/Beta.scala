@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable.{DoubleVar, DoubleVariable, DiscreteVariable, DiscreteValue}
 
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */

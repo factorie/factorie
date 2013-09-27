@@ -17,6 +17,7 @@ import cc.factorie._
 import cc.factorie.directed._
 import scala.collection.mutable.ArrayBuffer
 import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
+import cc.factorie.variable._
 
 /** The abstract document variable required by LDA. */
 trait Doc extends SeqBreaks {

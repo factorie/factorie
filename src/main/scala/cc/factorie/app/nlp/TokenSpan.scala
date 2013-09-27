@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.{SpanList, SpanVariable, LabeledCategoricalVariable}
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {

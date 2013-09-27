@@ -19,6 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.app.classify
+import cc.factorie.variable._
 
 object DocumentClassifier1 {
   

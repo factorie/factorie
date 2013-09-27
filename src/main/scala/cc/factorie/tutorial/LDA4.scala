@@ -5,6 +5,7 @@ import scala.xml._
 import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.app.topics.lda._
+import cc.factorie.variable.CategoricalSeqDomain
 
 // For FUSE research abstracts in XML
 object LDA4 {

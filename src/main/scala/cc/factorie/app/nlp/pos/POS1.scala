@@ -9,6 +9,7 @@ import scala.collection.mutable.HashMap
 import java.io.{File,InputStream,FileInputStream}
 import org.junit.Assert._
 import cc.factorie.util.HyperparameterMain
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 
 class POS1 extends DocumentAnnotator {
   // Different ways to load saved parameters
