@@ -1,12 +1,5 @@
 package cc.factorie.app.nlp
 
-/**
-* Created with IntelliJ IDEA.
-* User: belanger
-* Date: 9/27/13
-* Time: 10:47 AM
-* To change this template use File | Settings | File Templates.
-*/
 
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.parse.{ParseTree, ParseTreeLabelDomain}
@@ -20,9 +13,9 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.core.`type`.TypeReference
 
 
-/**
-* @author sameer
-*/
+
+
+
 object JsonDocumentSerialization {
 
   def serialize(docs: Iterator[cc.factorie.app.nlp.Document], outputFilename: String): Unit = {
@@ -116,17 +109,28 @@ object JsonDocumentSerialization {
 
   private def deserializeSection(s: LightweightSection, doc: cc.factorie.app.nlp.Document) = {
     val section = new Paragraph(doc, s.start, s.end)
-    val sentenceStarts = s.senStarts
-    val sentenceLens = s.senLens
-
     val tokenStarts = s.tokens.map(_.start)
-    val tokenLengths = s.tokens.map(_.length)
+
     val tokenStrings = s.tokens.map(_.string)
     val tokenLemma = s.tokens.map(_.lemma)
     val tokenPOS = s.tokens.map(_.pos)
+    val tokenLengths = s.tokens.map(_.length)
+
+
+    for (i <- 0 until tokenStarts.length) {
+      val token = new cc.factorie.app.nlp.Token(section, tokenStarts(i), tokenStarts(i) + tokenLengths(i))
+      token.attr += new TokenString(token, tokenStrings(i))
+      token.attr += new TokenLemma(token, tokenLemma(i))
+      token.attr += new PennPosLabel(token, tokenPOS(i))
+    }
+
+    val sentenceStarts = s.senStarts
+    val sentenceLens = s.senLens
+
     //val tokenNER = this.tokenNER.value
     val tokenParseParent = s.tokens.map(_.parseParent)
     val tokenParseDepRel = s.tokens.map(_.parseLabel)
+
 
     for (i <- 0 until sentenceStarts.length) {
       // add sentence
@@ -144,13 +148,6 @@ object JsonDocumentSerialization {
         newTree.label(si).set(li)(null)
       }
       s.attr += newTree
-    }
-
-    for (i <- 0 until tokenStarts.length) {
-      val token = new cc.factorie.app.nlp.Token(section, tokenStarts(i), tokenStarts(i) + tokenLengths(i))
-      token.attr += new TokenString(token, tokenStrings(i))
-      token.attr += new TokenLemma(token, tokenLemma(i))
-      token.attr += new PennPosLabel(token, tokenPOS(i))
     }
 
     section
