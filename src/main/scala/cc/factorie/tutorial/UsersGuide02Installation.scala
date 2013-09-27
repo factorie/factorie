@@ -109,7 +109,7 @@ IntelliJ IDEA (12 CE):
 2. Select the top-level directory from your cloned FACTORIE project, the directory containing the pom.xml file.
 3. Select "Import project from external model" then highlight Maven as the type.
 4. The root directory should be set to the directory containing the pom.xml, and select "Import Maven projects automatically"
-5. Select the profile "nlp-jar-with-dependencies" (?)
+5. Select the profile "nlp-jar-with-dependencies"
 6. The FACTORIE Maven project should be automatically selected in the next window
 7. Make sure the project SDK is set to the correct JDK on your machine, version >= 1.5. You may have to set your JDK home path if you have not yet configured your JDK in IntelliJ
 8. Select the project name and location for the IDEA project to be stored. The defaults should be fine.
