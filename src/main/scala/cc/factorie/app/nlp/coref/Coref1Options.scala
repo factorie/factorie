@@ -9,6 +9,7 @@ import scala.collection.mutable
  */
 
 class Coref1Options {
+  import ConjunctionOptions._
   def getConfigHash = mutable.HashMap[String,String]() ++= configHash.map(x => (x._1,x._2.toString))
 
   def setConfigHash(H: mutable.HashMap[String,String]): Unit = {
@@ -34,10 +35,6 @@ class Coref1Options {
 
   var mergeFeaturesAtAll = true
 
-  val NO_CONJUNCTIONS = 1
-  val HASH_CONJUNCTIONS = 2
-  val SLOW_CONJUNCTIONS = 3
-
   var slackRescale = 2.0
 
   var conjunctionStyle = NO_CONJUNCTIONS
@@ -61,4 +58,10 @@ class Coref1Options {
 
   var mentionAlignmentShiftWidth = 0
   var learningRate = 1.0
+}
+
+object ConjunctionOptions {
+  val NO_CONJUNCTIONS = 1
+  val HASH_CONJUNCTIONS = 2
+  val SLOW_CONJUNCTIONS = 3
 }

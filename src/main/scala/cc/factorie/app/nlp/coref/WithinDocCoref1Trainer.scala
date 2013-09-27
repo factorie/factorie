@@ -85,8 +85,18 @@ object WithinDocCoref1Trainer {
 
   def main(args: Array[String]) {
     opts.parse(args)
-    val options = new Coref1Options
+    val conjunctionStyle = opts.conjunctionStyle.value match {
+      case "NONE" => ConjunctionOptions.NO_CONJUNCTIONS
+      case "HASH" => ConjunctionOptions.HASH_CONJUNCTIONS
+      case "SLOW" => ConjunctionOptions.SLOW_CONJUNCTIONS
+      case s => sys.error("Unknown conjunction style: " + s)
+    }
+
+    val lr = if (conjunctionStyle == ConjunctionOptions.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref1 else new WithinDocCoref1
+
+    val options = lr.options
     //options that get serialized with the model
+
     options.setConfig("useEntityType",opts.useEntityType.value)
     options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
     // options which affect only learning
@@ -111,12 +121,7 @@ object WithinDocCoref1Trainer {
     // options still in flux
     options.mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
     options.learningRate = opts.learningRate.value
-    options.conjunctionStyle = opts.conjunctionStyle.value match {
-      case "NONE" => options.NO_CONJUNCTIONS
-      case "HASH" => options.HASH_CONJUNCTIONS
-      case "SLOW" => options.SLOW_CONJUNCTIONS
-      case s => sys.error("Unknown conjunction style: " + s)
-    }
+    options.conjunctionStyle = conjunctionStyle
 
     println("** Arguments")
     val ignoreOpts = Set("config", "help", "version")
@@ -141,22 +146,17 @@ object WithinDocCoref1Trainer {
 
         //copy over options that are tweakable at test time
 	      println("deserializing from " + opts.deserialize.value)
-        lr.deserialize(opts.deserialize.value)
-        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
-        lr.options.useEntityLR = options.useEntityLR
-        lr.options.numCompareToTheLeft = options.numCompareToTheLeft
+        lr.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
+        //between train and test. These options were serialized with the model, and set when you deserialize the model.
 
+        //However, there are some options that are safe to change at test time. Just to be extra sure, we set this manually back
+        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 
         lr.model.MentionPairFeaturesDomain.freeze()
         lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
         lr
       }
       else{
-        //todo: the options handling needs to be overhauled. Currently it isn't copying over to lr.options many of the input options
-        val lr = if (options.conjunctionStyle == options.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref1 else new WithinDocCoref1
-        lr.options.setConfigHash(options.getConfigHash)
-        lr.options.useEntityLR = options.useEntityLR
-
         lr.train(trainDocs, testDocs, WordNet, rng, trainPredMaps.toMap, testTrueMaps.toMap,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
         lr
       }
