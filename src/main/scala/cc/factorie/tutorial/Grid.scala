@@ -82,7 +82,7 @@ object Grid {
       for (j: Int <- 0 until img(i).length) {
         if (img(i)(j).categoryValue) print("W") else print(" ")
       }
-      println
+      println()
     }
 
 

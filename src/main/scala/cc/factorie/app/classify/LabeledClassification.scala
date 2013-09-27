@@ -36,5 +36,5 @@ class Trial[L<:LabeledMutableDiscreteVar[_],F](val classifier: MultiClassClassif
     classifications += c
     super.+=(c.label, c.classification.bestLabelIndex)
   }
-  override def toString: String = "OVERALL: " + overallEvalString + "\n" +  evalString
+  override def toString(): String = "OVERALL: " + overallEvalString + "\n" +  evalString
 }

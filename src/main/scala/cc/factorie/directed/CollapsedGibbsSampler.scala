@@ -58,7 +58,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
       var done = false
       val handlerIterator = handlers.iterator
       while (!done && handlerIterator.hasNext) {
-        val closure = handlerIterator.next.sampler(v, factors, this)
+        val closure = handlerIterator.next().sampler(v, factors, this)
         if (closure ne null) {
           done = true
           closure.sample(d)
@@ -179,7 +179,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable]
       val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
@@ -233,7 +233,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedCategoricalMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable]
       val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]

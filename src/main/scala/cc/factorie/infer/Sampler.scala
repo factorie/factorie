@@ -51,7 +51,7 @@ trait Sampler[C] {
   // TODO Consider renaming this to "processContext"? -akm
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
-    val processingWithoutContext = (null == context)
+    val processingWithoutContext = null == context
     val c = preProcessHook(context)
     // The preProcessHook might return null to indicate it doesn't want to sample this context, so check for it:
     if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
@@ -123,7 +123,7 @@ trait ProposalSampler[C] extends Sampler[C] {
       case 1 => props.head 
       case _ => pickProposal(props)
     }
-    proposal.diff.redo
+    proposal.diff.redo()
     proposalHook(proposal)
     proposal.diff
   }
@@ -251,7 +251,7 @@ class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, object
         //if (prevDiffList ne null) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
         _hasNext = nextValues(vs, vds)
         // copy over the difflist for each variable to the result
-        vds.foreach(vd => { vd.done = false; vd.redo; result ++= vd })
+        vds.foreach(vd => { vd.done = false; vd.redo(); result ++= vd })
       }
       //println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
       result
@@ -274,8 +274,8 @@ object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscr
     val d1 = icm.processAll(variables, returnDiffs = true)
     val as = new HashMapAssignment
     variables.foreach(v => as.update(v.asInstanceOf[DiscreteVar], v.value.asInstanceOf[DiscreteVar#Value]))
-    d1.undo
-    d0.undo
+    d1.undo()
+    d0.undo()
     new MAPSummary(as, model.factors(variables).toSeq)
   }
 }
@@ -298,7 +298,7 @@ trait FactorQueue[C] extends Sampler[C] {
     if (useQueue) {
       var queueDiff: DiffList = new DiffList
       if (queueProportion > 1.0 && !queue.isEmpty) {
-        for (i <- 0 until (queueProportion.toInt)) if (!queue.isEmpty) {
+        for (i <- 0 until queueProportion.toInt) if (!queue.isEmpty) {
           val qd = sampleFromQueue
           if (qd != null) queueDiff ++= qd
         }
@@ -314,8 +314,8 @@ trait FactorQueue[C] extends Sampler[C] {
     }
   }
   def sampleFromQueue : DiffList = {
-    val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
-    for (variable <- factor.variables.toSeq.shuffle; if (!variable.isInstanceOf[VarWithConstantValue])) {
+    val factor = queue.dequeue() // TODO consider proportionally sampling from the queue instead
+    for (variable <- factor.variables.toSeq.shuffle; if !variable.isInstanceOf[VarWithConstantValue]) {
       val difflist = process0(variable)
       if (difflist != null && difflist.size > 0) return difflist
     }

@@ -103,8 +103,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     }
   }
   override def apply(i:Int): Value = _elements(i)
-  def category(i:Int): C = lock.withReadLock { _elements(i).category.asInstanceOf[C] }
-  def categories: Seq[C] = lock.withReadLock { _elements.map(_.category.asInstanceOf[C]) }
+  def category(i:Int): C = lock.withReadLock {_elements(i).category}
+  def categories: Seq[C] = lock.withReadLock { _elements.map(_.category) }
   /** Return the integer associated with the category, do not increment the count of category, even if gatherCounts is true. */
   def indexOnly(category:C): Int = {
     val v = value(category)
@@ -133,7 +133,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def indexAll(c: Set[C]) = c map index
 
   override def dimensionName(i:Int): String = category(i).toString
-  override def toString = "CategoricalDomain[]("+size+")"
+  override def toString() = "CategoricalDomain[]("+size+")"
 
   protected def newCategoricalValue(i:Int, e:C) = new CategoricalValue(i, e)
   protected class CategoricalValue(val singleIndex:Int, val category:C) extends variable.CategoricalValue[C] {
@@ -164,7 +164,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     clear()
     gatherCounts = false
     for (i <- 0 until origEntries.size)
-      if (_apply(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
+      if (_apply(i) >= threshold) indexOnly(origEntries(i).category)
     _clear() // We don't need counts any more; allow it to be garbage collected.
     freeze()
     origEntries.size - size

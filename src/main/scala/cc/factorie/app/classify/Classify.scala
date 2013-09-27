@@ -206,7 +206,7 @@ object Classify {
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        for (file <- new File(directory).listFiles; if file.isFile) {
           //println ("Directory " + directory + " File " + file + " documents.size " + documents.size)
           val labelName = directoryFile.getName
           val instanceName = labelName + "-" + file.getName

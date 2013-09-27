@@ -23,13 +23,13 @@ import cc.factorie.app.classify.OnlineLinearMultiClassTrainer
 object DocumentClassifier1 {
   
   // Define variable classes
-  object DocumentDomain extends CategoricalVectorDomain[String];
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     val label = new Label(file.getParentFile.getName, this)
     cc.factorie.app.strings.alphaSegmenter(file).foreach(token => this += token)
   }
-  object LabelDomain extends CategoricalDomain[String];
+  object LabelDomain extends CategoricalDomain[String]
   class Label(labelString:String, val document:Document) extends LabeledCategoricalVariable(labelString) {
     def domain = LabelDomain
   }
@@ -46,7 +46,7 @@ object DocumentClassifier1 {
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
         docLabels += new Document(file).label
       }

@@ -81,7 +81,7 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   type Element = E
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that apply(Int) is more efficient.
   @inline final def value: IndexedSeq[Element] = _seq // Note that for efficiency we don't return a copy, but this means that this value could change out from under a saved "value" if this variable value is changed. 
-  def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
+  def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear(); _seq ++= newValue }
   def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
   def add(e:Element)(implicit d:DiffList): Unit = Append1Diff(e)
   def append(es:Element*)(implicit d:DiffList): Unit = AppendDiff(es:_*)
@@ -94,14 +94,14 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   def swap(i:Int,j:Int)(implicit d:DiffList) = Swap1Diff(i,j)
   def swapLength(pivot:Int,length:Int)(implicit d:DiffList) = for (i <- pivot-length until pivot) Swap1Diff(i,i+length)
   abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = MutableSeqVar.this}
-  case class UpdateDiff(i:Int, x:Element)(implicit d:DiffList) extends SeqVariableDiff {val xo = _seq(i); def undo = _seq(i) = xo; def redo = _seq(i) = x}
-  case class Append1Diff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
-  case class AppendDiff(xs:Element*)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(xs.length); def redo = _seq.append(xs:_*)}
-  case class PrependDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimStart(1); def redo = _seq.prepend(x)}
-  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo = _seq prependAll (s); def redo = _seq.trimStart(n)}
-  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo = _seq appendAll (s); def redo = _seq.trimEnd(n)}
-  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = _seq(n); def undo = _seq.insert(n,e); def redo = _seq.remove(n)}
-  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo = undo }
+  case class UpdateDiff(i:Int, x:Element)(implicit d:DiffList) extends SeqVariableDiff {val xo = _seq(i); def undo() = _seq(i) = xo; def redo() = _seq(i) = x}
+  case class Append1Diff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo() = _seq.trimEnd(1); def redo() = _seq.append(x)}
+  case class AppendDiff(xs:Element*)(implicit d:DiffList) extends SeqVariableDiff {def undo() = _seq.trimEnd(xs.length); def redo() = _seq.append(xs:_*)}
+  case class PrependDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo() = _seq.trimStart(1); def redo() = _seq.prepend(x)}
+  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo() = _seq prependAll s; def redo() = _seq.trimStart(n)}
+  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo() = _seq appendAll s; def redo() = _seq.trimEnd(n)}
+  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = _seq(n); def undo() = _seq.insert(n,e); def redo() = _seq.remove(n)}
+  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo() = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo() = undo }
   // Override some methods for a slight gain in efficiency
   override def length = _seq.length
   override def iterator = _seq.iterator

@@ -133,7 +133,7 @@ trait DoubleSeq {
     }
     b.append(end); b
   }
-  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString
+  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString()
   def mkString(sep:String): String = mkString("", sep, "")
   def mkString: String = mkString(" ")
 }

@@ -158,7 +158,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     val cleanEntities = new ArrayBuffer[T]
     cleanEntities ++= es.filter(_.isConnected)
     deletedEntities ++= es.filter(!_.isConnected)
-    es.clear
+    es.clear()
     es++=cleanEntities
     //println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
   }
@@ -310,8 +310,8 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     val newEntities = new HashSet[T]
     for(diff<-proposal.diff){
       diff.variable match {
-        case v:EntityExists => diff.undo
-        case v:IsEntity => diff.undo
+        case v:EntityExists => diff.undo()
+        case v:IsEntity => diff.undo()
         case _ => {}
       }
     }
@@ -323,8 +323,8 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     }
     for(diff<-proposal.diff){
       diff.variable match{
-        case v:EntityExists => diff.redo
-        case v:IsEntity => diff.redo
+        case v:EntityExists => diff.redo()
+        case v:IsEntity => diff.redo()
         case _ => {}
       }
     }
@@ -596,7 +596,7 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
   def l2Norm = scala.math.sqrt(_l2Norm)
   def l1Norm = _l1Norm
   def asHashMap:HashMap[String,Double] = {val result = new HashMap[String,Double];result ++= _bag;result}
-  override def toString = _bag.toString
+  override def toString = _bag.toString()
   def apply(s:String):Double = _bag.getOrElse(s,0.0)
   def contains(s:String):Boolean = _bag.contains(s)
   def size = _bag.size
@@ -636,7 +636,7 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
       else _bag(s) = _bag.getOrElse(s,0.0) - w
     }
   }
-  @inline final def withinEpsilon(v1:Double, v2:Double, epsilon:Double=0.000001):Boolean = if(v1==v2)true else ((v1-v2).abs<=epsilon)
+  @inline final def withinEpsilon(v1:Double, v2:Double, epsilon:Double=0.000001):Boolean = if(v1==v2)true else (v1 - v2).abs <= epsilon
   def addBag(that:BagOfWords) ={
     //that match{case t:SparseBagOfWords=>t.sizeHint(this.size+that.size)}
     for((k,v) <- that.iterator) this += (k,v)
@@ -688,29 +688,29 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String
   case class BagOfWordsVariableAddStringDiff(added: String,w:Double) extends Diff {
     // Console.println ("new SetVariableAddDiff added="+added)
     def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members += (added,w)
-    def undo = _members -= (added,w)
+    def redo() = _members += (added,w)
+    def undo() = _members -= (added,w)
     override def toString = "BagOfWordsVariableAddStringDiff of " + added + " to " + BagOfWordsVariable.this
   }
   case class BagOfWordsVariableRemoveStringDiff(removed: String,w:Double) extends Diff {
     //        Console.println ("new SetVariableRemoveDiff removed="+removed)
     def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members -= (removed,w)
-    def undo = _members += (removed,w)
+    def redo() = _members -= (removed,w)
+    def undo() = _members += (removed,w)
     override def toString = "BagOfWordsVariableRemoveStringDiff of " + removed + " from " + BagOfWordsVariable.this
   }
   case class BagOfWordsVariableAddBagDiff(added:BagOfWords) extends Diff {
     // Console.println ("new SetVariableAddDiff added="+added)
     def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members.addBag(added)
-    def undo = _members.removeBag(added)
+    def redo() = _members.addBag(added)
+    def undo() = _members.removeBag(added)
     override def toString = "BagOfWordsVariableAddBagDiff of " + added + " to " + BagOfWordsVariable.this
   }
   case class BagOfWordsVariableRemoveBagDiff(removed: BagOfWords) extends Diff {
     //        Console.println ("new SetVariableRemoveDiff removed="+removed)
     def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members.removeBag(removed)
-    def undo = _members.addBag(removed)
+    def redo() = _members.removeBag(removed)
+    def undo() = _members.addBag(removed)
     override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
   }
 }
@@ -914,7 +914,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
         if(count % (25*10000) == 0){
           val elapsed = (System.currentTimeMillis - startTime)/1000L
           val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-          println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+          println(count+" total time: "+ elapsed +" elasped: "+ elapsedInterval)
           intervalTime = System.currentTimeMillis
         }
       }
@@ -944,7 +944,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
   val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths))) with LazyCubbieConverter[C]
   protected def removeEntities(deleted:Seq[E]):Unit = for(e <- deleted)entityCubbieColl.remove(_.idIs(entity2cubbie(e).id))
   //TODO: generalize MongoSlot so that we can move this into the EnttiyCollection class
-  def drop:Unit = entityColl.drop
+  def drop:Unit = entityColl.drop()
   def loadLabeled:Seq[E] ={
     reset
     val result = new ArrayBuffer[C]
@@ -994,7 +994,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
     val qtime = System.currentTimeMillis
     println("About to load entities for canopies.")
     while(count<numToTake && qresult.hasNext){
-      val ec = qresult.next
+      val ec = qresult.next()
       for(name <- ec.canopies.value){
         if(!canopyHash.contains(name)){
           val elapsedTime = System.currentTimeMillis
@@ -1053,7 +1053,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
       topPriority += sorted.next
       if(i<10)println("  "+topPriority(i).inferencePriority.value+": "+topPriority(i).canopies.value.toSeq)
     }
-    sorted.close
+    sorted.close()
     var count = 0
     val qtime = System.currentTimeMillis
     println("About to load entities for canopies.")
@@ -1105,7 +1105,7 @@ abstract class MongoDBEntityCollection[E<:HierEntity with HasCanopyAttributes[E]
       if(count % (25*10000) == 0){
         val elapsed = (System.currentTimeMillis - startTime)/1000L
         val elapsedInterval = (System.currentTimeMillis - intervalTime)/1000L
-        println(count+" total time: "+(elapsed)+" elasped: "+(elapsedInterval))
+        println(count+" total time: "+ elapsed +" elasped: "+ elapsedInterval)
         intervalTime = System.currentTimeMillis
       }
       val e = newEntity

@@ -69,7 +69,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       //override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
       override def unroll(v:Var) = v match { case v:Aggregate#Member => Factor(v.owner, Vars(v.owner.members)); case _ => Nil }
       override def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
-        new RealVariable(v2.filter(_.booleanValue).size).value // TODO Just create a RealValue; don't bother with a RealVariable
+        new RealVariable(v2.count(_.booleanValue)).value // TODO Just create a RealValue; don't bother with a RealVariable
     }
     val diff = new DiffList
     aggregate.members(0).set(true)(diff)
@@ -83,11 +83,6 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   }
 }
 
-
-/**
- * @author brian martin
- * @date 2/9/2012
- */
 //class SettingIteratorTests extends TestCase {
 //  val v1 = new BooleanVariable(true)
 //  val v2 = new BooleanVariable(true)

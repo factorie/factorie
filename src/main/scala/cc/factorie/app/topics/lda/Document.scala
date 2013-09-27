@@ -117,7 +117,7 @@ object Document {
       //allWords += w
       if (stopwords.contains(w)) doc.breaks += doc.length // break goes at the index of the next word---the word that will begin the next phrase
       else doc.appendCategory(w)
-      if (doc.length == wordCountMax) break
+      if (doc.length == wordCountMax) break()
     }}
     doc.trimCapacity
     /*if (allWords.contains("logistic")) {

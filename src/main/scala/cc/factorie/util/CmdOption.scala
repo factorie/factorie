@@ -107,7 +107,7 @@ class CmdOptions {
       var invoked = false
       val optsIter = opts.valuesIterator
       while (optsIter.hasNext && !invoked) {
-        val opt = optsIter.next
+        val opt = optsIter.next()
         index = opt.parse(args, index)
         invoked = index != origIndex
         assert(invoked || index == origIndex)

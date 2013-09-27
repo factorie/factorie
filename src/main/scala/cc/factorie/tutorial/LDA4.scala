@@ -35,7 +35,7 @@ object LDA4 {
         // println("yearTxt="+yearTxt)
         val year = if (yearTxt.length >= 4) yearTxt.substring(0,4) else "2000"
         //val doc = Document(WordSeqDomain, file.getCanonicalPath, text)
-        print("."); Console.flush 
+        print("."); Console.flush()
         (file.getCanonicalPath, text, year)
       })
       texts.foreach({case(name, text, year) => {
@@ -43,7 +43,7 @@ object LDA4 {
         doc.year = year.toInt
         if (doc.year > maxYear) maxYear = doc.year
         if (doc.year < minYear) minYear = doc.year
-        if (doc.length > 3) { print("+"+doc.year); Console.flush; lda.addDocument(doc, random) }
+        if (doc.length > 3) { print("+"+doc.year); Console.flush(); lda.addDocument(doc, random) }
       }})
       println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
       /*for (file <- recursiveFiles(new File(dirname))) {
@@ -84,7 +84,7 @@ object LDA4 {
     val f = javax.xml.parsers.SAXParserFactory.newInstance()
     f.setNamespaceAware(false)
     f.setValidating(false)
-    f.setFeature("http://xml.org/sax/features/validation", false);
+    f.setFeature("http://xml.org/sax/features/validation", false)
     f.newSAXParser()
   }
 

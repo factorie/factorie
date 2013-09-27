@@ -32,7 +32,7 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   type NeighborType2 = N2
 
   def score(v1:N1#Value, v2:N2#Value): Double
-  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
+  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = (v1, v2).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
   def currentScore: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
   override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
@@ -47,11 +47,11 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   def currentAssignment = new Assignment2(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def assignmentScore(a:Assignment) = a match {
-    case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => score(a.value1, a.value2)
+    case a:AbstractAssignment2[N1,N2] if (a._1 eq _1) && (a._2 eq _2) => score(a.value1, a.value2)
     case _ => score(a(_1), a(_2))
   }
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
-    case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => statistics(a.value1, a.value2)
+    case a:AbstractAssignment2[N1,N2] if (a._1 eq _1) && (a._2 eq _2) => statistics(a.value1, a.value2)
     case _ => statistics(a(_1), a(_2))
   }
   /** Given multiplicative factors on values of neighbor _1 (which allow for limited iteration), and given the Tensor value of neighbor _2,
@@ -233,7 +233,7 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
     override def limitedDiscreteValues1: SparseBinaryTensor1 = Family2.this.limitedDiscreteValues1 //(this.asInstanceOf[Factor2[VectorVar,N2]])
   }
   def score(v1:N1#Value, v2:N2#Value): Double
-  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
+  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = (v1, v2).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
   def statisticsAreValues: Boolean = false
@@ -321,7 +321,7 @@ trait TupleFamily2[N1<:Var,N2<:Var] extends Family2[N1,N2] {
 }
 
 trait TupleFamilyWithStatistics2[N1<:Var,N2<:Var] extends TupleFamily2[N1,N2] {
-  final override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = ((v1, v2))
+  final override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = (v1, v2)
   final override def statisticsAreValues: Boolean = true
 }
 

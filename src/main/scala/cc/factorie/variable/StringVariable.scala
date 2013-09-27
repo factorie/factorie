@@ -44,8 +44,8 @@ class StringVariable(initialValue:String) extends MutableStringVar {
   }
   case class StringVariableDiff(oldString:String, newString:String) extends Diff {
     @inline final def variable: StringVariable = StringVariable.this
-    @inline final def redo = _value = newString
-    @inline final def undo = _value = oldString
+    @inline final def redo() = _value = newString
+    @inline final def undo() = _value = oldString
     override def toString = "StringVariableDiff("+oldString+","+newString+")"
   }
 }

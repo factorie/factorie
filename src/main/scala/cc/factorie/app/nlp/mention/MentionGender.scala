@@ -11,7 +11,7 @@ object MentionGenderDomain extends EnumDomain {
   FEMALE = Value   // female person
 }
 class MentionGenderLabel(val mention:Mention, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  def this(m:Mention, initialIntValue:Int) = this(m, MentionGenderDomain(initialIntValue).category.asInstanceOf[String])
+  def this(m:Mention, initialIntValue:Int) = this(m, MentionGenderDomain(initialIntValue).category)
   def domain = MentionGenderDomain
 }
 
@@ -53,14 +53,14 @@ class MentionGenderLabeler extends DocumentAnnotator {
   }
   def classifyPronoun(mention: Mention): Option[Int] = {
     if(mention.length > 1)
-      return None
+      None
     else{
       val lemma = mention.tokens.head.lemmaString.toLowerCase
       if(maleWords.contains(lemma))
-        return Some(MentionGenderDomain.MALE)
+        Some(MentionGenderDomain.MALE)
       else if (femaleWords.contains(lemma))
-        return Some(MentionGenderDomain.FEMALE)
-      else return None
+        Some(MentionGenderDomain.FEMALE)
+      else None
     }
   }
 

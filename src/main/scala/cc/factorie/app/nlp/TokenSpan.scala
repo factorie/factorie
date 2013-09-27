@@ -36,9 +36,9 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
         if (span.tokens(j).string != tokens(i2)) result = false
         j += 1; i2 += 1
       }
-      if (result == true) return true 
+      if (result) return true
     }
-    return false
+    false
   }
   override def toString = "TokenSpan("+start+":"+this.phrase+")"
   /** A short name for this span */

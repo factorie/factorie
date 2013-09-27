@@ -142,7 +142,7 @@ object Coref1 {
   object EntityRefSampler extends SettingsSampler[EntityRef](new EntityMentionModel, null)(new scala.util.Random(0)) {
     def settings(entityRef:EntityRef) : SettingIterator = new SettingIterator {
       val mention = entityRef.src.asInstanceOf[TokenSpanMention]
-      val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
+      val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions

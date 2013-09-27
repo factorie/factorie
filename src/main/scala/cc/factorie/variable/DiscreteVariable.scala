@@ -113,10 +113,10 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
 
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable = MutableDiscreteVar.this
-    @inline final def redo = MutableDiscreteVar.this.set(newValue)(null)
-    @inline final def undo = MutableDiscreteVar.this.set(oldValue)(null)
+    @inline final def redo() = MutableDiscreteVar.this.set(newValue)(null)
+    @inline final def undo() = MutableDiscreteVar.this.set(oldValue)(null)
     override def toString = variable match { 
-      case cv:CategoricalVar[_,_] if (oldValue >= 0) => "MutableDiscreteVarDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
+      case cv:CategoricalVar[_,_] if oldValue >= 0 => "MutableDiscreteVarDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
       case _ => "MutableDiscreteVarDiff("+oldValue+","+newValue+")"
     }
   }

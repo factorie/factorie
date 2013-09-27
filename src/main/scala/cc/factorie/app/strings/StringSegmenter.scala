@@ -33,7 +33,7 @@ class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmente
   def apply(s:String): StringSegmentIterator = new StringSegmentIterator {
     val matchIterator: scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
     def hasNext = matchIterator.hasNext
-    def next = matchIterator.next
+    def next() = matchIterator.next()
     def start = matchIterator.start
     def end = matchIterator.end
   }
@@ -47,7 +47,7 @@ class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
     var nextStart: Int = bi.first()
     var nextEnd: Int = bi.next()
     def hasNext: Boolean = nextEnd != BreakIterator.DONE
-    def next: String = {
+    def next(): String = {
       start = nextStart
       end = nextEnd
       val result = s.substring(start, end)

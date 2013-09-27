@@ -257,8 +257,8 @@ class SparseLDAInferencer(
         //println("ti="+newTi)
         localTopicCounts(ti) -= 1
         if (localTopicCounts(ti) == 0) {
-					denseIndex = 0;
-					while (localTopicIndex(denseIndex) != ti)
+					denseIndex = 0
+          while (localTopicIndex(denseIndex) != ti)
 						denseIndex += 1
 
 					while (denseIndex < nonZeroTopics) {
@@ -273,9 +273,9 @@ class SparseLDAInferencer(
 
         localTopicCounts(newTi) += 1
         if (localTopicCounts(newTi) == 1) {
-				  denseIndex = nonZeroTopics;
+				  denseIndex = nonZeroTopics
 
-				  while (denseIndex > 0 && localTopicIndex(denseIndex - 1) > newTi) {
+          while (denseIndex > 0 && localTopicIndex(denseIndex - 1) > newTi) {
 					 localTopicIndex(denseIndex) = localTopicIndex(denseIndex - 1)
 					 denseIndex -= 1
 				  }

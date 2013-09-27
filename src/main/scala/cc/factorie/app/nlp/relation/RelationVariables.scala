@@ -87,7 +87,7 @@ object RelationVariables {
       } catch {
         case _: Throwable =>
       }
-      for (child <- from.parseChildren; if (!visited(child))) {
+      for (child <- from.parseChildren; if !visited(child)) {
         for (path <- shortestPath(child, to, visited + from)) {
           val edge = PathEdge(from, child, child.parseLabel.categoryValue, true)
           paths += edge +: path
@@ -132,7 +132,7 @@ object RelationVariables {
 
 
     def tokenIsPossessive(token: Token) = {
-      token.posLabel.categoryValue == "PRP$" || (token.string.endsWith("'s"))
+      token.posLabel.categoryValue == "PRP$" || token.string.endsWith("'s")
     }
 
     def null2opt[T](t: T) = if (t == null) None else Some(t)
@@ -375,9 +375,9 @@ object RelationVariables {
     var total = 0
     var added = 0
     mentions.foreach(_.attr.getOrElseUpdate(new RelationMentions))
-    for (m1 <- mentions; m2 <- mentions; if (m1 != m2 &&
-      m1.head.sentence == m2.last.sentence &&
-      m1.last.sentence == m2.head.sentence)) {
+    for (m1 <- mentions; m2 <- mentions; if m1 != m2 &&
+                                            m1.head.sentence == m2.last.sentence &&
+                                            m1.last.sentence == m2.head.sentence) {
       total += 1
       // check whether it already exists
       val rmentions1 = m1.attr[RelationMentions]

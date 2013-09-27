@@ -121,7 +121,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
     while (factorIter.hasNext)
       factorIter.next() match {
         case MultivariateGaussian.Factor(fvalue, _, fcovariance) if fcovariance == covarianceVar =>
-          val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+          val centered = (fvalue.value - mean)
           sum += new Outer1Tensor2(centered, centered)
           count += 1.0
         case MultivariateGaussianMixture.Factor(fvalue, _, fcovariances, gate) if fcovariances.contains(covarianceVar) =>
@@ -129,13 +129,13 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
           val mixtureIndex = fcovariances.indexOf(covarianceVar)
           if (gateMarginal eq null) {
             if (gate.intValue == mixtureIndex) {
-              val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+              val centered = (fvalue.value - mean)
               sum += new Outer1Tensor2(centered, centered)
               count += 1.0
             }
           } else {
             val p = gateMarginal.proportions(mixtureIndex)
-            val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+            val centered = (fvalue.value - mean)
             centered *= math.sqrt(p)
             sum += new Outer1Tensor2(centered, centered)
             count += p

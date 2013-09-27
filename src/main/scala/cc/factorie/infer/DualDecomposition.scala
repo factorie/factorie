@@ -60,7 +60,7 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
       summary.summary.setToMaximize(d)
       for (diff <- d; v = diff.variable)
         as.update[v.type,v.type#Value](v, v.value.asInstanceOf[v.type#Value])
-      d.undo
+      d.undo()
     }
     new MAPSummary(as, summaries.flatMap(_.summary.factorMarginals.map(_.factor)).distinct)
   }

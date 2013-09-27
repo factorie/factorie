@@ -71,7 +71,7 @@ object Cards4 {
     }
   }
 
-  def isRun(s:Seq[Card]): Boolean = { for (i <- 0 until s.length - 1) if (s(i).n != s(i+1).n-1) return false; return true }
+  def isRun(s:Seq[Card]): Boolean = { for (i <- 0 until s.length - 1) if (s(i).n != s(i+1).n-1) return false; true }
   def hasSuitRun(cards:Seq[Card], runLength:Int): Boolean = {
     val rl = runLength + 1
     val bySuit = cards.groupBy(_.suit).values

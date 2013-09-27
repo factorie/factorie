@@ -62,14 +62,14 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
   final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
   case class SetVariableAddDiff(added: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
-    def redo = _members += added //if (_members.contains(added)) throw new Error else
-    def undo = _members -= added
+    def redo() = _members += added //if (_members.contains(added)) throw new Error else
+    def undo() = _members -= added
     override def toString = "SetVariableAddDiff of " + added + " to " + SetVariable.this
   }
   case class SetVariableRemoveDiff(removed: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
-    def redo = _members -= removed
-    def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    def redo() = _members -= removed
+    def undo() = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "SetVariableRemoveDiff of " + removed + " from " + SetVariable.this
   }
 }
@@ -96,13 +96,13 @@ class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scal
   }
   case class WeakSetVariableAddDiff(added: A) extends Diff {
     def variable: WeakSetVariable[A] = WeakSetVariable.this
-    def redo = _members += added //if (_members.contains(added)) throw new Error else
-    def undo = _members -= added
+    def redo() = _members += added //if (_members.contains(added)) throw new Error else
+    def undo() = _members -= added
   }
   case class WeakSetVariableRemoveDiff(removed: A) extends Diff {
     def variable: WeakSetVariable[A] = WeakSetVariable.this
-    def redo = _members -= removed
-    def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    def redo() = _members -= removed
+    def undo() = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "WeakSetVariableRemoveDiff of " + removed + " from " + WeakSetVariable.this
   }
 }

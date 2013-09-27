@@ -59,7 +59,7 @@ abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Ran
   def bestConfigHook(): Unit = {}
   
   /** Specialization of cc.factorie.Proposal that adds a MH forward-backward transition ratio, typically notated as a ratio of Qs. */
-  case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, val bfRatio:Double, val temperature:Double) extends cc.factorie.infer.Proposal(diff, modelScore, objectiveScore,acceptanceScore)
+  case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, bfRatio:Double, temperature:Double) extends cc.factorie.infer.Proposal(diff, modelScore, objectiveScore,acceptanceScore)
   
   var proposalsCount = 0
   def proposals(context:C): Seq[Proposal] = {
@@ -172,7 +172,7 @@ abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Ran
     // TODO Change this to actually sample, but test to make sure that the commented code is correct !!!
     if (logAcceptanceProb > math.log(random.nextDouble())) {
       // Proposal accepted!  (Re)make the change.
-      difflist.redo
+      difflist.redo()
       // Update diagnostics
       numAcceptedMoves += 1
       proposalAccepted = true

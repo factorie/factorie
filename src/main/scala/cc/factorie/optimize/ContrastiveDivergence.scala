@@ -22,7 +22,7 @@ class ContrastiveDivergenceExample[C](val context: C, model: Model with Paramete
     val proposalDiff = new DiffList
     repeat(k) { proposalDiff ++= sampler.process(context) }
     model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-    proposalDiff.undo
+    proposalDiff.undo()
     model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
   }
 }
@@ -41,7 +41,7 @@ class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val cont
     val groundTruthDiff = new DiffList
     context.setToTarget(groundTruthDiff)
     model.factorsOfFamilyClass[DotFamily](groundTruthDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-    groundTruthDiff.undo
+    groundTruthDiff.undo()
     val proposalDiff = sampler.process(context)
     model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
   }
@@ -68,11 +68,11 @@ class ContrastiveDivergenceHingeExample[C <: Var](
     val proposalScore = model.currentScore(context)
     if (truthScore - proposalScore < learningMargin) {
       model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      proposalDiff.undo
+      proposalDiff.undo()
       model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       value.accumulate(truthScore - proposalScore)
     } else
-      proposalDiff.undo
+      proposalDiff.undo()
   }
 }
 
@@ -97,10 +97,10 @@ class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
     val truthScore = model.currentScore(context)
     if (truthScore - currentConfigScore < learningMargin) {
       model.factorsOfFamilyClass[DotFamily](groundTruthDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      groundTruthDiff.undo
+      groundTruthDiff.undo()
       model.factorsOfFamilyClass[DotFamily](proposalDiff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
       value.accumulate(truthScore - currentConfigScore)
     } else
-      groundTruthDiff.undo
+      groundTruthDiff.undo()
   }
 }

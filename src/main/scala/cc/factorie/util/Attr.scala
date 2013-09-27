@@ -111,7 +111,7 @@ trait Attr {
       val result = new scala.collection.mutable.ArrayBuffer[AnyRef]
       var i = 0
       while (i < _attr.length) {
-        if ((_attr(i) ne null)) result += _attr(i)
+        if (_attr(i) ne null) result += _attr(i)
         i += 1
       }
       result

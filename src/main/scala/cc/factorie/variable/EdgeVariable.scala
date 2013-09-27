@@ -43,8 +43,8 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
   final def setDst(newDst:B)(implicit d:DiffList): Unit = set(_src, newDst)
   case class EdgeDiff(oldSrc:A, newSrc:A, oldDst:B, newDst:B) extends Diff {
     def variable = EdgeVariable.this
-    def redo = { _src = newSrc; _dst = newDst }
-    def undo = { _src = oldSrc; _dst = oldDst }
+    def redo() = { _src = newSrc; _dst = newDst }
+    def undo() = { _src = oldSrc; _dst = oldDst }
     override def toString = "EdgeDiff(%s,%s,%s,%s)".format(oldSrc.toString, newSrc.toString, oldDst.toString, newDst.toString)
   }
 }
@@ -66,8 +66,8 @@ class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
   //final def set(value:(A,B))(implicit d:DiffList): Unit = set(value._1, value._2) // Was here to enable MutableVar, but clashes with set(newDst:B)
   case class ArrowDiff(oldDst:B, newDst:B) extends Diff {
     def variable = ArrowVariable.this
-    def redo = _dst = newDst
-    def undo = _dst = oldDst
+    def redo() = _dst = newDst
+    def undo() = _dst = oldDst
     override def toString = "ArrowDiff(%s,%s)".format(oldDst, newDst)
   }
 }

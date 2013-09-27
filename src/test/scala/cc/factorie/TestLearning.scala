@@ -108,7 +108,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
-        for (b <- bools) b.set(random.nextBoolean)(delta)
+        for (b <- bools) b.set(random.nextBoolean())(delta)
         0.0
       }
   }

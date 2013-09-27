@@ -30,7 +30,7 @@ class GibbsSampler(val model:Model, val objective:Model = null)(implicit val ran
     var done = false
     val handlerIterator = handlers.iterator
     while (!done && handlerIterator.hasNext) {
-      val closure = handlerIterator.next.sampler(v, factors, this)
+      val closure = handlerIterator.next().sampler(v, factors, this)
       if (closure ne null) {
         done = true
         closure.sample(d)

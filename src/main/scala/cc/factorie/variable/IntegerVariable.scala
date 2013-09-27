@@ -51,8 +51,8 @@ class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with Mutab
   def /=(x:Int) = set(_value / x)(null)
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
     @inline final def variable: IntegerVariable = IntegerVariable.this
-    @inline final def redo = _value = newIndex
-    @inline final def undo = _value = oldIndex
+    @inline final def redo() = _value = newIndex
+    @inline final def undo() = _value = oldIndex
     override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }

@@ -152,7 +152,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
     }
     result
   }
-  val contents = new HashMap[String,List[LexiconToken]];
+  val contents = new HashMap[String,List[LexiconToken]]
   private def +=(t:LexiconPhraseToken): Unit = {
     val key = lemmatizer.lemmatize(t.string)
     val old: List[LexiconToken] = contents.getOrElse(key, Nil)
@@ -205,7 +205,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         if (te.string != lemmatizer.lemmatize(tq.string)) result = false
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) result = false
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && result == true)   
+      } while (te != null && tq != null && result)
       if (result && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return true
@@ -234,7 +234,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         if (te.string != lemmatizer.lemmatize(tq.string)) result = false
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) result = false
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && result == true)   
+      } while (te != null && tq != null && result)
       if (result && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return true
@@ -260,7 +260,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) found = false
         len += 1
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && found == true)   
+      } while (te != null && tq != null && found)
       if (found && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return len

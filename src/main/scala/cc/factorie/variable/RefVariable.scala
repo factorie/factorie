@@ -37,8 +37,8 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends MutableRefVar[A] {
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
   case class RefVariableDiff(oldValue:A, newValue:A) extends Diff {
     def variable: RefVariable[A] = RefVariable.this
-    def redo = _value = newValue
-    def undo = _value = oldValue
+    def redo() = _value = newValue
+    def undo() = _value = oldValue
   }
 }
 

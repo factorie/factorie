@@ -6,11 +6,6 @@ import org.junit.Test
 import java.io.File
 import collection.mutable.ArrayBuffer
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 class TestBibtexParser extends JUnitSuite with cc.factorie.util.FastLogging {
 
   def testMichaelsStuff(): Unit = {
@@ -29,7 +24,7 @@ Error on file: "%s"
 Error text: "%s" """ format (name, err)),
           _ =>
             Right("""
-Success on file: "%s" """ format (name)))
+Success on file: "%s" """ format name))
     }
 
     val (failures, successes) = (new ArrayBuffer[String], new ArrayBuffer[String])

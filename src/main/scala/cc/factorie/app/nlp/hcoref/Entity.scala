@@ -81,7 +81,7 @@ trait Entity extends Attr {
   def isConnected: Boolean = (parentEntity ne null) || childEntitiesSize > 0 || isObserved
   //def entityRoot: Entity = { val s = parentEntity; if (s eq null) this else this.entityRoot }©
   def entityRoot: Entity = if (isRoot) this else parentEntity.entityRoot
-  def isRoot:Boolean = (parentEntityRef == null || parentEntityRef.dst == null)
+  def isRoot:Boolean = parentEntityRef == null || parentEntityRef.dst == null
   def isLeaf:Boolean = childEntitiesSize==0
   var isObserved:Boolean = false
   //var treatAsObserved:Boolean=false

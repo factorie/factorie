@@ -48,7 +48,7 @@ object GaussianMixtureDemo {
 
     // Now randomly re-assign variable values so we can do the work of re-estimating them
     zs.foreach(_.set(random.nextInt(numComponents))(null))
-    meanComponents.foreach(_.set(random.nextDouble)(null))
+    meanComponents.foreach(_.set(random.nextDouble())(null))
 
     // Estimate means and zs by EM
     val em = new EMInferencer(meanComponents, zs, model, InferByMeanField, MaximizeGaussianMean)

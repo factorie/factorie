@@ -131,13 +131,13 @@ class HumanEditTemplateWithReliability(shouldLinkReward: Double, shouldNotLinkPe
         if(entity.entityRoot eq entity.linkedMention.get.entityRoot){
           if(debugFlag)println("    edit template should-link rewarding mention: "+(shouldLinkReward/2.0)+" reliability: "+entity.attr[UserReliabilityVariable].doubleValue+" correct edit? "+entity.memberOfEdit.get.isCorrect)
           // If the person is reliabile <50% of the time, then their opinion counts negatively
-          result += (shouldLinkReward/2.0) * scala.math.pow((entity.attr[UserReliabilityVariable].doubleValue),sigma)
+          result += (shouldLinkReward/2.0) * scala.math.pow(entity.attr[UserReliabilityVariable].doubleValue,sigma)
         } //TODO: else penalty but don't divide by 2?
       }else if(entity.editType eq HumanEditMention.ET_SHOULD_NOT_LINK){
         if(debugFlag)println("  EditTemplate: should-not-link mention")
         if(entity.entityRoot eq entity.linkedMention.get.entityRoot){
           if(debugFlag)println("    edit template should-not-link penalizing mention: "+(shouldNotLinkPenalty/2.0)+" reliability: "+entity.attr[UserReliabilityVariable].doubleValue+" correct edit? "+entity.memberOfEdit.get.isCorrect)
-          result -= shouldNotLinkPenalty/2.0 * scala.math.pow((entity.attr[UserReliabilityVariable].doubleValue),sigma)
+          result -= shouldNotLinkPenalty/2.0 * scala.math.pow(entity.attr[UserReliabilityVariable].doubleValue,sigma)
         }
       }
       result
@@ -411,11 +411,11 @@ object HumanEditExperiments{
   protected def normalizedEditSimilarity(memberOfMentionsToCompare:AuthorEntity,mentions:Seq[AuthorEntity]):Double = {
     var result = 0.0
     var z=0.0
-    val target = memberOfMentionsToCompare.attr[FullName].toString
+    val target = memberOfMentionsToCompare.attr[FullName].toString()
     for(m <- mentions){
       if(!m.eq(memberOfMentionsToCompare)){
-        val other = m.attr[FullName].toString
-        if(other.length>0 || target.length>0)result += target.editDistance(other).toDouble/(math.max(target.size,other.size).toDouble)
+        val other = m.attr[FullName].toString()
+        if(other.length>0 || target.length>0)result += target.editDistance(other).toDouble/ math.max(target.size, other.size).toDouble
         if(other.length>0 && target.length>0){
           if(other.charAt(0) != target.charAt(0))result += 1.0
           z += 1.0
@@ -535,8 +535,8 @@ object HumanEditExperiments{
           edit.mentions.foreach(_.attr += user)
         }
       }
-      user.truthCorrect += edits.filter(_.owner == userCount).filter(_.isCorrect).length.toDouble
-      user.truthTotal += edits.filter(_.owner == userCount).length.toDouble
+      user.truthCorrect += edits.filter(_.owner == userCount).count(_.isCorrect).toDouble
+      user.truthTotal += edits.count(_.owner == userCount).toDouble
       println("User: "+name)
       println("   num edits: "+user.truthTotal+"  correct: "+user.truthCorrect)
       userCount += 1
@@ -898,7 +898,7 @@ object HumanEditExperiments{
     var batchName = 0
     val toScore = new ArrayBuffer[AuthorEntity]
     toScore ++= initialDB
-    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    var entityCount = toScore.count(_.isEntity.booleanValue)
     val mentionCount = toScore.size
     pwbl1.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
     pwbl1.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+0+" "+mentionCount+" -1 "+batchName+" -1 -1")
@@ -1405,7 +1405,7 @@ object ExperimentsEditTracker{
     computeStats(stats)
     printStats(_slpw,"SLEDITS",correctSLSatisfied,incorrectSLSatisfied,correctSLIgnored,incorrectSLIgnored,numSLEdits)
     printStats(_snlpw,"SNLEDITS",correctSNLSatisfied,incorrectSNLSatisfied,correctSNLIgnored,incorrectSNLIgnored,numSNLEdits)
-    printStats(_allpw,"ALLEDITS",correctSLSatisfied+correctSNLSatisfied,incorrectSLSatisfied+incorrectSNLSatisfied,correctSLIgnored+correctSNLIgnored,incorrectSLIgnored+incorrectSNLIgnored,(numSLEdits+numSNLEdits))
+    printStats(_allpw,"ALLEDITS",correctSLSatisfied+correctSNLSatisfied,incorrectSLSatisfied+incorrectSNLSatisfied,correctSLIgnored+correctSNLIgnored,incorrectSLIgnored+incorrectSNLIgnored, numSLEdits + numSNLEdits)
   }
   def computeStats[T<:HierEntity with HumanEditMention](edits:Iterable[ExperimentalEdit[T]]):Unit ={
     reset()
@@ -1559,7 +1559,7 @@ trait HumanEditDebugUtils{
         println("^^^^^Done testing SNL constraint^^^^^")
         println("-------------------------------------")
       }
-      printSNLStatistics
+      printSNLStatistics()
     }
   }
   def mergeEditToGenerator(e:AuthorEntity,d:DiffList):Unit ={

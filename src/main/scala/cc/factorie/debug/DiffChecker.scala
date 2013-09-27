@@ -16,10 +16,10 @@ object DiffChecker {
   // and next configurations (of the given variables)
   def diffListScore(diffList: DiffList, variables: Iterable[Var], model: Model): Boolean = {
     // TODO check variables in difflist are in variables
-    diffList.redo
+    diffList.redo()
     val diffScore:Double = diffList.scoreAndUndo(model)
     val prevScore:Double = model.currentScore(variables)
-    diffList.redo
+    diffList.redo()
     val modelScoreDiff:Double = model.currentScore(variables)
     diffScore == modelScoreDiff
   }

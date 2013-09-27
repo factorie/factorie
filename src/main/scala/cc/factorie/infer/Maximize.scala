@@ -103,7 +103,7 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
       variablesTouched ++= p.diff.map(_.variable)
       if (currentScore > maxScore) {
         maxScore = currentScore
-        maxdiff.clear
+        maxdiff.clear()
         //println("SamplingMaximizer maxScore="+maxScore)
       } else if (p.diff.size > 0) {
         maxdiff appendAll p.diff
@@ -115,7 +115,7 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
     sampler.processAll(varying, iterations)
     sampler.proposalHooks -= updateHook // Remove our temporary hook
     sampler.temperature = origSamplerTemperature // Put back the sampler's temperature where we found it
-    maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
+    maxdiff.undo() // Go back to maximum scoring configuration so we return having changed the config to the best
     variablesTouched
   }
   def maximize(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): Iterable[Var] = {

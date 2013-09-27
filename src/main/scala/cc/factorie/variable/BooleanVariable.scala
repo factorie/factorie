@@ -14,7 +14,7 @@
 
 package cc.factorie.variable
 
-import cc.factorie.{variable}
+import cc.factorie.variable
 
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
@@ -27,7 +27,7 @@ trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain
 class BooleanDomain extends CategoricalDomain[Boolean] with Domain[BooleanValue] {
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
-  freeze
+  freeze()
   class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with variable.BooleanValue {
     override def domain = BooleanDomain.this
   }
@@ -54,7 +54,7 @@ trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[
   def value: BooleanValue
   //def domain: CategoricalDomain[Boolean] = BooleanDomain
   def domain: BooleanDomain = BooleanDomain
-  override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
+  override def categoryValue = intValue == 1 // Efficiently avoid a lookup in the domain
   @inline final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue

@@ -86,7 +86,7 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
   final def set(newValue:Int)(implicit d:DiffList): Unit = set(newValue.toDouble)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
-    def redo = _value = newValue
-    def undo = _value = oldValue
+    def redo() = _value = newValue
+    def undo() = _value = oldValue
   }
 }

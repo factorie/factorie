@@ -382,8 +382,8 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
     val factors = unconstrainedSummary.factorMarginals
     if (gradient != null) {
       for (factorMarginal <- factors; factorU <- factorMarginal.factor; if factorU.isInstanceOf[DotFamily#Factor]; factor <- factorU.asInstanceOf[DotFamily#Factor]) {
-        gradient.accumulate(factor.family.weights, constrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, 1.0)
-        gradient.accumulate(factor.family.weights, unconstrainedSummary.marginal(factor).asInstanceOf[FactorMarginal].tensorStatistics, -1.0)
+        gradient.accumulate(factor.family.weights, constrainedSummary.marginal(factor).tensorStatistics, 1.0)
+        gradient.accumulate(factor.family.weights, unconstrainedSummary.marginal(factor).tensorStatistics, -1.0)
       }
     }
   }

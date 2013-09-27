@@ -111,7 +111,7 @@ class PunktTokenizer extends DocumentAnnotator {
     val tokenIterator = for (section <- process(new Document(s)).sections.iterator; token <- section.tokens.iterator) yield token
     var token: Token = null
     def hasNext = tokenIterator.hasNext
-    def next: String = { token = tokenIterator.next; token.string }
+    def next(): String = { token = tokenIterator.next(); token.string }
     def start = token.stringStart
     def end = token.stringEnd
   }

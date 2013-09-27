@@ -63,28 +63,28 @@ trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
   
   case class SetTensorDiff(oldValue:A, newValue:A) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = _value = oldValue
-    def redo = _value = newValue
+    def undo() = _value = oldValue
+    def redo() = _value = newValue
   }
   case class UpdateTensorDiff(index:Int, oldValue:Double, newValue:Double) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = _value(index) = oldValue
-    def redo = _value(index) = newValue
+    def undo() = _value(index) = oldValue
+    def redo() = _value(index) = newValue
   }
   case class IncrementTensorIndexDiff(index:Int, incr:Double) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = _value.+=(index, -incr)
-    def redo = _value.+=(index, incr)
+    def undo() = _value.+=(index, -incr)
+    def redo() = _value.+=(index, incr)
   }
   case class IncrementTensorDiff(t: Tensor) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = _value -= t // Note this relies on Tensor t not having changed.
-    def redo = _value += t
+    def undo() = _value -= t // Note this relies on Tensor t not having changed.
+    def redo() = _value += t
   }
   case class ZeroTensorDiff(prev: Array[Double]) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = value += prev
-    def redo = value.zero()
+    def undo() = value += prev
+    def redo() = value.zero()
   }}
 
 /** A variable whose value is a cc.factorie.la.Tensor.

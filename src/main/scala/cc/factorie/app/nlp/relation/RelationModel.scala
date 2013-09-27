@@ -3,11 +3,6 @@ package cc.factorie.app.nlp.relation
 import cc.factorie._
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2}
 
-/**
- * @author sameer
- * @date 12/30/11
- */
-
 object RelationModel {
   import RelationVariables._
 

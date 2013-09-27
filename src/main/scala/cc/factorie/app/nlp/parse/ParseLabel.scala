@@ -132,7 +132,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
       if (_parents(i) == parentIndex) return i
       i += 1
     }
-    return -1
+    -1
   }
 
 

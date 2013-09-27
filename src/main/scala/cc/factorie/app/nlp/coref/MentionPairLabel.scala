@@ -42,7 +42,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
           for (b <- a + 1 until activeDomainSize) {
             val sb = new StringBuilder
             sb.append(basicFeats(a)); sb.append("_&&_"); sb.append(basicFeats(b))
-            addFeature(sb.toString)
+            addFeature(sb.toString())
           }
         }
       }

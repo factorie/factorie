@@ -88,7 +88,7 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], labelToF
       if (pc == 0 || pnc == 0)
         0.0
       else {
-        val ret = (- pc * math.log(pc)/maths.log2 - pnc * math.log(pnc)/maths.log2)
+        val ret = -pc * math.log(pc) / maths.log2 - pnc * math.log(pnc) / maths.log2
         assert (ret >= 0, "pc="+pc+" pnc="+pnc)
         ret
       }

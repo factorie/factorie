@@ -59,7 +59,7 @@ class ItemizedDirectedModel extends MutableDirectedModel {
   def extendedParentFactors(v:Var): Iterable[DirectedFactor] = {
     val result = new ArrayBuffer[DirectedFactor]
     result ++= getParentFactor(v)
-    for (parent <- parents(v); if (parent.isInstanceOf[VarWithDeterministicValue])) result ++= extendedParentFactors(parent)
+    for (parent <- parents(v); if parent.isInstanceOf[VarWithDeterministicValue]) result ++= extendedParentFactors(parent)
     result
   }
   def extendedChildFactors(v:Var): Iterable[DirectedFactor] = {

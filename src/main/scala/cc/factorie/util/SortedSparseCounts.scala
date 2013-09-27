@@ -247,7 +247,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     val pos = positionOfIndex(index)
     if (pos == -1) {
       if (incr <= 0) {
-        System.err.println(this.counts.toString)
+        System.err.println(this.counts.toString())
         throw new Error("index="+index+" count="+incr) // TODO just test "incr"
       }
       ensureCapacity(siz+1)

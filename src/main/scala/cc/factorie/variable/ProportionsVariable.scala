@@ -191,7 +191,7 @@ trait SparseTensorProportions extends SparseIndexedTensor with Proportions {
   def massTotal = 1.0
   protected def tensor: SparseIndexedTensor
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = tensor.foreachActiveElement(f)
-  tensor._makeReadable
+  tensor._makeReadable()
   def _makeReadable(): Unit = {}
   def _unsafeActiveDomainSize: Int = tensor._unsafeActiveDomainSize
   def _indices: Array[Int] = tensor._indices
@@ -375,18 +375,18 @@ class ProportionsVariable extends MutableProportionsVar[Proportions] {
   
   case class IncrementProportionsMassesIndexDiff(index:Int, incr:Double) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses.+=(index, -incr)
-    def redo = value.masses.+=(index, incr)
+    def undo() = value.masses.+=(index, -incr)
+    def redo() = value.masses.+=(index, incr)
   }
   case class IncrementProportionsMassesDiff(t: Tensor) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses -= t // Note this relies on Tensor t not having changed.
-    def redo = value.masses += t
+    def undo() = value.masses -= t // Note this relies on Tensor t not having changed.
+    def redo() = value.masses += t
   }
   case class ZeroProportionsMassesDiff(prev: Array[Double]) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses += prev
-    def redo = value.masses.zero()
+    def undo() = value.masses += prev
+    def redo() = value.masses.zero()
   }
 
 }

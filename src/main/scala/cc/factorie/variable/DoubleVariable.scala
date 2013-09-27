@@ -55,7 +55,7 @@ class DoubleVariable(initialValue: Double) extends MutableDoubleVar {
   //override def :=(newValue:Double): Unit = set(newValue)(null) // To avoid wrapping the Double when calling the generic method in MutableVar, but this method is final in MutableVar.
   case class DoubleDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: DoubleVariable = DoubleVariable.this
-    def redo = _value = newValue
-    def undo = _value = oldValue
+    def redo() = _value = newValue
+    def undo() = _value = oldValue
   }
 }

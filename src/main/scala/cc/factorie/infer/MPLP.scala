@@ -31,7 +31,7 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
           }
         case 2 =>
           // there is one other varying neighbor we have to max over
-          val other = (if (varyingVariables.head eq v) varyingVariables.drop(1).head else varyingVariables.head).asInstanceOf[DiscreteVar]
+          val other = (if (varyingVariables.head eq v) varyingVariables.drop(1).head else varyingVariables.head)
           val otherLambda = lambdas(other)
           val assignment = new Assignment2(v, v.domain(0).asInstanceOf[DiscreteVar#Value], other, other.domain(0).asInstanceOf[DiscreteVar#Value])
           for (value <- 0 until v.domain.size) {
@@ -64,7 +64,7 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
               implicit val d = new DiffList
               for (i <- 0 until others.length) others(i).set(others(i).domain(values(i)))(d)
               var score = factor.currentScore
-              d.undo
+              d.undo()
               for (i <- 0 until others.length) score += lambdas(others(i))(values(i))
               if (score > maxScore) maxScore = score
             } while (increment(values, domainSizes))
