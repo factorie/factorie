@@ -39,7 +39,7 @@ object JsonDocumentSerialization {
   def deserializeFiles(filenames: Seq[String],
                        encoding: String = "UTF-8" //ISO-8859-15"
                         ): Iterator[cc.factorie.app.nlp.Document] = {
-    filenames.iterator.flatMap(f => DEFTJson.deserializeFile(f, encoding))
+    filenames.iterator.flatMap(f => deserializeFile(f, encoding))
   }
 
   def deserializeFile(inputFilename: String, encoding: String = "UTF-8"): Iterator[cc.factorie.app.nlp.Document] = { //ISO-8859-15"
