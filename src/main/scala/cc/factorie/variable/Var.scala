@@ -43,8 +43,6 @@ trait ValueBound[+A] { type Value <: A }
     @author Andrew McCallum */
 trait VarWithValue[A] extends ValueBound[A] with Var { override type Value = A }
 
-
-
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    <p>
    You should never make a Var a Scala 'case class' because then

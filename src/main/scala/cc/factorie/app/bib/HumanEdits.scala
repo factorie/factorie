@@ -180,7 +180,7 @@ object HumanEditExperiments{
     mention2.linkedMention=Some(mention1)
     mention2.editType=HumanEditMention.ET_SHOULD_LINK
     mention2.memberOfEdit = Some(this)
-    def print:Unit ={
+    def print(): Unit ={
       if(mention1.isInstanceOf[AuthorEntity] && mention2.isInstanceOf[AuthorEntity]){
         println("\n=======PRINTING EDIT=======")
         println("SCORE: "+score)
@@ -241,7 +241,7 @@ object HumanEditExperiments{
     EntityUtils.linkChildToParent(edit.mention1.generatedFrom.get,root)(dl)
     EntityUtils.linkChildToParent(edit.mention2.generatedFrom.get,root)(dl)
     val afterScores = Evaluator.pairF1(mentions)
-    dl.undo
+    dl.undo()
     val f1 = afterScores(0) - beforeScores(0)
     val p = afterScores(1) - beforeScores(1)
     val r = afterScores(2) - beforeScores(2)
@@ -260,7 +260,7 @@ object HumanEditExperiments{
       EntityUtils.linkChildToParent(edit.mention2.generatedFrom.get,null)(dl)
     }
     val afterScores = Evaluator.pairF1(mentions)
-    dl.undo
+    dl.undo()
     val f1 = afterScores(0) - beforeScores(0)
     val p = afterScores(1) - beforeScores(1)
     val r = afterScores(2) - beforeScores(2)
@@ -357,7 +357,7 @@ object HumanEditExperiments{
     val accuracy = evaluateAttributeAccuracy(authors,label2truth(authors))
     val percentVandalized = percentOfAuthorsVandalized(evaluationAuthors,vandalizedFirstName,vandalizedMiddleName)
     println("done evaluating, dl size: "+difflist.size)
-    difflist.undo
+    difflist.undo()
     (accuracy,percentVandalized)
   }
   def evaluateInferredAccuracy(authors:Seq[AuthorEntity],vandalizedFirstName:String,vandalizedMiddleName:String,useReliabilities:Boolean=false):(Double,Double) = {
@@ -367,7 +367,7 @@ object HumanEditExperiments{
     val accuracy = evaluateAttributeAccuracy(evaluationAuthors,label2truth(authors))
     val percentVandalized = percentOfAuthorsVandalized(evaluationAuthors,vandalizedFirstName,vandalizedMiddleName)
     println("done evaluating, dl size: "+difflist.size)
-    difflist.undo
+    difflist.undo()
     (accuracy,percentVandalized)
   }
   def computeUserReliabilityForAttributeEdits(aParticularUsersEdits:Seq[ExpAttributeEdit[AuthorEntity]]):Int= {
@@ -383,7 +383,7 @@ object HumanEditExperiments{
         if(score>=0.9)correct += 1
       }
     }
-    difflist.undo
+    difflist.undo()
     //correct.toDouble/aParticularUsersEdits.size.toDouble
     correct
   }
@@ -604,7 +604,7 @@ object HumanEditExperiments{
             if(isCorrect)result += new ExpMergeEdit(lightcopy(yourPapers),lightcopy(me),score)
             else if(!isCorrect && score<0)result += new ExpMergeEdit(lightcopy(yourPapers),lightcopy(me),score)
           }
-          dl.undo
+          dl.undo()
         }
       }
       count += 1
@@ -672,7 +672,7 @@ object HumanEditExperiments{
           if(isCorrect)result += new ExpMergeEdit(lightcopy(node),lightcopy(me),score)
           else if(!isCorrect && score<0)result += new ExpMergeEdit(lightcopy(node),lightcopy(me),score)
         }
-        dl.undo
+        dl.undo()
       }
     }
     //should-not-link
@@ -686,7 +686,7 @@ object HumanEditExperiments{
         val mention2 = lightcopy(node)
         val score = Evaluator.pairF1(mentionsOfMP)(0) - initialScore
         if(score!=0.0)result += new ExpSplitEdit(mention1,mention2,score)
-        dl.undo
+        dl.undo()
       }
     }
     result.filter(_.isCorrect).foreach(_.userName=authorTruthKey)
@@ -741,7 +741,7 @@ object HumanEditExperiments{
                 else if(!isCorrect && score<0)result += new ExpMergeEdit(copy(isub),copy(jsub),score)
                 //else ignore
               }
-              dl.undo
+              dl.undo()
             }
           }
         }
@@ -803,7 +803,7 @@ object HumanEditExperiments{
                 */
                 if(afterScore-beforeScore != 0.0)result += new ExpMergeEdit(copy(isub),copy(jsub),afterScore-beforeScore)
               }
-              dl.undo
+              dl.undo()
             }
           }
         }
@@ -925,7 +925,7 @@ object HumanEditExperiments{
       pwbl1.println("-1 -1 -1 "+scores.mkString(" ")+" "+batchName+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
       pwbl1.flush()
     }
-    d.undo;d.clear;pwbl1.close
+    d.undo();d.clear();pwbl1.close()
   }
   protected def splitBaseline1(edit:AuthorEntity, d:DiffList):Unit ={
     val linked = edit.linkedMention.get.asInstanceOf[AuthorEntity]
@@ -943,7 +943,7 @@ object HumanEditExperiments{
     var batchName = 0
     val toScore = new ArrayBuffer[AuthorEntity]
     toScore ++= initialDB
-    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    var entityCount = toScore.count(_.isEntity.booleanValue)
     val mentionCount = toScore.size
     //pwbl.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
     pwbl.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+0+" "+mentionCount+" -1 "+batchName+" -1 -1")
@@ -969,7 +969,7 @@ object HumanEditExperiments{
       //println("scores: "+Evaluator.pairF1(toScore).mkString(" "))
       pwbl.flush()
     }
-    d.undo;d.clear//;pwbl.close
+    d.undo();d.clear()//;pwbl.close
   }
   def baseline2(initialDB:Seq[AuthorEntity],evidenceBatches:Seq[Seq[AuthorEntity]],pwbl:PrintWriter):Unit ={
     //val pwbl = new PrintWriter(file)
@@ -977,7 +977,7 @@ object HumanEditExperiments{
     var batchName = 0
     val toScore = new ArrayBuffer[AuthorEntity]
     toScore ++= initialDB
-    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    var entityCount = toScore.count(_.isEntity.booleanValue)
     val mentionCount = toScore.size
     //pwbl.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
     pwbl.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+0+" "+mentionCount+" -1 "+batchName+" -1 -1")
@@ -1002,7 +1002,7 @@ object HumanEditExperiments{
       println("scores: "+Evaluator.pairF1(toScore).mkString(" "))
       pwbl.flush()
     }
-    d.undo;d.clear//;pwbl.close
+    d.undo();d.clear()//;pwbl.close
   }
   def mergeBaseline1(initialDB:Seq[AuthorEntity],evidenceBatches:Seq[Seq[AuthorEntity]],file:File):Unit ={
     val pwbl1 = new PrintWriter(file)
@@ -1010,7 +1010,7 @@ object HumanEditExperiments{
     var batchName = 0
     val toScore = new ArrayBuffer[AuthorEntity]
     toScore ++= initialDB
-    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    var entityCount = toScore.count(_.isEntity.booleanValue)
     val mentionCount = toScore.size
     pwbl1.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
     pwbl1.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+0+" "+mentionCount+" -1 "+batchName+" -1 -1")
@@ -1037,7 +1037,7 @@ object HumanEditExperiments{
       println("scores: "+Evaluator.pairF1(toScore).mkString(" "))
       pwbl1.flush()
     }
-    d.undo;d.clear;pwbl1.close
+    d.undo();d.clear();pwbl1.close()
   }
   protected def mergeBaseline1(edit:AuthorEntity, d:DiffList):Unit ={
     val parent = new AuthorEntity
@@ -1051,7 +1051,7 @@ object HumanEditExperiments{
     val mentionCount = toScore.size
     var batchName = 0
     toScore ++= initialDB
-    var entityCount = toScore.filter(_.isEntity.booleanValue).size
+    var entityCount = toScore.count(_.isEntity.booleanValue)
     pwbl2.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
     pwbl2.println("-1 -1 -1 "+Evaluator.pairF1(toScore).mkString(" ")+" "+0+" "+mentionCount+" -1 "+batchName+" -1 -1")
     for(batch <- evidenceBatches){
@@ -1088,7 +1088,7 @@ object HumanEditExperiments{
       pwbl2.println("-1 -1 -1 "+scores.mkString(" ")+" "+batchName+" "+mentionCount+" "+entityCount+" "+batchName+" -1 -1")
       pwbl2.flush()
     }
-    d2.undo;d2.clear;pwbl2.close
+    d2.undo();d2.clear();pwbl2.close()
   }
   protected def mergeBaseline2(edit:AuthorEntity, d2:DiffList):Unit ={
     if(!edit.generatedFrom.get.entityRoot.eq(edit.linkedMention.get.asInstanceOf[AuthorEntity].generatedFrom.get.entityRoot)){
@@ -1174,7 +1174,7 @@ object HumanEditExperiments{
           println("   **split-point parent "+parent.id+" generated "+mention1.id)
           println("   **split-point child  "+splitPoint.id+" generated "+mention2.id)
           result += new ExpSplitEdit(mention1,mention2,score)
-          d.undo
+          d.undo()
         }
       }
       i += 1
@@ -1234,7 +1234,7 @@ object HumanEditExperiments{
       }
       i += 1
       println("processed "+i + " of "+entities.size)
-      d.undo
+      d.undo()
     }
     result
   }
@@ -1273,7 +1273,7 @@ object HumanEditExperiments{
           candidates += entity
           scores += (score - initScore)
         }
-        d.undo
+        d.undo()
         entity = entity.parentEntity.asInstanceOf[T]
       }
     }
@@ -1308,7 +1308,7 @@ object HumanEditExperiments{
           //bestScore = score
           //result = entity
         }
-        d.undo
+        d.undo()
         entity = entity.parentEntity.asInstanceOf[T]
       }
     }
@@ -1335,7 +1335,7 @@ object HumanEditExperiments{
         EntityUtils.linkChildToParent(ej,tmpRoot)(d)
         val editScore = scoreFunction(eiMentions ++ ejMentions ++ Seq(tmpRoot.asInstanceOf[HierEntity]))
         //undo the merge
-        d.undo
+        d.undo()
         assert(ei.parentEntity == null)
         assert(ej.parentEntity == null)
         //package the finding
@@ -1344,9 +1344,9 @@ object HumanEditExperiments{
       }
       i+=1
       print(".")
-      if(i % 25 == 0)println
+      if(i % 25 == 0) println()
     }
-    val numGood = result.filter(_.isCorrect).size
+    val numGood = result.count(_.isCorrect)
     val numBad = result.size - numGood
     println("Generated "+ result.size + " edits ("+ numGood + " correct edits. " + numBad + " incorrectEdits).")
     result
@@ -1373,7 +1373,7 @@ object ExperimentsEditTracker{
   protected var _snlpw:PrintWriter=null
   protected var _allpw:PrintWriter=null
 
-  def reset:Unit ={
+  def reset(): Unit = {
     numSLEdits=0
     numSNLEdits=0
     correctSNLSatisfied=0
@@ -1392,14 +1392,14 @@ object ExperimentsEditTracker{
     _slpw = new PrintWriter(fileName+".sl")
     _snlpw = new PrintWriter(fileName+".snl")
     _allpw = new PrintWriter(fileName+".all")
-    _slpw.println(schema);_slpw.flush
-    _snlpw.println(schema);_snlpw.flush
-    _allpw.println(schema);_allpw.flush
+    _slpw.println(schema);_slpw.flush()
+    _snlpw.println(schema);_snlpw.flush()
+    _allpw.println(schema);_allpw.flush()
   }
-  def endStats:Unit ={
-    _slpw.close
-    _snlpw.close
-    _allpw.close
+  def endStats(): Unit = {
+    _slpw.close()
+    _snlpw.close()
+    _allpw.close()
   }
   def computeAndPrintStats[T<:HierEntity with HumanEditMention](stats:Iterable[ExperimentalEdit[T]]):Unit ={
     computeStats(stats)
@@ -1408,7 +1408,7 @@ object ExperimentsEditTracker{
     printStats(_allpw,"ALLEDITS",correctSLSatisfied+correctSNLSatisfied,incorrectSLSatisfied+incorrectSNLSatisfied,correctSLIgnored+correctSNLIgnored,incorrectSLIgnored+incorrectSNLIgnored,(numSLEdits+numSNLEdits))
   }
   def computeStats[T<:HierEntity with HumanEditMention](edits:Iterable[ExperimentalEdit[T]]):Unit ={
-    reset
+    reset()
     println("COMPUTE STATS: num edits = "+edits.size)
     for(edit <- edits)updateStatistics(edit)
   }
@@ -1495,14 +1495,14 @@ trait HumanEditDebugUtils{
   def mergeUp(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):AuthorEntity
   def model:Model
   //
-  def reset:Unit ={
+  def reset(): Unit = {
     snlSatisfied=0
     snlViolatedDueToModelAtGenerator=0
     snlViolatedDueToInferenceAtGenerator=0
     snlViolatedDueToModelAtLink=0
     snlViolatedDueToInferenceAtLink=0
   }
-  def printSNLStatistics:Unit ={
+  def printSNLStatistics(): Unit = {
     println("\n-----should-not-link (SNL) statistics-----")
     println("#total constraints: "+snlTotal)
     println("#satisfied: "+snlSatisfied+" pct:"+(snlSatisfied.toDouble/snlTotal.toDouble))

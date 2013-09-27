@@ -30,7 +30,7 @@ class DebugDiffList extends DiffList{
     var s = model.currentScore(this)
     println("  next: "+ s)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
-    this.undo
+    this.undo()
     // We need to re-calculate the Factors list because the structure may have changed
     println("----CURRENT WORLD----")
     val s2 = model.currentScore(this)
@@ -216,7 +216,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
       pw.flush()
     }
   }
-  def checkEntities:Unit ={
+  def checkEntities(): Unit = {
     val eids = new HashSet[String]
     eids ++= entities.map(_.id.toString)
     if(eids.size!=entities.size){
@@ -299,7 +299,7 @@ class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity
     //}
     //for (edit <- evidence) println("Edit Owner Reliability: " + edit.attr[UserReliabilityVariable].totalImpactfulEdits / edit.attr[UserReliabilityVariable].totalEdits)
   }
-  def printRelAcc:Unit ={
+  def printRelAcc(): Unit = {
     //this code assumes urv.doubleValue is adjusted by the average
     var relXrel=0.0
     var relXunr=0.0
@@ -395,15 +395,15 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     parse(args)
     //writeOptions(new File(this.metaDir.value+experimentName.value))
     if(ldaModel.wasInvoked)Coref.ldaFileOpt = Some(ldaModel.value)
-    for(i<-0 until advanceSeed.value)random.nextInt
+    for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
       val mongoConn = new Mongo(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
-      mongoDB.getCollection("authors").drop
-      mongoDB.getCollection("papers").drop
-      mongoDB.getCollection("venues").drop
-      mongoConn.close
+      mongoDB.getCollection("authors").drop()
+      mongoDB.getCollection("papers").drop()
+      mongoDB.getCollection("venues").drop()
+      mongoConn.close()
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
     def opts = this
@@ -511,9 +511,9 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     }
     sampler.processExperiment(pw)
     initialDB = sampler.getEntities
-    pw.flush;pw.close
-    pwbl1.flush;pwbl1.close
-    pwbl2.flush;pwbl2.close
+    pw.flush();pw.close()
+    pwbl1.flush();pwbl1.close()
+    pwbl2.flush();pwbl2.close()
     ExperimentsEditTracker.endStats
   }
 }
@@ -549,15 +549,15 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     parse(args)
     //writeOptions(new File(this.metaDir.value+experimentName.value))
     if(ldaModel.wasInvoked)Coref.ldaFileOpt = Some(ldaModel.value)
-    for(i<-0 until advanceSeed.value)random.nextInt
+    for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
       val mongoConn = new Mongo(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
-      mongoDB.getCollection("authors").drop
-      mongoDB.getCollection("papers").drop
-      mongoDB.getCollection("venues").drop
-      mongoConn.close
+      mongoDB.getCollection("authors").drop()
+      mongoDB.getCollection("papers").drop()
+      mongoDB.getCollection("venues").drop()
+      mongoConn.close()
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
     def opts = this
@@ -614,7 +614,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     println("Evidence stream: "+evidenceStreamType.value)
     if(!evidenceStreamType.wasInvoked)throw new Exception("Remember to specify the type of evidence you want to stream.")
     if(evidenceStreamType.value=="human-edits"){
-      for(i<-0 until heAdvanceSeed.value)random.nextInt
+      for(i<-0 until heAdvanceSeed.value)random.nextInt()
       ExperimentsEditTracker.beginStats(outputFile.value)
       //do human edit experiment
       //val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
@@ -1199,9 +1199,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             initialDB = sampler.getEntities
           }
           System.out.println("Finished MIXED experiment (warning, may not have implemented w/o reliability case)... exiting.")
-          pw.flush;pw.close
-          pwbl1.flush;pwbl1.close
-          pwbl2.flush;pwbl2.close
+          pw.flush();pw.close()
+          pwbl1.flush();pwbl1.close()
+          pwbl2.flush();pwbl2.close()
           System.exit(0)
         }
         case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
@@ -1298,7 +1298,7 @@ trait ExperimentOptions extends DefaultCmdOptions{
     //if(!file.exists)file.mkDirs
     val pw = new PrintWriter(file)
     writeOptions(pw)
-    pw.close
+    pw.close()
   }
   def writeOptions(pw:PrintWriter):Unit ={
     //pw.println("Experiment Parameters: "+DateFormat.getDateInstance(DateFormat.SHORT).format(now))

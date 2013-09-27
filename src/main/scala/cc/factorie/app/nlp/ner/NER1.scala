@@ -90,7 +90,7 @@ class NER1 extends DocumentAnnotator {
   
   // For words like Swedish & Swedes but not Sweden
   object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") { 
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines) {
+    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
       val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
       for (phrase <- fields.drop(1)) this += phrase
     }

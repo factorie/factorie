@@ -354,7 +354,7 @@ class NER2 extends DocumentAnnotator {
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
         if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[BilouOntonotesNerLabel].valueIsTarget) " " else "*", token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
         debugPrintCount += 1
-        if (length > maxSize) dequeue
+        if (length > maxSize) dequeue()
       }
       this
     }
@@ -369,7 +369,7 @@ class NER2 extends DocumentAnnotator {
       super.clear()
       hash.clear()
     }
-    override def toString: String = {
+    override def toString(): String = {
       (for (token <- this) yield
           "%s = %s".format(token.string, filterByToken(token).map(token => OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(token.attr[BilouOntonotesNerLabel].intValue)).category).mkString(" "))
       ).mkString("\n")

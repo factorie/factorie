@@ -84,7 +84,7 @@ trait DiscreteVar extends VectorVar with ValueBound[DiscreteValue] with VarWithD
 }
 
 /** A single discrete variable whose value can be changed. */
-trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A] with IterableSettings {
+trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A] with VarWithValue[A] with IterableSettings {
   private var __value: Int = 0
   @inline final protected def _value = __value
   @inline final protected def _set(newValue:Int): Unit = __value = newValue
