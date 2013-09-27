@@ -5,7 +5,7 @@ import cc.factorie.app.bib.experiments._
 import cc.factorie.util.DefaultCmdOptions
 import app.nlp.hcoref._
 import db.mongo._
-import com.mongodb.{DB, Mongo}
+import com.mongodb.{MongoClient, DB, Mongo}
 import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import la.DenseTensor
@@ -286,7 +286,7 @@ object Coref{
     //Watch order here: first drop the collection, then create the epidb, then insert mentions. Required to make sure indexes remain intact.
     if(opts.createDB.value.toBoolean){
       println("Dropping database.")
-      val mongoConn = new Mongo(opts.server.value,opts.port.value.toInt)
+      val mongoConn = new MongoClient(opts.server.value,opts.port.value.toInt)
       val mongoDB = mongoConn.getDB(opts.database.value)
       mongoDB.getCollection("authors").drop()
       mongoDB.getCollection("papers").drop()
@@ -1578,7 +1578,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
 }
 class DefaultAuthorForeman(val model:AuthorCorefModel, val mongoServer:String, val mongoPort:Int, val mongoDBName:String, canopyListFile:File, paramFile:File) extends DefaultForeman[AuthorEntity](canopyListFile,paramFile){
   println("MongoBibDatabase: "+mongoServer+":"+mongoPort+"/"+mongoDBName)
-  protected val mongoConn = new Mongo(mongoServer,mongoPort)
+  protected val mongoConn = new MongoClient(mongoServer,mongoPort)
   mongoConn.getMongoOptions.connectionsPerHost=maxWorkers
   protected val mongoDB = mongoConn.getDB(mongoDBName)
   def newSampler = new AuthorSampler(model){temperature=0.001}
@@ -2061,7 +2061,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   import MongoCubbieConverter._
   import MongoCubbieImplicits._
   println("MongoBibDatabase: "+mongoServer+":"+mongoPort+"/"+mongoDBName)
-  protected val mongoConn = new Mongo(mongoServer,mongoPort)
+  protected val mongoConn = new MongoClient(mongoServer,mongoPort)
   protected val mongoDB = mongoConn.getDB(mongoDBName)
   val authorColl = new MongoDBBibEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie

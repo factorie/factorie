@@ -14,6 +14,8 @@
 
 package cc.factorie.util
 
+import scala.reflect.ClassTag
+
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
 
 /** Provides member "attr" which is a map from a class to an attribute value (instance of that class).
@@ -85,8 +87,8 @@ trait Attr {
       -1
     }
     /** Returns a sequence of all attributes with classes that are equal to or subclasses of C. */
-    def all[C<:AnyRef]()(implicit m: Manifest[C]): Seq[C] = {
-      val key = m.erasure
+    def all[C<:AnyRef]()(implicit m: ClassTag[C]): Seq[C] = {
+      val key = m.runtimeClass
       val result = new scala.collection.mutable.ArrayBuffer[C]
       var i = 0
       while (i < _attr.length) {
@@ -98,8 +100,8 @@ trait Attr {
     /** Remove all attributes with class matching or subclass of C.
         For example, to remove all attributes call remove[AnyRef].
         If call results in no removals, will not throw an Error. */
-    def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = {
-      val key = m.erasure
+    def remove[C<:AnyRef](implicit m: ClassTag[C]): Unit = {
+      val key = m.runtimeClass
       var i = 0
       while (i < _attr.length) {
         if ((_attr(i) ne null) && key.isAssignableFrom(_attr(i).getClass)) removeIndex(i)
@@ -116,12 +118,12 @@ trait Attr {
       }
       result
     }
-    @inline final def index[C<:AnyRef]()(implicit m: Manifest[C]): Int = index(m.erasure)
-    def contains[C<:AnyRef]()(implicit m: Manifest[C]): Boolean = index(m.erasure) >= 0
+    @inline final def index[C<:AnyRef]()(implicit m: ClassTag[C]): Int = index(m.runtimeClass)
+    def contains[C<:AnyRef]()(implicit m: ClassTag[C]): Boolean = index(m.runtimeClass) >= 0
     def contains(key:Class[_]): Boolean = index(key) >= 0
     /** Fetch the first value associated with the given class.  If none present, return null. */
-    def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = {
-      var i = index(m.erasure)
+    def apply[C<:AnyRef]()(implicit m: ClassTag[C]): C = {
+      var i = index(m.runtimeClass)
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
     }
     def apply[C<:AnyRef](key:Class[C]): C ={
@@ -129,19 +131,19 @@ trait Attr {
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
     }
 
-    def exactly[C<:AnyRef]()(implicit m: Manifest[C]): C = {
-      var i = indexExactly(m.erasure)
+    def exactly[C<:AnyRef]()(implicit m: ClassTag[C]): C = {
+      var i = indexExactly(m.runtimeClass)
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
     }
-    def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = {
+    def get[C<:AnyRef](implicit m: ClassTag[C]): Option[C] = {
       val result = this.apply[C]
       if (result ne null) Option(result) else None
     }
-    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): C = {
+    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: ClassTag[C]): C = {
       val result = this.apply[C]
       if (result ne null) result else defaultValue
     }
-    def getOrElseUpdate[C<:AnyRef](defaultValue: =>C)(implicit m: Manifest[C]): C = {
+    def getOrElseUpdate[C<:AnyRef](defaultValue: =>C)(implicit m: ClassTag[C]): C = {
       val result = this.apply[C]
       if (result ne null) result else {
         val value = defaultValue

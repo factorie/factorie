@@ -20,6 +20,7 @@ import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
 import annotation.tailrec
 import cc.factorie.variable.{Var, SetVariable, ArrowVariable, DiffList}
+import scala.reflect.ClassTag
 
 /** A pointer from a child Entity (or Mention) to its parent Entity in an coreference problem. */
 class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {
@@ -116,7 +117,7 @@ trait Entity extends Attr {
     result
   }
   */
-  def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
+  def descendantsOfClass[A<:Entity](implicit m:ClassTag[A]): Seq[A] = descendantsOfClass[A](m.runtimeClass.asInstanceOf[Class[A]])
   final def depth:Int = if(parentEntity eq null)0 else 1 + parentEntity.depth
   //def depth:Int = depth(0)
   //def depth(d:Int):Int = if(parentEntity==null)0 else parentEntity.depth(d+1)

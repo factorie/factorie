@@ -140,7 +140,7 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
 
   // TODO Make these preserve their correct return types rather than backing off to Traversable.
   def filterByType[T<:AnyRef](implicit m: ClassTag[T]): Traversable[T] = 
-    t.filter(t1 => m.erasure.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[T]]
+    t.filter(t1 => m.runtimeClass.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[T]]
   def filterByClass[C](c: Class[C]): Traversable[C] =
     t.filter(t1 => c.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[C]]
 
