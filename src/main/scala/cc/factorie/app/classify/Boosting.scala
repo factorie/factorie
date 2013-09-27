@@ -16,7 +16,7 @@ class BoostedBinaryClassifier(val weakClassifiers: Seq[(BaseBinaryClassifier[Ten
 class BoostedMultiClassClassifier(var weakClassifiers: Seq[(MultiClassClassifier[Tensor1], Double)], val numLabels: Int) extends MultiClassClassifier[Tensor1] {
   def score(features: Tensor1) =
     weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.score(features), t._2); acc})
-  def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }
 

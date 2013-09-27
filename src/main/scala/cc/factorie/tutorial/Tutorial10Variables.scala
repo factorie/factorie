@@ -104,7 +104,7 @@ object TutorialVariables {
      **/
 
     // cc.factorie.Var* are traits that capture various abstractions.
-    val mv: MutableVar[String] = s // All MutableVar have a set() method and a := method.
+    val mv: MutableVar = s // All MutableVar have a set() method and a := method.
     //val cv: VarWithConstantValue = s // This would cause a compilation error.
     
     // cc.factorie.Variable* are classes, all of which are mutable

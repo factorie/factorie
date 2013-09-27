@@ -21,7 +21,8 @@ import cc.factorie.la._
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type C.
     Concrete implementations include CategoricalVariable and BooleanVariable. 
     @author Andrew McCallum */
-trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with CategoricalVectorVar[C] with ValueBound[CategoricalValue[C]] with VarWithDomain[CategoricalValue[C]]  {
+trait CategoricalVar[C] extends DiscreteVar with CategoricalVectorVar[C] with VarWithDomain  {
+  type Value <: CategoricalValue[C]
   def domain: CategoricalDomain[C]
   def value: CategoricalValue[C]
   def categoryValue: C = if (value ne null) value.category else null.asInstanceOf[C]
@@ -31,18 +32,20 @@ trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with Categori
 /** An abstract variable whose values are CategoricalValues, 
     each corresponding to an integer 0...domain.size, and each associated with a category of type C (usually a String).
     @author Andrew McCallum */
-trait MutableCategoricalVar[V<:CategoricalValue[C],C] extends CategoricalVar[V,C] with MutableDiscreteVar[V] {
+trait MutableCategoricalVar[C] extends CategoricalVar[C] with MutableDiscreteVar {
+  def domain: CategoricalDomain[C]
   def setCategory(newCategory:C)(implicit d: DiffList): Unit = {
     val i = domain.index(newCategory)
     if (i >= 0) set(i)(d)
     else throw new Error("Category not in domain: "+newCategory.toString)
   }
-  override def value: V = domain.apply(_value).asInstanceOf[V]
+  override def value: Value = domain.apply(_value).asInstanceOf[Value]
 }
 
 /** A MutableDiscreteVar whose integers 0...N are associated with a category of type C (usually a String). 
     @author Andrew McCallum */
-abstract class CategoricalVariable[C] extends MutableDiscreteVar[CategoricalValue[C]] with MutableCategoricalVar[CategoricalValue[C],C] {
+abstract class CategoricalVariable[C] extends MutableDiscreteVar with MutableCategoricalVar[C] {
+  type Value = CategoricalValue[C]
   def this(initialCategory:C) = {
     this()
     val idx = domain.index(initialCategory)
@@ -64,7 +67,7 @@ abstract class CategoricalVariable[C] extends MutableDiscreteVar[CategoricalValu
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.categoryValue == p1. 
     @author Andrew McCallum */
-trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[CategoricalValue[This],This] with VarWithConstantValue {
+trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[This] with VarWithConstantValue {
   this: This =>
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.

@@ -28,22 +28,7 @@ package cc.factorie.variable
 // because they must implement methods (such as statistics(Variable1#Value)) that concretely define Value.
 
 
-/** Use this trait to refine the Value type member in subclasses of Variable.
-    It provides a covariant member type 'Value' in such a way that it can be override in subclasses.
-    However, because this type is lower-bounded not assigned, 
-    you cannot implement a method with arguments of this type, unless Value is later assigned
-    (for example with VarWithValue[A]).
-    @author Andrew McCallum */
-trait ValueBound[+A] { type Value <: A }
-
-/** Use this trait to refine and set the Value type member in subclasses of Variable.
-    It provides a non-variant 'Value' type member in such a way that it cannot be overridden in subclasses.
-    Because this type is assigned and fixed,
-    you can implement a method with arguments of this type. 
-    @author Andrew McCallum */
-trait VarWithValue[A] extends ValueBound[A] with Var { override type Value = A }
-
-/**Abstract superclass of all variables.  Don't need to know its value type to use it. 
+/**Abstract superclass of all variables.  Don't need to know its value type to use it.
    <p>
    You should never make a Var a Scala 'case class' because then
    it will get hashCode and equals methods dependent on its
@@ -55,8 +40,8 @@ trait VarWithValue[A] extends ValueBound[A] with Var { override type Value = A }
    even though its value may do so.  This prevents confusion between
    Model.factors(Var) and Model.factors(Iterable[Var]).
    @author Andrew McCallum */
-trait Var extends ValueBound[Any] {
- 
+trait Var {
+  type Value <: Any
   /** Abstract method to return the domain of this variable. */
   //def domain: Domain[Any]
 
@@ -87,11 +72,11 @@ trait Var extends ValueBound[Any] {
 /** A variable that has a Domain, with value type bound A. 
     Since this trait also inherits from ValueBound, 
     we ensure that the Value of the Var matches the Value of the Domain. */
-trait VarWithDomain[+A] extends Var with ValueBound[A] {
+trait VarWithDomain extends Var {
+  self =>
   /** Abstract method to return the domain of this variable. */
-  def domain: Domain[A]
+  def domain: Domain
 }
-
 
 // Various marker traits on Var
 
@@ -109,8 +94,8 @@ trait VarWithDeterministicValue extends Var
 
 /** A Variable with a value that can be changed.
     @author Andrew McCallum */
-trait MutableVar[A] extends VarWithValue[A] {
-  def value: A
+trait MutableVar extends Var {
+  def value: Value
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
   final def :=(newValue:Value): Unit = set(newValue)(null)
@@ -126,8 +111,9 @@ trait NoVariableCoordination {
 // Odd simple variable I wasn't sure where else to put. -akm
 
 /** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithValue[This] with VarWithConstantValue {
+trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithConstantValue {
   this: This =>
+  type Value = This
   final def value: This = this
 }
 

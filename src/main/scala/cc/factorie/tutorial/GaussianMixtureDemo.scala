@@ -20,6 +20,7 @@ import cc.factorie.la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
 import cc.factorie.directed._
 import cc.factorie.variable._
 import cc.factorie.infer.InferByMeanField
+import cc.factorie.directed.DirectedTypeHelpers.{MutableTensorVarTensor2, MutableTensorVarTensor1}
 
 
 object GaussianMixtureDemo {
@@ -28,7 +29,7 @@ object GaussianMixtureDemo {
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
-    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
+    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain.asInstanceOf }
     val meanComponents = Mixture(numComponents)(new DoubleVariable(random.nextDouble * 10))
     val varianceComponents = Mixture(numComponents)(new DoubleVariable(1.0))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
@@ -69,9 +70,9 @@ object MultivariateGaussianMixtureDemo {
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
-    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
-    val meanComponents = Mixture[MutableTensorVar[Tensor1]](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
-    val varianceComponents = Mixture[MutableTensorVar[Tensor2]](numComponents)(new TensorVariable[Tensor2](
+    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain.asInstanceOf }
+    val meanComponents = Mixture[MutableTensorVarTensor1](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
+    val varianceComponents = Mixture[MutableTensorVarTensor2](numComponents)(new TensorVariable[Tensor2](
       new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 10.0 else random.nextDouble() * 0.5))))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
     // Generate some data
@@ -80,7 +81,7 @@ object MultivariateGaussianMixtureDemo {
       new TensorVariable[Tensor1] :~ MultivariateGaussianMixture(meanComponents, varianceComponents, z)
     }
     // A convenience function for getting the Z for a particular DoubleVar data variable x
-    def z(x: MutableTensorVar[Tensor1]): Z = model.parentFactor(x).asInstanceOf[MultivariateGaussianMixture.Factor]._4.asInstanceOf[Z]
+    def z(x: MutableTensorVarTensor1): Z = model.parentFactor(x).asInstanceOf[MultivariateGaussianMixture.Factor]._4.asInstanceOf[Z]
     // Get the list of Z variables, so we can pass it into the EMInferencer
     val zs = data.map(z(_))
 

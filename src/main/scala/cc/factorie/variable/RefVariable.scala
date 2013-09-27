@@ -22,12 +22,13 @@ trait RefVar[A<:AnyRef] extends Var
 
 /** An abstract mutable variable whose value is a pointer to a Scala object (which may also be a Variable).
     @author Andrew McCallum */
-trait MutableRefVar[A<:AnyRef] extends RefVar[A] with MutableVar[A]
+trait MutableRefVar[A<:AnyRef] extends RefVar[A] with MutableVar
 
 /** A variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVariable and EdgeVariable.
     @author Andrew McCAllum */
 class RefVariable[A<:AnyRef](initialValue:A = null) extends MutableRefVar[A] {
+  type Value = A
   private var _value: A = initialValue
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {

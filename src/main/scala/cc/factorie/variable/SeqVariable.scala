@@ -63,7 +63,9 @@ trait IndexedSeqSimilar[+E] extends SeqSimilar[E] {
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity.
     @author Andrew McCallum */
-trait SeqVar[+E] extends Var with ValueBound[Seq[E]] with SeqSimilar[E]
+trait SeqVar[+E] extends Var with SeqSimilar[E] {
+  type Value <: Seq[E]
+}
 
 
 /** An abstract variable whose value is an IndexedSeq[E].  
@@ -71,13 +73,15 @@ trait SeqVar[+E] extends Var with ValueBound[Seq[E]] with SeqSimilar[E]
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity.
     @author Andrew McCallum */
-trait IndexedSeqVar[+E] extends SeqVar[E] with ValueBound[IndexedSeq[E]] with IndexedSeqSimilar[E]
+trait IndexedSeqVar[+E] extends SeqVar[E] with IndexedSeqSimilar[E] {
+  type Value <: IndexedSeq[E]
+}
 
 
 /** An abstract variable containing a mutable sequence of elements (which could be other variables).  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
+trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar {
   type Element = E
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that apply(Int) is more efficient.
   @inline final def value: IndexedSeq[Element] = _seq // Note that for efficiency we don't return a copy, but this means that this value could change out from under a saved "value" if this variable value is changed. 
@@ -115,6 +119,7 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
 
 /** A variable containing a mutable sequence of other variables. */
 class SeqVariable[X] extends MutableSeqVar[X] {
+  type Value = Seq[X]
   def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
 }
 

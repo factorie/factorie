@@ -94,7 +94,8 @@ trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
 /** An abstract variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeqVar[E] with VarWithValue[SpanValue[C,E]] {
+trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeqVar[E] {
+  type Value <: SpanValue[C,E]
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}

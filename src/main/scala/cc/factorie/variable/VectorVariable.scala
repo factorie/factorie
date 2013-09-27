@@ -21,7 +21,8 @@ import cc.factorie.util.Cubbie
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait VectorDomain extends Domain[Tensor1] {
+trait VectorDomain extends Domain {
+  type Value <: Tensor1
   def dimensionDomain: DiscreteDomain
   /** A convenience method to get the size of the dimensionDomain.
       This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
@@ -42,18 +43,20 @@ class VectorDomainCubbie extends Cubbie {
   def store(d: VectorDomain): Unit = size := d.dimensionDomain.size
   def fetch(): VectorDomain = new VectorDomain {
     def dimensionDomain = new DiscreteDomain(size.value)
-    type Value = Tensor1
   }
 }
 
 
 /** An abstract variable whose value is a one-dimensional Tensor whose length matches the size of a DiscreteDomain. */
-trait VectorVar extends TypedTensorVar[Tensor1] {
+trait VectorVar extends TensorVar {
+  type Value <: Tensor1
+  def value: Tensor1
   def domain: VectorDomain
   def contains(index:Int): Boolean = value.apply(index) != 0.0
 }
 
 /** A concrete variable whose value is a one-dimensional Tensor whose length matches the size of a DiscreteDomain. */
-abstract class VectorVariable extends MutableTensorVar[Tensor1] with VectorVar {
+abstract class VectorVariable extends MutableTensorVar with VectorVar {
+  type Value = Tensor1
   def this(initialValue:Tensor1) = { this(); set(initialValue)(null) }
 }

@@ -20,26 +20,23 @@ import cc.factorie.la._
 //object TensorDomain extends TensorDomain
 
 /** An abstract variable whose value is a Tensor. */
-trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var with ValueBound[Tensor] {
+trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
+  type Value <: Tensor
   //def domain: TensorDomain
   def value: Tensor
 }
 
-/** A TensorVar with a specific Tensor type value. */
-trait TypedTensorVar[+A<:Tensor] extends TensorVar with ValueBound[A] {
-  override def value: A
-}
 
 // TODO Consider also, just in case needed:
 // trait TypedTensorVar[+A<:Tensor] extends TensorVar with VarAndValueType[TypedTensorVar[A],A]
 // trait TensorVar extends TypedTensorVar[Tensor]
 
-trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
+trait MutableTensorVar extends TensorVar with MutableVar {
   //def domain: TensorDomain //with Domain[A]
-  private var _value: A = null.asInstanceOf[A]
-  @inline final def value: A = _value // This method will definitely not make a copy
+  private var _value: Value = null.asInstanceOf[Value]
+  @inline final def value: Value = _value // This method will definitely not make a copy
   // Methods that track modifications on a DiffList
-  def set(newValue:A)(implicit d:DiffList): Unit = {
+  def set(newValue:Value)(implicit d:DiffList): Unit = {
     if (d ne null) d += SetTensorDiff(_value, newValue)
     _value = newValue
   }
@@ -61,7 +58,7 @@ trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
     value.zero()
   }
   
-  case class SetTensorDiff(oldValue:A, newValue:A) extends Diff {
+  case class SetTensorDiff(oldValue:Value, newValue:Value) extends Diff {
     def variable = MutableTensorVar.this
     def undo() = _value = oldValue
     def redo() = _value = newValue
@@ -93,7 +90,8 @@ trait MutableTensorVar[A<:Tensor] extends TypedTensorVar[A] with MutableVar[A] {
     (e.g. so that CategoricalVariable can use its domain for value lookup),
     and should never be called by users; otherwise the value will be null. 
     @author Andrew McCallum */
-class TensorVariable[T <: Tensor] extends MutableTensorVar[T] {
+class TensorVariable[T <: Tensor] extends MutableTensorVar {
+  type Value = T
   def this(initialValue: T) = { this(); set(initialValue)(null) }
   //def domain: TensorDomain = TensorDomain
 }

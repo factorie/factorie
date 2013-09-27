@@ -344,14 +344,16 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
 //trait ProportionsDomain extends MassesDomain with Domain[Proportions]
 //object ProportionsDomain extends ProportionsDomain
 
-trait ProportionsVar extends MassesVar with ValueBound[Proportions] {
+trait ProportionsVar extends MassesVar {
+  type Value <: Proportions
   override def value: Proportions // I'm not sure why this is needed. -akm
   //def domain: ProportionsDomain = ProportionsDomain // TODO Consider moving this to ProportionsVariable. -akm
   // TODO What else should go here?
 }
-trait MutableProportionsVar[A<:Proportions] extends MutableMassesVar[A] with ProportionsVar
+trait MutableProportionsVar extends MutableMassesVar with ProportionsVar
 
-class ProportionsVariable extends MutableProportionsVar[Proportions] {
+class ProportionsVariable extends MutableProportionsVar {
+  type Value = Proportions
   def this(initialValue:Proportions) = { this(); set(initialValue)(null) }
   
   // Methods that track modifications on a DiffList
@@ -409,7 +411,7 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with Marginal1 with ProportionsMarginal {
+class ProportionsAssignment(p:ProportionsVariable, v:Proportions) extends Assignment1(p, v.asInstanceOf) with Marginal1 with ProportionsMarginal {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   override def variables = Seq(p)
   def mean = throw new Error // TODO!!! Should be this instead: value1

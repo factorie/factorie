@@ -30,21 +30,21 @@ class NER1 extends DocumentAnnotator {
   class NER1Model extends TemplateModel with cc.factorie.model.Parameters {
     // Bias term on each individual label
     val bias = this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain1 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor1(BilouConllNerDomain.size))
     }
     // Transition factors between two successive labels
     val markov = this += new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = BilouConllNerDomain
+      //override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain2 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
       def unroll1(label:BilouConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.prev.attr[BilouConllNerLabel], label) else Nil
       def unroll2(label:BilouConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.next.attr[BilouConllNerLabel]) else Nil
     }
     // Factor between label and observed token
     val evidence = this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = FeaturesDomain
+      //override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain2 = FeaturesDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize))
       def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")

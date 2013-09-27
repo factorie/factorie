@@ -16,18 +16,20 @@ package cc.factorie.variable
 
 /** The type of the domain of DoubleVariables.
     @author Andrew McCallum */
-trait DoubleDomain extends Domain[Double] {
+trait DoubleDomain extends Domain {
+  type Value = Double
   def minValue = Double.MinValue
   def maxValue = Double.MaxValue
 }
 /** The domain of DoubleVariables.
     @author Andrew McCallum */
-object DoubleDomain extends DoubleDomain { type Value = Double }
+object DoubleDomain extends DoubleDomain
 
 /** A Variable with a real (double) value. 
     If you want a variable that holds a single double but also has a value that inherits from Tensor, then consider RealVar. 
     @author Andrew McCallum */
-trait DoubleVar extends ScalarVar with VarWithValue[Double] {
+trait DoubleVar extends ScalarVar {
+  type Value = Double
   def domain: DoubleDomain = DoubleDomain
   @inline final def value: Double = doubleValue
   def doubleValue: Double
@@ -35,7 +37,7 @@ trait DoubleVar extends ScalarVar with VarWithValue[Double] {
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar[Double]
+trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar
 
 /** A Variable with a mutable Double value.
     @author Andrew McCallum */

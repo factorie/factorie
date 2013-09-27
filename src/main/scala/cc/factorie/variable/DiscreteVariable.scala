@@ -20,7 +20,8 @@ import cc.factorie.model._
 import cc.factorie.infer.{Maximize, DiscreteSummary1, SimpleDiscreteMarginal1, Summary}
 
 /** A single discrete variable */
-trait DiscreteVar extends VectorVar with ValueBound[DiscreteValue] with VarWithDomain[DiscreteValue] {
+trait DiscreteVar extends VectorVar with VarWithDomain {
+  type Value <: DiscreteValue
   def domain: DiscreteDomain
   def value: DiscreteValue
   def intValue = value.intValue
@@ -84,13 +85,15 @@ trait DiscreteVar extends VectorVar with ValueBound[DiscreteValue] with VarWithD
 }
 
 /** A single discrete variable whose value can be changed. */
-trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A] with VarWithValue[A] with IterableSettings {
+trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettings with VarWithDomain {
+  self =>
   private var __value: Int = 0
+  def domain: DiscreteDomain
   @inline final protected def _value = __value
   @inline final protected def _set(newValue:Int): Unit = __value = newValue
   //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
   override def intValue = __value
-  def value: A = domain.apply(__value).asInstanceOf[A] // TODO Is there a better way to coordinate A and domain?
+  def value: Value = domain.apply(__value).asInstanceOf // TODO Is there a better way to coordinate A and domain?
   //def set(newValue:Value)(implicit d:DiffList): Unit
   //def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[Value])(d)
   @inline final def :=(i:Int): Unit = set(i)(null)
@@ -116,24 +119,27 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     @inline final def redo() = MutableDiscreteVar.this.set(newValue)(null)
     @inline final def undo() = MutableDiscreteVar.this.set(oldValue)(null)
     override def toString = variable match { 
-      case cv:CategoricalVar[_,_] if oldValue >= 0 => "MutableDiscreteVarDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
+      case cv:CategoricalVar[_] if oldValue >= 0 => "MutableDiscreteVarDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
       case _ => "MutableDiscreteVarDiff("+oldValue+","+newValue+")"
     }
   }
 }
 
 // TODO What is this?  Get rid of it. -akm
-trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar[A] with IterableSettings {
+trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar with IterableSettings {
 }
 
 /** A concrete single discrete variable whose value can be changed. */
-abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
+abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue] {
+  self =>
+  type Value = DiscreteValue
+  def domain: DiscreteDomain
   def this(initialValue:Int) = { this(); _set(initialValue) }
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.dim1 == domain.size); _set(initialValue.intValue) }
 }
 
 
-object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar[_]],Model] {
+object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar],Model] {
   def intValue(d:DiscreteVar, factors:Iterable[Factor]): Int = {
     val l = d.domain.size 
     val assignment = new DiscreteAssignment1(d, 0)
@@ -150,12 +156,12 @@ object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar[_]],Model] 
     maxIntValue
   }
   def intValue(d:DiscreteVar, model:Model): Int = intValue(d, model.factors(d))
-  def caseFactorIntValue(d:MutableDiscreteVar[_], model:Model): Int = MaximizeDiscrete.intValue(d, model)
-  def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := intValue(d, model)
-  def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
+  def caseFactorIntValue(d:MutableDiscreteVar, model:Model): Int = MaximizeDiscrete.intValue(d, model)
+  def apply(d:MutableDiscreteVar, model:Model): Unit = d := intValue(d, model)
+  def apply(varying:Iterable[MutableDiscreteVar], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer(varying:DiscreteVar, model:Model) =
     new SimpleDiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, intValue(varying, model)))
-  def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model, marginalizing:Summary) = {
+  def infer(variables:Iterable[MutableDiscreteVar], model:Model, marginalizing:Summary) = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     val result = new DiscreteSummary1[DiscreteVar]
     for (v <- variables) result += infer(v, model)

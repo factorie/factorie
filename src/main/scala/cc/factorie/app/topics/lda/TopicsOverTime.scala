@@ -22,7 +22,7 @@ object TopicsOverTime {
   val numTopics = 10
   implicit val model = DirectedModel()
   implicit val random = new scala.util.Random(0)
-  object ZDomain extends DiscreteDomain(numTopics)
+  object ZDomain extends DiscreteDomain(numTopics) { type Value = DiscreteValue }
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[CategoricalMixture[String]#Factor]._3 }

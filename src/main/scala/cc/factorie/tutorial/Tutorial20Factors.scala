@@ -269,7 +269,7 @@ object TutorialFactors {
     var maxScore = Double.NegativeInfinity
     var maxLabeling = LabelDomain.head
     for (labeling <- LabelDomain) {
-      l1 := labeling
+      l1.set(labeling)(null)
       val score = cf.currentScore
       if (score > maxScore) {
         maxScore = score

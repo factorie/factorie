@@ -25,7 +25,7 @@ object DirichletDemo {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     object WordDomain extends EnumDomain { val a, b, c, d, e, f = Value }
-    class Word extends DiscreteVariable { def domain = WordDomain }
+    class Word extends DiscreteVariable { def domain = WordDomain.asInstanceOf }
     implicit val model = DirectedModel()
     
     val masses = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))

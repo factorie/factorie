@@ -19,7 +19,8 @@ import scala.language.reflectiveCalls
 
 /** An abstract variable whose value is a set of elements of type A.
     @author Andrew McCallum */
-trait SetVar[A] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]]*/ {
+trait SetVar[A] extends Var  {
+  type Value <: scala.collection.Set[A]
   def value: scala.collection.Set[A]
   def iterator: Iterator[A] = value.iterator
   def foreach[U](f:A=>U): Unit = iterator.foreach(f)
@@ -80,7 +81,8 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
     garbage collected.  This class has no "size" method because
     the size is unreliably dependent on garbage collection.
     @author Andrew McCallum */
-class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]]*/ {
+class WeakSetVariable[A<:{def present:Boolean}] extends Var  {
+  type Value <: scala.collection.Set[A]
   private val _members = new cc.factorie.util.WeakHashSet[A]()
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present) // TODO this triggers reflection

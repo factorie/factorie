@@ -158,19 +158,23 @@ class SortedSparseCountsMasses1(val dim1:Int) extends SparseDoubleSeq with Masse
 
 /** An abstract variable with value Masses.
     @author Andrew McCallum */
-trait MassesVar extends TensorVar with ValueBound[Masses] {
+trait MassesVar extends TensorVar {
+  type Value <: Masses
   def value: Masses
   //def domain: MassesDomain
 }
 
 /** An abstract variable with value Masses.
     @author Andrew McCallum */
-trait MutableMassesVar[A<:Masses] extends MutableTensorVar[A] with MassesVar
+trait MutableMassesVar extends MutableTensorVar with MassesVar {
+  type Value <: Masses
+}
 
 /** A variable with value Masses.
     @author Andrew McCallum */
-class MassesVariable extends MutableMassesVar[Masses] {
+class MassesVariable extends MutableMassesVar {
   //def domain = MassesDomain
+  type Value = Masses
   def this(initialValue:Masses) = { this(); set(initialValue)(null) }
 }
 

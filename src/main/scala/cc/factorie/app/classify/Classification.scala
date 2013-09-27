@@ -43,7 +43,7 @@ trait BaseBinaryClassifier[Features] extends BaseClassifier[Double, Features] {
   def classification(features: Features) = new BinaryClassification(score(features))
 }
 
-class ClassifierTemplate[Features,Value<:DiscreteValue,T<:LabeledMutableDiscreteVar[Value],F<:VarWithValue[Features]](classifier: BaseClassifier[Tensor1,Features], l2f: T => F)(implicit ml: Manifest[T], implicit val mf: Manifest[F]) extends Template2[T,F] {
+class ClassifierTemplate[Features,Value<:DiscreteValue,T<: LabeledMutableDiscreteVar, F<:Var { type Value = Features }](classifier: BaseClassifier[Tensor1,Features], l2f: T => F)(implicit ml: Manifest[T], implicit val mf: Manifest[F]) extends Template2[T,F] {
   def unroll1(v: T) = Factor(v, l2f(v))
   def unroll2(v: F) = Nil
   def score(v1: T#Value, v2: Features): Double = classifier.classification(v2).score(v1.asInstanceOf[DiscreteValue].intValue)
@@ -51,7 +51,7 @@ class ClassifierTemplate[Features,Value<:DiscreteValue,T<:LabeledMutableDiscrete
 
 trait MultiClassClassifier[Features] extends BaseClassifier[Tensor1, Features] {
   def classification(features: Features) = new MultiClassClassification(score(features))
-  def asTemplate[Value<:DiscreteValue,T <: LabeledMutableDiscreteVar[Value],F<: VarWithValue[Features]](l2f: T => F)(implicit ml: Manifest[T], mf: Manifest[F]) = new ClassifierTemplate[Features,Value,T,F](this, l2f)
+  def asTemplate[Value<:DiscreteValue,T <: LabeledMutableDiscreteVar,F<: Var { type Value = Features }](l2f: T => F)(implicit ml: Manifest[T], mf: Manifest[F]) = new ClassifierTemplate[Features,Value,T,F](this, l2f)
 }
 
 trait MultiClassTrainerBase[C <: MultiClassClassifier[Tensor1]] {
@@ -115,7 +115,7 @@ class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) exten
   self =>
   val weights = Weights(new DenseTensor2(labelSize, featureSize))
   def score(features: Tensor1) = weights.value * features
-  def asDotTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
+  def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
     val weights = self.weights

@@ -153,7 +153,10 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
       modelScore = 0.0; modelFactors.foreach(f => modelScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       objectiveScore = 0.0; objectiveFactors.foreach(f => objectiveScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       val d = new DiffList; d.done = false
-      if (context.isInstanceOf[MutableDiscreteVar[DiscreteValue]]) { val v = context.asInstanceOf[MutableDiscreteVar[DiscreteValue]]; d += new v.DiscreteVariableDiff(0, i) }
+      context match {
+        case v: MutableDiscreteVar => ; d += new v.DiscreteVariableDiff(0, i)
+        case _ =>
+      }
       //context match { case context:MutableDiscreteVar[_] => d += new context.DiscreteVariableDiff(0, i); case _ => {} } // This crashes the Scala 2.10.1 compiler
       result += new Proposal(d, modelScore, objectiveScore, modelScore)
       i += 1
@@ -267,8 +270,8 @@ class IteratedConditionalModes(model:Model, objective:Model = null) extends Sett
   def settings(v:Var with IterableSettings): SettingIterator = v.settings
 }
 
-object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model, marginalizing: Summary) = {
+object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscreteVar], Model] {
+  def infer(variables: Iterable[MutableDiscreteVar], model: Model, marginalizing: Summary) = {
     val icm = new IteratedConditionalModes(model)
     val d0 = icm.processAll(variables, returnDiffs = true)
     val d1 = icm.processAll(variables, returnDiffs = true)
@@ -349,7 +352,7 @@ class SamplingFactorMarginal(val factor: DotFamily#Factor) extends FactorMargina
     sumStatistics
   }
 }
-class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMarginal1[MutableDiscreteVar[_]] {
+class SamplingVariableMarginal(val _1: MutableDiscreteVar) extends DiscreteMarginal1[MutableDiscreteVar] {
   val sumStatistics = Tensor.newSparse(_1.value.asInstanceOf[Tensor])
   var t = 0
   var haveComputedMarginals = false
@@ -367,11 +370,11 @@ class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMa
   }
 }
 class SamplingSummary(variables: Iterable[Var], factors: Iterable[Factor]) extends Summary {
-  val variableMap = variables.flatMap({ case v: MutableDiscreteVar[DiscreteValue @unchecked] => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
+  val variableMap = variables.flatMap({ case v: MutableDiscreteVar => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
   val marginalMap = factors.flatMap({ case f: DotFamily#Factor => Some(f -> new SamplingFactorMarginal(f)) case _ => None }).toMap
   /** The collection of all Marginals available in this Summary */
   def marginals = variableMap.values
-  def marginal(v: Var) = v match { case v: MutableDiscreteVar[DiscreteValue @unchecked] => variableMap(v); case _ => null }
+  def marginal(v: Var) = v match { case v: MutableDiscreteVar => variableMap(v); case _ => null }
 
   /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
     return the Marginal with the maximally-available subset. */
@@ -393,11 +396,11 @@ class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) {
   }
 }
 
-class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model, marginalizing:Summary): SamplingSummary = {
+class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar], Model] {
+  def infer(variables:Iterable[MutableDiscreteVar], model:Model, marginalizing:Summary): SamplingSummary = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    val sampler = new VariableSettingsSampler[MutableDiscreteVar[_]](model)
-    val baseInfer = new InferBySampling[MutableDiscreteVar[_]](samplesToCollect, samplingInterval)
+    val sampler = new VariableSettingsSampler[MutableDiscreteVar](model)
+    val baseInfer = new InferBySampling[MutableDiscreteVar](samplesToCollect, samplingInterval)
     baseInfer.infer(variables, variables, model.factors(variables), sampler, model)
   }
   //override def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model): SamplingSummary = infer(variables, model, null)
