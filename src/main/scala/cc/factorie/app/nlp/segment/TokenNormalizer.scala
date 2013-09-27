@@ -69,7 +69,7 @@ class TokenNormalizer1[A<:TokenString](
   }
   override def tokenAnnotationString(token:Token): String = null
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
-  def postAttrs: Iterable[Class[_]] = List(m.erasure)
+  def postAttrs: Iterable[Class[_]] = List(m.runtimeClass)
 }
 
 class PlainNormalizedTokenString(token:Token, str:String) extends TokenString(token, str)

@@ -5,7 +5,7 @@ import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, Arr
 import cc.factorie.db.mongo.{LazyCubbieConverter, MutableCubbieCollection, AbstractCubbieCollection, MongoCubbieCollection}
 import cc.factorie.util.Cubbie
 import experiments.{PaperModelOptions, AuthorModelOptions, ExperimentOptions}
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 import java.io.File
 import scala.Some
 import collection.mutable
@@ -87,7 +87,7 @@ object BibKB{
     } else args=argsIn
     opts.parse(args)
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
-    val mongo = new Mongo(opts.server.value,opts.port.value)
+    val mongo = new MongoClient(opts.server.value,opts.port.value)
     val knowledgebase = new MongoBibKB(mongo,opts.database.value)
 
     //if(1+1==2){

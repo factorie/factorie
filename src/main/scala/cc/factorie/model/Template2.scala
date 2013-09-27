@@ -24,11 +24,12 @@ import cc.factorie.util.Substitutions
 import java.io._
 import cc.factorie.variable.{TensorVar, Var, DiscreteVar}
 import cc.factorie.{model, la}
+import scala.reflect.ClassTag
 
-abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with Template
+abstract class Template2[N1<:Var,N2<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2]) extends Family2[N1,N2] with Template
 {
-  val neighborClass1 = nm1.erasure
-  val neighborClass2 = nm2.erasure
+  val neighborClass1 = nm1.runtimeClass
+  val neighborClass2 = nm2.runtimeClass
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2)
 
   def addLimitedDiscreteCurrentValuesIn12(variables:Iterable[Var]): Unit = {
@@ -77,12 +78,12 @@ abstract class Template2[N1<:Var,N2<:Var](implicit nm1:Manifest[N1], nm2:Manifes
 }
 
 
-abstract class TupleTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TupleFamily2[N1,N2]
-abstract class TupleTemplateWithStatistics2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TupleFamilyWithStatistics2[N1,N2]
-abstract class TensorTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with TensorFamily2[N1,N2]
-abstract class TensorTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with TensorFamilyWithStatistics2[N1,N2]
-abstract class DotTemplate2[N1<:Var:Manifest,N2<:Var:Manifest] extends Template2[N1,N2] with DotFamily2[N1,N2]
-abstract class DotTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with DotFamilyWithStatistics2[N1,N2]
+abstract class TupleTemplate2[N1<:Var:ClassTag,N2<:Var:ClassTag] extends Template2[N1,N2] with TupleFamily2[N1,N2]
+abstract class TupleTemplateWithStatistics2[N1<:Var:ClassTag,N2<:Var:ClassTag] extends Template2[N1,N2] with TupleFamilyWithStatistics2[N1,N2]
+abstract class TensorTemplate2[N1<:Var:ClassTag,N2<:Var:ClassTag] extends Template2[N1,N2] with TensorFamily2[N1,N2]
+abstract class TensorTemplateWithStatistics2[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag] extends Template2[N1,N2] with TensorFamilyWithStatistics2[N1,N2]
+abstract class DotTemplate2[N1<:Var:ClassTag,N2<:Var:ClassTag] extends Template2[N1,N2] with DotFamily2[N1,N2]
+abstract class DotTemplateWithStatistics2[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag] extends Template2[N1,N2] with DotFamilyWithStatistics2[N1,N2]
 
 /*
 trait DiscreteFactorSettings2 extends Template {
