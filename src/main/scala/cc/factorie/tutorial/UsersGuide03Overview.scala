@@ -18,7 +18,7 @@ that complex joint probability distributions over multiple variables
 that would have otherwise been intractable to represent or manipulate
 can instead be represented compactly and often manipulated
 efficiently.  Since graphical models can straightforwardly express so
-many different probabilistic models, they have become a lingua-frana
+many different probabilistic models, they have become a lingua-franca
 for statistics, machine learning, and data mining.
 
 In graphical models, variables are depicted by the nodes a graph,
