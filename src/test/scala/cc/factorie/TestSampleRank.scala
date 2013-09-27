@@ -1,8 +1,7 @@
 package cc.factorie
 import cc.factorie.la._
 import cc.factorie.variable._
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2}
-import cc.factorie.infer.GibbsSampler
+import cc.factorie.model.DotTemplateWithStatistics2
 
 object TestSampleRank  extends cc.factorie.util.FastLogging{
   object LabelDomain extends CategoricalDomain[String]
