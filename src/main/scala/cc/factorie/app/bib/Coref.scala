@@ -474,7 +474,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
       authorPredictor.setEntities(entities)
       authorPredictor.timeAndProcess(-1)
       println("Inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-      val entityHistory = authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_)
+      val entityHistory = authorPredictor.getEntities ++ authorPredictor.getDeletedEntities
       for(mention <- entityHistory.filter(_.isMention.booleanValue))mention.rootIdOpt = Some(mention.entityRoot.id.toString)
       authorColl.store(entityHistory)
       count += 1
@@ -498,7 +498,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
 
     //predictor.getEntities.asInstanceOf[Seq[AuthorEntity]].foreach((e:AuthorEntity) => {EntityUtils.prettyPrintAuthor(e);println})
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_))
+    if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities)
   }
   def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean)(implicit random: scala.util.Random):Unit ={
     println("Processing all authors.")
@@ -513,7 +513,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorPredictor.timeAndProcess(numSteps)
     Evaluator.eval(entities)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_))
+    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities)
   }
   def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false)(implicit random: scala.util.Random):Unit ={
     println("Processing all papers.")
@@ -531,7 +531,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     paperPredictor.timeAndProcess(numSteps)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     println("Promoting mentions for paper entities...")
-    val processedPapers = paperPredictor.getEntities ++ paperPredictor.getDeletedEntities.map(_)
+    val processedPapers = paperPredictor.getEntities ++ paperPredictor.getDeletedEntities
     for(paper <- processedPapers)paperPredictor.chooseCanonicalMention(paper)(null)
     //println("Updating database...")
     //if(save)paperColl.store(processedPapers)

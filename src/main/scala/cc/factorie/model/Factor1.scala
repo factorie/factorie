@@ -54,7 +54,7 @@ abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
   def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
-  def addLimitedDiscreteCurrentValues1: Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
+  def addLimitedDiscreteCurrentValues1(): Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
 
   
   /** Return a Tensor1 containing the scores for each possible value of neighbor _1, which must be a DiscreteVar.

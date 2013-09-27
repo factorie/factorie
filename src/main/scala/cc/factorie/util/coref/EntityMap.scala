@@ -89,7 +89,7 @@ class GenericEntityMap[M] {
     reverseMap.put(mId, eId)
   }
 
-  def clear: Unit = {
+  def clear(): Unit = {
     entities.clear()
     reverseMap.clear()
   }

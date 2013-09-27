@@ -165,7 +165,7 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
   }
   def asSeq: IndexedSeq[E] = _chainseq
   def chainFrozen: Boolean = _frozen
-  def chainFreeze: Unit = _frozen = true
+  def chainFreeze(): Unit = _frozen = true
 }
 
 /** An abstract variable that is a Chain, with value IndexedSeq[ElementType].

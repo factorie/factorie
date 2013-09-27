@@ -14,7 +14,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   //implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
   
   @Test
-  def testCreateDiff {
+  def testCreateDiff() {
     //this test just shows how variables create diff objects that point to them
     val b = new BooleanVariable(true)
     val diff = new DiffList
@@ -23,7 +23,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   }
 
   @Test
-  def testFactorsOfDiffList {
+  def testFactorsOfDiffList() {
     val template = new DotTemplateWithStatistics1[BooleanVariable] with Parameters { val weights = Weights(new la.DenseTensor1(BooleanDomain.size)) }
     val b = new BooleanVariable(true)
     val diff = new DiffList
@@ -36,7 +36,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   }
 
   @Test
-  def testCascadeUnroll {
+  def testCascadeUnroll() {
     object Aggregate extends BooleanVariable {
       val b1 = new BooleanVariable {
         //override def unrollCascade: scala.Iterable[Var] = Seq(Aggregate)
@@ -54,7 +54,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
   }
 
   @Test
-  def testVarArgs {
+  def testVarArgs() {
     class Aggregate extends BooleanVariable {
       class Member extends BooleanVariable {
         def owner = Aggregate.this

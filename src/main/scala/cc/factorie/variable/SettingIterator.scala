@@ -29,7 +29,7 @@ trait SettingIterator extends Iterator[DiffList] {
   /** Makes the changes to achieve the next configuration in the iteration, without any context DiffList of previous changes. */
   def next(): DiffList = next(null)
   /** Rewind this iterator back to its initial state, so that the follow call to "next" will produce the first setting. */
-  def reset: Unit
+  def reset(): Unit
   def hasNext: Boolean
   /** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
   var makeNewDiffList = true

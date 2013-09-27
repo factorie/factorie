@@ -27,7 +27,7 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
   var groundTruth:Option[String] = None
   val bagOfTruths = new BagOfTruths(this)    
-  def flagAsMention:Unit = {isObserved=true;isMention.set(true)(null);numMentionsInSubtree.set(1)(null)}
+  def flagAsMention():Unit = {isObserved=true;isMention.set(true)(null);numMentionsInSubtree.set(1)(null)}
   def isEntity = attr[IsEntity]
   def isMention = attr[IsMention]
   def exists = attr[EntityExists]
@@ -76,7 +76,7 @@ trait CanopyAttribute[T<:Entity]{def entity:Entity;def canopyName:String}
 trait NonDetCanopyAttribute[T<:Entity] extends CanopyAttribute[T] {
   def canopyName = canopyNames(random.nextInt(canopyNames.size))
   def canopyNames:Seq[String]
-  def reset:Unit
+  def reset():Unit
 }
 class SimpleStringCanopy[T<:Entity](val entity:T,val canopyName:String) extends CanopyAttribute[T]
 /**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
@@ -410,8 +410,8 @@ class ChildParentEntropyOrderingTemplate[B<:BagOfWordsVariable with EntityAttr](
 */
 trait DebugableTemplate{
   protected var _debug:Boolean=false
-  def debugOn = _debug = true
-  def debugOff = _debug = false
+  def debugOn() = _debug = true
+  def debugOff() = _debug = false
   def name:String
   def debug(score:Double):String = score+" ("+name+")"
 }
@@ -584,7 +584,7 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
     this._l1Norm= _l1Norm
     this._l2Norm= _l2Norm
   }*/
-  def clear:Unit ={
+  def clear():Unit ={
     _l2Norm=0.0
     _l1Norm=0.0
     _bag = new LinkedHashMap[String,Double]
@@ -649,7 +649,7 @@ trait BagOfWordsVar extends Var with ValueBound[SparseBagOfWords] /*VarAndValueG
 class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar /*with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords]*/ {
   // Note that the returned value is not immutable.
   def value = _members
-  def clear = _members.clear
+  def clear() = _members.clear
   private val _members:SparseBagOfWords = {
     val result = new SparseBagOfWords(initialWords)
     if(initialMap!=null)for((k,v) <- initialMap)result += (k,v)
@@ -660,7 +660,7 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String
   def iterator = _members.iterator
   override def size = _members.size
   def contains(x:String) = _members.contains(x)
-  def accept:Unit ={} //_members.incorporateBags
+  def accept():Unit ={} //_members.incorporateBags
   def add(x:String,w:Double=1.0)(implicit d:DiffList):Unit = {
     if(d!=null) d += new BagOfWordsVariableAddStringDiff(x,w)
     _members += (x,w)
@@ -795,7 +795,7 @@ trait DBEntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizabl
 trait EntityCollection[E<:HierEntity]{
   def += (e:E):Unit
   def ++= (es:Iterable[E]):Unit
-  def drop:Unit
+  def drop():Unit
   def store(entitiesToStore:Iterable[E]):Unit
   def nextBatch(n:Int=10):Seq[E]
   def loadAll:Seq[E]
@@ -845,7 +845,7 @@ trait DBEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioriti
     }
     entities
   }
-  def reset:Unit ={
+  def reset():Unit ={
     _id2cubbie = new HashMap[Any,C]
     _id2entity = new HashMap[Any,E]
   }

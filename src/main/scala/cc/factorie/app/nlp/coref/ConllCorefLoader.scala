@@ -19,13 +19,13 @@ object ConllCorefLoader {
   // to be used with test-with-gold-mention-boundaries
   val autoFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("auto_conll")
+      file.getName.endsWith("auto_conll")
   }
 
   // to be used with test-key
   val goldFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("gold_conll")
+      file.getName.endsWith("gold_conll")
   }
 
 

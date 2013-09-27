@@ -85,7 +85,7 @@ object Logger {
 
   @noinline protected def sourceDescription(framesUp:Int): String = {
     val e = new Exception().getStackTrace()(framesUp+1)
-    e.getFileName() + ":" + e.getLineNumber()
+    e.getFileName + ":" + e.getLineNumber
   }
 
 }

@@ -60,7 +60,7 @@ trait MutableDiscreteSeqVar[A<:DiscreteValue] extends MutableVar[IndexedSeq[A]] 
    //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
   }
   def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
-  def trimCapacity: Unit = _trimCapacity
+  def trimCapacity(): Unit = _trimCapacity
   def clear(): Unit = _clear()
   def fill(newValue:Int): Unit = Arrays.fill(_array, newValue)
   def appendInt(i:Int): Unit = _append(i)

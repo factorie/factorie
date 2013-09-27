@@ -229,7 +229,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     sb.toString
   }
   
-  def maximizePhisAndThetas: Unit = {
+  def maximizePhisAndThetas(): Unit = {
     phis.foreach(_.value.zero())
     // TODO What about the priors on phis and theta?? -akm
     for (doc <- documents) {

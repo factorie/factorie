@@ -12,7 +12,7 @@ object MentionNumberDomain extends EnumDomain {
   PLURAL = Value   // person, but uncertain about gender
 }
 class MentionNumberLabel(val mention:Mention, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  def this(m:Mention, initialIntValue:Int) = this(m, MentionNumberDomain(initialIntValue).category)
+  def this(m:Mention, initialIntValue:Int) = this(m, MentionNumberDomain(initialIntValue).category.asInstanceOf[String])
   def domain = MentionNumberDomain
 }
 

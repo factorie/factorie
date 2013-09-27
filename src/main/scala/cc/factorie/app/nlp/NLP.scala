@@ -64,7 +64,7 @@ object NLP {
   
   case class ServerThread(socket: Socket, encoding:String, pipeline: DocumentAnnotator) extends Thread("ServerThread") {
     override def run(): Unit = try {
-      val out = new PrintStream(socket.getOutputStream(), false, encoding)
+      val out = new PrintStream(socket.getOutputStream, false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
       var document = load.LoadPlainText.fromString(in.mkString).head

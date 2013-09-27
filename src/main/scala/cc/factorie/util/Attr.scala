@@ -49,7 +49,7 @@ trait Attr {
       }
     }
     /** Re-allocate to remove any unused capacity */
-    def trimCapacity: Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
+    def trimCapacity(): Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
     // Methods that search through _attr
     /** Add the given attribute, with key equal to its class. */
     def +=[C<:AnyRef](value:C): C = {

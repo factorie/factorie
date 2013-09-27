@@ -164,7 +164,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
         configuration(i).set(result(i))(null)
     }
 
-  def checkAllPairs =
+  def checkAllPairs() =
     {
       //
       //Test extremes

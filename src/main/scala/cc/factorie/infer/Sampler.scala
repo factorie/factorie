@@ -185,7 +185,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(imp
     var i = 0
     val si = settings(context)
     while (si.hasNext) {
-      val d = si.next
+      val d = si.next()
       assert(model ne null) // TODO!!! Clean up and delete this
       val (m,o) = d.scoreAndUndo(model, objective)
       //if (proposalsCache.length == i) proposalsCache.append(null)

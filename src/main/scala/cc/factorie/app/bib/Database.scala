@@ -213,7 +213,7 @@ abstract class BibKB extends BibKBAccessPatterns{
       val paperRoot = getRoot[PaperCubbie](paper,id2cubbie)
       aid2papers.getOrElseUpdate(root.id.toString,new ArrayBuffer[PaperCubbie]) += id2cubbie(paperRoot.pid.value.toString)
     }
-    val sortedAuthors = aid2papers.toSeq.sortBy((idpapers): Pair[String, ArrayBuffer[PaperCubbie]] => {citationCount(idpapers._2)})
+    val sortedAuthors = aid2papers.toSeq.sortBy((idpapers: Pair[String, ArrayBuffer[PaperCubbie]]) => {citationCount(idpapers._2)})
     for((aid,papers)<-sortedAuthors){
       val author = aid2cubbie(aid)
       println("Name: "+author.firstName.value+" "+author.middleName.value+" "+author.lastName.value)

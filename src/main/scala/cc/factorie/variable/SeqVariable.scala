@@ -101,7 +101,7 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo() = _seq prependAll s; def redo() = _seq.trimStart(n)}
   case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo() = _seq appendAll s; def redo() = _seq.trimEnd(n)}
   case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = _seq(n); def undo() = _seq.insert(n,e); def redo() = _seq.remove(n)}
-  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo() = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo() = undo }
+  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo() = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo() = undo() }
   // Override some methods for a slight gain in efficiency
   override def length = _seq.length
   override def iterator = _seq.iterator

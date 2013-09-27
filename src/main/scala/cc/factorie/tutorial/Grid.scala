@@ -23,7 +23,7 @@ object Grid {
 
     val observed = new Observed(score)
 
-    def setUsingObserved = this.setCategory(observed.doubleValue > 0.0)(null)
+    def setUsingObserved() = this.setCategory(observed.doubleValue > 0.0)(null)
   }
 
   def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = Pair(10.0, 10.0), random: scala.util.Random = new scala.util.Random(0)): Seq[Seq[Pixel]] = {

@@ -111,11 +111,11 @@ trait LabeledMutableDiscreteVarWithTarget[A<:DiscreteValue] extends LabeledVarWi
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   @inline final def targetIntValue: Int = if (target eq null) -1 else target.asInstanceOf[DiscreteVar].intValue // TODO Work on removing this cast
   def targetIntValue_=(newValue:Int): Unit = target.asInstanceOf[MutableDiscreteVar[DiscreteValue]].set(newValue)(null) // TODO Work on removing this cast
-  override def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value
+  override def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf[Value]
   // TODO Consider trying to reinstate this
   def isUnlabeled = target eq null
-  def unlabel = if (targetIntValue >= 0) targetIntValue = -targetIntValue - 1 else throw new Error("Already unlabeled.")
-  def relabel = if (targetIntValue < 0) targetIntValue = -(targetIntValue+1) else throw new Error("Already labeled.")
+  def unlabel() = if (targetIntValue >= 0) targetIntValue = -targetIntValue - 1 else throw new Error("Already unlabeled.")
+  def relabel() = if (targetIntValue < 0) targetIntValue = -(targetIntValue+1) else throw new Error("Already labeled.")
 }
 
 /** A mutable discrete variable that has a true, target "labeled" value, separate from its current value.

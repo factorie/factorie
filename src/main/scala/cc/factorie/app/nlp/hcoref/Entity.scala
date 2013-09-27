@@ -52,7 +52,7 @@ trait Entity extends Attr {
   @deprecated("Will be removed.  Entities are not guaranteed to have string names.") def string: String
   def id: Any = this // Override to make some persistent id
   attr += new EntityRef(this,null)
-  def initializeAttributesOfStructure:Unit = {}
+  def initializeAttributesOfStructure():Unit = {}
   def removedChildHook(entity:Entity)(implicit d:DiffList)={}
   def addedChildHook(entity:Entity)(implicit d:DiffList)={}
   def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList)={}

@@ -23,7 +23,7 @@ import cc.factorie.model.Model
     Note that this is not just the set of marginals for the Q distribution (that is the embedded Summary);
     It is also the procedure for updating the Q. */
 trait MeanField {
-  def updateQ: Unit
+  def updateQ(): Unit
   def summary: Summary
 }
 

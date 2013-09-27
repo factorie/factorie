@@ -309,19 +309,19 @@ object Classify {
           val trainTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           trainTrial ++= trainingLabels
           println("== Training Evaluation ==")
-          println(trainTrial.toString)
+          println(trainTrial.toString())
         }
         if (testingLabels.length > 0) {
           val testTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           testTrial ++= testingLabels
           println("== Testing Evaluation ==")
-          println(testTrial.toString)
+          println(testTrial.toString())
         }
         if (validationLabels.length > 0) {
           val validationTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           validationTrial ++= validationLabels
           println("== Validation Evaluation ==")
-          println(validationTrial.toString)
+          println(validationTrial.toString())
         }
     }
   }

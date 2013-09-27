@@ -54,7 +54,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   private var _indices = Map[T, Int]()
  
   /** Wipe the Index clean */
-  def reset: Unit = {
+  def reset(): Unit = {
     _frozen = false
     _objects = new ArrayBuffer[T]
     _indices = Map[T,Int]()
@@ -72,7 +72,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   def frozen = _frozen
 
   // NOTE This used to be just "freeze", but I ran into troubles overriding freeze in DiscreteDomain
-  def freeze0: Unit = _frozen = true
+  def freeze0(): Unit = _frozen = true
 
   // NOTE This used to be just "allocSize", but I ran into troubles overriding freeze in DiscreteDomain  
   /**The size others might want to allocate to hold data relevant to this Index.  If maxSize is set can be bigger than size. */

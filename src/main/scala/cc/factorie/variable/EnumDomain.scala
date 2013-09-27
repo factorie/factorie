@@ -35,7 +35,7 @@ class EnumDomain extends CategoricalDomain[String] {
     //checkFields // TODO Re-add this and make sure example/DirichletDemo works
     index(field.getName) // Add it to the index
   } 
-  private def checkFields: Unit = {
+  private def checkFields(): Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
       //println("StringDomain.checkFields "+field+" fieldName="+fieldName)

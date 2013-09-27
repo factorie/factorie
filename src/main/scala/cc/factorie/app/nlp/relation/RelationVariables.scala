@@ -35,7 +35,7 @@ object RelationVariables {
     val arg2Features = new ArgFeatures(arg2, false)
     val features = new Features(this)
 
-    def computeFeatures = {
+    def computeFeatures() = {
       //arg1Features.compute
       //arg2Features.compute
       features.compute
@@ -48,7 +48,7 @@ object RelationVariables {
   class ArgFeatures(val arg: PairwiseMention, val first: Boolean) extends BinaryFeatureVectorVariable[String] {
     def domain = RelationArgFeaturesDomain
 
-    def compute = {
+    def compute() = {
       this += "BIAS"
       // TODO compute relation features using "first" and "arg"
       // TODO convert Lexicons (from refectorie.proj.jntinf) to app.chain.Lexicon
@@ -140,7 +140,7 @@ object RelationVariables {
 
     def clean(string: String) = string.replaceAll("\\s+", " ")
 
-    def computeZHOUFeatures {
+    def computeZHOUFeatures() {
       val arg1 = mention.arg1
       val arg2 = mention.arg2
       val m1 = arg1.tokens.slice(0, arg1.headToken.position - arg1.start + 1)
@@ -214,9 +214,9 @@ object RelationVariables {
       }
     }
 
-    def compute = computeZHOUFeatures
+    def compute() = computeZHOUFeatures
 
-    def compute2 = {
+    def compute2() = {
       val m1 = mention.arg1
       val m2 = mention.arg2
       val sentence = m1.sentence
@@ -260,7 +260,7 @@ object RelationVariables {
 
     }
 
-    def compute1 = {
+    def compute1() = {
       val m1 = mention.arg1
       val m2 = mention.arg2
       val sentence = m1.sentence

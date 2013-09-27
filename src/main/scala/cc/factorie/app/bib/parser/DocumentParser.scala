@@ -47,7 +47,7 @@ private[parser] object DocumentParser {
       COMMENT ~> (WS ~> (('{' ~> "[^}]*" <~ '}') | ('(' ~> "[^)]*" <~ ')')) | "[^@\r\n]*") ^^
       (CommentEntry(_))
 
-    lazy val stringEntry = STRING ~> WS ~> entryBody { tag } ^^ StringEntry(_, _).tupled
+    lazy val stringEntry = STRING ~> WS ~> entryBody { tag } ^^ (StringEntry(_, _)).tupled
 
     lazy val preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 

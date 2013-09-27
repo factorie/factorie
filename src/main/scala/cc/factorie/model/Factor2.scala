@@ -65,12 +65,12 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
   def limitedDiscreteValues12: SparseBinaryTensor2 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues12(i:Int, j:Int): Unit = limitedDiscreteValues12.+=(i, j)
-  def addLimitedDiscreteCurrentValues12: Unit = addLimitedDiscreteValues12(_1.asInstanceOf[DiscreteVar].intValue, _2.asInstanceOf[DiscreteVar].intValue)
+  def addLimitedDiscreteCurrentValues12(): Unit = addLimitedDiscreteValues12(_1.asInstanceOf[DiscreteVar].intValue, _2.asInstanceOf[DiscreteVar].intValue)
   
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
   def limitedDiscreteValues1: SparseBinaryTensor1 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
-  def addLimitedDiscreteCurrentValues1: Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
+  def addLimitedDiscreteCurrentValues1(): Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
   
   
   // TODO Consider something like this?
