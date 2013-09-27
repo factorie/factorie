@@ -2,11 +2,6 @@ package cc.factorie.app.bib.parser
 
 import scala.language.postfixOps
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 private[parser] object NameParser {
 
   import Dom.Name

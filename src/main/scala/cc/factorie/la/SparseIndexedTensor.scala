@@ -234,7 +234,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
     }
   }
 
-  final private def makeReadable: Unit = {
+  final private def makeReadable(): Unit = {
     if (_sorted == __npos) return
     if ((_sorted <= 10) && (__npos > 0)) {
       makeReadableEmpty()

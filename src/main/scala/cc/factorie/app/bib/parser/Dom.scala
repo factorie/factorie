@@ -3,11 +3,6 @@ package cc.factorie.app.bib.parser
 import collection.immutable.TreeMap
 import annotation.tailrec
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 object Dom {
 
   final case class Document(

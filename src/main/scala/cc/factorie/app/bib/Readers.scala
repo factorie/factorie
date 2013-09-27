@@ -408,7 +408,7 @@ object BibReader{
         line = reader.readLine
       }
     }catch{case e:Exception => {e.printStackTrace();println("Warning: exception caught while reading bibmog file: "+file.getName)}}
-    finally{if(reader != null)reader.close}
+    finally{if(reader != null)reader.close()}
     result
   }
   def loadBibTexDirForTopicModel(bibDir:File,paper2string:PaperEntity=>String):Seq[String] ={
@@ -700,7 +700,7 @@ object RexaLabeledLoader{
     val paper = new PaperEntity("",true)
     var authorInFocus = new Array[String](3)
     val loadedFile = scala.io.Source.fromFile(file)
-    for(line <- loadedFile.getLines.toSeq.reverse){ //for some reason scala loads files in reverse order...
+    for(line <- loadedFile.getLines().toSeq.reverse){ //for some reason scala loads files in reverse order...
       val split = line.split(":",2)
       if(split.length==2){
         val value = split(1).trim
@@ -773,7 +773,7 @@ object RexaLabeledLoader{
       }
       if(!foundAuthorInFocus)noAuthorInFocusCount += 1
     }
-    loadedFile.close
+    loadedFile.close()
     paper
   }
   def extractFlatSGML(string:String,tag:String):String ={

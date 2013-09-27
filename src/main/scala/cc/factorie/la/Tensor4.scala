@@ -91,7 +91,7 @@ class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
   def activeDomain3: IntSeq = throw new Error("Not yet implemented")
   def activeDomain4: IntSeq = throw new Error("Not yet implemented")
   def activeElements4: Tensor4ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor4ElementIterator { // Must not change _indexs and _values during iteration!
       var i = 0
       def hasNext = i < _unsafeActiveDomainSize
@@ -101,7 +101,7 @@ class SparseIndexedTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
       def index3 = SparseIndexedTensor4.this.index3(_indices(i-1))
       def index4 = SparseIndexedTensor4.this.index4(_indices(i-1))
       def value = _values(i-1)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def blankCopy: SparseIndexedTensor4 = new SparseIndexedTensor4(dim1, dim2, dim3, dim4)

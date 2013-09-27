@@ -2,11 +2,6 @@ package cc.factorie.app.bib.parser
 
 import languageFeature.postfixOps
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 private[parser] object AST {
   // these types all have very generic names, so wrap them in an "AST" prefix
   sealed trait Entry

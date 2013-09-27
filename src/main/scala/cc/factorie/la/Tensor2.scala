@@ -89,7 +89,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
       def index1 = DenseTensorLike2.this.index1(i)
       def index2 = DenseTensorLike2.this.index2(i)
       def value = apply(i)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   
@@ -319,7 +319,7 @@ trait SingletonBinaryTensorLike2 extends Tensor2 with SingletonBinaryTensor {
       def index1 = singleIndex1
       def index2 = singleIndex2
       def value = 1.0
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
 }
@@ -342,7 +342,7 @@ class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val sin
       def index1 = singleIndex1
       def index2 = singleIndex2
       def value = 1.0
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def copy = new SingletonTensor2(dim1, dim2, singleIndex1, singleIndex2, singleValue)
@@ -353,7 +353,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with ArraySparseBinaryTensor {
   def activeDomain2 = throw new Error("Not yet implemented")
   def +=(i:Int, j:Int): Unit = _insertSortedNoDuplicates(singleIndex(i,j))
   def activeElements2: Tensor2ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor2ElementIterator { // Must not change _indexs and _values during iteration!
       private var i = 0
       def hasNext = i < _unsafeActiveDomainSize
@@ -361,7 +361,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with ArraySparseBinaryTensor {
       def index1 = SparseBinaryTensorLike2.this.index1(_indices(i-1))
       def index2 = SparseBinaryTensorLike2.this.index2(_indices(i-1))
       def value = 1.0
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
 }
@@ -382,7 +382,7 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
   def activeDomain1: IntSeq = new RangeIntSeq(0, dim1) // TODO Implement this so that it is really sparse -akm 
   def activeDomain2: IntSeq = throw new Error("Not yet implemented")
   def activeElements2: Tensor2ElementIterator = {
-    _makeReadable
+    _makeReadable()
     new Tensor2ElementIterator { // Must not change _indexs and _values during iteration!
       private var i = 0
       def hasNext = i < _unsafeActiveDomainSize
@@ -390,7 +390,7 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Arra
       def index1 = SparseIndexedTensor2.this.index1(_indices(i-1))
       def index2 = SparseIndexedTensor2.this.index2(_indices(i-1))
       def value = _values(i-1)
-      def next = { i += 1; this }
+      def next() = { i += 1; this }
     }
   }
   override def blankCopy: SparseIndexedTensor2 = new SparseIndexedTensor2(dim1, dim2)

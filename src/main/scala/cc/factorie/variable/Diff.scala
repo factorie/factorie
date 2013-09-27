@@ -21,8 +21,8 @@ import cc.factorie.model.Model
     @author Andrew McCallum */
 trait Diff {
   def variable: Var
-  def redo: Unit
-  def undo: Unit
+  def redo(): Unit
+  def undo(): Unit
 }
 
 /** A Diff which, when created, performs the change.  
@@ -31,14 +31,14 @@ trait Diff {
  */
 abstract class AutoDiff(implicit d:DiffList) extends Diff {
   if (d != null) d += this
-  redo
+  redo()
 }
 
 /** A Diff that makes no change.
     @author Andrew McCallum */
 case class NoopDiff(variable:Var) extends Diff {
-  def redo: Unit = {}
-  def undo: Unit = {}
+  def redo(): Unit = {}
+  def undo(): Unit = {}
 }
  
 /** A collection of changes to variables.  
@@ -50,16 +50,16 @@ case class NoopDiff(variable:Var) extends Diff {
  */
 class DiffList extends ArrayBuffer[Diff] {
   var done = true
-  def redo: Unit = {
+  def redo(): Unit = {
     if (size == 0) return
     if (done) throw new Error("DiffList already done")
-    this.foreach(d => d.redo)
+    this.foreach(d => d.redo())
     done = true
   }
-  def undo: Unit = {
+  def undo(): Unit = {
     if (size == 0) return
     if (!done) throw new Error("DiffList already undone")
-    this.reverse.foreach(d => d.undo)
+    this.reverse.foreach(d => d.undo())
     done = false
   }
   def variables: Seq[Var] = {
@@ -73,7 +73,7 @@ class DiffList extends ArrayBuffer[Diff] {
     if (this.length == 0) return 0.0  // short-cut the simple case
     var s = model.currentScore(this)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
-    this.undo
+    this.undo()
     // We need to re-calculate the Factors list because the structure may have changed
     val s2 = model.currentScore(this) 
     s -= s2
@@ -86,7 +86,7 @@ class DiffList extends ArrayBuffer[Diff] {
     var s1 = model1.currentScore(this)
     var s2 = if (model2 == null) Double.NaN else model2.currentScore(this)
     //println("DiffList scoreAndUndo  pre-undo score=" + s1)
-    this.undo
+    this.undo()
     val s1b = model1.currentScore(this) 
     //println("DiffList scoreAndUndo post-undo score=" + s1b)
     s1 -= s1b
