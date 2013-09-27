@@ -18,7 +18,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math
 import java.util.Arrays
 
-// Variables for dealing with sequences
+// Variables for holding sequences.
 
 /** A trait for setting the member type ElementType in SeqVar classes.
     @author Andrew McCallum */
@@ -26,8 +26,8 @@ trait ElementType[+ET] {
   type ElementType = ET
 }
 
-/** A trait with many of the same methods as Seq, but not actually a Seq itself  
-    because Seq defines "equals" based on same contents, 
+/** A trait with many of the same methods as Seq, but not actually a Seq itself.
+    This is necessary because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity.
     @author Andrew McCallum */
 trait SeqSimilar[+E] extends Iterable[E] with ElementType[E] {
@@ -50,8 +50,8 @@ trait SeqSimilar[+E] extends Iterable[E] with ElementType[E] {
   override def exists(f:E=>Boolean): Boolean = value.exists(f)
 }
 
-/** A trait with many of the same methods as IndexedSeq, but not actually a IndexedSeq itself  
-    because Seq defines "equals" based on same contents, 
+/** A trait with many of the same methods as IndexedSeq, but not actually a IndexedSeq itself.  
+    This is necessary because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity.
     @author Andrew McCallum */
 trait IndexedSeqSimilar[+E] extends SeqSimilar[E] {
@@ -76,25 +76,29 @@ trait SeqVar[+E] extends Var with ValueBound[Seq[E]] with SeqSimilar[E]
 trait IndexedSeqVar[+E] extends SeqVar[E] with ValueBound[IndexedSeq[E]] with IndexedSeqSimilar[E]
 
 
-/** An abstract variable containing a mutable sequence of other variables.  
+/** An abstract variable containing a mutable sequence of elements (which could be other variables).  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
 trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   type Element = E
-  protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is more efficient.
+  protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that apply(Int) is more efficient.
   @inline final def value: IndexedSeq[Element] = _seq // Note that for efficiency we don't return a copy, but this means that this value could change out from under a saved "value" if this variable value is changed. 
   def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
   def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
-  def append(x:Element)(implicit d:DiffList) = AppendDiff(x)
-  def prepend(x:Element)(implicit d:DiffList) = PrependDiff(x)
-  def trimStart(n:Int)(implicit d:DiffList) = TrimStartDiff(n)
-  def trimEnd(n: Int)(implicit d:DiffList) = TrimEndDiff(n)
-  def remove(n:Int)(implicit d:DiffList) = Remove1Diff(n)
+  def add(e:Element)(implicit d:DiffList): Unit = Append1Diff(e)
+  def append(es:Element*)(implicit d:DiffList): Unit = AppendDiff(es:_*)
+  def prepend(e:Element)(implicit d:DiffList): Unit = PrependDiff(e)
+  def trimStart(n:Int)(implicit d:DiffList): Unit = TrimStartDiff(n)
+  def trimEnd(n:Int)(implicit d:DiffList): Unit = TrimEndDiff(n)
+  def remove(n:Int)(implicit d:DiffList): Unit = Remove1Diff(n)
+  def remove(e:E)(implicit d:DiffList): Unit = remove(_seq.indexOf(e))
+  def clear(implicit d:DiffList): Unit = for (i <- length-1 to 0) remove(i)
   def swap(i:Int,j:Int)(implicit d:DiffList) = Swap1Diff(i,j)
   def swapLength(pivot:Int,length:Int)(implicit d:DiffList) = for (i <- pivot-length until pivot) Swap1Diff(i,i+length)
   abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = MutableSeqVar.this}
   case class UpdateDiff(i:Int, x:Element)(implicit d:DiffList) extends SeqVariableDiff {val xo = _seq(i); def undo = _seq(i) = xo; def redo = _seq(i) = x}
-  case class AppendDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
+  case class Append1Diff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
+  case class AppendDiff(xs:Element*)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(xs.length); def redo = _seq.append(xs:_*)}
   case class PrependDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimStart(1); def redo = _seq.prepend(x)}
   case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo = _seq prependAll (s); def redo = _seq.trimStart(n)}
   case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo = _seq appendAll (s); def redo = _seq.trimEnd(n)}
@@ -106,8 +110,9 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar[IndexedSeq[E]] {
   override def apply(index: Int) = _seq(index)
   // for changes without Diff tracking
   def +=(x:Element) = _seq += x
+  def -=(x:Element) = _seq -= x
   def ++=(xs:Iterable[Element]) = _seq ++= xs
-  //def update(index:Int, x:Element): Unit = _seq(index) = x // What should this be named, since we already have an update method above? -akm
+  //def update(index:Int, x:Element): Unit = _seq(index) = x // TODO What should this be named, since we already have an update method above? -akm
 }
 
 /** A variable containing a mutable sequence of other variables. */

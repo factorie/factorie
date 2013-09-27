@@ -73,7 +73,9 @@ class SentenceSegmenter1 extends DocumentAnnotator {
         } else if (string(string.length-1) == '.') { // token ends in ., might also be end of sentence
           if (i+1 < tokens.length && possibleSentenceStart(tokens(i+1).string)) { // If the next word is a capitalized stopword, then say it is a sentence
             //println("SentenceSegmenter1 i="+i+" possibleSentenceStart "+tokens(i+1).string)
-            section.insert(i+1, new Token(token.stringEnd-1, token.stringEnd)) // Insert a token containing just the last (punctuation) character
+            val t2 = new Token(token.stringEnd-1, token.stringEnd)
+            t2._sentence = section.sentences.last
+            section.insert(i+1, t2) // Insert a token containing just the last (punctuation) character
             i += 1
             newSentence(i+1)
           }
@@ -91,7 +93,7 @@ class SentenceSegmenter1 extends DocumentAnnotator {
         i += 1
       }
       if (sentenceStart < tokens.length) newSentence(tokens.length) // Final sentence
-      
+      for (sentence <- section.sentences; token <- sentence.tokens) token._sentence = sentence  // Set each Token's internal record of its sentence, to avoid having to look it up later. 
     }
     document
   }

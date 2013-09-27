@@ -93,7 +93,7 @@ class TestLearning {
         val plt = localPLgrad.tensorSet(a)
         assertEquals("local tensor size for " + a + " does not match", plt.size, llt.size)
         for (i <- 0 until llt.size) {
-          assertEquals("local tensor value for " + a + "(" + i + ") does not match " + plt.mkString(",") + " " + llt.mkString(",") + " " + data(0).targetIntValue, plt(i), llt(i), 1.0e-7)
+          assertEquals(plt(i), llt(i), 1.0e-7)
         }
       }
     }

@@ -24,34 +24,42 @@ import scala.io._
 import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
-import java.util.zip.GZIPInputStream
-import scala.collection.mutable
 import cc.factorie.app.nlp.embeddings._
 
 
-class TokenSequence(token : Token) extends collection.mutable.ArrayBuffer[Token] {
+class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
   this.prepend(token)
-  val label : String = token.attr[BilouConllNerLabel].categoryValue.split("-")(1)
+  val label : String = token.attr[T].categoryValue.split("-")(1)
   def key = this.mkString("-")
-} 
+}
 
-class NER3(embeddingMap: SkipGramEmbedding,
-           embeddingDim: Int,
-           scale: Double,
-           useOffsetEmbedding: Boolean, url: java.net.URL=null) extends DocumentAnnotator {
+class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
+                        newLabel: (Token, String) => L,
+                        labelToToken: L => Token,
+                        embeddingMap: SkipGramEmbedding,
+                        embeddingDim: Int,
+                        scale: Double,
+                        useOffsetEmbedding: Boolean,
+                        url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
     argsList += ("embeddingDim" -> embeddingDim.toString)
   }
 
-  def process(document:Document): Document = {
+  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") {
+    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
+      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
+      for (phrase <- fields.drop(1)) this += phrase
+    }
+  }
 
+  def process(document:Document): Document = {
     if (document.tokenCount == 0) return document
-    if (!document.tokens.head.attr.contains(classOf[BilouConllNerLabel]))
-      document.tokens.map(token => token.attr += new BilouConllNerLabel(token, "O"))
+    if (!document.tokens.head.attr.contains(m.runtimeClass))
+      document.tokens.map(token => token.attr += newLabel(token, "O"))
     if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
-      document.tokens.map(token => token.attr += new ChainNerFeatures(token))
+      document.tokens.map(token => token.attr += newLabel(token, "O"))
       initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
     }
     process(document, useModel2 = false)
@@ -64,8 +72,8 @@ class NER3(embeddingMap: SkipGramEmbedding,
     document
   }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
-  def postAttrs = Seq(classOf[BilouConllNerLabel])
-  def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
+  def tokenAnnotationString(token:Token): String = token.attr[L].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -78,29 +86,26 @@ class NER3(embeddingMap: SkipGramEmbedding,
     override def skipNonCategories = true
   }
 
-  class NER3EModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
-  (val labelDomain1:CategoricalDomain[String],
-   val featuresDomain1:CategoricalVectorDomain[String],
-   val labelToFeatures1:Label=>Features,
-   val labelToToken1:Label=>Token,
-   val tokenToLabel1:Token=>Label)
-  (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
-    extends ChainModel(labelDomain1, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) {
+  class NER3EModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+                                                             labelToFeatures1:L=>Features,
+                                                             labelToToken1:L=>Token,
+                                                             tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
+    extends ChainModel(labelDomain, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) with Parameters {
 
     // Factor for embedding of observed token
-    val embedding = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+    val embedding = new DotFamilyWithStatistics2[L, EmbeddingVariable] {
       val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
-    val embeddingPrev = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+    val embeddingPrev = new DotFamilyWithStatistics2[L, EmbeddingVariable] {
       val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
-    val embeddingNext = new DotFamilyWithStatistics2[Label, EmbeddingVariable] {
+    val embeddingNext = new DotFamilyWithStatistics2[L, EmbeddingVariable] {
       val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
-    override def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
+    override def factorsWithContext(labels:IndexedSeq[L]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {
         result += bias.Factor(labels(i))
@@ -110,23 +115,23 @@ class NER3(embeddingMap: SkipGramEmbedding,
           if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
         }
         val l = labels(i)
-        val label:BilouConllNerLabel = labels(i).asInstanceOf[BilouConllNerLabel]
+        val label:L = labels(i)
 
         val scale = NERModelOpts.argsList("scale").toDouble
         if (embeddingMap != null ) {
-          if (embeddingMap.contains(label.token.string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(label.token.string) * scale))
-          if (useOffsetEmbedding && label.token.sentenceHasPrev && embeddingMap.contains(label.token.prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(label.token.prev.string) * scale))
-          if (useOffsetEmbedding && label.token.sentenceHasNext && embeddingMap.contains(label.token.next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(label.token.next.string) * scale))
+          if (embeddingMap.contains(labelToToken(label).string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).string) * scale))
+          if (useOffsetEmbedding && labelToToken(label).sentenceHasPrev && embeddingMap.contains(labelToToken(label).prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).prev.string) * scale))
+          if (useOffsetEmbedding && labelToToken(label).sentenceHasNext && embeddingMap.contains(labelToToken(label).next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).next.string) * scale))
         }
       }
       result
     }
   }
 
-  val model = new NER3EModel[BilouConllNerLabel,ChainNerFeatures,Token](BilouConllNerDomain, ChainNerFeaturesDomain, l => l.token.attr[ChainNerFeatures], l => l.token, t => t.attr[BilouConllNerLabel])
-  val model2 = new NER3EModel[BilouConllNerLabel,ChainNer2Features,Token](BilouConllNerDomain, ChainNer2FeaturesDomain, l => l.token.attr[ChainNer2Features], l => l.token, t => t.attr[BilouConllNerLabel])
+  val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
+  val model2 = new NER3EModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
-  val objective = new ChainNerObjective
+  val objective = new HammingTemplate[L]()
 
   if (url != null) {
     deSerialize(url.openConnection.getInputStream)
@@ -160,34 +165,6 @@ class NER3(embeddingMap: SkipGramEmbedding,
   }
 
   import cc.factorie.app.nlp.lexicon._
-  val lexicons = Seq(
-    iesl.AllPlaces,
-    iesl.City,
-    iesl.Company,
-    iesl.Continents,
-    iesl.Country,
-    iesl.Day,
-    iesl.JobTitle,
-    iesl.Month,
-    iesl.OrgSuffix,
-    iesl.PersonFirst,
-    iesl.PersonFirstHigh,
-    iesl.PersonFirstHighest,
-    iesl.PersonFirstMedium,
-    iesl.PersonHonorific,
-    iesl.PersonLast,
-    iesl.PersonLastHigh,
-    iesl.PersonLastHighest,
-    iesl.PersonLastMedium,
-    iesl.USState,
-    wikipedia.Book,
-    wikipedia.Business,
-    wikipedia.Event,
-    wikipedia.Film,
-    wikipedia.LocationAndRedirect,
-    wikipedia.OrganizationAndRedirect,
-    wikipedia.PersonAndRedirect)
-
   var aggregate = false
   var twoStage = false
   val clusters = new scala.collection.mutable.HashMap[String,String]
@@ -247,9 +224,48 @@ class NER3(embeddingMap: SkipGramEmbedding,
       //else features += "NOTCAPITALIZED"
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
-
       if (token.isPunctuation) features += "PUNCTUATION"
-      if(lexicons != null) for (lexicon <- lexicons; if lexicon.containsWord(token.string)) features += "LEX="+lexicon.name
+
+      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
+      if (lexicon.iesl.Day.containsLemmatizedWord(word)) features += "DAY"
+
+      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
+      if (lexicon.iesl.PersonFirstHigh.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGH"
+      if (lexicon.iesl.PersonFirstHighest.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGHEST"
+      if (lexicon.iesl.PersonFirstMedium.containsLemmatizedWord(word)) features += "PERSON-FIRST-MEDIUM"
+
+      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
+      if (lexicon.iesl.PersonLastHigh.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGH"
+      if (lexicon.iesl.PersonLastHighest.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGHEST"
+      if (lexicon.iesl.PersonLastMedium.containsLemmatizedWord(word)) features += "PERSON-LAST-MEDIUM"
+
+      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
+
+      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
+      if (lexicon.iesl.JobTitle.contains(token)) features += "JOB-TITLE"
+      if (lexicon.iesl.OrgSuffix.contains(token)) features += "ORG-SUFFIX"
+
+      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
+      if (lexicon.iesl.City.contains(token)) features += "CITY"
+      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
+      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
+      if (lexicon.iesl.Continents.contains(token)) features += "CONTINENT"
+
+      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
+      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
+      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
+      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
+      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
+      if (Demonyms.contains(token)) features += "DEMONYM"
+
+      if (lexicon.wikipedia.Book.contains(token)) features += "WIKI-BOOK"
+      if (lexicon.wikipedia.Business.contains(token)) features += "WIKI-BUSINESS"
+      if (lexicon.wikipedia.Film.contains(token)) features += "WIKI-FILM"
+
+      if (lexicon.wikipedia.LocationAndRedirect.contains(token)) features += "WIKI-LOCATION-REDIRECT"
+      if (lexicon.wikipedia.PersonAndRedirect.contains(token)) features += "WIKI-PERSON-REDIRECT"
+      if (lexicon.wikipedia.OrganizationAndRedirect.contains(token)) features += "WIKI-ORG-REDIRECT"
+
       if (clusters.size > 0 && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
         features += "CLUS="+prefix(6,clusters(rawWord))
@@ -283,17 +299,17 @@ class NER3(embeddingMap: SkipGramEmbedding,
     maxDomain
   }
 
-  def getSequences(document : Document) : List[TokenSequence] = {
-    var sequences = List[TokenSequence]()
-    var seq : TokenSequence = null
+  def getSequences(document : Document) : List[TokenSequence[L]] = {
+    var sequences = List[TokenSequence[L]]()
+    var seq : TokenSequence[L] = null
     for(token <- document.tokens) {
-      val categoryVal = token.attr[BilouConllNerLabel].categoryValue
+      val categoryVal = token.attr[L].categoryValue
       if(categoryVal.length() > 0) {
         categoryVal.substring(0,1) match {
-         case "B" => seq = new TokenSequence(token)
-         case "I" => if (seq != null) seq.append(token) else seq = new TokenSequence(token)
-         case "U" => seq = new TokenSequence(token)
-         case "L" => if (seq != null) seq.append(token) else seq = new TokenSequence(token)
+         case "B" => seq = new TokenSequence[L](token)
+         case "I" => if (seq != null) seq.append(token) else seq = new TokenSequence[L](token)
+         case "U" => seq = new TokenSequence[L](token)
+         case "L" => if (seq != null) seq.append(token) else seq = new TokenSequence[L](token)
          case _ => null
         }
         if(categoryVal.matches("(L|U)-\\D+")) sequences = seq :: sequences
@@ -302,7 +318,7 @@ class NER3(embeddingMap: SkipGramEmbedding,
     sequences
   }
 
-  def  allSubstrings(seq: TokenSequence, length : Int) : List[String] = {
+  def  allSubstrings(seq: TokenSequence[L], length : Int) : List[String] = {
 	  if(length == 0) return List[String]()
 	  var list = List[String]()
 	  for(i <- 0 to seq.length-length) {
@@ -316,12 +332,12 @@ class NER3(embeddingMap: SkipGramEmbedding,
   }
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[BilouConllNerLabel].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[BilouConllNerLabel].categoryValue+"&"+t.string))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[L].categoryValue))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[L].categoryValue+"&"+t.string))
     for(t <- document.tokens) {
 	    if(t.sentenceHasPrev) {
-		    t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[BilouConllNerLabel].categoryValue+"&"+t2._2.string)
-    	  t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[BilouConllNerLabel].categoryValue+"&"+t2._2.string)
+		    t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
+    	  t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
 	    }
     }
    
@@ -334,9 +350,9 @@ class NER3(embeddingMap: SkipGramEmbedding,
     if(extraFeatures) {
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
-          tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[BilouConllNerLabel].categoryValue)
+          tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[L].categoryValue)
         else
-          tokenToLabelMap(token.string) = List(token.attr[BilouConllNerLabel].categoryValue)
+          tokenToLabelMap(token.string) = List(token.attr[L].categoryValue)
       }
 	    for (seq <- sequences) {
 	      if(sequenceToLabelMap.contains(seq.key))
@@ -372,34 +388,34 @@ class NER3(embeddingMap: SkipGramEmbedding,
 	  }
 	  for(token <- document.tokens) {
 		  if(extendedPrediction.contains(token.string))
-        BilouConllNerDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
+        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
 		  if(extendedPrediction.contains(token.string))
-        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[BilouConllNerLabel].categoryValue)
+        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[L].categoryValue)
       else
-        extendedPrediction(token.string) = List(token.attr[BilouConllNerLabel].categoryValue)
+        extendedPrediction(token.string) = List(token.attr[L].categoryValue)
 	  }
 
     for(token <- document.tokens) {
 		  val rawWord = token.string
 		  if(token.hasPrev && clusters.size > 0) {
 			  if(clusters.contains(rawWord))
-		      token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BilouConllNerLabel].categoryValue + "&" + prefix(_,clusters(rawWord)))
+		      token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
 			  if(token.hasNext) {
 				  var nextRawWord = token.next.string
 				  if(clusters.contains(nextRawWord))
-					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BilouConllNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
 				  if(token.next.hasNext && clusters.contains(token.next.next.string)) {
 					  nextRawWord = token.next.next.string
-					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BilouConllNerLabel].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+					  token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
 				  }
 			  }
         if(token.hasPrev) {
 				  var prevRawWord = token.prev.string
 				  if(clusters.contains(prevRawWord))
-				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BilouConllNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
+				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
 				  if(token.prev.hasPrev && clusters.contains(token.prev.prev.string)) {
 				    prevRawWord = token.prev.prev.string
-				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[BilouConllNerLabel].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
+				    token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
 				  }
 			  }
 		  }
@@ -415,11 +431,11 @@ class NER3(embeddingMap: SkipGramEmbedding,
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
+  def train(loader: Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
-    val trainDocuments = LoadConll2003(BILOU=true).fromFilename(dataDir + trainFilename)
-    val testDocuments = LoadConll2003(BILOU=true).fromFilename(dataDir + testFilename)
+    val trainDocuments = loader.fromFilename(dataDir + trainFilename)
+    val testDocuments = loader.fromFilename(dataDir + testFilename)
 
     // Add features for NER                 \
     println("Initializing training features")
@@ -441,15 +457,15 @@ class NER3(embeddingMap: SkipGramEmbedding,
     //println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BilouConllNerLabel]) //.take(100)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BilouConllNerLabel]) //.take(20)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(100)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
  
-    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
     val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
-    trainDocuments.foreach(process(_, false))
-    testDocuments.foreach(process(_, false))
+    trainDocuments.foreach(process(_, useModel2=false))
+    testDocuments.foreach(process(_, useModel2=false))
     printEvaluation(trainDocuments, testDocuments, "FINAL 1")
 
     (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
@@ -461,7 +477,7 @@ class NER3(embeddingMap: SkipGramEmbedding,
     //println("Example Test Token features")
     //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[BilouConllNerLabel])
+    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
 
     val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChainSum))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
@@ -482,9 +498,9 @@ class NER3(embeddingMap: SkipGramEmbedding,
   
   def evaluationString(documents: Iterable[Document]): Double = {
     val buf = new StringBuffer
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BilouConllNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BilouConllNerLabel](BilouConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BilouConllNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[L]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L])
     println("Segment evaluation")
     println(segmentEvaluation)
     segmentEvaluation.f1
@@ -492,14 +508,20 @@ class NER3(embeddingMap: SkipGramEmbedding,
   def process(document:Document, useModel2 : Boolean): Unit = {
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
-      val vars = sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq
-      BP.inferChainMax(vars, if(useModel2) model2 else model)
+      val vars = sentence.tokens.map(_.attr[L]).toSeq
+      BP.inferChainMax(vars, if(useModel2) model2 else model).setToMaximize(null)
     }
   }
-
 }
-object NER3 extends NER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3](".factorie"))
-object NER3NoEmbeddings extends NER3(null, 0, 0.0, false, ClasspathURL[NER3](".factorie-noembeddings"))
+
+class ConllNER3(embeddingMap: SkipGramEmbedding,
+                embeddingDim: Int,
+                scale: Double,
+                useOffsetEmbedding: Boolean,
+                url: java.net.URL=null) extends NER3[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
+
+object NER3 extends ConllNER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3[_]](".factorie"))
+object NER3NoEmbeddings extends ConllNER3(null, 0, 0.0, false, ClasspathURL[NER3[_]](".factorie-noembeddings"))
 
 class NER3Opts extends CmdOptions {
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -524,7 +546,7 @@ object NER3Trainer extends HyperparameterMain {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new NER3(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new ConllNER3(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
@@ -536,7 +558,7 @@ object NER3Trainer extends HyperparameterMain {
       }
     }
     
-    val result = ner.train(opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
+    val result = ner.train(LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
@@ -550,7 +572,7 @@ object NER3Optimizer {
     opts.parse(args)
     opts.saveModel.setValue(false)
 
-    if (opts.runOnlyHere.value == true) {
+    if (opts.runOnlyHere.value) {
       opts.saveModel.setValue(true)
       val result = NER3Trainer.evaluateParameters(args)
       println("result: "+ result)

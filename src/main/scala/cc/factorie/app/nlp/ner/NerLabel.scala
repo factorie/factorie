@@ -39,6 +39,7 @@ class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
 
+class NerSpanList extends TokenSpanList[NerSpan]
 
 class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")

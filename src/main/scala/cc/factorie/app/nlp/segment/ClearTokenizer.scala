@@ -18,7 +18,7 @@ trait AbstractSegmenter extends DocumentAnnotator {
       TokenizerHelper.addTokensToDoc(sentences.flatten, section)
       var start = 0
       for (cs <- sentences; if cs.length > 0) {
-        new Sentence(section, start, cs.length)(null)
+        new Sentence(section, start, cs.length)
         start = start + cs.length
       }
     }

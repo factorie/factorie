@@ -83,7 +83,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), e(3) / (e(3) + e(3)), eps)
+    assertEquals(fg.marginal(v).proportions.maxIndex, 0)
   }
 
   @Test def v1f2MAP2 {
@@ -94,9 +94,23 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //logger.debug(fg.marginal(v).proportions)
-    assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
+    assertEquals(fg.marginal(v).proportions.maxIndex, 1)
   }
-  
+
+  @Test def v1f2ChainLogZ {
+    // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
+    // one variable, two factors
+    val v = new BinVar(0)
+    val model = new ItemizedModel(newFactor1(v, 0.5, 1.3), newFactor1(v, -0.3, 4.0))
+    val s = BP.inferChainMax(Seq(v), model)
+    val s2 = BP.inferChainSum(Seq(v), model)
+    // make sure all factors have the same logz
+    //val szs = s.bpFactors.to[Vector].map(_.calculateLogZ)
+    val s2zs = s2.bpFactors.to[Vector].map(_.calculateLogZ)
+    // assert(szs.distinct.length == 1)
+    assert(s2zs.distinct.length == 1)
+  }
+
   @Test def v2f1VaryingBoth {
     logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
@@ -123,9 +137,6 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
     assertEquals(0.5, fg.marginal(v1).proportions(0), eps)
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
 
@@ -187,6 +198,16 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
+    val fastSum = BP.inferChainSumFast(Seq(l0, l1, l2, l3), model)
+    val sum = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model)
+    assertEquals(sum.logZ, fastSum.logZ, 0.001)
+    for (label <- Seq(l0, l1, l2, l3)) {
+      assertArrayEquals(sum.marginal(label).proportions.toArray, fastSum.marginal(label).asInstanceOf[DiscreteMarginal1[DiscreteVar]].proportions.toArray, 0.001)
+    }
+    for (factor <- sum.factors.get) {
+      assertArrayEquals(sum.marginal(factor).tensorStatistics.toArray, fastSum.marginal(factor).tensorStatistics.toArray, 0.001)
+    }
+
     val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
     val BPSummary = InferByBPChainSum(Seq(l0, l1, l2, l3), model)
     for (v <- meanFieldSummary.variables) {
@@ -199,22 +220,22 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
     // Testing MPLP
     val mplpSummary = InferByMPLP.infer(Seq(l0, l1, l2, l3), model)
-    val mapSummary: BPSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model)
+    val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model)
     for (v <- Seq(l0, l1, l2, l3)) {
       val mfm = mplpSummary.mapAssignment(v)
-      val bpm = mapSummary.marginal(v)
-      assertEquals(bpm.proportions.maxIndex, mfm.intValue)
+      val bpm = mapSummary.mapAssignment(v)
+      assertEquals(bpm.intValue, mfm.intValue)
     }
 
     // testing dual decomposition
-    val model0 = DualDecomposition.getBPInferChain(Seq(l0, l1, l2), model)
-    val model1 = DualDecomposition.getBPInferChain(Seq(l2, l3), model)
-    val ddSummary = InferByDualDecomposition.infer(Seq(model0, model1), Seq((0, l2, 1, l2)))
-    for (v <- Seq(l0, l1, l2, l3)) {
-      val mfm = ddSummary.mapAssignment(v)
-      val bpm = mapSummary.marginal(v)
-      assertEquals(bpm.proportions.maxIndex, mfm.intValue)
-    }
+//    val model0 = DualDecomposition.getBPInferChain(Seq(l0, l1, l2), model)
+//    val model1 = DualDecomposition.getBPInferChain(Seq(l2, l3), model)
+//    val ddSummary = InferByDualDecomposition.infer(Seq(model0, model1), Seq((0, l2, 1, l2)))
+//    for (v <- Seq(l0, l1, l2, l3)) {
+//      val mfm = ddSummary.mapAssignment(v)
+//      val bpm = mapSummary.mapAssignment(v)
+//      assertEquals(bpm.intValue, mfm.intValue)
+//    }
 
     val samplingSummary = InferByGibbsSampling.infer(Seq(l0, l1, l2, l3), model)
     for ((variable, marginal) <- samplingSummary.variableMap) {
@@ -239,10 +260,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
-    for (mfactor <- fg.bpFactors) {
-      logger.debug(mfactor.proportions)
-    }
-    
+
     val v1Marginal = fg.marginal(v1).proportions
     for ((_, i) <- v1.settings.zipWithIndex if v1.value == v2.value)
       assertEquals(v1Marginal(i), 0.0, eps)
@@ -369,9 +387,15 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       // max product
       
       val mfg = BP.inferChainMax(vars, model)
+      val mfg2 = BP.inferTreeMarginalMax(vars, model)
+      assertEquals(mfg.logZ, mfg2.logZ, 0.001)
+      for (v <- vars) {
+        assertEquals(mfg.mapAssignment(v).intValue, mfg2.mapAssignment(v).intValue)
+      }
+      mfg.setToMaximize(null)
       logger.debug("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {
-        logger.debug("v" + i + " : " + mfg.marginal(vars(i)).proportions)
+        // logger.debug("v" + i + " : " + mfg.marginal(vars(i)).proportions)
         logger.debug("tv" + i + " : " + (mapAssignment / math.pow(2, i)).toInt % 2)
         assertEquals(vars(i).value.intValue, (mapAssignment / math.pow(2, i)).toInt % 2)
       }

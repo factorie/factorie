@@ -117,14 +117,14 @@ object ChainNER4 {
     if (false) {
       // Use BP Viterbi for prediction
       for (sentence <- testSentences)
-        BP.inferChainMax(sentence.asSeq.map(_.label), model)
+        BP.inferChainMax(sentence.asSeq.map(_.label), model).setToMaximize(null)
         //BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
       
       for (sentence <- trainSentences.take(10)) {
         println("---SumProduct---")
         printTokenMarginals(sentence.asSeq, BP.inferChainSum(sentence.asSeq.map(_.label), model))
         println("---MaxProduct---")
-        printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
+        // printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
         println("---Gibbs Sampling---")
         predictor.processAll(testLabels, 2)
         sentence.asSeq.foreach(token => printLabel(token.label))

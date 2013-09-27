@@ -84,7 +84,7 @@ object LoadReACE {
       currP += 1
       for (s <- p \\ "s") {
         val sId = getAttr(s, "id")
-        val sent = new Sentence(doc)(null)
+        val sent = new Sentence(doc)
         sent.attr += new ReACESentenceAnnotations {
           val paragraphId = Some(currP.toString);
           val sentenceId = sId
@@ -102,7 +102,7 @@ object LoadReACE {
   }
 
   private def lookupEntityMention(doc: Document, id: String): Option[PairwiseMention] = {
-    val opt = doc.spans.find {
+    val opt = doc.attr[ner.NerSpanList].find {
       s => {
         val a = s.attr[ReACEMentionIdentifiers]
         (a ne null) && a.mId.get == id
@@ -113,6 +113,7 @@ object LoadReACE {
   }
 
   def addNrm(doc: Document, xml: String): Document = {
+    val spanList = doc.attr[ner.NerSpanList]
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -134,6 +135,7 @@ object LoadReACE {
       val nerSubType = (mention \ "@st").text
 
       val m = new NerSpan(doc.asSection, nerType, start, length)(null) with PairwiseMention
+      spanList += m
 
       m.attr += new ReACEMentionIdentifiers {
         val mId = getAttr(mention, "id")
@@ -188,7 +190,7 @@ object LoadReACE {
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
     for (d <- docs)
-      d.sections.foreach(_.spansOfClass[PairwiseMention].foreach(s => println(s)))
+      d.attr[ner.NerSpanList].foreach(s => println(s))
   }
 
 }

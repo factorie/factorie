@@ -4,6 +4,9 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.hcoref._
 
 object Coref1 {
+  
+  class SpanMention(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) with TokenSpanMention
+  class SpanMentionList extends TokenSpanList[SpanMention]
 
   abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
     override def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
@@ -102,28 +105,29 @@ object Coref1 {
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {
+    val spanList = doc.attr += new SpanMentionList
     val section = doc.asSection
-    for (i <- 0 until section.length) {
+    for (token <- section.tokens) {
       // Make a mention for simple pronouns
-      if (section(i).string.matches("[Hh]e|[Ss]he|[Ii]t") && section(i).spans.length == 0) new TokenSpan(section, i, 1)(null) with TokenSpanMention
+      if (token.string.matches("[Hh]e|[Ss]he|[Ii]t") && spanList.spansContaining(token).length == 0) spanList += new SpanMention(section, token.position, 1)
       // Make a mention for sequences of capitalized words
-      if (section(i).isCapitalized && section(i).spans.length == 0) {
+      if (token.isCapitalized && spanList.spansContaining(token).length == 0) {
         var len = 1
-        while (i + len < section.length && section(i+len).isCapitalized) len += 1
-        new TokenSpan(section, i, len)(null) with TokenSpanMention
+        while (token.position + len < section.length && section(token.position+len).isCapitalized) len += 1
+        spanList += new SpanMention(section, token.position, len)
       }
     }
   }
 
-  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))(new scala.util.Random(0))
-  def nerMentionExtraction(doc:Document): Unit = {
-    for (iteration <- 1 to 3; token <- doc.tokens) spanner.process(token)
-  }
+//  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))(new scala.util.Random(0))
+//  def nerMentionExtraction(doc:Document): Unit = {
+//    for (iteration <- 1 to 3; token <- doc.tokens) spanner.process(token)
+//  }
 
   def corefInit(doc:Document): Unit = {
     //val entities = new ArrayBuffer[Entity]
     // Make each Mention its own Entity
-    for (mention <- doc.asSection.spansOfClass[TokenSpanMention]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
+    for (mention <- doc.attr[SpanMentionList]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
     // Assign each mention to its closest previous non-pronoun mention
     /*for (mention <- doc.orderedSpansOfClass[Mention]) {
       val prevMention = mention.document.spanOfClassPreceeding[Mention](mention.start)
@@ -139,7 +143,7 @@ object Coref1 {
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
-      for (antecedant <- mention.document.asSection.spansOfClassPreceeding[TokenSpanMention](mention.start))
+      for (antecedant <- mention.document.attr[SpanMentionList].spansPreceeding(mention.head))
         changes += {(d:DiffList) => entityRef.set(antecedant)(d)}
       var i = 0
       def hasNext = i < changes.length
@@ -165,7 +169,7 @@ object Coref1 {
   }
 
   def coref(doc:Document): Unit = {
-    for (mention <- doc.sections.flatMap(_.orderedSpansOfClass[TokenSpanMention])) {
+    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
       EntityRefSampler.process(mention.parentEntityRef)
     }
   }
@@ -179,8 +183,8 @@ object Coref1 {
     corefInit(doc)
     coref(doc)
     // Print the results
-    for (mention <- doc.asSection.orderedSpansOfClass[TokenSpanMention]) {
-      // println(mention+" => "+mention.parentEntity+"\n")
+    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
+      println(mention+" => "+mention.parentEntity+"\n")
     }
   }
 

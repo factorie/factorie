@@ -136,6 +136,8 @@ Then it re-estimates by maximum likelihood the mean and variance from the sample
 */
 
 package cc.factorie.tutorial
+import scala.language.reflectiveCalls
+
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
   import cc.factorie.directed._                    // Factors for directed graphical models
@@ -191,7 +193,7 @@ object ExampleLinearChainCRF extends App {
   trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
-  labelSequences.foreach(labels => BP.inferChainMax(labels, model))
+  labelSequences.foreach(labels => BP.inferChainMax(labels, model).setToMaximize(null))
   // Print the learned parameters on the Markov factors.
   println(model.markov.weights)
   // Print the inferred tags
@@ -266,6 +268,9 @@ PEBL...
 BUGS...
 
 Church...
+
+Irma... (Eisner)
+
 
 
 

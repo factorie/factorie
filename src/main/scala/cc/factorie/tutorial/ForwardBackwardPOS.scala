@@ -70,7 +70,7 @@ object ForwardBackwardPOS {
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PennPosLabel], oldBp: Boolean = false): Unit =
-    BP.inferChainMax(vs, PosModel)
+    BP.inferChainMax(vs, PosModel).setToMaximize(null)
     //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
