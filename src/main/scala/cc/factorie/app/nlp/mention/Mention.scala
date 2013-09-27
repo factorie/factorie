@@ -2,25 +2,12 @@ package cc.factorie.app.nlp.mention
 
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
-import cc.factorie.app.nlp.{Sentence, TokenSpan, Document, Section, Token}
+import cc.factorie.app.nlp.{Sentence, TokenSpan, TokenSpanList, Document, Section, Token}
 import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
 
-/**
- * Created with IntelliJ IDEA.
- * User: belanger
- * Date: 5/29/13
- * Time: 2:01 PM
- * To change this template use File | Settings | File Templates.
- */
+class MentionList extends TokenSpanList[Mention]
 
-class MentionList extends ArrayBuffer[Mention]
-
-//object Mention{
-//  def apply(sec: Section, start:Int, length: Int, headTokenIndex:Int) =  new Mention(sec, start, length, headTokenIndex)
-//  def apply(span:TokenSpan, headTokenIndex: Int = -1): Mention = new Mention(span.section, span.start, span.length, headTokenIndex)
-//}
-
-// TODO Rename this to "Chunk"?  Then "Mention" will be a trait that has to do with coref, and which can be folded into lots of things.
+// TODO Rename this to "Chunk"?  Then "Mention" will be a trait that has to do with coref, and which can be folded into lots of things.  See also coref.CorefMention
 /** A TokenSpan holding a mention of an entity.  
     Note that headTokenIndex is an offset from the beginning of this span, not the beginning of the Section.
     Note also that since Mention is a Span, and Span is a sequence over Tokens, "this.head" is the first token of the span, not the "natural language head" of the phrase; for the later use "this.headToken". */
@@ -39,6 +26,7 @@ class MentionType(val mention:Mention, targetValue:String) extends LabeledCatego
   def domain = OntonotesMentionTypeDomain
 }
 
+// TODO Is this really necessary?  I think an entity should be more than this. -akm
 class Entity(val name: String = "")
 
 

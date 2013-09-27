@@ -50,6 +50,7 @@ object CorefMention{
   val posSet = Seq("POS")
 }
 
+// TODO I think "Mention" should become "NounChunk", and then this "CorefMention" should become "Mention extends NounChunk".
 //basically, this is a wrapper around factorie Mention, with some extra stuff
 class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
   val _head =  mention.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document

@@ -109,8 +109,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def isSentenceStart: Boolean = (sentence ne null) && sentence.start == position
   def isSentenceEnd: Boolean = (sentence ne null) && sentence.end-1 == position
   
-
-  // Span methods
+  // Span methods.  Don't delete these yet.  Still small chance may have a canonical "SpanList" in Section.
 //  def inSpan: Boolean = chain.hasSpanContaining(position) 
 //  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
 //  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
@@ -124,23 +123,33 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"
-  /** Return true if the first  character of the word is upper case. */
+  /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\{Punct}")
+  /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
+  /** Return true if any character of the word is upper case. */
+  def containsUpperCase: Boolean = string.exists(c => java.lang.Character.isUpperCase(c))
   /* Return true if the word contains only digits. */
   def isDigits: Boolean = string.matches("\\d+")
-  /* Return true if the word contains at least one digit. */
+  /** Return true if the word contains at least one digit. */
   def containsDigit: Boolean = string.matches(".*\\d.*")
   /** Return a string that captures the generic "shape" of the original word, 
       mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
       Skip more than 'maxRepetitions' of the same character class. */
   def wordShape(maxRepetitions:Int = 2): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
+  /** Return all the word's character subsequences of lengths between min and max. */
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
+  /** Return true if the character immediately preceding the start of this token is a whitespace character (such as space, newline, tab, etc) */
   def hasPrecedingWhitespace: Boolean = stringStart == 0 || java.lang.Character.isWhitespace(document.string(stringStart-1))
+  /** Return true if the character immediately following the end of this token is a whitespace character (such as space, newline, tab, etc) */
   def hasFollowingWhitespace: Boolean = stringEnd == document.stringLength || java.lang.Character.isWhitespace(document.string(stringEnd))
+  /** Return true if the character immediately preceding the start of this token is a newline.  The beginning of the document counts as a newline. */
+  def followsNewline: Boolean = stringStart == 0 || document.string(stringStart-1) == '\n'
+  /** Return true if the character immediately following the end of this token is a newline.  The end of the document counts as a newline. */
   def precedesNewline: Boolean = stringEnd == document.stringLength || document.string(stringEnd) == '\n'
-  
+  /** Returns a string representation of this Token object, including the prefix "Token(" and its starting character offset.
+      If instead you want the string contents of the token use the method "string". */
   override def toString = "Token("+stringStart+":"+string+")"
 
 }
