@@ -46,7 +46,7 @@ trait Var {
   //def domain: Domain[Any]
 
   /** Abstract method to return the value of this variable. */
-  def value: Any
+  def value: Value
 
   /** Value comparisons (as distinct from variable pointer equality) */
   def ===(other: Var) = value == other.value

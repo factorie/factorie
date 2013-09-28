@@ -23,8 +23,8 @@ import cc.factorie.la._
     @author Andrew McCallum */
 trait CategoricalVar[C] extends DiscreteVar with CategoricalVectorVar[C] with VarWithDomain  {
   type Value <: CategoricalValue[C]
+  def value: Value
   def domain: CategoricalDomain[C]
-  def value: CategoricalValue[C]
   def categoryValue: C = if (value ne null) value.category else null.asInstanceOf[C]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + ")"
 }
@@ -71,7 +71,6 @@ trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[This] with Var
   this: This =>
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.
-  override val value = domain.value(this)
   override def categoryValue = this
 }
 

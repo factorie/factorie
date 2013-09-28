@@ -346,9 +346,7 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
 
 trait ProportionsVar extends MassesVar {
   type Value <: Proportions
-  override def value: Proportions // I'm not sure why this is needed. -akm
-  //def domain: ProportionsDomain = ProportionsDomain // TODO Consider moving this to ProportionsVariable. -akm
-  // TODO What else should go here?
+  override def value: Value
 }
 trait MutableProportionsVar extends MutableMassesVar with ProportionsVar
 

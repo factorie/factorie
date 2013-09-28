@@ -650,6 +650,7 @@ trait BagOfWordsVar extends Var with Iterable[(String,Double)] {
 }
 class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar /*with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords]*/ {
   // Note that the returned value is not immutable.
+  type Value = SparseBagOfWords
   def value = _members
   def clear() = _members.clear
   private val _members:SparseBagOfWords = {

@@ -59,7 +59,7 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
       implicit val d = new DiffList
       summary.summary.setToMaximize(d)
       for (diff <- d; v = diff.variable)
-        as.update[v.type,v.type#Value](v, v.value.asInstanceOf[v.type#Value])
+        as.update(v, v.value)
       d.undo()
     }
     new MAPSummary(as, summaries.flatMap(_.summary.factorMarginals.map(_.factor)).distinct)

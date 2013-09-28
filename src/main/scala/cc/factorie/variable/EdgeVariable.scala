@@ -54,6 +54,7 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
     @author Andrew McCallum */
 class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
   private var _dst = initialDst
+  type Value = (A,B)
   def dst = _dst
   def value = (src, _dst)
   def set(newDst:B)(implicit d:DiffList): Unit = {

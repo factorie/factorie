@@ -81,7 +81,7 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],Directed
   }
   def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     val assignment = new HashMapAssignment
-    for (v <- variables) { val m = maxMean(v, model, marginalizing); assignment.update(v, m) }
+    for (v <- variables) { val m = maxMean(v, model, marginalizing); assignment.update[MutableDoubleVar](v, m) }
     new AssignmentSummary(assignment)
   }
 }
@@ -146,7 +146,7 @@ object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],Dire
   }
   def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     lazy val assignment = new HashMapAssignment
-    for (v <- variables) { val va = maxVariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]]); assignment.update[MutableDoubleVar, MutableDoubleVar#Value](v, va) }
+    for (v <- variables) { val va = maxVariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]]); assignment.update[MutableDoubleVar](v, va) }
     new AssignmentSummary(assignment)
   }
 }

@@ -53,7 +53,8 @@ trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
   /** The position within the Chain at which this Span is over.  The last element of this Span is at 'end-1'. */
   def end = start + length
   /** The current start/length of this Span as a SpanValue.  Creates and returns an immutable SpanValue. */
-  def value: SpanValue[C,E] = new SpanValue[C,E] {
+  type Value = SpanValue[C,E]
+  def value: Value = new SpanValue[C,E] {
     val chain: C = _chain
     val start = _start
     val length = _length

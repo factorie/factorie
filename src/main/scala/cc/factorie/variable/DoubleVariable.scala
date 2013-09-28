@@ -37,7 +37,9 @@ trait DoubleVar extends ScalarVar {
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar
+trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar {
+  override type Value = Double
+}
 
 /** A Variable with a mutable Double value.
     @author Andrew McCallum */

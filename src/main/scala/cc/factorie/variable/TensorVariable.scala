@@ -23,7 +23,7 @@ import cc.factorie.la._
 trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
   type Value <: Tensor
   //def domain: TensorDomain
-  def value: Tensor
+  def value: Value
 }
 
 

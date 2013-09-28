@@ -160,7 +160,7 @@ class SortedSparseCountsMasses1(val dim1:Int) extends SparseDoubleSeq with Masse
     @author Andrew McCallum */
 trait MassesVar extends TensorVar {
   type Value <: Masses
-  def value: Masses
+  def value: Value
   //def domain: MassesDomain
 }
 

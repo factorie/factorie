@@ -65,6 +65,7 @@ trait IndexedSeqSimilar[+E] extends SeqSimilar[E] {
     @author Andrew McCallum */
 trait SeqVar[+E] extends Var with SeqSimilar[E] {
   type Value <: Seq[E]
+  def value: Value
 }
 
 
@@ -75,6 +76,7 @@ trait SeqVar[+E] extends Var with SeqSimilar[E] {
     @author Andrew McCallum */
 trait IndexedSeqVar[+E] extends SeqVar[E] with IndexedSeqSimilar[E] {
   type Value <: IndexedSeq[E]
+  def value: Value
 }
 
 

@@ -78,7 +78,7 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
     val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxMean(v, model, marginalizing)
-      m.foreach(assignment(v) = _)
+      m.foreach(i => assignment.update[MutableTensorVarTensor1](v, i))
     }
     new AssignmentSummary(assignment)
   }
@@ -159,7 +159,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
     lazy val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxCovariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]])
-      m.foreach(assignment(v) = _)
+      m.foreach(assignment.update[MutableTensorVarTensor2](v, _))
     }
     new AssignmentSummary(assignment)
   }

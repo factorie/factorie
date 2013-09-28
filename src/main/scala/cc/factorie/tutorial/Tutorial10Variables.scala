@@ -293,8 +293,8 @@ object TutorialVariables {
     
     // While a Variable objects holds a value, values for variable may also be stored in an Assignment.
     val as = new HashMapAssignment
-    as(i) = 55
-    as(j) = 66
+    as.update[IntegerVariable](i, 55)
+    as.update[IntegerVariable](j,  66)
     // This allows some code to consider different values for a variable which changing the "global" value stored in the variable.
     //  (Helpful for multi-threaded code, among other reasons.)
     

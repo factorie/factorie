@@ -23,7 +23,7 @@ import cc.factorie.infer.{Maximize, DiscreteSummary1, SimpleDiscreteMarginal1, S
 trait DiscreteVar extends VectorVar with VarWithDomain {
   type Value <: DiscreteValue
   def domain: DiscreteDomain
-  def value: DiscreteValue
+  def value: Value
   def intValue = value.intValue
   /** Return the distribution over values of this variable given some factors (which presumably neighbor this DiscreteVar)
       and given that all other variables' values are fixed. */
