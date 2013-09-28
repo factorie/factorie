@@ -181,8 +181,8 @@ class Assignment4[A<:Var,B<:Var,C<:Var,D<:Var](val _1:A, var value1:A#Value, val
     @author Andrew McCallum */
 object GlobalAssignment extends Assignment {
   def variables = throw new Error("Cannot list all variables of the global Assignment.")
-  def apply[V<:Var](v:V): V#Value = v.value.asInstanceOf
-  def get[V<:Var](v:V): Option[V#Value] = Some(v.value.asInstanceOf)
+  def apply[V<:Var](v:V): V#Value = v.value.asInstanceOf[V#Value]
+  def get[V<:Var](v:V): Option[V#Value] = Some(v.value.asInstanceOf[V#Value])
   def contains(v:Var) = true
   override def setVariables(implicit d:DiffList): Unit = {}
 }
