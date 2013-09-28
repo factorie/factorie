@@ -20,8 +20,8 @@ trait ProtectedIntArrayBuffer {
   protected def _capacityGrowthFactor: Double = 1.5
   @inline final protected def _ensureCapacity(cap:Int): Unit = 
     if (cap > _arr.length) _setCapacity(math.max(cap, (_arr.length * _capacityGrowthFactor).toInt))
-  protected def _considerShrinkingCapacity: Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
-  protected def _trimCapacity: Unit = _setCapacity(_size) // What if _size == 0?
+  protected def _considerShrinkingCapacity(): Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
+  protected def _trimCapacity(): Unit = _setCapacity(_size) // What if _size == 0?
   protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)

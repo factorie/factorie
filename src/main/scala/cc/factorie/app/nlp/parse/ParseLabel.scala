@@ -86,7 +86,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   def labels: Array[ParseTreeLabel] = _labels
   def parents: Array[Int] = _parents
   def targetParents: Array[Int] = _targetParents
-  def setParentsToTarget: Unit = System.arraycopy(_targetParents, 0, _parents, 0, _parents.length)
+  def setParentsToTarget(): Unit = System.arraycopy(_targetParents, 0, _parents, 0, _parents.length)
   def numParentsCorrect: Int = { var result = 0; for (i <- 0 until _parents.length) if (_parents(i) == _targetParents(i)) result += 1; result }
   def parentsAccuracy: Double = numParentsCorrect.toDouble / _parents.length
   def numLabelsCorrect: Int = {var result = 0; for (i <- 0 until _labels.length) if (_labels(i).valueIsTarget) result += 1; result }
@@ -132,7 +132,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
       if (_parents(i) == parentIndex) return i
       i += 1
     }
-    return -1
+    -1
   }
 
 
@@ -225,7 +225,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   }
   /** Return the label on the edge from 'childToken' to its parent. */
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
-  override def toString(): String = {
+  override def toString: String = {
     val tokenStrings = {
       if (sentence.tokens.forall(_.posLabel ne null))
         sentence.tokens.map(t => t.string + "/" + t.posLabel.categoryValue)
@@ -236,7 +236,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
     val buff = new StringBuffer()
     for (i <- 0 until sentence.length)
       buff.append(i + " " + _parents(i) + " " + tokenStrings(i) + " " + labelStrings(i) + "\n")
-    buff.toString()
+    buff.toString
   }
 }
 

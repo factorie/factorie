@@ -51,7 +51,7 @@ trait Sampler[C] {
   // TODO Consider renaming this to "processContext"? -akm
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
-    val processingWithoutContext = (null == context)
+    val processingWithoutContext = null == context
     val c = preProcessHook(context)
     // The preProcessHook might return null to indicate it doesn't want to sample this context, so check for it:
     if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
@@ -123,7 +123,7 @@ trait ProposalSampler[C] extends Sampler[C] {
       case 1 => props.head 
       case _ => pickProposal(props)
     }
-    proposal.diff.redo
+    proposal.diff.redo()
     proposalHook(proposal)
     proposal.diff
   }
@@ -153,7 +153,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
       modelScore = 0.0; modelFactors.foreach(f => modelScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       objectiveScore = 0.0; objectiveFactors.foreach(f => objectiveScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       val d = new DiffList; d.done = false
-      if (context.isInstanceOf[MutableDiscreteVar[DiscreteValue]]) { val v = context.asInstanceOf[MutableDiscreteVar[DiscreteValue]]; d += new v.DiscreteVariableDiff(0, i) }
+      context.cast[MutableDiscreteVar].foreach(v =>  d += new v.DiscreteVariableDiff(0, i))
       //context match { case context:MutableDiscreteVar[_] => d += new context.DiscreteVariableDiff(0, i); case _ => {} } // This crashes the Scala 2.10.1 compiler
       result += new Proposal(d, modelScore, objectiveScore, modelScore)
       i += 1
@@ -185,7 +185,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(imp
     var i = 0
     val si = settings(context)
     while (si.hasNext) {
-      val d = si.next
+      val d = si.next()
       assert(model ne null) // TODO!!! Clean up and delete this
       val (m,o) = d.scoreAndUndo(model, objective)
       //if (proposalsCache.length == i) proposalsCache.append(null)
@@ -251,7 +251,7 @@ class VariablesSettingsSampler[V<:Var with IterableSettings](model:Model, object
         //if (prevDiffList ne null) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
         _hasNext = nextValues(vs, vds)
         // copy over the difflist for each variable to the result
-        vds.foreach(vd => { vd.done = false; vd.redo; result ++= vd })
+        vds.foreach(vd => { vd.done = false; vd.redo(); result ++= vd })
       }
       //println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
       result
@@ -267,15 +267,15 @@ class IteratedConditionalModes(model:Model, objective:Model = null) extends Sett
   def settings(v:Var with IterableSettings): SettingIterator = v.settings
 }
 
-object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables: Iterable[MutableDiscreteVar[_]], model: Model, marginalizing: Summary) = {
+object MaximizeByIteratedConditionalModes extends Maximize[Iterable[MutableDiscreteVar], Model] {
+  def infer(variables: Iterable[MutableDiscreteVar], model: Model, marginalizing: Summary) = {
     val icm = new IteratedConditionalModes(model)
     val d0 = icm.processAll(variables, returnDiffs = true)
     val d1 = icm.processAll(variables, returnDiffs = true)
     val as = new HashMapAssignment
     variables.foreach(v => as.update(v.asInstanceOf[DiscreteVar], v.value.asInstanceOf[DiscreteVar#Value]))
-    d1.undo
-    d0.undo
+    d1.undo()
+    d0.undo()
     new MAPSummary(as, model.factors(variables).toSeq)
   }
 }
@@ -298,7 +298,7 @@ trait FactorQueue[C] extends Sampler[C] {
     if (useQueue) {
       var queueDiff: DiffList = new DiffList
       if (queueProportion > 1.0 && !queue.isEmpty) {
-        for (i <- 0 until (queueProportion.toInt)) if (!queue.isEmpty) {
+        for (i <- 0 until queueProportion.toInt) if (!queue.isEmpty) {
           val qd = sampleFromQueue
           if (qd != null) queueDiff ++= qd
         }
@@ -314,8 +314,8 @@ trait FactorQueue[C] extends Sampler[C] {
     }
   }
   def sampleFromQueue : DiffList = {
-    val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
-    for (variable <- factor.variables.toSeq.shuffle; if (!variable.isInstanceOf[VarWithConstantValue])) {
+    val factor = queue.dequeue() // TODO consider proportionally sampling from the queue instead
+    for (variable <- factor.variables.toSeq.shuffle; if !variable.isInstanceOf[VarWithConstantValue]) {
       val difflist = process0(variable)
       if (difflist != null && difflist.size > 0) return difflist
     }
@@ -349,7 +349,7 @@ class SamplingFactorMarginal(val factor: DotFamily#Factor) extends FactorMargina
     sumStatistics
   }
 }
-class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMarginal1[MutableDiscreteVar[_]] {
+class SamplingVariableMarginal(val _1: MutableDiscreteVar) extends DiscreteMarginal1[MutableDiscreteVar] {
   val sumStatistics = Tensor.newSparse(_1.value.asInstanceOf[Tensor])
   var t = 0
   var haveComputedMarginals = false
@@ -367,11 +367,11 @@ class SamplingVariableMarginal(val _1: MutableDiscreteVar[_]) extends DiscreteMa
   }
 }
 class SamplingSummary(variables: Iterable[Var], factors: Iterable[Factor]) extends Summary {
-  val variableMap = variables.flatMap({ case v: MutableDiscreteVar[DiscreteValue @unchecked] => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
+  val variableMap = variables.flatMap({ case v: MutableDiscreteVar => Some(v -> new SamplingVariableMarginal(v)); case _ => None}).toMap
   val marginalMap = factors.flatMap({ case f: DotFamily#Factor => Some(f -> new SamplingFactorMarginal(f)) case _ => None }).toMap
   /** The collection of all Marginals available in this Summary */
   def marginals = variableMap.values
-  def marginal(v: Var) = v match { case v: MutableDiscreteVar[DiscreteValue @unchecked] => variableMap(v); case _ => null }
+  def marginal(v: Var) = v match { case v: MutableDiscreteVar => variableMap(v); case _ => null }
 
   /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
     return the Marginal with the maximally-available subset. */
@@ -393,11 +393,11 @@ class InferBySampling[C](samplesToCollect: Int, samplingInterval: Int) {
   }
 }
 
-class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar[_]], Model] {
-  def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model, marginalizing:Summary): SamplingSummary = {
+class InferByGibbsSampling(samplesToCollect: Int, samplingInterval: Int, implicit val random: scala.util.Random) extends Infer[Iterable[MutableDiscreteVar], Model] {
+  def infer(variables:Iterable[MutableDiscreteVar], model:Model, marginalizing:Summary): SamplingSummary = {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    val sampler = new VariableSettingsSampler[MutableDiscreteVar[_]](model)
-    val baseInfer = new InferBySampling[MutableDiscreteVar[_]](samplesToCollect, samplingInterval)
+    val sampler = new VariableSettingsSampler[MutableDiscreteVar](model)
+    val baseInfer = new InferBySampling[MutableDiscreteVar](samplesToCollect, samplingInterval)
     baseInfer.infer(variables, variables, model.factors(variables), sampler, model)
   }
   //override def infer(variables:Iterable[MutableDiscreteVar[_]], model:Model): SamplingSummary = infer(variables, model, null)

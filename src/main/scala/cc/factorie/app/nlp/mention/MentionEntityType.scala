@@ -199,19 +199,19 @@ object MentionEntityTypeAnnotator1Util {
     val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
 
     if(onlyOne){
-      if(isPerson) return "PERSON"
-      else if(isPlace) return "GPE"
-      else if(isEvent) return "EVENT"
-      else if(isOrganization) return "ORG"
+      if(isPerson) "PERSON"
+      else if(isPlace) "GPE"
+      else if(isEvent) "EVENT"
+      else if(isOrganization) "ORG"
       else
-        return "O"
+        "O"
     }else{
       if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
-        return "GPE"
+        "GPE"
       else if(isPlace && isPerson)
-        return "GPE"
+        "GPE"
       else
-        return "O"
+        "O"
     }
   }
 

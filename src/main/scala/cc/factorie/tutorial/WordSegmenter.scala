@@ -103,7 +103,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
 
 
 

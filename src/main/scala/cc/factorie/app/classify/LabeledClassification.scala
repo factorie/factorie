@@ -21,7 +21,7 @@ case class LabeledClassification[L](label: L, classification: MultiClassClassifi
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
-class Trial[L<:LabeledMutableDiscreteVar[_],F](val classifier: MultiClassClassifier[F], labelDomain: CategoricalDomain[String], l2f: L => F)
+class Trial[L<:LabeledMutableDiscreteVar,F](val classifier: MultiClassClassifier[F], labelDomain: CategoricalDomain[String], l2f: L => F)
   extends LabeledDiscreteEvaluation(labelDomain) with IndexedSeq[LabeledClassification[L]] {
   private val classifications = new ArrayBuffer[LabeledClassification[L]]
   def length = classifications.length
@@ -36,5 +36,5 @@ class Trial[L<:LabeledMutableDiscreteVar[_],F](val classifier: MultiClassClassif
     classifications += c
     super.+=(c.label, c.classification.bestLabelIndex)
   }
-  override def toString: String = "OVERALL: " + overallEvalString + "\n" +  evalString
+  override def toString(): String = "OVERALL: " + overallEvalString + "\n" +  evalString
 }

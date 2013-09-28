@@ -207,7 +207,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       assertArrayEquals(sum.marginal(factor).tensorStatistics.toArray, fastSum.marginal(factor).tensorStatistics.toArray, 0.001)
     }
 
-    val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
+    val meanFieldSummary = InferByMeanField.apply(Seq(l0, l1, l2, l3), model)
     val BPSummary = InferByBPChain(Seq(l0, l1, l2, l3), model)
     for (v <- meanFieldSummary.variables) {
       val mfm = meanFieldSummary.marginal(v)
@@ -336,7 +336,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[DiscreteVar]
-    for (seed <- (0 until 50)) {
+    for (seed <- 0 until 50) {
       val random = new Random(seed * 1024)
       val model = new ItemizedModel
       for (i <- 0 until numVars) {
@@ -529,7 +529,7 @@ object BPTestUtils {
       override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
         BinDomain(if (value1.intValue == value2.intValue) 0 else 1)
     }
-    assert(family.statisticsAreValues == false)
+    assert(!family.statisticsAreValues)
     family.weights.value(0) = scoreEqual
     family.weights.value(1) = scoreUnequal
     family.factors(n1).head

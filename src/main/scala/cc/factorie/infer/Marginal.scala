@@ -18,6 +18,7 @@ import cc.factorie.la._
 import cc.factorie.directed.{MultivariateGaussian, Gaussian}
 import cc.factorie.variable._
 import cc.factorie.model._
+import cc.factorie.directed.DirectedTypeHelpers.MutableTensorVarTensor1
 
 /** Stores a marginal distribution containing a joint distribution over a set of variables.
     See also Summary, which stores a collection of Marginals.
@@ -65,7 +66,7 @@ trait DiscreteMarginal1[V1<:VectorVar] extends Marginal1 with DiscreteMarginal {
   def proportions: Proportions1
   //def variables = Seq(_1) // This is already inherited from AbstractAssignment1
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
-  def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
+  def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar => v.set(proportions.maxIndex); case _ => throw new Error }
 }
 
 class SimpleDiscreteMarginal1[V1<: VectorVar](val _1: V1, initialProportions1: Proportions1=null) extends DiscreteMarginal1[V1] {
@@ -236,7 +237,7 @@ class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
   def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
 }
 
-class MultivariateGaussianMarginal1[V1 <: MutableTensorVar[Tensor1]](val _1: V1) extends Marginal {
+class MultivariateGaussianMarginal1[V1 <: MutableTensorVarTensor1](val _1: V1) extends Marginal {
   def variables = Seq(_1)
   // TODO Set this up better for incremental estimation
   var mean = new DenseTensor1(_1.value.length, 0.0)

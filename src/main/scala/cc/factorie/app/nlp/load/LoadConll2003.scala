@@ -112,7 +112,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
   }
 
   def IOBtoBILOU(prev : Token, token : Token,  next : Token) : String = {
-    if(token.nerLabel.categoryValue == "O") return "O";
+    if(token.nerLabel.categoryValue == "O") return "O"
     // The major case that needs to be converted is I, which is dealt with here
     val ts = token.nerLabel.categoryValue.split("-")
     var ps : Array[String] = null

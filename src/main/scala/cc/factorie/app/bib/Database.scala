@@ -114,7 +114,7 @@ object BibKB{
           println("  -number not corefed: "+knowledgebase.numNotCoref)
         }
       }
-      knowledgebase.mostCited
+      knowledgebase.mostCited()
       //val papers = RexaCitationLoader.loadFromList(new File(opts.rexaFileList.value))
       //BibFeatures.decorate(papers,ldaOpt)
       //if(knowledgebase.paperColl.cubbieCollection.size==0)knowledgebase.addMentionsColdStartCoref(papers)
@@ -139,7 +139,7 @@ abstract class BibKB extends BibKBAccessPatterns{
   protected var numNotCoref=0
   def authorColl:BibKBAuthorCollection
   def paperColl:BibKBPaperCollection
-  def isPaperSufficientForInsert(paper:PaperEntity):Boolean= (paper.title.value!=null && paper.title.value.length>0 && FeatureUtils.paperHash(paper).length>=1)
+  def isPaperSufficientForInsert(paper:PaperEntity):Boolean= paper.title.value != null && paper.title.value.length > 0 && FeatureUtils.paperHash(paper).length >= 1
   def selectCanonical(papers:Seq[PaperEntity]):PaperEntity = papers.head
   //def addFeatures(paper:PaperEntity):Unit
   //def addFeatures(author:AuthorEntity):Unit
@@ -181,7 +181,7 @@ abstract class BibKB extends BibKBAccessPatterns{
       val author = allAuthors.dequeue()
       if(author.isMention.value)pid2authors.getOrElseUpdate(author.pid.value.toString,new ArrayBuffer[AuthorCubbie]) += author
       aid2cubbie += author.id.toString -> author
-      if(author.isMention.value==true)authorMentions += author
+      if(author.isMention.value)authorMentions += author
     }
     count=0
     for(paper <- paperColl.cubbieCollection){
@@ -213,7 +213,7 @@ abstract class BibKB extends BibKBAccessPatterns{
       val paperRoot = getRoot[PaperCubbie](paper,id2cubbie)
       aid2papers.getOrElseUpdate(root.id.toString,new ArrayBuffer[PaperCubbie]) += id2cubbie(paperRoot.pid.value.toString)
     }
-    val sortedAuthors = aid2papers.toSeq.sortBy(((idpapers):Pair[String,ArrayBuffer[PaperCubbie]]) => {citationCount(idpapers._2)})
+    val sortedAuthors = aid2papers.toSeq.sortBy((idpapers: Pair[String, ArrayBuffer[PaperCubbie]]) => {citationCount(idpapers._2)})
     for((aid,papers)<-sortedAuthors){
       val author = aid2cubbie(aid)
       println("Name: "+author.firstName.value+" "+author.middleName.value+" "+author.lastName.value)

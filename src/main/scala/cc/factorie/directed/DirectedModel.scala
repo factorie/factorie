@@ -17,7 +17,7 @@ trait DirectedModel extends Model {
   def extendedChildren(v:Var): Iterable[Var]
   def parents(v:Var): Seq[Var]
   def children(v:Var): Iterable[Var]
-  def sampleFromParents(v:MutableVar[_])(implicit d:DiffList, random: scala.util.Random): Unit
+  def sampleFromParents(v:MutableVar)(implicit d:DiffList, random: scala.util.Random): Unit
 }
 
 trait MutableDirectedModel extends DirectedModel {
@@ -59,7 +59,7 @@ class ItemizedDirectedModel extends MutableDirectedModel {
   def extendedParentFactors(v:Var): Iterable[DirectedFactor] = {
     val result = new ArrayBuffer[DirectedFactor]
     result ++= getParentFactor(v)
-    for (parent <- parents(v); if (parent.isInstanceOf[VarWithDeterministicValue])) result ++= extendedParentFactors(parent)
+    for (parent <- parents(v); if parent.isInstanceOf[VarWithDeterministicValue]) result ++= extendedParentFactors(parent)
     result
   }
   def extendedChildFactors(v:Var): Iterable[DirectedFactor] = {
@@ -77,7 +77,7 @@ class ItemizedDirectedModel extends MutableDirectedModel {
     if (_parentFactor.contains(v)) _parentFactor(v).parents else Nil
   def children(v:Var): Iterable[Var] = childFactors(v).map(_.child)
 
-  def sampleFromParents(v:MutableVar[_])(implicit d:DiffList, random: scala.util.Random): Unit = v.set(parentFactor(v).sampledValue.asInstanceOf[v.Value])
+  def sampleFromParents(v:MutableVar)(implicit d:DiffList, random: scala.util.Random): Unit = v.set(parentFactor(v).sampledValue.asInstanceOf[v.Value])
 
   def +=(f:DirectedFactor): Unit = {
     require(!_parentFactor.contains(f.child))

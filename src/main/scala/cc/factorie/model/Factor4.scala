@@ -47,11 +47,11 @@ abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, va
   def currentAssignment = new Assignment4(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value], _4, _4.value.asInstanceOf[N4#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def assignmentScore(a:Assignment) = a match {
-    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => score(a.value1, a.value2, a.value3, a.value4)
+    case a:AbstractAssignment4[N1,N2,N3,N4] if (a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4) => score(a.value1, a.value2, a.value3, a.value4)
     case _ => score(a(_1), a(_2), a(_3), a(_4))
   }
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
-    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4)
+    case a:AbstractAssignment4[N1,N2,N3,N4] if (a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4) => statistics(a.value1, a.value2, a.value3, a.value4)
     case _ => statistics(a(_1), a(_2), a(_3), a(_4))
   }
 }
@@ -60,7 +60,7 @@ abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, va
     Only "score" method is abstract. */
 abstract class TupleFactorWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
-  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
+  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = (v1, v2, v3, v4)
   final override def statisticsAreValues: Boolean = true
 }
 
@@ -115,10 +115,10 @@ trait Family4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends FamilyWithNeighborDomains
   type NeighborType3 = N3
   type NeighborType4 = N4
     /** Override this if you want to matchNeighborDomains */
-  def neighborDomain1: Domain[N1#Value] = null
-  def neighborDomain2: Domain[N2#Value] = null
-  def neighborDomain3: Domain[N3#Value] = null
-  def neighborDomain4: Domain[N4#Value] = null
+  def neighborDomain1: Domain { type Value = N1#Value } = null
+  def neighborDomain2: Domain { type Value = N2#Value } = null
+  def neighborDomain3: Domain { type Value = N3#Value } = null
+  def neighborDomain4: Domain { type Value = N4#Value } = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2, neighborDomain3, neighborDomain4)
   type FactorType = Factor
 
@@ -144,7 +144,7 @@ trait TupleFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Family4[N1,N2,N3,N4]
 }
 
 trait TupleFamilyWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends TupleFamily4[N1,N2,N3,N4] {
-  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
+  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = (v1, v2, v3, v4)
 }
 
 trait TensorFamily4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends Family4[N1,N2,N3,N4] with TensorFamily {

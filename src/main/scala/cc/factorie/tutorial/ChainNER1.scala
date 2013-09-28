@@ -65,7 +65,7 @@ object ChainNER1a {
     implicit val random = new scala.util.Random(0)
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))
-    for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
+    for (document <- trainDocuments ++ testDocuments; token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)

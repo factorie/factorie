@@ -33,7 +33,7 @@ package object strings {
       if (read > 0)
         out.appendAll(buffer, 0, read)
     } while (read >= 0)
-    out.toString
+    out.toString()
   }
 
   /** Return a string that captures the generic "shape" of the original word, 
@@ -43,7 +43,7 @@ package object strings {
     val sb = new StringBuffer
     var i = 0; var c = 'x'; var prevc = 'x'; var repetitions = 0
     while (i < word.length) {
-      val char = word(i); 
+      val char = word(i)
       if (Character.isUpperCase(char)) c = 'A'
       else if (Character.isLowerCase(char)) c = 'a'
       else if (Character.isDigit(char)) c = '1'

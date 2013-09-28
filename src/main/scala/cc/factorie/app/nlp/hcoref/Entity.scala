@@ -52,7 +52,7 @@ trait Entity extends Attr {
   @deprecated("Will be removed.  Entities are not guaranteed to have string names.") def string: String
   def id: Any = this // Override to make some persistent id
   attr += new EntityRef(this,null)
-  def initializeAttributesOfStructure:Unit = {}
+  def initializeAttributesOfStructure():Unit = {}
   def removedChildHook(entity:Entity)(implicit d:DiffList)={}
   def addedChildHook(entity:Entity)(implicit d:DiffList)={}
   def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList)={}
@@ -81,7 +81,7 @@ trait Entity extends Attr {
   def isConnected: Boolean = (parentEntity ne null) || childEntitiesSize > 0 || isObserved
   //def entityRoot: Entity = { val s = parentEntity; if (s eq null) this else this.entityRoot }©
   def entityRoot: Entity = if (isRoot) this else parentEntity.entityRoot
-  def isRoot:Boolean = (parentEntityRef == null || parentEntityRef.dst == null)
+  def isRoot:Boolean = parentEntityRef == null || parentEntityRef.dst == null
   def isLeaf:Boolean = childEntitiesSize==0
   var isObserved:Boolean = false
   //var treatAsObserved:Boolean=false

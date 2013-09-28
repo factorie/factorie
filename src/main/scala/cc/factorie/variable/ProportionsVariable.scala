@@ -191,7 +191,7 @@ trait SparseTensorProportions extends SparseIndexedTensor with Proportions {
   def massTotal = 1.0
   protected def tensor: SparseIndexedTensor
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = tensor.foreachActiveElement(f)
-  tensor._makeReadable
+  tensor._makeReadable()
   def _makeReadable(): Unit = {}
   def _unsafeActiveDomainSize: Int = tensor._unsafeActiveDomainSize
   def _indices: Array[Int] = tensor._indices
@@ -344,14 +344,14 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
 //trait ProportionsDomain extends MassesDomain with Domain[Proportions]
 //object ProportionsDomain extends ProportionsDomain
 
-trait ProportionsVar extends MassesVar with ValueBound[Proportions] {
-  override def value: Proportions // I'm not sure why this is needed. -akm
-  //def domain: ProportionsDomain = ProportionsDomain // TODO Consider moving this to ProportionsVariable. -akm
-  // TODO What else should go here?
+trait ProportionsVar extends MassesVar {
+  type Value <: Proportions
+  override def value: Value
 }
-trait MutableProportionsVar[A<:Proportions] extends MutableMassesVar[A] with ProportionsVar
+trait MutableProportionsVar extends MutableMassesVar with ProportionsVar
 
-class ProportionsVariable extends MutableProportionsVar[Proportions] {
+class ProportionsVariable extends MutableProportionsVar {
+  type Value = Proportions
   def this(initialValue:Proportions) = { this(); set(initialValue)(null) }
   
   // Methods that track modifications on a DiffList
@@ -375,18 +375,18 @@ class ProportionsVariable extends MutableProportionsVar[Proportions] {
   
   case class IncrementProportionsMassesIndexDiff(index:Int, incr:Double) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses.+=(index, -incr)
-    def redo = value.masses.+=(index, incr)
+    def undo() = value.masses.+=(index, -incr)
+    def redo() = value.masses.+=(index, incr)
   }
   case class IncrementProportionsMassesDiff(t: Tensor) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses -= t // Note this relies on Tensor t not having changed.
-    def redo = value.masses += t
+    def undo() = value.masses -= t // Note this relies on Tensor t not having changed.
+    def redo() = value.masses += t
   }
   case class ZeroProportionsMassesDiff(prev: Array[Double]) extends Diff {
     def variable = ProportionsVariable.this
-    def undo = value.masses += prev
-    def redo = value.masses.zero()
+    def undo() = value.masses += prev
+    def redo() = value.masses.zero()
   }
 
 }
@@ -409,7 +409,7 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with Marginal1 with ProportionsMarginal {
+class ProportionsAssignment(p:ProportionsVariable, v:Proportions) extends Assignment1[ProportionsVariable](p, v.asInstanceOf[p.Value]) with Marginal1 with ProportionsMarginal {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   override def variables = Seq(p)
   def mean = throw new Error // TODO!!! Should be this instead: value1

@@ -15,12 +15,15 @@
 package cc.factorie.variable
 
 
-trait IntegerDomain extends Domain[Int]
+trait IntegerDomain extends Domain {
+  type Value = Int
+}
 object IntegerDomain extends IntegerDomain
 
 /** An abstract variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends ScalarVar with VarWithValue[Int] with VarWithDomain[Int] {
+trait IntegerVar extends ScalarVar with VarWithDomain {
+  type Value = Int
   def value: Int
   def domain: IntegerDomain = IntegerDomain
   def maxIntValue = Int.MaxValue
@@ -32,7 +35,7 @@ trait IntegerVar extends ScalarVar with VarWithValue[Int] with VarWithDomain[Int
 
 /** An abstract variable with one Int value, which can be modified.
     This trait makes no commitment about how the value is stored. */
-trait MutableIntegerVar extends IntegerVar with MutableVar[Int]
+trait MutableIntegerVar extends IntegerVar with MutableVar
 
 /** A concrete variable with a mutable Int value.
     @author Andrew McCallum */ 
@@ -51,8 +54,8 @@ class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with Mutab
   def /=(x:Int) = set(_value / x)(null)
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
     @inline final def variable: IntegerVariable = IntegerVariable.this
-    @inline final def redo = _value = newIndex
-    @inline final def undo = _value = oldIndex
+    @inline final def redo() = _value = newIndex
+    @inline final def undo() = _value = oldIndex
     override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }

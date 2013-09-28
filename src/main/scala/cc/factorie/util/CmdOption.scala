@@ -107,7 +107,7 @@ class CmdOptions {
       var invoked = false
       val optsIter = opts.valuesIterator
       while (optsIter.hasNext && !invoked) {
-        val opt = optsIter.next
+        val opt = optsIter.next()
         index = opt.parse(args, index)
         invoked = index != origIndex
         assert(invoked || index == origIndex)
@@ -193,7 +193,7 @@ class CmdOptions {
       } else index
     }
     /** Called after this CmdOption has been matched and value has been parsed. */
-    def invoke: Unit = {}
+    def invoke(): Unit = {}
     /** After we have found a match, request that argument(s) to command-line option be parsed. 
         Return the index position that should be processed next. 
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */

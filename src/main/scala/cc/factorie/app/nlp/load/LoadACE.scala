@@ -10,11 +10,6 @@ import xml.{XML, NodeSeq}
 import java.io.File
 import relation.RelationVariables.{RelationMention, RelationMentions}
 
-/**
- * @author brian martin
- * @date 12/23/11
- */
-
 // TODO: consider moving this info into variables.
 trait ACEEntityIdentifiers {
   def eId: String
@@ -80,7 +75,7 @@ object LoadACE {
       if (t.stringStart <= charOffset && charOffset <= t.stringEnd) return i
       i += 1
     }
-    return -1
+    -1
   }
 
   private def getTokenIdxAndLength(mention: NodeSeq, doc: Document): (Int, Int) = {

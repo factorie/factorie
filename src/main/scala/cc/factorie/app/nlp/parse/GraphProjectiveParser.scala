@@ -84,7 +84,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       for (i <- 0 to distance) {
         f += "EdgeLength>="+i
       }
-      val normDistance = distance*10/(t.sentence.length)
+      val normDistance = distance*10/ t.sentence.length
       for (i <- 0 to normDistance) {
         f += "NormDistance>="+i
       }
@@ -120,9 +120,9 @@ class GraphProjectiveParser extends DocumentAnnotator {
       assert(parent != child, "can't add an edge from a token to itself")
       if (edgeScores(parent)(child).isNaN) {
         val loss = if ((child > 0) && (knownParents(child-1) == parent -1)) -1.0 else 0.0
-        edgeScores(parent)(child) = (if (child > 0)
-          loss + getPairwiseFeatureVector(sent.tokens(child-1), if (parent > 0) sent.tokens(parent-1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
-        else 0)
+        edgeScores(parent)(child) = if (child > 0)
+          loss + getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
+        else 0
       }
       edgeScores(parent)(child)
     }

@@ -37,7 +37,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
    * The (b) case makes it work for IOB notation, in which "B-*" is only used at the
    * boundary between two like-categoried mentions. */
   protected def isSegmentStart(x:String, prev:String) =
-    ((isStart(x) && !isContinue(x)) || (isContinue(x) && (prev == null || isBackground(prev))))
+    (isStart(x) && !isContinue(x)) || (isContinue(x) && (prev == null || isBackground(prev)))
   protected def isBackground(x:String) = !isStart(x) && !isContinue(x)
   protected def isStart(x:String) = labelValueStart.pattern.matcher(x).matches
   protected def isContinue(x:String) = labelValueContinue.pattern.matcher(x).matches

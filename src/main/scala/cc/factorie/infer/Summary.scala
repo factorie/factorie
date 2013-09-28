@@ -100,7 +100,7 @@ class SingletonSummary[M<:Marginal1](val marginal:M) extends Summary {
 class AssignmentSummary(val assignment:Assignment) extends Summary {
   lazy val _marginals = assignment.variables.map(v=> v -> new Marginal1 {
     def _1 = v
-    def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar[Any] => vv.set(assignment(vv)) }
+    def setToMaximize(implicit d: DiffList) = v match { case vv:MutableVar => vv.set(assignment(vv)) }
   }).toMap
   def marginals = _marginals.values
   def marginal(v:Var): Marginal1 = _marginals.getOrElse(v, null)
@@ -115,7 +115,7 @@ class AssignmentSummary(val assignment:Assignment) extends Summary {
 class MAPSummary(val mapAssignment: Assignment, factors: Seq[Factor]) extends Summary {
   /** The collection of all Marginals available in this Summary */
   class SingletonMarginal(val _1: Var) extends Marginal1 {
-    def setToMaximize(implicit d: DiffList) { _1 match { case v: MutableVar[Any @unchecked] => v.set(mapAssignment(v)) } }
+    def setToMaximize(implicit d: DiffList) { _1 match { case v: MutableVar => v.set(mapAssignment(v)) } }
   }
   val marginals = mapAssignment.variables.map(new SingletonMarginal(_))
   def marginal(v: Var) = mapAssignment.get(v) match {

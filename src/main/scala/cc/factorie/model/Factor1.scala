@@ -43,18 +43,18 @@ abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   def currentAssignment = new Assignment1(_1, _1.value.asInstanceOf[N1#Value]) // TODO Rename to simply "assignment", because "score" doesn't have "current" in its name.
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def assignmentScore(a:Assignment) = a match {
-    case a:AbstractAssignment1[N1] if (a._1 eq _1) => score(a.value1)
+    case a:AbstractAssignment1[N1] if a._1 eq _1 => score(a.value1)
     case _ => score(a(_1))
   }
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
-    case a:AbstractAssignment1[N1] if (a._1 eq _1) => statistics(a.value1)
+    case a:AbstractAssignment1[N1] if a._1 eq _1 => statistics(a.value1)
     case _ => statistics(a(_1))
   }
 
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1.activeDomainSize > 0
   def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
   def addLimitedDiscreteValues1(i:Int): Unit = limitedDiscreteValues1.+=(i)
-  def addLimitedDiscreteCurrentValues1: Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
+  def addLimitedDiscreteCurrentValues1(): Unit = addLimitedDiscreteValues1(this._1.asInstanceOf[DiscreteVar].intValue)
 
   
   /** Return a Tensor1 containing the scores for each possible value of neighbor _1, which must be a DiscreteVar.
@@ -146,7 +146,7 @@ abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) exten
 trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   /** Override this if you want to matchNeighborDomains */
-  def neighborDomain1: Domain[N1#Value] = null
+  def neighborDomain1: Domain { type Value = N1#Value } = null
   def neighborDomains = Seq(neighborDomain1)
   type FactorType = Factor
   
@@ -161,7 +161,7 @@ trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value): Double
-  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType] // TODO Make this throw an Error instead?
+  def statistics(v1:N1#Value): StatisticsType = v1.asInstanceOf[StatisticsType] // TODO Make this throw an Error instead?
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
   // For implementing sparsity in belief propagation
@@ -178,7 +178,7 @@ trait TupleFamily1[N1<:Var] extends Family1[N1] {
 }
 
 trait TupleFamilyWithStatistics1[N1<:Var] extends TupleFamily1[N1] {
-  @inline final override def statistics(v1:N1#Value) = ((v1))
+  @inline final override def statistics(v1:N1#Value) = v1
 }
 
 trait TensorFamily1[N1<:Var] extends Family1[N1] with TensorFamily {

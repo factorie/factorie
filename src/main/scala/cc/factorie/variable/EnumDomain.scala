@@ -30,12 +30,12 @@ class EnumDomain extends CategoricalDomain[String] {
   def Value: Int = {
     if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
     assert(stringFieldsIterator.hasNext)
-    val field = stringFieldsIterator.next
+    val field = stringFieldsIterator.next()
     //println("StringDomain Value got "+field.getName)
     //checkFields // TODO Re-add this and make sure example/DirichletDemo works
     index(field.getName) // Add it to the index
   } 
-  private def checkFields: Unit = {
+  private def checkFields(): Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
       //println("StringDomain.checkFields "+field+" fieldName="+fieldName)

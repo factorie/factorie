@@ -46,7 +46,7 @@ abstract class FeatureVectorVariable[C] extends CategoricalVectorVariable[C] wit
       b append domain.dimensionDomain.category(i)
       b append "="; b append v; b append ","
     })
-    b.dropRight(1); b.append(")"); b.toString
+    b.dropRight(1); b.append(")"); b.toString()
   } 
 }
 

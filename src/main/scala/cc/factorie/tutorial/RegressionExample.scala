@@ -37,7 +37,7 @@ object RegressionExample {
     /** Load documents **/
     var outputs = mutable.ArrayBuffer[Output]()
     for ((directory, i) <- args.zipWithIndex) {
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
 //        println("Loading " + file.getName)
         outputs += new Output(new Input(file), (2 * i - 1) + math.random * 0.001)
       }

@@ -14,11 +14,6 @@ import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosLabel
 import scala.Array.fallbackCanBuildFrom
 
-/**
- * @author brian martin
- * @date 1/23/11
- */
-
 trait ReACEMentionIdentifiers {
   val mId: Option[String]
   val eId: Option[String]
@@ -92,7 +87,7 @@ object LoadReACE {
         val sId = getAttr(s, "id")
         val sent = new Sentence(doc)
         sent.attr += new ReACESentenceAnnotations {
-          val paragraphId = Some(currP.toString);
+          val paragraphId = Some(currP.toString)
           val sentenceId = sId
         }
         for (w <- s \\ "w") {
@@ -161,7 +156,7 @@ object LoadReACE {
     // Add relations
     xmlText = XML.loadFile(xml + ".nrm.xml") // is there a way to avoid rereading?
     doc.attr += new RelationMentions
-    for (rel <- (xmlText \\ "rel")) {
+    for (rel <- xmlText \\ "rel") {
       val ids = new ReACERelationIdentifiers {
         val rId = getAttr(rel, "id")
         val rType = getAttr(rel, "t")

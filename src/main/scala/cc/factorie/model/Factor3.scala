@@ -40,11 +40,11 @@ abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3)
   def currentAssignment = new Assignment3(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def assignmentScore(a:Assignment) = a match {
-    case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => score(a.value1, a.value2, a.value3)
+    case a:AbstractAssignment3[N1,N2,N3] if (a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) => score(a.value1, a.value2, a.value3)
     case _ => score(a(_1), a(_2), a(_3))
   }
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
-    case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => statistics(a.value1, a.value2, a.value3)
+    case a:AbstractAssignment3[N1,N2,N3] if (a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) => statistics(a.value1, a.value2, a.value3)
     case _ => statistics(a(_1), a(_2), a(_3))
   }
   // For implementing sparsity in belief propagation.  
@@ -271,7 +271,7 @@ abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3)
     Only "score" method is abstract. */
 abstract class TupleFactorWithStatistics3[N1<:Var,N2<:Var,N3<:Var](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value))
-  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
+  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = (v1, v2, v3)
   final override def statisticsAreValues: Boolean = true
 }
 
@@ -324,9 +324,9 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   type NeighborType2 = N2
   type NeighborType3 = N3
   /** Override this if you need to use them. */
-  def neighborDomain1: Domain[N1#Value] = null
-  def neighborDomain2: Domain[N2#Value] = null
-  def neighborDomain3: Domain[N3#Value] = null
+  def neighborDomain1: Domain { type Value = N1#Value } = null
+  def neighborDomain2: Domain { type Value = N2#Value } = null
+  def neighborDomain3: Domain { type Value = N3#Value } = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2, neighborDomain3)
   type FactorType = Factor
   
@@ -352,9 +352,9 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
 
   override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensor3 => {
-      val domain1 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
-      val domain2 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
-      val domain3 = neighborDomain3.asInstanceOf[DiscreteDomain with Domain[N3#Value]]
+      val domain1 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
+      val domain2 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value = N2#Value }]
+      val domain3 = neighborDomain3.asInstanceOf[DiscreteDomain { type Value = N3#Value }]
       score(domain1(v.singleIndex1), domain2(v.singleIndex2), domain3(v.singleIndex3))
       //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
@@ -380,7 +380,7 @@ trait TupleFamily3[N1<:Var,N2<:Var,N3<:Var] extends Family3[N1,N2,N3] {
 }
 
 trait TupleFamilyWithStatistics3[N1<:Var,N2<:Var,N3<:Var] extends TupleFamily3[N1,N2,N3] {
-  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
+  final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = (v1, v2, v3)
 }
 
 trait TensorFamily3[N1<:Var,N2<:Var,N3<:Var] extends Family3[N1,N2,N3] with TensorFamily {

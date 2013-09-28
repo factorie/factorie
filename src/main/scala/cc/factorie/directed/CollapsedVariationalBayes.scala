@@ -47,7 +47,7 @@ class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var
 //  }
 //  def children(p:Variable): Iterable[Variable] = throw new Error
 
-  def process(v:MutableVar[_]): DiffList = {
+  def process(v:MutableVar): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(Seq(v)).toSeq.sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
@@ -55,7 +55,7 @@ class CollapsedVariationalBayes(collapse:Iterable[Var], marginalize:Iterable[Var
     val handlerIterator = handlers.iterator
     val d = new DiffList
     while (!done && handlerIterator.hasNext) {
-      done = handlerIterator.next.process(v, factors, this)(d)
+      done = handlerIterator.next().process(v, factors, this)(d)
     }
     if (!done) throw new Error("CollapsedVariationalBayes: No sampling method found for variable "+v+" with factors "+factors.map(_.factorName).mkString("List(",",",")"))
     d
@@ -101,7 +101,7 @@ class PlatedGateCollapsedVariationalBayes(val model:DirectedModel, val summary:S
           q(j) = mFactor._2(i).value(j) * gFactor._2.value(j)
           j += 1
         }
-        q.normalize
+        q.normalize()
         theta += q
         i += 1
       }

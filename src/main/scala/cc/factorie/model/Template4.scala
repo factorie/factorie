@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 import cc.factorie.variable.{TensorVar, Var, DiscreteVar}
-import cc.factorie.{model}
+import cc.factorie.model
 
 abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Family4[N1,N2,N3,N4] with Template {
   val neighborClass1 = nm1.erasure

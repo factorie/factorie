@@ -11,7 +11,11 @@ import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVari
 
 //here, mention1 is the mention to the right
 class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
-  {val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain); t.sizeHint(if (options.conjunctionStyle == options.SLOW_CONJUNCTIONS) 650 else 70); set(t)(null)}
+  {
+    val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
+    t.sizeHint(if (options.conjunctionStyle == options.SLOW_CONJUNCTIONS) 650 else 70)
+    set(t)(null)
+  }
   def domain = model.MentionPairFeaturesDomain
   override def skipNonCategories = true
   val features = this
@@ -42,7 +46,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
           for (b <- a + 1 until activeDomainSize) {
             val sb = new StringBuilder
             sb.append(basicFeats(a)); sb.append("_&&_"); sb.append(basicFeats(b))
-            addFeature(sb.toString)
+            addFeature(sb.toString())
           }
         }
       }

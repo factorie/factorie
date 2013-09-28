@@ -101,7 +101,7 @@ object WriteConll2008 {
   // if the source file is given, then include the fields that we don't know anything about
   // otherwise just give underscores for info we don't know.
   def toFile(outputFile: String, document: Document, sourceFile: String = null): Unit = {
-    val source = { if (sourceFile eq null) None else Some(Source.fromFile(sourceFile).getLines)}
+    val source = { if (sourceFile eq null) None else Some(Source.fromFile(sourceFile).getLines())}
     val sentences = document.sentences.iterator
     val writer = new PrintWriter(outputFile)
     var sentence: Sentence = sentences.next()

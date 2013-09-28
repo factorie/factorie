@@ -121,7 +121,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val startIterationTime = System.currentTimeMillis
       for (doc <- documents) sampler.process(doc.zs.asInstanceOf[Zs], timeToEstAlpha)
       val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
-      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
+      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush()
       if (i % diagnosticInterval == 0) {
         println ("\n"+diagnosticName+"\nIteration "+i)
         sampler.export(phis)
@@ -204,7 +204,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         }
 
         val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
-        if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
+        if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush()
       }
     } finally pool.shutdown()
     maximizePhisAndThetas
@@ -212,7 +212,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).value.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).value.massTotal.toInt, alphas.value(topicIndex))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, topicWords(topicIndex, numWords).mkString(" "), phis(topicIndex).value.massTotal.toInt, alphas.value(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
@@ -229,7 +229,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     sb.toString
   }
   
-  def maximizePhisAndThetas: Unit = {
+  def maximizePhisAndThetas(): Unit = {
     phis.foreach(_.value.zero())
     // TODO What about the priors on phis and theta?? -akm
     for (doc <- documents) {
@@ -258,12 +258,12 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val alphasString = reader.readLine(); alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
       reader.readLine() // consume delimiting newline
       println("Read alphas "+alphas.value.mkString(" "))
-    } else reader.reset // Put the reader back to the read position when reader.mark was called
+    } else reader.reset() // Put the reader back to the read position when reader.mark was called
     breakable { while (true) {
       val doc = new Document(wordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
       doc.zs = new Zs(Nil)
       val numWords = doc.readNameWordsZs(reader)
-      if (numWords < 0) break
+      if (numWords < 0) break()
       else if (numWords >= minDocLength) addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
       //else System.err.println("addDocumentsFromWordZs skipping document %s: only %d words found.".format(doc.name, numWords))
     }}
@@ -331,8 +331,8 @@ class LDACmd {
       for (directory <- opts.readDirs.value) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading files from directory " + directory)
-        breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
-          if (lda.documents.size == opts.maxNumDocs.value) break
+        breakable { for (file <- new File(directory).listFiles; if file.isFile) {
+          if (lda.documents.size == opts.maxNumDocs.value) break()
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           if (doc.length >= minDocLength) lda.addDocument(doc, random)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
@@ -345,7 +345,7 @@ class LDACmd {
       val source = if (opts.readLines.value == "-") scala.io.Source.stdin else scala.io.Source.fromFile(new File(opts.readLines.value))
       var count = 0
       breakable { for (line <- source.getLines()) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val text: String = 
           if (!opts.readLinesRegex.wasInvoked) line 
           else {
@@ -375,13 +375,13 @@ class LDACmd {
         val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
         reader.readLine() // consume delimiting newline
         println("Read alphas "+lda.alphas.value.mkString(" "))
-      } else reader.reset // Put the reader back to the read position when reader.mark was called
+      } else reader.reset() // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
-        if (numWords < 0) break
+        if (numWords < 0) break()
         else if (numWords >= minDocLength) lda.addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
         else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
@@ -398,11 +398,11 @@ class LDACmd {
       reader.readLine() // consume delimiting newline
       println("Read alphas "+lda.alphas.value.mkString(" "))
       breakable { while (true) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
-        if (numWords < 0) break
+        if (numWords < 0) break()
         else if (numWords >= minDocLength) {
           val len = doc.ws.length
           var i = 0
@@ -453,7 +453,7 @@ class LDACmd {
       //println(lda.topicsPhraseCounts.topicsPhrasesSummary(opts.printPhrases.value))
 
     if (opts.thetaServer.wasInvoked) {
-      lda.wordSeqDomain.elementDomain.freeze
+      lda.wordSeqDomain.elementDomain.freeze()
       val reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in))
       println("Reading documents, one per line.  To end, close by Control-D")
       var line = reader.readLine

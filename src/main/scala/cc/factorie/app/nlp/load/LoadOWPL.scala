@@ -26,7 +26,7 @@ object LoadOWPL {
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
     var sentence = new Sentence(doc)
     var numSentences = 1
-    for (line <- io.Source.fromFile(file).getLines) {
+    for (line <- io.Source.fromFile(file).getLines()) {
       if (line.trim == "") {
         sentence = new Sentence(doc)
         numSentences += 1

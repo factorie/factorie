@@ -53,7 +53,8 @@ trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
   /** The position within the Chain at which this Span is over.  The last element of this Span is at 'end-1'. */
   def end = start + length
   /** The current start/length of this Span as a SpanValue.  Creates and returns an immutable SpanValue. */
-  def value: SpanValue[C,E] = new SpanValue[C,E] {
+  type Value = SpanValue[C,E]
+  def value: Value = new SpanValue[C,E] {
     val chain: C = _chain
     val start = _start
     val length = _length
@@ -80,7 +81,7 @@ trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
   /** Return a sequence of n elements after the last element of this span.  May return a sequence of length less than n if there are insufficient elements. */
   def nextWindow(n:Int): Seq[E] = for (i <- end until math.min(chain.length,end+n)) yield chain(i)
   def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n)) yield chain(i)
-  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n); if (i < start || i > end)) yield chain(i)
+  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n); if i < start || i > end) yield chain(i)
   // Support for next/prev of elements within a span
   @inline private def requireInSpan(elt:E): Unit = { require(elt.chain eq chain, "Element not in chain."); require(elt.position >= start && elt.position < end, "Element outside span.") }
   /** Given an elt in the Span, return true if the span contains an additional element after elt. */
@@ -94,7 +95,8 @@ trait Span[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqSimilar[E] {
 /** An abstract variable whose value is a subsequence of a Chain.
     These are used, for example, as a superclass of TokenSpan, representing a sequence of Tokens within a Document.
     @author Andrew McCallum */
-trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeqVar[E] with VarWithValue[SpanValue[C,E]] {
+trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeqVar[E] {
+  type Value <: SpanValue[C,E]
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}
@@ -133,37 +135,37 @@ trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends Span[C,E] with IndexedSeq
   }*/
   case class SetStart(oldStart: Int, newStart: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = _start = newStart
-    def undo = _start = oldStart
+    def redo() = _start = newStart
+    def undo() = _start = oldStart
   }
   case class SetLength(oldLength: Int, newLength: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = _length = newLength
-    def undo = _length = oldLength
+    def redo() = _length = newLength
+    def undo() = _length = oldLength
   }
   case class TrimStart(n: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = {assert(n < _length); _start += n; _length -= n}
-    def undo = {assert(_start - n >= 0); _start -= n; _length += n}
+    def redo() = {assert(n < _length); _start += n; _length -= n}
+    def undo() = {assert(_start - n >= 0); _start -= n; _length += n}
     override def toString = "TrimStart("+n+","+SpanVar.this+")"
   }
   case class TrimEnd(n: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = {assert(n < _length); _length -= n}
-    def undo = _length += n
+    def redo() = {assert(n < _length); _length -= n}
+    def undo() = _length += n
     override def toString = "TrimEnd("+n+","+SpanVar.this+")"
   }
   case class Prepend(n: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = {assert(canPrepend(n)); _start -= n; _length += n}
-    def undo = {_start += n; _length -= n}
+    def redo() = {assert(canPrepend(n)); _start -= n; _length += n}
+    def undo() = {_start += n; _length -= n}
     override def toString = "Prepend("+n+","+SpanVar.this+")"
   }
   case class Append(n: Int)(implicit d: DiffList) extends AutoDiff {
     //if (!canAppend(n)) { println("Append n="+n+" start="+variable.start+" length="+variable.length+" parent.length="+variable.parent.length) }
     def variable = if (present || diffIfNotPresent) SpanVar.this else null
-    def redo = {assert(canAppend(n)); _length += n}
-    def undo = _length -= n
+    def redo() = {assert(canAppend(n)); _length += n}
+    def undo() = _length -= n
     override def toString = "Append("+n+","+SpanVar.this+")"
   }  
 }
@@ -196,16 +198,16 @@ class SpanList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuf
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
     var done = true
     def variable: S = if (span._present || span.diffIfNotPresent) span else null.asInstanceOf[S]
-    def redo = { SpanList.this.+=(span); assert(!done); done = true }
-    def undo = { SpanList.this.-=(span); assert(done); done = false }
+    def redo() = { SpanList.this.+=(span); assert(!done); done = true }
+    def undo() = { SpanList.this.-=(span); assert(done); done = false }
     override def toString = "AddSpanVariable("+span+")"
   }
   case class RemoveSpanListDiff(span:S) extends SpanListDiff {
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
     var done = true
     def variable: S = if (span._present || span.diffIfNotPresent) span else null.asInstanceOf[S]
-    def redo = { SpanList.this.-=(span); assert(!done); done = true }
-    def undo = { SpanList.this.+=(span); assert(done); done = false }
+    def redo() = { SpanList.this.-=(span); assert(!done); done = true }
+    def undo() = { SpanList.this.+=(span); assert(done); done = false }
     override def toString = "RemoveSpanVariable("+span+")"
   }
   

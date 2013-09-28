@@ -18,7 +18,7 @@ package cc.factorie.variable
 /** An abstract variable representing an edge between two nodes in a graph.
     The value of the variable is a Tuple2 of the source and destination nodes.
     @author Andrew McCallum */
-trait EdgeVar[A,B] extends Var with ValueBound[(A,B)] {
+trait EdgeVar[A,B] extends Var {
   type Value <: (A,B)
   def src: A
   def dst: B
@@ -27,7 +27,8 @@ trait EdgeVar[A,B] extends Var with ValueBound[(A,B)] {
 /** A variable representing an edge between two nodes in a graph.  
     The value of the variable is a Tuple2 of the source and destination nodes.
     @author Andrew McCallum */
-class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with MutableVar[(A,B)] {
+class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with MutableVar {
+  type Value = (A,B)
   private var _src = initialSrc
   private var _dst = initialDst
   def src = _src
@@ -43,8 +44,8 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
   final def setDst(newDst:B)(implicit d:DiffList): Unit = set(_src, newDst)
   case class EdgeDiff(oldSrc:A, newSrc:A, oldDst:B, newDst:B) extends Diff {
     def variable = EdgeVariable.this
-    def redo = { _src = newSrc; _dst = newDst }
-    def undo = { _src = oldSrc; _dst = oldDst }
+    def redo() = { _src = newSrc; _dst = newDst }
+    def undo() = { _src = oldSrc; _dst = oldDst }
     override def toString = "EdgeDiff(%s,%s,%s,%s)".format(oldSrc.toString, newSrc.toString, oldDst.toString, newDst.toString)
   }
 }
@@ -53,6 +54,7 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
     @author Andrew McCallum */
 class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
   private var _dst = initialDst
+  type Value = (A,B)
   def dst = _dst
   def value = (src, _dst)
   def set(newDst:B)(implicit d:DiffList): Unit = {
@@ -66,8 +68,8 @@ class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
   //final def set(value:(A,B))(implicit d:DiffList): Unit = set(value._1, value._2) // Was here to enable MutableVar, but clashes with set(newDst:B)
   case class ArrowDiff(oldDst:B, newDst:B) extends Diff {
     def variable = ArrowVariable.this
-    def redo = _dst = newDst
-    def undo = _dst = oldDst
+    def redo() = _dst = newDst
+    def undo() = _dst = oldDst
     override def toString = "ArrowDiff(%s,%s)".format(oldDst, newDst)
   }
 }

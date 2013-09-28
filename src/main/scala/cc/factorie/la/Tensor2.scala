@@ -178,7 +178,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           var row = 0
           while (row < dim1) {
             val offset = row * dim2
-            newArray(row) += (_values(offset + col))
+            newArray(row) += _values(offset + col)
             row += 1
           }
           ti += 1
@@ -719,7 +719,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     case t:SingletonLayeredTensorLike2 => { val inner = _inners(t.singleIndex1); if (inner ne null) inner.dot(t.inner) * t.singleValue1 else 0.0 }
     case t:DenseTensor => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
-    case t:DenseLayeredTensorLike2 => { var s = 0.0; for((inner1,inner2) <- _inners zip t._inners; if (inner1 ne null); if(inner2 ne null)) s += inner1.dot(inner2); s }
+    case t:DenseLayeredTensorLike2 => { var s = 0.0; for((inner1,inner2) <- _inners zip t._inners; if inner1 ne null; if inner2 ne null) s += inner1.dot(inner2); s }
     case t:SparseIndexedTensor => {val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var res = 0.0; var i = 0; while (i < len) { res += this(indices(i))*values(i) ; i += 1}; res}
     case t:Dense2LayeredTensor3 => { var sum = 0.0; t.foreachActiveElement((i, v) => sum += this(i)*v); sum}
     case _ => assert(false, t.getClass.getName + " doesn't have a match"); 0.0

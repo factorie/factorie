@@ -24,21 +24,21 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
       varyingVariables.size match {
         case 1 =>
           // we're the only varying neighbor, get the score
-          val assignment = new Assignment1(v, v.domain(0).asInstanceOf[DiscreteVar#Value])
+          val assignment = new Assignment1[v.type](v, v.domain(0).asInstanceOf[v.Value])
           for (i <- 0 until v.domain.size) {
-            assignment.value1 = v.domain(i).asInstanceOf[DiscreteVar#Value]
+            assignment.value1 = v.domain(i).asInstanceOf[v.Value]
             marginals(i) = factor.assignmentScore(assignment)
           }
         case 2 =>
           // there is one other varying neighbor we have to max over
-          val other = (if (varyingVariables.head eq v) varyingVariables.drop(1).head else varyingVariables.head).asInstanceOf[DiscreteVar]
+          val other = if (varyingVariables.head eq v) varyingVariables.drop(1).head else varyingVariables.head
           val otherLambda = lambdas(other)
-          val assignment = new Assignment2(v, v.domain(0).asInstanceOf[DiscreteVar#Value], other, other.domain(0).asInstanceOf[DiscreteVar#Value])
+          val assignment = new Assignment2[v.type,other.type](v, v.domain(0).asInstanceOf[v.Value], other, other.domain(0).asInstanceOf[other.Value])
           for (value <- 0 until v.domain.size) {
-            assignment.value1 = v.domain(value).asInstanceOf[DiscreteVar#Value]
+            assignment.value1 = v.domain(value).asInstanceOf[v.Value]
             var maxScore = Double.NegativeInfinity
             for (otherValue <- 0 until other.domain.size) {
-              assignment.value2 = other.domain(otherValue).asInstanceOf[DiscreteVar#Value]
+              assignment.value2 = other.domain(otherValue).asInstanceOf[other.Value]
               val s = factor.assignmentScore(assignment) + otherLambda(otherValue)
               if (s > maxScore) maxScore = s
             }
@@ -56,15 +56,15 @@ class MPLP(variables: Seq[DiscreteVar], model: Model, maxIterations: Int = 100) 
             !done
           }
           for (value <- 0 until v.domain.size) {
-            val others = varyingVariables.filterNot(_ eq v).map(_.asInstanceOf[MutableDiscreteVar[DiscreteValue]]).toSeq
+            val others = varyingVariables.filterNot(_ eq v).map(_.asInstanceOf[MutableDiscreteVar]).toSeq
             val domainSizes = others.map(_.domain.size).toArray
             val values = (0 until others.size).map(i => 0).toArray
             var maxScore = Double.NegativeInfinity
             do {
               implicit val d = new DiffList
-              for (i <- 0 until others.length) others(i).set(others(i).domain(values(i)))(d)
+              for (i <- 0 until others.length) others(i).set(others(i).domain(values(i)).intValue)(d)
               var score = factor.currentScore
-              d.undo
+              d.undo()
               for (i <- 0 until others.length) score += lambdas(others(i))(values(i))
               if (score > maxScore) maxScore = score
             } while (increment(values, domainSizes))

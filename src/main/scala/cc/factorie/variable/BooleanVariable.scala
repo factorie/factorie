@@ -14,7 +14,7 @@
 
 package cc.factorie.variable
 
-import cc.factorie.{variable}
+import cc.factorie.variable
 
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
@@ -24,14 +24,11 @@ trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
-class BooleanDomain extends CategoricalDomain[Boolean] with Domain[BooleanValue] {
+class BooleanDomain extends CategoricalDomain[Boolean] with Domain {
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
-  freeze
-  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with variable.BooleanValue {
-    override def domain = BooleanDomain.this
-  }
-  override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
+  freeze()
+  override protected def newCategoricalValue(i:Int, e:Boolean) = new CategoricalValue(i, e)
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
   // but the methods below will do most of the real work
   override def size = 2
@@ -50,11 +47,12 @@ object BooleanValue {
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[BooleanValue] with VarWithDomain[BooleanValue] {
+trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
+  type Value = BooleanValue
   def value: BooleanValue
   //def domain: CategoricalDomain[Boolean] = BooleanDomain
   def domain: BooleanDomain = BooleanDomain
-  override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
+  override def categoryValue = intValue == 1 // Efficiently avoid a lookup in the domain
   @inline final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue
@@ -66,7 +64,7 @@ trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with VarWithValue[
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */ 
 // TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain // TODO I think this is no longer true.
-class BooleanVariable extends MutableCategoricalVar[BooleanValue,Boolean] with BooleanVar {
+class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
   //type Value = BooleanValue
   // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
   def this(initialValue:Boolean) = { this(); _set(if (initialValue) 1 else 0) }

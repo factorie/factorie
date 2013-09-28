@@ -19,8 +19,9 @@ import scala.language.reflectiveCalls
 
 /** An abstract variable whose value is a set of elements of type A.
     @author Andrew McCallum */
-trait SetVar[A] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]]*/ {
-  def value: scala.collection.Set[A]
+trait SetVar[A] extends Var  {
+  type Value <: scala.collection.Set[A]
+  def value: Value
   def iterator: Iterator[A] = value.iterator
   def foreach[U](f:A=>U): Unit = iterator.foreach(f)
   def map[B](f:A=>B): scala.collection.Set[B] = new HashSet[B] ++= iterator.map(f)
@@ -31,6 +32,7 @@ trait SetVar[A] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndVal
 
 /** A SetVar whose value is always empty. */
 class EmptySetVar[A] extends SetVar[A] {
+  type Value = scala.collection.Set[A]
   override def iterator = Iterator.empty
   def size = 0
   def value = Set.empty[A]
@@ -62,14 +64,14 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
   final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
   case class SetVariableAddDiff(added: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
-    def redo = _members += added //if (_members.contains(added)) throw new Error else
-    def undo = _members -= added
+    def redo() = _members += added //if (_members.contains(added)) throw new Error else
+    def undo() = _members -= added
     override def toString = "SetVariableAddDiff of " + added + " to " + SetVariable.this
   }
   case class SetVariableRemoveDiff(removed: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
-    def redo = _members -= removed
-    def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    def redo() = _members -= removed
+    def undo() = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "SetVariableRemoveDiff of " + removed + " from " + SetVariable.this
   }
 }
@@ -80,7 +82,8 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
     garbage collected.  This class has no "size" method because
     the size is unreliably dependent on garbage collection.
     @author Andrew McCallum */
-class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scala.collection.Set[A]] /*VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]]*/ {
+class WeakSetVariable[A<:{def present:Boolean}] extends Var  {
+  type Value = scala.collection.Set[A]
   private val _members = new cc.factorie.util.WeakHashSet[A]()
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present) // TODO this triggers reflection
@@ -96,13 +99,13 @@ class WeakSetVariable[A<:{def present:Boolean}] extends Var with ValueBound[scal
   }
   case class WeakSetVariableAddDiff(added: A) extends Diff {
     def variable: WeakSetVariable[A] = WeakSetVariable.this
-    def redo = _members += added //if (_members.contains(added)) throw new Error else
-    def undo = _members -= added
+    def redo() = _members += added //if (_members.contains(added)) throw new Error else
+    def undo() = _members -= added
   }
   case class WeakSetVariableRemoveDiff(removed: A) extends Diff {
     def variable: WeakSetVariable[A] = WeakSetVariable.this
-    def redo = _members -= removed
-    def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    def redo() = _members -= removed
+    def undo() = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "WeakSetVariableRemoveDiff of " + removed + " from " + WeakSetVariable.this
   }
 }

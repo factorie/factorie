@@ -23,7 +23,7 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWithTarget}
 import cc.factorie.model.ModelWithContext
 
-class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
+class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
  val featuresDomain:CategoricalVectorDomain[String],
  val labelToFeatures:Label=>Features,

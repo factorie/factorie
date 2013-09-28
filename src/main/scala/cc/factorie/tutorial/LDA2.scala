@@ -49,7 +49,7 @@ object LDA2 {
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       // println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         // print("."); Console.flush
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_)).toSeq

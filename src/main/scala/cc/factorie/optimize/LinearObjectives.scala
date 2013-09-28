@@ -292,7 +292,7 @@ object LinearObjectivesTest {
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
         docLabels += new Document(file).label
       }

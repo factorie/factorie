@@ -25,12 +25,14 @@ package cc.factorie.variable
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
     @since 0.8 */
-trait Domain[+VT] extends ValueBound[VT] 
+trait Domain {
+  type Value <: Any
+}
 
 // TODO Consider removing type argument from Domain?  
 // It does provide a nice check between Value of Var and Domain, but I'm not sure how useful a check it is? -akm
 
 /** A domain that provides (and is itself) an Iterable[] over its values.
     @author Andrew McCallum */
-trait IterableDomain[+A] extends Domain[A] with Iterable[A]
+trait IterableDomain[+A] extends Domain with Iterable[A] {}
 

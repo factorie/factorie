@@ -43,7 +43,7 @@ trait Family {
 }
 
 trait FamilyWithNeighborDomains extends Family {
-  def neighborDomains: Seq[Domain[_]]
+  def neighborDomains: Seq[Domain]
 }
 
 trait FamilyWithNeighborClasses extends Family {

@@ -14,7 +14,7 @@
 
 package cc.factorie.tutorial
 
-import scala.collection.mutable.{ArrayBuffer}
+import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
@@ -67,11 +67,11 @@ object DocumentClassifier3 {
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var documents = new ArrayBuffer[Document];
+    var documents = new ArrayBuffer[Document]
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
         documents += new Document(file)
       }

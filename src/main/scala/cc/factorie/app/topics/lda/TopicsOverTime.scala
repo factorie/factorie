@@ -22,7 +22,7 @@ object TopicsOverTime {
   val numTopics = 10
   implicit val model = DirectedModel()
   implicit val random = new scala.util.Random(0)
-  object ZDomain extends DiscreteDomain(numTopics)
+  object ZDomain extends DiscreteDomain(numTopics) { type Value = DiscreteValue }
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[CategoricalMixture[String]#Factor]._3 }
@@ -42,8 +42,8 @@ object TopicsOverTime {
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
-        print("."); Console.flush
+      for (file <- new File(directory).listFiles; if file.isFile) {
+        print("."); Console.flush()
         val doc = new Document(file.toString)
         doc.date = file.lastModified
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
@@ -80,7 +80,7 @@ object TopicsOverTime {
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
         phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")))
-        println
+        println()
       }
       // Re-estimate the time stamp Beta parameters
       balphas.zip(bbetas).foreach(alphabeta => MaximizeBetaByMomentMatching(alphabeta._1, alphabeta._2, model))

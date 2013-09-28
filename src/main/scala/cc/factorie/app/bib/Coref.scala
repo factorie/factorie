@@ -32,7 +32,8 @@ trait BibEntity{
 
 }
 //class EntityAttributeCollectionVariable(val entity:Entity, collection:Seq[EntityAttr]) extends EntityAttr{}
-class CoAuthorTopicVar(val entity:Entity) extends ValueBound[(BagOfCoAuthors#Value, BagOfTopics#Value)] /*VarAndValueGenericDomain[CoAuthorTopicVar,(BagOfCoAuthors#Value, BagOfTopics#Value)]*/ with EntityAttr{
+class CoAuthorTopicVar(val entity:Entity)  /*VarAndValueGenericDomain[CoAuthorTopicVar,(BagOfCoAuthors#Value, BagOfTopics#Value)]*/ extends EntityAttr{
+  type Value = (BagOfCoAuthors#Value, BagOfTopics#Value)
   val coauthors=entity.attr[BagOfCoAuthors]
   val topics = entity.attr[BagOfTopics]
   def value = coauthors.value -> topics.value
@@ -279,7 +280,7 @@ object Coref{
     if(opts.printProcessed.value.toBoolean){
       println("Print processed invoked.")
       val tmpDB = new EpistemologicalDB(new AuthorCorefModel(),opts.server.value,opts.port.value.toInt,opts.database.value)
-      val entities = tmpDB.authorColl.loadProcessed(100).asInstanceOf[Seq[AuthorEntity]]
+      val entities = tmpDB.authorColl.loadProcessed(100)
       EntityUtils.prettyPrintAuthors(entities)
       System.exit(0)
     }
@@ -375,19 +376,19 @@ object Coref{
       epiDB.processAuthorsFromCanopyFile(new File(opts.canopyFile.value),opts.canopiesPerRound.value)
       */
       val workForce = new DefaultAuthorForeman(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value, new File(opts.canopyFile.value), new File(opts.foremanParamFile.value))
-      workForce.run
+      workForce.run()
       while(workForce.isWorking){Thread.sleep(1000)}
       System.exit(0)
     }
-    if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,true)
+    if(opts.inferenceType.value=="papers")epiDB.processAllPapers(opts.stepMultiplierA.value, opts.stepMultiplierB.value, opts.stepMultiplierC.value,true)
     else if(opts.inferenceType.value=="authors"){
-      epiDB.processAllAuthors(opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,opts.saveDB.value)
+      epiDB.processAllAuthors(opts.stepMultiplierA.value, opts.stepMultiplierB.value, opts.stepMultiplierC.value,opts.saveDB.value)
     }
     else if(opts.inferenceType.value=="default"){
       epiDB.inferenceSweep(
-        opts.numEpochs.value.toInt,
-        opts.batchSize.value.toInt,
-        opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,
+        opts.numEpochs.value,
+        opts.batchSize.value,
+        opts.stepMultiplierA.value, opts.stepMultiplierB.value, opts.stepMultiplierC.value,
         opts.saveDB.value
       )
     }
@@ -474,7 +475,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
       authorPredictor.setEntities(entities)
       authorPredictor.timeAndProcess(-1)
       println("Inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-      val entityHistory = authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity])
+      val entityHistory = authorPredictor.getEntities ++ authorPredictor.getDeletedEntities
       for(mention <- entityHistory.filter(_.isMention.booleanValue))mention.rootIdOpt = Some(mention.entityRoot.id.toString)
       authorColl.store(entityHistory)
       count += 1
@@ -498,7 +499,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
 
     //predictor.getEntities.asInstanceOf[Seq[AuthorEntity]].foreach((e:AuthorEntity) => {EntityUtils.prettyPrintAuthor(e);println})
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
+    if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities)
   }
   def processAllAuthors(a:Double,b:Double,c:Double,save:Boolean)(implicit random: scala.util.Random):Unit ={
     println("Processing all authors.")
@@ -513,7 +514,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorPredictor.timeAndProcess(numSteps)
     Evaluator.eval(entities)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
+    if(save)authorColl.store(authorPredictor.getEntities ++ authorPredictor.getDeletedEntities)
   }
   def processAllPapers(a:Double,b:Double,c:Double,hashInitialize:Boolean=false)(implicit random: scala.util.Random):Unit ={
     println("Processing all papers.")
@@ -531,7 +532,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     paperPredictor.timeAndProcess(numSteps)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     println("Promoting mentions for paper entities...")
-    val processedPapers = paperPredictor.getEntities ++ paperPredictor.getDeletedEntities.map(_.asInstanceOf[PaperEntity])
+    val processedPapers = paperPredictor.getEntities ++ paperPredictor.getDeletedEntities
     for(paper <- processedPapers)paperPredictor.chooseCanonicalMention(paper)(null)
     //println("Updating database...")
     //if(save)paperColl.store(processedPapers)
@@ -624,7 +625,7 @@ class TrainingModel extends CombinedModel {
       var result = 0.0
       //val bag = s._1
       val bagSeq = bag.iterator.toSeq
-      var i=0;var j=0;
+      var i=0;var j=0
       var tp = 0.0
       var fp = 0.0
       while(i<bagSeq.size){
@@ -725,7 +726,7 @@ class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterW
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       var firstLetterMismatches = 0
       var nameMismatches = 0
-      var i=0;var j=0;
+      var i=0;var j=0
       while(i<bagSeq.size){
         val (wordi,weighti) = bagSeq(i)
         j=i+1
@@ -788,7 +789,7 @@ class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends TemplateMod
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       var firstLetterMismatches = 0
       var nameMismatches = 0
-      var i=0;var j=0;
+      var i=0;var j=0
       while(i<bagSeq.size){
         val (wordi,weighti) = bagSeq(i)
         j=i+1
@@ -823,7 +824,7 @@ class AuthorCorefModel(includeDefaultTemplates:Boolean=true) extends TemplateMod
       //val bagSeq = bag.iterator.toSeq
       var firstLetterMismatches = 0
       var nameMismatches = 0
-      var i=0;var j=0;
+      var i=0;var j=0
       while(i<bagSeq.size){
         val (wordi,weighti) = bagSeq(i)
         j=i+1
@@ -879,7 +880,7 @@ class AuthorStreamer(model:Model, val stream:Iterable[AuthorEntity]) extends Aut
   //override def setEntities(entities:Seq[AuthorEntity]) = throw new Exception("Do not use this way.")
   //override def addEntity(entity:AuthorEntity) = throw new Exception("Do not use this way.")
   def go(): Unit = {
-    entities = new ArrayBuffer[AuthorEntity];
+    entities = new ArrayBuffer[AuthorEntity]
     println("Initializing")
     var count=0
     var hasp=0
@@ -908,8 +909,8 @@ class AuthorStreamer(model:Model, val stream:Iterable[AuthorEntity]) extends Aut
     }
     val es = this.getEntities
     for(e <- es)if(e.isEntity.booleanValue != e.isRoot)println("ERROR: isEntity incorrectly set. isEntity:"+e.isEntity.booleanValue+" isRoot"+e.isRoot+" "+EntityUtils.prettyPrintAuthor(e))
-    println("Num nodes "+es.size+" num roots: "+es.filter(_.isEntity.booleanValue).size+" num mentions: "+es.filter(_.isMention.booleanValue).size)
-    println("Done initializing: has potential"+hasp+" num entities: "+currentEntities.size+" num-non-sng: "+currentEntities.filter(!_.isMention.booleanValue).size)
+    println("Num nodes "+es.size+" num roots: "+es.count(_.isEntity.booleanValue)+" num mentions: "+es.count(_.isMention.booleanValue))
+    println("Done initializing: has potential"+hasp+" num entities: "+currentEntities.size+" num-non-sng: "+currentEntities.count(!_.isMention.booleanValue))
   }
   def hasPotential(mention:AuthorEntity,target:AuthorEntity):Boolean ={
     mention.canopyNames(0)==target.canopyNames(0) && (mention.bagOfCoAuthors.value.cosineSimilarity(target.bagOfCoAuthors.value)>0 || mention.bagOfTopics.value.cosineSimilarity(target.bagOfTopics.value)>0)
@@ -1418,7 +1419,7 @@ trait Worker[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exten
   def doWork(entities:Seq[E]):Seq[E]
   def saveWork(entities:Seq[E]):Unit
   def run(): Unit = {
-    initialize
+    initialize()
     startTime = System.currentTimeMillis
     var timer=System.currentTimeMillis;val work = findWork;_workLoad=work.size;timeFindingWork += (System.currentTimeMillis() - timer)
     //println("worker about to perform work on "+work.size+" mentities.")
@@ -1433,9 +1434,9 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
   sampler.printInfo=false
   def numberOfSteps(numEntities:Int):Int = if(numEntities<=20)numEntities*20 else if(numEntities <= 1000)numEntities*numEntities else (numEntities.toDouble*math.log(numEntities.toDouble/1000.0)*1000.0).toInt
   //def numberOfSteps(numEntities:Int):Int = (if(numEntities<=20)numEntities*20 else if(numEntities <= 100)numEntities*numEntities else if(numEntities<=1000) 100*numEntities else if(numEntities<=5000) 200*numEntities else 300*numEntities)
-  def initialize:Unit = {}
+  def initialize():Unit = {}
   def findWork:Seq[E] = {val r = workCollection.loadByCanopies(canopies);itemsProcessed=r.size;r}
-  def doWork(es:Seq[E]):Seq[E] = {val entities = initializeWork(es);sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.filter(_.isMention.booleanValue).size));(sampler.getEntities ++ sampler.getDeletedEntities)}
+  def doWork(es:Seq[E]):Seq[E] = {val entities = initializeWork(es);sampler.setEntities(entities);sampler.timeAndProcess(0);sampler.process(numberOfSteps(entities.count(_.isMention.booleanValue))); sampler.getEntities ++ sampler.getDeletedEntities }
   def saveWork(entities:Seq[E]):Unit = workCollection.store(entities)
   //def initializeWork(entities:Seq[E]):Seq[E] = entities
   //def initializeWork(entities:Seq[E]):Seq[E] = if(!entities.exists((e:E) => {!e.isMention.booleanValue}))EntityUtils.collapseOnCanopyAndCoAuthors(entities.asInstanceOf[Seq[AuthorEntity]]).asInstanceOf[Seq[E]] else entities
@@ -1444,7 +1445,7 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
     if(!entities.exists((e:E) => {!e.isMention.booleanValue})){
       if(entities.headOption != None){
         val initializer = new AuthorStreamer(sampler.model,entities.asInstanceOf[Seq[AuthorEntity]])
-        initializer.go
+        initializer.go()
         result = initializer.getEntities.asInstanceOf[Seq[E]]
       }
       else throw new Exception("Not implemented for non authors")
@@ -1455,7 +1456,7 @@ class DefaultSamplerWorker[E<:HierEntity with HasCanopyAttributes[E] with Priori
 trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] extends WorkerStatistics{
   def triggerSafeQuit:Boolean= _triggerSafeQuit
   protected var _triggerSafeQuit:Boolean=false
-  def isWorking:Boolean = (workers.size>0 || activeWorkers.size>0)
+  def isWorking:Boolean = workers.size > 0 || activeWorkers.size > 0
   protected var numWorkers=0
   var totalFinished = 0
   def initialize(): Unit
@@ -1472,7 +1473,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     while(numWorkers<maxWorkers && workers.size>0 && !triggerSafeQuit){
       val wpm = (totalFinished.toDouble/actualTotalTime.toDouble*1000.0*60.0).toInt
       println("Spawning worker. Active workers="+numWorkers+" Total workers:"+totalFinished+". Wpm: "+wpm)
-      spawnWorker
+      spawnWorker()
     }
     //println("Finished managing "+activeWorkers.size+" and "+workers.size+" inactive workers.")
   }
@@ -1503,7 +1504,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     println("About to manage "+workers.size+" workers")
     //manageWorkers
     spawn{
-      while((workers.size+activeWorkers.size)>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers;Thread.sleep(1000)}
+      while((workers.size+activeWorkers.size)>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers();Thread.sleep(1000)}
     }
     //while(workers.size>0){}
     //var timer = System.currentTimeMillis
@@ -1558,7 +1559,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
   }
   override protected def spawnPrintThreads(): Unit = {
     super.spawnPrintThreads()
-    spawn{while(true){printSamplingStats;Thread.sleep(60000)}}
+    spawn{while(true){printSamplingStats();Thread.sleep(60000)}}
     spawnParameterReader()
   }
   def printSamplingStats(): Unit = {
@@ -1673,8 +1674,8 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
   def newSampler:BibSampler[E]
   def samplesPerEntityCount(numEntities:Int):Int = -1
   abstract override def timeAndProcess(n:Int):Unit ={
-    loadBalancing
-    resetSamplingStatistics
+    loadBalancing()
+    resetSamplingStatistics()
     val maxSamplesPerSampler = samplers.map((s:BibSampler[E]) => samplesPerEntityCount(s.getEntities.size)).toSeq
     for(sampler <- samplers){
       sampler.timeAndProcess(0)
@@ -1687,7 +1688,7 @@ trait ParallelSampling[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     var finished=false
     while(!finished){
       if(proposalCount > 0 && ((proposalCount - recalcCount).toInt >= acceptanceRateCalculationWindow)){
-        samplers.foreach((s:BibSampler[E]) => {s.calculateInstantaneousAcceptanceRate})
+        samplers.foreach((s:BibSampler[E]) => {s.calculateInstantaneousAcceptanceRate()})
         recalcCount=proposalCount
       }
       var averageAcceptanceRate=samplers.map((s:BibSampler[E]) => s.acceptanceRateSinceLastTimeCheck).sum/samplers.size.toDouble
@@ -1814,7 +1815,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     if(printInfo)println("About to take "+ n + " samples.")
     totalTime=System.currentTimeMillis
     intervalTime=totalTime
-    resetSamplingStatistics
+    resetSamplingStatistics()
     super.process(n)
   }
   //def newEntity = new AuthorEntity
@@ -1825,7 +1826,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     }
   }
   override def setEntities(ents:Iterable[E]):Unit ={
-    resetSamplingStatistics
+    resetSamplingStatistics()
     _amountOfDirt = 0.0
     _numSampleAttempts = 0.0
     singletonCanopies = new ArrayBuffer[E]
@@ -1976,9 +1977,9 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
   protected var _forPSIAcceptanceCount=0L
   protected var _forPSIATimeCount=0L
   def printSamplingInfo(count:Long = proposalCount): Unit ={
-    val numSamplesElapsed = (proposalCount - _forPSIATimeCount)
+    val numSamplesElapsed = proposalCount - _forPSIATimeCount
     numAcceptedInTimeWindow = (numAccepted - _forPSIAcceptanceCount).toInt
-    val instantPctAccepted = numAcceptedInTimeWindow.toDouble/(numSamplesElapsed).toDouble*100.0
+    val instantPctAccepted = numAcceptedInTimeWindow.toDouble/ numSamplesElapsed.toDouble*100.0
     _forPSIAcceptanceCount=numAccepted
     _forPSIATimeCount=proposalCount
     val pctAccepted = numAccepted.toDouble/proposalCount.toDouble*100
@@ -1995,7 +1996,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       instantSampsPerSec = (numSamplesElapsed.toDouble/timeWindowMS.toDouble*1000.0).toInt
       instantAcceptedPerSec = (numAcceptedInTimeWindow.toDouble/timeWindowMS.toDouble*1000.0).toInt
     }
-    println(" No. samples: "+proposalCount+", %accepted: " + shortDecimal.format(pctAccepted)+" "+shortDecimal.format(instantPctAccepted)+", time: "+(timeWindowMS/1000)+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ sampsPerSec+" "+instantSampsPerSec+" Accepted per sec: "+acceptedPerSec+" "+instantAcceptedPerSec+". Avg diff size: "+(numDiffVarsInWindow)/(numNonTrivialDiffs+1))
+    println(" No. samples: "+proposalCount+", %accepted: " + shortDecimal.format(pctAccepted)+" "+shortDecimal.format(instantPctAccepted)+", time: "+(timeWindowMS/1000)+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ sampsPerSec+" "+instantSampsPerSec+" Accepted per sec: "+acceptedPerSec+" "+instantAcceptedPerSec+". Avg diff size: "+ numDiffVarsInWindow /(numNonTrivialDiffs+1))
     intervalTime = System.currentTimeMillis
     numDiffVarsInWindow=0
     allDiffVarsInWindow=0
@@ -2223,7 +2224,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     }
   }
   def add(papers:Iterable[PaperEntity]):Unit ={
-    val printOut:Boolean = (papers.size>=1000)
+    val printOut:Boolean = papers.size >= 1000
     if(printOut)println("About to add papers to db.")
     //println("Authors: "+papers.flatMap(_.authors).size)
     if(printOut)print("Re-extracting names.")

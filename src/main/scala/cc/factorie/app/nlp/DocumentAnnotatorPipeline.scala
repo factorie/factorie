@@ -88,7 +88,7 @@ object DocumentAnnotatorPipeline {
       if (!preSet.contains(goal) && (!preSet.exists(x => goal.isAssignableFrom(x)))) {
         val provider = if (map.contains(goal)) map(goal)() else {
           val list = map.keys.filter(k => goal.isAssignableFrom(k))
-          assert(list.nonEmpty, s"Could not find annotator for goal ${goal}, map includes ${map.keys.mkString(", ")}")
+          assert(list.nonEmpty, s"Could not find annotator for goal $goal, map includes ${map.keys.mkString(", ")}")
           map(list.head)()
         }
         if (!pipeSet.contains(provider)) {

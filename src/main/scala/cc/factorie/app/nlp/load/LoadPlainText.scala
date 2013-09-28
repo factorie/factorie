@@ -26,7 +26,7 @@ import scala.util.matching.Regex
     If the regex specifics a group (via parenthesis) then the Document's name will be set to the match of this first group. */
 class LoadPlainText(annotator:DocumentAnnotator = NoopDocumentAnnotator, documentName: String = null, documentSeparator:Regex = null)(implicit m: DocumentAnnotatorMap) extends Load with LoadDirectory {
   def fromSource(source:io.Source): Seq[Document] = {
-    val string = source.getLines.mkString("\n")
+    val string = source.getLines().mkString("\n")
     if (documentSeparator eq null) Seq(DocumentAnnotatorPipeline(m, annotator).process(new Document(string).setName(documentName)))
     else {
       var docStart = 0

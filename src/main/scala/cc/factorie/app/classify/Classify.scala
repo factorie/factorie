@@ -206,7 +206,7 @@ object Classify {
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        for (file <- new File(directory).listFiles; if file.isFile) {
           //println ("Directory " + directory + " File " + file + " documents.size " + documents.size)
           val labelName = directoryFile.getName
           val instanceName = labelName + "-" + file.getName
@@ -309,19 +309,19 @@ object Classify {
           val trainTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           trainTrial ++= trainingLabels
           println("== Training Evaluation ==")
-          println(trainTrial.toString)
+          println(trainTrial.toString())
         }
         if (testingLabels.length > 0) {
           val testTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           testTrial ++= testingLabels
           println("== Testing Evaluation ==")
-          println(testTrial.toString)
+          println(testTrial.toString())
         }
         if (validationLabels.length > 0) {
           val validationTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           validationTrial ++= validationLabels
           println("== Validation Evaluation ==")
-          println(validationTrial.toString)
+          println(validationTrial.toString())
         }
     }
   }

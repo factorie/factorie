@@ -284,7 +284,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
     //make such a set for every mention. For those mentions that aren't in entities, the set is just a singleton.
     val numGenderSets = allMentions.map(m => numGenderSetsForEntities.getOrElse(predMap.getEntity(m),Set(CoarseMentionType(m.gender,m.number))))
 
-    for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
+    for(i <- 0 until allMentions.length; if allMentions(i).isPRO){
       val m1 = allMentions(i)
       assert(numGenderSets(i).size == 1)
       val numGender1 = numGenderSets(i).head
@@ -358,7 +358,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
       //val proPro = m1.isPRO && m2.isPRO       //uncomment this and the !proPro part below if you want to prohibit
       //pronoun-pronoun comparison
 
-      if (/*!proPro && */ (!cataphora || options.allowTestCataphora)) {
+      if (/*!proPro && */ !cataphora || options.allowTestCataphora) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)

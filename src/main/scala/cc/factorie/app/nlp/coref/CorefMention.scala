@@ -94,7 +94,7 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def wnHypernyms = cache.wnHypernyms
   def wnAntonyms = cache.wnAntonyms
 
-  def printInfo : String = Seq[String]("gender",gender.toString,"number",number.toString,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
+  def printInfo : String = Seq[String]("gender", gender,"number", number,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
 }
 
 class MentionCache(m: CorefMention) {

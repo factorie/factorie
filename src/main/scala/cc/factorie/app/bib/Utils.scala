@@ -468,7 +468,7 @@ object EntityUtils{
     val groups = new Array[ArrayBuffer[String]](numFiles)
     for(i<-0 until groups.size)groups(i) = new ArrayBuffer[String]
     var i=0
-    while(i<canopies.size){groups((i % numFiles)) += canopies(i);i+=1}
+    while(i<canopies.size){groups(i % numFiles) += canopies(i);i+=1}
     var groupId=0
     for(group <- groups){
       val pw = new PrintWriter(new File(outDirPath+"canopy_batch_locality"+groupId))
@@ -791,7 +791,7 @@ object EntityUtils{
     for(bagVar <- e.attr.all[BagOfWordsVariable]){
       val bag = bagVar.value
       if(bag.size>0){
-        val name = bagVar.getClass.getName.toString.split("\\.").toSeq.takeRight(1)(0).replaceAll("[A-Za-z]+\\(","").replaceAll("\\)","")
+        val name = bagVar.getClass.getName.split("\\.").toSeq.takeRight(1)(0).replaceAll("[A-Za-z]+\\(","").replaceAll("\\)","")
         result += name+"("+bag.size+"): ["+this.bagToString(bag,8)+"]"
       }
     }
@@ -1096,7 +1096,7 @@ object LDAUtils{
       this.saveAlphaAndPhi(lda,new File(opts.writeModel.value))
       StopWatch.stop
     }
-    StopWatch.printTimes
+    StopWatch.printTimes()
   }
 
   def DEFAULT_DOCUMENT_GENERATOR(paper:PaperEntity):String = {

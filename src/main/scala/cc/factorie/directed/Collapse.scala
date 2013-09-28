@@ -53,7 +53,7 @@ object DenseCountsProportionsCollapser extends Collapser {
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
           case f:Dirichlet.Factor => p.value match {
             case pt:DenseProportions1 => pt.masses.+=(f._2.value)
-            case pt:SortedSparseCountsProportions1 if (model.parentFactor(p) eq f) => pt.prior = f._2.value
+            case pt:SortedSparseCountsProportions1 if model.parentFactor(p) eq f => pt.prior = f._2.value
           }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
         }

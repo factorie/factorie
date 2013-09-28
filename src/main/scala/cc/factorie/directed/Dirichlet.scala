@@ -69,7 +69,7 @@ object MaximizeDirichletByMomentMatching {
         //forIndex(m.size)(i => m(i) += f._1.tensor(i))
       }
     }
-    m.normalize
+    m.normalize()
     //assert(m.forall(_ >= 0.0))
     //println("MaximizeDirichletByMomentMatching mean max="+m.max)
     //forIndex(m.size)(m(_) /= numChildren)
