@@ -48,7 +48,8 @@ abstract class Factor2[N1<:Var,N2<:Var](val _1:N1, val _2:N2) extends Factor {
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def assignmentScore(a:Assignment) = a match {
     case a:AbstractAssignment2[N1,N2] if (a._1 eq _1) && (a._2 eq _2) => score(a.value1, a.value2)
-    case _ => score(a(_1), a(_2))
+    case _ =>
+      score(a(_1), a(_2))
   }
   override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
     case a:AbstractAssignment2[N1,N2] if (a._1 eq _1) && (a._2 eq _2) => statistics(a.value1, a.value2)
@@ -214,8 +215,8 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
   /** Override this if you want to matchNeighborDomains */
-  def neighborDomain1: Domain { type Value = N1#Value } = null
-  def neighborDomain2: Domain { type Value = N2#Value } = null
+  def neighborDomain1: Domain { type Value <: N1#Value } = null
+  def neighborDomain2: Domain { type Value <: N2#Value } = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2)
 
   type FactorType = Factor
@@ -240,23 +241,23 @@ trait Family2[N1<:Var,N2<:Var] extends FamilyWithNeighborDomains {
   
   override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensorLike2 => {
-      val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }]
-      val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value = N2#Value }]
+      val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value <: N1#Value }]
+      val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value <: N2#Value }]
       score(domain0(v.singleIndex1), domain1(v.singleIndex2))
       //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
     case v: SingletonBinaryLayeredTensor2 => {
-      val domain0 = if (neighborDomain1 ne null) neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }] else new DiscreteDomain(Int.MaxValue).asInstanceOf[DiscreteDomain { type Value  = N1#Value }]
+      val domain0 = if (neighborDomain1 ne null) neighborDomain1.asInstanceOf[DiscreteDomain { type Value <: N1#Value }] else new DiscreteDomain(Int.MaxValue).asInstanceOf[DiscreteDomain { type Value  = N1#Value }]
       score(domain0(v.singleIndex1), v.inner.asInstanceOf[N2#Value])
     }
     case v: Outer1Tensor2 => {
       (v.tensor1, v.tensor2) match {
         case (v1: SingletonBinaryTensor1, v2: SingletonBinaryTensor1) =>
-          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
-          val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value = N2#Value }]
+          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value <: N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
+          val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value <: N2#Value }]
           v.scale*score(domain0(v1.singleIndex), domain1(v1.singleIndex))
         case (v1: SingletonBinaryTensor1, v2: N2#Value @unchecked) =>
-          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
+          val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value <: N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
           v.scale*score(domain0(v1.singleIndex), v2)
       }
     }

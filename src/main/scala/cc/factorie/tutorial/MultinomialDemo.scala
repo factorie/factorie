@@ -24,7 +24,7 @@ import cc.factorie.infer.Maximize
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain(numSides)
-  class Roll extends DiscreteVariable { def domain = RollDomain.asInstanceOf }
+  class Roll extends DiscreteVariable { def domain = RollDomain }
   implicit val model = DirectedModel() // ItemizedDirectedModel
 
   def main(args:Array[String]) : Unit = {

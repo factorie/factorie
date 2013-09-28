@@ -19,9 +19,8 @@ object Cards4 {
   }
 
   class Location(val name:String) {
-    def cardsHere = allCards.filter(_.value == this)
-    val wins = new BooleanVariable()
-    wins.set(hasSuitRun(cardsHere, 3))(null)
+    def cardsHere = allCards.filter(_.value eq this)
+    lazy val wins = { val w = new BooleanVariable(); w.set(hasSuitRun(cardsHere, 3))(null); w }
   }
 
   def main(args:Array[String]): Unit = {
@@ -30,7 +29,7 @@ object Cards4 {
     val floor = new Location("floor")
     val locations = List(floor, jane)
     //val suits = List("H", "D", "C", "S").map(new Suit(_))
-    val cards = SuitDomain.flatMap(suit => for (i <- 0 until 13) yield new Card(i, suit.asInstanceOf, floor))
+    val cards = SuitDomain.flatMap(suit => for (i <- 0 until 13) yield new Card(i, suit, floor))
     val card = new HashMap[String,Card] ++= cards.map(c => (c.toString, c))
     allLocations = locations
     allCards = cards

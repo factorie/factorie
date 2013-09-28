@@ -52,7 +52,7 @@ trait LabeledVar extends Var {
     @author Andrew McCallum */
 trait LabeledVarWithTarget extends LabeledVar {
   self =>
-  type TargetType = TargetVar
+  type TargetType <: TargetVar
   /** Stores the intended true "target" value for this variable. */
   def target: TargetType { type Value = self.Value }
   override def valueIsTarget: Boolean = value == target.value
@@ -99,11 +99,10 @@ trait LabeledMutableDiscreteVar extends LabeledDiscreteVar with MutableDiscreteV
     separate from its current value. 
     @author Andrew McCallum */
 trait LabeledMutableDiscreteVarWithTarget extends LabeledVarWithTarget with LabeledMutableDiscreteVar {
-  def target: DiscreteTargetVar with MutableDiscreteVar
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   @inline final def targetIntValue: Int = if (target eq null) -1 else target.asInstanceOf[DiscreteVar].intValue // TODO Work on removing this cast
   def targetIntValue_=(newValue:Int): Unit = target.asInstanceOf[DiscreteTargetVar with MutableDiscreteVar].set(newValue)(null) // TODO Work on removing this cast
-  override def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf
+  override def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf[Value]
   // TODO Consider trying to reinstate this
   def isUnlabeled = target eq null
   def unlabel() = if (targetIntValue >= 0) targetIntValue = -targetIntValue - 1 else throw new Error("Already unlabeled.")
@@ -115,7 +114,8 @@ trait LabeledMutableDiscreteVarWithTarget extends LabeledVarWithTarget with Labe
     @author Andrew McCallum */
 abstract class LabeledDiscreteVariable(targetValue:Int) extends DiscreteVariable(targetValue) with LabeledMutableDiscreteVarWithTarget {
   self =>
-  val target = new DiscreteTarget(targetValue).asInstanceOf[TargetType] // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
+  type TargetType = DiscreteTarget
+  val target = new DiscreteTarget(targetValue) // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
   class DiscreteTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteTargetVar {
     type AimerType = LabeledDiscreteVariable
     def domain = self.domain
@@ -167,7 +167,8 @@ abstract class LabeledCategoricalVariable[C](theTargetCategory:C) extends Catego
 trait LabeledBooleanVar extends LabeledMutableCategoricalVarWithTarget[Boolean] with BooleanVar
 class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVal) with LabeledBooleanVar {
   self =>
-  val target = new LabeledBooleanTarget(targetVal).asInstanceOf[TargetType] // new BooleanLabelTarget(targetVal, this)
+  type TargetType = LabeledBooleanTarget
+  val target = new LabeledBooleanTarget(targetVal) // new BooleanLabelTarget(targetVal, this)
   class LabeledBooleanTarget(targetVal:Boolean) extends BooleanVariable(targetVal) with CategoricalTargetVar[Boolean] {
     type AimerType = LabeledBooleanVariable
     def aimer = self
@@ -195,13 +196,13 @@ class LabeledStringVariable(val targetValue:String) extends StringVariable(targe
 
 // Templates
 
-class HammingTemplate[A<:LabeledVarWithTarget] extends TupleTemplateWithStatistics2[A,A#TargetType]() {
+class HammingTemplate[A<:LabeledVarWithTarget]()(implicit ma: Manifest[A], mt: Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
   def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[A#TargetType])
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
   def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[A#TargetType]).currentScore).sum / variables.size
 }
-object HammingObjective extends HammingTemplate[LabeledVarWithTarget]
+object HammingObjective extends HammingTemplate[LabeledVarWithTarget]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVarWithTarget]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
 
 class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   import cc.factorie.la._
@@ -219,7 +220,7 @@ class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm
       }
   }
 }
-object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]
+object HammingLoss extends HammingLossTemplate[LabeledVarWithTarget]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVarWithTarget]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
 
 
 // Evaluation

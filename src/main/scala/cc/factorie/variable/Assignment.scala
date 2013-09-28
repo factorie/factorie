@@ -29,16 +29,16 @@ trait Assignment {
   /** All variables with values in this Assignment */
   def variables: Iterable[Var]
   /** Return the value assigned to variable v, or throw an Error if the variable is not in this Assignment. */
-  def apply[B<:Var,C<:B#Value](v:B): C
+  def apply[B<:Var](v:B): B#Value
   /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
-  def get[B<:Var,C<:B#Value](v:B): Option[C]
+  def get[B<:Var](v:B): Option[B#Value]
   /** Return true if this Assignment has a value for variable v. */
   def contains(v:Var): Boolean
-  def getOrElse[B<:Var,C<:B#Value](v:B, default: => C): C = if (contains(v)) apply(v) else default
+  def getOrElse[B<:Var](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
   def setVariables(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
-      case v:MutableVar => v.set(this.apply(v))(d)
+      case v:MutableVar => v.set(this.apply(v).asInstanceOf[v.Value])(d)
       case _ => throw new Error
     }
   }
@@ -54,11 +54,11 @@ trait MutableAssignment extends Assignment {
     @author Andrew McCallum */
 object TargetAssignment extends Assignment {
   def variables = throw new Error("Cannot list all variables of the TargetAssignment.")
-  def apply[V<:Var,W<:V#Value](v:V): W = v match {
-    case v:LabeledVar => v.targetValue.asInstanceOf[W]
-    case v:Var => v.value.asInstanceOf[W]
+  def apply[V<:Var](v:V): V#Value = v match {
+    case v:LabeledVar => v.targetValue.asInstanceOf[V#Value]
+    case v:Var => v.value.asInstanceOf[V#Value]
   }
-  def get[V<:Var,W<:V#Value](v:V): Option[W] = Some(apply(v))
+  def get[V<:Var](v:V): Option[V#Value] = Some(apply(v))
   def contains(v:Var) = true
   override def setVariables(implicit d:DiffList): Unit = throw new Error("Cannot set a TargetAssignment.  Instead use variables.setToTarget(DiffList).")
 }
@@ -70,8 +70,8 @@ class HashMapAssignment(val ignoreNonPresent: Boolean=true) extends MutableAssig
   def this(variables:Var*) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def this(variables:Iterable[Var]) = { this(ignoreNonPresent=true); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def variables = map.keys
-  def apply[V<:Var,W<:V#Value](v:V): W = { get(v) match { case Some(va) => va; case None => if (!ignoreNonPresent) throw new Error("Variable not in assignment: " + v) else v.value.asInstanceOf[W] } }
-  def get[V<:Var,W<:V#Value](v:V): Option[W] = if (ignoreNonPresent) map.get(v).map(_.asInstanceOf[W]) else Some(map.getOrElse(v, v.value).asInstanceOf[W])
+  def apply[V<:Var](v:V): V#Value = { get(v) match { case Some(va) => va; case None => if (!ignoreNonPresent) throw new Error("Variable not in assignment: " + v) else v.value.asInstanceOf[V#Value] } }
+  def get[V<:Var](v:V): Option[V#Value] = if (ignoreNonPresent) map.get(v).map(_.asInstanceOf[V#Value]) else Some(map.getOrElse(v, v.value).asInstanceOf[V#Value])
   def update[V<:Var, U <: V#Value](variable:V, value:U): Unit = map(variable) = value
   def contains(v:Var) = map.contains(v)
 }
@@ -83,8 +83,8 @@ trait AbstractAssignment1[A<:Var] extends Assignment {
   def _1: A
   def value1: A#Value
   def variables = Seq(_1) // TODO Consider making this a Set.
-  def apply[C<:Var,D<:C#Value](v:C): D = if (v eq _1) value1.asInstanceOf[D] else v.value.asInstanceOf[D] // throw new Error("Variable not present: "+v)
-  def get[C<:Var,D<:C#Value](v:C): Option[D] = if (v eq _1) Some(value1.asInstanceOf[D]) else None
+  def apply[C<:Var](v:C): C#Value = if (v eq _1) value1.asInstanceOf[C#Value] else v.value.asInstanceOf[C#Value] // throw new Error("Variable not present: "+v)
+  def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if (v eq _1) true else false
   override def setVariables(implicit d:DiffList): Unit = _1 match { case v:MutableVar => v.set(apply(v)) }
 }
@@ -113,8 +113,8 @@ trait AbstractAssignment2[A<:Var,B<:Var] extends Assignment {
   def value1: A#Value
   def value2: B#Value
   def variables = Seq(_1, _2)
-  def apply[C<:Var,D<:C#Value](v:C): D = if (v eq _1) value1.asInstanceOf[D] else if (v eq _2) value2.asInstanceOf[D] else v.value.asInstanceOf[D] // throw new Error("Variable not present: "+v)
-  def get[C<:Var,D<:C#Value](v:C): Option[D] = if (v eq _1) Some(value1.asInstanceOf[D]) else if (v eq _2) Some(value2.asInstanceOf[D]) else None
+  def apply[C<:Var](v:C): C#Value = if (v eq _1) value1.asInstanceOf[C#Value] else if (v eq _2) value2.asInstanceOf[C#Value] else v.value.asInstanceOf[C#Value] // throw new Error("Variable not present: "+v)
+  def get[C<:Var](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2)) true else false
   override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
@@ -135,8 +135,8 @@ trait AbstractAssignment3[A<:Var,B<:Var,C<:Var] extends Assignment {
   def value2: B#Value
   def value3: C#Value
   def variables = Seq(_1, _2, _3)
-  def apply[X<:Var,W<:X#Value](v:X): W = if (v eq _1) value1.asInstanceOf[W] else if (v eq _2) value2.asInstanceOf[W] else if (v eq _3) value3.asInstanceOf[W] else v.value.asInstanceOf[W] // throw new Error("Variable not present: "+v)
-  def get[C<:Var,W<:C#Value](v:C): Option[W] = if (v eq _1) Some(value1.asInstanceOf[W]) else if (v eq _2) Some(value2.asInstanceOf[W]) else if (v eq _3) Some(value3.asInstanceOf[W]) else None
+  def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
+  def get[X<:Var](v:X): Option[X#Value] = if (v eq _1) Some(value1.asInstanceOf[X#Value]) else if (v eq _2) Some(value2.asInstanceOf[X#Value]) else if (v eq _3) Some(value3.asInstanceOf[X#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3)) true else false
   override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
@@ -160,8 +160,8 @@ trait AbstractAssignment4[A<:Var,B<:Var,C<:Var,D<:Var] extends Assignment {
   def value3: C#Value
   def value4: D#Value
   def variables = Seq(_1, _2, _3, _4)
-  def apply[X<:Var,W<:X#Value](v:X): W = if (v eq _1) value1.asInstanceOf[W] else if (v eq _2) value2.asInstanceOf[W] else if (v eq _3) value3.asInstanceOf[W] else if (v eq _4) value4.asInstanceOf[W] else v.value.asInstanceOf[W] // throw new Error("Variable not present: "+v)
-  def get[C<:Var,D<:C#Value](v:C): Option[D] = if (v eq _1) Some(value1.asInstanceOf[D]) else if (v eq _2) Some(value2.asInstanceOf[D]) else if (v eq _3) Some(value3.asInstanceOf[D]) else if (v eq _4) Some(value4.asInstanceOf[D]) else None
+  def apply[X<:Var](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else if (v eq _4) value4.asInstanceOf[X#Value] else v.value.asInstanceOf[X#Value] // throw new Error("Variable not present: "+v)
+  def get[X<:Var](v:X): Option[X#Value] = if (v eq _1) Some(value1.asInstanceOf[X#Value]) else if (v eq _2) Some(value2.asInstanceOf[X#Value]) else if (v eq _3) Some(value3.asInstanceOf[X#Value]) else if (v eq _4) Some(value4.asInstanceOf[X#Value]) else None
   def contains(v:Var): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3) || (v eq _4)) true else false
   override def setVariables(implicit d:DiffList): Unit = {
     _1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
@@ -181,8 +181,8 @@ class Assignment4[A<:Var,B<:Var,C<:Var,D<:Var](val _1:A, var value1:A#Value, val
     @author Andrew McCallum */
 object GlobalAssignment extends Assignment {
   def variables = throw new Error("Cannot list all variables of the global Assignment.")
-  def apply[V<:Var,W<:V#Value](v:V): W = v.value.asInstanceOf[W]
-  def get[V<:Var,W<:V#Value](v:V): Option[W] = Some(v.value.asInstanceOf[W])
+  def apply[V<:Var](v:V): V#Value = v.value.asInstanceOf
+  def get[V<:Var](v:V): Option[V#Value] = Some(v.value.asInstanceOf)
   def contains(v:Var) = true
   override def setVariables(implicit d:DiffList): Unit = {}
 }
@@ -192,18 +192,18 @@ object GlobalAssignment extends Assignment {
     @author Andrew McCallum */
 class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null) extends Assignment {
   def variables = assignment.variables ++ next.variables
-  protected def apply[V<:Var,W<:V#Value](v:V, s:AssignmentStack): W =
+  protected def apply[V<:Var](v:V, s:AssignmentStack): V#Value =
     if (s.next eq null) s.assignment.apply(v)
-    else s.assignment.getOrElse(v, apply[V,W](v, s.next))
-  def apply[V<:Var,W<:V#Value](v:V): W = apply[V,W](v, this)
+    else s.assignment.getOrElse(v, apply[V](v, s.next))
+  def apply[V<:Var](v:V): V#Value = apply[V](v, this)
   /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
-  def get[B <: Var, C <: B#Value](v: B, s: AssignmentStack): Option[C] = {
+  def get[B <: Var](v: B, s: AssignmentStack): Option[B#Value] = {
     val o = assignment.get(v)
     if (o != None) o
-    else if (s.next ne null) s.next.get(v).asInstanceOf[Option[C]]
+    else if (s.next ne null) s.next.get(v).asInstanceOf
     else None
   }
-  def get[V<:Var,W<:V#Value](v:V): Option[W] = get(v, this)
+  def get[V<:Var](v:V): Option[V#Value] = get(v, this)
   def contains(v:Var) = if (assignment.contains(v)) true else next.contains(v)
   /** Returns a new Assignment stack, the result of prepending Assignment a. */
   def +:(a:Assignment): AssignmentStack = new AssignmentStack(a, this)

@@ -83,8 +83,9 @@ trait IndexedSeqVar[+E] extends SeqVar[E] with IndexedSeqSimilar[E] {
     @author Andrew McCallum */
 trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar {
   type Element = E
+  type Value = IndexedSeq[E]
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that apply(Int) is more efficient.
-  @inline final def value: IndexedSeq[Element] = _seq // Note that for efficiency we don't return a copy, but this means that this value could change out from under a saved "value" if this variable value is changed. 
+  @inline final def value: Value = _seq.toIndexedSeq // Note that for efficiency we don't return a copy, but this means that this value could change out from under a saved "value" if this variable value is changed.
   def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear(); _seq ++= newValue }
   def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
   def add(e:Element)(implicit d:DiffList): Unit = Append1Diff(e)
@@ -119,7 +120,6 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar {
 
 /** A variable containing a mutable sequence of other variables. */
 class SeqVariable[X] extends MutableSeqVar[X] {
-  type Value = Seq[X]
   def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
 }
 

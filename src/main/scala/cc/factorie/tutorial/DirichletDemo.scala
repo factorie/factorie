@@ -25,7 +25,7 @@ object DirichletDemo {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     object WordDomain extends EnumDomain { val a, b, c, d, e, f = Value }
-    class Word extends DiscreteVariable { def domain = WordDomain.asInstanceOf }
+    class Word extends DiscreteVariable { def domain = WordDomain }
     implicit val model = DirectedModel()
     
     val masses = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))
@@ -35,8 +35,8 @@ object DirichletDemo {
     //println("Demonstrating Proportions estimation")
     //println("Initial Proportions "+p1.value)
     val data = for (i <- 0 until 500) yield new Word :~ Discrete(p1)
-    //MaximizeProportions(p1, model)
-    Maximize(p1)
+    MaximizeProportions.infer(Seq(p1), model)
+    Maximize(Seq(p1), model)
     //println("Estimated Proportions "+p1.value)
     
     //println("Demonstrating Dirichlet parameter estimation")

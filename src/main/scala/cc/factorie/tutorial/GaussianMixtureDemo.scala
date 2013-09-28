@@ -29,7 +29,7 @@ object GaussianMixtureDemo {
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
-    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain.asInstanceOf }
+    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture(numComponents)(new DoubleVariable(random.nextDouble * 10))
     val varianceComponents = Mixture(numComponents)(new DoubleVariable(1.0))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
@@ -70,7 +70,7 @@ object MultivariateGaussianMixtureDemo {
     val numComponents = 2
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
-    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain.asInstanceOf }
+    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture[MutableTensorVarTensor1](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
     val varianceComponents = Mixture[MutableTensorVarTensor2](numComponents)(new TensorVariable[Tensor2](
       new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 10.0 else random.nextDouble() * 0.5))))

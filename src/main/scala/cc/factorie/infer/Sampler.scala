@@ -153,10 +153,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
       modelScore = 0.0; modelFactors.foreach(f => modelScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       objectiveScore = 0.0; objectiveFactors.foreach(f => objectiveScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       val d = new DiffList; d.done = false
-      context match {
-        case v: MutableDiscreteVar => ; d += new v.DiscreteVariableDiff(0, i)
-        case _ =>
-      }
+      context.cast[MutableDiscreteVar].foreach(v =>  d += new v.DiscreteVariableDiff(0, i))
       //context match { case context:MutableDiscreteVar[_] => d += new context.DiscreteVariableDiff(0, i); case _ => {} } // This crashes the Scala 2.10.1 compiler
       result += new Proposal(d, modelScore, objectiveScore, modelScore)
       i += 1

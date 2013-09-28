@@ -47,6 +47,7 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends MutableRefVar[A] {
     @author Andrew McCallum */
 trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
   this: MutableRefVar[A] =>
+  type Value = A
   def targetValue: A
   def isUnlabeled = targetValue == null
 }
@@ -55,4 +56,6 @@ trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
     It is marked 'abstract' not because it has missing definitions, but to insist that users
     create subclasses before using it.
     @author Andrew McCallum */
-abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A]
+abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A] {
+  override type Value = A
+}
