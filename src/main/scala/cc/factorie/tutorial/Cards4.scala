@@ -19,8 +19,8 @@ object Cards4 {
   }
 
   class Location(val name:String) {
-    def cardsHere = allCards.filter(_.value == this)
-    val wins = new BooleanVar { def value = BooleanValue(hasSuitRun(cardsHere, 3))}
+    def cardsHere = allCards.filter(_.value eq this)
+    lazy val wins = { val w = new BooleanVariable(); w.set(hasSuitRun(cardsHere, 3))(null); w }
   }
 
   def main(args:Array[String]): Unit = {

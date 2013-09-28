@@ -57,7 +57,7 @@ object DocumentClassifier2 {
     )
   }
 
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
 
   def main(args: Array[String]) : Unit = {
     implicit val random = new scala.util.Random(0)

@@ -49,9 +49,16 @@ trait CategoricalValue[C] extends DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalVectorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
+class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalVectorDomain[C] with Domain with cc.factorie.util.ProtectedIntArrayBuffer {
+  protected class CategoricalValue(val singleIndex:Int, val category:C) extends variable.CategoricalValue[C] {
+    override def copy = this
+    def domain = CategoricalDomain.this
+    def dim1 = CategoricalDomain.this.size
+  }
+  type Value <: CategoricalValue
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
-  private var __indices: mutable.HashMap[C,Value] = new mutable.HashMap[C,Value]
+
+  private val __indices: mutable.HashMap[C, Value] = new mutable.HashMap[C, Value]
   def _indices = __indices
   private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;
@@ -136,11 +143,6 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   override def toString() = "CategoricalDomain[]("+size+")"
 
   protected def newCategoricalValue(i:Int, e:C) = new CategoricalValue(i, e)
-  protected class CategoricalValue(val singleIndex:Int, val category:C) extends variable.CategoricalValue[C] {
-    override def copy = this
-    def domain = CategoricalDomain.this
-    def dim1 = CategoricalDomain.this.size
-  }
 
   /** If type T is not string, this should be overridden to provide de-serialization */
   override def stringToCategory(s:String): C = s.asInstanceOf[C]

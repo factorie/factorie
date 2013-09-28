@@ -115,10 +115,10 @@ trait Family4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends FamilyWithNeighborDomains
   type NeighborType3 = N3
   type NeighborType4 = N4
     /** Override this if you want to matchNeighborDomains */
-  def neighborDomain1: Domain[N1#Value] = null
-  def neighborDomain2: Domain[N2#Value] = null
-  def neighborDomain3: Domain[N3#Value] = null
-  def neighborDomain4: Domain[N4#Value] = null
+  def neighborDomain1: Domain { type Value = N1#Value } = null
+  def neighborDomain2: Domain { type Value = N2#Value } = null
+  def neighborDomain3: Domain { type Value = N3#Value } = null
+  def neighborDomain4: Domain { type Value = N4#Value } = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2, neighborDomain3, neighborDomain4)
   type FactorType = Factor
 

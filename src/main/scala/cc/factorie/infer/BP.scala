@@ -117,8 +117,8 @@ class BPVariable1(val _1: DiscreteVar) extends DiscreteMarginal1[DiscreteVar] wi
   def calculateBelief: Tensor1 = new DenseTensor1(variable.domain.size) ++= edges.map(_.messageFromFactor) // TODO Make this more efficient for cases of 1, 2, 3 edges?
   def proportions: Proportions1 = new DenseTensorProportions1(calculateMarginal.asInstanceOf[Tensor1].asArray)  // TODO Think about avoiding re-calc every time
   override def value1: DiscreteVar#Value = variable.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
-  def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
-  override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar[_]].set(calculateBelief.maxIndex)
+  def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
+  override def setToMaximize(implicit d: DiffList=null) = variable.asInstanceOf[MutableDiscreteVar].set(calculateBelief.maxIndex)
   def updateOutgoingMAP(maxValue: Int) {
     for (e <- edges) {
       e.messageFromVariable = new Tensor1 with SparseDoubleSeq with ReadOnlyTensor {
@@ -709,10 +709,10 @@ object BP {
       edge.bpFactor match {
         case f: BPFactor2 =>
           if (edge eq f.edge2) {
-            val value = f.edge2Max1(assignment(f.edge2.variable).intValue)
+            val value = f.edge2Max1(assignment(f.edge2.variable).asInstanceOf[DiscreteValue].intValue)
             assignment.update(f.edge1.variable, f.edge1.variable.domain(value).asInstanceOf[DiscreteVar#Value])
           } else {
-            val value = f.edge1Max2(assignment(f.edge1.variable).intValue)
+            val value = f.edge1Max2(assignment(f.edge1.variable).asInstanceOf[DiscreteValue].intValue)
             assignment.update(f.edge2.variable, f.edge2.variable.domain(value).asInstanceOf[DiscreteVar#Value])
           }
         case _ => 

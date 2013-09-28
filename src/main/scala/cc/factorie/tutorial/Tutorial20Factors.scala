@@ -94,7 +94,7 @@ object TutorialFactors {
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
-    as(v1) = 44
+    as.update[IntegerVariable](v1, 44)
     println("Second factor's score from a new assignment is "+f2.assignmentScore(as))
     assertEquals(44*4.4, f2.assignmentScore(as), 0.01)
     
@@ -269,7 +269,7 @@ object TutorialFactors {
     var maxScore = Double.NegativeInfinity
     var maxLabeling = LabelDomain.head
     for (labeling <- LabelDomain) {
-      l1 := labeling
+      l1.set(labeling)(null)
       val score = cf.currentScore
       if (score > maxScore) {
         maxScore = score

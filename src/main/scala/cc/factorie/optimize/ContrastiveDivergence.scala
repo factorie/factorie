@@ -34,7 +34,7 @@ class ContrastiveDivergenceExample[C](val context: C, model: Model with Paramete
  * @param sampler The sampler
  * @tparam C The type of sampler context
  */
-class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar[_]](val context: C, model: Model with Parameters, val sampler: Sampler[Var]) extends Example {
+class PersistentContrastiveDivergenceExample[C <: LabeledMutableVar](val context: C, model: Model with Parameters, val sampler: Sampler[Var]) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     require(gradient != null, "The PersistentContrastiveDivergenceExample needs a gradient accumulator")
@@ -84,7 +84,7 @@ class ContrastiveDivergenceHingeExample[C <: Var](
  * @param learningMargin The hinge loss margin
  * @tparam C The type of sampler context
  */
-class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar[_]](
+class PersistentContrastiveDivergenceHingeExample[C <: LabeledMutableVar](
   val context: C, model: Model with Parameters, val sampler: Sampler[Var], val learningMargin: Double = 1.0) extends Example {
   // NOTE: this assumes that the initial configuration is the ground truth
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {

@@ -135,9 +135,10 @@ trait ThisType[+This<:AnyRef] {
     @author Andrew McCallum */
 trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with IndexedSeqSimilar[E] {
   this: This =>
+  type Value = scala.collection.IndexedSeq[E]
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
   private var _frozen = false
-  def value: IndexedSeq[E] = _chainseq
+  def value: Value = _chainseq
   override def apply(i:Int): E = _chainseq(i)
   override def length = _chainseq.length
   @inline final def links: IndexedSeq[E] = _chainseq // TODO Remove this?

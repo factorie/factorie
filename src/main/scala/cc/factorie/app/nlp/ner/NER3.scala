@@ -77,7 +77,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     document
   }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
-  def postAttrs = Seq(m.runtimeClass)
+  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
   def tokenAnnotationString(token:Token): String = token.attr[L].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]

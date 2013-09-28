@@ -76,14 +76,14 @@ class RandomForestMultiClassClassifier(var trees: Seq[DTree], val labelSize: Int
     // FIXME these should be logged along with the regular decision tree scores
     res
   }
-  def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2(l2f, this)
 }
 
 class DecisionTreeMultiClassClassifier(var tree: DTree, val labelSize: Int) extends MultiClassClassifier[Tensor1] {
   def score(features: Tensor1) =
     DTree.score(features, tree)
-  def asTemplate[T <: LabeledMutableDiscreteVar[_]](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }
 

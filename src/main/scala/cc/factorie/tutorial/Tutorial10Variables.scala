@@ -104,7 +104,7 @@ object TutorialVariables {
      **/
 
     // cc.factorie.Var* are traits that capture various abstractions.
-    val mv: MutableVar[String] = s // All MutableVar have a set() method and a := method.
+    val mv: MutableVar = s // All MutableVar have a set() method and a := method.
     //val cv: VarWithConstantValue = s // This would cause a compilation error.
     
     // cc.factorie.Variable* are classes, all of which are mutable
@@ -293,8 +293,8 @@ object TutorialVariables {
     
     // While a Variable objects holds a value, values for variable may also be stored in an Assignment.
     val as = new HashMapAssignment
-    as(i) = 55
-    as(j) = 66
+    as.update[IntegerVariable](i, 55)
+    as.update[IntegerVariable](j,  66)
     // This allows some code to consider different values for a variable which changing the "global" value stored in the variable.
     //  (Helpful for multi-threaded code, among other reasons.)
     

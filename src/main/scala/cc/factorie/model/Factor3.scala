@@ -324,9 +324,9 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   type NeighborType2 = N2
   type NeighborType3 = N3
   /** Override this if you need to use them. */
-  def neighborDomain1: Domain[N1#Value] = null
-  def neighborDomain2: Domain[N2#Value] = null
-  def neighborDomain3: Domain[N3#Value] = null
+  def neighborDomain1: Domain { type Value = N1#Value } = null
+  def neighborDomain2: Domain { type Value = N2#Value } = null
+  def neighborDomain3: Domain { type Value = N3#Value } = null
   def neighborDomains = Seq(neighborDomain1, neighborDomain2, neighborDomain3)
   type FactorType = Factor
   
@@ -352,9 +352,9 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
 
   override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensor3 => {
-      val domain1 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
-      val domain2 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
-      val domain3 = neighborDomain3.asInstanceOf[DiscreteDomain with Domain[N3#Value]]
+      val domain1 = neighborDomain1.asInstanceOf[DiscreteDomain { type Value = N1#Value }] // TODO Yipes.  This is a bit shaky (and inefficient?)
+      val domain2 = neighborDomain2.asInstanceOf[DiscreteDomain { type Value = N2#Value }]
+      val domain3 = neighborDomain3.asInstanceOf[DiscreteDomain { type Value = N3#Value }]
       score(domain1(v.singleIndex1), domain2(v.singleIndex2), domain3(v.singleIndex3))
       //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
