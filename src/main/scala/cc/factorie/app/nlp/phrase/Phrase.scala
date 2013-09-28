@@ -19,10 +19,14 @@ class VerbPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = 
 class VerbPhraseList extends TokenSpanList[VerbPhrase]
 
 
-/** A simple subclass of Chunk reserved for noun phrases.
-    A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further cleaned up). */
+/** A simple subclass of Phrase reserved for noun phrases.
+    A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further fixed). */
 class NounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length)
 class NounPhraseList extends TokenSpanList[NounPhrase]
+
+class NerPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
+class PronounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
+class NominalPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
 
 
 /** Categorical variable indicating whether the noun phrase is a pronoun, nominal or proper noun. */
@@ -31,11 +35,3 @@ class NounPhraseType(val phrase:NounPhrase, targetValue:String) extends LabeledC
 }
 object OntonotesNounPhraseTypeDomain extends CategoricalDomain(List("PRO", "NOM", "NAM"))
 
-/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
-class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNounPhraseEntityTypeDomain
-}
-object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
-  this ++= ner.OntonotesNerDomain.categories
-  this += "MISC"
-}
