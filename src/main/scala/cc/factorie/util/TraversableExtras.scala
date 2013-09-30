@@ -17,9 +17,21 @@ package cc.factorie.util
 import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.ClassTag
+import scala.annotation.tailrec
 
 /** New functionality on Traversable instances, available by implicit conversion in the cc.factorie package object in cc/factorie/package.scala. */
 final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
+
+    def split(pred:(A => Boolean)):Iterable[Traversable[A]] = {
+      @tailrec def splitAcc(acc:List[Traversable[A]], elems:Traversable[A]):List[Traversable[A]] = {
+        val (first, rest) = elems span pred
+        if(elems.isEmpty) {acc}
+        else if(rest.isEmpty && first.nonEmpty) {first :: acc}
+        else if(first.isEmpty) {splitAcc(acc, rest.tail)}
+        else {splitAcc(first :: acc, rest.tail)}
+      }
+      splitAcc(Nil, t).reverse
+    }
 
   def indexSafe(i: Int): Option[A] = if (i < t.size && i >= 0) Some(t.toSeq(i)) else None
 
