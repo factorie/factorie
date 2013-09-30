@@ -74,12 +74,16 @@ object DualDecomposition {
     val combinedModel = new CombinedModel(model, weightedModel)
     var summary = baseInfer.infer(vars, combinedModel)
     def infer() { summary = baseInfer.infer(vars, combinedModel)}
-    class WeightedFactor(v: DiscreteVar, t: Tensor, d: Double) extends Factor1[DiscreteVar](v) {
+    case class WeightedFactor(var v: DiscreteVar, var t: Tensor, var d: Double) extends Factor1[DiscreteVar](v) {
       def score(v1: DiscreteVar#Value) = d*(v1 dot t)
       override def valuesScore(v1: Tensor) = d*(v1 dot t)
       override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
     }
-    def incrementWeights(v: DiscreteVar, t: Tensor, d: Double) { weightedModel += new WeightedFactor(v, t, d)}
+    val factors = collection.mutable.ArrayBuffer[WeightedFactor]()
+    def incrementWeights(v: DiscreteVar, t: Tensor, d: Double) {
+      factors += new WeightedFactor(v, t, d)
+      weightedModel += factors.last
+    }
   }
   def getBPInferChain(vars: Iterable[DiscreteVar], model: Model) = new WeightedSummaryWithBP(vars, model, MaximizeByBPChain)
   def getBPInferTree(vars: Iterable[DiscreteVar], model: Model) = new WeightedSummaryWithBP(vars, model, MaximizeByBPTree)
