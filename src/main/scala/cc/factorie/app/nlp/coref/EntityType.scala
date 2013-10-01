@@ -1,7 +1,6 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
-import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
 import mention.{MentionType, MentionList, Mention}
 import ner.OntonotesNerDomain
 

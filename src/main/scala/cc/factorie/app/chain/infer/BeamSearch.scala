@@ -4,6 +4,8 @@ import cc.factorie._
 import cc.factorie.la._
 import collection.mutable.ListBuffer
 import maths.ArrayOps
+import cc.factorie.variable.{VectorVar, TensorVar, MutableDiscreteVar}
+import cc.factorie.model.{DotFamilyWithStatistics2, DotFamilyWithStatistics1}
 
 /**
  * Author: martin
@@ -17,7 +19,7 @@ trait BeamSearch {
   // the contract here is: null out array elements you don't like
   def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
-  def searchAndSetToMax[OV <: VectorVar, LV <: MutableDiscreteVar[_]](
+  def searchAndSetToMax[OV <: VectorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -33,7 +35,7 @@ trait BeamSearch {
     }
   }
 
-  def search[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def search[OV <: TensorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],

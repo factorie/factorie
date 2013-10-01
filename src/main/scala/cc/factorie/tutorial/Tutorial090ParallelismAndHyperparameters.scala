@@ -5,6 +5,8 @@ import cc.factorie.app.nlp.{Document, Token}
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.nlp.segment.{SentenceSegmenter1, Tokenizer1}
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.infer.InferByBPChain
 
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {
@@ -91,7 +93,7 @@ object Tutorial090ParallelismAndHyperparameters {
       features += "W=" + t.string.toLowerCase
       features += "IsCapitalized=" + t.string(0).isUpper.toString
     })
-    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
+    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChain)
 
     /*&
      * Though we only have one training example we can still use factorie's parallel

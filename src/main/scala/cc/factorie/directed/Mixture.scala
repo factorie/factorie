@@ -16,6 +16,7 @@ package cc.factorie.directed
 
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
+import cc.factorie.variable._
 
 //trait GateVar extends MutableDiscreteVar
 //abstract class GateVariable(initial:Int) extends DiscreteVariable(initial) with GateVar {}
@@ -40,11 +41,14 @@ trait MixtureFactor extends DirectedFactor {
 // Proportions =/                                Gate =/
 
 // TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm
-class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
+class MixtureDomain[+V] extends Domain {
+  type Value <: scala.collection.Seq[V]
+}
 object MixtureDomain extends MixtureDomain[Any]
 // NOTE Was Mixture[+P...]
-class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirectedModel, implicit val random: scala.util.Random) extends scala.collection.Seq[P] with VarWithDeterministicValue with VarWithValue[scala.collection.Seq[P#Value]]
+class Mixture[P<:Var](val components:Seq[P])(implicit val model: MutableDirectedModel, implicit val random: scala.util.Random) extends scala.collection.Seq[P] with VarWithDeterministicValue
 {
+  type Value = scala.collection.Seq[P#Value]
   /* A Mixture is a deterministic function of its parents.  
      This fact is examined in DirectedModel.factors, causing factors(mixtureComponent)
      to return not only this Mixture but also all the children of this Mixture. */

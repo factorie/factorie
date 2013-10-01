@@ -7,6 +7,8 @@ import cc.factorie.la.{Tensor, WeightsMapAccumulator}
 import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
+import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
+import cc.factorie.model.Parameters
 
 /**
  * User: apassos
@@ -82,7 +84,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       for (i <- 0 to distance) {
         f += "EdgeLength>="+i
       }
-      val normDistance = distance*10/(t.sentence.length)
+      val normDistance = distance*10/ t.sentence.length
       for (i <- 0 to normDistance) {
         f += "NormDistance>="+i
       }
@@ -118,9 +120,9 @@ class GraphProjectiveParser extends DocumentAnnotator {
       assert(parent != child, "can't add an edge from a token to itself")
       if (edgeScores(parent)(child).isNaN) {
         val loss = if ((child > 0) && (knownParents(child-1) == parent -1)) -1.0 else 0.0
-        edgeScores(parent)(child) = (if (child > 0)
-          loss + getPairwiseFeatureVector(sent.tokens(child-1), if (parent > 0) sent.tokens(parent-1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
-        else 0)
+        edgeScores(parent)(child) = if (child > 0)
+          loss + getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
+        else 0
       }
       edgeScores(parent)(child)
     }
@@ -311,8 +313,8 @@ object GraphProjectiveParserTrainer {
 
     val parser = new GraphProjectiveParser
 
-    val trainDoc = LoadOntonotes5.fromFilename(opts.trainFile.value).head
-    val testDoc = LoadOntonotes5.fromFilename(opts.testFile.value).head
+    val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
+    val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
 
     // Train
     parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))

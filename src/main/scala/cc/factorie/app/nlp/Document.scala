@@ -17,6 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.CategoricalVar
 
 /** A portion of the string contents of a Document.
     @author Andrew McCallum */
@@ -112,7 +113,7 @@ class Document extends DocumentSubstring with Attr {
       If the user does not explicitly add any Sections, by default there will be one Section that covers the entire Document string;
       this one Section is the one returned by "Document.asSection".
       Note that Sections may overlap with each other, representing alternative tokenizations or annotations. */
-  def sections: Seq[Section] = if (_sections.length == 0) return Seq(asSection) else _sections
+  def sections: Seq[Section] = if (_sections.length == 0) Seq(asSection) else _sections
   /** Add a new Section to this Document's canonical list of Sections. */
   def +=(s: Section) = _sections += s
   /** Remove a Section to this Document's canonical list of Sections. */
@@ -170,7 +171,7 @@ class Document extends DocumentSubstring with Attr {
       for (af <- attributes) {
         buf.append("\t")
         af(token) match {
-          case cv:CategoricalVar[_,String @unchecked] => buf.append(cv.categoryValue.toString)
+          case cv:CategoricalVar[String @unchecked] => buf.append(cv.categoryValue.toString)
           case null => {}
           case v:Any => buf.append(v.toString)
         }

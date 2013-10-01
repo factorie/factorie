@@ -1,14 +1,13 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.segment.PlainTokenNormalizer
 import cc.factorie.la._
-import cc.factorie.optimize._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
-import scala.collection.mutable.HashMap
 import java.io.{File,InputStream,FileInputStream}
-import org.junit.Assert._
 import cc.factorie.util.HyperparameterMain
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.Trainer
 
 class POS1 extends DocumentAnnotator {
   // Different ways to load saved parameters
@@ -268,7 +267,7 @@ class POS1 extends DocumentAnnotator {
   
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
-    for (sentence <- (trainSentences ++ testSentences); token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
+    for (sentence <- trainSentences ++ testSentences; token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
     WordData.preProcess(trainSentences.flatMap(_.tokens))
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
@@ -341,8 +340,8 @@ object POS1Trainer extends HyperparameterMain {
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val pos = new POS1
-    val trainDocs = LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = LoadOntonotes5.fromFilename(opts.testFile.value)
+    val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
+    val testDocs = load.LoadOntonotes5.fromFilename(opts.testFile.value)
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))

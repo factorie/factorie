@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable.{DoubleVar, DoubleVariable, DiscreteVariable, DiscreteValue}
 
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */
@@ -80,7 +81,7 @@ object MaximizeBetaByMomentMatching {
     var i = 0
     for (factor <- childFactors) factor match {
       case f:Beta.Factor => { ds(i) = f._1.doubleValue; i += 1 }
-      case f:BetaMixture.Factor if (f._2(f._4.intValue) == alpha) => {
+      case f:BetaMixture.Factor if f._2(f._4.intValue) == alpha => {
         assert(f._3(f._4.intValue) == beta)
         ds(i) = f._1.doubleValue; i += 1
       }

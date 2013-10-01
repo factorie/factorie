@@ -57,11 +57,11 @@ class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
     val indexFilename = kv._2._2
 
     val indexFile  = sourceFactory(indexFilename)
-    val indexLines = indexFile.getLines.mkString("\n").split("\n")
+    val indexLines = indexFile.getLines().mkString("\n").split("\n")
     indexFile.close()
 
     val dataFile  = sourceFactory(dataFilename)
-    val dataLines = dataFile.getLines.mkString("\n").split("\n")
+    val dataLines = dataFile.getLines().mkString("\n").split("\n")
     dataFile.close()
 
     val filteredIndexLines = indexLines.filter(line => !isComment(line)).map(line => line.split(" "))

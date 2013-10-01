@@ -16,6 +16,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable._
 
 /** Calculate the information gain between all features of Instances and the Instances' labels.
     @author Andrew McCallum
@@ -50,7 +51,7 @@ class InfoGain[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], f:L=>F) extends 
       //println("InfoGain "+instance.activeDomain.toSeq)
       //for (featureIndex <- instance.activeDomain.asSeq)
       //println("InfoGain "+instance.tensor.asInstanceOf[cc.factorie.la.GrowableSparseBinaryTensor1].toIntArray.toSeq)
-      assert(instance.value.activeDomain.toSeq.distinct.length == instance.value.activeDomain.toSeq.length, instance.value.activeDomain.toSeq.toString)
+      assert(instance.value.activeDomain.toSeq.distinct.length == instance.value.activeDomain.toSeq.length, instance.value.activeDomain.toSeq.toString())
       instance.value.activeDomain.foreach(featureIndex => {
         featureTargetProportions(featureIndex).masses.+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1

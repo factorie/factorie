@@ -14,11 +14,14 @@
 
 package cc.factorie.directed
 
+import cc.factorie.infer._
 import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import cc.factorie.variable._
+import cc.factorie.model.Factor
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(implicit val random: scala.util.Random) extends Sampler[Iterable[MutableVar[_]]] {
+class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(implicit val random: scala.util.Random) extends Sampler[Iterable[MutableVar]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -42,7 +45,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
 
   def isCollapsed(v:Var): Boolean = collapsed.contains(v)
   
-  def process1(v:Iterable[MutableVar[_]]): DiffList = {
+  def process1(v:Iterable[MutableVar]): DiffList = {
     //assert(!v.exists(_.isInstanceOf[CollapsedVar])) // We should never be sampling a CollapsedVariable
     val d = newDiffList
     // If we have a cached closure, just use it and return
@@ -55,7 +58,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
       var done = false
       val handlerIterator = handlers.iterator
       while (!done && handlerIterator.hasNext) {
-        val closure = handlerIterator.next.sampler(v, factors, this)
+        val closure = handlerIterator.next().sampler(v, factors, this)
         if (closure ne null) {
           done = true
           closure.sample(d)
@@ -70,7 +73,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(imp
   }
 
   /** Convenience for sampling single variable */
-  def process(v:MutableVar[_]): DiffList = process(Seq(v))
+  def process(v:MutableVar): DiffList = process(Seq(v))
 
 }
 
@@ -97,7 +100,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
   class Closure(val factor:DirectedFactor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       factor.updateCollapsedParents(-1.0)
-      val variable = factor.child.asInstanceOf[MutableVar[_]]
+      val variable = factor.child.asInstanceOf[MutableVar]
       variable.set(factor.sampledValue.asInstanceOf[variable.Value])
       factor.updateCollapsedParents(1.0)
       // TODO Consider whether we should be passing values rather than variables to updateChildStats
@@ -176,7 +179,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable]
       val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
@@ -230,7 +233,7 @@ object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsS
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedCategoricalMixture.Factor)(implicit random: scala.util.Random) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable]
       val domainSize = gates(0).dim1 // domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[ProportionsVariable]

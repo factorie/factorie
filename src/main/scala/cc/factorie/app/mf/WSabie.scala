@@ -1,8 +1,10 @@
 package cc.factorie.app.mf
 
 import cc.factorie._
-import cc.factorie.la.{WeightsMapAccumulator}
+import cc.factorie.la.WeightsMapAccumulator
 import util.DoubleAccumulator
+import cc.factorie.variable.DiscreteDomain
+import cc.factorie.model.Parameters
 
 /**
  * User: apassos

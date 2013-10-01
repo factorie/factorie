@@ -4,6 +4,7 @@ import java.io.{PrintWriter, PrintStream}
 import cc.factorie._
 import cc.factorie.util.Cubbie
 import collection.mutable.ArrayBuffer
+import cc.factorie.variable.{CategoricalVectorDomain, CategoricalDomain}
 
 
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require

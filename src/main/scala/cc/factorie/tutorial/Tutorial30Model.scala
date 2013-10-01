@@ -12,6 +12,8 @@ package cc.factorie.tutorial
 
 import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.variable.BooleanVariable
+import cc.factorie.model.{ItemizedModel, DotFactorWithStatistics2}
 
 object TutorialModel {
   def main(args:Array[String]): Unit = {

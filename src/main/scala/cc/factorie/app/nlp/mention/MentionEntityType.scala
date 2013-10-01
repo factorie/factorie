@@ -4,8 +4,10 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
-import cc.factorie.optimize._
 import java.io._
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -197,19 +199,19 @@ object MentionEntityTypeAnnotator1Util {
     val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
 
     if(onlyOne){
-      if(isPerson) return "PERSON"
-      else if(isPlace) return "GPE"
-      else if(isEvent) return "EVENT"
-      else if(isOrganization) return "ORG"
+      if(isPerson) "PERSON"
+      else if(isPlace) "GPE"
+      else if(isEvent) "EVENT"
+      else if(isOrganization) "ORG"
       else
-        return "O"
+        "O"
     }else{
       if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
-        return "GPE"
+        "GPE"
       else if(isPlace && isPerson)
-        return "GPE"
+        "GPE"
       else
-        return "O"
+        "O"
     }
   }
 

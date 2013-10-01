@@ -4,13 +4,6 @@ import cc.factorie.util.ClasspathURL
 import cc.factorie.la
 import java.util.zip.GZIPInputStream
 
-/**
- * Created with IntelliJ IDEA.
- * User: vineet
- * Date: 9/11/13
- * Time: 5:03 PM
- * To change this template use File | Settings | File Templates.
- */
 object SkipGramEmbedding extends SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, 100)
 
 class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, dimensionSize: Int) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {

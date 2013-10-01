@@ -2,14 +2,13 @@ package cc.factorie
 
 import app.chain.ChainModel
 import app.nlp.Token
-import la.{LocalWeightsMapAccumulator}
-import optimize._
-import scala.collection.mutable.Stack
 import org.junit.Assert._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
-import util.LocalDoubleAccumulator
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer._
 
 /**
  * Test for the factorie-1.0 BP framework (that uses WeightsMap)
@@ -25,7 +24,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
   val eps = 1e-4
   
-  @Test def v1f1Test {
+  @Test def v1f1Test() {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 1, 1))
@@ -37,7 +36,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
   
-  @Test def v1f1UnequalPotentialsSum {
+  @Test def v1f1UnequalPotentialsSum() {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 2, 1))
@@ -49,7 +48,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(e(2) / (e(2) + e(1)), fg.marginal(v).proportions(0), eps)
   }
   
-  @Test def v1f2Test1 {
+  @Test def v1f2Test1() {
     //f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
@@ -62,7 +61,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
     
-  @Test def v1f2Test2 {
+  @Test def v1f2Test2() {
   // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
   // one variable, two factors
     val v = new BinVar(0)
@@ -75,7 +74,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(fg.marginal(v).proportions(0), e(0) / (e(0) + e(2)), eps)
   }
   
-  @Test def v1f2MAP1 {
+  @Test def v1f2MAP1() {
     // f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
@@ -86,7 +85,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(fg.marginal(v).proportions.maxIndex, 0)
   }
 
-  @Test def v1f2MAP2 {
+  @Test def v1f2MAP2() {
     // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
     // one variable, two factors
     val v = new BinVar(0)
@@ -97,7 +96,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(fg.marginal(v).proportions.maxIndex, 1)
   }
 
-  @Test def v1f2ChainLogZ {
+  @Test def v1f2ChainLogZ() {
     // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
     // one variable, two factors
     val v = new BinVar(0)
@@ -111,7 +110,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(s2zs.distinct.length == 1)
   }
 
-  @Test def v2f1VaryingBoth {
+  @Test def v2f1VaryingBoth() {
     logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
@@ -149,7 +148,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg3.logZ, 0.001)
   }
   
-  @Test def v2f2VaryingBoth {
+  @Test def v2f2VaryingBoth() {
     logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
@@ -174,7 +173,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
   }
 
-  @Test def testLoopyLogZ {
+  @Test def testLoopyLogZ() {
     val random = new scala.util.Random(0)
     object cdomain extends CategoricalVectorDomain[String]()
     val features = new BinaryFeatureVectorVariable[String]() { def domain = cdomain }
@@ -194,12 +193,12 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val tToL = Map(t0 -> l0, t1 -> l1, t2 -> l2, t3 -> l3)
     val model = new ChainModel[Label, BinaryFeatureVectorVariable[String], Token](ldomain, cdomain, l => features, lToT, tToL)
     model.parameters.tensors.foreach(t => t.foreachElement((i, v) => t(i) += random.nextDouble()))
-    val trueLogZ = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model).logZ
+    val trueLogZ = InferByBPChain.infer(Seq(l0, l1, l2, l3), model).logZ
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
     val fastSum = BP.inferChainSumFast(Seq(l0, l1, l2, l3), model)
-    val sum = InferByBPChainSum.infer(Seq(l0, l1, l2, l3), model)
+    val sum = InferByBPChain.infer(Seq(l0, l1, l2, l3), model)
     assertEquals(sum.logZ, fastSum.logZ, 0.001)
     for (label <- Seq(l0, l1, l2, l3)) {
       assertArrayEquals(sum.marginal(label).proportions.toArray, fastSum.marginal(label).asInstanceOf[DiscreteMarginal1[DiscreteVar]].proportions.toArray, 0.001)
@@ -208,8 +207,8 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       assertArrayEquals(sum.marginal(factor).tensorStatistics.toArray, fastSum.marginal(factor).tensorStatistics.toArray, 0.001)
     }
 
-    val meanFieldSummary = InferByMeanField.apply[Label](Seq(l0, l1, l2, l3), model)
-    val BPSummary = InferByBPChainSum(Seq(l0, l1, l2, l3), model)
+    val meanFieldSummary = InferByMeanField.apply(Seq(l0, l1, l2, l3), model)
+    val BPSummary = InferByBPChain(Seq(l0, l1, l2, l3), model)
     for (v <- meanFieldSummary.variables) {
       val mfm = meanFieldSummary.marginal(v)
       val bpm = BPSummary.marginal(v)
@@ -244,7 +243,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     }
   }
 
-  @Test def v2f1VaryingOne {
+  @Test def v2f1VaryingOne() {
     logger.debug("V2F1: varying one")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
@@ -267,7 +266,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     
   }  
   
-  @Test def loop2 {
+  @Test def loop2() {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2)
@@ -294,7 +293,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(v2.intValue == 0)
   }
 
-  @Test def loop4 {
+  @Test def loop4() {
     logger.debug("Loop4")
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -332,12 +331,12 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(v4.intValue, 0)
   }
 
-  @Test def chainRandom {
+  @Test def chainRandom() {
     logger.debug("ChainRandom")
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[DiscreteVar]
-    for (seed <- (0 until 50)) {
+    for (seed <- 0 until 50) {
       val random = new Random(seed * 1024)
       val model = new ItemizedModel
       for (i <- 0 until numVars) {
@@ -402,7 +401,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     }
   }
   
-  @Test def tree3 {
+  @Test def tree3() {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
     val v3 = new BinVar(0)
@@ -454,7 +453,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(math.log(z2), BP.inferTreeSum(vars2.toSet, model).logZ, 0.001)
   }
   
-  @Test def tree7 {
+  @Test def tree7() {
     val v1 = new BinVar(0) { override def toString = "v1" }
     val v2 = new BinVar(1) { override def toString = "v2" }
     val v3 = new BinVar(0) { override def toString = "v3" }
@@ -530,7 +529,7 @@ object BPTestUtils {
       override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
         BinDomain(if (value1.intValue == value2.intValue) 0 else 1)
     }
-    assert(family.statisticsAreValues == false)
+    assert(!family.statisticsAreValues)
     family.weights.value(0) = scoreEqual
     family.weights.value(1) = scoreUnequal
     family.factors(n1).head

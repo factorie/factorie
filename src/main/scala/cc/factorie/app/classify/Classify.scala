@@ -21,8 +21,10 @@ import java.io._
 import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.optimize.{LinearMultiClassClassifier, LinearMultiClassClassifierCubbie, MultiClassClassifier, MultiClassTrainerBase}
 import cc.factorie.la.Tensor1
+import scala.Some
+import cc.factorie.variable._
+import scala.Some
 
 // Feature and Label classes
 
@@ -204,7 +206,7 @@ object Classify {
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        for (file <- new File(directory).listFiles; if file.isFile) {
           //println ("Directory " + directory + " File " + file + " documents.size " + documents.size)
           val labelName = directoryFile.getName
           val instanceName = labelName + "-" + file.getName
@@ -240,7 +242,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val cubbie = new cc.factorie.optimize.LinearMultiClassClassifierCubbie
+      val cubbie = new LinearMultiClassClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
       val classifications = labels.map(l => classifier.classification(l.features.value))
@@ -307,19 +309,19 @@ object Classify {
           val trainTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           trainTrial ++= trainingLabels
           println("== Training Evaluation ==")
-          println(trainTrial.toString)
+          println(trainTrial.toString())
         }
         if (testingLabels.length > 0) {
           val testTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           testTrial ++= testingLabels
           println("== Testing Evaluation ==")
-          println(testTrial.toString)
+          println(testTrial.toString())
         }
         if (validationLabels.length > 0) {
           val validationTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           validationTrial ++= validationLabels
           println("== Validation Evaluation ==")
-          println(validationTrial.toString)
+          println(validationTrial.toString())
         }
     }
   }

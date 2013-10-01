@@ -7,6 +7,8 @@ import cc.factorie.db.mongo._
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCubbieConverter, MongoCubbieImplicits}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import com.mongodb.Mongo
+import cc.factorie.variable.{StringVariable, DiffList}
+import cc.factorie.model.{Parameters, TemplateModel, Model}
 
 /**
  * Please also see app.bib.Coref.scala for a more in depth example.
@@ -72,7 +74,7 @@ object Coref4{
     protected val entities = new MongoCubbieCollection(coll, //the underlying MongoDB collection
       () => new MyEntityCubbie,(a:MyEntityCubbie) => Seq(Seq(a.entityRef)) //specify the database indices, in this case, an index over the "entityRef" field
     ) with LazyCubbieConverter[MyEntityCubbie]
-    def drop:Unit = coll.drop
+    def drop():Unit = coll.drop()
     def store(data:List[(String,List[String])]):Unit ={
       val result = new ArrayBuffer[MyEntity]
       for(datum <- data)result += new MyEntity(datum._1,datum._2,true)

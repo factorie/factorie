@@ -22,6 +22,9 @@ import cc.factorie._
 import java.io.File
 import cc.factorie.util.BinarySerializer
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.IteratedConditionalModes
 
 object WordSegmenterDemo { 
   
@@ -100,7 +103,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
 
 
 

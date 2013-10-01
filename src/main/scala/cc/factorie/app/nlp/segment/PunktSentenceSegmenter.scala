@@ -135,7 +135,7 @@ object PunktSentenceSegmenter {
       val periodFinal = token.endsWith(".")
 
       def getType(tk: String) =
-        if ( {val fst = tk(0); (fst == '.' || fst == '-' || fst.isDigit)})
+        if ( {val fst = tk(0); fst == '.' || fst == '-' || fst.isDigit})
           numericRegex.replaceAllIn(tk.toLowerCase, "##number##")
         else
           tk.toLowerCase
@@ -469,7 +469,7 @@ object PunktSentenceSegmenter {
       def colLogLikelihood(countA: Int, countB: Int, countAB: Int, N: Int) = {
         val p = (countB: Double) / N
         val p1 = (countAB: Double) / countA
-        val p2 = ((countB - countAB): Double) / (N - countA)
+        val p2 = (countB - countAB: Double) / (N - countA)
         val summand1 = countAB * math.log(p) + (countA - countAB) * math.log(1.0 - p)
         val summand2 = (countB - countAB) * math.log(p) + (N - countA - countB + countAB) * math.log(1.0 - p)
         val summand3 =

@@ -1,11 +1,13 @@
 package cc.factorie.optimize
 import cc.factorie._
-import app.classify
 import cc.factorie.util._
 import cc.factorie.la._
 import java.io.File
 import io.Source
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.{Weights2, Weights1}
+import cc.factorie.app.classify.OnlineLinearMultiClassTrainer
 
 /**
  * Abstract trait for any objective function used in generalized linear models
@@ -266,67 +268,6 @@ object LinearObjectives {
   val logisticLinkFunction: UnivariateLinkFunction = prediction => 1.0 / (1 + math.exp(-prediction))
 }
 
-/**
- * Base example for all linear multivariate models
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label
- * @param objective The objective function
- * @param weight The weight of this example
- * @tparam Label The type of the label
- */
-class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
-  extends Example {
-  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = weights.value * featureVector
-    val (obj, sgrad) = objective.valueAndGradient(prediction, label)
-    if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, sgrad outer featureVector, weight)
-  }
-}
-
-/**
- * Example for all linear multiclass classifiers
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label
- * @param objective The objective function
- * @param weight The weight of this example
- */
-class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
-  extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
-
-/**
- * Base example for linear univariate models
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label
- * @param objective The objective
- * @param weight The weight of this example
- * @tparam Label The type of label
- */
-class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
-  extends Example {
-  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val score = weights.value dot featureVector
-    val (obj, sgrad) = objective.valueAndGradient(score, label)
-    if (value != null) value.accumulate(obj)
-    if (gradient != null) gradient.accumulate(weights, featureVector, weight * sgrad)
-  }
-}
-
-/**
- * Base example for linear binary classifiers
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label (+1 or -1)
- * @param objective The objective function
- * @param weight The weight of this example
- */
-class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
-  extends LinearUnivariateExample(weights, featureVector, label, objective, weight)
-
-
 
 object LinearObjectivesTest {
   object DocumentDomain extends CategoricalVectorDomain[String]
@@ -351,7 +292,7 @@ object LinearObjectivesTest {
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
         docLabels += new Document(file).label
       }

@@ -1,10 +1,15 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import model._
+import variable._
 import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.app.nlp.segment.PlainNormalizedTokenString
+import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar}
+import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate2}
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
@@ -21,7 +26,7 @@ class NER2 extends DocumentAnnotator {
     override def skipNonCategories = true
   }
   
-  class Model1 extends TemplateModel with Parameters {
+  class Model1 extends TemplateModel with cc.factorie.model.Parameters {
     val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionSize))
       def unroll1(label:BilouOntonotesNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
@@ -107,7 +112,7 @@ class NER2 extends DocumentAnnotator {
   var mainModel: Model = model3
 
   // The training objective
-  val objective = new HammingTemplate[BilouOntonotesNerLabel]
+  val objective = HammingObjective
 
   // Methods of DocumentAnnotator
   override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
@@ -135,12 +140,12 @@ class NER2 extends DocumentAnnotator {
   def forwardPredictToken(token:Token): Unit = {
     // This assumes that model1 has already been run on all tokens, so we get reasonable predictions on forward labels.
     val label = token.attr[BilouOntonotesNerLabel]
-    MaximizeDiscrete(label, model2)
+    variable.MaximizeDiscrete(label, model2)
     predictionHistory += token
   }
   // Predict using model1 only
   def indepedentPredictDocument(document:Document): Unit = {
-    for (token <- document.tokens) MaximizeDiscrete(token.attr[BilouOntonotesNerLabel], model1)
+    for (token <- document.tokens) variable.MaximizeDiscrete(token.attr[BilouOntonotesNerLabel], model1)
   }  
   // Predict using model1 and then model2
   def forwardPredictDocument(document:Document): Unit = {
@@ -217,7 +222,7 @@ class NER2 extends DocumentAnnotator {
   def trainModel1(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     // This depends on calling trainPrep alrady
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
-    def predict(labels:Iterable[BilouOntonotesNerLabel]): Unit = for (label <- labels) MaximizeDiscrete(label, model1)
+    def predict(labels:Iterable[BilouOntonotesNerLabel]): Unit = for (label <- labels) variable.MaximizeDiscrete(label, model1)
     val examples = labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1))
     def evaluate() {
       (trainDocs ++ testDocs).foreach(indepedentPredictDocument(_))
@@ -263,7 +268,7 @@ class NER2 extends DocumentAnnotator {
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     trainPrep(trainDocs, testDocs)
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
-    val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChainSum)).seq.toSeq
+    val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChain)).seq.toSeq
     def evaluate() {
       trainDocs.par.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
       testDocs.par.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
@@ -279,8 +284,8 @@ class NER2 extends DocumentAnnotator {
   }
   
   def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
-    val trainDocs = LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
-    val testDocs = LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
+    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
+    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
     mainModel match {
       case model:Model2 => trainModel2(trainDocs, testDocs)
       case model:Model3 => trainModel3(trainDocs, testDocs)
@@ -349,7 +354,7 @@ class NER2 extends DocumentAnnotator {
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
         if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[BilouOntonotesNerLabel].valueIsTarget) " " else "*", token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
         debugPrintCount += 1
-        if (length > maxSize) dequeue
+        if (length > maxSize) dequeue()
       }
       this
     }
@@ -364,7 +369,7 @@ class NER2 extends DocumentAnnotator {
       super.clear()
       hash.clear()
     }
-    override def toString: String = {
+    override def toString(): String = {
       (for (token <- this) yield
           "%s = %s".format(token.string, filterByToken(token).map(token => OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(token.attr[BilouOntonotesNerLabel].intValue)).category).mkString(" "))
       ).mkString("\n")

@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.hcoref
 import cc.factorie._
-import cc.factorie.DiffList
 import collection.mutable.{HashMap, ArrayBuffer}
+import cc.factorie.variable.DiffList
 
 object HierEntityUtils{
   val shortDecimal = new java.text.DecimalFormat("0.0#")
@@ -196,7 +196,7 @@ object HierEntityUtils{
     for(bagVar <- e.attr.all[BagOfWordsVariable]){
       val bag = bagVar.value
       if(bag.size>0){
-        val name = bagVar.getClass.getName.toString.split("\\.").toSeq.takeRight(1)(0).replaceAll("[A-Za-z]+\\(","").replaceAll("\\)","")
+        val name = bagVar.getClass.getName.split("\\.").toSeq.takeRight(1)(0).replaceAll("[A-Za-z]+\\(","").replaceAll("\\)","")
         result += name+"("+bag.size+"): ["+this.bagToString(bag,8)+"]"
       }
     }

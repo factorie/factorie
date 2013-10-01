@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.mention
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
 import cc.factorie.app.nlp.{Sentence, TokenSpan, TokenSpanList, Document, Section, Token}
-import cc.factorie.{CategoricalDomain, LabeledCategoricalVariable}
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 
 class MentionList extends TokenSpanList[Mention]
 

@@ -20,6 +20,9 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 import cc.factorie.optimize._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.{MaximizeByBPLoopy, InferByMPLP}
 
 object WordSegmenterDemo2 {
 
@@ -83,7 +86,7 @@ object WordSegmenterDemo2 {
     }
   }
 
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
 
   def main(args: Array[String]) : Unit = {
     // Read data and create Variables

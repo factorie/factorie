@@ -2,7 +2,6 @@ package cc.factorie
 
 /**
  * @author sameer
- * @date 2/7/12
  */
 
 import cc.factorie._
@@ -10,6 +9,9 @@ import junit.framework._
 import Assert._
 import scala.util.Random
 import collection.mutable.ArrayBuffer
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
+import cc.factorie.model.{ItemizedModel, TupleFactorWithStatistics2}
+import cc.factorie.infer.VariablesSettingsSampler
 
 /**
  * @author sameer
@@ -41,13 +43,13 @@ class TestProposalSamplers extends TestCase with cc.factorie.util.FastLogging {
   val eps = 1e-5
 
   override protected def setUp() {
-    super.setUp
+    super.setUp()
     // initialize binary variables with two values
     new BinVar(0)
     new BinVar(1)
   }
 
-  def testV2F1 = {
+  def testV2F1() = {
     implicit val random = new scala.util.Random(0)
     val samples = 10000
     val v1 = new BinVar(0)
@@ -65,19 +67,19 @@ class TestProposalSamplers extends TestCase with cc.factorie.util.FastLogging {
     val totalCount = assignCounts.toSeq.foldLeft(0.0)((s, arr) => arr.toSeq.foldLeft(s)(_ + _))
     var Z = 0.0
     for (p <- sampler.proposals(Seq(v1, v2))) {
-      p.diff.redo
+      p.diff.redo()
       val modelScore = model.currentScore(Seq(v1, v2))
       Z += e(modelScore)
-      p.diff.undo
+      p.diff.undo()
     }
     for (p <- sampler.proposals(Seq(v1, v2))) {
-      p.diff.redo
+      p.diff.redo()
       val modelScore = model.currentScore(Seq(v1, v2))
       val sampleProb = assignCounts(v1.intValue)(v2.intValue) / totalCount
       logger.debug("%d %d : true: %f, prop: %f, trueProb: %f, sample: %f".format(v1.intValue, v2.intValue, modelScore - origScore, p.modelScore, e(modelScore) / Z, sampleProb))
       assertEquals(modelScore - origScore, p.modelScore, eps)
       assertEquals(e(modelScore) / Z, sampleProb, 0.01)
-      p.diff.undo
+      p.diff.undo()
     }
   }
 }

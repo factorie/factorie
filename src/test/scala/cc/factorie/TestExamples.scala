@@ -39,9 +39,7 @@ class TestExamples {
 
   val dummyNERFile = dummyFileWithContents("train", "A NN C I-PER\nA NNS D O\nA NNP C I-LOC")
 
-  @Test def testChainNer1() {
-    cc.factorie.tutorial.ChainNER1a.main(Array(dummyNERFile, dummyNERFile))
-  }
+  //@Test def testChainNer1() { cc.factorie.tutorial.ChainNER1a.main(Array(dummyNERFile, dummyNERFile)) }
 
   @Test def testChainNER1ML() {
     cc.factorie.tutorial.ChainNER1ML.main(Array(dummyNERFile, dummyNERFile))

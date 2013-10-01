@@ -2,11 +2,6 @@ package cc.factorie.app.bib.parser
 
 import languageFeature.postfixOps
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 private[parser] object AST {
   // these types all have very generic names, so wrap them in an "AST" prefix
   sealed trait Entry
@@ -43,7 +38,7 @@ private[parser] object DocumentParser {
       (_ flatMap { case x => List(x): List[Entry] })
 
     // FIXME: lines starting with %%% are comments
-    lazy val freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*").? ^^ (s => CommentEntry(s.getOrElse("")))
+    lazy val freeComment = "[^@]*".? ^^ (s => CommentEntry(s.getOrElse("")))
     lazy val WS2 = WS ^^ (CommentEntry(_))
 
     lazy val anyEntry = AT ~> (commentEntry | stringEntry | preambleEntry | regularEntry)
@@ -57,7 +52,7 @@ private[parser] object DocumentParser {
     lazy val preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
     lazy val regularEntry =
-      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS.?) } ^^ {
+      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ COMMA_WS.? } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
 
@@ -78,7 +73,7 @@ private[parser] object DocumentParser {
 
     lazy val literalOrSymbol = (SYMBOL ^^ (Abbrev(_))) | literal
 
-    lazy val literal = (numericLiteral | braceDelimitedNoOuterLiteral | quoteDelimitedLiteral)
+    lazy val literal = numericLiteral | braceDelimitedNoOuterLiteral | quoteDelimitedLiteral
 
     lazy val numericLiteral = "\\d+(\\.\\d+)?" ^^ (Literal(_))
     lazy val quoteDelimitedLiteral =

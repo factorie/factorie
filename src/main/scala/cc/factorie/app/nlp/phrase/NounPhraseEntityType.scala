@@ -1,0 +1,255 @@
+package cc.factorie.app.nlp.phrase
+import cc.factorie._
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.pos._
+import cc.factorie.app.nlp.ner.OntonotesNerDomain
+import cc.factorie.util.BinarySerializer
+import java.io._
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
+
+/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
+class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = OntonotesNounPhraseEntityTypeDomain
+}
+object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
+  this ++= ner.OntonotesNerDomain.categories
+  this += "MISC"
+}
+
+
+class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
+  def this(stream:InputStream) = { this(); deserialize(stream) }
+  def this(file: File) = this(new FileInputStream(file))
+  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  
+  object FeatureDomain extends CategoricalVectorDomain[String]
+  class FeatureVariable extends BinaryFeatureVectorVariable[String] {
+    def domain = FeatureDomain
+    override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
+  }
+  lazy val model = new LinearMultiClassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionSize)
+  
+  def features(mention:NounPhrase): FeatureVariable = {
+    val features = new FeatureVariable
+    var tokens = mention.tokens.toSeq
+    if (tokens.head.string == "the") tokens = tokens.drop(1)
+    if (tokens.length > 0 && tokens.last.string == "'s") tokens = tokens.dropRight(1)
+    if (tokens.length == 0) return features // TODO Complain further here? 
+    val words = tokens.map(token => cc.factorie.app.strings.collapseDigits(token.string))
+    features ++= words
+    features += "HEAD="+mention.headToken.string
+    features += "LAST="+words.last
+    features += "FIRST="+words.last
+    mention.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
+    mention.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
+    for (lexicon <- lexicons) {
+      if (lexicon.contains(tokens)) features += "LEX="+lexicon.name
+      if (lexicon.containsWord(mention.headToken.string)) features += "HEADLEX="+lexicon.name
+    }
+    // TODO Add more features
+    features
+  }
+  val lexicons = Seq(
+      lexicon.iesl.PersonFirst,
+      lexicon.iesl.PersonLast,
+      lexicon.iesl.Month,
+      lexicon.iesl.PersonHonorific,
+      lexicon.iesl.Company,
+      lexicon.iesl.Country,
+      lexicon.iesl.City,
+      lexicon.iesl.AllPlaces,
+      lexicon.iesl.USState,
+      lexicon.wikipedia.Person,
+      lexicon.wikipedia.Event,
+      lexicon.wikipedia.Location,
+      lexicon.wikipedia.Organization,
+      lexicon.wikipedia.ManMadeThing,
+      lexicon.wikipedia.Event)
+  
+  val PersonLexicon = new lexicon.UnionLexicon("NounPhraseEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
+  def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
+  def entityTypeIndex(mention:NounPhrase): Int = {
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    else model.classification(features(mention).value).bestLabelIndex
+  }
+  def processNounPhrase(mention: NounPhrase): Unit = mention.attr.getOrElseUpdate(new NounPhraseEntityType(mention, "O")) := entityTypeIndex(mention)
+  def process(document:Document): Document = {
+    for (mention <- document.attr[NounPhraseList]) processNounPhrase(mention)
+    document
+  }
+
+  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[NounPhraseList].filter(_.contains(token)); mentions.map(_.attr[NounPhraseEntityType].categoryValue).mkString(",") }
+  override def phraseAnnotationString(mention:Phrase): String = { val t = mention.attr[NounPhraseEntityType]; if (t ne null) t.categoryValue else "_" }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[NounPhraseList])
+  def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseEntityType])
+ 
+  def filterTrainingNounPhrases(mentions:Seq[NounPhrase]): Iterable[NounPhrase] = 
+    mentions.groupBy(m => m.attr[coref.Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
+
+  def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
+    implicit val random = new scala.util.Random(0)
+    val trainNounPhrases = trainDocs.flatMap(_.attr[NounPhraseList])
+    FeatureDomain.dimensionDomain.gatherCounts = true
+    trainNounPhrases.foreach(features(_))
+    FeatureDomain.dimensionDomain.trimBelowCount(3)
+    val examples = for (doc <- trainDocs; mention <- filterTrainingNounPhrases(doc.attr[NounPhraseList])) yield
+      new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMultiClass)
+    val testNounPhrases = testDocs.flatMap(doc => filterTrainingNounPhrases(doc.attr[NounPhraseList]))
+    println("Training ")
+    def evaluate(): Unit = {
+      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[NounPhraseEntityType,la.Tensor1](model, OntonotesNerDomain, (t:NounPhraseEntityType) => features(t.phrase).value) ++= trainNounPhrases.map(_.attr[NounPhraseEntityType])).toString)
+      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[NounPhraseEntityType,la.Tensor1](model, OntonotesNerDomain, (t:NounPhraseEntityType) => features(t.phrase).value) ++= testNounPhrases.map(_.attr[NounPhraseEntityType])).toString)
+    }
+    Trainer.onlineTrain(model.parameters, examples.toSeq, maxIterations=3, evaluate = evaluate)
+  }
+
+  // Serialization
+  def serialize(filename: String): Unit = {
+    val file = new File(filename); if (file.getParentFile ne null) file.getParentFile.mkdirs()
+    serialize(new java.io.FileOutputStream(file))
+  }
+  def deserialize(file: File): Unit = {
+    require(file.exists(), "Trying to load non-existent file: '" +file)
+    deserialize(new java.io.FileInputStream(file))
+  }
+  def serialize(stream: java.io.OutputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
+    model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
+    model.weights.set(sparseEvidenceWeights)
+    val dstream = new java.io.DataOutputStream(stream)
+    BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }
+  def deserialize(stream: java.io.InputStream): Unit = {
+    import cc.factorie.util.CubbieConversions._
+    val dstream = new java.io.DataInputStream(stream)
+    BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
+    model.weights.set(new la.DenseLayeredTensor2(PennPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    BinarySerializer.deserialize(model, dstream)
+    dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
+  }
+
+}
+
+object NounPhraseEntityTypeLabeler extends NounPhraseEntityTypeLabeler(cc.factorie.util.ClasspathURL[NounPhraseEntityTypeLabeler](".factorie"))
+
+object NounPhraseEntityTypeLabelerTrainer {
+  def main(args:Array[String]): Unit = {
+    if (args.length == 0) println("usage: trainfile [modelfile]")
+    var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
+    val testDocs = trainDocs.takeRight(20)
+    trainDocs = trainDocs.dropRight(20)
+    val labeler = new NounPhraseEntityTypeLabeler
+    for (mention <- labeler.filterTrainingNounPhrases(testDocs.flatMap(_.attr[NounPhraseList])))
+      println("%20s  %s".format(mention.attr[NounPhraseEntityType].target.categoryValue, mention.phrase))
+
+    labeler.train(trainDocs, testDocs)
+    (trainDocs ++ testDocs).foreach(labeler.process(_))
+    for (mention <- labeler.filterTrainingNounPhrases(testDocs.flatMap(_.attr[NounPhraseList])))
+      println("%20s %-20s %-20s  %s".format(mention.attr[NounPhraseEntityType].target.categoryValue, mention.attr[NounPhraseEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.phrase))
+
+    if (args.length > 1) labeler.serialize(args(1))
+    
+  }
+}
+
+
+//this gives each NounPhrase and NounPhraseEntityType. This is a very simple rule-based annotator that can not even produce predictions
+//for many of the categories in  OntonotesNounPhraseEntityTypeDomain, only PERSON, ORG, GPE, and EVENT.
+//todo: this is a candidate for deletion
+object NounPhraseEntityTypeAnnotator1 extends DocumentAnnotator {
+  import NounPhraseEntityTypeAnnotator1Util._
+  def process(document:Document): Document = {
+    document.attr[NounPhraseList].foreach(predictNounPhraseEntityType(_))
+    document
+  }
+  def predictNounPhraseEntityType(m: NounPhrase): Unit = {
+    val prediction = classifyUsingRules(m.tokens.map(_.lemmaString))
+    m.attr += new NounPhraseEntityType(m,prediction)
+  }
+  override def tokenAnnotationString(token:Token): String = {
+    token.document.attr[NounPhraseList].filter(mention => mention.contains(token)) match { case ms:Seq[NounPhrase] if ms.length > 0 => ms.map(m => m.attr[NounPhraseEntityType].categoryValue + ":" + m.indexOf(token)).mkString(","); case _ => "_" }
+  }
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[NounPhraseList])
+  def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseEntityType])
+
+}
+
+//the reason some functions for above are pulled into a separate object as this simplifies the API with other projects greatly
+object NounPhraseEntityTypeAnnotator1Util {
+  final val articles = Seq("a","A","the","The").toSet
+
+  //this expects cased strings as input
+  def classifyUsingRules(strings: Seq[String]): String = {
+
+    val uStr = strings.filter(!articles.contains(_))
+    val str = uStr.map(_.toLowerCase)
+    val str1 = strings.mkString(" ")
+    val uStr1 = uStr.mkString(" ")
+
+    val isPerson = detectIfPerson(str,uStr)
+    val isPlace = detectIfPlace(str1,uStr1)
+    val isEvent = detectIfEvent(str1,uStr1)
+    val isOrganization = detectIfOrg(str1,uStr1)
+    val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
+
+    if(onlyOne){
+      if(isPerson) return "PERSON"
+      else if(isPlace) return "GPE"
+      else if(isEvent) return "EVENT"
+      else if(isOrganization) return "ORG"
+      else
+        return "O"
+    }else{
+      if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
+        return "GPE"
+      else if(isPlace && isPerson)
+        return "GPE"
+      else
+        return "O"
+    }
+  }
+
+  def detectIfPerson(strs: Seq[String], uStrs: Seq[String]): Boolean = {
+    val isCased = strs.zip(uStrs).exists(ab => ab._1 != ab._2)
+    val str = strs.mkString(" ")
+    val uStr = uStrs.mkString(" ")
+    val fullStringPerson = lexicon.wikipedia.Person.contains(str) && isCased
+    val fields = strs
+    val uFields = uStrs
+
+    val firstIsCased = fields.nonEmpty && fields(0) != uFields(0)
+    val secondIsCased = if(fields.length == 2) fields(1) != uFields(1) else false
+    val firstContained = fields.nonEmpty && (lexicon.uscensus.PersonFirstFemale.contains(fields(0)) || lexicon.uscensus.PersonFirstMale.contains(fields(0)))
+    val secondContained =   if(fields.length == 2) lexicon.uscensus.PersonLast.contains(fields(1))  else false
+
+    val firstName = fields.length == 2  && firstContained  &&  firstIsCased  && secondIsCased
+    val firstName2 = fields.length == 1 && lexicon.iesl.PersonFirst.contains(fields(0))  &&  firstIsCased
+    val lastName = fields.length == 2   && firstContained && secondContained   &&  secondIsCased && firstIsCased
+    val lastName2 = fields.length == 1   && lexicon.uscensus.PersonLast.contains(fields(0))   &&  firstIsCased
+    val bothNames = fields.length == 2 && firstContained && secondContained
+    val isI = fields.length == 1 && uStr == "I"
+
+    val isPerson = lastName || lastName2 || firstName || firstName2|| fullStringPerson  || bothNames
+    isPerson  && ! isI
+  }
+  //the follow three methods just check for exact string matches
+  def detectIfPlace(s: String, us: String): Boolean = {
+    lexicon.iesl.AllPlaces.contains(s)
+  }
+  def detectIfOrg(s: String, us: String): Boolean = {
+    lexicon.iesl.OrgSuffix.contains(s)
+  }
+  def detectIfEvent(s: String, us: String): Boolean = {
+    lexicon.wikipedia.Event.contains(s)
+  }
+
+  def classifyUsingRules(rawString: String): String = {
+    classifyUsingRules(rawString.split(" "))
+  }
+
+}

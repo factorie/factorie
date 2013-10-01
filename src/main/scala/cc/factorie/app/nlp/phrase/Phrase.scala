@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
+import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 
 // TODO Should we rename this to "Chunk"?  Then "NounChunk" and "NounChunker".  (But it is really a "NounPhraseChunk" and "NounPhraseChunker".)
 // TODO What do we do about the name "MentionType"?  I like that we can talk about gender/number/type of noun phrases independently of coref.  Below we have "NounPhraseType".  Is this OK as a substitute for "MentionType"?
@@ -18,10 +19,14 @@ class VerbPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = 
 class VerbPhraseList extends TokenSpanList[VerbPhrase]
 
 
-/** A simple subclass of Chunk reserved for noun phrases.
-    A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further cleaned up). */
+/** A simple subclass of Phrase reserved for noun phrases.
+    A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further fixed). */
 class NounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length)
 class NounPhraseList extends TokenSpanList[NounPhrase]
+
+class NerPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
+class PronounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
+class NominalPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends NounPhrase(section, start, length)
 
 
 /** Categorical variable indicating whether the noun phrase is a pronoun, nominal or proper noun. */
@@ -30,11 +35,3 @@ class NounPhraseType(val phrase:NounPhrase, targetValue:String) extends LabeledC
 }
 object OntonotesNounPhraseTypeDomain extends CategoricalDomain(List("PRO", "NOM", "NAM"))
 
-/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
-class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNounPhraseEntityTypeDomain
-}
-object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
-  this ++= ner.OntonotesNerDomain.categories
-  this += "MISC"
-}

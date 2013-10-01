@@ -2,9 +2,12 @@ package cc.factorie.app.nlp.relation
 
 import cc.factorie._
 import app.nlp.hcoref.PairwiseMention
-import cc.factorie.app.nlp.{ACEMentionSpan,ACEMentionSpanList,ACEMentionIdentifiers, Token, Document}
+import cc.factorie.app.nlp.{Token, Document}
+import cc.factorie.app.nlp.load.{ACEMentionSpan,ACEMentionSpanList,ACEMentionIdentifiers}
 import collection.mutable.{HashMap, ArrayBuffer}
 import cc.factorie.util.Attr
+import cc.factorie.variable._
+import scala.Some
 
 /**
  * @author sameer, brian, sebastian
@@ -32,7 +35,7 @@ object RelationVariables {
     val arg2Features = new ArgFeatures(arg2, false)
     val features = new Features(this)
 
-    def computeFeatures = {
+    def computeFeatures() = {
       //arg1Features.compute
       //arg2Features.compute
       features.compute
@@ -45,7 +48,7 @@ object RelationVariables {
   class ArgFeatures(val arg: PairwiseMention, val first: Boolean) extends BinaryFeatureVectorVariable[String] {
     def domain = RelationArgFeaturesDomain
 
-    def compute = {
+    def compute() = {
       this += "BIAS"
       // TODO compute relation features using "first" and "arg"
       // TODO convert Lexicons (from refectorie.proj.jntinf) to app.chain.Lexicon
@@ -85,7 +88,7 @@ object RelationVariables {
       } catch {
         case _: Throwable =>
       }
-      for (child <- from.parseChildren; if (!visited(child))) {
+      for (child <- from.parseChildren; if !visited(child)) {
         for (path <- shortestPath(child, to, visited + from)) {
           val edge = PathEdge(from, child, child.parseLabel.categoryValue, true)
           paths += edge +: path
@@ -130,14 +133,14 @@ object RelationVariables {
 
 
     def tokenIsPossessive(token: Token) = {
-      token.posLabel.categoryValue == "PRP$" || (token.string.endsWith("'s"))
+      token.posLabel.categoryValue == "PRP$" || token.string.endsWith("'s")
     }
 
     def null2opt[T](t: T) = if (t == null) None else Some(t)
 
     def clean(string: String) = string.replaceAll("\\s+", " ")
 
-    def computeZHOUFeatures {
+    def computeZHOUFeatures() {
       val arg1 = mention.arg1
       val arg2 = mention.arg2
       val m1 = arg1.tokens.slice(0, arg1.headToken.position - arg1.start + 1)
@@ -211,9 +214,9 @@ object RelationVariables {
       }
     }
 
-    def compute = computeZHOUFeatures
+    def compute() = computeZHOUFeatures
 
-    def compute2 = {
+    def compute2() = {
       val m1 = mention.arg1
       val m2 = mention.arg2
       val sentence = m1.sentence
@@ -257,7 +260,7 @@ object RelationVariables {
 
     }
 
-    def compute1 = {
+    def compute1() = {
       val m1 = mention.arg1
       val m2 = mention.arg2
       val sentence = m1.sentence
@@ -373,9 +376,9 @@ object RelationVariables {
     var total = 0
     var added = 0
     mentions.foreach(_.attr.getOrElseUpdate(new RelationMentions))
-    for (m1 <- mentions; m2 <- mentions; if (m1 != m2 &&
-      m1.head.sentence == m2.last.sentence &&
-      m1.last.sentence == m2.head.sentence)) {
+    for (m1 <- mentions; m2 <- mentions; if m1 != m2 &&
+                                            m1.head.sentence == m2.last.sentence &&
+                                            m1.last.sentence == m2.head.sentence) {
       total += 1
       // check whether it already exists
       val rmentions1 = m1.attr[RelationMentions]

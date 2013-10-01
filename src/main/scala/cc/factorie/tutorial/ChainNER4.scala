@@ -17,6 +17,9 @@
 package cc.factorie.tutorial
 import cc.factorie._
 import java.io.File
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{BPSummary, BP, IteratedConditionalModes, GibbsSampler}
 
 object ChainNER4 {
 
@@ -107,7 +110,7 @@ object ChainNER4 {
       // println("Iteration "+i)
       learner.processContexts(trainLabels)
       predictor.processAll(testLabels); predictor.processAll(trainLabels)
-      trainLabels.take(20).foreach(printLabel _); println; println
+      trainLabels.take(20).foreach(printLabel _); println(); println()
       printDiagnostic(trainLabels.take(400))
       //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
       //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
@@ -172,9 +175,9 @@ object ChainNER4 {
   }
  
   def printDiagnostic(labels:Seq[Label]) : Unit = {
-    for (label <- labels; if (label.intValue != label.domain.index("O"))) {
+    for (label <- labels; if label.intValue != label.domain.index("O")) {
       if (!label.hasPrev || label.value != label.prev.value) 
-        print("%-7s %-7s ".format((if (label.value != label.target.value) label.target.value.category.drop(2) else " "), label.value.category.drop(2)))
+        print("%-7s %-7s ".format(if (label.value != label.target.value) label.target.value.category.drop(2) else " ", label.value.category.drop(2)))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }

@@ -14,24 +14,23 @@
 
 package cc.factorie
 
-import cc.factorie.la._
 import junit.framework._
-import Assert._
+import cc.factorie.variable.IntegerVariable
 
 /** @author Pallika Kanani */
 class TestIntegerVariable extends TestCase  with cc.factorie.util.FastLogging {
 
-   def testDiffLists:Unit = {
-      var initialValue:Int = 100
-      var v = new IntegerVariable(initialValue)
-      var d: DiffList = new DiffList()
+   def testDiffLists(): Unit = {
+      val initialValue:Int = 100
+      val v = new IntegerVariable(initialValue)
+      val d: DiffList = new DiffList()
       logger.debug("Initial Value = " + v.intValue)
       v.set(200)(d)
       v.set(300)(d)
       v.set(400)(d)
       v.set(500)(d)
       v.set(600)(d)
-      d.reverse.foreach( a => a.undo);
+      d.reverse.foreach( a => a.undo())
       assert(v.intValue == initialValue)
    }
 }

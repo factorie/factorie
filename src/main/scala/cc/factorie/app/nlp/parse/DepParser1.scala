@@ -13,6 +13,8 @@ import cc.factorie.optimize._
 import scala.concurrent.Await
 import scala.Some
 import java.util.concurrent.Executors
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
 
 /** Default transition-based dependency parser. */
 class DepParser1 extends DocumentAnnotator {
@@ -487,7 +489,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
 
     // Load the sentences
     def loadSentences(o: opts.CmdOption[List[String]]): Seq[Sentence] = {
-      if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) LoadOntonotes5.fromFilename(filename) else LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
+      if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
       else Seq.empty[Sentence]
     }
     val sentences = loadSentences(opts.trainFiles)

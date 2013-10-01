@@ -5,13 +5,14 @@ import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
 import cc.factorie.app.nlp.segment.Tokenizer1
+import cc.factorie.variable.SpanList
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   
   class MySpanList extends SpanList[TokenSpan,Section,Token]
 
-  def testDiffLists:Unit = {
-     val doc = LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
+  def testDiffLists(): Unit = {
+     val doc = load.LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
      val sl = new MySpanList
      doc.attr += sl
        
@@ -26,7 +27,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      //logger.debug("new span 1 1")
      //logger.debug(doc.spans.mkString("\n"))
      //logger.debug("DiffList "+d)
-     d.undo
+     d.undo()
      //logger.debug("undo")
      //logger.debug("DiffList "+d)
      //logger.debug(doc.spans.mkString("\n"))
@@ -40,7 +41,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      val d2 = new DiffList
      sl.remove(s3)(d2)
      assert(sl.length == 1)
-     d2.undo
+     d2.undo()
      assert(sl.length == 2)
      sl.clear()
      assert(sl.length == 0)

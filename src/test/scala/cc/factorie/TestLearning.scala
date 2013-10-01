@@ -9,6 +9,9 @@ import org.junit.Test
 import org.junit.Before
 
 import cc.factorie._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.{MHSampler, InferByBPLoopy}
 
 
 /**
@@ -38,8 +41,6 @@ DOES MIRA/CW work with manually specified weightsSet?
 test if model ranking agrees with training signal (randomly created?)
 
 
-@Authors Michael Wick and Sameer Singh
-@Since 0.9
 
  */
 
@@ -107,7 +108,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
-        for (b <- bools) b.set(random.nextBoolean)(delta)
+        for (b <- bools) b.set(random.nextBoolean())(delta)
         0.0
       }
   }
@@ -163,7 +164,7 @@ class TestSampleRank2 extends AssertionsForJUnit  with cc.factorie.util.FastLogg
         configuration(i).set(result(i))(null)
     }
 
-  def checkAllPairs =
+  def checkAllPairs() =
     {
       //
       //Test extremes

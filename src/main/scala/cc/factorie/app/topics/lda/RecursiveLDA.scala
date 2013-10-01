@@ -4,6 +4,7 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import cc.factorie.directed._
+import cc.factorie.variable.{DiscreteSeqDomain, DiscreteSeqVariable, DiscreteDomain, CategoricalSeqDomain}
 
 // Name here must match superDoc exactly, in order to enable stitching back together again at the end 
 class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name, Nil)
@@ -76,8 +77,8 @@ object RecursiveLDA {
       for (directory <- opts.readDirs.value) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading files from directory " + directory)
-        breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
-          if (lda.documents.size == opts.maxNumDocs.value) break
+        breakable { for (file <- new File(directory).listFiles; if file.isFile) {
+          if (lda.documents.size == opts.maxNumDocs.value) break()
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           doc.time = file.lastModified
           if (doc.length >= minDocLength) lda.addDocument(doc, random)
@@ -100,11 +101,11 @@ object RecursiveLDA {
         //println("RecursiveLDA directory year "+year)
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading NIPS files from directory " + directory)
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        for (file <- new File(directory).listFiles; if file.isFile) {
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           doc.time = year
           if (doc.length >= 3) lda.addDocument(doc, random)
-          print("."); Console.flush
+          print("."); Console.flush()
         }
         println()
       }
@@ -118,7 +119,7 @@ object RecursiveLDA {
       val source = if (opts.readLines.value == "-") scala.io.Source.stdin else scala.io.Source.fromFile(new File(opts.readLines.value))
       var count = 0
       breakable { for (line <- source.getLines()) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val text: String = 
           if (!opts.readLinesRegex.wasInvoked) line 
           else {
@@ -149,15 +150,15 @@ object RecursiveLDA {
         val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
         reader.readLine() // consume delimiting newline
         println("Read alphas "+lda.alphas.value.mkString(" "))
-      } else reader.reset // Put the reader back to the read position when reader.mark was called
+      } else reader.reset() // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = lda.newZs
         val filterTopicIndex = opts.readDocsTopicIndex.value
         // If readDocsTopicIndex.wasInvoked then only read in words that had been assigned readDocsTopicIndex.value, and reassign them random Zs
         val numWords = if (opts.readDocsTopicIndex.wasInvoked) doc.readNameWordsMapZs(reader, ti => if (ti == filterTopicIndex) random.nextInt(numTopics) else -1) else doc.readNameWordsZs(reader)
-        if (numWords < 0) break
+        if (numWords < 0) break()
         else if (numWords >= minDocLength) lda.addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
         else if (!opts.readDocsTopicIndex.wasInvoked) System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
@@ -231,7 +232,7 @@ object RecursiveLDA {
       val file = new File(opts.writeDocs.value)
       val pw = new PrintWriter(file)
       pw.println("/alphas")
-      pw.println((Seq.fill(numTopics*numTopics)(opts.alpha.value)).mkString(" ")) // Just set all alphas to 1.0 // TODO can we do better?
+      pw.println(Seq.fill(numTopics * numTopics)(opts.alpha.value).mkString(" ")) // Just set all alphas to 1.0 // TODO can we do better?
       pw.println()
       documents1.foreach(_.writeNameWordsZs(pw))
       pw.close()
@@ -257,7 +258,7 @@ object RecursiveLDA {
   /** Calculate Beta distribution parameters (alpha, beta) for the topicIndex. */
   def timeMeanAlphaBetaForTopic(documents:Iterable[Doc], topicIndex:Int): (Double, Double, Double, Double) = {
     val stamps = new util.DoubleArrayBuffer
-    for (d <- documents; z <- d.zs.intValues; if (z == topicIndex)) {
+    for (d <- documents; z <- d.zs.intValues; if z == topicIndex) {
       if (d.time < 0) throw new Error(d.name+" has year "+d.time)
       stamps += time2Stamp(d.time) 
     }

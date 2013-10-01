@@ -2,6 +2,7 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /** Repeatedly call "step" until "isConverged" is true. */
 trait GradientOptimizer {

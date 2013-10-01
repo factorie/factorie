@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable._
 
 object DirichletMixture extends DirectedFamily3[ProportionsVariable,Mixture[MassesVariable],DiscreteVariable] {
   case class Factor(override val _1:ProportionsVariable, override val _2:Mixture[MassesVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with MixtureFactor {

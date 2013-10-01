@@ -19,6 +19,10 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import java.io.File
 import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.{LabeledDiscreteEvaluation, HammingTemplate, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel, CombinedModel}
+import cc.factorie.infer.{IteratedConditionalModes, VariableSettingsSampler, GibbsSampler}
+import cc.factorie.app.nlp.load.LoadConll2003
 
 object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -114,8 +118,8 @@ class ChainNer(implicit random: scala.util.Random) {
   def train(trainFilename:String, testFilename:String): Unit = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(trainFilename)
-    val testDocuments = LoadConll2003.fromFilename(testFilename)
+    val trainDocuments = load.LoadConll2003.fromFilename(trainFilename)
+    val testDocuments = load.LoadConll2003.fromFilename(testFilename)
 
     // Add features for NER
     trainDocuments.foreach(initFeatures(_))
@@ -263,7 +267,7 @@ object ChainNer extends ChainNer()(new scala.util.Random(0)) {
     if (opts.runPlainFiles.wasInvoked) {
       BinarySerializer.deserialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       for (filename <- opts.runPlainFiles.value) {
-        val document = LoadPlainText.fromFile(new java.io.File(filename)).head
+        val document = load.LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
         //println(document.map(_.string).mkString(" "))
         process(document)

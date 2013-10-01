@@ -5,6 +5,9 @@ import java.io.{File, InputStream, FileInputStream}
 import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConversions}
 import scala.concurrent.Await
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{Var, HammingTemplate, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.infer.{InferByBPChain, BP}
+import cc.factorie.model.{DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 
 
 /** A finite-state named entity recognizer, trained on CoNLL 2003 data.
@@ -24,32 +27,32 @@ class NER1 extends DocumentAnnotator {
   } 
   
   // The model
-  class NER1Model extends TemplateModel with Parameters {
+  class NER1Model extends TemplateModel with cc.factorie.model.Parameters {
     // Bias term on each individual label
     val bias = this += new DotTemplateWithStatistics1[BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain1 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor1(BilouConllNerDomain.size))
     }
     // Transition factors between two successive labels
     val markov = this += new DotTemplateWithStatistics2[BilouConllNerLabel, BilouConllNerLabel] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = BilouConllNerDomain
+      //override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain2 = BilouConllNerDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, BilouConllNerDomain.size))
       def unroll1(label:BilouConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.prev.attr[BilouConllNerLabel], label) else Nil
       def unroll2(label:BilouConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.next.attr[BilouConllNerLabel]) else Nil
     }
     // Factor between label and observed token
     val evidence = this += new DotTemplateWithStatistics2[BilouConllNerLabel, FeaturesVariable] {
-      override def neighborDomain1 = BilouConllNerDomain
-      override def neighborDomain2 = FeaturesDomain
+      //override def neighborDomain1 = BilouConllNerDomain
+      //override def neighborDomain2 = FeaturesDomain
       val weights = Weights(new la.DenseTensor2(BilouConllNerDomain.size, FeaturesDomain.dimensionSize))
       def unroll1(label:BilouConllNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't change")
     }
     // More efficient unrolling if given the sequence of labels
-    override def factors(vars:Iterable[Var]): Iterable[Factor] = vars match {
+    override def factors(vars:Iterable[Var]): Iterable[cc.factorie.model.Factor] = vars match {
       case vars:Seq[BilouConllNerLabel @unchecked] if vars.forall(_.isInstanceOf[BilouConllNerLabel]) => {
-        val result = new scala.collection.mutable.ArrayBuffer[Factor](vars.length*3)
+        val result = new scala.collection.mutable.ArrayBuffer[cc.factorie.model.Factor](vars.length*3)
         var prev: BilouConllNerLabel = null
         for (v <- vars) {
           result += bias.Factor(v); result += evidence.Factor(v, v.token.attr[FeaturesVariable])
@@ -87,7 +90,7 @@ class NER1 extends DocumentAnnotator {
   
   // For words like Swedish & Swedes but not Sweden
   object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") { 
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines) {
+    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
       val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
       for (phrase <- fields.drop(1)) this += phrase
     }
@@ -169,7 +172,7 @@ class NER1 extends DocumentAnnotator {
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     model.limitDiscreteValuesAsIn(trainLabels)
-    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChainSum))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new optimize.LikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel]), model, InferByBPChain))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
       trainDocs.par.foreach(process(_))
@@ -194,7 +197,7 @@ class NER1 extends DocumentAnnotator {
     new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }
   def loadDocuments(files:Iterable[File]): Seq[Document] = {
-    files.toSeq.flatMap(file => LoadConll2003(BILOU=true).fromFile(file))
+    files.toSeq.flatMap(file => load.LoadConll2003(BILOU=true).fromFile(file))
   }
   
   // Serialization

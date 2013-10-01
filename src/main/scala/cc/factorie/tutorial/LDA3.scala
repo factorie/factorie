@@ -10,6 +10,7 @@ import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.util.DoubleSeq
 import cc.factorie.directed._
+import cc.factorie.variable._
 
 object LDA3 {
   val numTopics = 15
@@ -50,7 +51,7 @@ object LDA3 {
     val stopwords = new Stopwords; stopwords += "rainbownum"
     for (directory <- directories) {
       // println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         // print("."); Console.flush
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!stopwords.contains(_)).toSeq

@@ -57,17 +57,17 @@ object NLP {
     }
     catch {
       case e: IOException =>
-        System.err.println("Could not listen on port: "+opts.socket.value);
+        System.err.println("Could not listen on port: "+opts.socket.value)
         System.exit(-1)
     }
   }
   
   case class ServerThread(socket: Socket, encoding:String, pipeline: DocumentAnnotator) extends Thread("ServerThread") {
     override def run(): Unit = try {
-      val out = new PrintStream(socket.getOutputStream(), false, encoding)
+      val out = new PrintStream(socket.getOutputStream, false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
-      var document = cc.factorie.app.nlp.LoadPlainText.fromString(in.mkString).head
+      var document = load.LoadPlainText.fromString(in.mkString).head
       val time = System.currentTimeMillis
       document = pipeline.process(document)
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
@@ -83,13 +83,13 @@ object NLP {
         }
       }
       for (annotator <- annotators) out.print(annotator.documentAnnotationString(document))
-      out.close();
-      in.close();
+      out.close()
+      in.close()
       socket.close()
     }
     catch {
       case e: SocketException => () // avoid stack trace when stopping a client with Ctrl-C
-      case e: IOException =>  e.printStackTrace();
+      case e: IOException =>  e.printStackTrace()
     }
   }
   

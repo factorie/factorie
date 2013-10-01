@@ -8,6 +8,8 @@ import java.io.{DataOutputStream, File, FileInputStream, DataInputStream}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.mention.Mention
 import cc.factorie.util.coref.GenericEntityMap
+import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.Parameters
 
 /**
  * User: apassos

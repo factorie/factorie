@@ -20,6 +20,9 @@ import cc.factorie._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.MHSampler
 
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */
@@ -80,10 +83,10 @@ object CorefMentionsDemo {
 
 
   def main(args: Array[String]) : Unit = {
-      var mentionList = new ArrayBuffer[Mention]();
-      var entityList = new ArrayBuffer[Entity]();
+      var mentionList = new ArrayBuffer[Mention]()
+    var entityList = new ArrayBuffer[Entity]()
 
-      val data = List(
+    val data = List(
         List("Andrew McCallum", "Andrew MacCallum", "Angrew McCallum", "McCallum", "A. McCallum"),
         List("Michael Wick", "Mike Wick", "Michael Andrew Wick", "Wick", "Wick"),
         List("Khashayar Rohanemanesh", "Khash R.", "Kesh Rohanemanesh"),
@@ -98,11 +101,11 @@ object CorefMentionsDemo {
       var mentions = data.zipWithIndex.map {case (names, trueEntityIndex) => {
         // Initialize by putting each mention into its own separate entity
         names.map(s => {
-          val newEntity = new Entity("e" + entityIndex);
-          val newMention = new Mention(s, trueEntityIndex, newEntity);
-          entityList += newEntity;
-          mentionList += newMention;
-          newMention;
+          val newEntity = new Entity("e" + entityIndex)
+          val newMention = new Mention(s, trueEntityIndex, newEntity)
+          entityList += newEntity
+          mentionList += newMention
+          newMention
         })
       }}
 
@@ -112,7 +115,7 @@ object CorefMentionsDemo {
       model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
         //def statisticsDomains = Tuple1(AffinityVectorDomain)
         val weights = model.Weights(new la.DenseTensor1(AffinityVectorDomain.dimensionSize))
-        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
+        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if other.entityRef.value == er.value) yield
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
           else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
         def unroll2 (er:EntityRef) = Nil // symmetric
@@ -133,7 +136,7 @@ object CorefMentionsDemo {
           }
           case _ => super.factors(d)
         }*/
-        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value != er.value)) yield 
+        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if other.entityRef.value != er.value) yield
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
           else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
         def unroll2 (er:EntityRef) = Nil // symmetric
@@ -150,7 +153,7 @@ object CorefMentionsDemo {
           val mentions: Entity#Value= e
           if (mentions.isEmpty) BooleanDomain.trueValue
           else {
-            val prefix1 = mentions.iterator.next.name.substring(0,1)
+            val prefix1 = mentions.iterator.next().name.substring(0,1)
             if (mentions.forall(m => prefix1 equals m.name.substring(0,1)))
               BooleanDomain.trueValue
             else
@@ -199,7 +202,7 @@ object CorefMentionsDemo {
           //            Console.println ("Proposal.jump moving "+m+" to "+e)
           m.entityRef.set(e)(difflist)
           // log-Q-ratio shows that forward and backward jumps are equally likely
-          return 0.0
+          0.0
         }
         override def postProposalHook(difflist:DiffList) : Unit = {
           super.postProposalHook(difflist)

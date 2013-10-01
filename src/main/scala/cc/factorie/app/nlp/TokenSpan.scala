@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.{SpanList, SpanVariable, LabeledCategoricalVariable}
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
@@ -35,9 +36,9 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
         if (span.tokens(j).string != tokens(i2)) result = false
         j += 1; i2 += 1
       }
-      if (result == true) return true 
+      if (result) return true
     }
-    return false
+    false
   }
   override def toString = "TokenSpan("+start+":"+this.phrase+")"
   /** A short name for this span */

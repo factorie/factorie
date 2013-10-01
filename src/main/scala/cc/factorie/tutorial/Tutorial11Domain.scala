@@ -2,6 +2,7 @@ package cc.factorie.tutorial
 
 import org.junit.Assert._
 import cc.factorie._
+import cc.factorie.variable.{DoubleDomain, DoubleVariable, DiscreteDomain, DiffList}
 
 /*& Examples of FACTORIE Domains, which specify the range of values a Variable can take. */
 object TutorialDomain {

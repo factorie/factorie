@@ -6,6 +6,8 @@ import cc.factorie.util.ArrayDoubleSeq
 import cc.factorie.la._
 import scala.math.exp
 import collection.mutable
+import cc.factorie.variable.{TensorVar, MutableDiscreteVar}
+import cc.factorie.model.{DotFamilyWithStatistics2, DotFamilyWithStatistics1}
 
 /**
  * Author: martin
@@ -97,7 +99,7 @@ object ForwardBackward {
     assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
   }
 
-  private def getLocalScores[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  private def getLocalScores[OV <: TensorVar, LV <: MutableDiscreteVar](
          vs: Seq[LV],
          localTemplate: DotFamilyWithStatistics2[LV, OV],
          biasTemplate: DotFamilyWithStatistics1[LV],
@@ -161,7 +163,7 @@ object ForwardBackward {
     result
   }
 
-  def marginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def marginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -179,7 +181,7 @@ object ForwardBackward {
     (nodeMargs, edgeMargs, logZ)
   }
 
-  def nodeEdgeMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def nodeEdgeMarginalsAndLogZ[OV <: TensorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -198,7 +200,7 @@ object ForwardBackward {
   }
 
 
-  def search[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def search[OV <: TensorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],

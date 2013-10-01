@@ -2,6 +2,9 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.hcoref._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer.SettingsSampler
 
 object Coref1 {
   
@@ -139,7 +142,7 @@ object Coref1 {
   object EntityRefSampler extends SettingsSampler[EntityRef](new EntityMentionModel, null)(new scala.util.Random(0)) {
     def settings(entityRef:EntityRef) : SettingIterator = new SettingIterator {
       val mention = entityRef.src.asInstanceOf[TokenSpanMention]
-      val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
+      val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
@@ -177,7 +180,7 @@ object Coref1 {
   def main(args:Array[String]): Unit = {
     // println("Entity running...")
     //val doc = LoadPlainText.fromString("USAToday", docString.takeWhile(_ != '\n'), false)
-    val doc = LoadPlainText.fromString(docString1.take(800)).head
+    val doc = load.LoadPlainText.fromString(docString1.take(800)).head
     //for (token <- doc) println(token.string)
     brainDeadMentionExtraction(doc)
     corefInit(doc)

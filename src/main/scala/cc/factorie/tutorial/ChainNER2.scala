@@ -14,8 +14,12 @@
 
 package cc.factorie.tutorial
 import cc.factorie._
-import cc.factorie.optimize._
 import java.io.File
+import model._
+import variable._
+import optimize._
+import cc.factorie.infer.{MaximizeByBPChain, InferByBPChain}
+import cc.factorie.variable.{BooleanValue, BooleanDomain, ChainLink}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's low-level "imperative" language to define model structure.
@@ -38,7 +42,7 @@ object ChainNER2 {
     val token = new Token(word, this)
     def domain = LabelDomain
   }
-  class Sentence extends Chain[Sentence,Label]
+  class Sentence extends variable.Chain[Sentence,Label]
   
   // The model
   val excludeSkipEdges = true
@@ -66,15 +70,15 @@ object ChainNER2 {
       new DotTemplate2[Label,Label] /*DotStatistics1[BooleanValue]*/ {
         //def statisticsDomains = Tuple1(BooleanDomain)
         val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
-        def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
-        def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
+        def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if other.token.string == label.token.string) yield Factor(label, other)
+        def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if other.token.string == label.token.string) yield Factor(other, label)
         override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1.intValue == v2.intValue)
       }
     )
   }
   
   // The training objective
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
   
 
   def main(args: Array[String]): Unit = {
@@ -93,9 +97,9 @@ object ChainNER2 {
     // Train for 5 iterations
     //val pieces = trainLabels.map(l => new SampleRankExample[Variable](l, new GibbsSampler(model, HammingLossObjective)))
     //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
-    val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChainSum))
+    val pieces = trainSentences.map(s => new LikelihoodExample(s.asSeq, model, InferByBPChain))
     val predictor = MaximizeByBPChain // new VariableSettingsSampler[ChainNerLabel](model, null)
-    Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
+    optimize.Trainer.batchTrain(model.parameters, pieces, evaluate = () => {
       (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
     })
     println ("Train accuracy = "+ objective.accuracy(trainLabels))

@@ -15,18 +15,15 @@
 package cc.factorie.app.chain
 
 import cc.factorie._
-import cc.factorie.maths.ArrayOps
-import cc.factorie.la._
-import cc.factorie.optimize._
-import cc.factorie.app.chain.infer._
+import Factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.File
-import scala.collection.mutable
 import org.junit.Assert._
-import scala.collection.mutable.LinkedHashMap
-import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
+import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWithTarget}
+import cc.factorie.model.ModelWithContext
 
-class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
+class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
  val featuresDomain:CategoricalVectorDomain[String],
  val labelToFeatures:Label=>Features,

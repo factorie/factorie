@@ -2,6 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.util.{TopN,TopEntry}
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable.CategoricalDomain
 
 class TopicPhraseCounts(numTopics:Int, multiWordOnly:Boolean = true) {
   
@@ -44,6 +45,6 @@ class TopicPhraseCounts(numTopics:Int, multiWordOnly:Boolean = true) {
   
   def topicEntries(zi:Int, n:Int = 10): Seq[TopEntry[String]] = new TopN(n, counts(zi).counts.asDoubleSeq, counts(zi).categories)
   def topicPhrases(zi:Int, n:Int = 10, includeCounts:Boolean = true): Seq[String] = topicEntries(zi, n).map(e => if (includeCounts) e.category+":"+e.score.toInt else e.category)
-  def topicPhrasesSummary(topicIndex:Int, n:Int = 10): String = "Topic "+topicIndex+"  "+(topicPhrases(topicIndex, n).mkString(" "))
+  def topicPhrasesSummary(topicIndex:Int, n:Int = 10): String = "Topic "+topicIndex+"  "+ topicPhrases(topicIndex, n).mkString(" ")
   def topicsPhrasesSummary(n:Int = 10): String = Range(0, numTopics).map(topicPhrasesSummary(_, n)).mkString("\n")
 }

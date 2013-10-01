@@ -18,10 +18,14 @@ package cc.factorie.tutorial
 
 import java.io.File
 import cc.factorie._
-import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.InferByBPChain
+import cc.factorie.optimize.{Trainer, LikelihoodExample}
+import cc.factorie.app.nlp.load.LoadConll2003
 
 object ChainNER1ML {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
@@ -56,8 +60,8 @@ object ChainNER1ML {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
-    val trainDocuments = LoadConll2003.fromFilename(args(0))
-    val testDocuments = LoadConll2003.fromFilename(args(1))
+    val trainDocuments = load.LoadConll2003.fromFilename(args(0))
+    val testDocuments = load.LoadConll2003.fromFilename(args(1))
     for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
@@ -82,13 +86,13 @@ object ChainNER1ML {
     val start = System.currentTimeMillis
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
-    val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChainSum))
+    val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChain))
     Trainer.batchTrain(model.parameters, examples)
     val objective = HammingObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
-      variables => cc.factorie.BP.inferChainMax(variables, model).setToMaximize(null)
+      variables => cc.factorie.infer.BP.inferChainMax(variables, model).setToMaximize(null)
     }
     println("test token accuracy=" + objective.accuracy(testLabelsSentences.flatten))
 

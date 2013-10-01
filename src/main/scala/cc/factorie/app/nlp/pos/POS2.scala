@@ -8,6 +8,8 @@ import java.io._
 import cc.factorie.util.{LocalDoubleAccumulator, HyperparameterMain, ClasspathURL, BinarySerializer}
 import cc.factorie.optimize.{StructuredSVMExample, LikelihoodExample, Trainer}
 import cc.factorie.la.SmartGradientAccumulator
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.infer.MaximizeByBPChain
 
 /**
  * User: apassos
@@ -118,8 +120,8 @@ object POS2Trainer extends HyperparameterMain {
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val pos = new POS2
-    val trainDocs = LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = LoadOntonotes5.fromFilename(opts.testFile.value)
+    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(opts.trainFile.value)
+    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(opts.testFile.value)
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))

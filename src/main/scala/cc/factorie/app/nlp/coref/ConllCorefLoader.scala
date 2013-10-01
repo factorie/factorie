@@ -1,13 +1,5 @@
 package cc.factorie.app.nlp.coref
 
-/**
- * Created with IntelliJ IDEA.
- * User: belanger
- * Date: 5/31/13
- * Time: 10:24 AM
- * To change this template use File | Settings | File Templates.
- */
-
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosLabel}
 import mention.{MentionEntityType, MentionList, Mention, Entity}
@@ -27,13 +19,13 @@ object ConllCorefLoader {
   // to be used with test-with-gold-mention-boundaries
   val autoFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("auto_conll")
+      file.getName.endsWith("auto_conll")
   }
 
   // to be used with test-key
   val goldFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("gold_conll")
+      file.getName.endsWith("gold_conll")
   }
 
 
@@ -55,7 +47,7 @@ object ConllCorefLoader {
   def filterMention(phrase: String,parentPhrase: String,prevPhrase: String,prevWord: String): Boolean = {
     assert(phrase == "NP")
     val apposition = (prevPhrase == "NP") && (parentPhrase == "NP") && (prevWord == ",")
-    val copular = (parentPhrase == "VP") && (copularVerbs.contains(prevWord))  //todo: prevWord has been properly case-normalized, right?
+    val copular = (parentPhrase == "VP") && copularVerbs.contains(prevWord)  //todo: prevWord has been properly case-normalized, right?
     apposition || copular
   }
 
@@ -96,9 +88,11 @@ object ConllCorefLoader {
 
     breakable { for (l <- source.getLines()) {
       if (l.startsWith("#begin document ")) {
-        if (docs.length == limitNumDocuments) break
+        if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+        currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
         currDoc.attr += new MentionList
@@ -186,7 +180,7 @@ object ConllCorefLoader {
               currDoc.attr[MentionList] += m
               numMentions += 1
 
-              if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
+              if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
                 val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
                 if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
                   m.attr += new MentionEntityType(m,currentEntityTypeStr)
@@ -230,7 +224,7 @@ object ConllCorefLoader {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
           val m = new Mention(span, getHeadToken(span))
           currDoc.attr[MentionList] += m
-          if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
+          if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
               m.attr += new MentionEntityType(m,currentEntityTypeStr)
@@ -273,9 +267,9 @@ object ConllCorefLoader {
   def getHeadToken(span: TokenSpan): Int = {
     val toReturn = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
     if(toReturn == -1){
-      return span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
+      span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
     }else{
-      return toReturn
+      toReturn
     }
   }
 
