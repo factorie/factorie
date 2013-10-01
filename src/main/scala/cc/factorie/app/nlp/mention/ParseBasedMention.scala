@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.mention
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.parse.{DepParser1, ParseTree}
 import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
 import cc.factorie.app.nlp.pos.PennPosLabel
 import scala.Some
@@ -94,48 +94,31 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] = (
+  final val allowedChildLabels = Set("amod", "det", "nn", "num", "hmod", "hyph", "possessive", "poss", "predet", "nmod", "dep")
+  final val disallowedChildLabels = Set("conj", "punct", "prep", "cc", "appos", "npadvmod", "advmod", "quantmod", "partmod", "rcmod", "dobj", "nsubj", "infmod", "ccomp", "advcl", "aux", "intj", "neg", "preconj", "prt", "meta", "parataxis", "complm", "mark")
 
-    for (section <- doc.sections; s <- section.sentences;
-         usedTokens = new HashSet[Token]();
-         (t, si) <- s.tokens.zipWithIndex if nounFilter(t)) yield {
-
-      //These two filtering rules are from 'Mention Detection: Heuristics for the OntoNotes annotations'
-      val prevTokenIsCopular = si > 0 && copularVerbs.contains(s.tokens(si-1).string.toLowerCase)
-      val copularPhrase = s.parse.parentIndex(si)!= -1 && prevTokenIsCopular && s.parse.parent(si).posLabel.value == "VB"
-
-      val parentIsNoun = s.parse.parent(si) != null && isNoun(s.parse.parent(si))
-      val prevWordIsComma = t.hasPrev && t.prev.string == ","
-      val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
-      //val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
-      val apposition = s.parse.label(si).categoryValue == "appos"
-
-      // skip tokens that are:
-      //   1. part of a copular phrase,
-      //   2. appositive clauses,
-      //   3. other nouns in a noun phrase
-      if (FILTER_APPOS && (copularPhrase || apposition ||  parentIsNoun)) None
-      else if(copularPhrase || parentIsNoun && !apposition) None
-      else {
-        val subtree = (Seq(t) ++ {
-          val filter = { ci : Int => s.tokens(ci).posLabel.categoryValue.startsWith("V") || s.tokens(ci).posLabel.categoryValue.startsWith("CC") || s.parse.label(ci).categoryValue == "appos" }
-          Seq(si) ++ s.parse.getChildrenIndices(si, filter).flatMap(s.parse.getSubtreeInds(_,filter)).distinct
-        }.map(i => s.tokens(i))).sortBy(_.position)
-        usedTokens ++= subtree
-        val (start, length) = subtree.size match {
-          // leaf of the parse
-          case 1 => t.position -> 1
-          // non-leaf
-          case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
+  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] =  {
+    val mentions = ArrayBuffer[Mention]()
+    for (section <- doc.sections; s <- section.sentences; (t, si) <- s.tokens.zipWithIndex if nounFilter(t);
+         label = s.parse.label(t.positionInSentence).categoryValue
+         if label != "nn" && label != "hmod")  {
+      val children = s.parse.children(t.positionInSentence)
+      children.foreach(c => {
+        val cat = s.parse.label(c.positionInSentence).categoryValue
+        if (!(allowedChildLabels.contains(cat) || disallowedChildLabels.contains(cat))) {
+          println("BAD LABEL: " + cat)
+          // println(doc.owplString(DepParser1))
         }
-        val commaLength = if(subtree.last.string == ",") length-1 else length
-        val headTokenIndexInSpan = t.position - start
-        val res = Some(new Mention(section, start, commaLength, headTokenIndexInSpan))
-
-        res
-      }
-
-    }).flatten.toSeq
+      })
+      val goodChildren = children.filter(c => allowedChildLabels.contains(s.parse.label(c.positionInSentence).categoryValue))
+      val tokens = Seq(t) ++ goodChildren.map(c => s.parse.subtree(c.positionInSentence)).flatten
+      val sTokens = tokens.sortBy(_.positionInSection)
+      val start = sTokens.head.positionInSection
+      val end = sTokens.last.positionInSection
+      mentions += new Mention(section, start, end-start, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2)
+    }
+    mentions
+  }
 
 
   private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
