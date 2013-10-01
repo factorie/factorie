@@ -121,13 +121,6 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
   }
 
 
-  private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
-    mentions
-      .groupBy( m => m.headToken )
-      .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
-      .toSeq
-      .sortBy(m => (m.tokens.head.stringStart, m.length))
-
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
     // Note: equality is only in the first set of arguments for case classes
     case class MentionStartLength(section:Section, start: Int, length: Int)(val mention: Mention) {
@@ -158,7 +151,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)
+    doc.attr += (new MentionList() ++= dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq)
 
     doc
   }
