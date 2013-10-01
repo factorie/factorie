@@ -198,7 +198,6 @@ object ExampleLinearChainCRF extends App {
 }
 ```
 
-/*&
 ## History
 
 Andrew McCallum began designing and developing FACTORIE in April 2008 as an effort to build an alternative to his [MALLET](http://mallet.cs.umass.edu) toolkit that could represent arbitrarily-structured factor graphs.
