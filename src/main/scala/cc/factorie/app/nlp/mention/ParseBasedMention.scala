@@ -12,7 +12,10 @@ import scala.Some
 class ParseBasedMentionList extends MentionList
 class NerSpanList extends TokenSpanList[NerSpan]
 
-object ParseBasedMentionFinding extends DocumentAnnotator {
+object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
+object ParseAndNerBasedMentionFinding extends ParseBasedMentionFinding(true)
+
+class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   private final val PERSONAL_PRONOUNS = Seq("PRP", "PRP$")
   private final val COMMON_NOUNS      = Seq("NN" , "NNS")
@@ -158,10 +161,13 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
 
   def process(doc: Document): Document = {
-    //if NER has already been done, then convert the NER tags to NER spans
-    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
 
     var docMentions = new ArrayBuffer[Mention]
+
+    //if NER has already been done, then convert the NER tags to NER spans
+    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
+    if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
+
     // NAM = proper noun, NOM = common noun, PRO = pronoun
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
@@ -174,29 +180,11 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     doc
   }
 
-  def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
+  def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.NerLabel])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)).mkString(","); case _ => "_" }
 
-  def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
-    val nerSpans = doc.attr += new NerSpanList
-    for (s <- doc.sections; t <- s.tokens) {
-      if (t.attr[T].categoryValue != "O") {
-        val attr = t.attr[T].categoryValue.split("-")
-        if (attr(0) == "U") {
-          nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
-        } else if (attr(0) == "B") {
-          if(t.hasNext) {
-            var lookFor = t.next
-            while (lookFor.hasNext && lookFor.attr[T].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            nerSpans += new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection)(null)
-          } else {
-            nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
-          }
-        }
-      }
-    }
-  }
+
 }
 
 
