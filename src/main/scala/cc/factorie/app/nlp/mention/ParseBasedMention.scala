@@ -161,14 +161,8 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
 
-    if (doc.hasAnnotation(classOf[BilouOntonotesNerLabel]))
-      addNerSpans[BilouOntonotesNerLabel](doc)
-    else if(doc.hasAnnotation(classOf[BilouConllNerLabel]))
-      addNerSpans[BilouConllNerLabel](doc)
-
     var docMentions = new ArrayBuffer[Mention]
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= nerSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})

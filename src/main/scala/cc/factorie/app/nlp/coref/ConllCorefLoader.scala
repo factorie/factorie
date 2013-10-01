@@ -91,6 +91,8 @@ object ConllCorefLoader {
         if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+        currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
         currDoc.attr += new MentionList
