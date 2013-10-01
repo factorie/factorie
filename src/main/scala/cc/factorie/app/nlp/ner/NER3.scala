@@ -59,7 +59,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (!document.tokens.head.attr.contains(m.runtimeClass))
       document.tokens.map(token => token.attr += newLabel(token, "O"))
     if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
+      document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
       initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
     }
     process(document, useModel2 = false)
