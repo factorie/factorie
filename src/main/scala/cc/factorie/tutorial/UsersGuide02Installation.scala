@@ -19,22 +19,26 @@ If you have the FACTORIE source, you can also run mvn package, which will genera
 
 You can get the latest FACTORIE source code by cloning our repository on Github:
 
-`git clone https://github.com/factorie/factorie.git`
+```
+git clone https://github.com/factorie/factorie.git
+```
 
 ## Compiling Development Version Source
 
 To compile FACTORIE, tell Maven to compile the project from the root directory. If you just cloned the git repository into your current directory, then the commands would be:
 
-`
+```
 cd factorie
 mvn compile
-`
+```
 
 This step may take several minutes because it must not only compile all of FACTORIE, but also download any dependencies, such as Scala. Maven will print many messages; no need to be concerned about them unless they start with [ERROR].
 
 If you find you are running out of Java heap space or PermGen space, you may want to add "-Xms2g -Xmx2g -XX:MaxPermSize=256m" to your MAVEN_OPTS environment variable before running Maven:
 
-`export MAVEN_OPTS="$MAVEN_OPTS -Xms2g -Xmx2g -XX:MaxPermSize=256m"`
+```
+export MAVEN_OPTS="$MAVEN_OPTS -Xms2g -Xmx2g -XX:MaxPermSize=256m"
+```
 
 This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen space, which should be enough to compile FACTORIE.
 
@@ -42,7 +46,9 @@ This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen spa
 
 After compiling, you may want to run the unit tests. The following command will achieve this:
 
-`mvn test`
+```
+mvn test
+```
 
 If you are running the latest version from git, rather than a milestone release, then some tests may fail. If tests fail for a milestone release, please contact the mailing list: factorie-discuss@googlegroups.com
 
@@ -50,7 +56,7 @@ If you are running the latest version from git, rather than a milestone release,
 
 If you'd like to add FACTORIE as a dependency in a Maven-manged project, first add the FACTORIE repository in the repositories section of the project's pom.xml:
 
-`
+```
 <repositories>
   ...
   <repository>
@@ -65,11 +71,11 @@ If you'd like to add FACTORIE as a dependency in a Maven-manged project, first a
     </releases>
   </repository>
 </repositories>
-`
+```
 
 Then add FACTORIE as a dependency in the dependencies section:
 
-`
+```
 <dependencies>
   ...
   <dependency>
@@ -78,7 +84,7 @@ Then add FACTORIE as a dependency in the dependencies section:
     <version>1.0.0-M8</version>
   </dependency>
 <dependencies>
-`
+```
 
 ## NLP Resources JAR
 
