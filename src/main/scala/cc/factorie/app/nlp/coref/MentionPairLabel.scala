@@ -13,7 +13,7 @@ import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVari
 class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMention, val mention2: CorefMention, mentions: Seq[CorefMention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
   {
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
-    t.sizeHint(if (options.conjunctionStyle == options.SLOW_CONJUNCTIONS) 650 else 70)
+    t.sizeHint(if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650 else 70)
     set(t)(null)
   }
   def domain = model.MentionPairFeaturesDomain
