@@ -56,7 +56,7 @@ trait Tensor2 extends Tensor {
   def leftMultiply(t: Tensor1): Tensor1 = {
     assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
     val newT = new DenseTensor1(dim2)
-    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(i)))
+    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(j) += this(i,j)*t(i)))
     newT
   }
   def trace: Double = {
