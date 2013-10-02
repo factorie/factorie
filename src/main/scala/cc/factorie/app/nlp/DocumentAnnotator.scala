@@ -14,7 +14,6 @@
 
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.mention._
-import cc.factorie.app.nlp.phrase._
 import cc.factorie.util.Threading
 
 trait DocumentAnnotator {
@@ -33,7 +32,6 @@ trait DocumentAnnotator {
   /** How the annotation of this DocumentAnnotator should be printed as extra information after a one-word-per-line (OWPL) format.
       If there is no document annotation, return the empty string.  Used in Document.owplString. */
   def documentAnnotationString(document:Document): String = ""
-  def phraseAnnotationString(mention:Phrase): String = ""
   def mentionAnnotationString(mention:Mention): String = ""
 }
 

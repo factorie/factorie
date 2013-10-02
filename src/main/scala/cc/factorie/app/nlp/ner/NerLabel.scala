@@ -30,7 +30,8 @@ class Conll2003SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLa
   def domain = ConllNerDomain
 }
 // TODO this shouldn't extend hcoref Mention
-
+// TODO Consider containing a Span rather than inheriting from Span.
+// TODO Consider making this an NERMention, inheriting from NounMention
 class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(sec, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
   val label = new Conll2003SpanNerLabel(this, labelString)
   def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
