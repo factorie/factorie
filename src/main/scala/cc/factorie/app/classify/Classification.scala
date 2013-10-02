@@ -36,7 +36,7 @@ class BinaryClassification(val score: Double) extends BaseClassification[Double]
 
 class MultiClassClassification(val score: Tensor1) extends BaseClassification[Tensor1] {
   lazy val proportions = new DenseTensorProportions1(score.expNormalized.asInstanceOf[Tensor1])
-  lazy val bestLabelIndex = proportions.maxIndex
+  lazy val bestLabelIndex = score.maxIndex
 }
 
 trait BaseBinaryClassifier[Features] extends BaseClassifier[Double, Features] {
