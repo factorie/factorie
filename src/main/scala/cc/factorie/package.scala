@@ -29,7 +29,7 @@ package object factorie extends CubbieConversions {
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
-    def cast[U](implicit u : TypeTag[U], t:TypeTag[T]): Option[U] = if (typeOf[T] <:< typeOf[U]) Some(a.asInstanceOf[U]) else None
+    def cast[U](implicit u : TypeTag[U], t:TypeTag[T]): Option[U] = if (typeOf[U] <:< typeOf[T]) Some(a.asInstanceOf[U]) else None
     def toNotNull: Option[T] = Option(a)
   }
 

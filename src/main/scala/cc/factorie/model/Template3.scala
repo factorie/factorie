@@ -28,8 +28,8 @@ import scala.reflect.ClassTag
 
 abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2], nm3:ClassTag[N3]) extends Family3[N1,N2,N3] with Template {
   val neighborClass1 = nm1.runtimeClass
-  val neighborClass2 = nm1.runtimeClass
-  val neighborClass3 = nm1.runtimeClass
+  val neighborClass2 = nm2.runtimeClass
+  val neighborClass3 = nm3.runtimeClass
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2, neighborClass3)
 //  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
 //    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) &&
