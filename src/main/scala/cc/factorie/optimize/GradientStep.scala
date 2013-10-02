@@ -78,6 +78,9 @@ trait GradientStep extends GradientOptimizer {
    * To override if you want to reset internal state.
    */
   def reset(): Unit = { it = 0 }
+
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
 }
 
 /**
@@ -90,10 +93,10 @@ trait ParameterAveraging extends GradientStep {
     super.doGradStep(weights, gradient, rate)
     wTmp += (gradient, rate*it)
   }
-
   def setWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,-1.0/it)
   def unSetWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,1.0/it)
   override def reset(): Unit = { super.reset(); wTmp = null }
+  override def finalizeWeights(weights: WeightsSet): Unit = setWeightsToAverage(weights)
 }
 
 /**

@@ -80,6 +80,9 @@ class LBFGS(var numIterations: Double = 1000,
 
   }
 
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
+
   def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     if (_isConverged) return
     //todo: is the right behavior to set _isConverged = true if exceeded numIters?
