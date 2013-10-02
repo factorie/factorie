@@ -122,15 +122,18 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
-    // Note: equality is only in the first set of arguments for case classes
-    case class MentionStartLength(section:Section, start: Int, length: Int)(val mention: Mention) {
-      def this(mention: Mention) = this(mention.section, mention.start, mention.length)(mention)
-    }
+      def dedupOverlappingMentions(mentions: Seq[Mention]): Mention = {
+        if(mentions.length == 1){
+          return mentions.head
+        }else{
+          mentions.find(_.attr[MentionType].categoryValue == "NAM").getOrElse(mentions.head)
+        }
+      }
 
-    (for (m <- mentions) yield new MentionStartLength(m))
-      .toSet
-      .map { m: MentionStartLength => m.mention }
-      .toSeq
+
+      mentions
+      .groupBy(m => (m.section,m.start,m.length))
+      .values.map(mentionSet => dedupOverlappingMentions(mentionSet)).toSeq
       .sortBy(m => (m.tokens.head.stringStart, m.length))
 
   }
