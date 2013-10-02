@@ -16,6 +16,8 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.directed.{Discrete, MaximizeDirichletByMomentMatching, Dirichlet}
+import cc.factorie.variable._
+import cc.factorie.infer.Maximize
 
 /** Simple demonstration of Dirichlet-distributed proportions generating Discrete values. */
 object DirichletDemo {
@@ -33,8 +35,8 @@ object DirichletDemo {
     //println("Demonstrating Proportions estimation")
     //println("Initial Proportions "+p1.value)
     val data = for (i <- 0 until 500) yield new Word :~ Discrete(p1)
-    //MaximizeProportions(p1, model)
-    Maximize(p1)
+    MaximizeProportions.infer(Seq(p1), model)
+    Maximize(Seq(p1), model)
     //println("Estimated Proportions "+p1.value)
     
     //println("Demonstrating Dirichlet parameter estimation")

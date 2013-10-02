@@ -19,12 +19,15 @@ import cc.factorie.util.SortedSparseCounts
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
+import cc.factorie.variable._
+import cc.factorie.model.Model
+import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}
 
 class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
   case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {
     def gate = _3
     def pr(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], z:DiscreteValue): Double = mixture(z.intValue).apply(child.intValue)
-    def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(z.intValue).sampleIndex)
+    def sampledValue(mixture:_2.Value, z:_3.Value)(implicit random: scala.util.Random): _1.Value = _1.domain.apply(mixture(z.intValue).sampleIndex).asInstanceOf[_1.Value]
     def prChoosing(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(child.intValue)
     def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).value.apply(_1.intValue)
     def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int)(implicit random: scala.util.Random): CategoricalValue[A] = _1.domain.apply(mixture(mixtureIndex).sampleIndex)

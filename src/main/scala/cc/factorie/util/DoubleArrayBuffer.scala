@@ -19,12 +19,11 @@ trait ProtectedDoubleArrayBuffer {
   protected def _capacityGrowthFactor: Double = 1.5
   @inline final protected def _ensureCapacity(cap:Int): Unit = 
     if (cap > _arr.length) _setCapacity(math.max(cap, (_arr.length * _capacityGrowthFactor).toInt))
-  protected def _considerShrinkingCapacity: Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
-  protected def _trimCapacity: Unit = _setCapacity(_size) // What if _size == 0?
-  protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
+  protected def _considerShrinkingCapacity(): Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
+  protected def _trimCapacity(): Unit = _setCapacity(_size) // What if _size == 0?
+  protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity() }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Double = _arr(index)
-  protected def _foreach[U](f:Double=>U): Unit = { var i = 0; while (i < _size) f(_arr(i)); i += 1 }
   @inline final protected def _update(index:Int, value:Double): Unit = _arr(index) = value
   @inline final protected def _increment(index:Int, incr:Double): Unit = { _ensureCapacity(index+1); _arr(index) += incr; if (_size < index+1) _size = index+1 }
   @inline final protected def _append(elem: Double): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
@@ -95,7 +94,7 @@ trait ProtectedDoubleArrayBuffer {
   }
   /** Search the array '_arr' for the index at which value x could be inserted in sorted order.
       @param start the lowest index to consider
-      @parm end one plus the highest index that already contains data
+      @param end one plus the highest index that already contains data
       @return the index into '_arr' such that _arr(index) == x, 
       or ind(index-1) < x < ind(index)
       or index == end.
@@ -106,7 +105,7 @@ trait ProtectedDoubleArrayBuffer {
     if (diff == 1) return if (_arr(start) >= x) start else end
     val middle = start + (diff / 2)
     val midval = _arr(middle)
-    if (midval == x) return middle
+    if (midval == x) middle
     else if (x < midval) _positionLte(x, start, middle)
     else _positionLte(x, middle+1, end)
   }
@@ -118,7 +117,7 @@ trait ProtectedDoubleArrayBuffer {
     if (diff == 1) return _arr(start) == x
     val middle = start + (diff / 2)
     val midval = _arr(middle)
-    if (midval == x) return true
+    if (midval == x) true
     else if (x < midval) _containsSorted(x, start, middle)
     else _containsSorted(x, middle+1, end)
   }

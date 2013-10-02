@@ -133,11 +133,9 @@ which then produces the output:
 
 The following code creates a model for holding factors that connect random variables for holding mean and variance with 1000 samples from a Gaussian.
 Then it re-estimates by maximum likelihood the mean and variance from the sampled data. 
-*/
 
+```
 package cc.factorie.tutorial
-import scala.language.reflectiveCalls
-
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
   import cc.factorie.directed._                    // Factors for directed graphical models
@@ -155,14 +153,13 @@ object ExampleGaussian extends App {
   Maximize(variance)
   println("estimated mean %f variance %f".format(mean.value, variance.value))
 }
-
-/*&
+```
 
 ### Linear-chain Conditional Random Field for part-of-speech tagging
 
 The following code declares data, model, inference and learning for a linear-chain CRF for part-of-speech tagging.
- */
 
+```
 object ExampleLinearChainCRF extends App {
   import cc.factorie._            // The base library: variables, factors
   import cc.factorie.la           // Linear algebra: tensors, dot-products, etc.
@@ -193,14 +190,14 @@ object ExampleLinearChainCRF extends App {
   trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
-  labelSequences.foreach(labels => BP.inferChainMax(labels, model).setToMaximize(null))
+  labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
   println(model.markov.weights)
   // Print the inferred tags
   labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
 }
+```
 
-/*&
 ## History
 
 Andrew McCallum began designing and developing FACTORIE in April 2008 as an effort to build an alternative to his [MALLET](http://mallet.cs.umass.edu) toolkit that could represent arbitrarily-structured factor graphs.

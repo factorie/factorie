@@ -1,6 +1,9 @@
 package cc.factorie.tutorial
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
+import cc.factorie.variable._
+import cc.factorie.model.{TupleTemplateWithStatistics1, CombinedModel}
+import cc.factorie.infer.{SamplingInferencer, VariableSettingsSampler, DiscreteSummary1}
 
 object Cards4 {
 
@@ -16,8 +19,8 @@ object Cards4 {
   }
 
   class Location(val name:String) {
-    def cardsHere = allCards.filter(_.value == this)
-    val wins = new BooleanVar { def value = BooleanValue(hasSuitRun(cardsHere, 3))}
+    def cardsHere = allCards.filter(_.value eq this)
+    lazy val wins = { val w = new BooleanVariable(); w.set(hasSuitRun(cardsHere, 3))(null); w }
   }
 
   def main(args:Array[String]): Unit = {
@@ -68,7 +71,7 @@ object Cards4 {
     }
   }
 
-  def isRun(s:Seq[Card]): Boolean = { for (i <- 0 until s.length - 1) if (s(i).n != s(i+1).n-1) return false; return true }
+  def isRun(s:Seq[Card]): Boolean = { for (i <- 0 until s.length - 1) if (s(i).n != s(i+1).n-1) return false; true }
   def hasSuitRun(cards:Seq[Card], runLength:Int): Boolean = {
     val rl = runLength + 1
     val bySuit = cards.groupBy(_.suit).values

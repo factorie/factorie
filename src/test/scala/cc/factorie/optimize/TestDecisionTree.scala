@@ -8,6 +8,8 @@ import cc.factorie.traversableExtras
 import cc.factorie.la.{SingletonTensor1, Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
+import cc.factorie.variable.{VectorDomain, DiscreteDomain}
+import cc.factorie.app.classify._
 
 class TestDecisionTree extends JUnitSuite {
   @Test def testRegression(): Unit = {

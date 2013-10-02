@@ -17,6 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.CategoricalVar
 
 /** A portion of the string contents of a Document.
     @author Andrew McCallum */
@@ -82,6 +83,7 @@ class Document extends DocumentSubstring with Attr {
     _string = null
     result
   }
+  /** The string contents of this Document. */
   def string: String = {
     this.synchronized {
       if (_string eq null) _string = _stringbuf.toString
@@ -89,34 +91,48 @@ class Document extends DocumentSubstring with Attr {
     }
     _string
   }
+  /** The number of characters in this Document's string.  
+      Use this instead of Document.string.length because it is more efficient when the Document's string is growing with appendString. */
   def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
 
   // For DocumentSubstring
+  /** A method required by the DocumentSubstring trait, which in this case simply returns this Document itself. */
   def document: Document = this
+  /** A method required by the DocumentSubstring trait, which in this case simply returns 0. */
   def stringStart: Int = 0
+  /** A method required by the DocumentSubstring trait, which in this case simply returns Document.stringLength. */
   def stringEnd: Int = stringLength
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
+  /** A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.
+      If the user does not explicitly add Sections to the document, this Section is returned by the "sections" method. */
   val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
   private var _sections: mutable.Buffer[Section] = new ArrayBuffer[Section]
-  def sections: Seq[Section] = if (_sections.length == 0) return Seq(asSection) else _sections
+  /** The canonical list of Sections containing the tokens of the document.  
+      The user may create and add Sections covering various substrings within the Document.
+      If the user does not explicitly add any Sections, by default there will be one Section that covers the entire Document string;
+      this one Section is the one returned by "Document.asSection".
+      Note that Sections may overlap with each other, representing alternative tokenizations or annotations. */
+  def sections: Seq[Section] = if (_sections.length == 0) Seq(asSection) else _sections
+  /** Add a new Section to this Document's canonical list of Sections. */
   def +=(s: Section) = _sections += s
+  /** Remove a Section to this Document's canonical list of Sections. */
+  def -=(s: Section) = _sections -= s
+  /** Remove all Section to this Document's canonical list of Sections. */
   def clearSections(): Unit = _sections.clear()
 
   // A few iterators that combine the results from the Sections
-  //def tokens: Iterator[Token] = for (section <- sections.iterator; token <- section.tokens.iterator) yield token
   def tokens: Iterable[Token] = if (sections.length == 1) sections.head.tokens else new Iterable[Token] { def iterator = for (section <- sections.iterator; token <- section.tokens.iterator) yield token }
-  //def sentences: Iterator[Sentence] = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence
   def sentences: Iterable[Sentence] = if (sections.length == 1) sections.head.sentences else new Iterable[Sentence] { def iterator = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence } 
   //def spans: Iterator[TokenSpan] = for (section <- sections.iterator; span <- section.spans.iterator) yield span
-  def spans: Iterable[TokenSpan] = if (sections.length == 1) sections.head.spans else new Iterable[TokenSpan] { def iterator = for (section <- sections.iterator; span <- section.spans.iterator) yield span }
+  //def spans: Iterable[TokenSpan] = if (sections.length == 1) sections.head.spans else new Iterable[TokenSpan] { def iterator = for (section <- sections.iterator; span <- section.spans.iterator) yield span }
   
   /** An efficient way to get the total number of Tokens in the canonical Sections of this Document. */
   def tokenCount: Int = if (sections.length == 0) sections.head.length else sections.foldLeft(0)((result, section) => result + section.length)
   /** An efficient way to get the total number of Sentences in the canonical Sections of this Document. */
   def sentenceCount: Int = if (sections.length == 0) sections.head.sentences.length else sections.foldLeft(0)((result, section) => result + section.sentences.length)
-  /** An efficient way to get the total number of Spans (not including Sentences) in the canonical Sections of this Document. */
-  def spanCount: Int = if (sections.length == 0) sections.head.spans.length else sections.foldLeft(0)((result, section) => result + section.spans.length)
+  ///** An efficient way to get the total number of Spans (not including Sentences) in the canonical Sections of this Document. */
+  //def spanCount: Int = if (sections.length == 0) sections.head.spans.length else sections.foldLeft(0)((result, section) => result + section.spans.length)
     
   /** The collection of DocumentAnnotators that have been run on this Document,
       For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.  
@@ -129,19 +145,19 @@ class Document extends DocumentSubstring with Attr {
   /** Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If  */
   def annotatorFor(c:Class[_]): Option[Class[_]] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
   
-  /** Return a String containing the Token strings in the document, with sentence and span boundaries indicated with SGML. */
-  def sgmlString: String = {
-    val buf = new StringBuffer
-    for (section <- sections; token <- section.tokens) {
-      if (token.isSentenceStart) buf.append("<sentence>")
-      token.startsSpans.foreach(span => buf.append("<"+span.name+">"))
-      buf.append(token.string)
-      token.endsSpans.foreach(span => buf.append("</"+span.name+">"))
-      if (token.isSentenceEnd) buf.append("</sentence>")
-      buf.append(" ")
-    }
-    buf.toString
-  }
+//  /** Return a String containing the Token strings in the document, with sentence and span boundaries indicated with SGML. */
+//  def sgmlString(spanLists:SpanList[_,_,_]*): String = {
+//    val buf = new StringBuffer
+//    for (section <- sections; token <- section.tokens) {
+//      if (token.isSentenceStart) buf.append("<sentence>")
+//      token.startsSpans.foreach(span => buf.append("<"+span.name+">"))
+//      buf.append(token.string)
+//      token.endsSpans.foreach(span => buf.append("</"+span.name+">"))
+//      if (token.isSentenceEnd) buf.append("</sentence>")
+//      buf.append(" ")
+//    }
+//    buf.toString
+//  }
   
   /** Return a String containing the Token strings in the document, with one-word-per-line 
       and various tab-separated attributes appended on each line. */
@@ -155,7 +171,7 @@ class Document extends DocumentSubstring with Attr {
       for (af <- attributes) {
         buf.append("\t")
         af(token) match {
-          case cv:CategoricalVar[_,String @unchecked] => buf.append(cv.categoryValue.toString)
+          case cv:CategoricalVar[String @unchecked] => buf.append(cv.categoryValue.toString)
           case null => {}
           case v:Any => buf.append(v.toString)
         }

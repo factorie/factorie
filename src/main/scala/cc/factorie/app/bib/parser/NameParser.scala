@@ -2,11 +2,6 @@ package cc.factorie.app.bib.parser
 
 import scala.language.postfixOps
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 private[parser] object NameParser {
 
   import Dom.Name
@@ -36,7 +31,7 @@ private[parser] object NameParser {
       case FRAGMENT(f) => f
       case _ => sys.error("Only fragments should be left over after processing!")
     })
-    val isVon: String => Boolean = _.filter(_.isLetter).headOption.map(_.isLower).getOrElse(false)
+    val isVon: String => Boolean = _.filter(_.isLetter).headOption.exists(_.isLower)
     sections match {
       case List(firstVonLast) if firstVonLast.exists(isVon) =>
         val (tsal, noVtsrif) = partitionTakeWhile(firstVonLast.reverse, 1)(!isVon(_))
@@ -119,7 +114,7 @@ private[parser] object NameParser {
 
     // if its just one fragment with curly braces, its a literal, so leave out the braces
     lazy val fragment =
-      (BRACE_DELIMITED_STRING_NO_OUTER.?) ~ ("""\\.""" | "[^\\s,}{\\-~]" | BRACE_DELIMITED_STRING).* ^^ {
+      BRACE_DELIMITED_STRING_NO_OUTER.? ~ ("""\\.""" | "[^\\s,}{\\-~]" | BRACE_DELIMITED_STRING).* ^^ {
         case Some(bds) ~ Nil => bds
         case Some(bds) ~ rest => (("{" + bds + "}") :: rest).mkString
         case None ~ rest => rest.mkString

@@ -4,8 +4,10 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
-import cc.factorie.optimize._
 import java.io._
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -32,7 +34,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
-    var tokens = mention.span.tokens.toSeq
+    var tokens = mention.tokens.toSeq
     if (tokens.head.string == "the") tokens = tokens.drop(1)
     if (tokens.length > 0 && tokens.last.string == "'s") tokens = tokens.dropRight(1)
     if (tokens.length == 0) return features // TODO Complain further here? 
@@ -41,8 +43,8 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     features += "HEAD="+mention.headToken.string
     features += "LAST="+words.last
     features += "FIRST="+words.last
-    mention.span.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
-    mention.span.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
+    mention.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
+    mention.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
     for (lexicon <- lexicons) {
       if (lexicon.contains(tokens)) features += "LEX="+lexicon.name
       if (lexicon.containsWord(mention.headToken.string)) features += "HEADLEX="+lexicon.name
@@ -70,7 +72,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Mention): Int = {
-    if (PersonLexicon.contains(mention.span) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
   def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
@@ -79,13 +81,13 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     document
   }
 
-  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
+  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
  
   def filterTrainingMentions(mentions:Seq[Mention]): Iterable[Mention] = 
-    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention.span))
+    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
@@ -144,12 +146,12 @@ object MentionEntityTypeLabelerTrainer {
     trainDocs = trainDocs.dropRight(20)
     val labeler = new MentionEntityTypeLabeler
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
-      println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
+      println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.phrase))
 
     labeler.train(trainDocs, testDocs)
     (trainDocs ++ testDocs).foreach(labeler.process(_))
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
-      println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.span.phrase))
+      println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
     
@@ -167,11 +169,11 @@ object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
     document
   }
   def predictMentionEntityType(m: Mention): Unit = {
-    val prediction = classifyUsingRules(m.span.tokens.map(_.lemmaString))
+    val prediction = classifyUsingRules(m.tokens.map(_.lemmaString))
     m.attr += new MentionEntityType(m,prediction)
   }
   override def tokenAnnotationString(token:Token): String = {
-    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.span.indexOf(token)).mkString(","); case _ => "_" }
+    token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.indexOf(token)).mkString(","); case _ => "_" }
   }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
@@ -197,19 +199,19 @@ object MentionEntityTypeAnnotator1Util {
     val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
 
     if(onlyOne){
-      if(isPerson) return "PERSON"
-      else if(isPlace) return "GPE"
-      else if(isEvent) return "EVENT"
-      else if(isOrganization) return "ORG"
+      if(isPerson) "PERSON"
+      else if(isPlace) "GPE"
+      else if(isEvent) "EVENT"
+      else if(isOrganization) "ORG"
       else
-        return "O"
+        "O"
     }else{
       if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
-        return "GPE"
+        "GPE"
       else if(isPlace && isPerson)
-        return "GPE"
+        "GPE"
       else
-        return "O"
+        "O"
     }
   }
 

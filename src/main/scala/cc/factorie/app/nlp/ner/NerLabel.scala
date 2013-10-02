@@ -16,6 +16,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Cubbie
+import cc.factorie.variable.{LabeledCategoricalVariable, DiffList, CategoricalDomain}
 
 /** The abstract class for all named-entity recognition labels. */
 abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {
@@ -39,6 +40,7 @@ class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
 
+class NerSpanList extends TokenSpanList[NerSpan]
 
 class NerLabelCubbie extends Cubbie {
   val label = StringSlot("label")

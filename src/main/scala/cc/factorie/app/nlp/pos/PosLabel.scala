@@ -15,10 +15,11 @@
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
+import cc.factorie.variable.{LabeledCategoricalVariable, EnumDomain, CategoricalDomain}
 
 
 // TODO Consider renaming PennPosDomain to PPosDomain, just because it is shorter and easier to pronounce
-// TODO Consider renaming classes POS1... to Pos1
+// TODO Consider renaming classes POS1... to Pos1 to be consistent with PosLabel
 
 /** Penn Treebank part-of-speech tag domain. */
 object PennPosDomain extends CategoricalDomain[String] {

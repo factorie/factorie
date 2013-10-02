@@ -49,7 +49,7 @@ trait Attr {
       }
     }
     /** Re-allocate to remove any unused capacity */
-    def trimCapacity: Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
+    def trimCapacity(): Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
     // Methods that search through _attr
     /** Add the given attribute, with key equal to its class. */
     def +=[C<:AnyRef](value:C): C = {
@@ -111,7 +111,7 @@ trait Attr {
       val result = new scala.collection.mutable.ArrayBuffer[AnyRef]
       var i = 0
       while (i < _attr.length) {
-        if ((_attr(i) ne null)) result += _attr(i)
+        if (_attr(i) ne null) result += _attr(i)
         i += 1
       }
       result

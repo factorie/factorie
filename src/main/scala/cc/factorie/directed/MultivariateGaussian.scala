@@ -1,15 +1,22 @@
 package cc.factorie.directed
 
 import cc.factorie._
-import cc.factorie.DiscreteValue
-import cc.factorie.DiscreteVariable
 import cc.factorie.la._
 import cc.factorie.maths
-import cc.factorie.MutableTensorVar
 import scala.util.Random
 import org.jblas.DoubleMatrix
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.infer._
+import scala.Some
 
-object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], MutableTensorVar[Tensor1], MutableTensorVar[Tensor2]] {
+object DirectedTypeHelpers {
+  type MutableTensorVarTensor1 = MutableTensorVar { type Value = Tensor1 }
+  type MutableTensorVarTensor2 = MutableTensorVar { type Value = Tensor2 }
+}
+import DirectedTypeHelpers._
+
+object MultivariateGaussian extends DirectedFamily3[MutableTensorVarTensor1, MutableTensorVarTensor1, MutableTensorVarTensor2] {
   self =>
   def logpr(value: Tensor1, mean: Tensor1, variance: Tensor2): Double = {
     val k = mean.length
@@ -18,7 +25,7 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
   }
   def pr(value: Tensor1, mean: Tensor1, variance: Tensor2): Double = math.exp(logpr(value, mean, variance))
   def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = nextGaussian(mean, variance)(random)
-  case class Factor(override val _1: MutableTensorVar[Tensor1], override val _2: MutableTensorVar[Tensor1], override val _3: MutableTensorVar[Tensor2])
+  case class Factor(override val _1: MutableTensorVarTensor1, override val _2: MutableTensorVarTensor1, override val _3: MutableTensorVarTensor2)
     extends super.Factor(_1, _2, _3) {
     override def logpr(child: Tensor1, mean: Tensor1, variance: Tensor2): Double = self.logpr(child, mean, variance)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
@@ -26,7 +33,7 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
     override def pr: Double = self.pr(_1.value, _2.value, _3.value)
     def sampledValue(mean: Tensor1, variance: Tensor2)(implicit random: scala.util.Random): Tensor1 = self.sampledValue(mean, variance)
   }
-  def newFactor(a: MutableTensorVar[Tensor1], b: MutableTensorVar[Tensor1], c: MutableTensorVar[Tensor2]) = Factor(a, b, c)
+  def newFactor(a: MutableTensorVarTensor1, b: MutableTensorVarTensor1, c: MutableTensorVarTensor2) = Factor(a, b, c)
   def nextGaussian(mean: Tensor1, covariance: Tensor2)(implicit r: Random): Tensor1 = {
     val uncorrelated = new DenseTensor1(Array.fill(mean.length)(maths.nextGaussian(0.0, 1.0)(r)))
     uncorrelated * cholesky(covariance) + mean
@@ -40,11 +47,11 @@ object MultivariateGaussian extends DirectedFamily3[MutableTensorVar[Tensor1], M
 }
 
 object MultivariateGaussianMixture
-  extends DirectedFamily4[MutableTensorVar[Tensor1], Mixture[MutableTensorVar[Tensor1]], Mixture[MutableTensorVar[Tensor2]], DiscreteVariable] {
+  extends DirectedFamily4[MutableTensorVarTensor1, Mixture[MutableTensorVarTensor1], Mixture[MutableTensorVarTensor2], DiscreteVariable] {
   case class Factor(
-    override val _1: MutableTensorVar[Tensor1],
-    override val _2: Mixture[MutableTensorVar[Tensor1]],
-    override val _3: Mixture[MutableTensorVar[Tensor2]],
+    override val _1: MutableTensorVarTensor1,
+    override val _2: Mixture[MutableTensorVarTensor1],
+    override val _3: Mixture[MutableTensorVarTensor2],
     override val _4: DiscreteVariable) extends super.Factor(_1, _2, _3, _4) {
     def gate = _4
     override def logpr(child: Tensor1, means: Seq[Tensor1], variances: Seq[Tensor2], z: DiscreteValue) =
@@ -58,20 +65,20 @@ object MultivariateGaussianMixture
     def sampledValueChoosing(means: Seq[Tensor1], variances: Seq[Tensor2], mixtureIndex: Int)(implicit random: scala.util.Random): Tensor1 =
       MultivariateGaussian.sampledValue(means(mixtureIndex), variances(mixtureIndex))
   }
-  def newFactor(a: MutableTensorVar[Tensor1], b: Mixture[MutableTensorVar[Tensor1]], c: Mixture[MutableTensorVar[Tensor2]], d: DiscreteVariable) =
+  def newFactor(a: MutableTensorVarTensor1, b: Mixture[MutableTensorVarTensor1], c: Mixture[MutableTensorVarTensor2], d: DiscreteVariable) =
     Factor(a, b, c, d)
 }
 
-object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVar[Tensor1]],DirectedModel] {
-  def maxMean(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: Summary): Option[Tensor1] =
+object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorVarTensor1],DirectedModel] {
+  def maxMean(meanVar: MutableTensorVarTensor1, model: DirectedModel, summary: Summary): Option[Tensor1] =
     getMeanFromFactors(model.extendedChildFactors(meanVar), _._2 == meanVar, _._2.indexOf(meanVar), summary)
-  def apply(meanVar: MutableTensorVar[Tensor1], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
+  def apply(meanVar: MutableTensorVarTensor1, model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxMean(meanVar, model, summary).foreach(meanVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor1]], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
+  def infer(variables: Iterable[MutableTensorVarTensor1], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxMean(v, model, marginalizing)
-      m.foreach(assignment(v) = _)
+      m.foreach(i => assignment.update[MutableTensorVarTensor1](v, i))
     }
     new AssignmentSummary(assignment)
   }
@@ -107,8 +114,8 @@ object MaximizeMultivariateGaussianMean extends Maximize[Iterable[MutableTensorV
   }
 }
 
-object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableTensorVar[Tensor2]],DirectedModel] {
-  def maxCovariance(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor2] = {
+object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableTensorVarTensor2],DirectedModel] {
+  def maxCovariance(covarianceVar: MutableTensorVarTensor2, model: DirectedModel, summary: DiscreteSummary1[DiscreteVar]): Option[Tensor2] = {
     val factorIter = model.extendedChildFactors(covarianceVar).iterator
     val n = covarianceVar.value.dim1
     val meanOpt = MaximizeMultivariateGaussianMean.getMeanFromFactors(
@@ -120,7 +127,7 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
     while (factorIter.hasNext)
       factorIter.next() match {
         case MultivariateGaussian.Factor(fvalue, _, fcovariance) if fcovariance == covarianceVar =>
-          val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+          val centered = (fvalue.value - mean)
           sum += new Outer1Tensor2(centered, centered)
           count += 1.0
         case MultivariateGaussianMixture.Factor(fvalue, _, fcovariances, gate) if fcovariances.contains(covarianceVar) =>
@@ -128,13 +135,13 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
           val mixtureIndex = fcovariances.indexOf(covarianceVar)
           if (gateMarginal eq null) {
             if (gate.intValue == mixtureIndex) {
-              val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+              val centered = (fvalue.value - mean)
               sum += new Outer1Tensor2(centered, centered)
               count += 1.0
             }
           } else {
             val p = gateMarginal.proportions(mixtureIndex)
-            val centered = (fvalue.value - mean).asInstanceOf[Tensor1]
+            val centered = (fvalue.value - mean)
             centered *= math.sqrt(p)
             sum += new Outer1Tensor2(centered, centered)
             count += p
@@ -146,13 +153,13 @@ object MaximizeMultivariateGaussianCovariance extends Maximize[Iterable[MutableT
     sum /= (count - 1.0)
     Some(sum)
   }
-  def apply(covarianceVar: MutableTensorVar[Tensor2], model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
+  def apply(covarianceVar: MutableTensorVarTensor2, model: DirectedModel, summary: DiscreteSummary1[DiscreteVar] = null): Unit =
     maxCovariance(covarianceVar, model, summary).foreach(covarianceVar.set(_)(null))
-  def infer(variables: Iterable[MutableTensorVar[Tensor2]], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
+  def infer(variables: Iterable[MutableTensorVarTensor2], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     lazy val assignment = new HashMapAssignment
     for (v <- variables) {
       val m = maxCovariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]])
-      m.foreach(assignment(v) = _)
+      m.foreach(assignment.update[MutableTensorVarTensor2](v, _))
     }
     new AssignmentSummary(assignment)
   }

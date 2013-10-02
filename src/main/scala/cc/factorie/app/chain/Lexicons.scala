@@ -54,24 +54,24 @@ class Lexicons( val sources : List[(String,BufferedSource)]) {
         //println("And phrase: " + phrase.map( _.string ).mkString(" "))
       }
     }
-    return lexes
+    lexes
   }
 
   def apply(span : TokenSpan) : List[String] = {
-    return if(lexiconMap.contains(removeTrail(span.phrase))) lexiconMap(removeTrail(span.phrase)) else List[String]()
+    if(lexiconMap.contains(removeTrail(span.phrase))) lexiconMap(removeTrail(span.phrase)) else List[String]()
   }
 
 
   def subsect(phrase :Seq[Token], token : Token, maxOutLength : Int) : List[List[Token]] = {
     val middle = phrase.zipWithIndex.filter( _._1 == token).head._2
     var keys = List[List[Token]]()
-    for(i <- (0 to maxOutLength)) {
+    for(i <- 0 to maxOutLength) {
       var start = middle
-      for(j <- (0 to i)) {
-        start = middle-j;
+      for(j <- 0 to i) {
+        start = middle-j
         var key : List[Token]= List[Token]()
         if(start > -1 && (start+i) < phrase.size) {
-          for(k <- (0 to i)) {
+          for(k <- 0 to i) {
             key =  key ++ List(phrase(start+k))
           }
           keys = key :: keys

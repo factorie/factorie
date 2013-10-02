@@ -89,9 +89,9 @@ class GenericEntityMap[M] {
     reverseMap.put(mId, eId)
   }
 
-  def clear: Unit = {
-    entities.clear
-    reverseMap.clear
+  def clear(): Unit = {
+    entities.clear()
+    reverseMap.clear()
   }
 
   def checkConsistency: Boolean = {
@@ -157,7 +157,7 @@ object EntityMap {
   def readFromFile(filename: String, mentionAlphabet: HashMap[String, Long]): EntityMap = {
     val map: EntityMap = new EntityMap
     val entityAlphabet: HashMap[String, Long] = new HashMap
-    for (line: String <- Source.fromFile(filename).getLines) {
+    for (line: String <- Source.fromFile(filename).getLines()) {
       if (!line.trim.equals("")) {
         val splits = line.trim.split("\\t")
         println("Adding {" + splits(1) + "} to {" + splits(0) + "}")
@@ -174,7 +174,7 @@ object EntityMap {
     val map: EntityMap = new EntityMap
     val entityAlphabet: HashMap[String, Long] = new HashMap
     var mentionId: Long = 0
-    for (line: String <- Source.fromFile(filename).getLines) {
+    for (line: String <- Source.fromFile(filename).getLines()) {
       //println("Adding {" + mentionId + "} to {" + line.trim + "}")
       map.addMention(mentionId, entityAlphabet.getOrElseUpdate(line.trim, entityAlphabet.size.toLong))
       mentionId += 1

@@ -7,6 +7,10 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosLabel, PennPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{LabeledVarWithTarget, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel}
+import cc.factorie.infer.{InferByBPChain, BP}
+import cc.factorie.app.nlp.load.LoadOWPL
 
 /**
  * Author: martin
@@ -94,7 +98,7 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceLabels = sentences.map(_.posLabels).filter(_.size > 0)
 
-    val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(s, PosModel, InferByBPChainSum))
+    val examples = sentenceLabels.map(s => new optimize.LikelihoodExample(s, PosModel, InferByBPChain))
     Trainer.onlineTrain(PosModel.parameters, examples, maxIterations=10)
     testSavePrint("final")
   }

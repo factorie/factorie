@@ -55,7 +55,7 @@ trait Trackable {
   def mark(text: String, start: Boolean) = {for (t <- Trackers) t.marked(text, start)}
   def |**(text: String) = mark(text, start = true)
   def **|(text: String) = mark(text, start = false)
-  def **| = mark("End of Event", start = false)
+  def **|() = mark("End of Event", start = false)
 }
 
 object Trackers extends ArrayBuffer[Tracker]

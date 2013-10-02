@@ -14,10 +14,11 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import variable._
+import optimize._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PennPosLabel
-import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import scala.io._
@@ -25,6 +26,10 @@ import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
+import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
+import cc.factorie.infer.{BP, InferByBPChain}
+import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
+import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -59,7 +64,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (!document.tokens.head.attr.contains(m.runtimeClass))
       document.tokens.map(token => token.attr += newLabel(token, "O"))
     if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
+      document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
       initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
     }
     process(document, useModel2 = false)
@@ -164,7 +169,6 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     is.close()
   }
 
-  import cc.factorie.app.nlp.lexicon._
   var aggregate = false
   var twoStage = false
   val clusters = new scala.collection.mutable.HashMap[String,String]
@@ -431,7 +435,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(loader: Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
+  def train(loader: load.Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
     val trainDocuments = loader.fromFilename(dataDir + trainFilename)
@@ -461,7 +465,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
  
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
-    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChainSum))
+    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChain))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
     trainDocuments.foreach(process(_, useModel2=false))
@@ -479,7 +483,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
 
-    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChainSum))
+    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChain))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
 
     trainDocuments.foreach(process)
@@ -558,7 +562,7 @@ object NER3Trainer extends HyperparameterMain {
       }
     }
     
-    val result = ner.train(LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
+    val result = ner.train(load.LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }

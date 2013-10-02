@@ -19,6 +19,7 @@ import cc.factorie.util.DoubleSeq
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
+import cc.factorie.variable._
 
 object PlatedDiscreteMixture extends DirectedFamily3[DiscreteSeqVariable,Mixture[ProportionsVariable],DiscreteSeqVariable] {
   self =>

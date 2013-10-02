@@ -3,11 +3,6 @@ package cc.factorie.app.bib.parser
 import scala.util.parsing.combinator._
 import scala.language.implicitConversions
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 private[parser] trait SharedParsers extends RegexParsers {
   override val skipWhitespace = false
   // FIXME: it's more readable if this is '+', not '*' - go find places that rely on it being '+' and add a '?'

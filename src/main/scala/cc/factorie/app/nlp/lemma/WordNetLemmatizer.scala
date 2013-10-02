@@ -50,13 +50,13 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   )
 
   for ((f, pos) <- Seq(("adj", ADJC), ("adv", ADVB), ("noun", NOUN), ("verb", VERB))) {
-    for (line <- sourceFactory(f + ".exc").getLines) {
+    for (line <- sourceFactory(f + ".exc").getLines()) {
       val fields = line.split(" ")
       if (fields(0).indexOf('_') == -1) // For now skip multi-word phrases (indicated by underscore in WordNet)
         exceptionMap(pos)(fields(0)) = fields(1)
     }
 
-    for (line <- sourceFactory("index." + f).getLines) {
+    for (line <- sourceFactory("index." + f).getLines()) {
       val word = line.split(" ")(0)
       if (!word.contains('_')) wordNetWords(pos) += word.toLowerCase
     }

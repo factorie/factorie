@@ -5,6 +5,7 @@ import org.junit.Assert._
 import cc.factorie._
 import la._
 import optimize.OnlineTrainer
+import cc.factorie.variable.DiscreteDomain
 
 /**
  * User: apassos

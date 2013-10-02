@@ -16,6 +16,9 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.optimize._
 import java.io.File
+import cc.factorie.variable._
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{VariableSettingsSampler, GibbsSampler}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's low-level "imperative" language to define model structure.
@@ -118,9 +121,9 @@ object ChainNER2b {
   }
  
   def printDiagnostic(labels:Seq[Label]) : Unit = {
-    for (label <- labels; if (label.intValue != label.domain.index("O"))) {
+    for (label <- labels; if label.intValue != label.domain.index("O")) {
       if (!label.hasPrev || label.value != label.prev.value) 
-        print("%-7s %-7s ".format((if (label.categoryValue != label.target.categoryValue) label.target.value.category else " "), label.value.category))
+        print("%-7s %-7s ".format(if (label.categoryValue != label.target.categoryValue) label.target.value.category else " ", label.value.category))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }

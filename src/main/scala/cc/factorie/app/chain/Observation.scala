@@ -16,6 +16,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
+import cc.factorie.variable.{AbstractChainLink, CategoricalVectorVar}
 
 /** A element of the input sequence to a linear-chain (CRF) having a string.  Its corresponding label will be an Attr attribute. */
 trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with Attr {
@@ -56,7 +57,7 @@ object Observations {
       }
     }
     // Put the new features in the Token
-    for (i <- 0 until size) (vf(observations(i))) ++= extraFeatures(i)
+    for (i <- 0 until size) vf(observations(i)) ++= extraFeatures(i)
   }
   
   /** Return null if index i is out of range. */
@@ -129,7 +130,7 @@ object Observations {
   // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
   // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
   private def appendConjunctions[A<:Observation[A]](t:A, seqStart:Int, seqEnd:Int, vf:A=>CategoricalVectorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
-    val result = new ArrayBuffer[List[(String,Int)]];
+    val result = new ArrayBuffer[List[(String,Int)]]
     val offset: Int = offsets.head
     var t2 = t.next(offset); if ((t2 ne null) && (t2.position < seqStart || t2.position >= seqEnd)) t2 = null.asInstanceOf[A]  // Don't add features beyond the boundaries of the Seq given in addNeighboringFeatureConjunctions
     val adding: Seq[String] = 

@@ -121,7 +121,7 @@ object RexaCitationLoader{
   }
   lazy val dateUpperBound = new SimpleDateFormat("yyyy").format(System.currentTimeMillis).toInt+1;////2014//(new com.sun.jmx.snmp.Timestamp(System.currentTimeMillis)).getDate.getYear+1
   lazy val dateLowerBound = 1900
-  def validDateRange(year:Int):Boolean=(year<=dateUpperBound && year>=dateLowerBound)
+  def validDateRange(year:Int):Boolean= year <= dateUpperBound && year >= dateLowerBound
   def setYearIfValid(paper:PaperEntity,year:Int):Unit = if(validDateRange(year))paper.year.set(year)(null)
 
   protected def processPaper(paperNode:Node):Option[PaperEntity] ={
@@ -140,8 +140,8 @@ object RexaCitationLoader{
               setYearIfValid(paper,text.toInt)
             }else{
               for(tok <- text.split("[^0-9']+")){
-                if(tok.matches("'[4-9][0-9]"))setYearIfValid(paper,(("19"+tok.substring(1,tok.length)).toInt))
-                else if(tok.matches("'[0-1][0-9]"))setYearIfValid(paper,(("20"+tok.substring(1,tok.length)).toInt))
+                if(tok.matches("'[4-9][0-9]"))setYearIfValid(paper, ("19" + tok.substring(1, tok.length)).toInt)
+                else if(tok.matches("'[0-1][0-9]"))setYearIfValid(paper, ("20" + tok.substring(1, tok.length)).toInt)
               }
               for(tok <- text.split("[^0-9-]+"))if(tok.matches(yearRegex))setYearIfValid(paper,tok.toInt)
             }
@@ -408,7 +408,7 @@ object BibReader{
         line = reader.readLine
       }
     }catch{case e:Exception => {e.printStackTrace();println("Warning: exception caught while reading bibmog file: "+file.getName)}}
-    finally{if(reader != null)reader.close}
+    finally{if(reader != null)reader.close()}
     result
   }
   def loadBibTexDirForTopicModel(bibDir:File,paper2string:PaperEntity=>String):Seq[String] ={
@@ -700,7 +700,7 @@ object RexaLabeledLoader{
     val paper = new PaperEntity("",true)
     var authorInFocus = new Array[String](3)
     val loadedFile = scala.io.Source.fromFile(file)
-    for(line <- loadedFile.getLines.toSeq.reverse){ //for some reason scala loads files in reverse order...
+    for(line <- loadedFile.getLines().toSeq.reverse){ //for some reason scala loads files in reverse order...
       val split = line.split(":",2)
       if(split.length==2){
         val value = split(1).trim
@@ -773,7 +773,7 @@ object RexaLabeledLoader{
       }
       if(!foundAuthorInFocus)noAuthorInFocusCount += 1
     }
-    loadedFile.close
+    loadedFile.close()
     paper
   }
   def extractFlatSGML(string:String,tag:String):String ={
@@ -910,7 +910,7 @@ object DBLPLoader{
     result
   }
 
-  protected def filterBib(s:String):Boolean = (s=="article" || s=="inproceedings")
+  protected def filterBib(s:String):Boolean = s == "article" || s == "inproceedings"
   protected def addFieldsForDBLP(node:Node,paperMention:PaperEntity) : Unit ={
     val nodes = node.getChildNodes
     var authorLastNameInFocus:Option[String] = None

@@ -47,7 +47,7 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends ReadOnlyTensor with Ten
 
   override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
     case t: ConcatenatedTensor => {
-      assert(t.tensors.length == theTensors.length);
+      assert(t.tensors.length == theTensors.length)
       (0 until theTensors.length).exists(i=> tensors(i).different(t.tensors(i), threshold))
     }
     case t:DoubleSeq => {
@@ -61,7 +61,7 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends ReadOnlyTensor with Ten
 
   override def :=(t:DoubleSeq): Unit = t match {
     case t: ConcatenatedTensor => {
-      assert(t.tensors.length == theTensors.length);
+      assert(t.tensors.length == theTensors.length)
       (0 until theTensors.length).map(i=> tensors(i):=t.tensors(i))
     }
     case t:DoubleSeq => {

@@ -33,7 +33,7 @@ object MentionAlignment {
     documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosLabel]))  //remove the gold POS annotation
     documentsToBeProcessed.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    documentsToBeProcessed.par.foreach(findMentions(_)(map))
+    cc.factorie.util.Threading.parForeach(documentsToBeProcessed, Runtime.getRuntime.availableProcessors())(findMentions(_)(map))
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist
@@ -94,9 +94,9 @@ object MentionAlignment {
         //val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
         //m.attr += new MentionEntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
-        if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
+        if(debug) println("aligned: " + gtMention.string +":" + gtMention.start   + "  " + m.string + ":" + m.start)
       }else{
-        if(debug) println("not aligned: "  +  m.span.string + ":" + m.start)
+        if(debug) println("not aligned: "  +  m.string + ":" + m.start)
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity

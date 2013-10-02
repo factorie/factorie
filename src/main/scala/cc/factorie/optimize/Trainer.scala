@@ -6,6 +6,7 @@ import cc.factorie._
 import java.util.concurrent.{ExecutorService, Executors, Callable}
 import util._
 import util.FastLogging
+import cc.factorie.model.WeightsSet
 
 /**
  * User: apassos

@@ -60,7 +60,7 @@ object Evaluator{
             println("    -BagOfCoAuthors: "+boc)
             println("    -BagOfVenues   : "+bov)
             println("    *TOTAL: "+(bok+boc+bov))
-            println("      parent eq? "+(mi.parentEntity.eq(mj.parentEntity)))
+            println("      parent eq? "+ mi.parentEntity.eq(mj.parentEntity))
           }
         }
       }
@@ -115,7 +115,7 @@ object Evaluator{
       val entity = predictedClustering(i)
       val predLabel = entity.entityRoot.id.toString//d.mentions(i).entity
       val truths = predictedClustering.filter((e:HierEntity)=>{e.groundTruth!=None && e.groundTruth.get==entity.groundTruth.get}).toSet//predictedClustering.getMentionsFromEID(d, d.mentions(i))
-      val preds = (entity.entityRoot.descendantsOfClass[HierEntity]).filter((e:HierEntity)=>e.groundTruth!=None).toSet
+      val preds = entity.entityRoot.descendantsOfClass[HierEntity].filter((e:HierEntity)=>e.groundTruth!=None).toSet
       var correct: Int = 0
       for (j <- preds)
         for (k <- truths)

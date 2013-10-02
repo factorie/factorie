@@ -50,7 +50,7 @@ object PorterStemmer {
     }
 
     /* removing the suffix string, s, does a vowel exist?' */
-    def vowelInStem(s: String): Boolean = (0 until b.length - s.length).find(!isConsonant(_)).isDefined
+    def vowelInStem(s: String): Boolean = (0 until b.length - s.length).exists(!isConsonant(_))
 
     /* doublec(j) is true <=> j,(j-1) contain a double consonant. */
     def doublec(): Boolean = {
@@ -82,13 +82,13 @@ object PorterStemmer {
     }
 
     def processSubList( l:List[(String, String)], checker: Int=>Boolean ): Boolean =
-      l.find(v => replacer(v._1, v._2, checker)).isDefined
+      l.exists(v => replacer(v._1, v._2, checker))
 
     // step 1a
     processSubList(step1aVals, _ >= 0)
 
     // step 1b
-    if (!(replacer("eed", "ee", _>0)) &&
+    if (!replacer("eed", "ee", _ > 0) &&
         ((vowelInStem("ed") && replacer("ed", "", _>=0) ) || ( vowelInStem("ing") && replacer( "ing", "", _>=0)  ) ) &&
         (! processSubList(step1bVals, _>=0))) {
       if ( doublec() && !"lsz".contains( b.last ) )
@@ -98,7 +98,7 @@ object PorterStemmer {
     }
 
     // step 1c
-    (vowelInStem("y") && replacer("y", "i", _>=0))
+    vowelInStem("y") && replacer("y", "i", _ >= 0)
 
     // step 2
     processSubList(step2Vals, _>0 )
@@ -126,7 +126,7 @@ object PorterStemmer {
   def apply(s:String): String = applySteps(s)
 
   def main(args: Array[String]): Unit = {
-    def getOWPL(f: String) = io.Source.fromFile(f).getLines.toSeq.map(_.trim)
+    def getOWPL(f: String) = io.Source.fromFile(f).getLines().toSeq.map(_.trim)
 
     if (args.length != 2)
       println("Expected arguments are a OWPL file of unstemmed and a OWPL file of properly stemmed words to check against.\n" +

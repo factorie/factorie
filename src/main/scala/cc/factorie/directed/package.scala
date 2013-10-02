@@ -17,11 +17,12 @@
 package cc.factorie
 
 import scala.language.implicitConversions
+import cc.factorie.variable.MutableVar
 
 package object directed {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       and add this new factor to the given model. */
   implicit def generatedVarExtras[V<:Var](v:V) = new GeneratedVarWrapper(v)
-  implicit def generatedMutableVarExtras[V<:MutableVar[_]](v:V) = new GeneratedMutableVarWrapper(v)
+  implicit def generatedMutableVarExtras[V<:MutableVar](v:V) = new GeneratedMutableVarWrapper(v)
 }
 

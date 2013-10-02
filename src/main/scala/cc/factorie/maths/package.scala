@@ -32,7 +32,7 @@ package object maths {
     def /=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) / d; i += 1 } }
     def incr(s:A, t:A): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i); i += 1 } }
     def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i) * factor; i += 1 } }
-    def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; return false }
+    def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; false }
     def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * t(i); i += 1 }; result }
     /** Divide each element of the array by the sum of the elements. */
     def normalize(s:A): Double = { val sum = oneNorm(s); var i = 0; while (i < s.length) { s(i) /= sum; i += 1 }; sum }

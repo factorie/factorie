@@ -13,17 +13,27 @@
    limitations under the License. */
 
 package cc.factorie.tutorial
-import cc.factorie._ 
+
+import cc.factorie._
+import cc.factorie.variable._
+import cc.factorie.model._
+import cc.factorie.infer._
 import cc.factorie.optimize._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.load._
 import cc.factorie.app.nlp.ner._
 import java.io.File
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.{VariableSettingsSampler, GibbsSampler}
 
 /** Simple, introductory linear-chain CRF for named-entity recognition.
     Demonstrates model creation, training and testing.
     Overly simple features to not, however, provide very high accuracy.
     See ChainNER3 for a related example with better features. 
     @author Andrew McCallum */
+
+/*
 object ChainNER1a {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -55,7 +65,7 @@ object ChainNER1a {
     implicit val random = new scala.util.Random(0)
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))
-    for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
+    for (document <- trainDocuments ++ testDocuments; token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
@@ -73,19 +83,7 @@ object ChainNER1a {
       println()
     })
   }
-}
-  
-// TODO Consider implementing cc.factorie.app.nlp.Token as a cc.factorie.er.Entity, 
-// so that a model definition like in the following could work again
-/*
-object ChainNER1 {
-  
-  // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
-    val label = new Label(labelString, this)
-    def domain = TokenDomain
-  }
+
   object LabelDomain extends CategoricalDomain[String]
   class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token) {
     def domain = LabelDomain
@@ -124,5 +122,6 @@ object ChainNER1 {
   }
 
 }
+
 */
 

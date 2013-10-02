@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.app.nlp.ner.{NerSpan, NerLabel}
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.Span
+import cc.factorie.variable.Span
 
 /**
  * User: apassos
@@ -17,7 +17,7 @@ class NerMentionList extends MentionList
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[NerLabel], classOf[PennPosLabel])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.span.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
@@ -27,22 +27,22 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
         val attr = t.attr[NerLabel].categoryValue.split("-")
         if (attr(0) == "U") {
           val lab = attr(1)
-          spans += (lab -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += (lab -> new TokenSpan(s, t.positionInSection, 1))
         } else if (attr(0) == "B") {
           val lab = attr(1)
           if(t.hasNext) {
             var lookFor = t.next
             while (lookFor.hasNext && lookFor.attr[NerLabel].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            spans += (lab -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection)(null))
+            spans += (lab -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
           } else {
-            spans += (lab -> new TokenSpan(s, t.positionInSection, 1)(null))
+            spans += (lab -> new TokenSpan(s, t.positionInSection, 1))
           }
         }
       } else {
         if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
-          spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1))
         } else if (t.posLabel.categoryValue == "NNP") {
-          spans += ("PER" -> new TokenSpan(s, t.positionInSection, 1)(null))
+          spans += ("MISC" -> new TokenSpan(s, t.positionInSection, 1))
         }
       }
     }
@@ -61,8 +61,8 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
        "O"
   }
 
-  def process(document: Document) = {
-    val nerMentions = getNerSpans(document).map(labelSpan => {
+  def  getNerMentions(document: Document): Seq[Mention] = {
+    getNerSpans(document).map(labelSpan => {
       val label = labelSpan._1
       val mappedLabel = if(label == "PER") "PERSON" else label    //this is important if you do conll NER, since MentionEntityType expects Ontonotes NER Labels
       val s = labelSpan._2
@@ -71,14 +71,18 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
       m.attr += new MentionEntityType(m,mappedLabel)
       m
     })
+  }
+
+  def process(document: Document) = {
+    val nerMentions = getNerMentions(document)
     val pronounMentions = getPronounSpans(document).map(s => {
       val m = new Mention(s, 0)
-      val label = getMentionEntityTypeLabelForPronoun(m.span)
+      val label = getMentionEntityTypeLabelForPronoun(m)
       m.attr += new MentionType(m, "PRO")
       m.attr += new MentionEntityType(m,label)
       m
     })
-    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.span.tokens.head.stringStart, m.length))
+    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.head.stringStart, m.length))
 
     document
   }

@@ -1,5 +1,7 @@
 package cc.factorie.app.nlp
 
+import cc.factorie.util.FastLogging
+
 /**
  * User: apassos
  * Date: 8/7/13
@@ -43,7 +45,7 @@ class MutableDocumentAnnotatorMap extends collection.mutable.LinkedHashMap[Class
 }
 
 /** A factory for creating DocumentAnnotatorPipelines given requirements about which annotations or which DocumentAnnotators are desired. */
-object DocumentAnnotatorPipeline {
+object DocumentAnnotatorPipeline extends FastLogging  {
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
     classOf[pos.PennPosLabel] -> (() => pos.POS1),
@@ -88,7 +90,7 @@ object DocumentAnnotatorPipeline {
       if (!preSet.contains(goal) && (!preSet.exists(x => goal.isAssignableFrom(x)))) {
         val provider = if (map.contains(goal)) map(goal)() else {
           val list = map.keys.filter(k => goal.isAssignableFrom(k))
-          assert(list.nonEmpty, s"Could not find annotator for goal ${goal}, map includes ${map.keys.mkString(", ")}")
+          assert(list.nonEmpty, s"Could not find annotator for goal $goal, map includes ${map.keys.mkString(", ")}")
           map(list.head)()
         }
         if (!pipeSet.contains(provider)) {
@@ -113,6 +115,12 @@ object DocumentAnnotatorPipeline {
   }
 
   def checkPipeline(pipeline: Seq[DocumentAnnotator]) {
+    if (logger.level == cc.factorie.util.Logger.DEBUG) {
+      logger.debug("-- printing pipeline --")
+      for (annotator <- pipeline) {
+        logger.debug(s"Annotator ${annotator.getClass.getName} Prereqs(${annotator.prereqAttrs.map(_.getName).mkString(", ")}}) PostAttrs(${annotator.postAttrs.map(_.getName).mkString(", ")})")
+      }
+    }
     val satisfiedSet = collection.mutable.HashSet[Class[_]]()
     for (annotator <- pipeline) {
       for (requirement <- annotator.prereqAttrs

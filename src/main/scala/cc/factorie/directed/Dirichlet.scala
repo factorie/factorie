@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable._
 
 // Proportions ~ Dirichlet(Masses)
 // Proportions ~ Dirichlet(Proportions, Precision)
@@ -57,7 +58,7 @@ object Dirichlet extends DirectedFamily2[ProportionsVariable,MassesVariable] {
 object MaximizeDirichletByMomentMatching {
   def apply(masses:MassesVariable, model:DirectedModel): Unit = {
     // Calculate and set the mean
-    val m = new cc.factorie.DenseMasses1(masses.value.length)
+    val m = new DenseMasses1(masses.value.length)
     val childFactors = model.childFactors(masses)
     val numChildren = childFactors.size; assert(numChildren > 1)
     for (factor <- childFactors) factor match { 
@@ -68,7 +69,7 @@ object MaximizeDirichletByMomentMatching {
         //forIndex(m.size)(i => m(i) += f._1.tensor(i))
       }
     }
-    m.normalize
+    m.normalize()
     //assert(m.forall(_ >= 0.0))
     //println("MaximizeDirichletByMomentMatching mean max="+m.max)
     //forIndex(m.size)(m(_) /= numChildren)
@@ -172,7 +173,7 @@ object LearnDirichletUsingFrequencyHistograms {
       }
     }
 
-    masses := new cc.factorie.DenseMasses1(masses.value.length)
+    masses := new DenseMasses1(masses.value.length)
     for(i <- 0 until parameters.length) masses.increment(i, parameters(i))(null)
     assert(paramSum >= 0.0)
   }

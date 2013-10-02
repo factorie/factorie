@@ -29,8 +29,8 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   }
   def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[Mention]]
-    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.span.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+    token.document.attr[MentionList].filter(mention => mention.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
@@ -214,7 +214,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
      val len = ments.length
      var i = 1
      while(i < len){
-       assert(ments(i).span.tokens.head.stringStart >= ments(i-1).span.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
+       assert(ments(i).tokens.head.stringStart >= ments(i-1).tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
        i +=1
      }
   }
@@ -242,7 +242,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.span.tokens.head.stringStart, mention.length)))
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.tokens.head.stringStart, mention.length)))
   }
 
   def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[Mention]): GenericEntityMap[Mention] = {
@@ -284,7 +284,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
     //make such a set for every mention. For those mentions that aren't in entities, the set is just a singleton.
     val numGenderSets = allMentions.map(m => numGenderSetsForEntities.getOrElse(predMap.getEntity(m),Set(CoarseMentionType(m.gender,m.number))))
 
-    for(i <- 0 until allMentions.length; if(allMentions(i).isPRO)){
+    for(i <- 0 until allMentions.length; if allMentions(i).isPRO){
       val m1 = allMentions(i)
       assert(numGenderSets(i).size == 1)
       val numGender1 = numGenderSets(i).head
@@ -358,7 +358,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
       //val proPro = m1.isPRO && m2.isPRO       //uncomment this and the !proPro part below if you want to prohibit
       //pronoun-pronoun comparison
 
-      if (/*!proPro && */ (!cataphora || options.allowTestCataphora)) {
+      if (/*!proPro && */ !cataphora || options.allowTestCataphora) {
         val candLabel = new MentionPairFeatures(model, m1, m2, orderedMentions, options=options)
         val mergeables = candLabels.filter(l => predMap.reverseMap(l.mention2) == predMap.reverseMap(m2))
         mergeFeatures(candLabel, mergeables)

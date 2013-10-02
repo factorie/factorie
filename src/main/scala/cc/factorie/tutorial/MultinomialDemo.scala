@@ -18,6 +18,8 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.directed.Discrete
+import cc.factorie.variable.{DenseProportions1, ProportionsVariable, DiscreteVariable, DiscreteDomain}
+import cc.factorie.infer.Maximize
 
 object MultinomialDemo {
   val numSides = 6

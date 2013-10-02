@@ -23,6 +23,7 @@ import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.directed._
+import cc.factorie.variable._
 
 object LDA2 {
   
@@ -48,7 +49,7 @@ object LDA2 {
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       // println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
         // print("."); Console.flush
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_)).toSeq

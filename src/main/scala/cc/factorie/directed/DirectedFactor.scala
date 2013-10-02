@@ -15,6 +15,8 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.model._
+import cc.factorie.variable.{MutableVar, Var}
 
 trait DirectedFactor extends Factor {
   type ChildType <: Var
@@ -44,7 +46,7 @@ class GeneratedVarWrapper[V<:Var](val v:V) {
   }
 }
 
-class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
+class GeneratedMutableVarWrapper[V<:MutableVar](val v:V) {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */

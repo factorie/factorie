@@ -1,9 +1,9 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.Weights1
 import cc.factorie.optimize.{Example, LinearObjectives, LinearBinaryExample}
-import cc.factorie.la.{WeightsMapAccumulator, SparseBinaryTensor}
+import cc.factorie.la.{Tensor1, WeightsMapAccumulator, SparseBinaryTensor}
 import cc.factorie.util.DoubleAccumulator
+import cc.factorie.model.Weights1
 
 /**
  * User: apassos
@@ -17,7 +17,7 @@ class LeftRightExample(weights: Weights1, label: MentionPairLabel, recSlackResca
 class LeftRightImplicitConjunctionExample(model: ImplicitCrossProductCorefModel, label: MentionPairLabel, recSlackRescale: Double = 3.0) extends Example {
   val y = if (label.intValue == 0) 1 else -1
   val objective = LinearObjectives.hingeScaledBinary(negSlackRescale = recSlackRescale)
-  val featureVector = label.features.value
+  val featureVector: Tensor1 = label.features.value
   val hashCross = new ImplicitFeatureConjunctionTensor(model.MentionPairCrossFeaturesDomain.dimensionSize, featureVector.asInstanceOf[SparseBinaryTensor], model.domain)
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val score = (model.pairwise.value dot featureVector) + (model.products.value dot hashCross)

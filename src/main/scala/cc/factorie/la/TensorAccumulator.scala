@@ -1,7 +1,7 @@
 package cc.factorie.la
 
 import cc.factorie.util.{DoubleAccumulator, LocalDoubleAccumulator, Accumulator}
-import cc.factorie.{WeightsMap, TensorSet, Weights}
+import cc.factorie.model.{Weights, WeightsMap}
 
 // TODO why doesn't this implement Accumulator[WeightsMap]? -luke
 // answer: it's hard - contravariance on the method arguments

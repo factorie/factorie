@@ -5,9 +5,9 @@ import java.io.File
 import collection.mutable
 import io.Source
 
-import cc.factorie.{DiffList, TensorVariable, CategoricalVectorDomain, BinaryFeatureVectorVariable}
 import cc.factorie.app.regress.LinearRegressionTrainer
 import cc.factorie.la.{DenseTensor1, Tensor1}
+import cc.factorie.variable.{TensorVariable, BinaryFeatureVectorVariable, DiffList, CategoricalVectorDomain}
 
 /**
  * An example of Linear Regression.  Tries to predict the hash value
@@ -37,7 +37,7 @@ object RegressionExample {
     /** Load documents **/
     var outputs = mutable.ArrayBuffer[Output]()
     for ((directory, i) <- args.zipWithIndex) {
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
+      for (file <- new File(directory).listFiles; if file.isFile) {
 //        println("Loading " + file.getName)
         outputs += new Output(new Input(file), (2 * i - 1) + math.random * 0.001)
       }

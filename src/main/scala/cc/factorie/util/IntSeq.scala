@@ -96,7 +96,7 @@ final class Outer2IntSeq(val dim1:Int, val dim2:Int, val intSeq1:IntSeq, val int
   private val _array = new Array[Int](intSeq1.length * intSeq2.length)
   def toArray = { val a = new Array[Int](length); System.arraycopy(_array, 0, a, 0, _array.length); a }
   override def asArray = _array
-  private def _init = { var k = 0; for (i <- 0 until intSeq1.length; j <- 0 until intSeq2.length) { _array(k) = i*dim2 + j; k += 1 } }
+  private def _init() = { var k = 0; for (i <- 0 until intSeq1.length; j <- 0 until intSeq2.length) { _array(k) = i*dim2 + j; k += 1 } }
   _init
   def length = _array.length
   def apply(i:Int): Int = _array(i)

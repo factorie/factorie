@@ -2,6 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.directed._
+import cc.factorie.variable.{MassesVariable, CategoricalSeqDomain}
 
 // Unfinished model similar to Labeled-LDA.
 
@@ -43,8 +44,8 @@ object TaggedLDA {
       else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
     for (directory <- directories) {
       println("Reading files from directory " + directory)
-      for (file <- new java.io.File(directory).listFiles; if (file.isFile)) {
-        print("."); Console.flush
+      for (file <- new java.io.File(directory).listFiles; if file.isFile) {
+        print("."); Console.flush()
         val text = scala.io.Source.fromFile(file).mkString
         val doc = new TaggedDocument(WordSeqDomain, file.toString, tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
         lda.addDocument(doc, random)

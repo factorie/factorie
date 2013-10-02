@@ -14,8 +14,8 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.optimize.{MultiClassTrainerBase, LinearMultiClassClassifier}
 import cc.factorie.la.Tensor1
+import cc.factorie.variable.DenseProportions1
 
 class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MultiClassTrainerBase[LinearMultiClassClassifier]  {
   def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMultiClassClassifier) => Unit) {
