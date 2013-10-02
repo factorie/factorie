@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.hcoref._
 import cc.factorie.db.mongo._
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCubbieConverter, MongoCubbieImplicits}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 import cc.factorie.variable.{StringVariable, DiffList}
 import cc.factorie.model.{Parameters, TemplateModel, Model}
 
@@ -68,7 +68,7 @@ object Coref4{
   class EntityDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="hier-demo"){
     import MongoCubbieImplicits._
     import MongoCubbieConverter._
-    protected val mongoConn = new Mongo(mongoServer,mongoPort)
+    protected val mongoConn = new MongoClient(mongoServer,mongoPort)
     protected val mongoDB = mongoConn.getDB(mongoDBName)
     protected val coll = mongoDB.getCollection("people")
     protected val entities = new MongoCubbieCollection(coll, //the underlying MongoDB collection

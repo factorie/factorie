@@ -2,6 +2,8 @@ package cc.factorie.app.nlp
 
 import cc.factorie.util.FastLogging
 
+import scala.reflect.ClassTag
+
 /**
  * User: apassos
  * Date: 8/7/13
@@ -70,15 +72,15 @@ object DocumentAnnotatorPipeline extends FastLogging  {
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
-  def apply[A](implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m.erasure))
-  def apply[A,B](implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure))
-  def apply[A,B,C](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
-  def apply[A,B,C,D](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
+  def apply[A](implicit m:ClassTag[A]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m.runtimeClass))
+  def apply[A,B](implicit m1:ClassTag[A], m2:ClassTag[B]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass))
+  def apply[A,B,C](implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass))
+  def apply[A,B,C,D](implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C], m4:ClassTag[D]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass, m4.runtimeClass))
   //def apply(goal: Class[_], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(Seq(goal), map)
-  def apply[A](map: DocumentAnnotatorMap)(implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m.erasure))
-  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure))
-  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
-  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
+  def apply[A](map: DocumentAnnotatorMap)(implicit m:ClassTag[A]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m.runtimeClass))
+  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass))
+  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass))
+  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C], m4:ClassTag[D]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass, m4.runtimeClass))
 
   //def apply(goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, goals:_*)
   //def apply(prereqs: Seq[Class[_]], goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, prereqs, goals)

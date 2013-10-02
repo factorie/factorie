@@ -22,6 +22,7 @@ import org.junit.Assert._
 import cc.factorie.util.BinarySerializer
 import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWithTarget}
 import cc.factorie.model.ModelWithContext
+import scala.reflect.ClassTag
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -29,14 +30,14 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
  val labelToFeatures:Label=>Features,
  val labelToToken:Label=>Token,
  val tokenToLabel:Token=>Label) 
- (implicit lm:Manifest[Label], fm:Manifest[Features], tm:Manifest[Token])
+ (implicit lm:ClassTag[Label], fm:ClassTag[Features], tm:ClassTag[Token])
 extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
 with Parameters
 {
   self =>
-  val labelClass = lm.erasure
-  val featureClass = fm.erasure
-  val tokenClass = tm.erasure
+  val labelClass = lm.runtimeClass
+  val featureClass = fm.runtimeClass
+  val tokenClass = tm.runtimeClass
   val bias = new DotFamilyWithStatistics1[Label] {
     factorName = "Label"
     val weights = Weights(new la.DenseTensor1(labelDomain.size))

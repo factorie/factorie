@@ -194,7 +194,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  // NOTE: this is a hack to get around broken Manifest <:< for singleton types
  // this is fixed in 2.10 so once we upgrade we can remove this hack (that assumes all params are covariant!)
  def checkCompat(m1: Manifest[_], m2: Manifest[_]): Boolean =
-   m2.erasure.isAssignableFrom(m1.erasure) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
+   m2.runtimeClass.isAssignableFrom(m1.runtimeClass) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
 
  @Test def testClassifierPosSerialization() {
    val model = new app.nlp.pos.POS1
