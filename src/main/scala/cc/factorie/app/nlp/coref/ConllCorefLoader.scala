@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosLabel}
-import mention.{MentionEntityType, MentionList, Mention}
+import mention.{MentionEntityType, MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
 import scala.util.control.Breaks._
