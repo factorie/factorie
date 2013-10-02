@@ -182,7 +182,7 @@ class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVa
     for (assignment <- iterator) {
       score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       distribution(i) = score
-      if(labels.forall(v => assignment(v).intValue == v.targetIntValue)) targetIndex = i
+      if(labels.forall(v => assignment(v).asInstanceOf[DiscreteValue].intValue == v.targetIntValue)) targetIndex = i
       i += 1
     }
     distribution.expNormalize()
@@ -237,7 +237,7 @@ class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Par
  * @param label The discrete var
  * @param model The model
  */
-class CaseFactorDiscreteLikelihoodExample(label: LabeledMutableDiscreteVar[_], model: Model with Parameters) extends Example {
+class CaseFactorDiscreteLikelihoodExample(label: LabeledMutableDiscreteVar, model: Model with Parameters) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
     if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))

@@ -46,7 +46,7 @@ class GeneratedVarWrapper[V<:Var](val v:V) {
   }
 }
 
-class GeneratedMutableVarWrapper[V<:MutableVar[_]](val v:V) {
+class GeneratedMutableVarWrapper[V<:MutableVar](val v:V) {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */

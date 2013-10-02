@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.mention
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.parse.{DepParser1, ParseTree}
 import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
 import cc.factorie.app.nlp.pos.PennPosLabel
 import scala.Some
@@ -12,7 +12,10 @@ import scala.Some
 class ParseBasedMentionList extends MentionList
 class NerSpanList extends TokenSpanList[NerSpan]
 
-object ParseBasedMentionFinding extends DocumentAnnotator {
+object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
+object ParseAndNerBasedMentionFinding extends ParseBasedMentionFinding(true)
+
+class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   private final val PERSONAL_PRONOUNS = Seq("PRP", "PRP$")
   private final val COMMON_NOUNS      = Seq("NN" , "NNS")
@@ -91,56 +94,32 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
   final val copularVerbs = collection.immutable.HashSet[String]() ++ Seq("is","are","was","'m")
 
-  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] = (
+  final val allowedChildLabels = Set("amod", "det", "nn", "num", "hmod", "hyph", "possessive", "poss", "predet", "nmod", "dep")
+  final val disallowedChildLabels = Set("conj", "punct", "prep", "cc", "appos", "npadvmod", "advmod", "quantmod", "partmod", "rcmod", "dobj", "nsubj", "infmod", "ccomp", "advcl", "aux", "intj", "neg", "preconj", "prt", "meta", "parataxis", "complm", "mark")
 
-    for (section <- doc.sections; s <- section.sentences;
-         usedTokens = new HashSet[Token]();
-         (t, si) <- s.tokens.zipWithIndex if nounFilter(t)) yield {
-
-      //These two filtering rules are from 'Mention Detection: Heuristics for the OntoNotes annotations'
-      val prevTokenIsCopular = si > 0 && copularVerbs.contains(s.tokens(si-1).string.toLowerCase)
-      val copularPhrase = s.parse.parentIndex(si)!= -1 && prevTokenIsCopular && s.parse.parent(si).posLabel.value == "VB"
-
-      val parentIsNoun = s.parse.parent(si) != null && isNoun(s.parse.parent(si))
-      val prevWordIsComma = t.hasPrev && t.prev.string == ","
-      val prevPhraseIsNP = if(si > 1) usedTokens.contains(s.tokens(si - 2)) else false
-      //val apposition =  parentIsNoun && prevWordIsComma && prevPhraseIsNP
-      val apposition = s.parse.label(si).categoryValue == "appos"
-
-      // skip tokens that are:
-      //   1. part of a copular phrase,
-      //   2. appositive clauses,
-      //   3. other nouns in a noun phrase
-      if (FILTER_APPOS && (copularPhrase || apposition ||  parentIsNoun)) None
-      else if(copularPhrase || parentIsNoun && !apposition) None
-      else {
-        val subtree = (Seq(t) ++ {
-          val filter = { ci : Int => s.tokens(ci).posLabel.categoryValue.startsWith("V") || s.tokens(ci).posLabel.categoryValue.startsWith("CC") || s.parse.label(ci).categoryValue == "appos" }
-          Seq(si) ++ s.parse.getChildrenIndices(si, filter).flatMap(s.parse.getSubtreeInds(_,filter)).distinct
-        }.map(i => s.tokens(i))).sortBy(_.position)
-        usedTokens ++= subtree
-        val (start, length) = subtree.size match {
-          // leaf of the parse
-          case 1 => t.position -> 1
-          // non-leaf
-          case _ => subtree.head.position -> (subtree.last.position - subtree.head.position + 1)
+  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] =  {
+    val mentions = ArrayBuffer[Mention]()
+    for (section <- doc.sections; s <- section.sentences; (t, si) <- s.tokens.zipWithIndex if nounFilter(t);
+         label = s.parse.label(t.positionInSentence).categoryValue
+         if label != "nn" && label != "hmod")  {
+      val children = s.parse.children(t.positionInSentence)
+      children.foreach(c => {
+        val cat = s.parse.label(c.positionInSentence).categoryValue
+        if (!(allowedChildLabels.contains(cat) || disallowedChildLabels.contains(cat))) {
+          println("BAD LABEL: " + cat)
+          // println(doc.owplString(DepParser1))
         }
-        val commaLength = if(subtree.last.string == ",") length-1 else length
-        val headTokenIndexInSpan = t.position - start
-        val res = Some(new Mention(section, start, commaLength, headTokenIndexInSpan))
-
-        res
-      }
-
-    }).flatten.toSeq
-
-
-  private def removeSmallerIfHeadWordEqual(doc: Document, mentions: Seq[Mention]): Seq[Mention] =
+      })
+      val goodChildren = children.filter(c => allowedChildLabels.contains(s.parse.label(c.positionInSentence).categoryValue))
+      val tokens = Seq(t) ++ goodChildren.map(c => s.parse.subtree(c.positionInSentence)).flatten
+      val sTokens = tokens.sortBy(_.positionInSection)
+      val start = sTokens.head.positionInSection
+      val end = sTokens.last.positionInSection
+      mentions += new Mention(section, start, end-start, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2)
+    }
     mentions
-      .groupBy( m => m.headToken )
-      .map { case (_, mentionSeq) => mentionSeq.maxBy(_.length) }
-      .toSeq
-      .sortBy(m => (m.tokens.head.stringStart, m.length))
+  }
+
 
   private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
     // Note: equality is only in the first set of arguments for case classes
@@ -158,51 +137,30 @@ object ParseBasedMentionFinding extends DocumentAnnotator {
 
 
   def process(doc: Document): Document = {
-    //if NER has already been done, then convert the NER tags to NER spans
-    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
-
-    if (doc.hasAnnotation(classOf[BilouOntonotesNerLabel]))
-      addNerSpans[BilouOntonotesNerLabel](doc)
-    else if(doc.hasAnnotation(classOf[BilouConllNerLabel]))
-      addNerSpans[BilouConllNerLabel](doc)
 
     var docMentions = new ArrayBuffer[Mention]
+
+    //if NER has already been done, then convert the NER tags to NER spans
+    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
+    if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
+
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= nerSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
     docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
     docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
     docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => mention.attr[MentionType] ne null).toSeq)
+    doc.attr += (new MentionList() ++= dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq)
 
     doc
   }
 
-  def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
+  def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.NerLabel])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)).mkString(","); case _ => "_" }
 
-  def addNerSpans[T <: NerLabel](doc: Document)(implicit m: Manifest[T]): Unit = {
-    val nerSpans = doc.attr += new NerSpanList
-    for (s <- doc.sections; t <- s.tokens) {
-      if (t.attr[T].categoryValue != "O") {
-        val attr = t.attr[T].categoryValue.split("-")
-        if (attr(0) == "U") {
-          nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
-        } else if (attr(0) == "B") {
-          if(t.hasNext) {
-            var lookFor = t.next
-            while (lookFor.hasNext && lookFor.attr[T].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            nerSpans += new NerSpan(s, attr(1), t.positionInSection, lookFor.positionInSection - t.positionInSection)(null)
-          } else {
-            nerSpans += new NerSpan(s, attr(1), t.positionInSection, 1)(null)
-          }
-        }
-      }
-    }
-  }
+
 }
 
 

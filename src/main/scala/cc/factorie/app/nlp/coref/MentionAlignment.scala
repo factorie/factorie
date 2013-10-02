@@ -33,7 +33,7 @@ object MentionAlignment {
     documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosLabel]))  //remove the gold POS annotation
     documentsToBeProcessed.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    documentsToBeProcessed.par.foreach(findMentions(_)(map))
+    cc.factorie.util.Threading.parForeach(documentsToBeProcessed, Runtime.getRuntime.availableProcessors())(findMentions(_)(map))
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist

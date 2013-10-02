@@ -19,7 +19,7 @@ trait BeamSearch {
   // the contract here is: null out array elements you don't like
   def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
-  def searchAndSetToMax[OV <: VectorVar, LV <: MutableDiscreteVar[_]](
+  def searchAndSetToMax[OV <: VectorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],
@@ -35,7 +35,7 @@ trait BeamSearch {
     }
   }
 
-  def search[OV <: TensorVar, LV <: MutableDiscreteVar[_]](
+  def search[OV <: TensorVar, LV <: MutableDiscreteVar](
             vs: Seq[LV],
             localTemplate: DotFamilyWithStatistics2[LV, OV],
             transTemplate: DotFamilyWithStatistics2[LV, LV],

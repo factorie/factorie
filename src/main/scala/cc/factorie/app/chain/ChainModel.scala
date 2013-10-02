@@ -24,7 +24,7 @@ import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWith
 import cc.factorie.model.ModelWithContext
 import scala.reflect.ClassTag
 
-class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget[_], Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
+class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
  val featuresDomain:CategoricalVectorDomain[String],
  val labelToFeatures:Label=>Features,

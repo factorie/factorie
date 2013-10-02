@@ -578,7 +578,7 @@ object HumanEditExperiments{
     val namesSet = allUserNames.toSet
     var result = new ArrayBuffer[ExperimentalEdit[AuthorEntity]]
     val mine = allAuthorNodesWithKey(entities,greedyUserName)//.filter(_.isEntity.booleanValue)
-    val me = mine.sortBy((e:AuthorEntity) => e.attr[BagOfTruths].value(greedyUserName)).reverse.head.entityRoot.asInstanceOf[AuthorEntity]
+    val me = mine.sortBy((e:AuthorEntity) => e.attr[BagOfTruths].value(greedyUserName).toDouble).reverse.head.entityRoot.asInstanceOf[AuthorEntity]
     val yours = random.shuffle(entities.filter((e:AuthorEntity) =>  e.groundTruth != None && namesSet.contains(e.groundTruth.get)))
     val mentionsOfMP = me.entityRoot.descendantsOfClass[HierEntity].filter(_.groundTruth != None)
     val targets = new HashSet[String]

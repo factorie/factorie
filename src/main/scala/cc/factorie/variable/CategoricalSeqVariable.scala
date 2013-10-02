@@ -19,7 +19,8 @@ import cc.factorie.util.Cubbie
 
 /** A Domain for sequences of CategoricalValues.
     @author Andrew McCallum */
-class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
+class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain {
+  type Value = Seq[CategoricalValue[C]]
   lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
 
@@ -49,6 +50,7 @@ class CategoricalSeqDomainCubbie[T](val csd: CategoricalSeqDomain[T]) extends Cu
     The method 'domain' is abstract.
     @author Andrew McCallum */
 abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[CategoricalValue[C]] with IndexedSeqVar[CategoricalValue[C]] /*VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]]*/ {
+  type Value = IndexedSeq[CategoricalValue[C]]
   def this(initialValue:Seq[C]) = {
     this()
     _setCapacity(if (initialValue.length > 0) initialValue.length else 1)

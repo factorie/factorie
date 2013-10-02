@@ -56,7 +56,7 @@ trait Tensor2 extends Tensor {
   def leftMultiply(t: Tensor1): Tensor1 = {
     assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
     val newT = new DenseTensor1(dim2)
-    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(i)))
+    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(j) += this(i,j)*t(i)))
     newT
   }
   def trace: Double = {
@@ -722,6 +722,25 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DenseLayeredTensorLike2 => { var s = 0.0; for((inner1,inner2) <- _inners zip t._inners; if inner1 ne null; if inner2 ne null) s += inner1.dot(inner2); s }
     case t:SparseIndexedTensor => {val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var res = 0.0; var i = 0; while (i < len) { res += this(indices(i))*values(i) ; i += 1}; res}
     case t:Dense2LayeredTensor3 => { var sum = 0.0; t.foreachActiveElement((i, v) => sum += this(i)*v); sum}
+    case t:Outer1Tensor2 => {
+      (t.tensor1,t.tensor2) match {
+        case (t1: DenseTensor, t2: DenseTensor) => var sum = 0.0; foreachActiveElement((i, v) => sum += t(i)*v); sum
+        case (t1: DenseTensor, t2: SparseTensor) =>
+          var sum = 0.0
+          for (i <- activeDomain1) {
+            sum += t1(i) * (inner(i) dot t2)
+          }
+          sum
+        case (t1: SparseTensor, t2: Tensor) =>
+          var sum = 0.0
+          for ((i,v) <- t1.activeElements) {
+            if (_inners(i) ne null) {
+              sum += v * (inner(i) dot t2)
+            }
+          }
+          sum
+      }
+    }
     case _ => assert(false, t.getClass.getName + " doesn't have a match"); 0.0
   }
 }

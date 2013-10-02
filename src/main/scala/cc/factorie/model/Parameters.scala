@@ -2,8 +2,7 @@ package cc.factorie.model
 
 import cc.factorie.la._
 import scala.collection.mutable
-import cc.factorie.util.Cubbie
-import cc.factorie.variable.{VarWithValue, TensorVar}
+import cc.factorie.variable.TensorVar
 import cc.factorie._
 
 /** An object with a "parameters" method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.
@@ -36,7 +35,10 @@ class WeightsSet extends TensorSet {
   def blankSparseMap: WeightsMap = new WeightsMap(key => Tensor.newSparse(key.value))
   
   // Weights are created here to ensure that they are immediately associate with one and only one WeightsSet.
-  def newWeights(ctor: => Tensor): Weights = new Weights with ConcreteWeights with VarWithValue[Tensor] { def newBlankTensor = ctor }
+  def newWeights(ctor: => Tensor): Weights = new Weights with ConcreteWeights {
+    type Value = Tensor
+    def newBlankTensor = ctor
+  }
   def newWeights(ctor: => Tensor1): Weights1 = new Weights1 with ConcreteWeights { def newBlankTensor = ctor }
   def newWeights(ctor: => Tensor2): Weights2 = new Weights2 with ConcreteWeights { def newBlankTensor = ctor }
   def newWeights(ctor: => Tensor3): Weights3 = new Weights3 with ConcreteWeights { def newBlankTensor = ctor }
@@ -135,10 +137,10 @@ trait Weights extends TensorVar {
   //def domain = TensorDomain
 }
 
-trait Weights1 extends Weights with VarWithValue[Tensor1]
-trait Weights2 extends Weights with VarWithValue[Tensor2]
-trait Weights3 extends Weights with VarWithValue[Tensor3]
-trait Weights4 extends Weights with VarWithValue[Tensor4]
+trait Weights1 extends Weights { type Value = Tensor1 }
+trait Weights2 extends Weights { type Value = Tensor2 }
+trait Weights3 extends Weights { type Value = Tensor3 }
+trait Weights4 extends Weights { type Value = Tensor4 }
 
 /** A Cubbie for serializing a WeightsSet.  Typically used for saving parameters to disk. */
 class WeightsSetCubbie(val ws: WeightsSet) extends Cubbie {

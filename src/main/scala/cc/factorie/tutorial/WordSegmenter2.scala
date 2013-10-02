@@ -86,7 +86,7 @@ object WordSegmenterDemo2 {
     }
   }
 
-  val objective = new HammingTemplate[Label]
+  val objective = HammingObjective
 
   def main(args: Array[String]) : Unit = {
     // Read data and create Variables
