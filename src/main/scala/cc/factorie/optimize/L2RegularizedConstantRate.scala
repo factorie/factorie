@@ -19,7 +19,8 @@ class L2RegularizedConstantRate(l2: Double = 0.1, rate: Double = 0.1) extends Gr
     weights *= (1.0 - rate * l2)
   }
 
-  def initializeWeights(weights: WeightsSet) = {
+  def initializeWeights(weights: WeightsSet): Unit = {
+    if (initialized) return
     MutableScalableWeights.initializeWeights(weights)
     initialized = true
   }

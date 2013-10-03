@@ -36,6 +36,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     weights.+=(gradient)
   }
   def initializeWeights(weights: WeightsSet): Unit = {
+    if (initialized) return
     for (key <- weights.keys) {
       key.value match {
         case t: AdaGradRDATensor => println("Warning: creating two AdaGradRDA optimizers on the same tensors. Reusing old one...")

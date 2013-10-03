@@ -370,13 +370,7 @@ object Trainer {
    */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
     parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
-    optimizer match {
-      case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
-      case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
-      case o: L2RegularizedConstantRate if !o.initialized => o.initializeWeights(parameters)
-      case o: Pegasos if !o.initialized => o.initializeWeights(parameters)
-      case _ =>
-    }
+    optimizer.initializeWeights(parameters)
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
@@ -392,10 +386,7 @@ object Trainer {
       }
     } finally {
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
-      optimizer match {
-        case o: ParameterAveraging => o.setWeightsToAverage(parameters)
-        case _ =>
-      }
+      optimizer.finalizeWeights(parameters)
     }
   }
 

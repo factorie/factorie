@@ -19,6 +19,7 @@ class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) ex
     weights.+=(gradient)
   }
   def initializeWeights(weights: WeightsSet): Unit = {
+    if (initialized) return
     for (key <- weights.keys) key.value match {
       case t: Tensor1 => weights(key) = new RDATensor1(t.length, rate, l1, l2)
       case t: Tensor2 => weights(key) = new RDATensor2(t.dim1, t.dim2, rate, l1, l2)

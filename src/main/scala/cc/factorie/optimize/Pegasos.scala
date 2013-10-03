@@ -32,7 +32,7 @@ class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimiz
     step += 1
   }
 
-  def initializeWeights(weights: WeightsSet) = MutableScalableWeights.initializeWeights(weights)
+  def initializeWeights(weights: WeightsSet) = if (!initialized) MutableScalableWeights.initializeWeights(weights)
   def finalizeWeights(weights: WeightsSet) = MutableScalableWeights.finalizeWeights(weights)
 
   // can we get a good convergence criterion here? since it's not regular sgd, I feel like yes?
