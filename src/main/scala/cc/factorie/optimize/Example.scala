@@ -402,10 +402,10 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = weights.value * featureVector
+    val prediction = weights.value.leftMultiply(featureVector)
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, sgrad outer featureVector, weight)
+    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, featureVector outer sgrad, weight)
   }
 }
 
