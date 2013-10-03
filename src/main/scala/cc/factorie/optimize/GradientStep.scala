@@ -76,14 +76,11 @@ trait GradientStep extends GradientOptimizer {
   /**
    * To override if you want to reset internal state.
    */
-  val reseters = collection.mutable.ArrayBuffer[Function0[Unit]]() // Somehow replacing these Function0 and Function1 with syntactic sugar causes compilation errors
-  final def reset(): Unit = { it = 0; reseters.foreach(_()) }
+  def reset(): Unit = { it = 0 }
 
-  val initializers = collection.mutable.ArrayBuffer[Function1[WeightsSet,Unit]]()
-  final def initializeWeights(weights: WeightsSet): Unit = { initializers.foreach(_.apply(weights)) }
+  def initializeWeights(weights: WeightsSet): Unit = { }
 
-  val finalizers = collection.mutable.ArrayBuffer[Function1[WeightsSet,Unit]]()
-  final def finalizeWeights(weights: WeightsSet): Unit = { finalizers.foreach(_.apply(weights)) }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
 }
 
 /**
@@ -104,12 +101,16 @@ trait ParameterAveraging extends GradientStep {
     weights += (wTmp,1.0/it)
     isSetToAverage = false
   }
-  reseters += (() => { super.reset(); wTmp = null })
-  initializers += ((weights: WeightsSet) => {
+  override def reset(): Unit = { super.reset(); wTmp = null }
+  override def initializeWeights(weights: WeightsSet): Unit = {
+    super.initializeWeights(weights)
     if (wTmp eq null) wTmp = weights.blankDenseMap
     unSetWeightsToAverage(weights)
-  })
-  finalizers += ((weights: WeightsSet) => setWeightsToAverage(weights))
+  }
+  override def finalizeWeights(weights: WeightsSet): Unit = {
+    super.finalizeWeights(weights)
+    setWeightsToAverage(weights)
+  }
 }
 
 /**
@@ -130,8 +131,14 @@ trait AdaptiveLearningRate extends GradientStep {
   val delta: Double = 0.1
   private var HSq: WeightsMap = null
   var printed = false
-  initializers += ((weights: WeightsSet) => { if (HSq == null) { HSq = weights.blankDenseMap }})
-  reseters += (() => { HSq = null })
+  override def initializeWeights(weights: WeightsSet) {
+    super.initializeWeights(weights)
+    if (HSq == null) HSq = weights.blankDenseMap
+  }
+  override def reset(): Unit = {
+    super.reset()
+    HSq = null
+  }
   override def processGradient(weights: WeightsSet, gradient: WeightsMap): Unit = {
     val eta = rate
 //    val l2 = 0.1
