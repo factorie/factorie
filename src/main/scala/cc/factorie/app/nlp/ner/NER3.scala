@@ -30,6 +30,14 @@ import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
 import cc.factorie.infer.{BP, InferByBPChain}
 import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
 import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
+import cc.factorie.Factorie._
+import cc.factorie.optimize.LikelihoodExample
+import cc.factorie.optimize.Trainer
+import cc.factorie.variable.BinaryFeatureVectorVariable
+import cc.factorie.variable.CategoricalVectorDomain
+import cc.factorie.variable.DiscreteDomain
+import cc.factorie.DiscreteDomain
+import cc.factorie.variable.CategoricalDomain
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -110,29 +118,30 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
       val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
-    override def factorsWithContext(labels:IndexedSeq[L]): Iterable[Factor] = {
+    override def factors(variables:Iterable[Var]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
-      for (i <- 0 until labels.length) {
-        result += bias.Factor(labels(i))
-        result += obs.Factor(labels(i), labelToFeatures(labels(i)))
-        if (i > 0) {
-          result += markov.Factor(labels(i-1), labels(i))
-          if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
-        }
-        val l = labels(i)
-        val label:L = labels(i)
-
-        val scale = NERModelOpts.argsList("scale").toDouble
-        if (embeddingMap != null ) {
-          if (embeddingMap.contains(labelToToken(label).string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).string) * scale))
-          if (useOffsetEmbedding && labelToToken(label).sentenceHasPrev && embeddingMap.contains(labelToToken(label).prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).prev.string) * scale))
-          if (useOffsetEmbedding && labelToToken(label).sentenceHasNext && embeddingMap.contains(labelToToken(label).next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).next.string) * scale))
-        }
+      variables match {
+        case labels: Iterable[L] if variables.forall(v => m.runtimeClass.isAssignableFrom(v.getClass)) =>
+          var prevLabel: L = null.asInstanceOf[L]
+          for (label <- labels) {
+            result += bias.Factor(label)
+            result += obs.Factor(label, labelToFeatures(label))
+            if (prevLabel ne null) {
+              result += markov.Factor(prevLabel, label)
+              if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))
+            }
+            val scale = NERModelOpts.argsList("scale").toDouble
+            if (embeddingMap != null ) {
+              if (embeddingMap.contains(labelToToken(label).string)) result += embedding.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).string) * scale))
+              if (useOffsetEmbedding && labelToToken(label).sentenceHasPrev && embeddingMap.contains(labelToToken(label).prev.string)) result += embeddingPrev.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).prev.string) * scale))
+              if (useOffsetEmbedding && labelToToken(label).sentenceHasNext && embeddingMap.contains(labelToToken(label).next.string)) result += embeddingNext.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).next.string) * scale))
+            }
+            prevLabel = label
+          }
       }
       result
     }
   }
-
   val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new NER3EModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 

@@ -21,7 +21,6 @@ import java.io.File
 import org.junit.Assert._
 import cc.factorie.util.BinarySerializer
 import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWithTarget}
-import cc.factorie.model.ModelWithContext
 import scala.reflect.ClassTag
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
@@ -31,8 +30,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
  val labelToToken:Label=>Token,
  val tokenToLabel:Token=>Label) 
  (implicit lm:ClassTag[Label], fm:ClassTag[Features], tm:ClassTag[Token])
-extends ModelWithContext[IndexedSeq[Label]] //with Trainer[ChainModel[Label,Features,Token]]
-with Parameters
+extends Model with Parameters
 {
   self =>
   val labelClass = lm.runtimeClass
@@ -80,23 +78,24 @@ with Parameters
     BinarySerializer.deserialize(this, modelFile)
   }
 
-  def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
+  def factors(variables:Iterable[Var]): Iterable[Factor] = {
     val result = new ListBuffer[Factor]
-    for (i <- 0 until labels.length) {
-      result += bias.Factor(labels(i))
-      result += obs.Factor(labels(i), labelToFeatures(labels(i)))
-      if (i > 0) {
-        result += markov.Factor(labels(i-1), labels(i))
-        if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
-      }
+    variables match {
+      case labels: Iterable[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) =>
+        var prevLabel: Label = null.asInstanceOf[Label]
+        for (label <- labels) {
+          result += bias.Factor(label)
+          result += obs.Factor(label, labelToFeatures(label))
+          if (prevLabel ne null) {
+            result += markov.Factor(prevLabel, label)
+            if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))
+          }
+          prevLabel = label
+        }
     }
     result
   }
-  def factors(variables: Iterable[Var]): Iterable[Factor] = variables match {
-    case variables: IndexedSeq[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) => factorsWithContext(variables)
-    case variables: Seq[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) => factorsWithContext(variables.toIndexedSeq)
-    case _ => { val result = newFactorsCollection; variables.foreach(v => result ++= factors(v)); result }
-  }
+
   override def factors(v: Var) = v match {
     case label:Label if label.getClass eq labelClass => {
       val result = new ArrayBuffer[Factor](4)

@@ -297,7 +297,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
  class Sentence extends Chain[Sentence, Token]
 
- class SegmenterModel extends ModelWithContext[Seq[Label]] with Parameters {
+ class SegmenterModel extends Model with Parameters {
    val bias = new DotFamilyWithStatistics1[Label] {
      factorName = "Label"
      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
@@ -306,10 +306,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
      factorName = "Label,Token"
      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
    }
-   def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
+   def factors(label: Iterable[Var]): Iterable[Factor] = {
      Seq.empty[Factor]
    }
-   def factors(v:Iterable[Var]) = throw new Error("Not yet implemented.")
  }
 
  val data = Array(
