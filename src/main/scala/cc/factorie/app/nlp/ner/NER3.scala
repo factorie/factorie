@@ -125,7 +125,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
           var prevLabel: L = null.asInstanceOf[L]
           for (label <- labels) {
             result += bias.Factor(label)
-            result += obs.Factor(label, labelToFeatures(label))
+            result += obs.Factor(labelToFeatures(label), label)
             if (prevLabel ne null) {
               result += markov.Factor(prevLabel, label)
               if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))

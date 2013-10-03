@@ -19,14 +19,14 @@ import Factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.File
 import org.junit.Assert._
-import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
+import cc.factorie.util.{ArrayDoubleSeq, DoubleAccumulator, BinarySerializer}
 import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.Factorie.DotFamilyWithStatistics3
 import cc.factorie.Factorie.Parameters
 import cc.factorie.Factorie.DotFamilyWithStatistics2
 import cc.factorie.Factorie.Factor
-import cc.factorie.la.{WeightsMapAccumulator, Tensor1}
+import cc.factorie.la.WeightsMapAccumulator
 import cc.factorie.DenseTensor1
 import cc.factorie.Factorie.CategoricalVectorDomain
 import cc.factorie.Factorie.Var
@@ -35,14 +35,13 @@ import cc.factorie.Model
 import cc.factorie.Factorie.DotFamilyWithStatistics1
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
-(val labelDomain:CategoricalDomain[String],
- val featuresDomain:CategoricalVectorDomain[String],
- val labelToFeatures:Label=>Features,
- val labelToToken:Label=>Token,
- val tokenToLabel:Token=>Label) 
- (implicit lm:ClassTag[Label], fm:ClassTag[Features], tm:ClassTag[Token])
-extends Model with Parameters
-{
+(val labelDomain: CategoricalDomain[String],
+  val featuresDomain: CategoricalVectorDomain[String],
+  val labelToFeatures: Label => Features,
+  val labelToToken: Label => Token,
+  val tokenToLabel: Token => Label)
+  (implicit lm: ClassTag[Label], fm: ClassTag[Features], tm: ClassTag[Token])
+  extends Model with Parameters {
   self =>
   val labelClass = lm.runtimeClass
   val featureClass = fm.runtimeClass
@@ -51,15 +50,15 @@ extends Model with Parameters
     factorName = "Label"
     val weights = Weights(new la.DenseTensor1(labelDomain.size))
   }
-  val obs = new DotFamilyWithStatistics2[Label,Features] {
+  val obs = new DotFamilyWithStatistics2[Features, Label] {
     factorName = "Label,Token"
-    val weights = Weights(new la.DenseTensor2(labelDomain.size, featuresDomain.dimensionSize))
+    val weights = Weights(new la.DenseTensor2(featuresDomain.dimensionSize, labelDomain.dimensionSize))
   }
-  val markov = new DotFamilyWithStatistics2[Label,Label] {
+  val markov = new DotFamilyWithStatistics2[Label, Label] {
     factorName = "Label,Label"
     val weights = Weights(new la.DenseTensor2(labelDomain.size, labelDomain.size))
   }
-  val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Features] {
+  val obsmarkov = new DotFamilyWithStatistics3[Label, Label, Features] {
     factorName = "Label,Label,Token"
     val weights = Weights(if (useObsMarkov) new la.DenseTensor3(labelDomain.size, labelDomain.size, featuresDomain.dimensionSize) else new la.DenseTensor3(1, 1, 1))
   }
@@ -85,18 +84,18 @@ extends Model with Parameters
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
     val modelFile = new File(prefix + "-model")
     assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    assertEquals(markov.weights.value.length, labelDomain.length * labelDomain.length)
+    //    assertEquals(markov.weights.value.length, labelDomain.length * labelDomain.length)
     BinarySerializer.deserialize(this, modelFile)
   }
 
-  def factors(variables:Iterable[Var]): Iterable[Factor] = {
+  def factors(variables: Iterable[Var]): Iterable[Factor] = {
     val result = new ListBuffer[Factor]
     variables match {
       case labels: Iterable[Label] if variables.forall(v => labelClass.isAssignableFrom(v.getClass)) =>
         var prevLabel: Label = null.asInstanceOf[Label]
         for (label <- labels) {
           result += bias.Factor(label)
-          result += obs.Factor(label, labelToFeatures(label))
+          result += obs.Factor(labelToFeatures(label), label)
           if (prevLabel ne null) {
             result += markov.Factor(prevLabel, label)
             if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))
@@ -108,10 +107,10 @@ extends Model with Parameters
   }
 
   override def factors(v: Var) = v match {
-    case label:Label if label.getClass eq labelClass => {
+    case label: Label if label.getClass eq labelClass => {
       val result = new ArrayBuffer[Factor](4)
       result += bias.Factor(label)
-      result += obs.Factor(label, labelToFeatures(label))
+      result += obs.Factor(labelToFeatures(label), label)
       val token = labelToToken(label)
       if (token.hasPrev) {
         result += markov.Factor(tokenToLabel(token.prev), label)
@@ -127,17 +126,16 @@ extends Model with Parameters
     }
   }
   // only works for dot familys, no structured svm, obs template looks like [Label, Features]
-  def inferChainSumFast(varying: Seq[Label]): (Double,Array[DenseTensor1],Array[DenseTensor1],Array[DenseTensor1]) = {
+  def inferChainSumFast(varying: Seq[Label]): (Double, Array[DenseTensor1], Array[DenseTensor1], Array[DenseTensor1]) = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient sum-product")
     val markovScores = markov.weights.value
     val biasScores = bias.weights.value
     val obsWeights = obs.weights.value
 
-
     val localScores = Array.fill[DenseTensor1](varying.size)(null)
     var i = 0
     while (i < varying.length) {
-      val scores = (obsWeights * varying(i).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
+      val scores = (obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1])).asInstanceOf[DenseTensor1]
       scores += biasScores
       localScores(i) = scores
       i += 1
@@ -150,16 +148,18 @@ extends Model with Parameters
 
     i = 1
     val d1 = markovScores.dim1
+    val tmpArray = Array.fill(markovScores.dim1)(0.0)
     while (i < varying.size) {
       val ai = alphas(i)
-      val aim1 = alphas(i-1)
+      val aim1 = alphas(i - 1)
       var vi = 0
       while (vi < d1) {
         var vj = 0
         while (vj < d1) {
-          ai(vi) = maths.sumLogProb(ai(vi), markovScores(vj, vi) + aim1(vj))
+          tmpArray(vj) = markovScores(vj, vi) + aim1(vj)
           vj += 1
         }
+        ai(vi) = maths.sumLogProbs(new ArrayDoubleSeq(tmpArray))
         vi += 1
       }
       alphas(i) += localScores(i)
@@ -171,15 +171,16 @@ extends Model with Parameters
     i = varying.size - 2
     while (i >= 0) {
       val bi = betas(i)
-      val bip1 = betas(i+1)
-      val lsp1 = localScores(i+1)
+      val bip1 = betas(i + 1)
+      val lsp1 = localScores(i + 1)
       var vi = 0
       while (vi < d1) {
         var vj = 0
         while (vj < d1) {
-          bi(vi) = maths.sumLogProb(bi(vi), markovScores(vi, vj) + bip1(vj) + lsp1(vj))
+          tmpArray(vj) = markovScores(vi, vj) + bip1(vj) + lsp1(vj)
           vj += 1
         }
+        bi(vi) = maths.sumLogProbs(new ArrayDoubleSeq(tmpArray))
         vi += 1
       }
       i -= 1
@@ -189,41 +190,54 @@ extends Model with Parameters
     (logZ, alphas, betas, localScores)
   }
 
-  def example(varying: Seq[Label]): Example = {
-    new Example {
-      def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) = {
-        val (logZ,alphas,betas,localScores) = inferChainSumFast(varying)
-        val transScores = markov.weights.value
+  class ChainLikelihoodExample(varying: Seq[Label]) extends Example {
+    def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
+      if (varying.length == 0) return
+      val (logZ, alphas, betas, localScores) = inferChainSumFast(varying)
+      val transScores = markov.weights.value
+      if (value ne null)
+        value.accumulate(-logZ)
+      val domainSize = transScores.dim1
+      val transGradient = new DenseTensor2(domainSize, domainSize)
+      val len = varying.length
+      var i = 0
+      while (i < len) {
+        val curLabel = varying(i)
+        val prevLabel = if (i >= 1) varying(i - 1) else null.asInstanceOf[Label]
+        val prevAlpha = if (i >= 1) alphas(i - 1) else null.asInstanceOf[Tensor1]
+        val curAlpha = alphas(i)
+        val curBeta = betas(i)
+        val curLocalScores = localScores(i)
+        val curTargetIntValue = curLabel.targetIntValue
+        val prevTargetIntValue = if (i >= 1) prevLabel.targetIntValue else -1
         if (value ne null) {
-          for (i <- 0 until varying.length) {
-            value.accumulate(localScores(i)(varying(i).targetIntValue))
-            if (i >= 1) value.accumulate(transScores(varying(i-1).targetIntValue,varying(i).targetIntValue))
-          }
-          value.accumulate(-logZ)
+          value.accumulate(curLocalScores(curTargetIntValue))
+          if (i >= 1) value.accumulate(transScores(prevTargetIntValue, curTargetIntValue))
         }
         if (gradient ne null) {
-          val marginal = new DenseTensor2(transScores.dim1, transScores.dim1)
-          for (i <- 0 until varying.length) {
-            val localMarginal = alphas(i) + betas(i)
-            localMarginal.expNormalize(logZ)
-            localMarginal *= -1
-            localMarginal(varying(i).targetIntValue) += 1
-            gradient.accumulate(bias.weights, localMarginal)
-            gradient.accumulate(obs.weights, localMarginal outer labelToFeatures(varying(i)).value)
-            if (i >= 1) {
-              for (ii <- 0 until localMarginal.dim1; jj <- 0 until localMarginal.dim1) {
-                marginal(ii, jj) += -math.exp(alphas(i-1)(ii) + transScores(ii,jj) + betas(i)(jj) - logZ)
+          val localMarginal = curAlpha + curBeta
+          localMarginal.expNormalize(logZ)
+          localMarginal *= -1
+          localMarginal(curTargetIntValue) += 1
+          gradient.accumulate(bias.weights, localMarginal) // note
+          gradient.accumulate(obs.weights, labelToFeatures(curLabel).value outer localMarginal)
+          if (i >= 1) {
+            var ii = 0
+            while (ii < domainSize) {
+              var jj = 0
+              while (jj < domainSize) {
+                transGradient(ii, jj) += -math.exp(prevAlpha(ii) + transScores(ii, jj) + curBeta(jj) + curLocalScores(jj) - logZ)
+                jj += 1
               }
-              marginal(varying(i-1).targetIntValue,varying(i).targetIntValue) += 1
+              ii += 1
             }
+            transGradient(prevTargetIntValue, curTargetIntValue) += 1
           }
-          gradient.accumulate(markov.weights, marginal)
         }
+        i += 1
       }
+      if (gradient ne null)
+        gradient.accumulate(markov.weights, transGradient)
     }
   }
-
-
 }
-
-

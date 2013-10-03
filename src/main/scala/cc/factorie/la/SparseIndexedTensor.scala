@@ -309,6 +309,29 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
             }
             i += 1
           }
+        case (t1: SingletonBinaryTensor, t2: DenseTensor) => {
+          val i0 = t1.singleIndex
+          val arr = t2.asArray
+          var i = 0
+          while (i < arr.length) {
+            this += (t.singleFlatIndex(i0, i), ff*arr(i))
+            i += 1
+          }
+        }
+        case (t1: SparseTensor, t2: DenseTensor) =>
+          var j = 0
+          val arr = t2.asArray
+          while (j < arr.length) {
+            val len = t1.activeDomainSize
+            val indices = t1._indices
+            val values = t1._valuesSeq
+            var i = 0
+            while (i < len) {
+              this += (t.singleFlatIndex(indices(i), j), ff*t2(j)*values(i))
+              i += 1
+            }
+            j += 1
+          }
         case (t1: SingletonTensor, t2: SparseTensor) => {
           val i0 = t1.singleIndex
           val arr = t2._indices
@@ -335,15 +358,6 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
               this += (t.singleFlatIndex(indices1(i), indices2(j)), ff*values1(i)*values2(j))
               j += 1
             }
-            i += 1
-          }
-        }
-        case (t1: SingletonBinaryTensor, t2: DenseTensor) => {
-          val i0 = t1.singleIndex
-          val arr = t2.asArray
-          var i = 0
-          while (i < arr.length) {
-            this += (t.singleFlatIndex(i0, i), ff*arr(i))
             i += 1
           }
         }

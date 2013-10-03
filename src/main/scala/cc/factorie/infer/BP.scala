@@ -47,7 +47,8 @@ object BPFactorFactory {
       case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
         if (varying.contains(factor._1) && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary, summary.ring)
         else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
-        else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+        else if (factor._1.isInstanceOf[DiscreteVar]) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+        else new BPFactor1Factor2Left(factor.asInstanceOf[Factor2[VectorVar,DiscreteVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
       case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
         val neighbors = factor.variables.filter(v => v.isInstanceOf[DiscreteVar] && varying.contains(v.asInstanceOf[DiscreteVar]))
         if (neighbors.size == 2)
@@ -230,6 +231,14 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,VectorVar], edge1:BPEdge,
       i += 1
     }
     result
+  }
+}
+
+class BPFactor1Factor2Left(val factor: Factor2[VectorVar,DiscreteVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1[DiscreteVar] with DiscreteMarginal1Factor2Other[VectorVar,DiscreteVar] {
+  def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
+  def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
+  val scores: Tensor1 = {
+    factor.asInstanceOf[DotFamily#Factor].family.weights.value.asInstanceOf[Tensor2].leftMultiply(factor.variables.head.value.asInstanceOf[Tensor1])
   }
 }
 

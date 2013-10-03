@@ -94,6 +94,18 @@ trait DiscreteMarginal1Factor2[V1<:VectorVar,V2<:VectorVar] extends FactorMargin
   }
 }
 
+trait DiscreteMarginal1Factor2Other[V1<:VectorVar,V2<:VectorVar] extends FactorMarginal {
+  this: DiscreteMarginal1[V2] =>
+  def _1: V2
+  override def factor: Factor2[V1,V2]
+  def tensorStatistics = {
+    if (_1 eq factor._1)
+      proportions outer factor._2.value
+    else
+      factor._1.value outer proportions
+  }
+}
+
 trait DiscreteMarginal1Factor3[V1<:VectorVar,V2<:VectorVar,V3<:VectorVar,V4<:DiscreteVar] extends FactorMarginal {
   this: DiscreteMarginal1[V4] =>
   def _1: V4
