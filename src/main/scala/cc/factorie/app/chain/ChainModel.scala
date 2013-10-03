@@ -19,9 +19,20 @@ import Factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.File
 import org.junit.Assert._
-import cc.factorie.util.BinarySerializer
-import cc.factorie.variable.{CategoricalVectorVar, LabeledMutableDiscreteVarWithTarget}
+import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
+import cc.factorie.variable._
 import scala.reflect.ClassTag
+import cc.factorie.Factorie.DotFamilyWithStatistics3
+import cc.factorie.Factorie.Parameters
+import cc.factorie.Factorie.DotFamilyWithStatistics2
+import cc.factorie.Factorie.Factor
+import cc.factorie.la.{WeightsMapAccumulator, Tensor1}
+import cc.factorie.DenseTensor1
+import cc.factorie.Factorie.CategoricalVectorDomain
+import cc.factorie.Factorie.Var
+import cc.factorie.Factorie.CategoricalDomain
+import cc.factorie.Model
+import cc.factorie.Factorie.DotFamilyWithStatistics1
 
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain:CategoricalDomain[String],
@@ -115,6 +126,104 @@ extends Model with Parameters
       result
     }
   }
+  // only works for dot familys, no structured svm, obs template looks like [Label, Features]
+  def inferChainSumFast(varying: Seq[Label]): (Double,Array[DenseTensor1],Array[DenseTensor1],Array[DenseTensor1]) = {
+    assert(!useObsMarkov, "obsMarkov factors not supported with efficient sum-product")
+    val markovScores = markov.weights.value
+    val biasScores = bias.weights.value
+    val obsWeights = obs.weights.value
+
+
+    val localScores = Array.fill[DenseTensor1](varying.size)(null)
+    var i = 0
+    while (i < varying.length) {
+      val scores = (obsWeights * varying(i).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
+      scores += biasScores
+      localScores(i) = scores
+      i += 1
+    }
+
+    val alphas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
+    val betas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
+
+    alphas(0) := localScores(0)
+
+    i = 1
+    val d1 = markovScores.dim1
+    while (i < varying.size) {
+      val ai = alphas(i)
+      val aim1 = alphas(i-1)
+      var vi = 0
+      while (vi < d1) {
+        var vj = 0
+        while (vj < d1) {
+          ai(vi) = maths.sumLogProb(ai(vi), markovScores(vj, vi) + aim1(vj))
+          vj += 1
+        }
+        vi += 1
+      }
+      alphas(i) += localScores(i)
+      i += 1
+    }
+
+    betas.last.zero()
+
+    i = varying.size - 2
+    while (i >= 0) {
+      val bi = betas(i)
+      val bip1 = betas(i+1)
+      val lsp1 = localScores(i+1)
+      var vi = 0
+      while (vi < d1) {
+        var vj = 0
+        while (vj < d1) {
+          bi(vi) = maths.sumLogProb(bi(vi), markovScores(vi, vj) + bip1(vj) + lsp1(vj))
+          vj += 1
+        }
+        vi += 1
+      }
+      i -= 1
+    }
+
+    val logZ = maths.sumLogProbs(alphas.last)
+    (logZ, alphas, betas, localScores)
+  }
+
+  def example(varying: Seq[Label]): Example = {
+    new Example {
+      def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) = {
+        val (logZ,alphas,betas,localScores) = inferChainSumFast(varying)
+        val transScores = markov.weights.value
+        if (value ne null) {
+          for (i <- 0 until varying.length) {
+            value.accumulate(localScores(i)(varying(i).targetIntValue))
+            if (i >= 1) value.accumulate(transScores(varying(i-1).targetIntValue,varying(i).targetIntValue))
+          }
+          value.accumulate(-logZ)
+        }
+        if (gradient ne null) {
+          val marginal = new DenseTensor2(transScores.dim1, transScores.dim1)
+          for (i <- 0 until varying.length) {
+            val localMarginal = alphas(i) + betas(i)
+            localMarginal.expNormalize(logZ)
+            localMarginal *= -1
+            localMarginal(varying(i).targetIntValue) += 1
+            gradient.accumulate(bias.weights, localMarginal)
+            gradient.accumulate(obs.weights, localMarginal outer labelToFeatures(varying(i)).value)
+            if (i >= 1) {
+              for (ii <- 0 until localMarginal.dim1; jj <- 0 until localMarginal.dim1) {
+                marginal(ii, jj) += -math.exp(alphas(i-1)(ii) + transScores(ii,jj) + betas(i)(jj) - logZ)
+              }
+              marginal(varying(i-1).targetIntValue,varying(i).targetIntValue) += 1
+            }
+          }
+          gradient.accumulate(markov.weights, marginal)
+        }
+      }
+    }
+  }
+
+
 }
 
 
