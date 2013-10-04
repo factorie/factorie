@@ -316,7 +316,7 @@ object POS1WSJ extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie")
 //object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
 object POS1Ontonotes extends POS1(cc.factorie.util.ClasspathURL[POS1]("-Ontonotes.factorie"))
 
-class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
+class POS1Opts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
   val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
   val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
@@ -341,12 +341,23 @@ object POS1Trainer extends HyperparameterMain {
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val pos = new POS1
+
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = load.LoadOntonotes5.fromFilename(opts.testFile.value)
+    val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
+
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-    pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDocs.flatMap(_.sentences)
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+    pos.train(trainSentences, testSentences,
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
@@ -355,7 +366,9 @@ object POS1Trainer extends HyperparameterMain {
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
-    pos.accuracy(testDocs.flatMap(_.sentences))
+    val acc = pos.accuracy(testDocs.flatMap(_.sentences))
+    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    acc
   }
 }
 

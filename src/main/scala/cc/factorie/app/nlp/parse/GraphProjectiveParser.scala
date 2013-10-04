@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
+import util.{HyperparameterMain, ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
 import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
@@ -300,33 +300,48 @@ object GraphProjectiveParser extends GraphProjectiveParser {
   deserialize(ClasspathURL[GraphProjectiveParser](".factorie"))
 }
 
-object GraphProjectiveParserTrainer {
-  def main(args: Array[String]): Unit = {
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
-      //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
-      val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
-      val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
-      val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
-    }
+object GraphProjectiveParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+  val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
+  //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
+  val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
+  val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
+  val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
+}
+
+object GraphProjectiveParserTrainer extends HyperparameterMain {
+  def evaluateParameters(args: Array[String]): Double = {
+    val opts = GraphProjectiveParserOpts
     opts.parse(args)
 
     val parser = new GraphProjectiveParser
 
+
     val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
     val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
 
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDoc.sentences.toSeq
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDoc.sentences.toSeq
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+
     // Train
-    parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    parser.train(trainSentences, testSentences, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
     // Test
 
     // Print accuracy diagnostics
     println("Predicting train set..."); parser.process(trainDoc)
     println("Predicting test set...");  parser.process(testDoc)
     println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
-    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
+    val testUAS = ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree]))
+    println("Testing UAS = "+ testUAS)
     println()
     println("Done.")
+    if(opts.targetAccuracy.wasInvoked) assert(testUAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    testUAS
   }
 
 }

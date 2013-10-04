@@ -466,7 +466,7 @@ object DepParser1Ontonotes extends DepParser1(cc.factorie.util.ClasspathURL[DepP
 
 
 
-class DepParser1Args extends cc.factorie.util.DefaultCmdOptions {
+class DepParser1Args extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -495,9 +495,19 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
       else Seq.empty[Sentence]
     }
-    val sentences = loadSentences(opts.trainFiles)
-    val devSentences = loadSentences(opts.devFiles)
-    val testSentences = loadSentences(opts.testFiles)
+
+    val sentencesFull = loadSentences(opts.trainFiles)
+    val devSentencesFull = loadSentences(opts.devFiles)
+    val testSentencesFull = loadSentences(opts.testFiles)
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val sentences = sentencesFull.take((trainPortionToTake*sentencesFull.length).floor.toInt)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    val devSentences = devSentencesFull.take((testPortionToTake*devSentencesFull.length).floor.toInt)
+
+
+
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
@@ -548,7 +558,9 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       d.deserialize(new java.io.File(modelUrl))
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
-    ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    testLAS
   }
 }
 

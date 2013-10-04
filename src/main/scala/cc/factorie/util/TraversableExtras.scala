@@ -17,7 +17,6 @@ package cc.factorie.util
 import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.ClassTag
-import scala.annotation.tailrec
 
 private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
   var _first:Traversable[A] = null

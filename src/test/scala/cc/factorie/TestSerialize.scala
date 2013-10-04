@@ -89,6 +89,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    modelFileOutput.flush()
    modelFileOutput.close()
 
+
    val modelFileInput = new FileInputStream(f)
 
    val deserialized = deserializeChainModel(modelFileInput)
