@@ -18,8 +18,35 @@ import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.ClassTag
 
+private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
+  var _first:Traversable[A] = null
+  var _rest:Traversable[A] = t
+
+  def hasNext: Boolean = _rest.nonEmpty && {
+    var r = _rest.span(pred)
+    _first = r._1; _rest = r._2
+    while(_first.isEmpty && _rest.nonEmpty) {
+      r = _rest.tail.span(pred)
+      _first = r._1; _rest = r._2
+    }
+    _first.nonEmpty
+  }
+
+  def next(): Traversable[A] = {
+    if(_first==null) {
+      hasNext
+    }
+    if(_first.isEmpty) {
+      throw new NoSuchElementException()
+    }
+    _first
+  }
+}
+
 /** New functionality on Traversable instances, available by implicit conversion in the cc.factorie package object in cc/factorie/package.scala. */
 final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
+
+  def split(pred:(A => Boolean)):Iterator[Traversable[A]] = new SplitIterator[A](t, pred)
 
   def indexSafe(i: Int): Option[A] = if (i < t.size && i >= 0) Some(t.toSeq(i)) else None
 

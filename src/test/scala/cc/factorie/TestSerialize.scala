@@ -69,7 +69,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  @Test def testChainModelSerialization(): Unit = {
    val random = new scala.util.Random(0)
 
-   val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
+   val f = File.createTempFile("FactorieTestFile", "serialize-chain-model")
+   val modelFileOutput = new FileOutputStream(f)
 
    logger.debug("creating toy model with random weights")
 
@@ -84,9 +85,14 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    model.obs.weights.value:= Array.fill[Double](model.obs.weights.value.length)(random.nextDouble())
    model.markov.weights.value:= Array.fill[Double](model.markov.weights.value.length)(random.nextDouble())
    logger.debug("serializing chain model")
-   model.serialize(modelFile)
+   model.serialize(modelFileOutput)
+   modelFileOutput.flush()
+   modelFileOutput.close()
 
-   val deserialized = deserializeChainModel(modelFile)
+
+   val modelFileInput = new FileInputStream(f)
+
+   val deserialized = deserializeChainModel(modelFileInput)
 
    assertSameWeights(model, deserialized)
 
@@ -119,11 +125,11 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    model
  }
 
- def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
+ def deserializeChainModel(iStream: InputStream): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
    object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    object OntoNerLabelDomain extends CategoricalDomain[String]
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-   model.deSerialize(fileName)
+   model.deserialize(iStream)
    model
  }
 

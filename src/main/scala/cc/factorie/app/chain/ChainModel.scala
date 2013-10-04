@@ -17,16 +17,15 @@ package cc.factorie.app.chain
 import cc.factorie._
 import Factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
-import java.io.File
-import org.junit.Assert._
-import cc.factorie.util.{ArrayDoubleSeq, DoubleAccumulator, BinarySerializer}
+import java.io.{InputStream, OutputStream, DataInputStream, DataOutputStream}
+import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
 import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.Factorie.DotFamilyWithStatistics3
 import cc.factorie.Factorie.Parameters
 import cc.factorie.Factorie.DotFamilyWithStatistics2
 import cc.factorie.Factorie.Factor
-import cc.factorie.la.{SingletonTensor1, SingletonBinaryTensor1, SparseIndexedTensor1, WeightsMapAccumulator}
+import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
 import cc.factorie.DenseTensor1
 import cc.factorie.Factorie.CategoricalVectorDomain
 import cc.factorie.Factorie.Var
@@ -34,6 +33,9 @@ import cc.factorie.Factorie.CategoricalDomain
 import cc.factorie.Model
 import cc.factorie.Factorie.DotFamilyWithStatistics1
 
+
+
+//TODO We should add the ability to explictly permit and forbid label transitions
 class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
 (val labelDomain: CategoricalDomain[String],
   val featuresDomain: CategoricalVectorDomain[String],
@@ -64,28 +66,20 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
   }
   var useObsMarkov = false
 
-  def serialize(prefix: String) {
-    val modelFile = new File(prefix + "-model")
-    if (modelFile.getParentFile ne null)
-      modelFile.getParentFile.mkdirs()
-    BinarySerializer.serialize(this, modelFile)
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    BinarySerializer.serialize(labelDomain, labelDomainFile)
-    val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinarySerializer.serialize(featuresDomain.dimensionDomain, featuresDomainFile)
+  def serialize(stream: OutputStream) {
+    val dstream = new DataOutputStream(stream)
+    BinarySerializer.serialize(featuresDomain, dstream)
+    BinarySerializer.serialize(labelDomain, dstream)
+    BinarySerializer.serialize(this, dstream)
+    dstream.close()
   }
 
-  def deSerialize(prefix: String) {
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinarySerializer.deserialize(labelDomain, labelDomainFile)
-    val featuresDomainFile = new File(prefix + "-featuresDomain")
-    assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
-    BinarySerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
-    val modelFile = new File(prefix + "-model")
-    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    //    assertEquals(markov.weights.value.length, labelDomain.length * labelDomain.length)
-    BinarySerializer.deserialize(this, modelFile)
+  def deserialize(stream: InputStream) {
+    val dstream = new DataInputStream(stream)
+    BinarySerializer.deserialize(featuresDomain, dstream)
+    BinarySerializer.deserialize(labelDomain, dstream)
+    BinarySerializer.deserialize(this, dstream)
+    dstream.close()
   }
 
   def factors(variables: Iterable[Var]): Iterable[Factor] = {
@@ -129,39 +123,39 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
   case class ViterbiResults(mapScore: Double, mapValues: Array[Int], localScores: Array[DenseTensor1])
   case class InferenceResults(logZ: Double, alphas: Array[DenseTensor1], betas: Array[DenseTensor1], localScores: Array[DenseTensor1])
 
-  def viterbiFast(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None): ViterbiResults = {
+  def viterbiFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): ViterbiResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient max-product")
     val markovScores = markov.weights.value
     val localScores = getLocalScores(varying)
-    localScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
+    addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
-    val maxMarginals = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
+    val costs = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
     val backPointers = Array.fill(varying.size)(Array.fill[Int](markovScores.dim1)(-1))
 
-    maxMarginals(0) := localScores(0)
+    costs(0) := localScores(0)
 
     val domainSize = markovScores.dim1
 
     var i = 1
     while (i < varying.size) {
       val curLocalScores = localScores(i)
-      val curMaxMarginal = maxMarginals(i)
+      val curCost = costs(i)
       val curBackPointers = backPointers(i)
-      val prevMaxMarginal = maxMarginals(i - 1)
+      val prevCost = costs(i - 1)
       var vi = 0
       while (vi < domainSize) {
         var maxScore = Double.NegativeInfinity
         var maxIndex = -1
         var vj = 0
         while (vj < domainSize) {
-          val curScore = markovScores(vj, vi) + prevMaxMarginal(vj) + curLocalScores(vi)
+          val curScore = markovScores(vj, vi) + prevCost(vj) + curLocalScores(vi)
           if (curScore > maxScore) {
             maxScore = curScore
             maxIndex = vj
           }
           vj += 1
         }
-        curMaxMarginal(vi) = maxScore
+        curCost(vi) = maxScore
         curBackPointers(vi) = maxIndex
         vi += 1
       }
@@ -169,20 +163,31 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     }
 
     val mapValues = Array.fill[Int](varying.size)(0)
-    mapValues(mapValues.size - 1) = maxMarginals.last.maxIndex
+    mapValues(mapValues.size - 1) = costs.last.maxIndex
     var j = mapValues.size - 2
     while (j >= 0) {
       mapValues(j) = backPointers(j + 1)(mapValues(j + 1))
       j -= 1
     }
 
-    ViterbiResults(maxMarginals.last.max, mapValues, localScores)
+    ViterbiResults(costs.last.max, mapValues, localScores)
   }
 
   def maximize(vars: Seq[Label])(implicit d: DiffList): Unit = {
     val result = viterbiFast(vars)
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
+
+  def getHammingLossScores(varying: Seq[Label]): Array[Tensor1] = {
+     val localScores = new Array[Tensor1](varying.size)
+     val domainSize = localScores.head.size
+     for ((v, i) <- varying.zipWithIndex) {
+       localScores(i) = new DenseTensor1(domainSize)
+       for (wrong <- 0 until domainSize if wrong != v.targetIntValue)
+         localScores(i)(wrong) += 1.0
+     }
+     localScores
+   }
 
   def getLocalScores(varying: Seq[Label]): Array[DenseTensor1] = {
     val biasScores = bias.weights.value
@@ -198,11 +203,11 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     a
   }
 
-  def inferFast(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None): InferenceResults = {
+  def inferFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): InferenceResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient sum-product")
     val markovScores = markov.weights.value
     val localScores = getLocalScores(varying)
-    localScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
+    addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
     val alphas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
     val betas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
@@ -253,10 +258,12 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     InferenceResults(logZ, alphas, betas, localScores)
   }
 
-  class ChainViterbiExample(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None) extends Example {
+  class ChainStructuredSVMExample(varying: Seq[Label]) extends ChainViterbiExample(varying, () => Some(getHammingLossScores(varying)))
+
+  class ChainViterbiExample(varying: Seq[Label], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
-      val ViterbiResults(mapScore, mapValues, localScores) = viterbiFast(varying, localScoresOpt)
+      val ViterbiResults(mapScore, mapValues, localScores) = viterbiFast(varying, addToLocalScoresOpt())
       val transScores = markov.weights.value
       if (value ne null)
         value.accumulate(-mapScore)
@@ -294,22 +301,10 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     }
   }
 
-  class ChainStructuredSVMExample(varying: Seq[Label]) extends Example {
-    // gradient or value can be null if they don't need to be computed.
-    def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) = {
-      val halfLocalScores = varying.map(v => {
-        val t = new DenseTensor1(labelDomain.size, 1.0)
-        t(v.targetIntValue) = 0
-        t.asInstanceOf[Tensor1]
-      }).toArray
-      new ChainViterbiExample(varying, Some(halfLocalScores)).accumulateValueAndGradient(value, gradient)
-    }
-  }
-
-  class ChainLikelihoodExample(varying: Seq[Label]) extends Example {
+  class ChainLikelihoodExample(varying: Seq[Label], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
-      val InferenceResults(logZ, alphas, betas, localScores) = inferFast(varying)
+      val InferenceResults(logZ, alphas, betas, localScores) = inferFast(varying, addToLocalScoresOpt())
       val transScores = markov.weights.value
       if (value ne null)
         value.accumulate(-logZ)
@@ -335,7 +330,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
           localMarginal.expNormalize(logZ)
           localMarginal *= -1
           localMarginal(curTargetIntValue) += 1
-          gradient.accumulate(bias.weights, localMarginal) // note
+          gradient.accumulate(bias.weights, localMarginal)
           gradient.accumulate(obs.weights, labelToFeatures(curLabel).value outer localMarginal)
           if (i >= 1) {
             var ii = 0
