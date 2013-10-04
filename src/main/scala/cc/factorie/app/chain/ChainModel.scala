@@ -330,7 +330,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
           localMarginal.expNormalize(logZ)
           localMarginal *= -1
           localMarginal(curTargetIntValue) += 1
-          gradient.accumulate(bias.weights, localMarginal) // note
+          gradient.accumulate(bias.weights, localMarginal)
           gradient.accumulate(obs.weights, labelToFeatures(curLabel).value outer localMarginal)
           if (i >= 1) {
             var ii = 0
