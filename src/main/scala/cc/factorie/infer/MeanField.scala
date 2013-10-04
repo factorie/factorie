@@ -59,14 +59,14 @@ class DiscreteMeanField(val model:Model, val summary:DiscreteSummary1[MutableDis
     distribution.expNormalize()
     p.masses := distribution
   }
-  def updateQ: Unit = summary.variables.foreach(updateQ(_))
+  def updateQ(): Unit = summary.variables.foreach(updateQ)
 }
 
 object InferByMeanField extends Infer[Iterable[MutableDiscreteVar],Model] {
   def inferencer(variables:Iterable[MutableDiscreteVar], model:Model): DiscreteMeanField = new DiscreteMeanField(variables, model)
   def apply(variables:Iterable[MutableDiscreteVar], model:Model): DiscreteSummary1[MutableDiscreteVar] = {
     val inf = inferencer(variables, model)
-    for (i <- 0 until 5) inf.updateQ // TODO Replace with a proper convergence criterion!!!
+    for (i <- 0 until 5) inf.updateQ() // TODO Replace with a proper convergence criterion!!!
     inf.summary
   }
   def infer(variables:Iterable[MutableDiscreteVar], model:Model, marginalizing:Summary) = {
