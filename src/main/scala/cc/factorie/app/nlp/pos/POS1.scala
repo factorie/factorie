@@ -262,6 +262,7 @@ class POS1 extends DocumentAnnotator {
         if (token.attr[PennPosLabel].valueIsTarget) correct += 1.0
       }
     })
+    println(s"${total*1000/totalTime} tokens/sec")
     correct/total
   }
   
