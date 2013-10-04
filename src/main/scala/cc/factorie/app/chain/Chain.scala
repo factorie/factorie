@@ -61,7 +61,7 @@ object Chain {
 
   private class FeatureChain extends Chain[FeatureChain, Features]
 
-  private class Features(featureStrings: Iterable[String], val label: Label, val useBinaryFeatures: Boolean = ChainOpts.readBinaryFeatures.value)
+  private class Features(val featureStrings: Iterable[String], val label: Label, val useBinaryFeatures: Boolean = ChainOpts.readBinaryFeatures.value)
     extends FeatureVectorVariable[String] with Observation[Features] with ChainLink[Features, FeatureChain] {
     if (useBinaryFeatures) set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
     else set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
@@ -150,7 +150,7 @@ object Chain {
         featureChain =>
           featureChain.foreach {
             link =>
-              classificationResults.write("%s %s".format(link.label.categoryValue, link.features.mkString(" ")))
+              classificationResults.write("%s %s".format(link.label.categoryValue, link.featureStrings.mkString(" ")))
               classificationResults.newLine()
           }
           classificationResults.newLine()
