@@ -351,17 +351,7 @@ class StructuredPerceptronExample[A<:Iterable[Var],B<:Model](labels: A, model: B
  * @tparam A The type of the labels
  */
 class StructuredSVMExample[A<:Iterable[Var]](labels: A, model: Model with Parameters, loss: Model = HammingLoss, infer: Maximize[A,Model])
-  extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer) {
-  override def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
-    if (value != null) {
-      val valueAcc = new LocalDoubleAccumulator(0.0)
-      // TODO why are we doing this again? -luke
-      super.accumulateValueAndGradient(valueAcc, gradient)
-      // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
-      if (value != null) value.accumulate(valueAcc.value)
-    }
-  }
-}
+  extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer)
 
 /**
  * Maximum likelihood in one semi supervised setting. It does constrained inference and maximizes the likelihood of
