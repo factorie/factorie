@@ -204,7 +204,7 @@ object NER1 extends NER1(cc.factorie.util.ClasspathURL[NER1](".factorie"))
 
 /** Example main function for training NER1 from CoNLL 2003 data. */
 object NER1Trainer extends cc.factorie.util.HyperparameterMain {
-  class Opts extends cc.factorie.util.CmdOptions {
+  class Opts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions{
     val saveModel = new CmdOption("save-model", "NER1.factorie", "STRING", "Filename for the model (saving a trained model or reading a running model.")
     val serialize = new CmdOption("serialize", false, "BOOLEAN", "Whether to serialize at all")
     val train = new CmdOption("train", "eng.train", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
@@ -223,6 +223,8 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     if (opts.train.wasInvoked) {
       val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value, opts.learningRate.value)
       if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
+      if(opts.targetAccuracy.wasInvoked) assert(ret > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+
       return ret
     } else {
       System.err.println(getClass.toString+" : --train argument required.")

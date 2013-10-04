@@ -543,7 +543,7 @@ class ConllNER3(embeddingMap: SkipGramEmbedding,
 object NER3 extends ConllNER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3[_]](".factorie"))
 object NER3NoEmbeddings extends ConllNER3(null, 0, 0.0, false, ClasspathURL[NER3[_]](".factorie-noembeddings"))
 
-class NER3Opts extends CmdOptions {
+class NER3Opts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
   val modelDir =      new CmdOption("model", "NER3.factorie", "FILE", "File for saving or loading model.")
@@ -582,6 +582,8 @@ object NER3Trainer extends HyperparameterMain {
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
+    if(opts.targetAccuracy.wasInvoked) assert(result > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+
     result
   }
 }

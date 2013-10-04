@@ -463,7 +463,7 @@ object DepParser1Ontonotes extends DepParser1(cc.factorie.util.ClasspathURL[DepP
 
 
 
-class DepParser1Args extends cc.factorie.util.DefaultCmdOptions {
+class DepParser1Args extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -552,7 +552,9 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       testSentences.foreach(d.process)
       println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
     }
-    ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    testLAS
   }
 }
 

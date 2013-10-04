@@ -129,7 +129,9 @@ object POS2Trainer extends HyperparameterMain {
       val pos2 = new POS2
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
-    HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
+    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    acc
   }
 }
 

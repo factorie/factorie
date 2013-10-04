@@ -315,7 +315,7 @@ object POS1WSJ extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie")
 //object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
 object POS1Ontonotes extends POS1(cc.factorie.util.ClasspathURL[POS1]("-Ontonotes.factorie"))
 
-class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
+class POS1Opts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
   val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
   val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
@@ -354,7 +354,9 @@ object POS1Trainer extends HyperparameterMain {
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
-    pos.accuracy(testDocs.flatMap(_.sentences))
+    val acc = pos.accuracy(testDocs.flatMap(_.sentences))
+    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    acc
   }
 }
 
