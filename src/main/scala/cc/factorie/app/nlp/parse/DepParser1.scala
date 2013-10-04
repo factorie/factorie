@@ -123,9 +123,12 @@ class DepParser1 extends DocumentAnnotator {
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
-    testSentences.par.foreach(process(_))
+    val t0 = System.currentTimeMillis()
+    testSentences.foreach(process)
+    val totalTime = System.currentTimeMillis() - t0
+    val totalTokens = testSentences.map(_.tokens.length).sum
     val pred = testSentences.map(_.attr[ParseTree])
-    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
+    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)+s"  ${totalTokens*1000.0/totalTime} tokens/sec"
   }
 
 
@@ -500,13 +503,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
 
     def testSingle(c: DepParser1, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
-        println(extraText)
-        println("------------")
-        ss.foreach(c.process)
-        val pred = ss.map(_.attr[ParseTree])
-        println("LAS: " + ParserEval.calcLas(pred))
-        println("UAS: " + ParserEval.calcUas(pred))
-        println("\n")
+        println(extraText + " " + c.testString(ss))
       }
     }
 
@@ -549,8 +546,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       c.serialize(new java.io.File(modelUrl))
       val d = new DepParser1
       d.deserialize(new java.io.File(modelUrl))
-      testSentences.foreach(d.process)
-      println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
+      testSingle(c, testSentences, "Post serialization accuracy ")
     }
     ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
   }
