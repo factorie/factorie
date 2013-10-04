@@ -113,8 +113,8 @@ class LinearBinaryClassifier(val featureSize: Int) extends BaseBinaryClassifier[
 
 class LinearMultiClassClassifier(val labelSize: Int, val featureSize: Int) extends MultiClassClassifier[Tensor1] with Parameters {
   self =>
-  val weights = Weights(new DenseTensor2(labelSize, featureSize))
-  def score(features: Tensor1) = weights.value * features
+  val weights = Weights(new DenseTensor2(featureSize, labelSize))
+  def score(features: Tensor1) = weights.value.leftMultiply(features)
   def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
@@ -170,7 +170,7 @@ class SVMMultiClassTrainer(parallel: Boolean=false)(implicit random: scala.util.
     }
     val weightsValue = classifier.weights.value
     for (f <- 0 until weightsValue.dim2; (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      weightsValue(l,f) = t(f)
+      weightsValue(f,l) = t(f)
     }
     evaluate(classifier)
   }

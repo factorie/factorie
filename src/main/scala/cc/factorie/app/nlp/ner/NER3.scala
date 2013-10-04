@@ -14,8 +14,6 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
-import variable._
-import optimize._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PennPosLabel
@@ -26,16 +24,13 @@ import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
-import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
-import cc.factorie.infer.{BP, InferByBPChain}
+import cc.factorie.model.DotFamilyWithStatistics2
 import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
 import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 import cc.factorie.Factorie._
-import cc.factorie.optimize.LikelihoodExample
 import cc.factorie.optimize.Trainer
 import cc.factorie.variable.BinaryFeatureVectorVariable
 import cc.factorie.variable.CategoricalVectorDomain
-import cc.factorie.variable.DiscreteDomain
 import cc.factorie.DiscreteDomain
 import cc.factorie.variable.CategoricalDomain
 
@@ -125,7 +120,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
           var prevLabel: L = null.asInstanceOf[L]
           for (label <- labels) {
             result += bias.Factor(label)
-            result += obs.Factor(label, labelToFeatures(label))
+            result += obs.Factor(labelToFeatures(label), label)
             if (prevLabel ne null) {
               result += markov.Factor(prevLabel, label)
               if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))
@@ -140,6 +135,25 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
           }
       }
       result
+    }
+
+    override def getLocalScores(varying: Seq[L]): Array[DenseTensor1] = {
+      val biasScores = bias.weights.value
+      val obsWeights = obs.weights.value
+      val a = Array.fill[DenseTensor1](varying.size)(null)
+      var i = 0
+      while (i < varying.length) {
+        val scores = obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
+        scores += biasScores
+        if (embeddingMap != null) {
+          scores += embedding.weights.value.dot(embeddingMap(labelToToken(varying(i)).string))
+          if (i >= 1) scores += embeddingPrev.weights.value.dot(embeddingMap(labelToToken(varying(i-1)).string))
+          if (i < varying.length-1) scores += embeddingNext.weights.value.dot(embeddingMap(labelToToken(varying(i+1)).string))
+        }
+        a(i) = scores
+        i += 1
+      }
+      a
     }
   }
   val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
@@ -463,18 +477,11 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (embeddingMap != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
-    //println("Example Token features")
-    //println(trainDocuments(3).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    //println("Example Test Token features")
-    //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    //println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
-    
-    // Get the variables to be inferred (for now, just operate on a subset)
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(100)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
  
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
-    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChain))
+    val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
     trainDocuments.foreach(process(_, useModel2=false))
@@ -492,7 +499,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
 
-    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChain))
+    val examples2 = vars2.map(v => new model2.ChainLikelihoodExample(v.toSeq))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
 
     trainDocuments.foreach(process)
@@ -522,7 +529,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
       val vars = sentence.tokens.map(_.attr[L]).toSeq
-      BP.inferChainMax(vars, if(useModel2) model2 else model).setToMaximize(null)
+      (if (useModel2) model2 else model).maximize(vars)(null)
     }
   }
 }

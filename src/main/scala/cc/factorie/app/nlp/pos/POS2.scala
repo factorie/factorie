@@ -1,15 +1,12 @@
 package cc.factorie.app.nlp.pos
 
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.chain.Observations._
 import java.io._
-import cc.factorie.util.{LocalDoubleAccumulator, HyperparameterMain, ClasspathURL, BinarySerializer}
-import cc.factorie.optimize.{StructuredSVMExample, LikelihoodExample, Trainer}
-import cc.factorie.la.SmartGradientAccumulator
+import cc.factorie.util.{HyperparameterMain, ClasspathURL, BinarySerializer}
+import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.infer.MaximizeByBPChain
 
 /**
  * User: apassos
@@ -22,7 +19,7 @@ class POS2 extends DocumentAnnotator {
       if (s.nonEmpty) {
         s.tokens.foreach(t => if (!t.attr.contains[PennPosLabel]) t.attr += new PennPosLabel(t, "NN"))
         initPOSFeatures(s)
-        MaximizeByBPChain.maximize(s.tokens.map(_.posLabel), model)
+        model.maximize(s.tokens.map(_.posLabel))(null)
       }
     })
     document
@@ -53,11 +50,11 @@ class POS2 extends DocumentAnnotator {
     PosFeaturesDomain.freeze()
     testSentences.foreach(initPOSFeatures)
     def evaluate() {
-      (trainSentences ++ testSentences).foreach(s => MaximizeByBPChain.maximize(s.tokens.map(_.posLabel), model))
+      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.posLabel))(null))
       println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.posLabel))))
       println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.posLabel))))
     }
-    val examples = trainSentences.map(sentence => new StructuredSVMExample(sentence.tokens.map(_.posLabel), model, infer=MaximizeByBPChain)).toSeq
+    val examples = trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.posLabel))).toSeq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
