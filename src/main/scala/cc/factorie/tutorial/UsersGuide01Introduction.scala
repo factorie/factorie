@@ -239,26 +239,43 @@ Although at its core FACTORIE is a graphical models toolkit, since classificatio
 However, it was not designed to support arbitrarily-structured graphical models.  FACTORIE strives to supersede MALLET in all ways.
 The [GRMM](http://mallet.cs.umass.edu/grmm/) extension to MALLET, written by Charles Sutton, does support graphical models, but not with as flexible an architecture; and in any case it is no longer being developed or supported. 
 
-[SciKit-Learn](http://scikit-learn.org) provides an extensive set of tools for classification, regression, clustering, dimensionality reduction and model selection.  
-It is more mature than FACTORIE, and has been integrated into a graphic package so that it can produce graph outputs directly.
-However, it does not support graphical models.
-SciKit-Learn is implemented in Python, so in many cases it is less efficient than FACTORIE, which is JVM-based.
+[SciKit-Learn](http://scikit-learn.org) provides an extensive set of
+tools for classification, regression, clustering, dimensionality
+reduction and model selection.  It is more mature than FACTORIE, and
+it is easily integratable with matplotlib, a graphics package, so it
+can produce pretty graphs directly.  However, it does not support
+graphical models.  SciKit-Learn is implemented in Python, with
+cpu-heavy functions written in cython and compiled down to C, and in
+many cases it can be less efficient than FACTORIE, which is JVM-based.
 
-Weka...
+[Weka](http://www.cs.waikato.ac.nz/ml/weka/) is a collection of
+machine learning algorithms, mostly for classification and
+regression. Weka comes with a nice GUI interface for visualization and
+experimentation with small datasets, but it is not focused on large
+sparse problems like factorie. It also does not support graphical
+models.
 
-Apache Mahout...
+[Apache Mahout](http://mahout.apache.org/) provides a set of
+large-scale machine learning algorithms implemented on top of Apache
+Hadoop's mapreduce system. Factorie is mostly a single-machine
+framework, working at smaller scale but benefitting from the locality
+efficiency that arise form this.
 
-LibLinear...
+[LibLinear](http://www.csie.ntu.edu.tw/~cjlin/liblinear/) is a C
+library for fast training of linear support vector machines and
+l1-regularized logistic regression. Factorie has an implementation of
+liblinear's l1-regularized algorithm, and supports reading and writing
+of libsvm-style training examples for classification and regression.
 
 
 
 ### Probabilistic programming and graphical models toolkits
 
-Infer.NET...
+[Infer.NET](http://research.microsoft.com/en-us/um/cambridge/projects/infernet/) is a language for describing graphical models in C# and F#, which compiles inference down to CLR bytecode before execution. It is mostly focused on bayesian models with continuous random variables, and uses EP as its main inference algorithm. Factorie provides more general machine learning utilities, has a full nlp pipeline, and is mostly focused on discrete graphical models or other models in which inference can only be done by sampling and factors have to be lazily defined.
 
 Figaro...
 
-Alchemy...
+[Alchemy](http://ai.cs.washington.edu/projects/alchemy) is a library for stastistical relational learning, mostly structured around Markov Logic Networks. While MLNs are representable in factorie, its main focus is on other kinds of model. Factorie also provides many tools for machine learning and natural language processing which do not fit in the statistical relational learning framework.
 
 PEBL...
 
@@ -286,6 +303,16 @@ Apache Mahout...
 
 GraphLab...
 
-Vowpal Wabbit...
+[Vowpal Wabbit](https://github.com/JohnLangford/vowpal_wabbit/wiki) is
+a very efficient library for doing binary classification and, via
+learning reductions, some other more complex models, such as neural
+networks and topic models. VW runs on a single machine or distributed,
+and is written in heavily optimized C code. While factorie implements
+many variants of algorithms which VW also implements, the focuses of
+the libraries are very different, as factorie prefers to have
+in-memory data structures for easy access to and analysis of data,
+while VW works by streaming things from disk. Factorie is also more
+flexible when it comes to how the parameters are stored and how
+learning is made, though it also supports VW-style feature hashing.
 
 */
