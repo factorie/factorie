@@ -179,6 +179,11 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     ViterbiResults(maxMarginals.last.max, mapValues, localScores)
   }
 
+  def maximize(vars: Seq[Label])(implicit d: DiffList): Unit = {
+    val result = viterbiFast(vars)
+    for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
+  }
+
   def getLocalScores(varying: Seq[Label]): Array[DenseTensor1] = {
     val biasScores = bias.weights.value
     val obsWeights = obs.weights.value

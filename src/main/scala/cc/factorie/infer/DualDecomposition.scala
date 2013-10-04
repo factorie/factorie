@@ -1,11 +1,6 @@
 package cc.factorie.infer
 
-import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator, Tensor}
-import cc.factorie.optimize.Example
-import cc.factorie.util.DoubleAccumulator
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.chain.ChainModel
-import org.junit.Assert._
+import cc.factorie.la.{SparseIndexedTensor1, Tensor}
 import cc.factorie.variable.{DiscreteVar, DiffList, HashMapAssignment}
 import cc.factorie.model.{CombinedModel, ItemizedModel, Model, Factor1}
 

@@ -45,8 +45,7 @@ class NER1 extends DocumentAnnotator {
       for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
       for (sentence <- document.sentences if sentence.length > 0) {
         val labels = sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq
-        val results = model.viterbiFast(labels)
-        for (i <- 0 until results.mapValues.length) labels(i).set(results.mapValues(i))(null)
+        model.maximize(labels)(null)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
     }

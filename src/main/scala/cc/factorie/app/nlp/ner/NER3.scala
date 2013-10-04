@@ -529,8 +529,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
       val vars = sentence.tokens.map(_.attr[L]).toSeq
-      val results = (if (useModel2) model2 else model).viterbiFast(vars)
-      for (i <- 0 until vars.length) vars(i).set(results.mapValues(i))(null)
+      (if (useModel2) model2 else model).maximize(vars)(null)
     }
   }
 }
