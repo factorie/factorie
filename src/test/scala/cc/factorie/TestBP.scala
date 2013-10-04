@@ -197,9 +197,9 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val loopyLogZ = InferByBPLoopyTreewise.infer(Seq(l0, l1, l2, l3), model).logZ
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
-    val fastSum = model.inferChainSumFast(Seq(l0, l1, l2, l3))
+    val fastSum = model.inferFast(Seq(l0, l1, l2, l3))
     val sum = InferByBPChain.infer(Seq(l0, l1, l2, l3), model)
-    assertEquals(sum.logZ, fastSum._1, 0.001)
+    assertEquals(sum.logZ, fastSum.logZ, 0.001)
     for (label <- Seq(l0, l1, l2, l3)) {
       // assertArrayEquals(sum.marginal(label).proportions.toArray, fastSum.marginal(label).asInstanceOf[DiscreteMarginal1[DiscreteVar]].proportions.toArray, 0.001)
     }
