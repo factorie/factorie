@@ -37,7 +37,7 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   linearRegressor =>
 
   def regression(x: A) = {
-    val result = (weights * dependant2Explanatory(x).value.asInstanceOf[Tensor1]).reshape(x.value.dimensions)
+    val result = weights.leftMultiply(dependant2Explanatory(x).value.asInstanceOf[Tensor1]).reshape(x.value.dimensions)
     new Regression[A] {
       def dependant = x
       def dependantValue = result.asInstanceOf[A#Value]
@@ -57,7 +57,7 @@ trait UnivariateModel extends Parameters {
 }
 
 class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends MultivariateModel {
-  val weights = Weights(new DenseTensor2(nLabel, nFeatures))
+  val weights = Weights(new DenseTensor2(nFeatures, nLabel))
 }
 
 object LinearRegressionTrainer {
