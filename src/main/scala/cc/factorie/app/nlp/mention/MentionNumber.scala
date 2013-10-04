@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.mention
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
+import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 import org.jblas.Singular
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 
@@ -38,7 +38,7 @@ class MentionNumberLabeler extends DocumentAnnotator {
         else if (isProper(headPos) && mention.exists(token => token.string.toLowerCase == "and")) number := PLURAL
         else if (isNoun(headPos) || isPossessive(headPos)) {
           val headWord = mention.headToken.string.toLowerCase
-          if (MorphologicalAnalyzer1.isPlural(headWord)) number := PLURAL
+          if (BasicMorphologicalAnalyzer.isPlural(headWord)) number := PLURAL
           else if (headPos.startsWith("N")) { if (headPos.endsWith("S")) number := PLURAL else number := SINGULAR }
           else number := SINGULAR
         }

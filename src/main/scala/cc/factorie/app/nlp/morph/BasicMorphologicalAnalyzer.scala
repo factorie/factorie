@@ -8,7 +8,7 @@ import cc.factorie.util.ClasspathURL
 /** A simple morphological analyzer, simply indicating if a noun is singular or plural.
     Obviously this supports very limited functionality. More will be added as needed.
     @author David Belanger */
-class MorphologicalAnalyzer1(fmap: String => io.Source) {
+class BasicMorphologicalAnalyzer(fmap: String => io.Source) {
   def this(name: String) = this(s => scala.io.Source.fromFile(name + s))
   val pluralWords = mutable.HashSet[String]()
   val singularWords = mutable.HashSet[String]()
@@ -31,6 +31,6 @@ class MorphologicalAnalyzer1(fmap: String => io.Source) {
   }
 }
 
-object MorphologicalAnalyzer1 extends MorphologicalAnalyzer1((s:String) => {
+object BasicMorphologicalAnalyzer extends BasicMorphologicalAnalyzer((s:String) => {
   io.Source.fromURL(ClasspathURL.fromDirectory[Lexicon](s))
 })

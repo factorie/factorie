@@ -16,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
  * Time: 12:25 PM
  */
 
-abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
+abstract class ForwardCorefBase extends DocumentAnnotator {
   val options = new Coref1Options
   val model: PairwiseCorefModel
 
@@ -445,21 +445,21 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
   }
 }
 
-class WithinDocCoref1 extends BaseWithinDocCoref1 {
+class ForwardCoref extends ForwardCorefBase {
   val model = new BaseCorefModel
 }
 
-class ImplicitConjunctionWithinDocCoref1 extends BaseWithinDocCoref1 {
+class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
   val model = new ImplicitCrossProductCorefModel
 }
 
-object WithinDocCoref1 extends WithinDocCoref1 {
+object ForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
-  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1](".factorie").openConnection().getInputStream))
+  deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
 }
 
 // This should only be used when using the NerAndPronounMentionFinder to find mentions
-object WithinDocCoref1Ner extends WithinDocCoref1 {
+object ForwardCorefNer extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
-  deserialize(new DataInputStream(ClasspathURL[WithinDocCoref1]("-NER.factorie").openConnection().getInputStream))
+  deserialize(new DataInputStream(ClasspathURL[ForwardCoref]("-NER.factorie").openConnection().getInputStream))
 }

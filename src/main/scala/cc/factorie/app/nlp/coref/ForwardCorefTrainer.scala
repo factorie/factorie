@@ -1,10 +1,9 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, MutableDocumentAnnotatorMap, Document}
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
-import java.io.File
 import cc.factorie.app.nlp.ner.{NER1, NerLabel}
 import cc.factorie.util.HyperparameterMain
 
@@ -15,7 +14,7 @@ import cc.factorie.util.HyperparameterMain
  */
 
 
-trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc.factorie.app.nlp.SharedNLPCmdOptions{
+trait ForwardCorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc.factorie.app.nlp.SharedNLPCmdOptions{
   val trainFile = new CmdOption("train", "conll-train-clean.txt", "STRING", "File with training data")
   val testFile = new CmdOption("test", "conll-test-clean.txt", "STRING", "File with testing data")
   val numPositivePairsTrain = new CmdOption("prune-train", 2, "INT", "number of positive pairs before pruning instances in training")
@@ -48,7 +47,7 @@ trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions with
   val useNerMentions = new CmdOption("use-ner-mentions", false, "BOOLEAN", "Whether to use NER mentions instead of noun phrase mentions")
 }
 
-object WithinDocCoref1Trainer extends HyperparameterMain{
+object ForwardCorefTrainer extends HyperparameterMain{
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
@@ -81,7 +80,7 @@ object WithinDocCoref1Trainer extends HyperparameterMain{
   }
 
 
-  object opts extends WithinDocCoref1TrainerOpts
+  object opts extends ForwardCorefTrainerOpts
 
 
   def evaluateParameters(args: Array[String]): Double = {
@@ -93,7 +92,7 @@ object WithinDocCoref1Trainer extends HyperparameterMain{
       case s => sys.error("Unknown conjunction style: " + s)
     }
 
-    val lr = if (conjunctionStyle == ConjunctionOptions.HASH_CONJUNCTIONS) new ImplicitConjunctionWithinDocCoref1 else new WithinDocCoref1
+    val lr = if (conjunctionStyle == ConjunctionOptions.HASH_CONJUNCTIONS) new ForwardCorefImplicitConjunctions else new ForwardCoref
 
     val options = lr.options
     //options that get serialized with the model
@@ -143,7 +142,7 @@ object WithinDocCoref1Trainer extends HyperparameterMain{
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
-        val lr = new WithinDocCoref1()
+        val lr = new ForwardCoref()
 
         //copy over options that are tweakable at test time
 	      println("deserializing from " + opts.deserialize.value)
