@@ -91,6 +91,7 @@ trait ParameterAveraging extends GradientStep {
   var isSetToAverage = false
   override def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = {
     super.doGradStep(weights, gradient, rate)
+    if (wTmp == null) wTmp = weights.blankDenseMap
     wTmp += (gradient, rate*it)
   }
   def setWeightsToAverage(weights: WeightsSet): Unit = if (!isSetToAverage && (wTmp ne null)) {
@@ -143,6 +144,7 @@ trait AdaptiveLearningRate extends GradientStep {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weightsSet, -l2)
+    if(HSq == null) HSq =  weights.blankDenseMap
     for (template <- gradient.keys) {
       gradient(template) match {
         case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense =>
