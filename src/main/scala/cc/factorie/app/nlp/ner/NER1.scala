@@ -221,7 +221,16 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     val ner = new NER1
     
     if (opts.train.wasInvoked) {
-      val ret = ner.train(ner.loadDocuments(Seq(new File(opts.train.value))), ner.loadDocuments(Seq(new File(opts.test.value))), opts.l1.value, opts.l2.value, opts.learningRate.value)
+
+      val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+      val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+      val trainDocsFull = load.LoadOntonotes5.fromFilename(opts.train.value)
+      val testDocsFull =  load.LoadOntonotes5.fromFilename(opts.test.value)
+      val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
+      val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
+
+
+      val ret = ner.train(trainDocs, testDocs, opts.l1.value, opts.l2.value, opts.learningRate.value)
       if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
       if(opts.targetAccuracy.wasInvoked) assert(ret > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
 

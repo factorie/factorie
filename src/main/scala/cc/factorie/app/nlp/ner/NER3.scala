@@ -458,11 +458,9 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(loader: load.Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
+  def train(trainDocuments: Seq[Document],testDocuments: Seq[Document], rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
-    val trainDocuments = loader.fromFilename(dataDir + trainFilename)
-    val testDocuments = loader.fromFilename(dataDir + testFilename)
 
     // Add features for NER                 \
     println("Initializing training features")
@@ -577,8 +575,17 @@ object NER3Trainer extends HyperparameterMain {
         ner.clusters(splitLine(1)) = splitLine(0)
       }
     }
-    
-    val result = ner.train(load.LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainDocsFull = load.LoadConll2003(BILOU=true).fromFilename(opts.trainFile.value)
+    val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.testFile.value)
+
+    val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
+    val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
+
+
+    val result = ner.train(trainDocs,testDocs, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
