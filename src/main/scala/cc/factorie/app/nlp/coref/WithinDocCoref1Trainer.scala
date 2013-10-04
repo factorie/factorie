@@ -6,6 +6,7 @@ import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import java.io.File
 import cc.factorie.app.nlp.ner.{NER1, NerLabel}
+import cc.factorie.util.HyperparameterMain
 
 /**
  * User: apassos
@@ -14,7 +15,7 @@ import cc.factorie.app.nlp.ner.{NER1, NerLabel}
  */
 
 
-trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
+trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc.factorie.app.nlp.SharedNLPCmdOptions{
   val trainFile = new CmdOption("train", "conll-train-clean.txt", "STRING", "File with training data")
   val testFile = new CmdOption("test", "conll-test-clean.txt", "STRING", "File with testing data")
   val numPositivePairsTrain = new CmdOption("prune-train", 2, "INT", "number of positive pairs before pruning instances in training")
@@ -47,7 +48,7 @@ trait WithinDocCoref1TrainerOpts extends cc.factorie.util.DefaultCmdOptions {
   val useNerMentions = new CmdOption("use-ner-mentions", false, "BOOLEAN", "Whether to use NER mentions instead of noun phrase mentions")
 }
 
-object WithinDocCoref1Trainer {
+object WithinDocCoref1Trainer extends HyperparameterMain{
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
@@ -83,7 +84,7 @@ object WithinDocCoref1Trainer {
   object opts extends WithinDocCoref1TrainerOpts
 
 
-  def main(args: Array[String]) {
+  def evaluateParameters(args: Array[String]): Double = {
     opts.parse(args)
     val conjunctionStyle = opts.conjunctionStyle.value match {
       case "NONE" => ConjunctionOptions.NO_CONJUNCTIONS
@@ -177,6 +178,10 @@ object WithinDocCoref1Trainer {
       conllFormatGold2.flush()
       conllFormatGold2.close()
     }
+    val accuracy = 0.0
+    if(opts.targetAccuracy.wasInvoked) assert(accuracy > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+
+    accuracy
   }
 
   def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {

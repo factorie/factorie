@@ -117,19 +117,32 @@ object POS2Trainer extends HyperparameterMain {
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
     val pos = new POS2
-    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(opts.testFile.value)
+
+    val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
+    val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
+
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-    pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDocs.flatMap(_.sentences)
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+    pos.train(trainSentences, testSentences,
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
       val pos2 = new POS2
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
-    HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
+    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    acc
   }
 }
 
