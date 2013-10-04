@@ -1,13 +1,12 @@
 package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
-import cc.factorie.app.strings.RegexSegmenter
 
 /** Split a String into Tokens.  Aims to adhere to CoNLL 2003 tokenization rules.
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
     */
-class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeConnl03:Boolean = false) extends DocumentAnnotator {
+class BasicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeConnl03:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -126,11 +125,11 @@ class Tokenizer1(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, to
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object Tokenizer1 extends Tokenizer1(false, false, false, false) {
+object BasicTokenizer extends BasicTokenizer(false, false, false, false) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)
-    Tokenizer1.process(doc)
+    BasicTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }
