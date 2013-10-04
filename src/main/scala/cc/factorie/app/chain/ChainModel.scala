@@ -16,7 +16,7 @@ package cc.factorie.app.chain
 
 import cc.factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
-import java.io.File
+import java.io.{InputStream, OutputStream, DataInputStream, DataOutputStream}
 import org.junit.Assert._
 import cc.factorie.util.{ArrayDoubleSeq, DoubleAccumulator, BinarySerializer}
 import cc.factorie.variable._
@@ -54,28 +54,20 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
   }
   var useObsMarkov = false
 
-  def serialize(prefix: String) {
-    val modelFile = new File(prefix + "-model")
-    if (modelFile.getParentFile ne null)
-      modelFile.getParentFile.mkdirs()
-    BinarySerializer.serialize(this, modelFile)
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    BinarySerializer.serialize(labelDomain, labelDomainFile)
-    val featuresDomainFile = new File(prefix + "-featuresDomain")
-    BinarySerializer.serialize(featuresDomain.dimensionDomain, featuresDomainFile)
+  def serialize(stream: OutputStream) {
+    val dstream = new DataOutputStream(stream)
+    BinarySerializer.serialize(featuresDomain, dstream)
+    BinarySerializer.serialize(labelDomain, dstream)
+    BinarySerializer.serialize(this, dstream)
+    dstream.close()
   }
 
-  def deSerialize(prefix: String) {
-    val labelDomainFile = new File(prefix + "-labelDomain")
-    assert(labelDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-labelDomain'")
-    BinarySerializer.deserialize(labelDomain, labelDomainFile)
-    val featuresDomainFile = new File(prefix + "-featuresDomain")
-    assert(featuresDomainFile.exists(), "Trying to load inexistent label domain file: '" + prefix + "-featuresDomain'")
-    BinarySerializer.deserialize(featuresDomain.dimensionDomain, featuresDomainFile)
-    val modelFile = new File(prefix + "-model")
-    assert(modelFile.exists(), "Trying to load inexisting model file: '" + prefix + "-model'")
-    //    assertEquals(markov.weights.value.length, labelDomain.length * labelDomain.length)
-    BinarySerializer.deserialize(this, modelFile)
+  def deserialize(stream: InputStream) {
+    val dstream = new DataInputStream(stream)
+    BinarySerializer.deserialize(featuresDomain, dstream)
+    BinarySerializer.deserialize(labelDomain, dstream)
+    BinarySerializer.deserialize(this, dstream)
+    dstream.close()
   }
 
   def factors(variables: Iterable[Var]): Iterable[Factor] = {

@@ -60,7 +60,7 @@ class DepParser1 extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
-    val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
@@ -76,7 +76,7 @@ class DepParser1 extends DocumentAnnotator {
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     import scala.language.reflectiveCalls
-    model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
@@ -123,9 +123,12 @@ class DepParser1 extends DocumentAnnotator {
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
-    testSentences.par.foreach(process(_))
+    val t0 = System.currentTimeMillis()
+    testSentences.foreach(process)
+    val totalTime = System.currentTimeMillis() - t0
+    val totalTokens = testSentences.map(_.tokens.length).sum
     val pred = testSentences.map(_.attr[ParseTree])
-    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
+    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)+s"  ${totalTokens*1000.0/totalTime} tokens/sec"
   }
 
 
@@ -500,13 +503,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
 
     def testSingle(c: DepParser1, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
-        println(extraText)
-        println("------------")
-        ss.par.foreach(c.process)
-        val pred = ss.map(_.attr[ParseTree])
-        println("LAS: " + ParserEval.calcLas(pred))
-        println("UAS: " + ParserEval.calcUas(pred))
-        println("\n")
+        println(extraText + " " + c.testString(ss))
       }
     }
 
@@ -549,8 +546,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       c.serialize(new java.io.File(modelUrl))
       val d = new DepParser1
       d.deserialize(new java.io.File(modelUrl))
-      testSentences.foreach(d.process)
-      println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
+      testSingle(c, testSentences, "Post serialization accuracy ")
     }
     ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
   }
