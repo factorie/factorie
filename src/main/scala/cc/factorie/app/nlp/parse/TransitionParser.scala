@@ -15,9 +15,10 @@ import scala.Some
 import java.util.concurrent.Executors
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
+import scala.collection.mutable
 
 /** Default transition-based dependency parser. */
-class DepParser1 extends DocumentAnnotator {
+class TransitionParser extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = {
@@ -166,7 +167,7 @@ class DepParser1 extends DocumentAnnotator {
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
-  def process(doc: Document) = { doc.sentences.foreach(process(_)); doc }
+  def process(doc: Document) = { doc.sentences.foreach(process); doc }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
@@ -336,7 +337,7 @@ class DepParser1 extends DocumentAnnotator {
       "F_LNPB"   -> "lnpb", // left-nearest punctuation of beta
       "F_RNPB"   -> "rnpb"  // right-nearest punctuation of beta
     )
-    val locationFns: HashMap[String, (Int) => (ParseState) => DepToken] = HashMap(
+    val locationFns: HashMap[String, (Int) => (ParseState) => DepToken] = mutable.HashMap(
       "b"   -> ((offset: Int) => (state: ParseState) => state.inputToken(offset)),
       "l"   -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset)),
       "s"   -> ((offset: Int) => (state: ParseState) => state.stackToken(offset)),
@@ -352,7 +353,7 @@ class DepParser1 extends DocumentAnnotator {
       "m"   -> ((t: DepToken) => t.lemma),
       "p"   -> ((t: DepToken) => t.pos),
       "d"   -> ((t: DepToken) => if (!t.hasHead) "null" else t.head.label),
-      "b0"  -> ((t: DepToken) => if (t.pos == -2) "null" else (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString),
+      "b0"  -> ((t: DepToken) => if (t.thisIdx == -1) "null" else (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString),
       "b1"  -> ((t: DepToken) => (t.state.stackToken(0) eq t.state.sentenceTokens.last).toString),
       "b2"  -> ((t: DepToken) => (t.state.input - t.state.stack == 1).toString)
     )
@@ -419,7 +420,7 @@ class DepParser1 extends DocumentAnnotator {
 
   case class DepArc(depToken: DepToken, label: String)
 
-  class ParseState(var stack: Int, var input: Int, val reducedIds: HashSet[Int], sentence: Sentence) {
+  class ParseState(var stack: Int, var input: Int, val reducedIds: collection.mutable.HashSet[Int], sentence: Sentence) {
     private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
     val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
     val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
@@ -460,9 +461,9 @@ class DepParser1 extends DocumentAnnotator {
   }
 }
 
-object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1](".factorie"))
+object TransitionParser extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser](".factorie"))
 
-object DepParser1Ontonotes extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1]("-Ontonotes.factorie"))
+object DepParser1Ontonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
 
 
 
@@ -484,7 +485,7 @@ class DepParser1Args extends cc.factorie.util.DefaultCmdOptions with SharedNLPCm
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
-object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
+object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
     val opts = new DepParser1Args
     implicit val random = new scala.util.Random(0)
@@ -511,13 +512,13 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
-    def testSingle(c: DepParser1, ss: Seq[Sentence], extraText: String = ""): Unit = {
+    def testSingle(c: TransitionParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
         println(extraText + " " + c.testString(ss))
       }
     }
 
-    def testAll(c: DepParser1, extraText: String = ""): Unit = {
+    def testAll(c: TransitionParser, extraText: String = ""): Unit = {
       println("\n")
       testSingle(c, sentences,     "Train " + extraText)
       testSingle(c, devSentences,  "Dev "   + extraText)
@@ -526,7 +527,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = opts.bootstrapping.value.toInt
-    val c = new DepParser1
+    val c = new TransitionParser
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
@@ -554,7 +555,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
-      val d = new DepParser1
+      val d = new TransitionParser
       d.deserialize(new java.io.File(modelUrl))
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
@@ -564,7 +565,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
   }
 }
 
-object DepParse12Optimizer {
+object TransitionParserOptimizer {
   def main(args: Array[String]) {
     val opts = new DepParser1Args
     opts.parse(args)
@@ -581,7 +582,7 @@ object DepParse12Optimizer {
       "cc.factorie.app.nlp.parse.DepParser1",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser1Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

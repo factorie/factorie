@@ -51,7 +51,7 @@ object DocumentAnnotatorPipeline extends FastLogging  {
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
     classOf[pos.PennPosLabel] -> (() => pos.POS1),
-    classOf[parse.ParseTree] -> (() => parse.DepParser1),
+    classOf[parse.ParseTree] -> (() => parse.TransitionParser),
     classOf[segment.PlainNormalizedTokenString] -> (() => segment.PlainTokenNormalizer),
     classOf[Token] -> (() => cc.factorie.app.nlp.segment.Tokenizer1),
     classOf[Sentence] -> (() => cc.factorie.app.nlp.segment.SentenceSegmenter1),
