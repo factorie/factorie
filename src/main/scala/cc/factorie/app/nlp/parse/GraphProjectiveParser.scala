@@ -315,11 +315,21 @@ object GraphProjectiveParserTrainer extends HyperparameterMain {
 
     val parser = new GraphProjectiveParser
 
+
     val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
     val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
 
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDoc.sentences.toSeq
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDoc.sentences.toSeq
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+
     // Train
-    parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    parser.train(trainSentences, testSentences, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
     // Test
 
     // Print accuracy diagnostics
