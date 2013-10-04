@@ -142,13 +142,15 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
     }
   }
 
-  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0) {
+  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
     val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
     val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    var accuracy = 0.0
     try {
       val trainer = new LeftRightParallelTrainer(model, optimizer, trainTrueMaps, pool)
+
       for (iter <- 0 until options.numTrainingIterations) {
         val shuffledDocs = rng.shuffle(trainDocs)
         val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
@@ -161,7 +163,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
         println("Train docs")
         doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, trainTrueMaps, "Train")
         println("Test docs")
-        doTest(testDocs, wn, testTrueMaps, "Test")
+        accuracy = doTest(testDocs, wn, testTrueMaps, "Test")
 
       if(saveModelBetweenEpochs && iter % saveFrequency == 0)
         serialize(filename + "-" + iter)
@@ -169,6 +171,7 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
         optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
       }
       optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+      accuracy
     } finally {
       pool.shutdown()
     }
@@ -422,10 +425,11 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
       processDocumentOneModelFromEntities(doc)
   }
 
-  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[Mention]], name: String) {
+  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[Mention]], name: String): Double = {
     val scorer = new CorefScorer[Mention]
     object ScorerMutex
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    var accuracy = 0.0
     try {
       if(options.usePronounRules) assert(options.useEntityLR)
       val tester = if (options.useEntityLR) new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool) with LeftRightTesterFromEntities
@@ -434,9 +438,11 @@ abstract class BaseWithinDocCoref1 extends DocumentAnnotator {
       println("-----------------------")
       println("  * Overall scores")
       scorer.printInhouseScore(name)
+      accuracy = scorer.microPW.f1
     } finally pool.shutdown()
-  }
+    accuracy
 
+  }
 }
 
 class WithinDocCoref1 extends BaseWithinDocCoref1 {
