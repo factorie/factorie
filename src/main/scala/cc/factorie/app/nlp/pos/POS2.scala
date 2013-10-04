@@ -111,7 +111,7 @@ object POS2 extends POS2 {
 object POS2Trainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
-    val opts = new POS1Opts
+    val opts = new ForwardPOSOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
@@ -148,7 +148,7 @@ object POS2Trainer extends HyperparameterMain {
 
 object POS2Optimizer {
   def main(args: Array[String]) {
-    val opts = new POS1Opts
+    val opts = new ForwardPOSOptions
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
