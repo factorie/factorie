@@ -117,14 +117,23 @@ object BinarySerializer extends GlobalLogging {
     new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
   }
 
+  val currentVersion = 0x0
   def serialize(c: Cubbie, s: DataOutputStream): Unit = {
+    serialize(Some("version"), currentVersion, s)
     for ((k, v) <- c._map.toSeq) serialize(Some(k), v, s)
   }
   def deserialize(c: Cubbie, s: DataInputStream): Unit = {
-    for ((k, v) <- c._map.toSeq) {
-      val key = readString(s)
-      assert(k == key, "Cubbie keys don't match with serialized data! (got \"%s\", expected \"%s\")" format (key, k))
-      c._map(key) = deserializeInner(v, s.readByte(), s)
+    val key = readString(s)
+    assert(key == "version")
+    deserializeInner(0, s.readByte(), s)  match {
+      case 0x0 =>
+        for ((k, v) <- c._map.toSeq) {
+          val key = readString(s)
+          assert(k == key, "Cubbie keys don't match with serialized data! (got \"%s\", expected \"%s\")" format (key, k))
+          c._map(key) = deserializeInner(v, s.readByte(), s)
+        }
+      case a =>
+        throw new Error("Binary format version not supported: "+a)
     }
   }
 
