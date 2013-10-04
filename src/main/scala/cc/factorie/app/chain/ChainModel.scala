@@ -15,28 +15,16 @@
 package cc.factorie.app.chain
 
 import cc.factorie._
-import Factorie._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.{InputStream, OutputStream, DataInputStream, DataOutputStream}
 import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
 import cc.factorie.variable._
 import scala.reflect.ClassTag
-import cc.factorie.Factorie.DotFamilyWithStatistics3
-import cc.factorie.Factorie.Parameters
-import cc.factorie.Factorie.DotFamilyWithStatistics2
-import cc.factorie.Factorie.Factor
 import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
-import cc.factorie.DenseTensor1
-import cc.factorie.Factorie.CategoricalVectorDomain
-import cc.factorie.Factorie.Var
-import cc.factorie.Factorie.CategoricalDomain
-import cc.factorie.Model
-import cc.factorie.Factorie.DotFamilyWithStatistics1
+import cc.factorie.model._
 
-
-
-//TODO We should add the ability to explictly permit and forbid label transitions
-class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:CategoricalVectorVar[String], Token<:Observation[Token]]
+// TODO We should add the ability to explictly permit and forbid label transitions
+class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: CategoricalVectorVar[String], Token <: Observation[Token]]
 (val labelDomain: CategoricalDomain[String],
   val featuresDomain: CategoricalVectorDomain[String],
   val labelToFeatures: Label => Features,
