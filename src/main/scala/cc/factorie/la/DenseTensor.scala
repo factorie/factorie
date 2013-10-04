@@ -26,15 +26,6 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
   protected def _values = __values
   protected def _valuesSize: Int = __values.size
   protected def _resetValues(s:Int): Unit = __values = new Array[Double](s)
-  // Used by subclass GrowableDenseTensor1
-  private def ensureCapacity(size:Int): Unit = if (__values.size < size) { // TODO Delete this method
-    if (__values.size == 0) { __values = new Array[Double](size); return }
-    val newSize = math.max(__values.size * 2, size)
-    val newValues = new Array[Double](newSize)
-    Array.copy(_values, 0, newValues, 0, __values.size)
-    if (__default != 0.0) java.util.Arrays.fill(newValues, __values.size, newSize, __default)
-    __values = newValues
-  }
   protected def _setArray(a:Array[Double]): Unit = { assert(a.length == length); __values = a }
   def isDense = true
   def activeDomain: IntSeq = new RangeIntSeq(0, length)
@@ -43,7 +34,11 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def asArray = __values
-  override def *=(d: Double) = { var i = 0; while (i < __values.length) { __values(i) *= d; i += 1 } }
+  override def *=(d: Double) = {
+    val myValues = __values
+    val len = myValues.length; var i = 0
+    while (i < len) { myValues(i) *= d; i += 1 }
+  }
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
   override def :=(ds:DoubleSeq): Unit = ds match {
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
@@ -58,8 +53,11 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)
     case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
     case t2:DenseTensor => {
+      val myValues = __values
+      val otherValues = t2.__values
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
-      while (i < len) { result += __values(i) * t2.__values(i); i += 1 }; result
+      while (i < len) { result += myValues(i) * otherValues(i); i += 1 }
+      result
     }
 //    case t2:SparseBinaryTensor => {
 //      var s = 0.0; t2.foreachActiveElement((i,v) => s += __values(i)); s
@@ -81,14 +79,14 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
   }
 
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryLayeredTensor2 => {
+    case t: SingletonBinaryLayeredTensor2 => {
       val i0 = t.singleIndex1
       t.inner match {
         case inner: SingletonTensor => {
           val i = inner.singleIndex
           this(t.singleIndex(i0, i)) += inner.singleValue * f
         }
-        case inner:SparseBinaryTensorLike1 => {
+        case inner: SparseBinaryTensorLike1 => {
           var i = 0
           val indices = inner.activeDomain
           while (i < indices.length) {
@@ -96,19 +94,28 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
             i += 1
           }
         }
-        case inner:SparseIndexedTensor => {
+        case inner: SparseIndexedTensor => {
           inner.foreachActiveElement((i, v) => {
             this(t.singleIndex(i0, i)) += v * f
           })
         }
-        case _ => assert(false, t.inner.getClass.getName + " doesn't match")
+        case _ => sys.error(t.inner.getClass.getName + " doesn't match")
       }
     }
     case t:SingletonBinaryTensor => __values(t.singleIndex) += f
     case t:SingletonTensor => __values(t.singleIndex) += f * t.singleValue
     case t:SparseBinaryTensor => t.=+(__values, f)
-    case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += f * t.__values(i); i += 1 }}
-    case t:UniformTensor => { val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }}
+    case t:DenseTensor => {
+      val myValues = __values
+      val otherValues = t.__values
+      val len = length; var i = 0
+      while (i < len) { myValues(i) += f * otherValues(i); i += 1 }
+    }
+    case t:UniformTensor => {
+      val myValues = __values
+      val len = length; val u = t.uniformValue * f; var i = 0
+      while (i < len) { myValues(i) += u; i += 1 }
+    }
     case t:TensorTimesScalar => this.+=(t.tensor, t.scalar) //{ t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) } 
     case t:Outer1Tensor2 => {
       val ff = f*t.scale
@@ -123,7 +130,12 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case t:SingletonBinaryTensor => __values(offset + t.singleIndex) += f
     case t:SingletonTensor => __values(offset + t.singleIndex) += f * t.singleValue
     case t:SparseBinaryTensorLike1 => t.=+(__values, offset, f)
-    case t:DenseTensor => { val len = t.length; var i = 0; while (i < len) { __values(i+offset) += f * t.__values(i); i += 1 }}
+    case t:DenseTensor => {
+      val myValues = __values
+      val otherValues = t.__values
+      val len = t.length; var i = 0
+      while (i < len) { myValues(i+offset) += f * otherValues(i); i += 1 }
+    }
   }
 
   // A little faster than the MutableDoubleSeq implementation because it can access the __values array directly
