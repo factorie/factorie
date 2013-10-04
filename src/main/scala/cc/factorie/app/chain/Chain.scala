@@ -106,8 +106,9 @@ object Chain {
       throw new NotImplementedError("Specifying an evaluator isn't yet implemented")
     }
 
-    if(ChainOpts.localRandomSeed.wasInvoked) {
-      implicit val random = new Random(ChainOpts.localRandomSeed.value)
+    implicit val random = ChainOpts.localRandomSeed.wasInvoked match {
+      case true => new Random(ChainOpts.localRandomSeed.value)
+      case false => new Random()
     }
 
     def processInstances(filename:String):Iterable[FeatureChain] = {
