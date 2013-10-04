@@ -532,14 +532,14 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
   }
 }
 
-class StackedConllNer(embeddingMap: SkipGramEmbedding,
+class StackedConllNER(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
                 url: java.net.URL=null) extends StackedNER[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
 
-object StackedConllNER extends StackedConllNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
-object StackConllNerNoEmbeddings extends StackedConllNer(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
+object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
+object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
 
 class NER3Opts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
