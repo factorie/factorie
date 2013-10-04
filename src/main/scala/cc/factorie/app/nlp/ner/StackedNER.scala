@@ -564,7 +564,7 @@ object NER3Trainer extends HyperparameterMain {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new StackedConllNer(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new StackedConllNER(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
