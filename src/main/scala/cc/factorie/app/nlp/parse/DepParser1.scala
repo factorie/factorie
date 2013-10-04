@@ -60,7 +60,7 @@ class DepParser1 extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
-    val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
@@ -76,7 +76,7 @@ class DepParser1 extends DocumentAnnotator {
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     import scala.language.reflectiveCalls
-    model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
@@ -502,7 +502,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       if (ss.nonEmpty) {
         println(extraText)
         println("------------")
-        ss.par.foreach(c.process)
+        ss.foreach(c.process)
         val pred = ss.map(_.attr[ParseTree])
         println("LAS: " + ParserEval.calcLas(pred))
         println("UAS: " + ParserEval.calcUas(pred))
