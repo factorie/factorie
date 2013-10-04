@@ -26,7 +26,7 @@ import cc.factorie.Factorie.DotFamilyWithStatistics3
 import cc.factorie.Factorie.Parameters
 import cc.factorie.Factorie.DotFamilyWithStatistics2
 import cc.factorie.Factorie.Factor
-import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
+import cc.factorie.la.{SingletonTensor1, SingletonBinaryTensor1, SparseIndexedTensor1, WeightsMapAccumulator}
 import cc.factorie.DenseTensor1
 import cc.factorie.Factorie.CategoricalVectorDomain
 import cc.factorie.Factorie.Var
@@ -129,10 +129,11 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
   case class ViterbiResults(mapScore: Double, mapValues: Array[Int], localScores: Array[DenseTensor1])
   case class InferenceResults(logZ: Double, alphas: Array[DenseTensor1], betas: Array[DenseTensor1], localScores: Array[DenseTensor1])
 
-  def viterbiFast(varying: Seq[Label], localScoresOpt: Option[Array[DenseTensor1]] = None): ViterbiResults = {
+  def viterbiFast(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None): ViterbiResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient max-product")
     val markovScores = markov.weights.value
-    val localScores = localScoresOpt.getOrElse(getLocalScores(varying))
+    val localScores = getLocalScores(varying)
+    localScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
     val maxMarginals = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
     val backPointers = Array.fill(varying.size)(Array.fill[Int](markovScores.dim1)(-1))
@@ -192,10 +193,11 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     a
   }
 
-  def inferFast(varying: Seq[Label], localScoresOpt: Option[Array[DenseTensor1]] = None): InferenceResults = {
+  def inferFast(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None): InferenceResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient sum-product")
     val markovScores = markov.weights.value
-    val localScores = localScoresOpt.getOrElse(getLocalScores(varying))
+    val localScores = getLocalScores(varying)
+    localScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
     val alphas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
     val betas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
@@ -246,7 +248,7 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
     InferenceResults(logZ, alphas, betas, localScores)
   }
 
-  class ChainViterbiExample(varying: Seq[Label], localScoresOpt: Option[Array[DenseTensor1]] = None) extends Example {
+  class ChainViterbiExample(varying: Seq[Label], localScoresOpt: Option[Array[Tensor1]] = None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val ViterbiResults(mapScore, mapValues, localScores) = viterbiFast(varying, localScoresOpt)
@@ -284,6 +286,18 @@ class ChainModel[Label<:LabeledMutableDiscreteVarWithTarget, Features<:Categoric
       }
       if (gradient ne null)
         gradient.accumulate(markov.weights, transGradient)
+    }
+  }
+
+  class ChainStructuredSVMExample(varying: Seq[Label]) extends Example {
+    // gradient or value can be null if they don't need to be computed.
+    def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) = {
+      val halfLocalScores = varying.map(v => {
+        val t = new DenseTensor1(labelDomain.size, 1.0)
+        t(v.targetIntValue) = 0
+        t.asInstanceOf[Tensor1]
+      }).toArray
+      new ChainViterbiExample(varying, Some(halfLocalScores)).accumulateValueAndGradient(value, gradient)
     }
   }
 
