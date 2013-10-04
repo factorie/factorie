@@ -138,51 +138,10 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     override def copy = copyToDense(new DenseTensor1(dim1))
   }
   private class AdaGradRDATensor2(val dim1: Int, val dim2: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor2 {
-
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def isDense = false
     override def copy = copyToDense(new DenseTensor2(dim1, dim2))
-
-    override def *(t: Tensor1): Tensor1 = {
-  //    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
-      val newT = new DenseTensor1(dim1)
-      val newArray = newT.asArray
-      t match {
-        case t: DenseTensor =>
-          val tArr = t.asArray
-          var col = 0
-          while (col < tArr.length) {
-            val v = tArr(col)
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
-            }
-            col += 1
-          }
-        case t: SparseTensor =>
-          val tActiveDomainSize = t.activeDomainSize
-          val tIndices = t._indices
-          val tValues = t._valuesSeq
-          var ti = 0
-          while (ti < tActiveDomainSize) {
-            val col = tIndices(ti)
-            val v = tValues(ti)
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
-            }
-            ti += 1
-          }
-        case _ =>
-          throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
-      }
-      newT
-    }
   }
   private class AdaGradRDATensor3(val dim1: Int, val dim2: Int, val dim3: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor3 {
     def isDense = false

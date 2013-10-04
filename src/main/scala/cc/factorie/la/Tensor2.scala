@@ -44,18 +44,102 @@ trait Tensor2 extends Tensor {
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
+
   def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
     val newT = new DenseTensor1(dim1)
-    activeDomain1.foreach(i => t.activeDomain1.foreach(j => newT(i) += this(i,j)*t(j)))
+    val newArray = newT.asArray
+    t match {
+      case t: DenseTensor =>
+        val tArr = t.asArray
+        var col = 0
+        while (col < tArr.length) {
+          val v = tArr(col)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (apply(offset + col) * v)
+            row += 1
+          }
+          col += 1
+        }
+      case t: SparseTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        val tValues = t._valuesSeq
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val col = tIndices(ti)
+          val v = tValues(ti)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (apply(offset + col) * v)
+            row += 1
+          }
+          ti += 1
+        }
+      case _ =>
+        throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
+    }
     newT
   }
+
   def leftMultiply(t: Tensor1): Tensor1 = {
     assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
+    val myDim2 = dim2
     val newT = new DenseTensor1(dim2)
-    t.foreachActiveElement((i,v) => activeDomain2.foreach(j => newT(j) += this(i,j)*t(i)))
+    val newArray = newT.asArray
+    t match {
+      case t: DenseTensor =>
+        val tArr = t.asArray
+        var row = 0
+        while (row < tArr.length) {
+          val v = tArr(row)
+          val offset = row * myDim2
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += (apply(offset + col) * v)
+            col += 1
+          }
+          row += 1
+        }
+      case t: SparseBinaryTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val row = tIndices(ti)
+          val offset = row * myDim2
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += apply(offset + col)
+            col += 1
+          }
+          ti += 1
+        }
+      case t: SparseIndexedTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        val tValues = t._values
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val row = tIndices(ti)
+          val offset = row * myDim2
+          val v = tValues(ti)
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += (apply(offset + col) * v)
+            col += 1
+          }
+          ti += 1
+        }
+      case _ =>
+        throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
+    }
     newT
   }
+
   def trace: Double = {
     assert(dim1 == dim2, "Dimensions don't match: " + dim1 + " " + dim2)
     (0 until dim1).map(n => apply(n, n)).sum
