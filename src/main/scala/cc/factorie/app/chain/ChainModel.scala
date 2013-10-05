@@ -248,6 +248,8 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
 
   class ChainStructuredSVMExample(varying: Seq[Label]) extends ChainViterbiExample(varying, () => Some(getHammingLossScores(varying)))
 
+  def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obsMarginal: Tensor1, position: Int, labels: Seq[Label]): Unit = {}
+
   class ChainViterbiExample(varying: Seq[Label], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
@@ -277,6 +279,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
           localMarginal(curTargetIntValue) += 1
           gradient.accumulate(bias.weights, localMarginal)
           gradient.accumulate(obs.weights, labelToFeatures(curLabel).value outer localMarginal)
+          accumulateExtraObsGradients(gradient, localMarginal, i, varying)
           if (i >= 1) {
             transGradient(prevTargetIntValue, curTargetIntValue) += 1
             transGradient(prevPredIntValue, curPredIntValue) += -1
@@ -320,6 +323,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
           localMarginal(curTargetIntValue) += 1
           gradient.accumulate(bias.weights, localMarginal)
           gradient.accumulate(obs.weights, labelToFeatures(curLabel).value outer localMarginal)
+          accumulateExtraObsGradients(gradient, localMarginal, i, varying)
           if (i >= 1) {
             var ii = 0
             while (ii < domainSize) {

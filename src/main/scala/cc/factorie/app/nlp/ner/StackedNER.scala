@@ -33,6 +33,7 @@ import cc.factorie.variable.BinaryFeatureVectorVariable
 import cc.factorie.variable.CategoricalVectorDomain
 import cc.factorie.DiscreteDomain
 import cc.factorie.variable.CategoricalDomain
+import cc.factorie.la.WeightsMapAccumulator
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -154,6 +155,14 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
         i += 1
       }
       a
+    }
+
+    override def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obs: Tensor1, position: Int, labels: Seq[L]): Unit = {
+      if (embeddingMap ne null) {
+        gradient.accumulate(embedding.weights, embeddingMap(labelToToken(labels(position)).string))
+        if (position >= 1) gradient.accumulate(embeddingPrev.weights, embeddingMap(labelToToken(labels(position-1)).string))
+        if (position < labels.length-1) gradient.accumulate(embeddingNext.weights, embeddingMap(labelToToken(labels(position+1)).string))
+      }
     }
   }
   val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
