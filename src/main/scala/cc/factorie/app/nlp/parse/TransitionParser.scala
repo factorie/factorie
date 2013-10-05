@@ -25,7 +25,7 @@ class TransitionParser extends DocumentAnnotator {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("DepParser1 loading from "+url)
+    println("TransitionParser loading from "+url)
     deserialize(stream)
   }
 
@@ -79,7 +79,7 @@ class TransitionParser extends DocumentAnnotator {
     import scala.language.reflectiveCalls
     model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
+    println("TransitionParser model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
@@ -98,7 +98,7 @@ class TransitionParser extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("DepParser1.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("TransitionParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionDomain.size)
@@ -463,11 +463,11 @@ class TransitionParser extends DocumentAnnotator {
 
 object TransitionParser extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser](".factorie"))
 
-object DepParser1Ontonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
+object TransitionParserOntonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
 
 
 
-class DepParser1Args extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -487,7 +487,7 @@ class DepParser1Args extends cc.factorie.util.DefaultCmdOptions with SharedNLPCm
 
 object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
-    val opts = new DepParser1Args
+    val opts = new TransitionParserArgs
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
@@ -567,7 +567,7 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
 
 object TransitionParserOptimizer {
   def main(args: Array[String]) {
-    val opts = new DepParser1Args
+    val opts = new TransitionParserArgs
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -579,7 +579,7 @@ object TransitionParserOptimizer {
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.DepParser1",
+      "cc.factorie.app.nlp.parse.TransitionParser",
       10, 5)
       */
     val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
