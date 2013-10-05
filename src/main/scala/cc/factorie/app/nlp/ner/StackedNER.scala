@@ -94,7 +94,7 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
     override def skipNonCategories = true
   }
 
-  class NER3EModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+  class StackedNEREModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
                                                              labelToFeatures1:L=>Features,
                                                              labelToToken1:L=>Token,
                                                              tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
@@ -156,8 +156,8 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
       a
     }
   }
-  val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
-  val model2 = new NER3EModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
+  val model = new StackedNEREModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
+  val model2 = new StackedNEREModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
   val objective = new HammingTemplate[L]()
 
@@ -472,8 +472,8 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    if (embeddingMap != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
-    println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("StackedNER #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    println("StackedNER #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(100)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
@@ -541,10 +541,10 @@ class StackedConllNER(embeddingMap: SkipGramEmbedding,
 object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
 object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
 
-class NER3Opts extends CmdOptions with SharedNLPCmdOptions{
+class StackedNEROpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
-  val modelDir =      new CmdOption("model", "NER3.factorie", "FILE", "File for saving or loading model.")
+  val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
   val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
@@ -559,10 +559,10 @@ class NER3Opts extends CmdOptions with SharedNLPCmdOptions{
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
 }
 
-object NER3Trainer extends HyperparameterMain {
+object StackedNERTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     // Parse command-line
-    val opts = new NER3Opts
+    val opts = new StackedNEROpts
     opts.parse(args)
     val ner = new StackedConllNER(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
@@ -595,15 +595,15 @@ object NER3Trainer extends HyperparameterMain {
   }
 }
 
-object NER3Optimizer {
+object StackedNEROptimizer {
   def main(args: Array[String]) {
-    val opts = new NER3Opts
+    val opts = new StackedNEROpts
     opts.parse(args)
     opts.saveModel.setValue(false)
 
     if (opts.runOnlyHere.value) {
       opts.saveModel.setValue(true)
-      val result = NER3Trainer.evaluateParameters(args)
+      val result = StackedNERTrainer.evaluateParameters(args)
       println("result: "+ result)
     }
     else {
@@ -617,7 +617,7 @@ object NER3Optimizer {
         "cc.factorie.app.nlp.parse.DepParser2",
         10, 5)
         */
-      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.NER3Trainer")
+      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.StackedNERTrainer")
       val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 200, 180, 60)
       val result = optimizer.optimize()
       println("Got results: " + result.mkString(" "))
