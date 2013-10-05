@@ -147,9 +147,9 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
         val scores = obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
         scores += biasScores
         if (embeddingMap != null) {
-          scores += embedding.weights.value.dot(embeddingMap(labelToToken(varying(i)).string))
-          if (i >= 1) scores += embeddingPrev.weights.value.dot(embeddingMap(labelToToken(varying(i-1)).string))
-          if (i < varying.length-1) scores += embeddingNext.weights.value.dot(embeddingMap(labelToToken(varying(i+1)).string))
+          scores += embedding.weights.value * (embeddingMap(labelToToken(varying(i)).string))
+          if (i >= 1) scores += embeddingPrev.weights.value * (embeddingMap(labelToToken(varying(i-1)).string))
+          if (i < varying.length-1) scores += embeddingNext.weights.value * (embeddingMap(labelToToken(varying(i+1)).string))
         }
         a(i) = scores
         i += 1
@@ -159,9 +159,9 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
 
     override def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obs: Tensor1, position: Int, labels: Seq[L]): Unit = {
       if (embeddingMap ne null) {
-        gradient.accumulate(embedding.weights, embeddingMap(labelToToken(labels(position)).string))
-        if (position >= 1) gradient.accumulate(embeddingPrev.weights, embeddingMap(labelToToken(labels(position-1)).string))
-        if (position < labels.length-1) gradient.accumulate(embeddingNext.weights, embeddingMap(labelToToken(labels(position+1)).string))
+        gradient.accumulate(embedding.weights, obs outer embeddingMap(labelToToken(labels(position)).string))
+        if (position >= 1) gradient.accumulate(embeddingPrev.weights, obs outer embeddingMap(labelToToken(labels(position-1)).string))
+        if (position < labels.length-1) gradient.accumulate(embeddingNext.weights, obs outer embeddingMap(labelToToken(labels(position+1)).string))
       }
     }
   }
