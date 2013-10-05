@@ -2,5 +2,5 @@ language: scala
 scala:
          - 2.10.1
 script:
-        - "apt-get install libgfortran3"
+        - "sudo apt-get install libgfortran3"
         - "MAVEN_OPTS='-Xmx1G -XX:MaxPermSize=512m' mvn test"
