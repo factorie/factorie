@@ -17,11 +17,12 @@ package cc.factorie.app.chain
 import java.io.{FileWriter, BufferedWriter, FileInputStream, FileOutputStream}
 import scala.util.Random
 import cc.factorie._
-import cc.factorie.optimize.{LikelihoodExample, OnlineTrainer}
+import cc.factorie.optimize.OnlineTrainer
 import cc.factorie.util.DefaultCmdOptions
 import cc.factorie.variable._
 import scala.io.Source
-import cc.factorie.infer.{InferByBPChain, MaximizeByBPChain}
+import cc.factorie.infer.MaximizeByBPChain
+import cc.factorie.la.{GrowableSparseBinaryTensor1, GrowableSparseTensor1}
 
 object Chain {
 
@@ -60,33 +61,18 @@ object Chain {
 
   private class FeatureChain extends Chain[FeatureChain, Features]
 
-  private trait Features extends CategoricalVectorVar[String] with Observation[Features] with ChainLink[Features, FeatureChain] {
-    val features:Iterable[String]
-    val label:Label
+  private class Features(val featureStrings: Iterable[String], val label: Label, val useBinaryFeatures: Boolean = ChainOpts.readBinaryFeatures.value)
+    extends FeatureVectorVariable[String] with Observation[Features] with ChainLink[Features, FeatureChain] {
+    if (useBinaryFeatures) set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
+    else set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
+    this ++= featureStrings
     val string = "N/A"
     override def domain = FeaturesDomain
+    override val skipNonCategories = true
   }
 
-  private object Features {
-    def apply(features:Iterable[String], label:Label):Features = ChainOpts.readBinaryFeatures.value match {
-      case true => new BinaryFeatures(features, label)
-      case false => new NonBinaryFeatures(features, label)
-    }
-  }
-
-  private class BinaryFeatures(val features:Iterable[String], val label:Label) extends BinaryFeatureVectorVariable[String](features) with Features {
-    label.featOpt = Some(this)
-  }
-  private class NonBinaryFeatures(val features:Iterable[String], val label:Label) extends FeatureVectorVariable[String](features) with Features {
-    label.featOpt = Some(this)
-  }
-
-  private class Label(value:String) extends LabeledCategoricalVariable[String](value) {
-    var featOpt:Option[Features] = None
-    def features:Features = featOpt match {
-      case Some(feature) => feature
-      case None => throw new Exception("Uninitialized Features")
-    }
+  private class Label(value: String, featureStrings: Iterable[String]) extends LabeledCategoricalVariable[String](value) {
+    val features = new Features(featureStrings, this)
     def token = features
     override def domain = LabelDomain
   }
@@ -95,88 +81,89 @@ object Chain {
 
     val startTime = System.currentTimeMillis()
 
-
     ChainOpts.parse(args)
 
-    if(ChainOpts.trainer.wasInvoked) {
+    if (ChainOpts.trainer.wasInvoked) {
       throw new NotImplementedError("Specifying a trainer isn't yet implemented")
     }
 
-    if(ChainOpts.evaluator.wasInvoked) {
+    if (ChainOpts.evaluator.wasInvoked) {
       throw new NotImplementedError("Specifying an evaluator isn't yet implemented")
     }
 
-    if(ChainOpts.localRandomSeed.wasInvoked) {
-      implicit val random = new Random(ChainOpts.localRandomSeed.value)
+    implicit val random = ChainOpts.localRandomSeed.wasInvoked match {
+      case true => new Random(ChainOpts.localRandomSeed.value)
+      case false => new Random()
     }
 
-    def processInstances(filename:String):Iterable[FeatureChain] = {
+    def processInstances(filename: String): Iterable[FeatureChain] = {
       val src = Source.fromFile(filename)
-      val featureChains =  src.getLines().toSeq.map(_.split("\\s+").toList).split(_.nonEmpty).map{ chains =>
-      new FeatureChain() ++= chains.collect{ case labelString :: featureString =>
-      Features(featureString, new Label(labelString))
-    }.toIterable
-  }.toList
-  src.close()
-  featureChains
-}
-
-// todo share across this and classify
-val (trainingLabels, testingLabels) = if(Seq(ChainOpts.readSequences, ChainOpts.trainingPortion).map(_.wasInvoked).reduce(_ && _)) {
-  processInstances(ChainOpts.readSequences.value) match {
-    case labels if ChainOpts.trainingPortion == 1.0 => labels -> Seq()
-    case labels => labels.shuffle.split(ChainOpts.trainingPortion.value)
-  }
-} else if(Seq(ChainOpts.readTrainingSequences, ChainOpts.readTestingSequences).map(_.wasInvoked).reduce(_ && _)) {
-  processInstances(ChainOpts.readTrainingSequences.value) -> processInstances(ChainOpts.readTestingSequences.value)
-} else {
-  throw new IllegalArgumentException("Invalid argument combination, supply either a read sequence and training portion or a pair of training and testing sequences.")
-}
-
-val model = new ChainModel[Label, Features, Features](LabelDomain, FeaturesDomain, _.features, _.token, _.label)
-
-
-
-if(ChainOpts.readChainModel.wasInvoked) {
-  val f = new FileInputStream(ChainOpts.readChainModel.value)
-  model.deserialize(f)
-  f.close()
-} else {
-  val examples = trainingLabels.map{ fc => new LikelihoodExample(fc.map{f:Features => f.label}, model, InferByBPChain)}
-
-  val trainer = new OnlineTrainer(model.parameters, maxIterations = 1)
-
-  trainer.trainFromExamples(examples)
-}
-
-var totalTokens = 0.0
-var correctTokens = 0.0
-
-testingLabels.foreach{ fc =>
-val res = MaximizeByBPChain.infer(fc.map{f:Features => f.label}, model, null)
-res.setToMaximize(null) // sets each label to it's maximum value
-totalTokens += fc.size
-correctTokens += HammingObjective.accuracy(fc.map{f:Features => f.label}) * fc.size
+      val featureChains = src.getLines().toSeq.map(_.split("\\s+").toList).split(_.nonEmpty).map {
+        chains =>
+          new FeatureChain() ++= chains.collect {
+            case labelString :: featureStrings =>
+              new Label(labelString, featureStrings).features
+          }.toIterable
+      }.toList
+      src.close()
+      featureChains
     }
 
-    if(ChainOpts.writeClassifications.wasInvoked) {
+    // todo share across this and classify
+    val (trainingLabels, testingLabels) = if (Seq(ChainOpts.readSequences, ChainOpts.trainingPortion).map(_.wasInvoked).reduce(_ && _)) {
+      processInstances(ChainOpts.readSequences.value) match {
+        case labels if ChainOpts.trainingPortion.value == 1.0 => labels.shuffle -> Seq()
+        case labels => labels.shuffle.split(ChainOpts.trainingPortion.value)
+      }
+    } else if (Seq(ChainOpts.readTrainingSequences, ChainOpts.readTestingSequences).map(_.wasInvoked).reduce(_ && _)) {
+      processInstances(ChainOpts.readTrainingSequences.value) -> processInstances(ChainOpts.readTestingSequences.value)
+    } else {
+      throw new IllegalArgumentException("Invalid argument combination, supply either a read sequence and training portion or a pair of training and testing sequences.")
+    }
+
+    val model = new ChainModel[Label, Features, Features](LabelDomain, FeaturesDomain, _.features, _.token, _.label)
+
+    if (ChainOpts.readChainModel.wasInvoked) {
+      val f = new FileInputStream(ChainOpts.readChainModel.value)
+      model.deserialize(f)
+      f.close()
+    } else {
+      val examples = trainingLabels.map(fc => new model.ChainLikelihoodExample(fc.value.map(_.label)))
+      val trainer = new OnlineTrainer(model.parameters, maxIterations = 1)
+      trainer.trainFromExamples(examples)
+    }
+
+    var totalTokens = 0.0
+    var correctTokens = 0.0
+
+    testingLabels.foreach {
+      fc =>
+        val res = MaximizeByBPChain.infer(fc.value.map(_.label), model, null)
+        res.setToMaximize(null) // sets each label to it's maximum value
+        totalTokens += fc.size
+        correctTokens += HammingObjective.accuracy(fc.value.map(_.label)) * fc.size
+    }
+
+    if (ChainOpts.writeClassifications.wasInvoked) {
       val classificationResults = new BufferedWriter(new FileWriter(ChainOpts.writeClassifications.value))
-      testingLabels.foreach{ featureChain =>
-      featureChain.foreach{ link =>
-      classificationResults.write("%s %s".format(link.label.categoryValue, link.features.mkString(" ")))
-    classificationResults.newLine()
-  }
-  classificationResults.newLine()
-}
-classificationResults.flush()
-classificationResults.close()
+      testingLabels.foreach {
+        featureChain =>
+          featureChain.foreach {
+            link =>
+              classificationResults.write("%s %s".format(link.label.categoryValue, link.featureStrings.mkString(" ")))
+              classificationResults.newLine()
+          }
+          classificationResults.newLine()
+      }
+      classificationResults.flush()
+      classificationResults.close()
     }
 
     println("Overall accuracy: " + (correctTokens / totalTokens))
 
     println("Total elapsed time: " + (System.currentTimeMillis() - startTime) / 1000.0 + "sec")
 
-    if(ChainOpts.writeChainModel.wasInvoked) {
+    if (ChainOpts.writeChainModel.wasInvoked) {
       val f = new FileOutputStream(ChainOpts.writeChainModel.value)
       model.serialize(f)
       f.flush()

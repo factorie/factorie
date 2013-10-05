@@ -5,7 +5,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
-import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
+import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 
 /**
  * User: apassos

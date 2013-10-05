@@ -41,7 +41,7 @@ class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends 
   def key = this.mkString("-")
 }
 
-class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
+class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
                         newLabel: (Token, String) => L,
                         labelToToken: L => Token,
                         embeddingMap: SkipGramEmbedding,
@@ -532,14 +532,14 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
   }
 }
 
-class ConllNER3(embeddingMap: SkipGramEmbedding,
+class StackedConllNER(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
-                url: java.net.URL=null) extends NER3[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
+                url: java.net.URL=null) extends StackedNER[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
 
-object NER3 extends ConllNER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3[_]](".factorie"))
-object NER3NoEmbeddings extends ConllNER3(null, 0, 0.0, false, ClasspathURL[NER3[_]](".factorie-noembeddings"))
+object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
+object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
 
 class NER3Opts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -564,7 +564,7 @@ object NER3Trainer extends HyperparameterMain {
     // Parse command-line
     val opts = new NER3Opts
     opts.parse(args)
-    val ner = new ConllNER3(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new StackedConllNER(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 

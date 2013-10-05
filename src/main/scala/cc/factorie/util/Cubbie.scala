@@ -31,6 +31,8 @@ import cc.factorie.la.Tensor
 class Cubbie {
   thisCubbie =>
 
+  def version: String = "1.0"
+  def cubbieName: String = getClass.getName
 
   //  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data

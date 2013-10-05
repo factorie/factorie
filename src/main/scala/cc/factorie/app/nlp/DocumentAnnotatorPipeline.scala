@@ -51,24 +51,24 @@ object DocumentAnnotatorPipeline extends FastLogging  {
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
     classOf[pos.PennPosLabel] -> (() => pos.POS1),
-    classOf[parse.ParseTree] -> (() => parse.DepParser1),
+    classOf[parse.ParseTree] -> (() => parse.TransitionParser),
     classOf[segment.PlainNormalizedTokenString] -> (() => segment.PlainTokenNormalizer),
-    classOf[Token] -> (() => cc.factorie.app.nlp.segment.Tokenizer1),
-    classOf[Sentence] -> (() => cc.factorie.app.nlp.segment.SentenceSegmenter1),
+    classOf[Token] -> (() => cc.factorie.app.nlp.segment.BasicTokenizer),
+    classOf[Sentence] -> (() => cc.factorie.app.nlp.segment.BasicSentenceSegmenter),
     classOf[lemma.WordNetTokenLemma] -> (() => cc.factorie.app.nlp.lemma.WordNetLemmatizer),
     classOf[lemma.SimplifyDigitsTokenLemma] -> (() => lemma.SimplifyDigitsLemmatizer),
     classOf[lemma.CollapseDigitsTokenLemma] -> (() => lemma.CollapseDigitsLemmatizer),
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
-    classOf[ner.NerLabel] -> (() => ner.NER1), // TODO Should there be a different default?
-    classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
+    classOf[ner.NerLabel] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
+    classOf[ner.BilouConllNerLabel] -> (() => ner.BasicConllNER),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1Ner)
+    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.ForwardCorefNer)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)

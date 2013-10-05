@@ -14,7 +14,7 @@ import cc.factorie.app.chain.ChainModel
     Trained by online stochastic gradient ascent with an L1 prior that leads to ~90% sparsity.
     Inference by Viterbi.
     Achieves ~91% field F1 on CoNLL 2003 dev set. */
-class NER1 extends DocumentAnnotator {
+class BasicConllNER extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
@@ -200,10 +200,10 @@ class NER1 extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object NER1 extends NER1(cc.factorie.util.ClasspathURL[NER1](".factorie"))
+object BasicConllNER extends BasicConllNER(cc.factorie.util.ClasspathURL[BasicConllNER](".factorie"))
 
 /** Example main function for training NER1 from CoNLL 2003 data. */
-object NER1Trainer extends cc.factorie.util.HyperparameterMain {
+object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
   class Opts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions{
     val saveModel = new CmdOption("save-model", "NER1.factorie", "STRING", "Filename for the model (saving a trained model or reading a running model.")
     val serialize = new CmdOption("serialize", false, "BOOLEAN", "Whether to serialize at all")
@@ -218,7 +218,7 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
     
-    val ner = new NER1
+    val ner = new BasicConllNER
     
     if (opts.train.wasInvoked) {
 
@@ -245,15 +245,15 @@ object NER1Trainer extends cc.factorie.util.HyperparameterMain {
 }
 
 
-object NER1Validator {
+object BasicConllNerOptimizer {
   def main(args: Array[String]) {
-    val opts = new NER1Trainer.Opts
+    val opts = new BasicConllNerTrainer.Opts
     opts.parse(args)
     opts.serialize.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-12, 1))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-12, 1))
     val lr = cc.factorie.util.HyperParameter(opts.learningRate, new LogUniformDoubleSampler(1e-3, 10))
-    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.NER1Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.BasicConllNerTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, lr), qs.execute, 100, 90, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

@@ -262,7 +262,7 @@ object Classify {
       if (opts.readTestingInstances.wasInvoked) testingLabels ++= readInstancesFromFile(opts.readTestingInstances.value)
     } else {
       val (trainSet, testAndValidationSet) =
-        if (opts.trainingPortion == 1.0) (labels, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
+        if (opts.trainingPortion.value == 1.0) (labels.shuffle, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
       val (valSet, testSet) =
         if (opts.validationPortion.value == 0.0) (Seq(): Seq[Label], testAndValidationSet)
         else testAndValidationSet.split(opts.validationPortion.value / (1 - opts.trainingPortion.value))
