@@ -329,6 +329,7 @@ class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
+  val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
 }
 
 
@@ -358,7 +359,7 @@ object ForwardPOSTrainer extends HyperparameterMain {
 
 
     pos.train(trainSentences, testSentences,
-              opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
+              opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, numIterations=opts.numIters.value.toInt,l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
       pos.serialize(opts.modelFile.value)
