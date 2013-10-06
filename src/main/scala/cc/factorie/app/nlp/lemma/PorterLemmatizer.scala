@@ -7,7 +7,7 @@ class PorterLemmatizer extends DocumentAnnotator with Lemmatizer {
     for (token <- document.tokens) token.attr += new PorterTokenLemma(token, lemmatize(token.string))
     document
   }
-  override def tokenAnnotationString(token:Token): String = { val l = token.attr[SimplifyDigitsTokenLemma]; l.value }
+  override def tokenAnnotationString(token:Token): String = { val l = token.attr[PorterTokenLemma]; l.value }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
   def postAttrs: Iterable[Class[_]] = List(classOf[PorterTokenLemma])
 }
