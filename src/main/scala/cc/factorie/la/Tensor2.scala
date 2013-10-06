@@ -534,7 +534,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
       case (t1: SparseTensor, t2: SparseTensor) =>
         val t1Size = t1.activeDomainSize
         val t1Indices = t1._indices
-        val t1Values = t2._valuesSeq
+        val t1Values = t1._valuesSeq
         val t2Size = t2.activeDomainSize
         val t2IndexSeq = t2._indices
         val t2Values = t2._valuesSeq
@@ -627,7 +627,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
           var dot = 0.0
           val len1 = t1.activeDomainSize
           val indices1 = t1._indices
-          val values1 = t2._valuesSeq
+          val values1 = t1._valuesSeq
           val len2 = t2.activeDomainSize
           val indices2 = t2._indices
           val values2 = t2._valuesSeq
