@@ -41,6 +41,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     false
   }
   override def toString = "TokenSpan("+start+":"+this.phrase+")"
+  // TODO This seems unsafe.  Can we delete it? -akm
   /** A short name for this span */
   def name: String = attr.values.head match {
     case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
