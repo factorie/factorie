@@ -372,7 +372,7 @@ object Trainer {
     parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
     optimizer.initializeWeights(parameters)
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
-    val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
+    val trainer = if (useOnlineTrainer && useParallelTrainer) new SynchronizedOptimizerOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
       else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
       else new BatchTrainer(parameters, optimizer=optimizer)
