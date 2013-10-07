@@ -538,13 +538,13 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
       testAll(c, "iteration ")
     }
     c.featuresDomain.dimensionDomain.gatherCounts = true
-    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    c.generateDecisions(sentences, 0, opts.nThreads.value)
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
     c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
-    trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
     c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
