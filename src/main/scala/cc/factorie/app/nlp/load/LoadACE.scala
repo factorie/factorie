@@ -93,6 +93,7 @@ object LoadACE {
   }
 
   def addMentionsFromApf(apf: NodeSeq, doc: Document): Unit = {
+    val spanList = doc.attr += new ACEMentionSpanList
     for (entity <- apf \\ "entity") {
       val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
       e.attr += new ACEEntityIdentifiers {
@@ -102,7 +103,6 @@ object LoadACE {
         def eClass = getAttr(entity, "CLASS")
       }
       
-      val spanList = doc.attr += new ACEMentionSpanList 
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
         val m = new ACEMentionSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)
@@ -155,8 +155,8 @@ object LoadACE {
       }
 
       for (mention <- relation \ "relation_mention") {
-        val args = mention \ "rel_mention_arg" map {
-          arg => lookupEntityMention(getAttr(arg, "ENTITYMENTIONID"), doc)
+        val args = mention \ "relation_mention_argument" map {
+          arg => lookupEntityMention(getAttr(arg, "REFID"), doc)
         }
         assert(args.size == 2)
         val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
