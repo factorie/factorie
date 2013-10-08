@@ -31,6 +31,8 @@ import cc.factorie.la.Tensor
 class Cubbie {
   thisCubbie =>
 
+  def version: String = "1.0"
+  def cubbieName: String = getClass.getName
 
   //  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
@@ -270,9 +272,9 @@ class Cubbie {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
 
-    //todo: this is probably very slow, as I need access the manifest, erasure, create new object etc.
+    //todo: this is probably very slow, as I need access the manifest, runtimeClass, create new object etc.
     def value2(implicit cache: collection.Map[(Class[Cubbie], String, Any), Iterable[Cubbie]]) = {
-      val foreignCubbie = m.erasure.newInstance().asInstanceOf[A]
+      val foreignCubbie = m.runtimeClass.newInstance().asInstanceOf[A]
       val foreignSlot = slot(foreignCubbie)
       cache((foreignCubbie.cubbieClass, foreignSlot.name, cubbie.id)).asInstanceOf[Iterable[A]]
     }

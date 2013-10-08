@@ -2,6 +2,8 @@ package cc.factorie.app.nlp
 
 import cc.factorie.util.FastLogging
 
+import scala.reflect.ClassTag
+
 /**
  * User: apassos
  * Date: 8/7/13
@@ -49,36 +51,36 @@ object DocumentAnnotatorPipeline extends FastLogging  {
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
     classOf[pos.PennPosLabel] -> (() => pos.POS1),
-    classOf[parse.ParseTree] -> (() => parse.DepParser1),
+    classOf[parse.ParseTree] -> (() => parse.TransitionParser),
     classOf[segment.PlainNormalizedTokenString] -> (() => segment.PlainTokenNormalizer),
-    classOf[Token] -> (() => cc.factorie.app.nlp.segment.Tokenizer1),
-    classOf[Sentence] -> (() => cc.factorie.app.nlp.segment.SentenceSegmenter1),
+    classOf[Token] -> (() => cc.factorie.app.nlp.segment.BasicTokenizer),
+    classOf[Sentence] -> (() => cc.factorie.app.nlp.segment.BasicSentenceSegmenter),
     classOf[lemma.WordNetTokenLemma] -> (() => cc.factorie.app.nlp.lemma.WordNetLemmatizer),
     classOf[lemma.SimplifyDigitsTokenLemma] -> (() => lemma.SimplifyDigitsLemmatizer),
     classOf[lemma.CollapseDigitsTokenLemma] -> (() => lemma.CollapseDigitsLemmatizer),
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
-    classOf[ner.NerLabel] -> (() => ner.NER1), // TODO Should there be a different default?
-    classOf[ner.BilouConllNerLabel] -> (() => ner.NER1),
+    classOf[ner.NerLabel] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
+    classOf[ner.BilouConllNerLabel] -> (() => ner.BasicConllNER),
     classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.WithinDocCoref1Ner)
+    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.ForwardCorefNer)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)
-  def apply[A](implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m.erasure))
-  def apply[A,B](implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure))
-  def apply[A,B,C](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
-  def apply[A,B,C,D](implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
+  def apply[A](implicit m:ClassTag[A]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m.runtimeClass))
+  def apply[A,B](implicit m1:ClassTag[A], m2:ClassTag[B]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass))
+  def apply[A,B,C](implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass))
+  def apply[A,B,C,D](implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C], m4:ClassTag[D]): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass, m4.runtimeClass))
   //def apply(goal: Class[_], map: DocumentAnnotatorMap): DocumentAnnotationPipeline = apply(Seq(goal), map)
-  def apply[A](map: DocumentAnnotatorMap)(implicit m:Manifest[A]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m.erasure))
-  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure))
-  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure))
-  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:Manifest[A], m2:Manifest[B], m3:Manifest[C], m4:Manifest[D]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.erasure, m2.erasure, m3.erasure, m4.erasure))
+  def apply[A](map: DocumentAnnotatorMap)(implicit m:ClassTag[A]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m.runtimeClass))
+  def apply[A,B](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass))
+  def apply[A,B,C](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass))
+  def apply[A,B,C,D](map: DocumentAnnotatorMap)(implicit m1:ClassTag[A], m2:ClassTag[B], m3:ClassTag[C], m4:ClassTag[D]): DocumentAnnotationPipeline = apply(map, Nil, Seq(m1.runtimeClass, m2.runtimeClass, m3.runtimeClass, m4.runtimeClass))
 
   //def apply(goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, Nil, goals:_*)
   //def apply(prereqs: Seq[Class[_]], goals:Class[_]*): DocumentAnnotationPipeline = apply(defaultDocumentAnnotationMap, prereqs, goals)

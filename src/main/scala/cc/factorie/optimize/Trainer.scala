@@ -234,6 +234,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     override def *(other: Tensor1) = lock.withReadLock(base * other)
+    override def leftMultiply(other: Tensor1) = lock.withReadLock(base leftMultiply other)
     override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {
@@ -370,13 +371,7 @@ object Trainer {
    */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
     parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
-    optimizer match {
-      case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
-      case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
-      case o: L2RegularizedConstantRate if !o.initialized => o.initializeWeights(parameters)
-      case o: Pegasos if !o.initialized => o.initializeWeights(parameters)
-      case _ =>
-    }
+    optimizer.initializeWeights(parameters)
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
@@ -392,10 +387,7 @@ object Trainer {
       }
     } finally {
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
-      optimizer match {
-        case o: ParameterAveraging => o.setWeightsToAverage(parameters)
-        case _ =>
-      }
+      optimizer.finalizeWeights(parameters)
     }
   }
 

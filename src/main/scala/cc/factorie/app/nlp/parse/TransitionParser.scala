@@ -15,16 +15,17 @@ import scala.Some
 import java.util.concurrent.Executors
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
+import scala.collection.mutable
 
 /** Default transition-based dependency parser. */
-class DepParser1 extends DocumentAnnotator {
+class TransitionParser extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("DepParser1 loading from "+url)
+    println("TransitionParser loading from "+url)
     deserialize(stream)
   }
 
@@ -60,7 +61,7 @@ class DepParser1 extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
-    val sparseEvidenceWeights = new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
+    val sparseEvidenceWeights = new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(stream)
@@ -76,9 +77,9 @@ class DepParser1 extends DocumentAnnotator {
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     import scala.language.reflectiveCalls
-    model.weights.set(new la.DenseLayeredTensor2(labelDomain.size, featuresDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("DepParser1 model parameters oneNorm "+model.parameters.oneNorm)
+    println("TransitionParser model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
@@ -97,7 +98,7 @@ class DepParser1 extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("DepParser1.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("TransitionParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionDomain.size)
@@ -123,9 +124,12 @@ class DepParser1 extends DocumentAnnotator {
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
-    testSentences.par.foreach(process(_))
+    val t0 = System.currentTimeMillis()
+    testSentences.foreach(process)
+    val totalTime = System.currentTimeMillis() - t0
+    val totalTokens = testSentences.map(_.tokens.length).sum
     val pred = testSentences.map(_.attr[ParseTree])
-    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)
+    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)+s"  ${totalTokens*1000.0/totalTime} tokens/sec"
   }
 
 
@@ -163,7 +167,7 @@ class DepParser1 extends DocumentAnnotator {
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
-  def process(doc: Document) = { doc.sentences.foreach(process(_)); doc }
+  def process(doc: Document) = { doc.sentences.foreach(process); doc }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
@@ -333,7 +337,7 @@ class DepParser1 extends DocumentAnnotator {
       "F_LNPB"   -> "lnpb", // left-nearest punctuation of beta
       "F_RNPB"   -> "rnpb"  // right-nearest punctuation of beta
     )
-    val locationFns: HashMap[String, (Int) => (ParseState) => DepToken] = HashMap(
+    val locationFns: HashMap[String, (Int) => (ParseState) => DepToken] = mutable.HashMap(
       "b"   -> ((offset: Int) => (state: ParseState) => state.inputToken(offset)),
       "l"   -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset)),
       "s"   -> ((offset: Int) => (state: ParseState) => state.stackToken(offset)),
@@ -349,7 +353,7 @@ class DepParser1 extends DocumentAnnotator {
       "m"   -> ((t: DepToken) => t.lemma),
       "p"   -> ((t: DepToken) => t.pos),
       "d"   -> ((t: DepToken) => if (!t.hasHead) "null" else t.head.label),
-      "b0"  -> ((t: DepToken) => if (t.pos == -2) "null" else (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString),
+      "b0"  -> ((t: DepToken) => if (t.thisIdx == -1) "null" else (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString),
       "b1"  -> ((t: DepToken) => (t.state.stackToken(0) eq t.state.sentenceTokens.last).toString),
       "b2"  -> ((t: DepToken) => (t.state.input - t.state.stack == 1).toString)
     )
@@ -416,7 +420,7 @@ class DepParser1 extends DocumentAnnotator {
 
   case class DepArc(depToken: DepToken, label: String)
 
-  class ParseState(var stack: Int, var input: Int, val reducedIds: HashSet[Int], sentence: Sentence) {
+  class ParseState(var stack: Int, var input: Int, val reducedIds: collection.mutable.HashSet[Int], sentence: Sentence) {
     private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
     val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
     val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
@@ -457,13 +461,13 @@ class DepParser1 extends DocumentAnnotator {
   }
 }
 
-object DepParser1 extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1](".factorie"))
+object TransitionParser extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser](".factorie"))
 
-object DepParser1Ontonotes extends DepParser1(cc.factorie.util.ClasspathURL[DepParser1]("-Ontonotes.factorie"))
+object TransitionParserOntonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
 
 
 
-class DepParser1Args extends cc.factorie.util.DefaultCmdOptions {
+class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -481,9 +485,9 @@ class DepParser1Args extends cc.factorie.util.DefaultCmdOptions {
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
-object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
+object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
-    val opts = new DepParser1Args
+    val opts = new TransitionParserArgs
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
@@ -492,25 +496,29 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
       else Seq.empty[Sentence]
     }
-    val sentences = loadSentences(opts.trainFiles)
-    val devSentences = loadSentences(opts.devFiles)
-    val testSentences = loadSentences(opts.testFiles)
+
+    val sentencesFull = loadSentences(opts.trainFiles)
+    val devSentencesFull = loadSentences(opts.devFiles)
+    val testSentencesFull = loadSentences(opts.testFiles)
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val sentences = sentencesFull.take((trainPortionToTake*sentencesFull.length).floor.toInt)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    val devSentences = devSentencesFull.take((testPortionToTake*devSentencesFull.length).floor.toInt)
+
+
+
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
-    def testSingle(c: DepParser1, ss: Seq[Sentence], extraText: String = ""): Unit = {
+    def testSingle(c: TransitionParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
-        println(extraText)
-        println("------------")
-        ss.par.foreach(c.process)
-        val pred = ss.map(_.attr[ParseTree])
-        println("LAS: " + ParserEval.calcLas(pred))
-        println("UAS: " + ParserEval.calcUas(pred))
-        println("\n")
+        println(extraText + " " + c.testString(ss))
       }
     }
 
-    def testAll(c: DepParser1, extraText: String = ""): Unit = {
+    def testAll(c: TransitionParser, extraText: String = ""): Unit = {
       println("\n")
       testSingle(c, sentences,     "Train " + extraText)
       testSingle(c, devSentences,  "Dev "   + extraText)
@@ -519,7 +527,7 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = opts.bootstrapping.value.toInt
-    val c = new DepParser1
+    val c = new TransitionParser
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
@@ -530,13 +538,13 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
       testAll(c, "iteration ")
     }
     c.featuresDomain.dimensionDomain.gatherCounts = true
-    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    c.generateDecisions(sentences, 0, opts.nThreads.value)
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
     c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
-    trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
     c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
@@ -547,18 +555,19 @@ object DepParser1Trainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
-      val d = new DepParser1
+      val d = new TransitionParser
       d.deserialize(new java.io.File(modelUrl))
-      testSentences.foreach(d.process)
-      println("Post deserialization accuracy " + ParserEval.calcLas(testSentences.map(_.attr[ParseTree])))
+      testSingle(c, testSentences, "Post serialization accuracy ")
     }
-    ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
+    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    testLAS
   }
 }
 
-object DepParse12Optimizer {
+object TransitionParserOptimizer {
   def main(args: Array[String]) {
-    val opts = new DepParser1Args
+    val opts = new TransitionParserArgs
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -570,10 +579,10 @@ object DepParse12Optimizer {
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.DepParser1",
+      "cc.factorie.app.nlp.parse.TransitionParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.DepParser1Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

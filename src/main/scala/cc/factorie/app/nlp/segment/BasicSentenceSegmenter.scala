@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 
 /** Segments a sequence of tokens into sentences.
     @author Andrew McCallum */
-class SentenceSegmenter1 extends DocumentAnnotator {
+class BasicSentenceSegmenter extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -29,7 +29,7 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   /** Whitespace that should not be allowed between a closingRegex and closingContinuationRegex for a sentence continuation.  For example:  He ran.  "You shouldn't run!" */
   val spaceRegex = "[ \n\r\t\u00A0\\p{Z}]+".r
   
-  val emoticonRegex = ("\\A("+Tokenizer1.emoticon+")\\Z").r
+  val emoticonRegex = ("\\A("+BasicTokenizer.emoticon+")\\Z").r
   
   val charOffsetBoundary = 10 // If there are more than this number of characters between the end of the previous token and the beginning of this one, force a sentence start
   
@@ -101,11 +101,11 @@ class SentenceSegmenter1 extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[Sentence])
 }
 
-object SentenceSegmenter1 extends SentenceSegmenter1 {
+object BasicSentenceSegmenter extends BasicSentenceSegmenter {
   def main(args: Array[String]): Unit = {
     for (filename <- args) {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      Tokenizer1.process(doc)
+      BasicTokenizer.process(doc)
       this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)

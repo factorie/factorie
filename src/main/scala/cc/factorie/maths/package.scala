@@ -393,6 +393,38 @@ package object maths {
       b + math.log1p(math.exp(a-b))
   }
 
+  def sumLogProbs(vals: Array[Double]): Double = {
+    val LOGTOLERANCE = 30.0
+
+    val len = vals.length
+    var max = vals(0)
+    var maxIdx = 0
+    var i = 1
+    while (i < len) {
+      val v = vals(i)
+      if (v > max) {
+        max = v
+        maxIdx = i
+      }
+      i += 1
+    }
+    var anyAdded = false
+    var intermediate = 0.0
+    val cutoff = max - LOGTOLERANCE
+    i = 0
+    while (i < len) {
+      if (vals(i) >= cutoff && i != maxIdx) {
+        anyAdded = true
+        intermediate += math.exp(vals(i) - max)
+      }
+      i += 1
+    }
+    if (anyAdded)
+      max + math.log1p(intermediate)
+    else
+      max
+  }
+
   def sumLogProbs(vals: DoubleSeq): Double = {
     val LOGTOLERANCE = 30.0
 

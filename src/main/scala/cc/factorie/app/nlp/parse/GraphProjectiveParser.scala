@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import cc.factorie.util.{ClasspathURL, DoubleAccumulator}
+import util.{HyperparameterMain, ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
 import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
@@ -110,10 +110,10 @@ class GraphProjectiveParser extends DocumentAnnotator {
     negativeExamples.foreach(e => knownParents(e._2) = e._1)
     val tokenScores = Array.fill(sent.length+1)(0.0)
     val parentScores = Array.fill(sent.length+1)(0.0)
-    parentScores(0) = getParentFeatureVector(null).value.dot(weights)
+    parentScores(0) = weights.dot(getParentFeatureVector(null).value)
     for (i <- 0 until sentLength) {
-      tokenScores(i+1) = getTokenFeatureVector(sent.tokens(i)).value.dot(weights)
-      parentScores(i+1) = getParentFeatureVector(sent.tokens(i)).value.dot(weights)
+      tokenScores(i+1) = weights.dot(getTokenFeatureVector(sent.tokens(i)).value)
+      parentScores(i+1) = weights.dot(getParentFeatureVector(sent.tokens(i)).value)
     }
     val edgeScores = Array.fill(sent.length+1,sent.length+1)(Double.NaN)
     def getEdgeScore(parent: Int, child: Int) : Double = {
@@ -121,7 +121,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       if (edgeScores(parent)(child).isNaN) {
         val loss = if ((child > 0) && (knownParents(child-1) == parent -1)) -1.0 else 0.0
         edgeScores(parent)(child) = if (child > 0)
-          loss + getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
+          loss + weights.dot(getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value) + tokenScores(child) + parentScores(parent)
         else 0
       }
       edgeScores(parent)(child)
@@ -300,33 +300,48 @@ object GraphProjectiveParser extends GraphProjectiveParser {
   deserialize(ClasspathURL[GraphProjectiveParser](".factorie"))
 }
 
-object GraphProjectiveParserTrainer {
-  def main(args: Array[String]): Unit = {
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
-      //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
-      val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
-      val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
-      val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
-    }
+object GraphProjectiveParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+  val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
+  //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
+  val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
+  val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
+  val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
+}
+
+object GraphProjectiveParserTrainer extends HyperparameterMain {
+  def evaluateParameters(args: Array[String]): Double = {
+    val opts = GraphProjectiveParserOpts
     opts.parse(args)
 
     val parser = new GraphProjectiveParser
 
+
     val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
     val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
 
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDoc.sentences.toSeq
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDoc.sentences.toSeq
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+
     // Train
-    parser.train(trainDoc.sentences.toSeq, testDoc.sentences.toSeq, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    parser.train(trainSentences, testSentences, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
     // Test
 
     // Print accuracy diagnostics
     println("Predicting train set..."); parser.process(trainDoc)
     println("Predicting test set...");  parser.process(testDoc)
     println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
-    println(" Testing UAS = "+ ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree])))
+    val testUAS = ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree]))
+    println("Testing UAS = "+ testUAS)
     println()
     println("Done.")
+    if(opts.targetAccuracy.wasInvoked) assert(testUAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    testUAS
   }
 
 }

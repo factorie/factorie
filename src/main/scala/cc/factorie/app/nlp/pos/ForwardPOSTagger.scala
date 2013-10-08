@@ -9,7 +9,7 @@ import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomai
 import cc.factorie.app.classify.LinearMultiClassClassifier
 import cc.factorie.optimize.Trainer
 
-class POS1 extends DocumentAnnotator {
+class ForwardPOSTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
@@ -243,7 +243,7 @@ class POS1 extends DocumentAnnotator {
     import CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
-    model.weights.set(new la.DenseLayeredTensor2(PennPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, PennPosDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
@@ -262,6 +262,7 @@ class POS1 extends DocumentAnnotator {
         if (token.attr[PennPosLabel].valueIsTarget) correct += 1.0
       }
     })
+    println(s"${total*1000/totalTime} tokens/sec")
     correct/total
   }
   
@@ -307,15 +308,15 @@ class POS1 extends DocumentAnnotator {
 // object POS1 is defined in app/nlp/pos/package.scala
 
 /** The default POS1, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-object POS1WSJ extends POS1(cc.factorie.util.ClasspathURL[POS1]("-WSJ.factorie"))
+object ForwardPOSTagger extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-WSJ.factorie"))
 
 /** The default POS1, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
 // TODO Set up so that POS1WSJ and POS1Ontonotes parameter loading locations can be set independently. 
 //class POS1Ontonotes(url:java.net.URL) extends POS1(url)
 //object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
-object POS1Ontonotes extends POS1(cc.factorie.util.ClasspathURL[POS1]("-Ontonotes.factorie"))
+object ForwardPOSTaggerOntonotes extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-Ontonotes.factorie"))
 
-class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
+class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
   val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
   val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
@@ -328,39 +329,53 @@ class POS1Opts extends cc.factorie.util.DefaultCmdOptions {
   val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
+  val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
 }
 
 
-object POS1Trainer extends HyperparameterMain {
+object ForwardPOSTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
-    val opts = new POS1Opts
+    val opts = new ForwardPOSOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new POS1
+    val pos = new ForwardPOSTagger
+
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs = load.LoadOntonotes5.fromFilename(opts.testFile.value)
+    val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
+
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-    pos.train(trainDocs.flatMap(_.sentences), testDocs.flatMap(_.sentences),
-              opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDocs.flatMap(_.sentences)
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+    pos.train(trainSentences, testSentences,
+              opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, numIterations=opts.numIters.value.toInt,l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
       pos.serialize(opts.modelFile.value)
-      val pos2 = new POS1
+      val pos2 = new ForwardPOSTagger
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
-    pos.accuracy(testDocs.flatMap(_.sentences))
+    val acc = pos.accuracy(testDocs.flatMap(_.sentences))
+    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    acc
   }
 }
 
-object POS1Optimizer {
+object ForwardPOSOptimizer {
   def main(args: Array[String]) {
-    val opts = new POS1Opts
+    val opts = new ForwardPOSOptions
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -376,7 +391,7 @@ object POS1Optimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.POS1Trainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPOSTagger")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

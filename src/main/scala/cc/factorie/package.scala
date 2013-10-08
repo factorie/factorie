@@ -19,6 +19,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import cc.factorie.model.{IterableSingleFactor, Factor}
 import cc.factorie.variable.TensorVar
+import scala.reflect.runtime.universe._
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -28,7 +29,7 @@ package object factorie extends CubbieConversions {
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
-    def cast[U](implicit m: ClassTag[U]): Option[U] = if (m >:> ClassTag(a.getClass)) Some(a.asInstanceOf[U]) else None
+    def cast[U](implicit u : TypeTag[U], t:TypeTag[T]): Option[U] = if (typeOf[U] <:< typeOf[T]) Some(a.asInstanceOf[U]) else None
     def toNotNull: Option[T] = Option(a)
   }
 

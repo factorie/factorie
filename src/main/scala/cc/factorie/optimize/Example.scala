@@ -351,17 +351,7 @@ class StructuredPerceptronExample[A<:Iterable[Var],B<:Model](labels: A, model: B
  * @tparam A The type of the labels
  */
 class StructuredSVMExample[A<:Iterable[Var]](labels: A, model: Model with Parameters, loss: Model = HammingLoss, infer: Maximize[A,Model])
-  extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer) {
-  override def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
-    if (value != null) {
-      val valueAcc = new LocalDoubleAccumulator(0.0)
-      // TODO why are we doing this again? -luke
-      super.accumulateValueAndGradient(valueAcc, gradient)
-      // get a margin from LikelihoodExample (which equals value since value is the penalty of the most violated constraint)
-      if (value != null) value.accumulate(valueAcc.value)
-    }
-  }
-}
+  extends StructuredPerceptronExample(labels, new CombinedModel(model, loss) with Parameters { override val parameters = model.parameters }, infer)
 
 /**
  * Maximum likelihood in one semi supervised setting. It does constrained inference and maximizes the likelihood of
@@ -402,10 +392,10 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = weights.value * featureVector
+    val prediction = weights.value.leftMultiply(featureVector)
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, sgrad outer featureVector, weight)
+    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, featureVector outer sgrad, weight)
   }
 }
 
@@ -435,7 +425,7 @@ class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, 
     val score = weights.value dot featureVector
     val (obj, sgrad) = objective.valueAndGradient(score, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null) gradient.accumulate(weights, featureVector, weight * sgrad)
+    if (gradient != null) gradient.accumulate(weights, featureVector.copy, weight * sgrad)
   }
 }
 

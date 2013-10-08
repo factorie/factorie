@@ -5,7 +5,7 @@ import java.io._
 import collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import java.text.DateFormat
 import cc.factorie.util.{CmdOption, DefaultCmdOptions}
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 import cc.factorie._
 import app.nlp.hcoref._
 import io.Source
@@ -398,7 +398,7 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
-      val mongoConn = new Mongo(server.value,port.value.toInt)
+      val mongoConn = new MongoClient(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
       mongoDB.getCollection("authors").drop()
       mongoDB.getCollection("papers").drop()
@@ -552,7 +552,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
-      val mongoConn = new Mongo(server.value,port.value.toInt)
+      val mongoConn = new MongoClient(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
       mongoDB.getCollection("authors").drop()
       mongoDB.getCollection("papers").drop()

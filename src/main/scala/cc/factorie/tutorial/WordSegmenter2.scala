@@ -23,68 +23,27 @@ import cc.factorie.optimize._
 import cc.factorie.variable._
 import cc.factorie.model._
 import cc.factorie.infer.{MaximizeByBPLoopy, InferByMPLP}
+import cc.factorie.app.chain.{Observation, ChainModel}
 
-object WordSegmenterDemo2 {
+object WordSegmenter2 {
 
   // The variable types:
-  class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)
+  object LabelDomain extends CategoricalDomain[String] {
+    this ++= Seq("YES", "NO")
+    freeze()
+  }
+  class Label(b:Boolean, val token:Token) extends LabeledCategoricalVariable[String](if (b) "YES" else "NO") { def domain = LabelDomain }
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
+  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] with Observation[Token] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)
     this += char.toString
+    def string = char.toString
     if ("aeiou".contains(char)) this += "VOWEL"
   }
   class Sentence extends Chain[Sentence,Token]
 
-  val model = new ModelWithContext[IndexedSeq[Label]] with Parameters {
-    val bias = new DotFamilyWithStatistics1[Label] {
-      factorName = "Label"
-      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
-    }
-    val obs = new DotFamilyWithStatistics2[Label,Token] {
-      factorName = "Label,Token"
-      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
-    }
-    val markov = new DotFamilyWithStatistics2[Label,Label] {
-      factorName = "Label,Label"
-      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size))
-    }
-    val obsmarkov = new DotFamilyWithStatistics3[Label,Label,Token] {
-      factorName = "Label,Label,Token"
-      val weights = Weights(new la.Dense2LayeredTensor3(BooleanDomain.size, BooleanDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_)))
-    }
-    val skip = new DotFamily2[Label,Label] {
-      factorName = "Label,Label:Boolean"
-      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
-      override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
-    }
-    // NOTE if I don't annotate this type here I get a crazy compiler crash when it finds the upper bounds of these template types -luke
-    def families: Seq[DotFamily] = Seq(bias, obs, markov, obsmarkov)
-    def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
-      val result = new ListBuffer[Factor]
-      for (i <- 0 until labels.length) {
-        result += bias.Factor(labels(i))
-        result += obs.Factor(labels(i), labels(i).token)
-        if (i > 0) result += markov.Factor(labels(i-1), labels(i))
-      }
-      result
-    }
-    def factors(variables:Iterable[Var]): Iterable[Factor] = variables match {
-      case variables:IndexedSeq[Label @unchecked] => factorsWithContext(variables)
-    }
-    override def factors(v:Var) = {
-      val label = v.asInstanceOf[Label]
-      val result = new ArrayBuffer[Factor](4)
-      result += bias.Factor(label)
-      result += obs.Factor(label, label.token)
-      if (label.token.hasPrev)
-        result += markov.Factor(label.token.prev.label, label)
-      if (label.token.hasNext)
-        result += markov.Factor(label, label.token.next.label)
-      result
-    }
-  }
+  val model = new ChainModel[Label,Token,Token](LabelDomain, TokenDomain, l => l.token, l => l.token, t => t.label)
 
   val objective = HammingObjective
 

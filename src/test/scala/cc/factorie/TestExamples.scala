@@ -183,6 +183,6 @@ class TestExamples {
   }
 
   @Test def testWordSegmenter2() {
-    cc.factorie.tutorial.WordSegmenterDemo2.main(emptyArgs)
+    cc.factorie.tutorial.WordSegmenter2.main(emptyArgs)
   }
 }

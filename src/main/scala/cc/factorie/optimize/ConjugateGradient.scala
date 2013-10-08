@@ -49,6 +49,9 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
   }
 
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
+
   def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     if (_isConverged) return
     

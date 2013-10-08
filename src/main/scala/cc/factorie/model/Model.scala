@@ -22,6 +22,7 @@ import scala.collection.mutable.Set
 import scala.collection.generic.Growable
 import cc.factorie.variable._
 import cc.factorie.util.SingletonIndexedSeq
+import scala.reflect.ClassTag
 
 /** In FACTORIE a Model is a source of factors.
     In particular, it can return the collection of factors that touch a collection of variables.
@@ -60,12 +61,12 @@ trait Model {
   def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
   def factorsOfClass[F<:Factor](variable:Var, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(variable), fclass)
   def factorsOfClass[F<:Factor](variables:Iterable[Var], fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(variables), fclass)
-  def factorsOfClass[F<:Factor](variable:Var)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass(variable, fm.erasure.asInstanceOf[Class[F]])
-  def factorsOfClass[F<:Factor](variables:Iterable[Var])(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass(variables, fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfClass[F<:Factor](variable:Var)(implicit fm:ClassTag[F]): Iterable[F] = factorsOfClass(variable, fm.runtimeClass.asInstanceOf[Class[F]])
+  def factorsOfClass[F<:Factor](variables:Iterable[Var])(implicit fm:ClassTag[F]): Iterable[F] = factorsOfClass(variables, fm.runtimeClass.asInstanceOf[Class[F]])
   def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(d), fclass)
-  def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:ClassTag[F]): Iterable[F] = factorsOfClass[F](d, fm.runtimeClass.asInstanceOf[Class[F]])
 
-  // TODO: why can't this just take the manifest for F as an implicit and avoid this explicit passing of the "Class" object? -luke
+  // TODO: why can't this just take the ClassTag for F as an implicit and avoid this explicit passing of the "Class" object? -luke
   // TODO maybe these methods should be moved to a model companion object since they do not require anything from the model -luke, akm
   def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
     factors.filter(f => f match {
@@ -79,10 +80,10 @@ trait Model {
     })
   def factorsOfFamilyClass[F<:Family](variable:Var, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variable), fclass)
   def factorsOfFamilyClass[F<:Family](variables:Iterable[Var], fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variables), fclass)
-  def factorsOfFamilyClass[F<:Family](variable:Var)(implicit fm:Manifest[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variable, fm.erasure.asInstanceOf[Class[F]])
-  def factorsOfFamilyClass[F<:Family](variables:Iterable[Var])(implicit fm:Manifest[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variables, fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfFamilyClass[F<:Family](variable:Var)(implicit fm:ClassTag[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variable, fm.runtimeClass.asInstanceOf[Class[F]])
+  def factorsOfFamilyClass[F<:Family](variables:Iterable[Var])(implicit fm:ClassTag[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variables, fm.runtimeClass.asInstanceOf[Class[F]])
   def factorsOfFamilyClass[F<:Family](d:DiffList, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass(factors(d), fclass)
-  def factorsOfFamilyClass[F<:Family](d:DiffList)(implicit fm:Manifest[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(d), fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfFamilyClass[F<:Family](d:DiffList)(implicit fm:ClassTag[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(d), fm.runtimeClass.asInstanceOf[Class[F]])
 
   def filterByFamily[F<:Family](factors:Iterable[Factor], family:F): Iterable[F#Factor] = 
     factors.filter(f => f match {
@@ -117,22 +118,6 @@ trait Model {
   def itemizedModel(variables:Iterable[Var]): ItemizedModel = new ItemizedModel(factors(variables))
   def itemizedModel(d:Diff): ItemizedModel = new ItemizedModel(factors(d))
   def itemizedModel(dl:DiffList): ItemizedModel = new ItemizedModel(factors(dl))
-}
-
-trait ModelWithContext[-C] extends Model {
-  // Factors from context (different than Variable, Iterable[Variable] or DiffList
-  def factorsWithContext(context:C): Iterable[Factor] // = throw new Error("Model subclass does not implement factors(C): "+getClass)
-  def factorsWithContext(contexts:Iterable[C]): Iterable[Factor] = { val result = newFactorsCollection; contexts.foreach(c => addFactorsWithContext(c, result)); result }
-  def variablesWithContext(context:C): Iterable[Var] = factorsWithContext(context).flatMap(_.variables).toSeq.distinct
-  def addFactorsWithContext(context:C, result:Set[Factor]): Unit = result ++= factorsWithContext(context)
-  def factorsWithContextOfClass[F<:Factor](context:C, fclass:Class[F]): Iterable[F] = filterByFactorClass(factorsWithContext(context), fclass)
-  def factorsWithContextOfFamilyClass[F<:Family](context:C, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factorsWithContext(context), fclass)
-  def factorsWithContextOfFamily[F<:Family](context:C, family:F): Iterable[F#Factor] = filterByFamily(factorsWithContext(context), family)
-  def factorsWithContextOfFamilies[F<:Family](context:C, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factorsWithContext(context), families)
-  def itemizedModelWithContext(context:C): ItemizedModel = new ItemizedModel(factorsWithContext(context))
-  // Getting sums of scores from all neighboring factors
-  def currentScore(context:C): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.currentScore; sum }
-  def assignmentScore(context:C, assignment:Assignment): Double = { var sum = 0.0; for (f <- factorsWithContext(context)) sum += f.assignmentScore(assignment); sum }
 }
 
 /** A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.
@@ -201,7 +186,4 @@ class TemplateModel(theTemplates:Template*) extends Model {
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = templates.foreach(_.limitDiscreteValuesAsIn(vars)) 
 }
 
-trait ProxyModel[C1,C2] extends ModelWithContext[C2] {
-  def model: ModelWithContext[C1]
-}
 

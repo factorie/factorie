@@ -14,8 +14,6 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
-import variable._
-import optimize._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
 import cc.factorie.app.nlp.pos.PennPosLabel
@@ -26,10 +24,16 @@ import java.io._
 import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
-import cc.factorie.model.{Parameters, DotFamilyWithStatistics2, Factor}
-import cc.factorie.infer.{BP, InferByBPChain}
+import cc.factorie.model.DotFamilyWithStatistics2
 import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
 import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
+import cc.factorie.Factorie._
+import cc.factorie.optimize.Trainer
+import cc.factorie.variable.BinaryFeatureVectorVariable
+import cc.factorie.variable.CategoricalVectorDomain
+import cc.factorie.DiscreteDomain
+import cc.factorie.variable.CategoricalDomain
+import cc.factorie.la.WeightsMapAccumulator
 
 
 class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -38,7 +42,7 @@ class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends 
   def key = this.mkString("-")
 }
 
-class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
+class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
                         newLabel: (Token, String) => L,
                         labelToToken: L => Token,
                         embeddingMap: SkipGramEmbedding,
@@ -91,7 +95,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     override def skipNonCategories = true
   }
 
-  class NER3EModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+  class StackedNEREModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
                                                              labelToFeatures1:L=>Features,
                                                              labelToToken1:L=>Token,
                                                              tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
@@ -110,31 +114,59 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
       val weights = Weights(new la.DenseTensor2(labelDomain.size, embeddingDim))
     }
 
-    override def factorsWithContext(labels:IndexedSeq[L]): Iterable[Factor] = {
+    override def factors(variables:Iterable[Var]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
-      for (i <- 0 until labels.length) {
-        result += bias.Factor(labels(i))
-        result += obs.Factor(labels(i), labelToFeatures(labels(i)))
-        if (i > 0) {
-          result += markov.Factor(labels(i-1), labels(i))
-          if (useObsMarkov) result += obsmarkov.Factor(labels(i-1), labels(i), labelToFeatures(labels(i)))
-        }
-        val l = labels(i)
-        val label:L = labels(i)
-
-        val scale = NERModelOpts.argsList("scale").toDouble
-        if (embeddingMap != null ) {
-          if (embeddingMap.contains(labelToToken(label).string)) result += embedding.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).string) * scale))
-          if (useOffsetEmbedding && labelToToken(label).sentenceHasPrev && embeddingMap.contains(labelToToken(label).prev.string)) result += embeddingPrev.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).prev.string) * scale))
-          if (useOffsetEmbedding && labelToToken(label).sentenceHasNext && embeddingMap.contains(labelToToken(label).next.string)) result += embeddingNext.Factor(l, new EmbeddingVariable(embeddingMap(labelToToken(label).next.string) * scale))
-        }
+      variables match {
+        case labels: Iterable[L] if variables.forall(v => m.runtimeClass.isAssignableFrom(v.getClass)) =>
+          var prevLabel: L = null.asInstanceOf[L]
+          for (label <- labels) {
+            result += bias.Factor(label)
+            result += obs.Factor(labelToFeatures(label), label)
+            if (prevLabel ne null) {
+              result += markov.Factor(prevLabel, label)
+              if (useObsMarkov) result += obsmarkov.Factor(prevLabel, label, labelToFeatures(label))
+            }
+            val scale = NERModelOpts.argsList("scale").toDouble
+            if (embeddingMap != null ) {
+              if (embeddingMap.contains(labelToToken(label).string)) result += embedding.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).string) * scale))
+              if (useOffsetEmbedding && labelToToken(label).sentenceHasPrev && embeddingMap.contains(labelToToken(label).prev.string)) result += embeddingPrev.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).prev.string) * scale))
+              if (useOffsetEmbedding && labelToToken(label).sentenceHasNext && embeddingMap.contains(labelToToken(label).next.string)) result += embeddingNext.Factor(label, new EmbeddingVariable(embeddingMap(labelToToken(label).next.string) * scale))
+            }
+            prevLabel = label
+          }
       }
       result
     }
-  }
 
-  val model = new NER3EModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
-  val model2 = new NER3EModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
+    override def getLocalScores(varying: Seq[L]): Array[DenseTensor1] = {
+      val biasScores = bias.weights.value
+      val obsWeights = obs.weights.value
+      val a = Array.fill[DenseTensor1](varying.size)(null)
+      var i = 0
+      while (i < varying.length) {
+        val scores = obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
+        scores += biasScores
+        if (embeddingMap != null) {
+          scores += embedding.weights.value * (embeddingMap(labelToToken(varying(i)).string))
+          if (i >= 1) scores += embeddingPrev.weights.value * (embeddingMap(labelToToken(varying(i-1)).string))
+          if (i < varying.length-1) scores += embeddingNext.weights.value * (embeddingMap(labelToToken(varying(i+1)).string))
+        }
+        a(i) = scores
+        i += 1
+      }
+      a
+    }
+
+    override def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obs: Tensor1, position: Int, labels: Seq[L]): Unit = {
+      if (embeddingMap ne null) {
+        gradient.accumulate(embedding.weights, obs outer embeddingMap(labelToToken(labels(position)).string))
+        if (position >= 1) gradient.accumulate(embeddingPrev.weights, obs outer embeddingMap(labelToToken(labels(position-1)).string))
+        if (position < labels.length-1) gradient.accumulate(embeddingNext.weights, obs outer embeddingMap(labelToToken(labels(position+1)).string))
+      }
+    }
+  }
+  val model = new StackedNEREModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
+  val model2 = new StackedNEREModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
   val objective = new HammingTemplate[L]()
 
@@ -435,11 +467,9 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
 	  (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
-  def train(loader: load.Load, dataDir: String, trainFilename:String, testFilename:String, rate: Double, delta: Double): Double = {
+  def train(trainDocuments: Seq[Document],testDocuments: Seq[Document], rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
-    val trainDocuments = loader.fromFilename(dataDir + trainFilename)
-    val testDocuments = loader.fromFilename(dataDir + testFilename)
 
     // Add features for NER                 \
     println("Initializing training features")
@@ -451,21 +481,14 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    if (embeddingMap != null) println("NER3 #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
-    println("NER3 #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("StackedNER #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    println("StackedNER #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
-    //println("Example Token features")
-    //println(trainDocuments(3).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    //println("Example Test Token features")
-    //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
-    //println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
-    
-    // Get the variables to be inferred (for now, just operate on a subset)
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(100)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
  
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
-    val examples = vars.map(v => new LikelihoodExample(v.toSeq, model, InferByBPChain))
+    val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
     trainDocuments.foreach(process(_, useModel2=false))
@@ -483,7 +506,7 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
 
-    val examples2 = vars2.map(v => new LikelihoodExample(v.toSeq, model2, infer=InferByBPChain))
+    val examples2 = vars2.map(v => new model2.ChainLikelihoodExample(v.toSeq))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
 
     trainDocuments.foreach(process)
@@ -513,24 +536,24 @@ class NER3[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
       val vars = sentence.tokens.map(_.attr[L]).toSeq
-      BP.inferChainMax(vars, if(useModel2) model2 else model).setToMaximize(null)
+      (if (useModel2) model2 else model).maximize(vars)(null)
     }
   }
 }
 
-class ConllNER3(embeddingMap: SkipGramEmbedding,
+class StackedConllNER(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
-                url: java.net.URL=null) extends NER3[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
+                url: java.net.URL=null) extends StackedNER[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
 
-object NER3 extends ConllNER3(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[NER3[_]](".factorie"))
-object NER3NoEmbeddings extends ConllNER3(null, 0, 0.0, false, ClasspathURL[NER3[_]](".factorie-noembeddings"))
+object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
+object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
 
-class NER3Opts extends CmdOptions {
+class StackedNEROpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
-  val modelDir =      new CmdOption("model", "NER3.factorie", "FILE", "File for saving or loading model.")
+  val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
   val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
@@ -545,12 +568,12 @@ class NER3Opts extends CmdOptions {
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
 }
 
-object NER3Trainer extends HyperparameterMain {
+object StackedNERTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     // Parse command-line
-    val opts = new NER3Opts
+    val opts = new StackedNEROpts
     opts.parse(args)
-    val ner = new ConllNER3(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new StackedConllNER(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
@@ -561,24 +584,35 @@ object NER3Trainer extends HyperparameterMain {
         ner.clusters(splitLine(1)) = splitLine(0)
       }
     }
-    
-    val result = ner.train(load.LoadConll2003(BILOU=true), opts.dataDir.value, opts.trainFile.value, opts.testFile.value, opts.rate.value, opts.delta.value)
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainDocsFull = load.LoadConll2003(BILOU=true).fromFilename(opts.trainFile.value)
+    val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.testFile.value)
+
+    val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
+    val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
+
+
+    val result = ner.train(trainDocs,testDocs, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
+    if(opts.targetAccuracy.wasInvoked) assert(result > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+
     result
   }
 }
 
-object NER3Optimizer {
+object StackedNEROptimizer {
   def main(args: Array[String]) {
-    val opts = new NER3Opts
+    val opts = new StackedNEROpts
     opts.parse(args)
     opts.saveModel.setValue(false)
 
     if (opts.runOnlyHere.value) {
       opts.saveModel.setValue(true)
-      val result = NER3Trainer.evaluateParameters(args)
+      val result = StackedNERTrainer.evaluateParameters(args)
       println("result: "+ result)
     }
     else {
@@ -592,7 +626,7 @@ object NER3Optimizer {
         "cc.factorie.app.nlp.parse.DepParser2",
         10, 5)
         */
-      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.NER3Trainer")
+      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.StackedNERTrainer")
       val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 200, 180, 60)
       val result = optimizer.optimize()
       println("Got results: " + result.mkString(" "))

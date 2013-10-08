@@ -24,12 +24,13 @@ import cc.factorie.util.Substitutions
 import java.io._
 import cc.factorie.variable.{TensorVar, Var, DiscreteVar}
 import cc.factorie.model
+import scala.reflect.ClassTag
 
-abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Family4[N1,N2,N3,N4] with Template {
-  val neighborClass1 = nm1.erasure
-  val neighborClass2 = nm2.erasure
-  val neighborClass3 = nm3.erasure
-  val neighborClass4 = nm4.erasure
+abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2], nm3:ClassTag[N3], nm4:ClassTag[N4]) extends Family4[N1,N2,N3,N4] with Template {
+  val neighborClass1 = nm1.runtimeClass
+  val neighborClass2 = nm2.runtimeClass
+  val neighborClass3 = nm3.runtimeClass
+  val neighborClass4 = nm4.runtimeClass
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2, neighborClass3, neighborClass4)
 
   final override def addFactors(v:Var, result:scala.collection.mutable.Set[model.Factor]): Unit = {
@@ -48,9 +49,9 @@ abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:Manifest[
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = throw new Error("Not yet implemented.") 
 }
 
-abstract class TupleTemplate4[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest,N4<:Var:Manifest] extends Template4[N1,N2,N3,N4] with TupleFamily4[N1,N2,N3,N4]
-abstract class TupleTemplateWithStatistics4[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest,N4<:Var:Manifest] extends Template4[N1,N2,N3,N4] with TupleFamilyWithStatistics4[N1,N2,N3,N4]
-abstract class TensorTemplate4[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest,N4<:Var:Manifest] extends Template4[N1,N2,N3,N4] with TensorFamily4[N1,N2,N3,N4]
-abstract class TensorTemplateWithStatistics4[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest,N4<:TensorVar:Manifest] extends Template4[N1,N2,N3,N4] with TensorFamilyWithStatistics4[N1,N2,N3,N4]
-abstract class DotTemplate4[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest,N4<:Var:Manifest] extends Template4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4]
-abstract class DotTemplateWithStatistics4[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest,N4<:TensorVar:Manifest] extends Template4[N1,N2,N3,N4] with DotFamilyWithStatistics4[N1,N2,N3,N4]
+abstract class TupleTemplate4[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag,N4<:Var:ClassTag] extends Template4[N1,N2,N3,N4] with TupleFamily4[N1,N2,N3,N4]
+abstract class TupleTemplateWithStatistics4[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag,N4<:Var:ClassTag] extends Template4[N1,N2,N3,N4] with TupleFamilyWithStatistics4[N1,N2,N3,N4]
+abstract class TensorTemplate4[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag,N4<:Var:ClassTag] extends Template4[N1,N2,N3,N4] with TensorFamily4[N1,N2,N3,N4]
+abstract class TensorTemplateWithStatistics4[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag,N3<:TensorVar:ClassTag,N4<:TensorVar:ClassTag] extends Template4[N1,N2,N3,N4] with TensorFamilyWithStatistics4[N1,N2,N3,N4]
+abstract class DotTemplate4[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag,N4<:Var:ClassTag] extends Template4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4]
+abstract class DotTemplateWithStatistics4[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag,N3<:TensorVar:ClassTag,N4<:TensorVar:ClassTag] extends Template4[N1,N2,N3,N4] with DotFamilyWithStatistics4[N1,N2,N3,N4]

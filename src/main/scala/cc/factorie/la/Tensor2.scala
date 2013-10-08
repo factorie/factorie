@@ -13,7 +13,6 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
 import cc.factorie.util._
 
 trait Tensor2 extends Tensor {
@@ -45,20 +44,102 @@ trait Tensor2 extends Tensor {
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
-  // TODO This method should have a better name -akm
-  // TODO This method should be overriden in DenseLayeredTensor2 to use inner.dot for efficiency -akm
+
   def *(t: Tensor1): Tensor1 = {
     assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
     val newT = new DenseTensor1(dim1)
-    activeDomain1.foreach(i => t.activeDomain1.foreach(j => newT(i) += this(i,j)*t(j)))
+    val newArray = newT.asArray
+    t match {
+      case t: DenseTensor =>
+        val tArr = t.asArray
+        var col = 0
+        while (col < tArr.length) {
+          val v = tArr(col)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (apply(offset + col) * v)
+            row += 1
+          }
+          col += 1
+        }
+      case t: SparseTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        val tValues = t._valuesSeq
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val col = tIndices(ti)
+          val v = tValues(ti)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (apply(offset + col) * v)
+            row += 1
+          }
+          ti += 1
+        }
+      case _ =>
+        throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
+    }
     newT
   }
+
   def leftMultiply(t: Tensor1): Tensor1 = {
     assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
+    val myDim2 = dim2
     val newT = new DenseTensor1(dim2)
-    t.activeDomain1.foreach(i => activeDomain2.foreach(j => newT(j) += this(i,j)*t(i)))
+    val newArray = newT.asArray
+    t match {
+      case t: DenseTensor =>
+        val tArr = t.asArray
+        var row = 0
+        while (row < tArr.length) {
+          val v = tArr(row)
+          val offset = row * myDim2
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += (apply(offset + col) * v)
+            col += 1
+          }
+          row += 1
+        }
+      case t: SparseBinaryTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val row = tIndices(ti)
+          val offset = row * myDim2
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += apply(offset + col)
+            col += 1
+          }
+          ti += 1
+        }
+      case t: SparseIndexedTensor =>
+        val tActiveDomainSize = t.activeDomainSize
+        val tIndices = t._indices
+        val tValues = t._values
+        var ti = 0
+        while (ti < tActiveDomainSize) {
+          val row = tIndices(ti)
+          val offset = row * myDim2
+          val v = tValues(ti)
+          var col = 0
+          while (col < myDim2) {
+            newArray(col) += (apply(offset + col) * v)
+            col += 1
+          }
+          ti += 1
+        }
+      case _ =>
+        throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
+    }
     newT
   }
+
   def trace: Double = {
     assert(dim1 == dim2, "Dimensions don't match: " + dim1 + " " + dim2)
     (0 until dim1).map(n => apply(n, n)).sum
@@ -68,7 +149,6 @@ trait Tensor2 extends Tensor {
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2
-  //def activeElements2: Tensor2ElementIterator
   override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def blankCopy: Tensor2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
@@ -77,9 +157,6 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   var haveWarned = false
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
-  //override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
-  //override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
-  //override def update(i:Int, j:Int, v:Double): Unit = __values(i*dim2+j) = v
   def activeElements2: Tensor2ElementIterator = {
     new Tensor2ElementIterator { // Must not change _indexs and _values during iteration!
       private var i = -1
@@ -96,51 +173,10 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   def toTensor1: DenseTensor1 = new DenseTensor1(_values)
   
   override def dot(t:DoubleSeq): Double = t match {
-    //case t:SingletonBinaryTensor2 => apply(t.singleIndex)
-    //case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
-    //case t:DenseTensorLike2 => Tensor.dot(this, t)
     case t: SingletonBinaryLayeredTensorLike2 => t dot this
     case t: SingletonLayeredTensorLike2 => t dot this
     case t: DoubleSeq => super.dot(t)
   }
-  /*
-  override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
-    case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
-    //case t:DenseLayeredTensorLike2 => { val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
-    case t:DenseLayeredTensorLike2 => t.=+(_values, f)
-    case t:SparseIndexedTensor2 => t.=+(_values, f)
-    case t:DoubleSeq => super.+=(t, f)
-  }
-  */
-  /*def +=(ds: DoubleSeq, factor: DoubleSeq, scalar: Double): Unit = (ds, factor) match {
-    case (ds: SparseIndexedTensor2, factor: DenseTensor2) =>
-      ds._makeReadable
-      val indices = ds._indices
-      val values = ds._values
-      val numIndices = ds.activeDomainSize
-      var i = 0
-      while (i < numIndices) {
-        val curIdx = indices(i)
-        _values(curIdx) += values(i) * factor._values(curIdx) * scalar
-        i += 1
-      }
-    case (ds:SparseDoubleSeq, fac) => { ds.foreachActiveElement((i,v) => +=(i,v*fac(i)*scalar)) }
-    case (ds: DenseTensor, fa: DenseTensor) =>
-      val dsA = ds.asArray
-      val faA = fa.asArray
-      var i = 0
-      while (i < dsA.length) {
-        this.+=(i, dsA(i)*fa(i)*scalar)
-        i += 1
-      }
-    case (ds:DoubleSeq, fac) => {
-      if (!haveWarned) {
-        haveWarned = true
-        println("DenseTensorLike2 dot unsupported type: " + ds.getClass.getName + " " + fac.getClass.getName)
-      }
-      val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)*scalar); i += 1 }}
-  }*/
 }
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
@@ -498,7 +534,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
       case (t1: SparseTensor, t2: SparseTensor) =>
         val t1Size = t1.activeDomainSize
         val t1Indices = t1._indices
-        val t1Values = t2._valuesSeq
+        val t1Values = t1._valuesSeq
         val t2Size = t2.activeDomainSize
         val t2IndexSeq = t2._indices
         val t2Values = t2._valuesSeq
@@ -591,7 +627,7 @@ trait Outer2Tensor extends ReadOnlyTensor with SparseDoubleSeq {
           var dot = 0.0
           val len1 = t1.activeDomainSize
           val indices1 = t1._indices
-          val values1 = t2._valuesSeq
+          val values1 = t1._valuesSeq
           val len2 = t2.activeDomainSize
           val indices2 = t2._indices
           val values2 = t2._valuesSeq
@@ -641,7 +677,7 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Outer2Tens
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
   override def foreachActiveElement(f: (Int,Double) => Unit) = tensor1.foreachActiveElement((i1, v1) => tensor2.foreachActiveElement((i2, v2) => f(singleIndex(i1,i2), v1*v2)))
-  def toTensor1: DenseTensor1 = new DenseTensor1(Array.tabulate(length)(apply(_))) 
+  def toTensor1: DenseTensor1 = new DenseTensor1(Array.tabulate(length)(apply))
 }
 
 object Outer2Tensor {
@@ -662,7 +698,7 @@ class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extend
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1:Int=>Tensor1
-  private var _inners = new Array[Tensor1](dim1) // var because may need to grow in Growable version
+  private val _inners = new Array[Tensor1](dim1)
   override def zero() { _inners.foreach(i => if (i != null) i.zero()) }
   def activeDomain1 = { val a = new Array[Int](dim1); var i = 0; var j = 0; while (i < dim1) { if (_inners(i) ne null) { a(j) = i; j += 1 }; i += 1 }; new TruncatedArrayIntSeq(a, j) }
   def activeDomain2 = new RangeIntSeq(0, dim2) // This could perhaps be more sparse
@@ -689,16 +725,12 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     }
     out
   }
+  override def leftMultiply(other: Tensor1): Tensor1 = {
+    val out = new DenseTensor1(dim2)
+    other.foreachActiveElement((i, v) => if (_inners(i) ne null) out += (inner(i),v))
+    out
+  }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
-  /*override def +=(ds:DoubleSeq): Unit = ds match {
-    case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, 1.0)
-    case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, t.singleValue)
-    case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
-    case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
-    case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i); i += 1 } }
-    case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
-    //case t:DoubleSeq => super.+=(ds)
-  }*/
   override def +=(ds:DoubleSeq, f:Double): Unit = ds match {
     case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f)
     case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f * t.singleValue)
@@ -711,7 +743,6 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SparseIndexedTensor => { val len = t.activeDomainSize; val indices = t._indices; val values = t._values; var i = 0; while (i < len) { this(indices(i)) += values(i)*f ; i += 1}  }
     case t:Dense2LayeredTensor3 => { t.foreachActiveElement((i, v) => this(i) += v*f) }
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
-    //case t:DoubleSeq => super.+=(ds)
   }
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryLayeredTensorLike2 => { val inner = _inners(t.singleIndex1); if (inner ne null) inner.dot(t.inner) else 0.0 } // This is a common case, and should be fast
@@ -741,7 +772,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
           sum
       }
     }
-    case _ => assert(false, t.getClass.getName + " doesn't have a match"); 0.0
+    case _ => throw new Error(t.getClass.getName + " doesn't have a match")
   }
 }
 

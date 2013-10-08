@@ -24,11 +24,12 @@ import cc.factorie.util.Substitutions
 import java.io._
 import cc.factorie.variable.{TensorVar, Var, VectorVar, DiscreteVar}
 import cc.factorie.model
+import scala.reflect.ClassTag
 
-abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Family3[N1,N2,N3] with Template {
-  val neighborClass1 = nm1.erasure
-  val neighborClass2 = nm2.erasure
-  val neighborClass3 = nm3.erasure
+abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2], nm3:ClassTag[N3]) extends Family3[N1,N2,N3] with Template {
+  val neighborClass1 = nm1.runtimeClass
+  val neighborClass2 = nm2.runtimeClass
+  val neighborClass3 = nm3.runtimeClass
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2, neighborClass3)
 //  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
 //    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) &&
@@ -64,9 +65,9 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:Manifest[N1], nm2
     }
 }
 
-abstract class TupleTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TupleFamily3[N1,N2,N3]
-abstract class TupleTemplateWithStatistics3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TupleFamilyWithStatistics3[N1,N2,N3]
-abstract class TensorTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with TensorFamily3[N1,N2,N3]
-abstract class TensorTemplateWithStatistics3[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest] extends Template3[N1,N2,N3] with TensorFamilyWithStatistics3[N1,N2,N3]
-abstract class DotTemplate3[N1<:Var:Manifest,N2<:Var:Manifest,N3<:Var:Manifest] extends Template3[N1,N2,N3] with DotFamily3[N1,N2,N3]
-abstract class DotTemplateWithStatistics3[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest] extends Template3[N1,N2,N3] with DotFamilyWithStatistics3[N1,N2,N3]
+abstract class TupleTemplate3[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag] extends Template3[N1,N2,N3] with TupleFamily3[N1,N2,N3]
+abstract class TupleTemplateWithStatistics3[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag] extends Template3[N1,N2,N3] with TupleFamilyWithStatistics3[N1,N2,N3]
+abstract class TensorTemplate3[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag] extends Template3[N1,N2,N3] with TensorFamily3[N1,N2,N3]
+abstract class TensorTemplateWithStatistics3[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag,N3<:TensorVar:ClassTag] extends Template3[N1,N2,N3] with TensorFamilyWithStatistics3[N1,N2,N3]
+abstract class DotTemplate3[N1<:Var:ClassTag,N2<:Var:ClassTag,N3<:Var:ClassTag] extends Template3[N1,N2,N3] with DotFamily3[N1,N2,N3]
+abstract class DotTemplateWithStatistics3[N1<:TensorVar:ClassTag,N2<:TensorVar:ClassTag,N3<:TensorVar:ClassTag] extends Template3[N1,N2,N3] with DotFamilyWithStatistics3[N1,N2,N3]

@@ -69,7 +69,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  @Test def testChainModelSerialization(): Unit = {
    val random = new scala.util.Random(0)
 
-   val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
+   val f = File.createTempFile("FactorieTestFile", "serialize-chain-model")
+   val modelFileOutput = new FileOutputStream(f)
 
    logger.debug("creating toy model with random weights")
 
@@ -84,9 +85,14 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    model.obs.weights.value:= Array.fill[Double](model.obs.weights.value.length)(random.nextDouble())
    model.markov.weights.value:= Array.fill[Double](model.markov.weights.value.length)(random.nextDouble())
    logger.debug("serializing chain model")
-   model.serialize(modelFile)
+   model.serialize(modelFileOutput)
+   modelFileOutput.flush()
+   modelFileOutput.close()
 
-   val deserialized = deserializeChainModel(modelFile)
+
+   val modelFileInput = new FileInputStream(f)
+
+   val deserialized = deserializeChainModel(modelFileInput)
 
    assertSameWeights(model, deserialized)
 
@@ -119,11 +125,11 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    model
  }
 
- def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
+ def deserializeChainModel(iStream: InputStream): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
    object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    object OntoNerLabelDomain extends CategoricalDomain[String]
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-   model.deSerialize(fileName)
+   model.deserialize(iStream)
    model
  }
 
@@ -194,13 +200,13 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  // NOTE: this is a hack to get around broken Manifest <:< for singleton types
  // this is fixed in 2.10 so once we upgrade we can remove this hack (that assumes all params are covariant!)
  def checkCompat(m1: Manifest[_], m2: Manifest[_]): Boolean =
-   m2.erasure.isAssignableFrom(m1.erasure) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
+   m2.runtimeClass.isAssignableFrom(m1.runtimeClass) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
 
  @Test def testClassifierPosSerialization() {
-   val model = new app.nlp.pos.POS1
+   val model = new app.nlp.pos.ForwardPOSTagger
    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
    model.serialize(fileName)
-   val otherModel = new app.nlp.pos.POS1(new File(fileName))
+   val otherModel = new app.nlp.pos.ForwardPOSTagger(new File(fileName))
  }
 
  @Test def testInstanceSerialize(): Unit = {
@@ -297,7 +303,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
  class Sentence extends Chain[Sentence, Token]
 
- class SegmenterModel extends ModelWithContext[Seq[Label]] with Parameters {
+ class SegmenterModel extends Model with Parameters {
    val bias = new DotFamilyWithStatistics1[Label] {
      factorName = "Label"
      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
@@ -306,10 +312,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
      factorName = "Label,Token"
      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
    }
-   def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
+   def factors(label: Iterable[Var]): Iterable[Factor] = {
      Seq.empty[Factor]
    }
-   def factors(v:Iterable[Var]) = throw new Error("Not yet implemented.")
  }
 
  val data = Array(

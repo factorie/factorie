@@ -1,4 +1,40 @@
-For Thursday Sprint:
+For October 4 Sprint:
+
+Main:
+* use Assignments in more places [Alex, Andrew, Thursday?]
+* settle serialization [Luke, Andrew,..]
+* app.nlp clean-up and TAC import [Friday: Andrew, Alex, Ari, David, Sam,..]
+* nlp-resources sub-projects [Soergel]
+* settle app.classify
+
+Tools:
+* finish app.chain.Chain [Jack]
+* finish app.classify.Classify [Jack?]
+* finish moving TAC/KBP attribute extraction [Sam, Ari]
+
+Tests:
+* test every variable, factor, template,... [Lakshmi]
+* tests for la and optimize [Arvind]
+* tests for NLP non-learning components [Caiti]
+* tests for NLP training and usage [Emma]
+
+Cleaning:
+* clean demos, perhaps make more [Andrew, _]
+* ...
+
+Documentation:
+* Scaladoc everything
+* overview of inference and learning [Alex]
+* overview of nlp [Andrew]
+* write about related packages [Alex]
+* get scaladoc online
+* better tools for getting markdown documentation online
+* better web site design
+
+
+
+
+For September 27 Sprint:
 
 Span, SpanList, Phrase, Mention, Entity [Andrew]
 Clean up app.nlp [Andrew]

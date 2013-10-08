@@ -6,14 +6,13 @@ import cc.factorie.app.nlp._
 import java.io.File
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
-import cc.factorie.app.nlp.segment.PlainNormalizedTokenString
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar}
 import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate2}
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
-class NER2 extends DocumentAnnotator {
+class BasicOntonotesNER extends DocumentAnnotator {
   def this(url:java.net.URL) = {
     this()
     println("NER2 loading from "+url)
@@ -161,14 +160,12 @@ class NER2 extends DocumentAnnotator {
   
   // Feature creation
   def addFeatures(document:Document): Unit = {
-    val cow = cc.factorie.app.nlp.lexicon.iesl
     document.annotators(classOf[FeaturesVariable]) = this.getClass
     import cc.factorie.app.strings.simplifyDigits
     for (section <- document.sections; token <- section.tokens) {
       val features = new FeaturesVariable(token)
       token.attr += features
       val rawWord = token.string
-      val rawWordLength = rawWord.length
       val word = simplifyDigits(rawWord).toLowerCase
       val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
       features += "W="+word
@@ -209,12 +206,11 @@ class NER2 extends DocumentAnnotator {
   }
   
   def trainPrep(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
-    def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
     println("Adding training features")
-    trainDocs.foreach(addFeatures(_)) // Initialize all features to get parameters size
+    trainDocs.foreach(addFeatures) // Initialize all features to get parameters size
     FeaturesDomain.freeze()
     println("Applying features to test data")
-    testDocs.foreach(addFeatures(_))
+    testDocs.foreach(addFeatures)
     println(tokenFeaturesString(trainDocs.head.tokens.take(100)))
     println("Training with %d features.".format(FeaturesDomain.dimensionSize))
   }
@@ -222,10 +218,9 @@ class NER2 extends DocumentAnnotator {
   def trainModel1(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     // This depends on calling trainPrep alrady
     def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
-    def predict(labels:Iterable[BilouOntonotesNerLabel]): Unit = for (label <- labels) variable.MaximizeDiscrete(label, model1)
     val examples = labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1))
     def evaluate() {
-      (trainDocs ++ testDocs).foreach(indepedentPredictDocument(_))
+      (trainDocs ++ testDocs).foreach(indepedentPredictDocument)
       println("Some model1 training data"); println(sampleOutputString(trainDocs.head.tokens.drop(200).take(200)))
       println("Some model1 testing data"); println(sampleOutputString(testDocs.head.tokens.drop(200).take(200)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -250,10 +245,10 @@ class NER2 extends DocumentAnnotator {
     }
     val learner = new optimize.SampleRankTrainer(predictor, new optimize.AdaGrad)
     for (iteration <- 1 until 4) {
-      trainDocs.foreach(indepedentPredictDocument(_))
+      trainDocs.foreach(indepedentPredictDocument)
       learner.processContexts(labels(trainDocs))
-      trainDocs.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.foreach(process); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.foreach(process);  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(iteration*100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(iteration*100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -270,8 +265,8 @@ class NER2 extends DocumentAnnotator {
     val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
     val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChain)).seq.toSeq
     def evaluate() {
-      trainDocs.par.foreach(process(_)); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
-      testDocs.par.foreach(process(_));  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
+      trainDocs.par.foreach(process); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
+      testDocs.par.foreach(process);  println("Test  accuracy "+objective.accuracy(labels(testDocs)))
       println("Some training data"); println(sampleOutputString(trainDocs.head.tokens.drop(100).take(100)))
       println("Some testing data"); println(sampleOutputString(testDocs.head.tokens.drop(100).take(100)))
       println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -379,14 +374,14 @@ class NER2 extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object NER2WSJ extends NER2(cc.factorie.util.ClasspathURL[NER2]("-WSJ.factorie"))
-object NER2Ontonotes extends NER2(cc.factorie.util.ClasspathURL[NER2]("-Ontonotes.factorie"))
+object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie"))
+object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie"))
 
-object NER2Trainer {
+object BasicOntonotesNERTrainer {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     if (args.length != 3) throw new Error("Usage: trainfile testfile savemodelfile")
-    val ner = new NER2
+    val ner = new BasicOntonotesNER
     ner.train(args(0), args(1))
     ner.serialize(args(2))
   }

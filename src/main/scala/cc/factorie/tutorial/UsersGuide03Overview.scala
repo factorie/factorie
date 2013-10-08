@@ -485,7 +485,11 @@ for the global assignment.
 
 There are several concrete subclasses of `Model`.  A `TemplateModel`'s
 factors come entirely from a collection of `Template`s.  By contrast,
-an `ItemizedModel`
+an `ItemizedModel` stores a set of factors created beforehand. A
+`CombinedModel` returns the union of the sets of factors returned by
+many submodels. There are also specialized models, such as the
+`ChainModel` for linear-chain conditional random fields, with
+specialized inference and learning algorithms.
 
 #### Parameters and Weights
 

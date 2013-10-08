@@ -47,7 +47,8 @@ object BPFactorFactory {
       case factor:Factor2[DiscreteVar @unchecked,DiscreteVar @unchecked] =>
         if (varying.contains(factor._1) && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2)), summary, summary.ring)
         else if (varying.contains(factor._1)) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._1)), summary)
-        else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+        else if (factor._1.isInstanceOf[DiscreteVar]) new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,VectorVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
+        else new BPFactor1Factor2Left(factor.asInstanceOf[Factor2[VectorVar,DiscreteVar]], new BPEdge(summary.bpVariable(factor._2)), summary)
       case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
         val neighbors = factor.variables.filter(v => v.isInstanceOf[DiscreteVar] && varying.contains(v.asInstanceOf[DiscreteVar]))
         if (neighbors.size == 2)
@@ -230,6 +231,14 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,VectorVar], edge1:BPEdge,
       i += 1
     }
     result
+  }
+}
+
+class BPFactor1Factor2Left(val factor: Factor2[VectorVar,DiscreteVar], edge1:BPEdge, sum: BPSummary) extends BPFactor1(edge1, sum) with DiscreteMarginal1[DiscreteVar] with DiscreteMarginal1Factor2Other[VectorVar,DiscreteVar] {
+  def hasLimitedDiscreteValues1: Boolean = factor.hasLimitedDiscreteValues1
+  def limitedDiscreteValues1: SparseBinaryTensor1 = factor.limitedDiscreteValues1
+  val scores: Tensor1 = {
+    factor.asInstanceOf[DotFamily#Factor].family.weights.value.asInstanceOf[Tensor2].leftMultiply(factor.variables.head.value.asInstanceOf[Tensor1])
   }
 }
 
@@ -752,129 +761,6 @@ object BP {
     }
   }
 
-    // only works for dot familys, no structured svm, obs template looks like [Label, Features]
-  def inferChainSumFast(varying: Seq[DiscreteVar], model: Model): Summary = {
-    val factors = model.factors(varying).to[Vector]
-
-    val biasFactors = factors.filter(f => f.isInstanceOf[Factor1[TensorVar @unchecked]]).asInstanceOf[Seq[DotFamilyWithStatistics1[TensorVar]#Factor]]
-    val obsFactors = factors.filter(f => f.isInstanceOf[Factor2[TensorVar @unchecked, TensorVar @unchecked]] && !f.variables.forall(varying.contains)).asInstanceOf[Seq[DotFamilyWithStatistics2[TensorVar, TensorVar]#Factor]]
-    val markovFactors = factors.filter(f => f.isInstanceOf[Factor2[TensorVar @unchecked, TensorVar @unchecked]] && f.variables.forall(varying.contains)).asInstanceOf[Seq[DotFamilyWithStatistics2[TensorVar, TensorVar]#Factor]]
-
-    // assume that obs goes [Label, Features]
-    val markovScores = markovFactors.head.asInstanceOf[DotFamily#Factor].family.weights.value.asInstanceOf[DenseTensor2]
-    val biasScores = biasFactors.head.asInstanceOf[DotFamily#Factor].family.weights.value.asInstanceOf[DenseTensor1]
-    val obsWeights = obsFactors.head.asInstanceOf[DotFamily#Factor].family.weights.value.asInstanceOf[DenseTensor2]
-
-    val localScores = for (f <- obsFactors) yield {
-      val obsVariable = f.asInstanceOf[Factor2[TensorVar, TensorVar]]._2.asInstanceOf[TensorVar]
-      val scores = (obsWeights * obsVariable.value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
-      scores += biasScores
-      scores
-    }
-
-    val alphas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
-    val betas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
-
-    alphas(0) := localScores(0)
-
-    var i = 1
-    val d1 = markovScores.dim1
-    while (i < varying.size) {
-      val ai = alphas(i)
-      val aim1 = alphas(i-1)
-      var vi = 0
-      while (vi < d1) {
-        var vj = 0
-        while (vj < d1) {
-          ai(vi) = maths.sumLogProb(ai(vi), markovScores(vj, vi) + aim1(vj))
-          vj += 1
-        }
-        vi += 1
-      }
-      alphas(i) += localScores(i)
-      i += 1
-    }
-
-    betas.last.zero()
-
-    i = varying.size - 2
-    while (i >= 0) {
-      val bi = betas(i)
-      val bip1 = betas(i+1)
-      val lsp1 = localScores(i+1)
-      var vi = 0
-      while (vi < d1) {
-        var vj = 0
-        while (vj < d1) {
-          bi(vi) = maths.sumLogProb(bi(vi), markovScores(vi, vj) + bip1(vj) + lsp1(vj))
-          vj += 1
-        }
-        vi += 1
-      }
-      i -= 1
-    }
-
-    val nodeMarginalTensors = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, 0.0))
-    for (i <- 0 until varying.size) {nodeMarginalTensors(i) += betas(i); nodeMarginalTensors(i) += alphas(i)}
-
-    val logZ = nodeMarginalTensors.head.expNormalize()
-    nodeMarginalTensors.drop(1).foreach(_.expNormalize(logZ))
-
-    val nodeMarginals = for ((nm, v) <- nodeMarginalTensors.zip(varying)) yield
-      new SimpleDiscreteMarginal1(v, new DenseTensorProportions1(nm.asArray, false))
-
-    val biasFactorMarginals = for (i <- 0 until varying.size) yield {
-      val nm = nodeMarginals(i)
-      val v = varying(i)
-      val f = biasFactors(i)
-      new SimpleDiscreteMarginal1(v, nm.proportions) with DiscreteMarginal1Factor1[DiscreteVar] {
-        def factor: Factor1[DiscreteVar] = f.asInstanceOf[Factor1[DiscreteVar]]
-      }
-    }
-
-    val obsFactorMarginals = for (((f, nmT), v) <- obsFactors.zip(nodeMarginalTensors).zip(varying)) yield {
-      new SimpleDiscreteMarginal1(v, new DenseTensorProportions1(nmT.asArray, false)) with DiscreteMarginal1Factor2[DiscreteVar, VectorVar] {
-        def factor: Factor2[DiscreteVar, VectorVar] = f.asInstanceOf[Factor2[DiscreteVar, VectorVar]]
-      }
-    }
-
-    val markovFactorMarginals = for (m <- 0 until varying.size - 1) yield {
-      val curAlpha = alphas(m)
-      val curBeta = betas(m + 1)
-      val dim = markovScores.dim1
-      val marg = new DenseTensor2(dim, dim)
-      for (i <- 0 until dim; j <- 0 until dim)
-        marg(i, j) = curAlpha(i) + curBeta(j) + markovScores(i, j) + localScores(m + 1)(j)
-      val f = markovFactors(m)
-      marg.expNormalize(logZ)
-      new DiscreteMarginal2(varying(m), varying(m + 1), new DenseTensorProportions2(marg.asArray, dim, dim, false))
-        with DiscreteMarginal2Factor2[DiscreteVar, DiscreteVar] {
-        override def factor: Factor2[DiscreteVar, DiscreteVar] = f.asInstanceOf[Factor2[DiscreteVar, DiscreteVar]]
-      }
-    }
-
-    val factorMarginalMap = new mutable.HashMap[Factor, FactorMarginal]
-    markovFactorMarginals.foreach(fm => factorMarginalMap(fm.factor) = fm)
-    obsFactorMarginals.foreach(fm => factorMarginalMap(fm.factor) = fm)
-    biasFactorMarginals.foreach(fm => factorMarginalMap(fm.factor) = fm)
-
-    val nodeMarginalMap = new mutable.HashMap[Var, Marginal1]
-    nodeMarginals.foreach(nm => nodeMarginalMap(nm._1) = nm)
-
-    val outsideLogZ = logZ
-    new Summary {
-      /** The collection of all Marginals available in this Summary */
-      def marginals: Iterable[Marginal1] = nodeMarginalMap.values
-      /** If this Summary has a univariate Marginal for variable v, return it; otherwise return null. */
-      def marginal(v: Var): Marginal1 = nodeMarginalMap(v)
-      /** If this Summary has a Marginal that touches all or a subset of the neighbors of this factor
-      return the Marginal with the maximally-available subset. */
-      def marginal(factor: Factor): FactorMarginal = factorMarginalMap(factor)
-      def factorMarginals: Iterable[FactorMarginal] = factorMarginalMap.values
-      def logZ: Double = outsideLogZ
-    }
-  }
-
   // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainSum(varying:Seq[DiscreteVar], model:Model): BPSummary = {
     val summary = BPSummary(varying, BPSumProductRing, model)
@@ -968,14 +854,6 @@ object InferByBPChain extends InferByBP {
     apply(variables, model)
   }
   def apply(varying:Iterable[DiscreteVar], model:Model): BPSummary = BP.inferChainSum(varying.toSeq, model)
-}
-
-object InferByBPOptimizedChainSum extends InferByBP {
-  def infer(variables:Iterable[DiscreteVar], model:Model, marginalizing:Summary) = {
-    if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
-    apply(variables, model)
-  }
-  def apply(varying:Iterable[DiscreteVar], model:Model): Summary = BP.inferChainSumFast(varying.toSeq, model)
 }
 
 object MaximizeByBPChain extends MaximizeByBP {

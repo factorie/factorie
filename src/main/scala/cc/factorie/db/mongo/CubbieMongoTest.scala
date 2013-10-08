@@ -1,7 +1,7 @@
 package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 
 /**
  * This class shows some example usage of cubbies and mongo serialization and querying.
@@ -61,7 +61,7 @@ object CubbieMongoTest {
     println(kid.age(10))
 
 
-    val mongoConn = new Mongo("localhost", 27017)
+    val mongoConn = new MongoClient("localhost", 27017)
     val mongoDB = mongoConn.getDB("mongocubbie-test")
     val coll = mongoDB.getCollection("persons")
     coll.drop()

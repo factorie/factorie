@@ -44,9 +44,9 @@ object Tutorial060Learning {
 
     // The Document class implements documents as sequences of sentences and tokens.
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    val tokenizer = new app.nlp.segment.Tokenizer1
+    val tokenizer = new app.nlp.segment.BasicTokenizer
     tokenizer.process(document)
-    val segmenter = new app.nlp.segment.SentenceSegmenter1
+    val segmenter = new app.nlp.segment.BasicSentenceSegmenter
     segmenter.process(document)
     assertStringEquals(document.tokenCount, "10")
     assertStringEquals(document.sentenceCount, "1")
@@ -170,8 +170,8 @@ object Tutorial060Learning {
 
     // Now we can run inference and see that we have learned
     val summary2 = InferByBPChain(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
-    assertStringEquals(summary2.logZ, "48.63607808733318")
-    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897892,6.913211020986328E-5)")
+    assertStringEquals(summary2.logZ, "48.63607808729122")
+    assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897892,6.913211020966629E-5)")
 
     /*&
      * Factorie also has support for more efficient learning algorithms than traditional

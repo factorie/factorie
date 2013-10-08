@@ -60,7 +60,11 @@ class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val i
     tmplam = 0.0
     alam2 = 0.0
   }
-    def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
+
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
+
+  def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     logger.debug("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
@@ -154,7 +158,7 @@ class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val i
 }
 
 
-/** Change the weightsSet in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
+/** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
 class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
@@ -168,6 +172,8 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     _isConverged = false
     oldValue = Double.NaN
   }
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
