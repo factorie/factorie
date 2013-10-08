@@ -234,6 +234,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     override def *(other: Tensor1) = lock.withReadLock(base * other)
+    override def leftMultiply(other: Tensor1) = lock.withReadLock(base leftMultiply other)
     override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {
@@ -372,7 +373,7 @@ object Trainer {
     parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
     optimizer.initializeWeights(parameters)
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
-    val trainer = if (useOnlineTrainer && useParallelTrainer) new SynchronizedOptimizerOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
+    val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
       else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
       else new BatchTrainer(parameters, optimizer=optimizer)
