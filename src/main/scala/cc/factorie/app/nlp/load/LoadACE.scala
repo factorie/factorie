@@ -11,37 +11,13 @@ import java.io.File
 import relation.RelationVariables.{RelationMention, RelationMentions}
 
 // TODO: consider moving this info into variables.
-trait ACEEntityIdentifiers {
-  def eId: String
+case class ACEEntityIdentifiers(eId: String, eType: String, eSubtype: String, eClass: String)
 
-  def eType: String
+case class ACEMentionIdentifiers(mId: String, mType: String, ldcType: String, offsetStart: Int, offsetEnd: Int)
 
-  def eSubtype: String
+case class ACERelationIdentifiers(rId: String, rType: String, rSubtype: String)
 
-  def eClass: String
-}
-
-trait ACEMentionIdentifiers {
-  def mId: String
-
-  def mType: String
-
-  def ldcType: String
-
-  def offsetStart: Int
-
-  def offsetEnd: Int
-}
-
-trait ACERelationIdentifiers {
-  def rId: String
-
-  def rType: String
-
-  def rSubtype: String
-}
-
-class ACEFileIdentifier(val fileId: String)
+case class ACEFileIdentifier(fileId: String)
 
 class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention with PairwiseMention {
   override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
@@ -96,25 +72,15 @@ object LoadACE {
     val spanList = doc.attr += new ACEMentionSpanList
     for (entity <- apf \\ "entity") {
       val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
-      e.attr += new ACEEntityIdentifiers {
-        def eId = getAttr(entity, "ID")
-        def eType = getAttr(entity, "TYPE")
-        def eSubtype = getAttr(entity, "SUBTYPE")
-        def eClass = getAttr(entity, "CLASS")
-      }
+      e.attr += ACEEntityIdentifiers(eId = getAttr(entity, "ID"), eType = getAttr(entity, "TYPE"), eSubtype = getAttr(entity, "SUBTYPE"), eClass = getAttr(entity, "CLASS"))
+
       
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
         val m = new ACEMentionSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)
         spanList += m
         if (m.sentence == null) println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
-        m.attr += new ACEMentionIdentifiers {
-          def mId = getAttr(mention, "ID")
-          def mType = getAttr(mention, "TYPE")
-          def ldcType = getAttr(mention, "LDCTYPE")
-          def offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt
-          def offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt
-        }
+        m.attr += new ACEMentionIdentifiers(mId = getAttr(mention, "ID"), mType = getAttr(mention, "TYPE"), ldcType = getAttr(mention, "LDCTYPE"), offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt, offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt)
         m.attr += new EntityRef(m, e)
 
         val headCharIndex = getAttr(mention \ "head" \ "charseq", "END").toInt //- 1 // is the -1 necessary?
@@ -148,11 +114,7 @@ object LoadACE {
   def addRelationsFromApf(apf: NodeSeq, doc: Document): Unit = {
     doc.attr += new RelationMentions
     for (relation <- apf \\ "relation") {
-      val identifiers = new ACERelationIdentifiers {
-        val rId = getAttr(relation, "ID")
-        val rType = getAttr(relation, "TYPE")
-        val rSubtype = getAttr(relation, "SUBTYPE")
-      }
+      val identifiers = new ACERelationIdentifiers(rId = getAttr(relation, "ID"), rType = getAttr(relation, "TYPE"), rSubtype = getAttr(relation, "SUBTYPE"))
 
       for (mention <- relation \ "relation_mention") {
         val args = mention \ "relation_mention_argument" map {
