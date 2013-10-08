@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
     Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
     @author martin 
     */
-class BasicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeConnl03:Boolean = false) extends DocumentAnnotator {
+class BasicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeAllDashedWords:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -61,12 +61,12 @@ class BasicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false
   val ordinals = "[0-9]{1,4}(st|nd|rd|th)"; patterns += ordinals // like 1st and 22nd
   val quote = "''|``|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\\p{Pf}]|&(quot|[rl][ad]quo);|" + ap2 + "{2}"; patterns += quote
   // List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples.
-  if(tokenizeConnl03) { val dashedWord = s"($letter)([\\p{L}\\p{M}\\p{Nd}_]*(-[\\p{L}\\p{M}\\p{Nd}_]*)*)"; patterns += dashedWord }
+  if (tokenizeAllDashedWords) { val dashedWord = s"($letter)([\\p{L}\\p{M}\\p{Nd}_]*(-[\\p{L}\\p{M}\\p{Nd}_]*)*)"; patterns += dashedWord }
   val dashedPrefixes = "(?i:a|anti|arch|be|co|counter|de|dis|e|en|em|ex|fore|hi|hind|mal|mid|midi|mini|mis|out|over|part|post|pre|pro|re|self|step|t|trans|twi|un|under|up|with|Afro|ambi|amphi|an|ana|Anglo|ante|apo|astro|auto|bi|bio|circum|cis|con|com|col|cor|contra|cryo|crypto|de|demi|demo|deutero|deuter|di|dia|dis|dif|du|duo|eco|electro|e|en|epi|Euro|ex|extra|fin|Franco|geo|gyro|hetero|hemi|homo|hydro|hyper|hypo|ideo|idio|in|Indo|in|infra|inter|intra|iso|macro|maxi|mega|meta|micro|mono|multi|neo|non|omni|ortho|paleo|pan|para|ped|per|peri|photo|pod|poly|post|pre|preter|pro|pros|proto|pseudo|pyro|quasi|retro|semi|socio|sub|sup|super|supra|sur|syn|tele|trans|tri|uh|ultra|uni|vice|x)"
   val dashedSuffixes = "(?i:able|ahol|aholic|ation|centric|cracy|crat|dom|e-\\p{L}+|er|ery|esque|ette|fest|fi|fold|ful|gate|gon|hood|ian|ible|ing|isation|ise|ising|ism|ist|itis|ization|ize|izing|less|logist|logy|ly|most|o-torium|rama|ise)"
   val dashedPrefixWord = dashedPrefixes+"-[\\p{L}\\p{M}][\\p{L}\\p{M}\\p{Nd}]*"; patterns += dashedPrefixWord // Dashed words with certain prefixes, like "trans-ocean" or "Afro-pop"
   val dashedSuffixWord = "[\\p{L}\\p{M}\\p{N}]+-"+dashedSuffixes+s"(?!$letter)"; patterns += dashedSuffixWord // Dashed words with certain suffixes, like "senior-itis" // TODO Consider a dashedPrefixSuffixWord?
-  // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,  
+  // common dashed words in Ontonotes include counter-, ultra-, eastern-, quasi-, trans-,...
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|&(frac14|frac12|frac34);|(\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val contractedWord = s"[\\p{L}\\p{M}]+(?=($contraction))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
   val caps = s"\\p{Lu}+([&+](?!($htmlSymbol|$htmlAccentedLetter))(\\p{Lu}(?!\\p{Ll}))+)+"; patterns += caps // For "AT&T" but don't grab "LAT&Eacute;" and be sure not to grab "PE&gym"

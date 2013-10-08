@@ -18,17 +18,20 @@ package cc.factorie.variable
 /** An abstract variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVar and EdgeVar.
     @author Andrew McCallum */
-trait RefVar[A<:AnyRef] extends Var
+trait RefVar[+A<:AnyRef] extends Var {
+  type Value <: A
+}
 
 /** An abstract mutable variable whose value is a pointer to a Scala object (which may also be a Variable).
     @author Andrew McCallum */
-trait MutableRefVar[A<:AnyRef] extends RefVar[A] with MutableVar
+trait MutableRefVar[A<:AnyRef] extends RefVar[A] with MutableVar {
+  type Value = A
+}
 
 /** A variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVariable and EdgeVariable.
     @author Andrew McCAllum */
 class RefVariable[A<:AnyRef](initialValue:A = null) extends MutableRefVar[A] {
-  type Value = A
   private var _value: A = initialValue
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {
@@ -45,9 +48,8 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends MutableRefVar[A] {
 
 /** An abstract MutableRefVar variable that also has a target value.
     @author Andrew McCallum */
-trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
+trait LabeledRefVar[A>:Null<:AnyRef] extends MutableRefVar[A] with LabeledVar {
   this: MutableRefVar[A] =>
-  type Value = A
   def targetValue: A
   def isUnlabeled = targetValue == null
 }
@@ -56,6 +58,4 @@ trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
     It is marked 'abstract' not because it has missing definitions, but to insist that users
     create subclasses before using it.
     @author Andrew McCallum */
-abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A] {
-  override type Value = A
-}
+abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A]

@@ -1,22 +1,50 @@
+WithinDocCoref1 => ForwardCoref
+
+MorphologicalAnalyzer1 => BasicMorphologicalAnalyzer
+
+POS1 => ForwardPOSTagger
+POS2 => ChainPOSTagger
+
+NER1 => BasicConllNER
+NER2 => BasicOntonotesNER
+NER3 => StackedConllNER
+
+DepParser1 => TransitionParser, (or ForwardParser, TransitionBasedParser)
+=> GraphProjectiveParser
+
+Tokenizer1 => BasicTokenizer 
+
+POSNounPhraser
+PronounNounPhraser
+ChainNounPhraser (doesn't yet exist)
+
+
 For October 4 Sprint:
 
 Main:
 * use Assignments in more places [Alex, Andrew, Thursday?]
-* settle serialization [Luke, Andrew,..]
+* settle serialization [Luke, Alex, Andrew,..]
+ - serialize out of order
+ - serialize optional
+ - version number on binary serializer itself, and each cubbie
+ - faster tensor serialization by writing batches of byte arrays
+ - JSONSerializer? (low-priority)
 * app.nlp clean-up and TAC import [Friday: Andrew, Alex, Ari, David, Sam,..]
 * nlp-resources sub-projects [Soergel]
 * settle app.classify
+* left multiplication switch [Alex]
 
 Tools:
 * finish app.chain.Chain [Jack]
-* finish app.classify.Classify [Jack?]
+* fast SVMLight data parser, avoid nextLine [Luke]
+* finish app.classify.Classify [Jack]
 * finish moving TAC/KBP attribute extraction [Sam, Ari]
 
 Tests:
 * test every variable, factor, template,... [Lakshmi]
 * tests for la and optimize [Arvind]
 * tests for NLP non-learning components [Caiti]
-* tests for NLP training and usage [Emma]
+* tests for NLP training and usage [Emma, David]
 
 Cleaning:
 * clean demos, perhaps make more [Andrew, _]
@@ -26,10 +54,14 @@ Documentation:
 * Scaladoc everything
 * overview of inference and learning [Alex]
 * overview of nlp [Andrew]
-* write about related packages [Alex]
+* write about related packages [Alex, Andrew]
 * get scaladoc online
 * better tools for getting markdown documentation online
-* better web site design
+* better web site design; delete googlecode.
+
+Publicity
+* FACTORIE twitter account
+* NIPS 1-page OSS submission
 
 
 
