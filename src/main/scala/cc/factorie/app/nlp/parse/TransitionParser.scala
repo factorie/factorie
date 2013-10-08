@@ -532,19 +532,19 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
     val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
-      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, miniBatch=50, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
+      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }
     c.featuresDomain.dimensionDomain.gatherCounts = true
-    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    c.generateDecisions(sentences, 0, opts.nThreads.value)
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
     c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
-    trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
     c.trainFromVariables(trainingVs, trainer, evaluate)
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {

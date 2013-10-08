@@ -234,6 +234,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     override def *(other: Tensor1) = lock.withReadLock(base * other)
+    override def leftMultiply(other: Tensor1) = lock.withReadLock(base leftMultiply other)
     override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {

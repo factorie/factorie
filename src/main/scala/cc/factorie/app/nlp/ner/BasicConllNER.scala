@@ -224,8 +224,8 @@ object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
 
       val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
       val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
-      val trainDocsFull = load.LoadOntonotes5.fromFilename(opts.train.value)
-      val testDocsFull =  load.LoadOntonotes5.fromFilename(opts.test.value)
+      val trainDocsFull = load.LoadConll2003(BILOU=true).fromFilename(opts.train.value)
+      val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.test.value)
       val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
       val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
 

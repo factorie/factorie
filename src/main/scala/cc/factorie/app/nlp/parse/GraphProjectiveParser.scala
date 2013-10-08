@@ -110,10 +110,10 @@ class GraphProjectiveParser extends DocumentAnnotator {
     negativeExamples.foreach(e => knownParents(e._2) = e._1)
     val tokenScores = Array.fill(sent.length+1)(0.0)
     val parentScores = Array.fill(sent.length+1)(0.0)
-    parentScores(0) = getParentFeatureVector(null).value.dot(weights)
+    parentScores(0) = weights.dot(getParentFeatureVector(null).value)
     for (i <- 0 until sentLength) {
-      tokenScores(i+1) = getTokenFeatureVector(sent.tokens(i)).value.dot(weights)
-      parentScores(i+1) = getParentFeatureVector(sent.tokens(i)).value.dot(weights)
+      tokenScores(i+1) = weights.dot(getTokenFeatureVector(sent.tokens(i)).value)
+      parentScores(i+1) = weights.dot(getParentFeatureVector(sent.tokens(i)).value)
     }
     val edgeScores = Array.fill(sent.length+1,sent.length+1)(Double.NaN)
     def getEdgeScore(parent: Int, child: Int) : Double = {
@@ -121,7 +121,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
       if (edgeScores(parent)(child).isNaN) {
         val loss = if ((child > 0) && (knownParents(child-1) == parent -1)) -1.0 else 0.0
         edgeScores(parent)(child) = if (child > 0)
-          loss + getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value.dot(weights) + tokenScores(child) + parentScores(parent)
+          loss + weights.dot(getPairwiseFeatureVector(sent.tokens(child - 1), if (parent > 0) sent.tokens(parent - 1) else null).value) + tokenScores(child) + parentScores(parent)
         else 0
       }
       edgeScores(parent)(child)

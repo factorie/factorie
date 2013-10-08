@@ -425,7 +425,7 @@ class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, 
     val score = weights.value dot featureVector
     val (obj, sgrad) = objective.valueAndGradient(score, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null) gradient.accumulate(weights, featureVector, weight * sgrad)
+    if (gradient != null) gradient.accumulate(weights, featureVector.copy, weight * sgrad)
   }
 }
 
