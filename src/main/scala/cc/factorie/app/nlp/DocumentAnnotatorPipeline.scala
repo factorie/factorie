@@ -68,7 +68,7 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.ForwardCorefNer)
+    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.NerForwardCoref)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)

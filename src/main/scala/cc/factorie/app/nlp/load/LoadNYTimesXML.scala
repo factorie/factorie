@@ -16,8 +16,9 @@ package cc.factorie.app.nlp.load
 import java.io.File
 import scala.xml._
 import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.DocumentAnnotatorPipeline
 
+/** Load a Document from a single NYTimes article in the XML format released by NYTimes and described in
+    Evan Sandhaus (2008), "The New York Times Annotated Corpus," Linguistic Data Consortium, Philadelphia. */
 object LoadNYTimesXML {
   def fromFile(file:File): Seq[Document] = {
     val article = XML.loadFile(file)
@@ -26,7 +27,7 @@ object LoadNYTimesXML {
     //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
     val content = article \ "head" \ "docdata" \ "identified-content"
     //print("Reading ***"+(article\"head"\"title").text+"***")
-    // This does not include the headline, perhaps it should -akm
-    new LoadPlainText(documentName = file.getCanonicalPath)(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap).fromString((article \ "body" \ "body.content").text)
+    // TODO This does not include the headline, perhaps it should -akm
+    LoadPlainText.fromString((article \ "body" \ "body.content").text).map(_.setName(file.getCanonicalPath))
   }
 }

@@ -459,7 +459,9 @@ object ForwardCoref extends ForwardCoref {
 }
 
 // This should only be used when using the NerAndPronounMentionFinder to find mentions
-object ForwardCorefNer extends ForwardCoref {
+class NerForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
-  deserialize(new DataInputStream(ClasspathURL[ForwardCoref]("-NER.factorie").openConnection().getInputStream))
+}
+object NerForwardCoref extends NerForwardCoref {
+  deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))
 }
