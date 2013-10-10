@@ -69,7 +69,10 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
     iteration += 1
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
-    examples.zipWithIndex.foreach({ case (example, i) => {
+    var i = 0
+    val iter = examples.iterator
+    while (iter.hasNext) {
+      val example = iter.next()
       val gradientAccumulator = new SmartGradientAccumulator
       if ((logEveryN != 0) && (i % logEveryN == 0) && (i != 0)) {
         logger.info(TrainerHelpers.getOnlineTrainerStatus(i, logEveryN, timePerIteration, valuesSeenSoFar))
@@ -83,7 +86,8 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
       valuesSeenSoFar += valueAccumulator.value
       optimizer.step(weightsSet, gradientAccumulator.getMap, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
-    }})
+      i+=1
+    }
   }
   def isConverged = iteration >= maxIterations
 }
