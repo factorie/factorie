@@ -30,7 +30,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMultiClassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMultiClassClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
@@ -72,10 +72,13 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Mention): Int = {
-    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) MentionEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
+  def processMention(mention: Mention): Unit = {
+    val label = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O"))
+    label.set(entityTypeIndex(mention))(null)
+  }
   def process(document:Document): Document = {
     for (mention <- document.attr[MentionList]) processMention(mention)
     document
@@ -129,7 +132,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
-    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, PennPosDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, MentionEntityTypeDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
