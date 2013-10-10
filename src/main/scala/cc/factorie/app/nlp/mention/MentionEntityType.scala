@@ -100,8 +100,8 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
-      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
-      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
+      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
+      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
     }
     Trainer.onlineTrain(model.parameters, examples.toSeq, maxIterations=3, evaluate = evaluate)
   }
