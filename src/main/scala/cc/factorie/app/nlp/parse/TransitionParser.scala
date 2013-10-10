@@ -40,7 +40,7 @@ class TransitionParser extends DocumentAnnotator {
   class ParseDecisionVariable(targetDecision: ParseDecision, val state: ParseState) extends LabeledCategoricalVariable(targetDecision.action) {
     def domain = labelDomain
     val features = new NonProjDependencyParserFeatures(this)
-    features ++= featureGenerators.map(_.apply(state))
+    featureGenerators.foreach(f => features += f.apply(state))
   }
   object featuresDomain extends CategoricalVectorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
@@ -84,8 +84,9 @@ class TransitionParser extends DocumentAnnotator {
   }
     
     
-    
-  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
+  val parseDecisionCache = collection.mutable.HashMap[String,ParseDecision]()
+  def getParseDecision(s: String): ParseDecision = parseDecisionCache.getOrElseUpdate(s, new ParseDecision(s))
+  def classify(v: ParseDecisionVariable) = getParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
   lazy val model = new LinearMultiClassClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
 
@@ -186,7 +187,7 @@ class TransitionParser extends DocumentAnnotator {
     })
     s
   }
-
+  val defaultDecision = ParseDecision(defaultCategory)
   class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecision) {
     import ParserConstants._
     def parse(s: Sentence) = {
@@ -195,7 +196,7 @@ class TransitionParser extends DocumentAnnotator {
         if (state.stack < 0)
           noShift(state)
         else {
-          val label = predict(new ParseDecisionVariable(ParseDecision(defaultCategory), state))
+          val label = predict(new ParseDecisionVariable(defaultDecision, state))
           if (label.leftOrRightOrNo == LEFT) {
             if (state.stack == ROOT_ID) noShift(state)
             else if (state.inputToken(0).isDescendentOf(state.stackToken(0))) noPass(state)

@@ -167,8 +167,8 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
   }
 
   def getHammingLossScores(varying: Seq[Label]): Array[Tensor1] = {
+     val domainSize = varying.head.domain.size
      val localScores = new Array[Tensor1](varying.size)
-     val domainSize = localScores.head.size
      for ((v, i) <- varying.zipWithIndex) {
        localScores(i) = new DenseTensor1(domainSize)
        for (wrong <- 0 until domainSize if wrong != v.targetIntValue)
