@@ -31,7 +31,6 @@ class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val i
   def isConverged = _isConverged
   def stepSize = alam
   
-  var gradientNormMax = 100.0
   var relTolx = 1e-7
   var absTolx = 1e-4
   var ALF = 1e-4
@@ -72,7 +71,7 @@ class BackTrackLineOptimizer(val gradient:WeightsMap, val line:WeightsMap, val i
       // Set the slope
 
       val sum = line.twoNorm
-      if (sum > initialStepSize) line.tensors.foreach(_*=(initialStepSize / sum)) // If gradient is too steep, bring it down to gradientNormMax
+      if (sum > stpmax) line.tensors.foreach(_*=(stpmax / sum)) // If gradient is too steep, bring it down to gradientNormMax
       slope = gradient dot line     //todo, it's redundant, and expensive to do both gradient.twoNorm and gradient dot line when they're the same
       logger.debug("BackTrackLineOptimizer slope="+slope)
       if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
