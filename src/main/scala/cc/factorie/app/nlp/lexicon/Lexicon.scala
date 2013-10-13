@@ -34,15 +34,17 @@ trait Lexicon {
   /** The string lemmatizer that simplifies lexicon entries and queries before searching for a match.
       For example, a common lemmatizer is one that lowercases all strings. */
   def lemmatizer:Lemmatizer
-  /** Is this single word in the lexicon.  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
+  /** Is this single word in the lexicon?  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
   def containsLemmatizedWord(word:String): Boolean
   // For querying the lexicon
-  /** Is this single word in the lexicon.  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
+  /** Is this single word in the lexicon?  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
   def containsWord(word:String): Boolean = containsLemmatizedWord(lemmatizer.lemmatize(word))
-  /** Is the pre-tokenized sequence of words in the lexicon.  Each of the input words is processed by the lemmatizer. */
+  /** Is the pre-tokenized sequence of words in the lexicon?  The input words are expected to already be processed by the lemmatizer. */
   def containsLemmatizedWords(words: Seq[String]): Boolean
+  /** Is the pre-tokenized sequence of words in the lexicon?  Each of the input words will be processed by the lemmatizer. */
   def containsWords(words: Seq[String]): Boolean = containsLemmatizedWords(words.map(lemmatizer.lemmatize(_)))
-  /** Is this Token (or more generally Observation) a member of a phrase in the lexicon (including single-word phrases).
+  /** Is this Token (or more generally Observation) a member of a phrase in the lexicon (including single-word phrases)?
+      The query.string will be processed by the lemmatizer.
       For example if query.string is "New" and query.next.string is "York" and the two-word phrase "New York" is in the lexicon, 
       then this method will return true.  But if query.next.string is "shoes" (and "New shoes" is not in the lexicon) this method will return false. */
   def contains[T<:Observation[T]](query:T): Boolean

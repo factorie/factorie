@@ -17,10 +17,8 @@ package cc.factorie.variable
 import cc.factorie.la._
 import cc.factorie.util.Cubbie
 
-// TODO Consider name "DiscreteVectorDomain", since I think all our use cases are Tensor1 -akm
-
-/** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
-    This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
+/** A Domain for variables whose Tensor1 value has length matching the size of a DiscreteDomain.
+    The method 'dimensionDomain' is abstract and should return this DiscreteDomain. */
 trait VectorDomain extends Domain {
   type Value <: Tensor1
   def dimensionDomain: DiscreteDomain
