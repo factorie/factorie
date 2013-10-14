@@ -113,16 +113,17 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
 
   def viterbiFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): ViterbiResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient max-product")
-    val markovScores = markov.weights.value
+    val markovScoresT = markov.weights.value
+    val markovScores = markovScoresT.asArray
     val localScores = getLocalScores(varying)
     addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
-    val costs = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
-    val backPointers = Array.fill(varying.size)(Array.fill[Int](markovScores.dim1)(-1))
+    val d1 = markovScoresT.dim1
+
+    val costs = Array.fill(varying.size)(new DenseTensor1(d1, Double.NegativeInfinity))
+    val backPointers = Array.fill(varying.size)(Array.fill[Int](d1)(-1))
 
     costs(0) := localScores(0)
-
-    val domainSize = markovScores.dim1
 
     var i = 1
     while (i < varying.size) {
@@ -131,12 +132,12 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
       val curBackPointers = backPointers(i)
       val prevCost = costs(i - 1)
       var vi = 0
-      while (vi < domainSize) {
+      while (vi < d1) {
         var maxScore = Double.NegativeInfinity
         var maxIndex = -1
         var vj = 0
-        while (vj < domainSize) {
-          val curScore = markovScores(vj, vi) + prevCost(vj) + curLocalScores(vi)
+        while (vj < d1) {
+          val curScore = markovScores(vj * d1 + vi) + prevCost(vj) + curLocalScores(vi)
           if (curScore > maxScore) {
             maxScore = curScore
             maxIndex = vj
@@ -178,7 +179,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
    }
 
   def getLocalScores(varying: Seq[Label]): Array[DenseTensor1] = {
-    val biasScores = bias.weights.value
+    val biasScores = bias.weights.value.asArray
     val obsWeights = obs.weights.value
     val a = Array.fill[DenseTensor1](varying.size)(null)
     var i = 0
@@ -193,18 +194,20 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
 
   def inferFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): InferenceResults = {
     assert(!useObsMarkov, "obsMarkov factors not supported with efficient sum-product")
-    val markovScores = markov.weights.value
+    val markovScoresT = markov.weights.value
+    val markovScores = markovScoresT.asArray
     val localScores = getLocalScores(varying)
     addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
 
-    val alphas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
-    val betas = Array.fill(varying.size)(new DenseTensor1(markovScores.dim1, Double.NegativeInfinity))
+    val d1 = markovScoresT.dim1
+
+    val alphas = Array.fill(varying.size)(new DenseTensor1(d1, Double.NegativeInfinity))
+    val betas = Array.fill(varying.size)(new DenseTensor1(d1, Double.NegativeInfinity))
 
     alphas(0) := localScores(0)
 
     var i = 1
-    val d1 = markovScores.dim1
-    val tmpArray = Array.fill(markovScores.dim1)(0.0)
+    val tmpArray = Array.fill(d1)(0.0)
     while (i < varying.size) {
       val ai = alphas(i)
       val aim1 = alphas(i - 1)
@@ -212,7 +215,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
       while (vi < d1) {
         var vj = 0
         while (vj < d1) {
-          tmpArray(vj) = markovScores(vj, vi) + aim1(vj)
+          tmpArray(vj) = markovScores(vj * d1 + vi) + aim1(vj)
           vj += 1
         }
         ai(vi) = maths.sumLogProbs(tmpArray)
@@ -233,7 +236,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
       while (vi < d1) {
         var vj = 0
         while (vj < d1) {
-          tmpArray(vj) = markovScores(vi, vj) + bip1(vj) + lsp1(vj)
+          tmpArray(vj) = markovScores(vi * d1 + vj) + bip1(vj) + lsp1(vj)
           vj += 1
         }
         bi(vi) = maths.sumLogProbs(tmpArray)
@@ -296,10 +299,11 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val InferenceResults(logZ, alphas, betas, localScores) = inferFast(varying, addToLocalScoresOpt())
-      val transScores = markov.weights.value
+      val transScoresT = markov.weights.value
+      val transScores = transScoresT.asArray
+      val domainSize = transScoresT.dim1
       if (value ne null)
         value.accumulate(-logZ)
-      val domainSize = transScores.dim1
       val transGradient = new DenseTensor2(domainSize, domainSize)
       val len = varying.length
       var i = 0
@@ -314,7 +318,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
         val prevTargetIntValue = if (i >= 1) prevLabel.targetIntValue else -1
         if (value ne null) {
           value.accumulate(curLocalScores(curTargetIntValue))
-          if (i >= 1) value.accumulate(transScores(prevTargetIntValue, curTargetIntValue))
+          if (i >= 1) value.accumulate(transScores(prevTargetIntValue * domainSize + curTargetIntValue))
         }
         if (gradient ne null) {
           val localMarginal = curAlpha + curBeta
@@ -329,7 +333,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
             while (ii < domainSize) {
               var jj = 0
               while (jj < domainSize) {
-                transGradient(ii, jj) += -math.exp(prevAlpha(ii) + transScores(ii, jj) + curBeta(jj) + curLocalScores(jj) - logZ)
+                transGradient(ii, jj) += -math.exp(prevAlpha(ii) + transScores(ii * domainSize + jj) + curBeta(jj) + curLocalScores(jj) - logZ)
                 jj += 1
               }
               ii += 1
