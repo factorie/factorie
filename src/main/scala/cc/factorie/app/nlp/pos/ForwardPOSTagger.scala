@@ -6,7 +6,7 @@ import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import java.io.{File,InputStream,FileInputStream}
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.app.classify.LinearMultiClassClassifier
+import cc.factorie.app.classify.LinearMulticlassValueClassifier
 import cc.factorie.optimize.Trainer
 
 class ForwardPOSTagger extends DocumentAnnotator {
@@ -17,7 +17,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
   
   object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable(t:Tensor1) extends BinaryFeatureVectorVariable[String] { def domain = FeatureDomain; set(t)(null) } // Only used for printing diagnostics
-  lazy val model = new LinearMultiClassClassifier(PennPosDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMulticlassValueClassifier(PennPosDomain.size, FeatureDomain.dimensionSize)
   
   /** Local lemmatizer used for POS features. */
   protected def lemmatize(string:String): String = cc.factorie.app.strings.replaceDigits(string)
@@ -186,15 +186,15 @@ class ForwardPOSTagger extends DocumentAnnotator {
   }
 
   var exampleSetsToPrediction = false
-  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMultiClassClassifier, lossAndGradient: optimize.LinearObjectives.MultiClass) extends optimize.Example {
+  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMulticlassValueClassifier, lossAndGradient: optimize.LinearObjectives.Multiclass) extends optimize.Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
         val posLabel = token.attr[PennPosLabel]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
-  //      new optimize.LinearMultiClassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
+        new optimize.LinearMulticlassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
+  //      new optimize.LinearMulticlassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
         if (exampleSetsToPrediction) {
           posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
         }
@@ -284,7 +284,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       println(s"Sparsity: ${model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length}")
     }
     val examples = trainSentences.shuffle.par.map(sentence =>
-      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMultiClass else cc.factorie.optimize.LinearObjectives.sparseLogMultiClass)).seq
+      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMulticlass else cc.factorie.optimize.LinearObjectives.sparseLogMulticlass)).seq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)

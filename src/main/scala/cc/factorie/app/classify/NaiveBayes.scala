@@ -17,8 +17,8 @@ import cc.factorie._
 import cc.factorie.la.Tensor1
 import cc.factorie.variable.DenseProportions1
 
-class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MultiClassTrainerBase[LinearMultiClassClassifier]  {
-  def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMultiClassClassifier) => Unit) {
+class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MulticlassValueClassifierTrainer[LinearMulticlassValueClassifier]  {
+  def baseTrain(classifier: LinearMulticlassValueClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMulticlassValueClassifier) => Unit) {
     val numLabels = classifier.labelSize
     val numFeatures = classifier.featureSize
     // assuming the existence of a bias feature
@@ -38,8 +38,8 @@ class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MultiClassTrai
       evWeightsValue(li * numFeatures + fi) = math.log(evid(li).apply(fi))
   }
 
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMultiClassClassifier) => Unit) = {
-    val classifier = new LinearMultiClassClassifier(labelSize, featureSize)
+  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMulticlassValueClassifier) => Unit) = {
+    val classifier = new LinearMulticlassValueClassifier(labelSize, featureSize)
     baseTrain(classifier, labels, features, weights, evaluate)
     classifier
   }

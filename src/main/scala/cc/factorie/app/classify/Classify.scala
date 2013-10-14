@@ -113,7 +113,7 @@ object Classify {
       val validationPortion = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
       val localRandomSeed = new CmdOption("random-seed", 0, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
-      val trainer = new CmdOption("trainer", "new SVMMultiClassTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
+      val trainer = new CmdOption("trainer", "new SVMMulticlassValueClassifierTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
       val crossValidation = new CmdOption("cross-validation", 0, "N", "The number of folds for cross-validation (DEFAULT=0)")
 
@@ -242,7 +242,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val cubbie = new LinearMultiClassClassifierCubbie
+      val cubbie = new LinearMulticlassValueClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
       val classifications = labels.map(l => classifier.classification(l.features.value))
@@ -284,7 +284,7 @@ object Classify {
       writeInstances(bigll, instancesFile)
     }
 
-    val classifierTrainer = ScriptingUtils.eval[MultiClassTrainerBase[MultiClassClassifier[Tensor1]]](
+    val classifierTrainer = ScriptingUtils.eval[MulticlassValueClassifierTrainer[MulticlassValueClassifier[Tensor1]]](
       "{ implicit val rng = new scala.util.Random(0); " + opts.trainer.value + "}", Seq("cc.factorie.app.classify._", "cc.factorie.optimize._"))
 
     val start = System.currentTimeMillis
@@ -296,8 +296,8 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       classifier match {
-        case model: LinearMultiClassClassifier =>
-          val mc = new LinearMultiClassClassifierCubbie
+        case model: LinearMulticlassValueClassifier =>
+          val mc = new LinearMulticlassValueClassifierCubbie
           mc.store(model)
           BinarySerializer.serialize(mc, classifierFile)
       }

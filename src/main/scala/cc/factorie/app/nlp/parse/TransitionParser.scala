@@ -14,7 +14,7 @@ import scala.concurrent.Await
 import scala.Some
 import java.util.concurrent.Executors
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
+import cc.factorie.app.classify.{OnlineLinearMulticlassValueClassifierTrainer, SVMMulticlassValueClassifierTrainer, LinearMulticlassValueClassifierTrainer, LinearMulticlassValueClassifier}
 import scala.collection.mutable
 
 /** Default transition-based dependency parser. */
@@ -87,10 +87,10 @@ class TransitionParser extends DocumentAnnotator {
   val parseDecisionCache = collection.mutable.HashMap[String,ParseDecision]()
   def getParseDecision(s: String): ParseDecision = parseDecisionCache.getOrElseUpdate(s, new ParseDecision(s))
   def classify(v: ParseDecisionVariable) = getParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
-  lazy val model = new LinearMultiClassClassifier(labelDomain.size, featuresDomain.dimensionSize)
+  lazy val model = new LinearMulticlassValueClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
 
-  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMultiClassTrainer, evaluate: (LinearMultiClassClassifier) => Unit) {
+  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMulticlassValueClassifierTrainer, evaluate: (LinearMulticlassValueClassifier) => Unit) {
     trainer.baseTrain(model, vs.map(_.targetIntValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
   }
   
@@ -116,12 +116,12 @@ class TransitionParser extends DocumentAnnotator {
   }
   
   def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
-    def evaluate(c: LinearMultiClassClassifier) {
+    def evaluate(c: LinearMulticlassValueClassifier) {
       // println(model.weights.value.toSeq.count(x => x == 0).toFloat/model.weights.value.length +" sparsity")
       println(" TRAIN "+testString(trainSentences))
       println(" TEST  "+testString(testSentences))
     }
-    new OnlineLinearMultiClassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
+    new OnlineLinearMulticlassValueClassifierTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
@@ -164,7 +164,7 @@ class TransitionParser extends DocumentAnnotator {
     })
     decs.flatten
   }
-  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
+  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMulticlassValueClassifierTrainer, evaluate: LinearMulticlassValueClassifier => Unit) =
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
@@ -532,9 +532,9 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
-    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
-      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
-    def evaluate(cls: LinearMultiClassClassifier) {
+    val trainer = if (opts.useSVM.value) new SVMMulticlassValueClassifierTrainer()
+      else new OnlineLinearMulticlassValueClassifierTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMulticlass, maxIterations=5)
+    def evaluate(cls: LinearMulticlassValueClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }

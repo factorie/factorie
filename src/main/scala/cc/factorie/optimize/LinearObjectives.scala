@@ -7,7 +7,7 @@ import io.Source
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.{Weights2, Weights1}
-import cc.factorie.app.classify.OnlineLinearMultiClassTrainer
+import cc.factorie.app.classify.OnlineLinearMulticlassValueClassifierTrainer
 
 /**
  * Abstract trait for any objective function used in generalized linear models
@@ -25,13 +25,13 @@ object LinearObjectives {
   /**
    * General type for multivariate linear objective functions for clasification
    */
-  type MultiClass = MultivariateLinearObjective[Int]
+  type Multiclass = MultivariateLinearObjective[Int]
   /**
    * General type for objective functions for binary classification
    */
   type Binary = UnivariateLinearObjective[Int]
 
-  class HingeMultiClass extends MultivariateLinearObjective[Int] {
+  class HingeMulticlass extends MultivariateLinearObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
@@ -47,7 +47,7 @@ object LinearObjectives {
     }
   }
 
-  class HingeSqMultiClass extends MultivariateLinearObjective[Int] {
+  class HingeSqMulticlass extends MultivariateLinearObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
@@ -63,7 +63,7 @@ object LinearObjectives {
     }
   }
 
-  class LogMultiClass extends MultivariateLinearObjective[Int] {
+  class LogMulticlass extends MultivariateLinearObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val normed = prediction.expNormalized.asInstanceOf[Tensor1]
       val loss = math.log(normed(label))
@@ -73,7 +73,7 @@ object LinearObjectives {
     }
   }
 
-  class SparseLogMultiClass extends MultivariateLinearObjective[Int] {
+  class SparseLogMulticlass extends MultivariateLinearObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val normed = prediction.expNormalized.asInstanceOf[Tensor1]
       val loss = math.log(normed(label))
@@ -185,22 +185,22 @@ object LinearObjectives {
   /**
    * Hinge objective for multiclass classification
    */
-  val hingeMultiClass = new HingeMultiClass
+  val hingeMulticlass = new HingeMulticlass
 
   /**
    * Squared hinge objective for multiclass classification
    */
-  val hingeSqMultiClass = new HingeSqMultiClass
+  val hingeSqMulticlass = new HingeSqMulticlass
 
   /**
    * Log objective for multiclass classification. Inefficient.
    */
-  val logMultiClass = new LogMultiClass
+  val logMulticlass = new LogMulticlass
 
   /**
    * Sparse Log objective for multiclass classification; very efficient.
    */
-  val sparseLogMultiClass = new SparseLogMultiClass
+  val sparseLogMulticlass = new SparseLogMulticlass
 
   /**
    * Epsilon-insensitive squared objective for multivariate regression
@@ -303,9 +303,9 @@ object LinearObjectivesTest {
     val trainLabels = new ArrayBuffer[Label]() ++= trainSet
     val testLabels = new ArrayBuffer[Label]() ++= testSet
 
-    val loss = LinearObjectives.hingeMultiClass
+    val loss = LinearObjectives.hingeMulticlass
     // needs to be binary
-    val trainer = new OnlineLinearMultiClassTrainer()
+    val trainer = new OnlineLinearMulticlassValueClassifierTrainer()
     val classifier = trainer.train(trainLabels, trainLabels.map(_.document))
 
   }

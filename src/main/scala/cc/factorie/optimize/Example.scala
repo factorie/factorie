@@ -407,7 +407,7 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
  * @param objective The objective function
  * @param weight The weight of this example
  */
-class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
+class LinearMulticlassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.Multiclass, weight: Double = 1.0)
   extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
 
 /**

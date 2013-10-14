@@ -51,7 +51,7 @@ object BookInfoGain {
     val trainLabels = new collection.mutable.ArrayBuffer[Label] ++= trainSet
     val testLabels = new collection.mutable.ArrayBuffer[Label] ++= testSet
 
-    val trainer = new OnlineLinearMultiClassTrainer()
+    val trainer = new OnlineLinearMulticlassValueClassifierTrainer()
     val classifier = trainer.train(trainLabels, trainLabels.map(_.document))
     val testTrial = new classify.Trial[Label,Document#Value](classifier, trainLabels.head.domain, _.document.value)
     testTrial ++= testLabels
