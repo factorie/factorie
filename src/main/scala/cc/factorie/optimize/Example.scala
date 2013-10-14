@@ -409,7 +409,7 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
  */
 class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
   extends LinearMultivariateExample(weights, featureVector, label, objective, weight) {
-  assert(label >= 0, "Label must be nonnegative for LinearBinaryExample. Instead got: " + label)
+  assert(label >= 0, "Label must be nonnegative for LinearMultiClassExample. Instead got: " + label)
 }
 
 /**
