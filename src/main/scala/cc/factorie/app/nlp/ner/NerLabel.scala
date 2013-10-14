@@ -35,8 +35,8 @@ class Conll2003SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLa
 class NerSpan(sec:Section, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(sec, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention {
   val label = new Conll2003SpanNerLabel(this, labelString)
   def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
-    (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) &&
-    (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
+    (!value.hasPredecessor(1) || value.predecessor(1).nerLabel.intValue != label.intValue) &&
+    (!value.hasSuccessor(1) || value.successor(1).nerLabel.intValue != label.intValue)
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
 

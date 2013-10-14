@@ -15,13 +15,13 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
-import cc.factorie.variable.{SpanList, SpanVariable, LabeledCategoricalVariable}
+import cc.factorie.variable._
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
   final def section = chain  // Just a convenient alias
   final def document = chain.document
-  final def tokens = value
+  final def tokens = this.toIndexedSeq //value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
   def phrase: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
@@ -40,7 +40,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     }
     false
   }
-  override def toString = "TokenSpan("+start+":"+this.phrase+")"
+  override def toString = "TokenSpan("+start+","+end+":"+this.phrase+")"
   // TODO This seems unsafe.  Can we delete it? -akm
   /** A short name for this span */
   def name: String = attr.values.head match {
@@ -50,7 +50,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
 }
 
 /** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanList[S<:TokenSpan] extends SpanList[S, Section, Token]
+class TokenSpanList[S<:TokenSpan] extends SpanVarList[S, Section, Token]
 
 object TokenSpan {
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {

@@ -5,11 +5,11 @@ import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
 import cc.factorie.app.nlp.segment.BasicTokenizer
-import cc.factorie.variable.SpanList
+import cc.factorie.variable.SpanVarList
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   
-  class MySpanList extends SpanList[TokenSpan,Section,Token]
+  class MySpanList extends SpanVarList[TokenSpan,Section,Token]
 
   def testDiffLists(): Unit = {
      val doc = load.LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
