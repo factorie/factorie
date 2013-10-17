@@ -150,7 +150,7 @@ trait HyperparameterMain {
  * Base class for executors which run their own JVMs.
  */
 trait Executor {
-  def serializeArgs(args: Array[String]) = args.map(s => s.substring(2,s.length)).mkString("::")
+  def serializeArgs(args: Array[String]) = args.mkString("::")
   val classpath =
     ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs.map(_.getFile).mkString(":")
   def execute(args: Array[String]): Future[Double]
@@ -227,7 +227,7 @@ object QSubExecutor {
     opts.parse(args)
     val cls = Class.forName(opts.className.value)
     val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").map("--" + _).toArray
+    val argsArray = opts.classArgs.value.split("::").toArray
     println("Using args \n" + argsArray.mkString("\n"))
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
     println("---- END OF JOB -----")
@@ -309,7 +309,7 @@ object SSHExecutor {
     opts.parse(args)
     val cls = Class.forName(opts.className.value)
     val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").map("--" + _).toArray
+    val argsArray = opts.classArgs.value.split("::").toArray
     println("Using args \n" + argsArray.mkString("\n"))
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
     println("----- END OF JOB -----")
