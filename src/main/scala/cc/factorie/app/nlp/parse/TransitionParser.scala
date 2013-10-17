@@ -532,7 +532,7 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
-    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
+    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer(opts.nThreads.value)
       else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
