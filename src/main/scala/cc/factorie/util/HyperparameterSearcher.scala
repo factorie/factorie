@@ -184,7 +184,10 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
       new java.io.File(thisPrefix).getParentFile.mkdirs()
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
       val cmdFile = thisPrefix+"-cmd.sh"
-      (("echo " + jvmCommand) #> new java.io.File(cmdFile)).!
+      val s = new OutputStreamWriter(new FileOutputStream(cmdFile))
+      s.write(jvmCommand + "\n")
+      s.close()
+      Thread.sleep(1000)
       blocking { try { runJob(cmdFile, thisPrefix+"-log.txt") } catch { case c: RuntimeException => () } }
       var done = false
       var tries = 0
