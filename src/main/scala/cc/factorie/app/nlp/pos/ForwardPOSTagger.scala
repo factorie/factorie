@@ -369,6 +369,7 @@ object ForwardPOSTrainer extends HyperparameterMain {
     }
     val acc = pos.accuracy(testDocs.flatMap(_.sentences))
     if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(acc,opts.targetAccuracy.value.toDouble)
+    acc
   }
 }
 
