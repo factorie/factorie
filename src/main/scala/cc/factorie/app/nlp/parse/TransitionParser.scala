@@ -561,7 +561,8 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
-    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(testLAS,opts.targetAccuracy.value.toDouble)
+
     testLAS
   }
 }

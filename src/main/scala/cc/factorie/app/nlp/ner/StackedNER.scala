@@ -598,7 +598,8 @@ object StackedNERTrainer extends HyperparameterMain {
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
-    if(opts.targetAccuracy.wasInvoked) assert(result > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+
+    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(result,opts.targetAccuracy.value.toDouble)
 
     result
   }

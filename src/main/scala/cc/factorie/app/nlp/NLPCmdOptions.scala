@@ -15,3 +15,14 @@ trait SharedNLPCmdOptions extends CmdOptions  {
   val testPortion = new CmdOption("test-portion", "", "INT", "portion of test to load")
 
 }
+
+
+object PerformanceChecking{
+
+  def assertAccuracy(got: Double, goal: Double): Unit = {
+    val err = "Accuracy Mismatch Error\n"
+    if(got > goal)  throw new IllegalStateException(err + "Accuracy went up from " + goal + " to " + got)
+    if(got < goal)  throw new IllegalStateException(err + "Accuracy went down from " + got + " to " + goal)
+  }
+
+}
