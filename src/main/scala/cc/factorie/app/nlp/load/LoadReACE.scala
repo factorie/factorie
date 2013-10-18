@@ -135,7 +135,7 @@ object LoadReACE {
       val nerType = (mention \ "@t").text
       val nerSubType = (mention \ "@st").text
 
-      val m = new NerSpan(doc.asSection, nerType, start, length)(null) with PairwiseMention
+      val m = new NerSpan(doc.asSection, nerType, start, length) with PairwiseMention
       spanList += m
 
       m.attr += new ReACEMentionIdentifiers {

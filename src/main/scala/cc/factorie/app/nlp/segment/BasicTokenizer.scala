@@ -53,7 +53,7 @@ class BasicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false
   val letter = s"([\\p{L}\\p{M}]|$htmlAccentedLetter)"
   val ap = "(?:['\u0092\u2019]|&(apos|rsquo|#00?39|#00?92|#2019);)" // apostrophe and open single quotes
   val ap2 = s"(?:$ap|&lsquo;|[`\u0091\u2018\u201B])" // also includes backwards apostrophe and single quotes, but not double quotes
-  val contraction = s"(?:n${ap}t|(?<=\\p{L})$ap(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions
+  val contraction = s"(?:[nN]${ap}[tT]|(?<=\\p{L})$ap(d|D|s|S|m|M|re|RE|ve|VE|ll|LL))"; patterns += contraction // an apostrophe, preceded by a non-consumed letter, followed by patterns of contractions
   val apword = s"${ap}n($ap)?|${ap2}em|[OoDdLl]${ap}$letter+|[Oo]${ap2}clock|add${ap2}l|[Cc]${ap2}mon|${ap2}cause|${ap}till?|ol$ap|Dunkin$ap|$ap[1-9]0s|N$ap|\\p{L}\\p{Ll}*[aeiou]$ap[aeiou]\\p{Ll}*"; patterns += apword // words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma
   //val ing = s"[A-Za-z]{3,}in${ap}"; patterns += ing // fishin' (but this pattern also gets all but the last character of "Britain's" :-(  // TODO Try to find some more specific fix for this
   val initials = "[\\p{L}]\\.[\\p{L}\\.]*"; patterns += initials // A.  A.A.A.I.  etc.

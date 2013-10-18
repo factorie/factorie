@@ -67,7 +67,7 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
 class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
   //type Value = BooleanValue
   // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
-  def this(initialValue:Boolean) = { this(); _set(if (initialValue) 1 else 0) }
+  def this(initialValue:Boolean) = { this(); _initialize(if (initialValue) 1 else 0) }
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)

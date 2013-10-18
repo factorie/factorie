@@ -37,7 +37,7 @@ class TokenNormalizer1[A<:TokenString](
   
   def processToken(token:Token): Unit = {
     val string = token.string
-    if (undoPennParens && string == "-LRB-") token.attr += newTokenString(token, "(")
+    if      (undoPennParens && string == "-LRB-") token.attr += newTokenString(token, "(")
     else if (undoPennParens && string == "-RRB-") token.attr += newTokenString(token, ")")
     else if (undoPennParens && string == "-LCB-") token.attr += newTokenString(token, "{")
     else if (undoPennParens && string == "-RCB-") token.attr += newTokenString(token, "}")

@@ -21,11 +21,17 @@ import cc.factorie.model.TupleTemplateWithStatistics2
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
 // The "target" is a container for the true, correct value.
-// The "aimer" is the variable that is supposed to have the true value; it is aiming to have the target value, 
+// The "aimer" is the variable that is supposed to have that correct value; it is "aiming" to have the correct value, 
 //  but may have some other value temporarily. 
-
+// In other words:
 // The "aimer" is a variable that should have the target value.  
-// The "target" is the container for that target value, which also has a pointer back to its aimer. 
+// The "target" is the container for that target value, which also has a pointer back to its aimer.
+
+// Further naming conventions:
+// A "LabeledCategoricalVar" variable is an "aimer"
+// A "CategoricalLabeling" is a trait that must be mixed with a CategoricalVariable that defines everything needed to make it "Labeled",
+//  (unlike "LabeledCategoricalVar" which still leaves some members abstract so that LabeledBooleanVariable can inherit from it).
+// A "Label" however could simply be a categorical variable associated with some other object, like a "SpanLabel(val span:Span) extends CategoricalVariable[String]".
 
 /** A trait for all variables that are containers of target values.
     Having this trait allows ZeroOneLossTemplate to use this type as a neighbor,
@@ -143,22 +149,46 @@ trait LabeledMutableCategoricalVar[C] extends MutableCategoricalVar[C] with Labe
     separate from its current value. 
     @author Andrew McCallum */
 trait LabeledMutableCategoricalVarWithTarget[C] extends LabeledMutableCategoricalVar[C] with LabeledMutableDiscreteVarWithTarget {
-  type TargetType <: CategoricalTargetVar[C]
+  type TargetType <: MutableCategoricalVar[C] with CategoricalTargetVar[C]
+//  type Value = CategoricalValue[C]
+//  type TargetType = CategoricalVariable[C] with CategoricalTargetVar[C]
+//  val target: TargetType = (new CategoricalTarget) // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
+//  class CategoricalTarget extends CategoricalVariable[C] with CategoricalTargetVar[C] {
+//    type AimerType = LabeledMutableCategoricalVarWithTarget[C]
+//    def domain = LabeledMutableCategoricalVarWithTarget.this.domain
+//    def aimer = LabeledMutableCategoricalVarWithTarget.this
+//  }
 }
 
+// Should we include something like this? -akm
+trait CategoricalLabeling[C] extends CategoricalVariable[C] with LabeledMutableCategoricalVarWithTarget[C] {
+  //type Value = CategoricalValue[C]
+  type TargetType = CategoricalTargetVariable[C]
+  val target = new CategoricalTargetVariable[C](this)
+  override protected def _initialize(newValue:Int): Unit = { super._initialize(newValue); target := newValue } 
+}
+
+class CategoricalTargetVariable[C](val aimer:LabeledMutableCategoricalVarWithTarget[C]) extends CategoricalVariable[C] with CategoricalTargetVar[C] {
+  type AimerType = LabeledMutableCategoricalVarWithTarget[C]
+  def this(targetCategory:C, aimer:LabeledMutableCategoricalVarWithTarget[C]) = { this(aimer); _initialize(domain.index(targetCategory)) }
+  def this(targetInt:Int, aimer:LabeledMutableCategoricalVarWithTarget[C]) = { this(aimer); _initialize(targetInt) }
+  def domain = aimer.domain
+}
 
 /** A mutable categorical variable that has a true, target "labeled" value, separate from its current value.
     The only abstract method is "domain".    
     @author Andrew McCallum */
 abstract class LabeledCategoricalVariable[C](theTargetCategory:C) extends CategoricalVariable[C](theTargetCategory) with LabeledMutableCategoricalVarWithTarget[C] {
-  self =>
-  override type TargetType = CategoricalVariable[C] with CategoricalTargetVar[C]
-  val target = new CategoricalTarget(theTargetCategory).asInstanceOf[TargetType] // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
-  class CategoricalTarget(targetVal:C) extends CategoricalVariable(targetVal) with CategoricalTargetVar[C] {
-    type AimerType = LabeledCategoricalVariable[C]
-    def domain = LabeledCategoricalVariable.this.domain
-    def aimer = self
-  }
+  type TargetType = CategoricalTargetVariable[C]
+  val target = new CategoricalTargetVariable(theTargetCategory, this)
+  //target.setCategory(theTargetCategory)(null)
+//  override type TargetType = CategoricalVariable[C] with CategoricalTargetVar[C]
+//  val target = new CategoricalTarget(theTargetCategory).asInstanceOf[TargetType] // TODO Consider making this a var, so that it can be set to null if we don't want one. -akm
+//  class CategoricalTarget(targetVal:C) extends CategoricalVariable(targetVal) with CategoricalTargetVar[C] {
+//    type AimerType = LabeledCategoricalVariable[C]
+//    def domain = LabeledCategoricalVariable.this.domain
+//    def aimer = LabeledCategoricalVariable.this
+//  }
 }
 
 
@@ -166,12 +196,11 @@ abstract class LabeledCategoricalVariable[C](theTargetCategory:C) extends Catego
 
 trait LabeledBooleanVar extends LabeledMutableCategoricalVarWithTarget[Boolean] with BooleanVar
 class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVal) with LabeledBooleanVar {
-  self =>
   type TargetType = LabeledBooleanTarget
   val target = new LabeledBooleanTarget(targetVal) // new BooleanLabelTarget(targetVal, this)
   class LabeledBooleanTarget(targetVal:Boolean) extends BooleanVariable(targetVal) with CategoricalTargetVar[Boolean] {
     type AimerType = LabeledBooleanVariable
-    def aimer = self
+    def aimer = LabeledBooleanVariable.this
   }
 } 
 
