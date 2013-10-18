@@ -353,7 +353,8 @@ object GraphProjectiveParserTrainer extends HyperparameterMain {
     println("Testing UAS = "+ testUAS)
     println()
     println("Done.")
-    if(opts.targetAccuracy.wasInvoked) assert(testUAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(testUAS,opts.targetAccuracy.value.toDouble)
+
     testUAS
   }
 
