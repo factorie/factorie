@@ -45,11 +45,11 @@ class ForwardPOSTagger extends DocumentAnnotator {
       var tokenCount = 0
       tokens.foreach(t => {
         tokenCount += 1
-        if (t.attr[PennPosLabel] eq null) {
+        if (t.attr[PennPosTag] eq null) {
           println("POS1.WordData.preProcess tokenCount "+tokenCount)
           println("POS1.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
           println("POS1.WordData.preProcess token "+t.string+" "+t.attr)
-          throw new Error("Found training token with no PennPosLabel.")
+          throw new Error("Found training token with no PennPosTag.")
         }
         val lemma = lemmatize(t.string).toLowerCase
         if (!wordCounts.contains(lemma)) {
@@ -57,7 +57,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
           posCounts(lemma) = Array.fill(PennPosDomain.size)(0)
         }
         wordCounts(lemma) += 1
-        posCounts(lemma)(t.attr[PennPosLabel].intValue) += 1
+        posCounts(lemma)(t.attr[PennPosTag].intValue) += 1
       })
       wordCounts.keys.foreach(w => {
         if (wordCounts(w) >= wordInclusionThreshold) {
@@ -75,7 +75,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
     def lemmaStringAtOffset(offset:Int): String = "L@"+offset+"="+lemmas.lc(lemmaIndex + offset) // this is lowercased
     def wordStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas(lemmaIndex + offset) // this is not lowercased, but still has digits replaced
     def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(lemmas.lc(lemmaIndex + offset), null)
-    def posTagAtOffset(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[PennPosLabel].categoryValue else null) }
+    def posTagAtOffset(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[PennPosTag].categoryValue else null) }
     def take(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(0,n) }
     def takeRight(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(l-n,l) }
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
@@ -191,7 +191,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
-        val posLabel = token.attr[PennPosLabel]
+        val posLabel = token.attr[PennPosTag]
         val featureVector = features(token, index, lemmaStrings)
         new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
   //      new optimize.LinearMultiClassExample(featureVector, posLabel.target.intValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
@@ -206,10 +206,10 @@ class ForwardPOSTagger extends DocumentAnnotator {
     val lemmaStrings = lemmas(tokens)
     for (index <- 0 until tokens.length) {
       val token = tokens(index)
-      val posLabel = token.attr[PennPosLabel]
+      val posLabel = token.attr[PennPosTag]
       val featureVector = features(token, index, lemmaStrings)
-      if (token.attr[PennPosLabel] eq null) token.attr += new PennPosLabel(token, "NNP")
-      token.attr[PennPosLabel].set(model.classification(featureVector).bestLabelIndex)(null)
+      if (token.attr[PennPosTag] eq null) token.attr += new PennPosTag(token, "NNP")
+      token.attr[PennPosTag].set(model.classification(featureVector).bestLabelIndex)(null)
     }
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
@@ -259,7 +259,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       totalTime += (System.currentTimeMillis()-t0)
       for (token <- s.tokens) {
         total += 1
-        if (token.attr[PennPosLabel].valueIsTarget) correct += 1.0
+        if (token.attr[PennPosTag].valueIsTarget) correct += 1.0
       }
     })
     println(s"${total*1000/totalTime} tokens/sec")
@@ -301,8 +301,8 @@ class ForwardPOSTagger extends DocumentAnnotator {
 
   def process(d: Document) = { predict(d); d }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
-  def postAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
-  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+  def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
+  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
 }
 
 // object POS1 is defined in app/nlp/pos/package.scala

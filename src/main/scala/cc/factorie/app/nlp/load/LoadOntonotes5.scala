@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.load
 
 import scala.io.Source
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
@@ -40,7 +40,7 @@ object LoadOntonotes5 {
     val document: Document = new Document().setName("Ontonotes499/" + filename)
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-    if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    if (loadPos) document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerTag]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerTag]) = UnknownDocumentAnnotator.getClass
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)
@@ -65,7 +65,7 @@ object LoadOntonotes5 {
         var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)
-        if (loadPos) token.attr += new PennPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
+        if (loadPos) token.attr += new PennPosTag(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
         if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
@@ -83,7 +83,7 @@ object LoadOntonotes5 {
     val document: Document = new Document()
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-    if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    if (loadPos) document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerTag]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerTag]) = UnknownDocumentAnnotator.getClass
     var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -107,7 +107,7 @@ object LoadOntonotes5 {
         var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)
-        if (loadPos) token.attr += new PennPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
+        if (loadPos) token.attr += new PennPosTag(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
         if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))

@@ -23,7 +23,7 @@ import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
@@ -41,7 +41,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       val document = new Document("").setName(name)
       document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
       document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-      document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+      document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
       document
     }
 
@@ -71,7 +71,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new LabeledIobConllNerTag(token, ner)
-        token.attr += new cc.factorie.app.nlp.pos.PennPosLabel(token, partOfSpeech)
+        token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }
     if (BILOU) convertToBILOU(documents)

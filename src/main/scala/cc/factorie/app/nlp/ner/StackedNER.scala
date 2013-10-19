@@ -16,7 +16,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
 import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import scala.io._
@@ -75,7 +75,7 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
     process(document,useModel2 = true)
     document
   }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel])
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag])
   def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
   def tokenAnnotationString(token:Token): String = token.attr[L].categoryValue
 

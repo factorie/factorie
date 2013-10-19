@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.mention._
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.ner.{NerSpan, NerTag}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Span
@@ -12,7 +12,7 @@ class NerPronounPhraseList extends MentionList
 /** Find noun phrases by a combination of named-entity recognition and lexicon-based pronoun finding.
     @author Alexandre Passos */
 object NounPhraser2 extends DocumentAnnotator {
-  def prereqAttrs = Seq(classOf[NerTag], classOf[PennPosLabel])
+  def prereqAttrs = Seq(classOf[NerTag], classOf[PennPosTag])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
 

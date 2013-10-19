@@ -3,7 +3,7 @@ import cc.factorie.app.nlp._
 
 import hcoref._
 import ner.ConllNerSpan
-import pos.PennPosLabel
+import pos.PennPosTag
 import relation.RelationVariables.{RelationMention, RelationMentions}
 import xml.{XML, NodeSeq}
 import java.io.File
@@ -11,7 +11,7 @@ import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Array.fallbackCanBuildFrom
 
 trait ReACEMentionIdentifiers {
@@ -75,7 +75,7 @@ object LoadReACE {
     val doc = new Document().setName(xml)
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
-    doc.annotators(classOf[PennPosLabel]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PennPosTag]) = UnknownDocumentAnnotator.getClass
 
     doc.attr += new ACEFileIdentifier(xml)
     val xmlText: NodeSeq = XML.loadFile(xml + ".ttt.xml")
@@ -95,7 +95,7 @@ object LoadReACE {
           doc.appendString(" ")
           val annotations = makeTokenAnnotations(w)
           t.attr += annotations // TODO I think these annotations should go in more standard FACTORIE NLP form -akm
-          annotations.pos.foreach(p => t.attr += new PennPosLabel(t, p))
+          annotations.pos.foreach(p => t.attr += new PennPosTag(t, p))
         }
       }
     }

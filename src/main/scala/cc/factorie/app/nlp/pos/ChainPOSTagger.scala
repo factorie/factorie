@@ -17,7 +17,7 @@ class ChainPOSTagger extends DocumentAnnotator {
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
-        s.tokens.foreach(t => if (!t.attr.contains[PennPosLabel]) t.attr += new PennPosLabel(t, "NN"))
+        s.tokens.foreach(t => if (!t.attr.contains[PennPosTag]) t.attr += new PennPosTag(t, "NN"))
         initPOSFeatures(s)
         model.maximize(s.tokens.map(_.posLabel))(null)
       }
@@ -26,8 +26,8 @@ class ChainPOSTagger extends DocumentAnnotator {
   }
 
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
-  def postAttrs = Seq(classOf[PennPosLabel])
-  def tokenAnnotationString(token: Token) = { val label = token.attr[PennPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+  def postAttrs = Seq(classOf[PennPosTag])
+  def tokenAnnotationString(token: Token) = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
@@ -65,11 +65,11 @@ class ChainPOSTagger extends DocumentAnnotator {
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
 
-  val model = new ChainModel[PennPosLabel, PosFeatures, Token](PennPosDomain,
+  val model = new ChainModel[PennPosTag, PosFeatures, Token](PennPosDomain,
     PosFeaturesDomain,
     l => l.token.attr[PosFeatures],
     l => l.token,
-    t => t.attr[PennPosLabel]){
+    t => t.attr[PennPosTag]){
     useObsMarkov = false
   }
 

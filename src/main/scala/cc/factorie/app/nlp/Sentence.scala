@@ -47,7 +47,7 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
   def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild
 
   // common labels
-  def posLabels: IndexedSeq[pos.PennPosLabel] = tokens.map(_.posLabel)
+  def posLabels: IndexedSeq[pos.PennPosTag] = tokens.map(_.posLabel)
   def nerTags: IndexedSeq[ner.NerTag] = tokens.map(_.nerTag)
 }
 

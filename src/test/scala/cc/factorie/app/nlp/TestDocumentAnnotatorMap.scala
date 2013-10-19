@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp
 import org.junit.Test
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.WordNetTokenLemma
 import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
@@ -19,13 +19,13 @@ class TestDocumentAnnotatorMap {
     val map = new MutableDocumentAnnotatorMap
     object pos1 extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
-      def postAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
       def process(document: Document) = document
       def tokenAnnotationString(token: Token) = ""
     }
     map += pos1
     object parser1 extends DocumentAnnotator {
-      def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
+      def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
       def postAttrs = Seq(classOf[ParseTree])
       def process(d: Document) = d
       def tokenAnnotationString(t: Token) = ""
@@ -34,7 +34,7 @@ class TestDocumentAnnotatorMap {
     map += segment.PlainTokenNormalizer
     map += cc.factorie.app.nlp.segment.ClearSegmenter
     object wnLemma extends DocumentAnnotator {
-      def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
+      def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
       def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
       def process(d: Document) = d
       def tokenAnnotationString(t: Token) = ""
