@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.mention
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosLabel
-import cc.factorie.app.nlp.ner.{NerSpan, NerLabel}
+import cc.factorie.app.nlp.ner._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Span
 
@@ -15,7 +15,7 @@ import cc.factorie.variable.Span
 class NerMentionList extends MentionList
 
 object NerAndPronounMentionFinder extends DocumentAnnotator {
-  def prereqAttrs = Seq(classOf[NerLabel], classOf[PennPosLabel])
+  def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosLabel])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
 
@@ -23,8 +23,8 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
     val spans = ArrayBuffer[(String,TokenSpan)]()
     for (s <- doc.sections;t <- s.tokens) {
-      if (t.attr[NerLabel].categoryValue != "O") {
-        val attr = t.attr[NerLabel].categoryValue.split("-")
+      if (t.attr[BilouConllNerTag].categoryValue != "O") {
+        val attr = t.attr[BilouConllNerTag].categoryValue.split("-")
         if (attr(0) == "U") {
           val lab = attr(1)
           spans += (lab -> new TokenSpan(s, t.positionInSection, 1))
@@ -32,7 +32,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
           val lab = attr(1)
           if(t.hasNext) {
             var lookFor = t.next
-            while (lookFor.hasNext && lookFor.attr[NerLabel].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
+            while (lookFor.hasNext && lookFor.attr[BilouConllNerTag].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
             spans += (lab -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
           } else {
             spans += (lab -> new TokenSpan(s, t.positionInSection, 1))

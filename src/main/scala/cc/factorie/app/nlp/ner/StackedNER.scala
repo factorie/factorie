@@ -25,24 +25,19 @@ import scala.math.round
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.embeddings._
 import cc.factorie.model.DotFamilyWithStatistics2
-import cc.factorie.variable.{LabeledDiscreteEvaluation, VectorVariable, HammingTemplate, CategoricalVectorVar}
 import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
-import cc.factorie.Factorie._
+import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
-import cc.factorie.variable.BinaryFeatureVectorVariable
-import cc.factorie.variable.CategoricalVectorDomain
-import cc.factorie.DiscreteDomain
-import cc.factorie.variable.CategoricalDomain
 import cc.factorie.la.WeightsMapAccumulator
 
 
-class TokenSequence[T<:NerLabel](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
+class TokenSequence[T<:NerTag](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
   this.prepend(token)
   val label : String = token.attr[T].categoryValue.split("-")(1)
   def key = this.mkString("-")
 }
 
-class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
+class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
                         newLabel: (Token, String) => L,
                         labelToToken: L => Token,
                         embeddingMap: SkipGramEmbedding,
@@ -168,7 +163,7 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
   val model = new StackedNEREModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new StackedNEREModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
-  val objective = new HammingTemplate[L]()
+  val objective = cc.factorie.variable.HammingObjective //new HammingTemplate[LabeledMutableDiscreteVarWithTarget]()
 
   if (url != null) {
     deSerialize(url.openConnection.getInputStream)
@@ -484,10 +479,10 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
     if (embeddingMap != null) println("StackedNER #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("StackedNER #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(100)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L]) //.take(20)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]) //.take(100)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]) //.take(20)
  
-    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget])
     val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
@@ -500,11 +495,11 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
     for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
     for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
     ChainNer2FeaturesDomain.freeze()
-    //println(trainDocuments(3).tokens.map(token => token.nerLabel.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
+    //println(trainDocuments(3).tokens.map(token => token.nerTag.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     //println("Example Test Token features")
-    //println(testDocuments(1).tokens.map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
+    //println(testDocuments(1).tokens.map(token => token.nerTag.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L])
+    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget])
 
     val examples2 = vars2.map(v => new model2.ChainLikelihoodExample(v.toSeq))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
@@ -525,9 +520,9 @@ class StackedNER[L<:NerLabel](labelDomain: CategoricalDomain[String],
   
   def evaluationString(documents: Iterable[Document]): Double = {
     val buf = new StringBuffer
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[L]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L with LabeledMutableCategoricalVarWithTarget[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVarWithTarget[String]])
     println("Segment evaluation")
     println(segmentEvaluation)
     segmentEvaluation.f1
@@ -545,7 +540,7 @@ class StackedConllNER(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
-                url: java.net.URL=null) extends StackedNER[BilouConllNerLabel](BilouConllNerDomain, (t, s) => new BilouConllNerLabel(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
+                url: java.net.URL=null) extends StackedNER[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
 
 object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
 object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))

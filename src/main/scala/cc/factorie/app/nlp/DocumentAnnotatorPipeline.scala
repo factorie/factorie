@@ -60,9 +60,9 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[lemma.CollapseDigitsTokenLemma] -> (() => lemma.CollapseDigitsLemmatizer),
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
-    classOf[ner.NerLabel] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
-    classOf[ner.BilouConllNerLabel] -> (() => ner.BasicConllNER),
-    classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
+    classOf[ner.NerTag] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
+    classOf[ner.BilouConllNerTag] -> (() => ner.BasicConllNER),
+    classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),

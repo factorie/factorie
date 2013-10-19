@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
 import hcoref._
-import ner.NerSpan
+import ner.ConllNerSpan
 import pos.PennPosLabel
 import relation.RelationVariables.{RelationMention, RelationMentions}
 import xml.{XML, NodeSeq}
@@ -103,7 +103,7 @@ object LoadReACE {
   }
 
   private def lookupEntityMention(doc: Document, id: String): Option[PairwiseMention] = {
-    val opt = doc.attr[ner.NerSpanList].find {
+    val opt = doc.attr[ner.ConllNerSpanList].find {
       s => {
         val a = s.attr[ReACEMentionIdentifiers]
         (a ne null) && a.mId.get == id
@@ -114,7 +114,7 @@ object LoadReACE {
   }
 
   def addNrm(doc: Document, xml: String): Document = {
-    val spanList = doc.attr[ner.NerSpanList]
+    val spanList = doc.attr[ner.ConllNerSpanList]
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -135,7 +135,7 @@ object LoadReACE {
       val nerType = (mention \ "@t").text
       val nerSubType = (mention \ "@st").text
 
-      val m = new NerSpan(doc.asSection, nerType, start, length) with PairwiseMention
+      val m = new ConllNerSpan(doc.asSection, start, length, nerType) with PairwiseMention
       spanList += m
 
       m.attr += new ReACEMentionIdentifiers {
@@ -191,7 +191,7 @@ object LoadReACE {
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
     for (d <- docs)
-      d.attr[ner.NerSpanList].foreach(s => println(s))
+      d.attr[ner.ConllNerSpanList].foreach(s => println(s))
   }
 
 }

@@ -3,7 +3,7 @@ import org.junit.Test
 import cc.factorie.app.nlp.pos.PennPosLabel
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.WordNetTokenLemma
-import cc.factorie.app.nlp.ner.{BilouOntonotesNerLabel, BilouConllNerLabel}
+import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
 import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.GenericEntityMap
 
@@ -45,16 +45,16 @@ class TestDocumentAnnotatorMap {
     map += lemma.PorterLemmatizer
     map += lemma.LowercaseLemmatizer
     object ner1 extends DocumentAnnotator {
-      def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+      def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerTag].categoryValue
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence])
-      def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerTag])
       def process(d: Document) = d
     }
     map += ner1
     object ner2 extends DocumentAnnotator {
-      override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
+      override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerTag].categoryValue
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
-      def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerTag])
       def process(document:Document): Document = document
     }
     map += ner2

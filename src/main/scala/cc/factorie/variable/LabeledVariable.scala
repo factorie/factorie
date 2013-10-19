@@ -165,7 +165,9 @@ trait CategoricalLabeling[C] extends CategoricalVariable[C] with LabeledMutableC
   //type Value = CategoricalValue[C]
   type TargetType = CategoricalTargetVariable[C]
   val target = new CategoricalTargetVariable[C](this)
-  override protected def _initialize(newValue:Int): Unit = { super._initialize(newValue); target := newValue } 
+  assert(intValue >= 0)
+  target := intValue // Hopefully value has already been set
+  //override protected def _initialize(newValue:Int): Unit = { super._initialize(newValue); target := newValue } 
 }
 
 class CategoricalTargetVariable[C](val aimer:LabeledMutableCategoricalVarWithTarget[C]) extends CategoricalVariable[C] with CategoricalTargetVar[C] {

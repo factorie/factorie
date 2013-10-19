@@ -70,7 +70,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new BioConllNerLabel(token, ner)
+        token.attr += new LabeledIobConllNerTag(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PennPosLabel(token, partOfSpeech)
       }
     }
@@ -84,7 +84,7 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       for(sentence <- doc.sentences) {
         for(token <- sentence.tokens) {
           //println("=======")
-          val ner = token.nerLabel
+          val ner = token.nerTag
           var prev : Token = null
           var next : Token = null
           //println(token + " -> " + ner.categoryValue);
@@ -104,17 +104,17 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
             println(token.string)
             println(newLabel)
           }*/
-          // token.attr.remove[BioConllNerLabel]
-          token.attr += new BilouConllNerLabel(token, newLabel)
+          // token.attr.remove[IobConllNerLabel]
+          token.attr += new LabeledBilouConllNerTag(token, newLabel)
         }
       }
     }
   }
 
   def IOBtoBILOU(prev : Token, token : Token,  next : Token) : String = {
-    if(token.nerLabel.categoryValue == "O") return "O"
+    if(token.nerTag.categoryValue == "O") return "O"
     // The major case that needs to be converted is I, which is dealt with here
-    val ts = token.nerLabel.categoryValue.split("-")
+    val ts = token.nerTag.categoryValue.split("-")
     var ps : Array[String] = null
     var ns : Array[String] = null
     if(prev != null)
@@ -122,11 +122,11 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
     if(next != null)
       ns = splitLabel(next)
 
-    if(token.nerLabel.categoryValue.contains("B-")) {
+    if(token.nerTag.categoryValue.contains("B-")) {
     if(next == null || ns(1) != ts(1) || ns(0) == "B")
         return "U-" + ts(1)
     else
-        return token.nerLabel.categoryValue
+        return token.nerTag.categoryValue
     }
 
     if(prev == null || ps(1) != ts(1)) {
@@ -140,8 +140,8 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
   }
   
   private def splitLabel(token : Token) : Array[String] = {
-    if(token.nerLabel.categoryValue.contains("-"))
-      token.nerLabel.categoryValue.split("-")
+    if(token.nerTag.categoryValue.contains("-"))
+      token.nerTag.categoryValue.split("-")
     else
       Array("", "O")
   }

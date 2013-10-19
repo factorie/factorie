@@ -1,11 +1,9 @@
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
 
 import scala.io.Source
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosLabel
-import cc.factorie.app.nlp.ner.{BioOntonotesNerLabel,BilouOntonotesNerLabel}
+import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -43,7 +41,7 @@ object LoadOntonotes5 {
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
     if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerTag]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerTag]) = UnknownDocumentAnnotator.getClass
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -68,7 +66,7 @@ object LoadOntonotes5 {
         document.appendString(" ")
         val token = new Token(sentence, word)
         if (loadPos) token.attr += new PennPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
-        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerLabel(token, ner) else new BioOntonotesNerLabel(token, ner))
+        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
@@ -86,7 +84,7 @@ object LoadOntonotes5 {
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
     if (loadPos) document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerLabel]) = UnknownDocumentAnnotator.getClass
+    if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerTag]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerTag]) = UnknownDocumentAnnotator.getClass
     var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- lines) {
@@ -110,7 +108,7 @@ object LoadOntonotes5 {
         document.appendString(" ")
         val token = new Token(sentence, word)
         if (loadPos) token.attr += new PennPosLabel(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
-        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerLabel(token, ner) else new BioOntonotesNerLabel(token, ner))
+        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
@@ -122,17 +120,18 @@ object LoadOntonotes5 {
     Seq(document)
   }
   
+  // TODO Don't we need convertIobBilou since CoNLL 2003 data is actually in IOB format? -akm
   def convertBioBilou(section:Section): Unit = {
     /** Return the string of the NER label, including the two letter (B- or I-) prefix. */
-    def cat(token:Token): String = if (token eq null) "null" else token.attr[BilouOntonotesNerLabel].categoryValue
+    def cat(token:Token): String = if (token eq null) "null" else token.attr[BilouOntonotesNerTag].categoryValue
     /** Return true if the strings are equal without their two letter (B- or I-) prefix. */
     def sim(s1:String, s2:String): Boolean = s1.drop(2) == s2.drop(2)
     def isU(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'B' && (!sim(cat2, cat3) || cat3(0) == 'B')
     def isB(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'B' && sim(cat2, cat3) && cat3(0) == 'I'
     def isL(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'I' && sim(cat1, cat2) && (cat3(0) == 'B' || !sim(cat2, cat3))
     def isI(cat1:String, cat2:String, cat3:String): Boolean = cat2(0) == 'I' && cat3(0) == 'I'
-    for (token <- section.tokens) if (token.attr[BilouOntonotesNerLabel].intValue != 0) {
-      val nerLabel = token.attr[BilouOntonotesNerLabel]
+    for (token <- section.tokens) if (token.attr[LabeledBilouOntonotesNerTag].intValue != 0) {
+      val nerLabel = token.attr[LabeledBilouOntonotesNerTag]
       val cat1 = cat(token.prev); val cat2 = cat(token); val cat3 = cat(token.next)
       if (isU(cat1, cat2, cat3)) nerLabel.target.setCategory("U-"+cat2.drop(2))(null)
       else if (isB(cat1, cat2, cat3)) nerLabel.target.setCategory("B-"+cat2.drop(2))(null)

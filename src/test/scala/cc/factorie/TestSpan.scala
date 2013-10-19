@@ -32,7 +32,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      //logger.debug("DiffList "+d)
      //logger.debug(doc.spans.mkString("\n"))
      assert(sl.length == 0)
-     val s2 = new NerSpan(doc.asSection, "PER", 2, 2)
+     val s2 = new ConllNerSpan(doc.asSection, 2, 2, "PER")
      sl += s2
      assert(s2.phrase == "John Smith")
      val s3 = new TokenSpan(doc.asSection, 4, 1)

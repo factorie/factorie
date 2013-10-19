@@ -33,30 +33,30 @@ class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Stri
 class ChainNerModel extends TemplateModel with Parameters {
   addTemplates(
     /*// Bias term on each individual label
-    new TemplateWithDotStatistics1[ChainNerLabel] {
+    new TemplateWithDotStatistics1[ChainNerTag] {
       factorName = "bias"
       override def statisticsDomains = Tuple1(Conll2003NerDomain)
     },*/
     // Factor between label and observed token
-    new DotTemplateWithStatistics2[BioConllNerLabel,ChainNerFeatures] {
+    new DotTemplateWithStatistics2[IobConllNerTag,ChainNerFeatures] {
       factorName = "observation"
       //override def statisticsDomains = ((Conll2003NerDomain, ChainNerFeaturesDomain))
-      val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, ChainNerFeaturesDomain.dimensionSize))
-      def unroll1(label: BioConllNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
-      def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[BioConllNerLabel], tf)
+      val weights = Weights(new la.DenseTensor2(IobConllNerDomain.size, ChainNerFeaturesDomain.dimensionSize))
+      def unroll1(label: IobConllNerTag) = Factor(label, label.token.attr[ChainNerFeatures])
+      def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[IobConllNerTag], tf)
     },
     // Transition factors between two successive labels
-    new DotTemplateWithStatistics2[BioConllNerLabel, BioConllNerLabel] {
+    new DotTemplateWithStatistics2[IobConllNerTag, IobConllNerTag] {
       factorName = "markov"
       //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
-      val weights = Weights(new la.DenseTensor2(BioConllNerDomain.size, BioConllNerDomain.size))
-      def unroll1(label: BioConllNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[BioConllNerLabel], label) else Nil
-      def unroll2(label: BioConllNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[BioConllNerLabel]) else Nil
+      val weights = Weights(new la.DenseTensor2(IobConllNerDomain.size, IobConllNerDomain.size))
+      def unroll1(label: IobConllNerTag) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[IobConllNerTag], label) else Nil
+      def unroll2(label: IobConllNerTag) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[IobConllNerTag]) else Nil
     }
   )
 }
 
-class ChainNerObjective extends HammingTemplate[BioConllNerLabel]
+class ChainNerObjective extends HammingTemplate[LabeledIobConllNerTag]
 
   
 class ChainNer(implicit random: scala.util.Random) {
@@ -112,7 +112,7 @@ class ChainNer(implicit random: scala.util.Random) {
   def hasFeatures(token:Token): Boolean = token.attr.contains(classOf[ChainNerFeatures])
   def hasFeatures(document:Document): Boolean = hasFeatures(document.tokens.head)
   
-  def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerLabel])
+  def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerTag])
   def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
   def train(trainFilename:String, testFilename:String): Unit = {
@@ -125,12 +125,12 @@ class ChainNer(implicit random: scala.util.Random) {
     trainDocuments.foreach(initFeatures(_))
     testDocuments.foreach(initFeatures(_))
     println("Example Token features")
-    println(trainDocuments(3).tokens.take(10).map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
+    println(trainDocuments(3).tokens.take(10).map(token => token.nerTag.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[LabeledIobConllNerTag]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[LabeledIobConllNerTag]) //.take(2000)
  
     // Train for 5 iterations
     if (false) {
@@ -143,7 +143,7 @@ class ChainNer(implicit random: scala.util.Random) {
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly)
       val learner = new SampleRankTrainer(new GibbsSampler(model, objective), new ConstantLearningRate) //ConfidenceWeightedUpdates { temperature = 0.01 }
-      val predictor = new VariableSettingsSampler[BioConllNerLabel](model, null)
+      val predictor = new VariableSettingsSampler[LabeledIobConllNerTag](model, null)
       for (iteration <- 1 until 3) {
         learner.processContexts(trainLabels)
         predictor.processAll(testLabels)
@@ -171,9 +171,9 @@ class ChainNer(implicit random: scala.util.Random) {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BioConllNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BioConllNerLabel](BioConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BioConllNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[LabeledIobConllNerTag]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[LabeledIobConllNerTag](IobConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[LabeledIobConllNerTag])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -182,34 +182,34 @@ class ChainNer(implicit random: scala.util.Random) {
   def process(document:Document): Unit = {
     if (document.tokenCount == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new BioConllNerLabel(token, "O"))
+    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new IobConllNerTag(token, "O"))
     if (true) {
       throw new Error("BP training not yet implemented.")
-      //new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
+      //new BPInferencer[ChainNerTag](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerTag]))
     } else {
-      for (token <- document.tokens) if (token.attr[BioConllNerLabel] == null) token.attr += new BioConllNerLabel(token, BioConllNerDomain.category(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[IobConllNerTag] == null) token.attr += new IobConllNerTag(token, IobConllNerDomain.category(0)) // init value doens't matter
       val localModel = new CombinedModel(model.templates(0), model.templates(1))
       val localPredictor = new IteratedConditionalModes(localModel, null)
-      for (label <- document.tokens.map(_.attr[BioConllNerLabel])) localPredictor.process(label)
-      val predictor = new VariableSettingsSampler[BioConllNerLabel](model, null)
-      for (i <- 0 until 3; label <- document.tokens.map(_.attr[BioConllNerLabel])) predictor.process(label)
+      for (label <- document.tokens.map(_.attr[IobConllNerTag])) localPredictor.process(label)
+      val predictor = new VariableSettingsSampler[IobConllNerTag](model, null)
+      for (i <- 0 until 3; label <- document.tokens.map(_.attr[IobConllNerTag])) predictor.process(label)
     }
   }
   
   def printSGML(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = BioConllNerDomain.index("O")
+    val other = IobConllNerDomain.index("O")
     while (i < tokens.length) {
-      if (tokens(i).nerLabel.intValue != other) {
+      if (tokens(i).nerTag.intValue != other) {
         val start = i
-        print("<"+tokens(i).nerLabel.shortCategoryValue+">"+tokens(i).string)
+        print("<"+tokens(i).nerTag.shortCategoryValue+">"+tokens(i).string)
         i += 1
-        while (i < tokens.length && tokens(i).nerLabel.categoryValue.startsWith("I-")) {
+        while (i < tokens.length && tokens(i).nerTag.categoryValue.startsWith("I-")) {
           print(" "+tokens(i).string)
           i += 1
         }
         var end = i - 1
-        print("</"+tokens(i-1).nerLabel.shortCategoryValue+"> ")
+        print("</"+tokens(i-1).nerTag.shortCategoryValue+"> ")
       } else {
         print(tokens(i).string+" ")
         i += 1
@@ -219,13 +219,13 @@ class ChainNer(implicit random: scala.util.Random) {
   
   def printEntities(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = BioConllNerDomain.index("O")
+    val other = IobConllNerDomain.index("O")
     while (i < tokens.length) {
-      if (tokens(i).nerLabel.intValue != other) {
+      if (tokens(i).nerTag.intValue != other) {
         val start = i
-        print(tokens(i).nerLabel.shortCategoryValue+" "+tokens(i).string+" ")
+        print(tokens(i).nerTag.shortCategoryValue+" "+tokens(i).string+" ")
         i += 1
-        while (i < tokens.length && tokens(i).nerLabel.categoryValue.startsWith("I-")) {
+        while (i < tokens.length && tokens(i).nerTag.categoryValue.startsWith("I-")) {
           print(tokens(i).string+" ")
           i += 1
         }
@@ -265,7 +265,7 @@ object ChainNer extends ChainNer()(new scala.util.Random(0)) {
     }
     
     if (opts.runPlainFiles.wasInvoked) {
-      BinarySerializer.deserialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+      BinarySerializer.deserialize(IobConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       for (filename <- opts.runPlainFiles.value) {
         val document = load.LoadPlainText.fromFile(new java.io.File(filename)).head
         //println("ChainNer plain document: <START>"+document.string+"<END>")
@@ -278,12 +278,12 @@ object ChainNer extends ChainNer()(new scala.util.Random(0)) {
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      BinarySerializer.deserialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+      BinarySerializer.deserialize(IobConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
       //run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked)
-        BinarySerializer.serialize(BioConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
+        BinarySerializer.serialize(IobConllNerDomain, ChainNerFeaturesDomain, model, new File(opts.modelDir.value))
     }
 
     //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")

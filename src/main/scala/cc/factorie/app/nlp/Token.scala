@@ -82,7 +82,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
 
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PennPosLabel]
-  def nerLabel = attr[cc.factorie.app.nlp.ner.NerLabel]
+  def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
@@ -191,12 +191,12 @@ trait TokenStringCubbieSlot extends TokenCubbie {
   // No postFetchToken necessary because "string" isn't needed for Token initialization
 }
 
-trait TokenNerLabelCubbie extends TokenCubbie {
+trait TokenIobConllNerTagCubbie extends TokenCubbie {
   val ner = StringSlot("ner")
-  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.BioConllNerLabel
+  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.IobConllNerTag
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
-    ner := t.nerLabel.categoryValue
+    ner := t.nerTag.categoryValue
     this
   }
   override def fetchToken: Token = {

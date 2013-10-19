@@ -19,50 +19,47 @@ import cc.factorie.util.Cubbie
 import cc.factorie.variable._
 
 // A "Tag" is a categorical label associated with a token.  We will also have a PosTag.
-abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory)
-class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioConllNerDomain }
-class LabeledBioConllNerTag(token:Token, initialCategory:String) extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String]
-class BilouConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouConllNerDomain }
-class LabeledBilouConllNerTag(token:Token, initialCategory:String) extends BilouConllNerTag(token, initialCategory) with CategoricalLabeling[String]
-class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouConllNerDomain }
-class LabeledOntonotesConllNerTag(token:Token, initialCategory:String) extends BilouOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
-
-
-// There is no labeled counterpart to this.
-class ConllNerSpanLabel(val span:TokenSpan, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  def domain = ConllNerDomain
-}
-class ConllNerSpan(section:Section, start:Int, length:Int, category:String) extends TokenSpan(section, start, length) {
-  val label = new ConllNerSpanLabel(this, category)
-}
-
-
-/** The abstract class for all named-entity recognition labels. */
-abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {
+abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-  def cubbieSlotName = "ner"
-  def cubbieSlotValue = categoryValue
+  def baseCategoryValue: String = if (intValue == 0) "O" else categoryValue.drop(2)
+  // TODO Pick just one of the above.
 }
 
-class ConllSpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue) {
-  def domain = ConllNerDomain
-}
-// TODO Rename this to ConllNerSpan
-class NerSpan(sec:Section, labelString:String, start:Int, length:Int) extends TokenSpan(sec, start, length) {
-  val label = new ConllSpanNerLabel(this, labelString)
-  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
-    (!value.hasPredecessor(1) || value.predecessor(1).nerLabel.intValue != label.intValue) &&
-    (!value.hasSuccessor(1) || value.successor(1).nerLabel.intValue != label.intValue)
+// Note: There are no labeled counterparts to these SpanLabels.
+abstract class NerSpanLabel(val span:TokenSpan, initialCategory:String) extends CategoricalVariable(initialCategory)
+abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) {
+  def label: NerSpanLabel
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
 
-class NerSpanList extends TokenSpanList[NerSpan]
 
-
-class NerLabelCubbie extends Cubbie {
-  val label = StringSlot("label")
-}
+///** The abstract class for all named-entity recognition labels. */
+//abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {
+//  /** Return "PER" instead of "I-PER". */
+//  def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
+//  def cubbieSlotName = "ner"
+//  def cubbieSlotValue = categoryValue
+//}
+//
+//class ConllSpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue) {
+//  def domain = ConllNerDomain
+//}
+//// TODO Rename this to ConllNerSpan
+//class NerSpan(sec:Section, labelString:String, start:Int, length:Int) extends TokenSpan(sec, start, length) {
+//  val label = new ConllSpanNerLabel(this, labelString)
+//  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
+//    (!value.hasPredecessor(1) || value.predecessor(1).nerLabel.intValue != label.intValue) &&
+//    (!value.hasSuccessor(1) || value.successor(1).nerLabel.intValue != label.intValue)
+//  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+//}
+//
+//class NerSpanList extends TokenSpanList[NerSpan]
+//
+//
+//class NerLabelCubbie extends Cubbie {
+//  val label = StringSlot("label")
+//}
 
 object ConllNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
@@ -74,10 +71,15 @@ object ConllNerDomain extends CategoricalDomain[String] {
   )
   freeze()
 }
-class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
+class ConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = ConllNerDomain }
+class LabeledConllNerTag(token:Token, initialCategory:String) extends ConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+class ConllNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = ConllNerDomain }
+class ConllNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new ConllNerSpanLabel(this, category) }
+class ConllNerSpanList extends TokenSpanList[ConllNerSpan]
+//class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
 
 
-// TODO I think this should be renamed IOB? -akm
 object BioConllNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
    "O",
@@ -91,12 +93,17 @@ object BioConllNerDomain extends CategoricalDomain[String] {
    "I-MISC"
   )
   freeze()
-  def spanList(section:Section): NerSpanList = {
-    val boundaries = iobBoundaries(section.tokens.map(_.attr[BioConllNerLabel].categoryValue))
-    new NerSpanList ++= boundaries.map(b => new NerSpan(section, b._3, b._1, b._2))
+  def spanList(section:Section): ConllNerSpanList = {
+    val boundaries = iobBoundaries(section.tokens.map(_.attr[BioConllNerTag].categoryValue))
+    new ConllNerSpanList ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
-class BioConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioConllNerDomain }
+class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioConllNerDomain }
+class LabeledBioConllNerTag(token:Token, initialCategory:String) extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+// IobConllNerDomain is defined in app.nlp.package as val IobConllNerDomain = BioConllNerDomain
+class IobConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = IobConllNerDomain }
+class LabeledIobConllNerTag(token:Token, initialCategory:String) extends IobConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+//class BioConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioConllNerDomain }
 
 
 object BilouConllNerDomain extends CategoricalDomain[String] {
@@ -120,12 +127,14 @@ object BilouConllNerDomain extends CategoricalDomain[String] {
    "U-MISC"
   )  
   freeze()
-  def spanList(section:Section): NerSpanList = {
-    val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouConllNerLabel].categoryValue))
-    new NerSpanList ++= boundaries.map(b => new NerSpan(section, b._3, b._1, b._2))
+  def spanList(section:Section): ConllNerSpanList = {
+    val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouConllNerTag].categoryValue))
+    new ConllNerSpanList ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
-class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
+class BilouConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouConllNerDomain }
+class LabeledBilouConllNerTag(token:Token, initialCategory:String) extends BilouConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+//class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 
 object OntonotesNerDomain extends CategoricalDomain[String] {
@@ -153,7 +162,13 @@ object OntonotesNerDomain extends CategoricalDomain[String] {
 
   freeze()
 }
-class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }
+class OntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = OntonotesNerDomain }
+class LabeledOntonotesNerTag(token:Token, initialCategory:String) extends OntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = OntonotesNerDomain }
+class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new OntonotesNerSpanLabel(this, category) }
+class OntonotesNerSpanList extends TokenSpanList[OntonotesNerSpan]
+//class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }
 
 
 object BioOntonotesNerDomain extends CategoricalDomain[String] {
@@ -198,7 +213,11 @@ object BioOntonotesNerDomain extends CategoricalDomain[String] {
   )
   freeze()
 }
-class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
+class BioOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioOntonotesNerDomain }
+class LabeledBioOntonotesNerTag(token:Token, initialCategory:String) extends BioOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
+class IobOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioOntonotesNerDomain }
+class LabeledIobOntonotesNerTag(token:Token, initialCategory:String) extends IobOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
+//class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
 
 object BilouOntonotesNerDomain extends CategoricalDomain[String] {
   this ++= Vector(
@@ -280,8 +299,6 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
   def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
   freeze()
 }
-class BilouOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) {
-  def domain = BilouOntonotesNerDomain
-  def baseCategoryValue: String = if (intValue == 0) "O" else categoryValue.drop(2)
-}
+class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
+class LabeledBilouOntonotesNerTag(token:Token, initialCategory:String) extends BilouOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 

@@ -26,30 +26,30 @@ class BasicConllNER extends DocumentAnnotator {
   } 
   
   // The model
-  class NER1Model extends ChainModel[BilouConllNerLabel, FeaturesVariable, Token](BilouConllNerDomain, FeaturesDomain, l => l.token.attr[FeaturesVariable], l => l.token, t => t.attr[BilouConllNerLabel])
+  class NER1Model extends ChainModel[BilouConllNerTag, FeaturesVariable, Token](BilouConllNerDomain, FeaturesDomain, l => l.token.attr[FeaturesVariable], l => l.token, t => t.attr[BilouConllNerTag])
   
   val model = new NER1Model
   
   
   // The training objective
-  val objective = new HammingTemplate[BilouConllNerLabel]
+  val objective = new HammingTemplate[LabeledBilouConllNerTag]
 
   // Methods of DocumentAnnotator
-  override def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+  override def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerTag].categoryValue
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence])
-  def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
+  def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerTag])
   def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
-      for (token <- document.tokens) if (token.attr[BilouConllNerLabel] eq null) token.attr += new BilouConllNerLabel(token, "O")
+      for (token <- document.tokens) if (token.attr[BilouConllNerTag] eq null) token.attr += new BilouConllNerTag(token, "O")
       for (sentence <- document.sentences if sentence.length > 0) {
-        val labels = sentence.tokens.map(_.attr[BilouConllNerLabel]).toSeq
+        val labels = sentence.tokens.map(_.attr[BilouConllNerTag]).toSeq
         model.maximize(labels)(null)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
       // Add and populated NerSpanList attr to the document 
-      document.attr.+=(new ner.NerSpanList ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
+      document.attr.+=(new ner.ConllNerSpanList ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
     }
     document
   }
@@ -126,41 +126,41 @@ class BasicConllNER extends DocumentAnnotator {
   
   def sampleOutputString(tokens:Iterable[Token]): String = {
     val sb = new StringBuffer
-    for (token <- tokens) sb.append("%s %20s %10s %10s  %s\n".format(if (token.attr[BilouConllNerLabel].valueIsTarget) " " else "*", token.string, token.attr[BilouConllNerLabel].target.categoryValue, token.attr[BilouConllNerLabel].categoryValue, token.attr[FeaturesVariable]))
+    for (token <- tokens) sb.append("%s %20s %10s %10s  %s\n".format(if (token.attr[LabeledBilouConllNerTag].valueIsTarget) " " else "*", token.string, token.attr[LabeledBilouConllNerTag].target.categoryValue, token.attr[BilouConllNerTag].categoryValue, token.attr[FeaturesVariable]))
     sb.toString
   }
 
   // Parameter estimation
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document], l1Factor:Double = 0.02, l2Factor:Double = 0.000001, lr: Double = 1.0)(implicit random: scala.util.Random): Double = {
-    def labels(docs:Iterable[Document]): Iterable[BilouConllNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouConllNerLabel]))
+    def labels(docs:Iterable[Document]): Iterable[LabeledBilouConllNerTag] = docs.flatMap(doc => doc.tokens.map(_.attr[LabeledBilouConllNerTag]))
     trainDocs.foreach(addFeatures); FeaturesDomain.freeze(); testDocs.foreach(addFeatures) // Discovery features on training data only
     println(sampleOutputString(trainDocs.take(12).last.tokens.take(200)))
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
     // model.limitDiscreteValuesAsIn(trainLabels)
-    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[BilouConllNerLabel])))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[LabeledBilouConllNerTag])))).toSeq
     val optimizer = new optimize.AdaGradRDA(rate=lr, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     def evaluate() {
       trainDocs.par.foreach(process)
       println("Train accuracy "+objective.accuracy(trainLabels))
-      println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
+      println(new app.chain.SegmentEvaluation[LabeledBilouConllNerTag]("(B|U)-", "(I|L)-", BilouConllNerDomain, trainLabels.toIndexedSeq))
       if (!testDocs.isEmpty) {
         testDocs.par.foreach(process)
         println("Test  accuracy "+objective.accuracy(testLabels))
-        println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
+        println(new app.chain.SegmentEvaluation[LabeledBilouConllNerTag]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
       }
       println(model.parameters.tensors.sumInts(t => t.toSeq.count(x => x == 0)).toFloat/model.parameters.tensors.sumInts(_.length)+" sparsity")
     }
     Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate)
     //model.evidence.weights.set(model.evidence.weights.value.toSparseTensor) // sparsify the evidence weights
-    return new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
+    return new app.chain.SegmentEvaluation[LabeledBilouConllNerTag]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
     Trainer.batchTrain(model.parameters, examples, optimizer = new optimize.LBFGS with optimize.L2Regularization { variance = 10.0 }, evaluate = () => {
       trainDocs.foreach(process); println("Train accuracy "+objective.accuracy(trainLabels))
       if (!testDocs.isEmpty) testDocs.foreach(process);  println("Test  accuracy "+objective.accuracy(testLabels))
-      println(new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
+      println(new app.chain.SegmentEvaluation[LabeledBilouConllNerTag]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq))
     })
     //new java.io.PrintStream(new File("ner3-test-output")).print(sampleOutputString(testDocs.flatMap(_.tokens)))
-    new app.chain.SegmentEvaluation[BilouConllNerLabel]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
+    new app.chain.SegmentEvaluation[LabeledBilouConllNerTag]("(B|U)-", "(I|L)-", BilouConllNerDomain, testLabels.toIndexedSeq).f1
   }
   def loadDocuments(files:Iterable[File]): Seq[Document] = {
     files.toSeq.flatMap(file => load.LoadConll2003(BILOU=true).fromFile(file))

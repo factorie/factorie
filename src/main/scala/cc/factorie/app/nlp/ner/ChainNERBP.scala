@@ -75,7 +75,7 @@ class ChainNerBP {
   def hasFeatures(token:Token): Boolean = token.attr.contains(classOf[ChainNerFeatures])
   def hasFeatures(document:Document): Boolean = hasFeatures(document.tokens.head)
   
-  def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerLabel])
+  def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerTag])
   def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
   def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
@@ -87,15 +87,15 @@ class ChainNerBP {
     trainDocuments.foreach(initFeatures(_))
     testDocuments.foreach(initFeatures(_))
     println("Example Token features")
-    println(trainDocuments(3).tokens.take(10).map(token => token.nerLabel.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
+    println(trainDocuments(3).tokens.take(10).map(token => token.nerTag.shortCategoryValue+" "+token.string+" "+token.attr[ChainNerFeatures].toString).mkString("\n"))
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[BioConllNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[LabeledIobConllNerTag]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[LabeledIobConllNerTag]) //.take(2000)
  
     // Train for 5 iterations
-    val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[BioConllNerLabel])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[LabeledIobConllNerTag])
 //    val trainingInstances = vars.map(ModelExample(model, _))
 //    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
 //    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
@@ -124,9 +124,9 @@ class ChainNerBP {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[BioConllNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BioConllNerLabel](BioConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[BioConllNerLabel])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[LabeledIobConllNerTag]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[LabeledIobConllNerTag](IobConllNerDomain.categories.filter(_.length > 2).map(_.substring(2)))
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[LabeledIobConllNerTag])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -135,9 +135,9 @@ class ChainNerBP {
   def process(document:Document): Unit = {
     if (document.tokenCount == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new BioConllNerLabel(token, "O"))
+    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new IobConllNerTag(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
-	    val vars = sentence.tokens.map(_.attr[BioConllNerLabel]).toSeq
+	    val vars = sentence.tokens.map(_.attr[IobConllNerTag]).toSeq
 	    BP.inferChainMax(vars, model).setToMaximize(null)
 	    //val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
     	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
@@ -148,18 +148,18 @@ class ChainNerBP {
   
   def printSGML(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = BioConllNerDomain.index("O")
+    val other = IobConllNerDomain.index("O")
     while (i < tokens.length) {
-      if (tokens(i).nerLabel.intValue != other) {
+      if (tokens(i).nerTag.intValue != other) {
         val start = i
-        print("<"+tokens(i).nerLabel.shortCategoryValue+">"+tokens(i).string)
+        print("<"+tokens(i).nerTag.shortCategoryValue+">"+tokens(i).string)
         i += 1
-        while (i < tokens.length && tokens(i).nerLabel.categoryValue.startsWith("I-")) {
+        while (i < tokens.length && tokens(i).nerTag.categoryValue.startsWith("I-")) {
           print(" "+tokens(i).string)
           i += 1
         }
         var end = i - 1
-        print("</"+tokens(i-1).nerLabel.shortCategoryValue+"> ")
+        print("</"+tokens(i-1).nerTag.shortCategoryValue+"> ")
       } else {
         print(tokens(i).string+" ")
         i += 1
@@ -169,13 +169,13 @@ class ChainNerBP {
   
   def printEntities(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = BioConllNerDomain.index("O")
+    val other = IobConllNerDomain.index("O")
     while (i < tokens.length) {
-      if (tokens(i).nerLabel.intValue != other) {
+      if (tokens(i).nerTag.intValue != other) {
         val start = i
-        print(tokens(i).nerLabel.shortCategoryValue+" "+tokens(i).string+" ")
+        print(tokens(i).nerTag.shortCategoryValue+" "+tokens(i).string+" ")
         i += 1
-        while (i < tokens.length && tokens(i).nerLabel.categoryValue.startsWith("I-")) {
+        while (i < tokens.length && tokens(i).nerTag.categoryValue.startsWith("I-")) {
           print(tokens(i).string+" ")
           i += 1
         }

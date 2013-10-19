@@ -48,7 +48,7 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
 
   // common labels
   def posLabels: IndexedSeq[pos.PennPosLabel] = tokens.map(_.posLabel)
-  def nerLabels: IndexedSeq[ner.NerLabel] = tokens.map(_.nerLabel)
+  def nerTags: IndexedSeq[ner.NerTag] = tokens.map(_.nerTag)
 }
 
 
