@@ -216,7 +216,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   /** Return the label on the edge from the child at sentence position 'index' to its parent. */
   def label(index:Int): ParseTreeLabel = _labels(index)
   def copy: ParseTree = {
-    val newTree = new ParseTree(sentence, targetParents, labels.map(_.targetCategory))
+    val newTree = new ParseTree(sentence, targetParents, labels.map(_.target.categoryValue))
     for (i <- 0 until sentence.length) {
       newTree._parents(i) = this._parents(i)
       newTree._labels(i).set(this._labels(i).intValue)(null)

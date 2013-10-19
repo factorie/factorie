@@ -61,16 +61,18 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
   override def toString = if (intValue == 0) printName+"(false)" else printName+"(true)"
 }
 
-/** A class for mutable Boolean variables. 
-    @author Andrew McCallum */ 
-// TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain // TODO I think this is no longer true.
-class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
-  //type Value = BooleanValue
-  // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
-  def this(initialValue:Boolean) = { this(); _initialize(if (initialValue) 1 else 0) }
+/** An abstract mutable Boolean variable. 
+    @author Andrew McCallum */
+trait MutableBooleanVar extends MutableCategoricalVar[Boolean] with BooleanVar {
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   // If you want to coordinate with changes to this variable value, override set(ValueType)
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
+}
+
+/** A concrete  mutable Boolean variable. 
+    @author Andrew McCallum */ 
+class BooleanVariable(initialValue:Boolean = false) extends MutableCategoricalVar[Boolean] with MutableBooleanVar {
+  _initialize(if (initialValue) 1 else 0)
 }

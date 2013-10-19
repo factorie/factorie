@@ -7,7 +7,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosLabel, PennPosDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 import cc.factorie.optimize.Trainer
-import cc.factorie.variable.{LabeledVarWithTarget, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.variable.{LabeledVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel}
 import cc.factorie.infer.{InferByBPChain, BP}
 import cc.factorie.app.nlp.load.LoadOWPL
@@ -67,7 +67,7 @@ object ForwardBackwardPOS {
       addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
-  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = {
+  def percentageSetToTarget[L <: LabeledVar](ls: Seq[L]): Double = {
     val numCorrect = ls.foldLeft(0.0)((partialSum, label) => partialSum + {if (label.valueIsTarget) 1 else 0})
     numCorrect / ls.size * 100
   }

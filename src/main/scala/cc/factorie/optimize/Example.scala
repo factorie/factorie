@@ -97,10 +97,10 @@ class PseudomaxExample(labels: Iterable[LabeledDiscreteVar], model: Model with P
       val predIndex = proportions.maxIndex
       // TODO: this value is wrong - the loss is not defined in terms of log-normalized proportions, but raw scores (like perceptron/svm)
       // should we have a "scores" method like "proportions" that just goes through all possible settings and scores each?
-      if (value != null) value.accumulate(math.max(0, proportions(label.targetIntValue) - proportions(predIndex)))
-      if (gradient != null && predIndex != label.targetIntValue) {
+      if (value != null) value.accumulate(math.max(0, proportions(label.target.intValue) - proportions(predIndex)))
+      if (gradient != null && predIndex != label.target.intValue) {
         val predAssignment = new DiscreteAssignment1(label, predIndex)
-        val groundAssignment = new DiscreteAssignment1(label, label.targetIntValue)
+        val groundAssignment = new DiscreteAssignment1(label, label.target.intValue)
         for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily])) {
           gradient.accumulate(f.family.weights, f.assignmentStatistics(groundAssignment), 1.0)
           gradient.accumulate(f.family.weights, f.assignmentStatistics(predAssignment), -1.0)
@@ -124,13 +124,13 @@ class PseudomaxMarginExample(labels: Iterable[LabeledDiscreteVar], model: Model 
       val factors = model.factors(label)
       val proportionsNotAugmented = label.proportions(factors)
       val proportions = new DenseTensor1(proportionsNotAugmented.length)
-      proportions -= (label.targetIntValue, 1.0)
+      proportions -= (label.target.intValue, 1.0)
       val predIndex = proportions.maxIndex
       // TODO: this value is wrong - see Pseudomax - luke
-      if (value != null) value.accumulate(math.max(0, proportions(label.targetIntValue) - proportions(predIndex)))
-      if (gradient != null && predIndex != label.targetIntValue) {
+      if (value != null) value.accumulate(math.max(0, proportions(label.target.intValue) - proportions(predIndex)))
+      if (gradient != null && predIndex != label.target.intValue) {
         val predAssignment = new DiscreteAssignment1(label, predIndex)
-        val groundAssignment = new DiscreteAssignment1(label, label.targetIntValue)
+        val groundAssignment = new DiscreteAssignment1(label, label.target.intValue)
         for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily])) {
           gradient.accumulate(f.family.weights, f.assignmentStatistics(groundAssignment), 1.0)
           gradient.accumulate(f.family.weights, f.assignmentStatistics(predAssignment), -1.0)
@@ -150,13 +150,13 @@ class PseudolikelihoodExample(labels: Iterable[LabeledDiscreteVar], model: Model
     for (label <- labels) {
       val factors = model.factors(label)
       val proportions = label.proportions(factors)
-      if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+      if (value ne null) value.accumulate(math.log(proportions(label.target.intValue)))
       if (gradient ne null) {
         val assignment = new DiscreteAssignment1(label, 0)
         var i = 0
         while (i < proportions.length) {
           assignment.intValue1 = i
-          val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+          val p = if (i == label.target.intValue) 1.0 - proportions(i) else -proportions(i)
           for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily]))
             gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p) // TODO Consider instance weights here also?
           i += 1
@@ -182,7 +182,7 @@ class CompositeLikelihoodExample(components: Iterable[Iterable[LabeledDiscreteVa
     for (assignment <- iterator) {
       score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       distribution(i) = score
-      if(labels.forall(v => assignment(v).asInstanceOf[DiscreteValue].intValue == v.targetIntValue)) targetIndex = i
+      if(labels.forall(v => assignment(v).asInstanceOf[DiscreteValue].intValue == v.target.intValue)) targetIndex = i
       i += 1
     }
     distribution.expNormalize()
@@ -217,13 +217,13 @@ class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Par
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val factors = model.factors(label)
     val proportions = label.proportions(factors)
-    if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+    if (value ne null) value.accumulate(math.log(proportions(label.target.intValue)))
     if (gradient ne null) {
       val assignment = new DiscreteAssignment1(label, 0)
       var i = 0
       while (i < proportions.length) {
         assignment.intValue1 = i
-        val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+        val p = if (i == label.target.intValue) 1.0 - proportions(i) else -proportions(i)
         for (f <- model.filterByFamilyClass[DotFamily](factors, classOf[DotFamily]))
           gradient.accumulate(f.family.weights, f.assignmentStatistics(assignment), p) // TODO Consider instance weights here also?
         i += 1
@@ -240,12 +240,12 @@ class DiscreteLikelihoodExample(label: LabeledDiscreteVar, model: Model with Par
 class CaseFactorDiscreteLikelihoodExample(label: LabeledMutableDiscreteVar, model: Model with Parameters) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val proportions = label.caseFactorProportions(model)
-    if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+    if (value ne null) value.accumulate(math.log(proportions(label.target.intValue)))
     if (gradient ne null) {
       var i = 0
       while (i < proportions.length) {
         label := i
-        val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+        val p = if (i == label.target.intValue) 1.0 - proportions(i) else -proportions(i)
         // Note that label must be mutable here because there is no way to get different factors with an Assignment.  A little sad. -akm
         model.factorsOfFamilyClass[DotFamily](label).foreach(f => {
           gradient.accumulate(f.family.weights, f.currentStatistics, p) // TODO Consider instance weightsSet here also?

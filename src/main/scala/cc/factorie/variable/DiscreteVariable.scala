@@ -89,7 +89,7 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettin
   private var __value: Int = -1
   def domain: DiscreteDomain
   @inline final protected def _value = __value
-  protected def _initialize(newValue:Int): Unit = if (__value == -1) __value = newValue else throw new Error("_initialize method called after MutableDiscreteVar value already set.")
+  protected def _initialize(newValue:Int): Unit = if (__value == -1 && newValue >= 0) __value = newValue else throw new Error("_initialize method called after MutableDiscreteVar value already set; or newValue negative.")
   override def intValue = __value
   def value: Value = domain.apply(__value).asInstanceOf[Value] // TODO Is there a better way to coordinate A and domain?
   //def set(newValue:Value)(implicit d:DiffList): Unit

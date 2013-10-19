@@ -28,7 +28,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
 
   var targetCount, predictedCount, correctCount = 0 // per segment
 
-  def ++=(tokenseqs:Seq[IndexedSeq[{def label:LabeledMutableCategoricalVarWithTarget[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
+  def ++=(tokenseqs:Seq[IndexedSeq[{def label:LabeledMutableCategoricalVar[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))  // TODO this triggers reflection
 
   /* Find out if we are at the beginning of a segment.
    * This complicated conditional is necessary to make the start pattern "(B|I)-" work
@@ -49,7 +49,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
       document ends in a mention and the next document begins with the same
       mention type, they will be counted as only one mention, when they should
       have been counted as two. */
-  def +=(labels: IndexedSeq[LabeledMutableCategoricalVarWithTarget[String]]): Unit = {
+  def +=(labels: IndexedSeq[LabeledMutableCategoricalVar[String]]): Unit = {
     //println("PerSegmentEvaluation += "+labels.size)
     var predictedStart, targetStart = false
     for (position <- 0 until labels.length) {
@@ -122,7 +122,7 @@ object SegmentEvaluation {
 
 // For defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
 // For BILOU you should use startPrefix = "(B|U)-" and continuePrefix = "(I|L)-"
-class SegmentEvaluation[L<:LabeledMutableCategoricalVarWithTarget[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
+class SegmentEvaluation[L<:LabeledMutableCategoricalVar[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String], labels:IndexedSeq[L]) = {
     this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)

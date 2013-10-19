@@ -193,8 +193,8 @@ class ForwardPOSTagger extends DocumentAnnotator {
         val token = tokens(index)
         val posLabel = token.attr[PennPosLabel]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
-  //      new optimize.LinearMultiClassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
+        new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
+  //      new optimize.LinearMultiClassExample(featureVector, posLabel.target.intValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
         if (exampleSetsToPrediction) {
           posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
         }

@@ -163,7 +163,7 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
   val model = new StackedNEREModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new StackedNEREModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
-  val objective = cc.factorie.variable.HammingObjective //new HammingTemplate[LabeledMutableDiscreteVarWithTarget]()
+  val objective = cc.factorie.variable.HammingObjective //new HammingTemplate[LabeledMutableDiscreteVar]()
 
   if (url != null) {
     deSerialize(url.openConnection.getInputStream)
@@ -479,10 +479,10 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
     if (embeddingMap != null) println("StackedNER #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
     println("StackedNER #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]) //.take(100)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]) //.take(20)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(100)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(20)
  
-    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget])
+    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])
     val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
     Trainer.onlineTrain(model.parameters, examples, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
@@ -499,7 +499,7 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
     //println("Example Test Token features")
     //println(testDocuments(1).tokens.map(token => token.nerTag.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget])
+    val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])
 
     val examples2 = vars2.map(v => new model2.ChainLikelihoodExample(v.toSeq))
     Trainer.onlineTrain(model2.parameters, examples2, optimizer=new AdaGrad(rate=rate, delta=delta) with ParameterAveraging, useParallelTrainer=false)
@@ -520,9 +520,9 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
   
   def evaluationString(documents: Iterable[Document]): Double = {
     val buf = new StringBuffer
-    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[L with LabeledMutableDiscreteVarWithTarget]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L with LabeledMutableCategoricalVarWithTarget[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVarWithTarget[String]])
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[L with LabeledMutableDiscreteVar]))))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
     println("Segment evaluation")
     println(segmentEvaluation)
     segmentEvaluation.f1

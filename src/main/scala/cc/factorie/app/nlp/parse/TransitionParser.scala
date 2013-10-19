@@ -91,7 +91,7 @@ class TransitionParser extends DocumentAnnotator {
 
 
   def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMultiClassTrainer, evaluate: (LinearMultiClassClassifier) => Unit) {
-    trainer.baseTrain(model, vs.map(_.targetIntValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
+    trainer.baseTrain(model, vs.map(_.target.intValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
   }
   
   
@@ -121,7 +121,7 @@ class TransitionParser extends DocumentAnnotator {
       println(" TRAIN "+testString(trainSentences))
       println(" TEST  "+testString(testSentences))
     }
-    new OnlineLinearMultiClassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
+    new OnlineLinearMultiClassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.target.intValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
