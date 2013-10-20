@@ -191,7 +191,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
-        val posLabel = token.attr[PennPosTag]
+        val posLabel = token.attr[LabeledPennPosTag]
         val featureVector = features(token, index, lemmaStrings)
         new optimize.LinearMultiClassExample(model.weights, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
   //      new optimize.LinearMultiClassExample(featureVector, posLabel.target.intValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
@@ -259,7 +259,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       totalTime += (System.currentTimeMillis()-t0)
       for (token <- s.tokens) {
         total += 1
-        if (token.attr[PennPosTag].valueIsTarget) correct += 1.0
+        if (token.attr[LabeledPennPosTag].valueIsTarget) correct += 1.0
       }
     })
     println(s"${total*1000/totalTime} tokens/sec")
@@ -292,7 +292,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       // Print test results to file
       val source = new java.io.PrintStream(new File("pos1-test-output.txt"))
       for (s <- testSentences) {
-        for (t <- s.tokens) { val p = t.posLabel; source.println("%s %20s  %6s %6s".format(if (p.valueIsTarget) " " else "*", t.string, p.target.categoryValue, p.categoryValue)) }
+        for (t <- s.tokens) { val p = t.attr[LabeledPennPosTag]; source.println("%s %20s  %6s %6s".format(if (p.valueIsTarget) " " else "*", t.string, p.target.categoryValue, p.categoryValue)) }
         source.println()
       }
       source.close()

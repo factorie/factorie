@@ -163,7 +163,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
     else addMergeableFeature("td" + tdist)
     if (mention1.demonym != "" && mention1.demonym == mention2.demonym) addMergeableFeature("dM") else addMergeableFeature("dMf")
     addMergeableFeature("cap" + mention1.capitalization +"_" +  mention2.capitalization)
-    addMergeableFeature("hpos" + mention2.headToken.posLabel.value + "_" + mention1.headToken.posLabel.value)
+    addMergeableFeature("hpos" + mention2.headToken.posTag.value + "_" + mention1.headToken.posTag.value)
     addMergeableFeature("am" + acronymMatch)
     basicFeatureCalculated = true
   }

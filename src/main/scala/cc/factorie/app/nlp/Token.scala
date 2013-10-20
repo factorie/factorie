@@ -81,7 +81,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
 
   // Common attributes, will return null if not present
-  def posLabel = attr[cc.factorie.app.nlp.pos.PennPosTag]
+  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag]
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
@@ -211,7 +211,7 @@ trait TokenPennPosTagCubbie extends TokenCubbie {
   def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PennPosTag
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
-    pos:= t.posLabel.categoryValue
+    pos:= t.posTag.categoryValue
     this
   }
   override def fetchToken: Token = {

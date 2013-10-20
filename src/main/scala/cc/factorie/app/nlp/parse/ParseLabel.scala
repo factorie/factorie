@@ -227,8 +227,8 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
   override def toString: String = {
     val tokenStrings = {
-      if (sentence.tokens.forall(_.posLabel ne null))
-        sentence.tokens.map(t => t.string + "/" + t.posLabel.categoryValue)
+      if (sentence.tokens.forall(_.posTag ne null))
+        sentence.tokens.map(t => t.string + "/" + t.posTag.categoryValue)
       else
         sentence.tokens.map(_.string)
     }

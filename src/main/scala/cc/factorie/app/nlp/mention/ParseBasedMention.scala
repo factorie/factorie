@@ -22,10 +22,10 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
   private final val PROPER_NOUNS      = Seq("NNP", "NNPS")
   private final val ALL_NOUNS         = Seq("NN","NNS","NNP","NNPS","PRP","PRP$")
 
-  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS.contains(t.posLabel.categoryValue.toUpperCase)
-  private def isCommonNoun     (t: Token) = COMMON_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
-  private def isProperNoun     (t: Token) = PROPER_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
-  private def isNoun           (t: Token) = ALL_NOUNS.contains(t.posLabel.categoryValue.toUpperCase)
+  private def isPersonalPronoun(t: Token) = PERSONAL_PRONOUNS.contains(t.posTag.categoryValue.toUpperCase)
+  private def isCommonNoun     (t: Token) = COMMON_NOUNS.contains(t.posTag.categoryValue.toUpperCase)
+  private def isProperNoun     (t: Token) = PROPER_NOUNS.contains(t.posTag.categoryValue.toUpperCase)
+  private def isNoun           (t: Token) = ALL_NOUNS.contains(t.posTag.categoryValue.toUpperCase)
 
   def predictMentionType(t: Token): Option[String] =
     if(isPersonalPronoun(t)) Some("PRO")

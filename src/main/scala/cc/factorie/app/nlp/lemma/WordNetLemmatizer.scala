@@ -81,7 +81,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     else wordbase(rawlc, pos)
   }
   def process(document:Document): Document = {
-    for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posLabel.categoryValue))
+    for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posTag.categoryValue))
     document
   }
   override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; l.value }
