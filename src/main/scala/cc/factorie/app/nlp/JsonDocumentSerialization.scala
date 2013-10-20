@@ -81,7 +81,7 @@ object JsonDocumentSerialization {
       val tokens: ArrayBuffer[LightweightToken] = new ArrayBuffer
       for (t <- s.tokens) {
         tokens += LightweightToken(t.stringStart, t.stringEnd - t.stringStart,
-          t.string, t.lemmaString, t.posLabel.categoryValue, t.parseParentIndex,
+          t.string, t.lemmaString, t.posTag.categoryValue, t.parseParentIndex,
           t.parseLabel.categoryValue)
       }
       sections += LightweightSection(s.stringStart, s.stringEnd,

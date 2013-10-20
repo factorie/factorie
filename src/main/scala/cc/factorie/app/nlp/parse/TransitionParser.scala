@@ -422,7 +422,7 @@ class TransitionParser extends DocumentAnnotator {
   case class DepArc(depToken: DepToken, label: String)
 
   class ParseState(var stack: Int, var input: Int, val reducedIds: collection.mutable.HashSet[Int], sentence: Sentence) {
-    private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
+    private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posTag.categoryValue, thisIdx=idx, state=state)
     val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
     val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
     val sentenceTokens = (Seq(rootToken) ++ sentence.tokens.zipWithIndex.map(t => depToken(t._1, t._2+1, this))).toArray

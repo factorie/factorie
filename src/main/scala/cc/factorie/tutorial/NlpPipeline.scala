@@ -6,5 +6,5 @@ object NlpPipeline extends App {
   val doc = new Document("Education is the most powerful weapon which you can use to change the world.")
   DocumentAnnotatorPipeline(pos.POS1).process(doc)
   for (token <- doc.tokens)
-    println("%-10s %-5s".format(token.string, token.posLabel.categoryValue))
+    println("%-10s %-5s".format(token.string, token.posTag.categoryValue))
 }

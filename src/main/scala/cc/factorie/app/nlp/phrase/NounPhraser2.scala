@@ -38,7 +38,7 @@ object NounPhraser2 extends DocumentAnnotator {
       } else {
         if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
           spans += ("ORG" -> new NounPhrase(s, t.positionInSection, 1))
-        } else if (t.posLabel.categoryValue == "NNP") {
+        } else if (t.posTag.categoryValue == "NNP") {
           spans += ("PER" -> new NounPhrase(s, t.positionInSection, 1))
         }
       }
@@ -47,7 +47,7 @@ object NounPhraser2 extends DocumentAnnotator {
   }
 
   def getPronounSpans(doc: Document): Seq[TokenSpan] = {
-    doc.tokens.filter(_.posLabel.isPersonalPronoun).map(t => new TokenSpan(t.section, t.positionInSection, 1)).toSeq
+    doc.tokens.filter(_.posTag.isPersonalPronoun).map(t => new TokenSpan(t.section, t.positionInSection, 1)).toSeq
   }
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer) // TODO change lexicon name to "EntityTypePerson"? -akm
 

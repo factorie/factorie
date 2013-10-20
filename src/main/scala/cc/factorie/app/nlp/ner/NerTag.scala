@@ -18,7 +18,11 @@ import cc.factorie.app.nlp._
 import cc.factorie.util.Cubbie
 import cc.factorie.variable._
 
-// A "Tag" is a categorical label associated with a token.  We will also have a PosTag.
+// A "Tag" is a categorical label associated with a token.
+
+ /** An abstract class for a variable holding the part-of-speech tag of a Token.
+     More specific subclasses have a domain, such as BilouConllNerDomain.
+     @author Andrew McCallum */
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
@@ -26,40 +30,18 @@ abstract class NerTag(val token:Token, initialCategory:String) extends Categoric
   // TODO Pick just one of the above.
 }
 
-// Note: There are no labeled counterparts to these SpanLabels.
+/** A categorical variable holding the named entity type of a TokenSpan.
+    More specific subclasses have a domain, such as ConllNerDomain.
+    @author Andrew McCallum */
 abstract class NerSpanLabel(val span:TokenSpan, initialCategory:String) extends CategoricalVariable(initialCategory)
+/** A TokenSpan covering a named entity.  Its entity type is indicated by its "label" member.
+    @author Andrew McCallum */
 abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) {
   def label: NerSpanLabel
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
 }
+// Note: There are currently no labeled counterparts to these SpanLabels.
 
-
-///** The abstract class for all named-entity recognition labels. */
-//abstract class NerLabel(initialValue:String) extends LabeledCategoricalVariable(initialValue) {
-//  /** Return "PER" instead of "I-PER". */
-//  def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-//  def cubbieSlotName = "ner"
-//  def cubbieSlotValue = categoryValue
-//}
-//
-//class ConllSpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue) {
-//  def domain = ConllNerDomain
-//}
-//// TODO Rename this to ConllNerSpan
-//class NerSpan(sec:Section, labelString:String, start:Int, length:Int) extends TokenSpan(sec, start, length) {
-//  val label = new ConllSpanNerLabel(this, labelString)
-//  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
-//    (!value.hasPredecessor(1) || value.predecessor(1).nerLabel.intValue != label.intValue) &&
-//    (!value.hasSuccessor(1) || value.successor(1).nerLabel.intValue != label.intValue)
-//  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
-//}
-//
-//class NerSpanList extends TokenSpanList[NerSpan]
-//
-//
-//class NerLabelCubbie extends Cubbie {
-//  val label = StringSlot("label")
-//}
 
 object ConllNerDomain extends CategoricalDomain[String] {
   this ++= Vector(

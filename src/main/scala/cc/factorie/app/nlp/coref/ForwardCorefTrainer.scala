@@ -66,7 +66,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
         val endingMents = endingTokMap.get(s(ti))
         val singleTokMents = singleTokMap.get(s(ti))
         assert(singleTokMents.size <= 1)
-        out.print(docName + " " + partNum.toInt + " " + (ti + 1) + " " + s(ti).string + " " + s(ti).posLabel.categoryValue + " - - - - - - - ")
+        out.print(docName + " " + partNum.toInt + " " + (ti + 1) + " " + s(ti).string + " " + s(ti).posTag.categoryValue + " - - - - - - - ")
         var ments = List[String]()
         if (beginningMents.isDefined) ments = beginningMents.get.reverse.map(m => "(" + map.reverseMap(m)).mkString("|") :: ments
         if (singleTokMents.isDefined) ments = singleTokMents.get.map(m => "(" + map.reverseMap(m) + ")").mkString("|") :: ments

@@ -53,7 +53,7 @@ object RelationVariables {
       // TODO compute relation features using "first" and "arg"
       // TODO convert Lexicons (from refectorie.proj.jntinf) to app.chain.Lexicon
       for (tok <- arg.tokens) {
-        this += "POS_" + tok.posLabel.categoryValue
+        this += "POS_" + tok.posTag.categoryValue
         if (tok.string(0).isLower)
           this += "STEM_" + tok.string.replaceAll("\\s+", " ").take(5)
         //for (lex <- Lexicons.getMemberships(tok.string.replaceAll("\\s+", " ").toLowerCase))
@@ -61,7 +61,7 @@ object RelationVariables {
       }
 //      for (lex <- Lexicons.getMemberships(arg.phrase.replaceAll("\\s+", " ").toLowerCase))
 //        this += "PHRASE-LEX-" + lex
-      this += "HEAD_POS_" + arg.headToken.posLabel.categoryValue
+      this += "HEAD_POS_" + arg.headToken.posTag.categoryValue
 //      for (lex <- Lexicons.getMemberships(arg.headToken.string.replaceAll("\\s+", " ").toLowerCase))
 //        this += "HEAD_LEX-" + lex
     }
@@ -126,14 +126,14 @@ object RelationVariables {
         //this += prefix + "W_" + tok.string.replaceAll("\\s+", " ").toLowerCase
         //this += prefix + "STEM_" + tok.string.replaceAll("\\s+", " ").toLowerCase.take(5)
       }
-      this += prefix + "POS_" + tok.posLabel.categoryValue
+      this += prefix + "POS_" + tok.posTag.categoryValue
     }
 
     override def +=(elt: String) = update(domain.index(elt), 1.0)(null)
 
 
     def tokenIsPossessive(token: Token) = {
-      token.posLabel.categoryValue == "PRP$" || token.string.endsWith("'s")
+      token.posTag.categoryValue == "PRP$" || token.string.endsWith("'s")
     }
 
     def null2opt[T](t: T) = if (t == null) None else Some(t)
@@ -233,17 +233,17 @@ object RelationVariables {
           val (outside, inside, arg1ContainsArg2) =
             if (m1.start <= m2.start && m1.end >= m2.end) (m1, m2, true) else (m2, m1, false)
 
-          val inBetweenTags = inBetweenHeads.map(_.posLabel.categoryValue).mkString(" ")
+          val inBetweenTags = inBetweenHeads.map(_.posTag.categoryValue).mkString(" ")
           val config = "-" + arg1ContainsArg2 + "-" + forward
           val inBetweenTagsAndConfig = "BETW: " + inBetweenTags + config
           this += inBetweenTagsAndConfig
           this += inBetweenTagsAndConfig + " ARG1 POSS: " + tokenIsPossessive(m1.headToken)
           this += inBetweenTagsAndConfig + " ARG2 POSS: " + tokenIsPossessive(m2.headToken)
-          this += inBetweenTagsAndConfig + " ARG1 TAG: " + m1.headToken.posLabel.categoryValue
-          this += inBetweenTagsAndConfig + " ARG2 TAG: " + m2.headToken.posLabel.categoryValue
+          this += inBetweenTagsAndConfig + " ARG1 TAG: " + m1.headToken.posTag.categoryValue
+          this += inBetweenTagsAndConfig + " ARG2 TAG: " + m2.headToken.posTag.categoryValue
           this += inBetweenTagsAndConfig + " ARG1 WORD: " + m1.phrase.replaceAll("\n", " ")
           this += inBetweenTagsAndConfig + " ARG2 WORD: " + m2.phrase.replaceAll("\n", " ")
-          this += inBetweenTagsAndConfig + " ARG TAGS: " + m1.headToken.posLabel.categoryValue + " " + m2.headToken.posLabel.categoryValue
+          this += inBetweenTagsAndConfig + " ARG TAGS: " + m1.headToken.posTag.categoryValue + " " + m2.headToken.posTag.categoryValue
 
         }
       } else {

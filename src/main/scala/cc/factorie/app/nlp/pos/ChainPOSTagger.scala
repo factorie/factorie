@@ -19,7 +19,7 @@ class ChainPOSTagger extends DocumentAnnotator {
       if (s.nonEmpty) {
         s.tokens.foreach(t => if (!t.attr.contains[PennPosTag]) t.attr += new PennPosTag(t, "NN"))
         initPOSFeatures(s)
-        model.maximize(s.tokens.map(_.posLabel))(null)
+        model.maximize(s.tokens.map(_.posTag))(null)
       }
     })
     document
@@ -50,11 +50,11 @@ class ChainPOSTagger extends DocumentAnnotator {
     PosFeaturesDomain.freeze()
     testSentences.foreach(initPOSFeatures)
     def evaluate() {
-      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.posLabel))(null))
-      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.posLabel))))
-      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.posLabel))))
+      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[LabeledPennPosTag]))(null))
+      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
     }
-    val examples = trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.posLabel))).toSeq
+    val examples = trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[LabeledPennPosTag]))).toSeq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
@@ -140,7 +140,7 @@ object ChainPOSTrainer extends HyperparameterMain {
       val pos2 = new ChainPOSTagger
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
-    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
     if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(acc,opts.targetAccuracy.value.toDouble)
 
     acc
