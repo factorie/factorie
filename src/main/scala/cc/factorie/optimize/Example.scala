@@ -408,7 +408,9 @@ class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1
  * @param weight The weight of this example
  */
 class LinearMultiClassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.MultiClass, weight: Double = 1.0)
-  extends LinearMultivariateExample(weights, featureVector, label, objective, weight)
+  extends LinearMultivariateExample(weights, featureVector, label, objective, weight) {
+  assert(label >= 0, "Label must be nonnegative for LinearMultiClassExample. Instead got: " + label)
+}
 
 /**
  * Base example for linear univariate models
@@ -438,5 +440,7 @@ class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, 
  * @param weight The weight of this example
  */
 class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
-  extends LinearUnivariateExample(weights, featureVector, label, objective, weight)
+  extends LinearUnivariateExample(weights, featureVector, label, objective, weight) {
+  assert(label == 1 || label == -1, "Label must be -1 or 1 for LinearBinaryExample. Instead got: " + label)
+}
 

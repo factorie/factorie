@@ -32,7 +32,7 @@ class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimiz
     step += 1
   }
 
-  def initializeWeights(weights: WeightsSet) = if (!initialized) MutableScalableWeights.initializeWeights(weights)
+  def initializeWeights(weights: WeightsSet) = if (!initialized) MutableScalableWeights.initializeWeights(weights, cacheTwoNormSq = true)
   def finalizeWeights(weights: WeightsSet) = MutableScalableWeights.finalizeWeights(weights)
 
   // can we get a good convergence criterion here? since it's not regular sgd, I feel like yes?
@@ -43,13 +43,13 @@ class Pegasos(baseRate: Double = 0.1, l2: Double = 0.01) extends GradientOptimiz
 }
 
 object MutableScalableWeights {
-  def initializeWeights(weights: WeightsSet): Unit = {
+  def initializeWeights(weights: WeightsSet, cacheTwoNormSq: Boolean = false): Unit = {
     for (key <- weights.keys) {
       key.value match {
-        case t: Tensor1 => weights(key) = new MutableScaledTensor1(t.length)
-        case t: Tensor2 => weights(key) = new MutableScaledTensor2(t.dim1, t.dim2)
-        case t: Tensor3 => weights(key) = new MutableScaledTensor3(t.dim1, t.dim2, t.dim3)
-        case t: Tensor4 => weights(key) = new MutableScaledTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+        case t: Tensor1 => weights(key) = new MutableScaledTensor1(t.length, cacheTwoNormSq)
+        case t: Tensor2 => weights(key) = new MutableScaledTensor2(t.dim1, t.dim2, cacheTwoNormSq)
+        case t: Tensor3 => weights(key) = new MutableScaledTensor3(t.dim1, t.dim2, t.dim3, cacheTwoNormSq)
+        case t: Tensor4 => weights(key) = new MutableScaledTensor4(t.dim1, t.dim2, t.dim3, t.dim4, cacheTwoNormSq)
       }
     }
   }
@@ -60,10 +60,8 @@ object MutableScalableWeights {
       scaledTensor.foreachElement((i, v) => key.value(i) = v)
     }
 
-  // NOTE use the scaled tensor to build Pegasos and l2 sgd, and then see if we can
-  // make the l2 regularized thing work with the averaged perceptron -
-  // it can certainly work with the MIRA, different LR's etc
-  private trait MutableScaledTensor extends Tensor with DenseDoubleSeq {
+  abstract class MutableScaledTensor(cacheTwoNormSq: Boolean) extends Tensor with DenseDoubleSeq {
+    private var cachedTwoNormSq: Double = 0.0
     def activeDomain = new RangeIntSeq(0, length)
     def activeDomainSize = activeDomain.length
     def forallActiveElements(f: (Int,Double) => Boolean) = forallElements(f)
@@ -71,60 +69,94 @@ object MutableScalableWeights {
     var multiplier = 1.0
     var tolerance = 0.00001
     override def twoNormSquared: Double = {
+      if (cacheTwoNormSq) return cachedTwoNormSq
+      val myValues = _values
+      val myMultiplier = multiplier
       var normSq = 0.0
       var i = 0
-      while (i < _values.length) {
-        normSq += _values(i) * _values(i)
+      while (i < myValues.length) {
+        normSq += myValues(i) * myValues(i)
         i += 1
       }
-      normSq
+      normSq * myMultiplier * myMultiplier
     }
-    override def update(i: Int, v: Double): Unit = _values(i) = v / multiplier
+    override def update(i: Int, v: Double): Unit = {
+      val myValues = _values
+      val myMultiplier = multiplier
+      if (cacheTwoNormSq) {
+        val oldValue = myValues(i) * myMultiplier
+        cachedTwoNormSq -= oldValue * oldValue
+        cachedTwoNormSq += v * v
+      }
+      myValues(i) = v / myMultiplier
+    }
     override def apply(i: Int): Double = _values(i) * multiplier
     override def *=(f: Double): Unit = {
-      if (math.abs(multiplier) < tolerance) applyMultiplier()
       if (f == 0.0) zero()
       else multiplier *= f
+      if (math.abs(multiplier) < tolerance) applyMultiplier()
     }
 
     override def +=(ds: DoubleSeq, factor: Double) {
+      val myValues = _values
+      val myMultiplier = multiplier
       ds match {
         case o: SparseIndexedTensor =>
-          val len = o.activeDomainSize
+          val len = o._unsafeActiveDomainSize
           val indices = o._indices
           val values = o._values
           var i = 0
           while (i < len) {
             val idx = indices(i)
-            _values(idx) = (_values(idx) * multiplier + values(i) * factor) / multiplier
+            val oldValue = myValues(idx) * myMultiplier
+            val newValue = oldValue + values(i) * factor
+            if (cacheTwoNormSq) {
+              cachedTwoNormSq -= oldValue * oldValue
+              cachedTwoNormSq += newValue * newValue
+            }
+            myValues(idx) = newValue / myMultiplier
             i += 1
           }
         case o: SparseBinaryTensor =>
-          val len = o.activeDomainSize
+          val len = o._unsafeActiveDomainSize
           val indices = o._indices
           var i = 0
           while (i < len) {
             val idx = indices(i)
-            _values(idx) = (_values(idx) * multiplier + factor) / multiplier
+            val oldValue = myValues(idx) * myMultiplier
+            val newValue = oldValue + factor
+            if (cacheTwoNormSq) {
+              cachedTwoNormSq -= oldValue * oldValue
+              cachedTwoNormSq += newValue * newValue
+            }
+            myValues(idx) = newValue / myMultiplier
             i += 1
           }
         case o: DenseTensor =>
           val arr = o.asArray
           var i = 0
           while (i < arr.length) {
-            _values(i) = (_values(i) * multiplier + arr(i) * factor) / multiplier
+            val oldValue = myValues(i) * myMultiplier
+            val newValue = oldValue + arr(i) * factor
+            if (cacheTwoNormSq) {
+              cachedTwoNormSq -= oldValue * oldValue
+              cachedTwoNormSq += newValue * newValue
+            }
+            myValues(i) = newValue / myMultiplier
             i += 1
           }
         case _ => throw new Error("ScaledTensor can't yet handle += from" + ds.getClass.getName)
       }
     }
     override def dot(ds: DoubleSeq) = {
+      val myValues = _values
+      val myMultiplier = multiplier
       var res = 0.0
-      ds.foreachActiveElement((i, x) => res += apply(i) * x)
+      ds.foreachActiveElement((i, x) => res += myValues(i) * myMultiplier * x)
       res
     }
-    def copy: Tensor = throw new Error("Method copy not defined on ScaledTensor")
-    def blankCopy: Tensor = throw new Error("Method blankCopy not defined on ScaledTensor")
+    def copy: Tensor = throw new Error("Method copy not defined on MutableScaledTensor")
+    def blankCopy: Tensor = throw new Error("Method blankCopy not defined on MutableScaledTensor")
     def +=(i: Int, v: Double): Unit =  update(i, v + apply(i))
     def zero(): Unit = {
       for (i <- 0 until length) { _values(i) = 0 }
@@ -133,10 +165,11 @@ object MutableScalableWeights {
 
     protected def copyTo[D <: DenseTensor](c: D): D = {
       val cArr = c.asArray
-      val valArr = _values
+      val myValues = _values
+      val myMultiplier = multiplier
       var i = 0
-      while (i < _values.length) {
-        cArr(i) = valArr(i) * multiplier
+      while (i < myValues.length) {
+        cArr(i) = myValues(i) * myMultiplier
         i += 1
       }
       c
@@ -144,39 +177,59 @@ object MutableScalableWeights {
 
     private def applyMultiplier(): Unit = {
       var i = 0
-      while (i < _values.length) {
-        _values(i) *= multiplier
+      val myValues = _values
+      val myMultiplier = multiplier
+      while (i < myValues.length) {
+        myValues(i) *= myMultiplier
         i += 1
       }
-      multiplier  = 1.0
+      multiplier = 1.0
     }
   }
 
-  private class MutableScaledTensor1(val dim1: Int) extends MutableScaledTensor with Tensor1 {
+  private class MutableScaledTensor1(val dim1: Int, val cacheTwoNormSq: Boolean) extends MutableScaledTensor(cacheTwoNormSq) with Tensor1 {
     def isDense = false
     override def copy = copyTo(new DenseTensor1(dim1))
   }
-  private class MutableScaledTensor2(val dim1: Int, val dim2: Int) extends MutableScaledTensor with Tensor2 {
+  private class MutableScaledTensor2(val dim1: Int, val dim2: Int, val cacheTwoNormSq: Boolean) extends MutableScaledTensor(cacheTwoNormSq) with Tensor2 {
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def isDense = false
     override def copy = copyTo(new DenseTensor2(dim1, dim2))
-    override def *(t: Tensor1): Tensor1 = {
-      val newT = new DenseTensor1(dim1)
+    override def leftMultiply(t: Tensor1): Tensor1 = {
+      val myValues = _values
+      val myMultiplier = multiplier
+      assert(dim1 == t.dim1, "Dimensions don't match: " + dim1 + " " + t.dim1)
+      val myDim2 = dim2
+      val newT = new DenseTensor1(dim2)
       val newArray = newT.asArray
       t match {
-        case t: DenseTensor1 =>
+        case t: DenseTensor =>
           val tArr = t.asArray
-          var col = 0
-          while (col < tArr.length) {
-            val v = tArr(col)
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
+          var row = 0
+          while (row < tArr.length) {
+            val v = tArr(row)
+            val offset = row * myDim2
+            var col = 0
+            while (col < myDim2) {
+              newArray(col) += (myValues(offset + col) * myMultiplier * v)
+              col += 1
             }
-            col += 1
+            row += 1
+          }
+        case t: SparseBinaryTensor =>
+          val tActiveDomainSize = t.activeDomainSize
+          val tIndices = t._indices
+          var ti = 0
+          while (ti < tActiveDomainSize) {
+            val row = tIndices(ti)
+            val offset = row * myDim2
+            var col = 0
+            while (col < myDim2) {
+              newArray(col) += myValues(offset + col) * myMultiplier
+              col += 1
+            }
+            ti += 1
           }
         case t: SparseIndexedTensor =>
           val tActiveDomainSize = t.activeDomainSize
@@ -184,51 +237,72 @@ object MutableScalableWeights {
           val tValues = t._values
           var ti = 0
           while (ti < tActiveDomainSize) {
+            val row = tIndices(ti)
+            val offset = row * myDim2
+            val v = tValues(ti)
+            var col = 0
+            while (col < myDim2) {
+              newArray(col) += (myValues(offset + col) * v * myMultiplier)
+              col += 1
+            }
+            ti += 1
+          }
+        case _ =>
+          throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
+      }
+      newT
+    }
+
+    override def *(t: Tensor1): Tensor1 = {
+      assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
+      val myValues = _values
+      val myMultiplier = multiplier
+      val newT = new DenseTensor1(dim1)
+      val newArray = newT.asArray
+      t match {
+        case t: DenseTensor =>
+          val tArr = t.asArray
+          var col = 0
+          while (col < tArr.length) {
+            val v = tArr(col)
+            var row = 0
+            while (row < dim1) {
+              val offset = row * dim2
+              newArray(row) += (myValues(offset + col) * myMultiplier * v)
+              row += 1
+            }
+            col += 1
+          }
+        case t: SparseTensor =>
+          val tActiveDomainSize = t.activeDomainSize
+          val tIndices = t._indices
+          val tValues = t._valuesSeq
+          var ti = 0
+          while (ti < tActiveDomainSize) {
             val col = tIndices(ti)
             val v = tValues(ti)
             var row = 0
             while (row < dim1) {
               val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
-            }
-            ti += 1
-          }
-        case t: SparseBinaryTensor =>
-          val tActiveDomainSize = t.activeDomainSize
-          val tIndices = t._indices
-          var ti = 0
-          while (ti < tActiveDomainSize) {
-            val col = tIndices(ti)
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += apply(offset + col)
+              newArray(row) += (myValues(offset + col) * myMultiplier * v)
               row += 1
             }
             ti += 1
           }
         case _ =>
-          t.foreachActiveElement((col, v) => {
-            var row = 0
-            while (row < dim1) {
-              val offset = row * dim2
-              newArray(row) += (apply(offset + col) * v)
-              row += 1
-            }
-          })
+          throw new Error("tensor type neither dense nor sparse: " + t.getClass.getName)
       }
       newT
     }
   }
-  private class MutableScaledTensor3(val dim1: Int, val dim2: Int, val dim3: Int) extends MutableScaledTensor with Tensor3 {
+  private class MutableScaledTensor3(val dim1: Int, val dim2: Int, val dim3: Int, val cacheTwoNormSq: Boolean) extends MutableScaledTensor(cacheTwoNormSq) with Tensor3 {
     def isDense = false
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def activeDomain3 = new RangeIntSeq(0, dim3)
     override def copy = copyTo(new DenseTensor3(dim1, dim2, dim3))
   }
-  private class MutableScaledTensor4(val dim1: Int, val dim2: Int, val dim3: Int, val dim4: Int) extends MutableScaledTensor with Tensor4 {
+  private class MutableScaledTensor4(val dim1: Int, val dim2: Int, val dim3: Int, val dim4: Int, val cacheTwoNormSq: Boolean) extends MutableScaledTensor(cacheTwoNormSq) with Tensor4 {
     def isDense = false
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)

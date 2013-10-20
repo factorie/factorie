@@ -473,16 +473,17 @@ class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with Share
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
-  val cutoff    = new CmdOption("cutoff", "0", "", "")
+  val cutoff    = new CmdOption("cutoff", 0, "", "")
   val loadModel = new CmdOption("load", "", "", "")
   val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use during training.")
   val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
   val modelDir =  new CmdOption("model", "model", "FILENAME", "File in which to save the trained model.")
-  val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
+  val bootstrapping = new CmdOption("bootstrap", 0, "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
   val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val maxIters = new CmdOption("max-iterations", 5, "INT", "iterations of training per round")
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
@@ -532,8 +533,8 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
-    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
-      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
+    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer(opts.nThreads.value)
+      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=opts.maxIters.value)
     def evaluate(cls: LinearMultiClassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
@@ -541,7 +542,7 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     c.featuresDomain.dimensionDomain.gatherCounts = true
     c.generateDecisions(sentences, 0, opts.nThreads.value)
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
-    c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
+    c.featuresDomain.dimensionDomain.trimBelowCount(2*opts.cutoff.value)
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
@@ -561,7 +562,8 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
-    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(testLAS,opts.targetAccuracy.value.toDouble)
+
     testLAS
   }
 }
@@ -575,6 +577,9 @@ object TransitionParserOptimizer {
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 10)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -584,10 +589,9 @@ object TransitionParserOptimizer {
       10, 5)
       */
     val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
-    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
     import scala.concurrent.duration._

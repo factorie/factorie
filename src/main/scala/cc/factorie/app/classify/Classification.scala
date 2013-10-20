@@ -2,10 +2,11 @@ package cc.factorie.app.classify
 
 import cc.factorie._
 import cc.factorie.la.{Tensor2, DenseTensor2, Tensor1, DenseTensor1}
-import cc.factorie.util.{TensorCubbie, Cubbie}
+import cc.factorie.util.{Threading, TensorCubbie, Cubbie}
 import cc.factorie.variable._
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, Template2}
 import cc.factorie.optimize._
+import cc.factorie.optimize.LinearMultiClassExample
 
 /**
  * User: apassos
@@ -159,17 +160,14 @@ class LinearMultiClassTrainer(val optimizer: GradientOptimizer,
   }
 }
 
-class SVMMultiClassTrainer(parallel: Boolean=false)(implicit random: scala.util.Random) extends LinearMultiClassTrainer(optimizer=null, useParallelTrainer=parallel, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
+class SVMMultiClassTrainer(nThreads: Int = 1)(implicit random: scala.util.Random) extends LinearMultiClassTrainer(optimizer=null, useParallelTrainer=false, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
   override def baseTrain(classifier: LinearMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMultiClassClassifier => Unit) {
     val ll = labels.toArray
     val ff = features.toArray
-    val numLabels = classifier.weights.value.dim1
-    val weightTensor = {
-      if (parallel) (0 until numLabels).par.map { label => (new LinearL2SVM).train(ff, ll, label) }
-      else (0 until numLabels).map { label => (new LinearL2SVM).train(ff, ll, label) }
-    }
+    val numLabels = classifier.weights.value.dim2
+    val weightTensor = Threading.parMap(0 until numLabels, nThreads) { label => (new LinearL2SVM).train(ff, ll, label) }
     val weightsValue = classifier.weights.value
-    for (f <- 0 until weightsValue.dim2; (l,t) <- (0 until numLabels).zip(weightTensor)) {
+    for (f <- 0 until weightsValue.dim1; (l,t) <- (0 until numLabels).zip(weightTensor)) {
       weightsValue(f,l) = t(f)
     }
     evaluate(classifier)

@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
+import cc.factorie.app.nlp.{PerformanceChecking, DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -178,7 +178,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
       conllFormatGold2.close()
     }
     val accuracy = 0.0
-    if(opts.targetAccuracy.wasInvoked) assert(accuracy > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(accuracy,opts.targetAccuracy.value.toDouble)
 
     accuracy
   }

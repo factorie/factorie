@@ -37,7 +37,7 @@ trait GradientOptimizer {
 
 /** Include L2 regularization (Gaussian with given scalar as the spherical covariance) in the gradient and value. */
 trait L2Regularization extends GradientOptimizer {
-  var variance: Double = 10.0
+  var variance: Double = 1.0
   abstract override def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
     gradient += (weights, -1 / variance)
     super.step(weights, gradient, value - 0.5 / variance * (weights dot weights))
