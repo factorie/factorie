@@ -9,7 +9,7 @@ import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomai
 import cc.factorie.app.classify.LinearMultiClassClassifier
 import cc.factorie.optimize.Trainer
 
-class ForwardPOSTagger extends DocumentAnnotator {
+class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
@@ -305,18 +305,15 @@ class ForwardPOSTagger extends DocumentAnnotator {
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
 }
 
-// object POS1 is defined in app/nlp/pos/package.scala
+/** The default part-of-speech tagger, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
+class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
 
-/** The default POS1, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-object ForwardPOSTagger extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-WSJ.factorie"))
+/** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
+class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
 
-/** The default POS1, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-// TODO Set up so that POS1WSJ and POS1Ontonotes parameter loading locations can be set independently. 
-//class POS1Ontonotes(url:java.net.URL) extends POS1(url)
-//object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
-object ForwardPOSTaggerOntonotes extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-Ontonotes.factorie"))
-
-class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
   val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
   val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
@@ -333,15 +330,15 @@ class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 }
 
 
-object ForwardPOSTrainer extends HyperparameterMain {
+object ForwardPosTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new ForwardPOSTagger
+    val pos = new ForwardPosTagger
 
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
     val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
@@ -363,7 +360,7 @@ object ForwardPOSTrainer extends HyperparameterMain {
     if (opts.saveModel.value) {
       println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
       pos.serialize(opts.modelFile.value)
-      val pos2 = new ForwardPOSTagger
+      val pos2 = new ForwardPosTagger
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
@@ -373,9 +370,9 @@ object ForwardPOSTrainer extends HyperparameterMain {
   }
 }
 
-object ForwardPOSOptimizer {
+object ForwardPosOptimizer {
   def main(args: Array[String]) {
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -391,7 +388,7 @@ object ForwardPOSOptimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPOSTagger")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPosTagger")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
