@@ -540,7 +540,16 @@ class StackedConllNER(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
-                url: java.net.URL=null) extends StackedNER[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url)
+                url: java.net.URL=null) extends StackedNER[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+  override def process(document:Document): Document = {
+    if (document.tokenCount > 0) {
+      val doc = super.process(document)
+      // Add and populated NerSpanList attr to the document 
+      doc.attr.+=(new ner.OntonotesNerSpanList ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section)))
+      doc
+    } else document
+  }
+}
 
 object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
 object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))

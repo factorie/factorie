@@ -35,6 +35,7 @@ class TokenNormalizer1[A<:TokenString](
     override def default(s:String) = s
   } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'") // TODO complete this collection
   
+  // TODO Normalize to `` and '' for better PosTag prediction, etc.
   def processToken(token:Token): Unit = {
     val string = token.string
     if      (undoPennParens && string == "-LRB-") token.attr += newTokenString(token, "(")

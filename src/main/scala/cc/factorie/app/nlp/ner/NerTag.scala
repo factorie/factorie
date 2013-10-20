@@ -298,6 +298,10 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
   // Convert from an intValue in this domain to an intValue in the OntonotesNerDomain
   def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
   freeze()
+  def spanList(section:Section): OntonotesNerSpanList = {
+    val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouOntonotesNerTag].categoryValue))
+    new OntonotesNerSpanList ++= boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3))
+  } 
 }
 class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
 class LabeledBilouOntonotesNerTag(token:Token, initialCategory:String) extends BilouOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
