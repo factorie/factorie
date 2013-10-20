@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 
-/** Find and chunk noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
-object NounPhraser1 extends DocumentAnnotator {
+/** Find noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
+object PosBasedNounPhraseFinder extends DocumentAnnotator {
   def process(document:Document): Document = {
     val phrases = new NounPhraseList
     var tempSpan: NounPhrase = null
