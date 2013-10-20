@@ -4,13 +4,13 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.parse.{TransitionParser, ParseTree}
-import ner.{NerLabel, BilouConllNerLabel, BilouOntonotesNerLabel, NerSpan}
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.ner._
+import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
 
 
 class ParseBasedMentionList extends MentionList
-class NerSpanList extends TokenSpanList[NerSpan]
+//class NerSpanList extends TokenSpanList[NerSpan]
 
 object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
 object ParseAndNerBasedMentionFinding extends ParseBasedMentionFinding(true)
@@ -40,7 +40,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
 
   private def nerSpans(doc: Document): Seq[Mention] = {
-    (for (span <- doc.attr[NerSpanList]) yield
+    (for (span <- doc.attr[ConllNerSpanList]) yield
       new Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
@@ -159,7 +159,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     doc
   }
 
-  def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.NerLabel])
+  def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.IobConllNerTag])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)).mkString(","); case _ => "_" }
 

@@ -2,8 +2,8 @@ package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.mention._
-import cc.factorie.app.nlp.pos.PennPosLabel
-import cc.factorie.app.nlp.ner.{NerSpan, NerLabel}
+import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.ner.{NerSpan, NerTag}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Span
 
@@ -12,7 +12,7 @@ class NerPronounPhraseList extends MentionList
 /** Find noun phrases by a combination of named-entity recognition and lexicon-based pronoun finding.
     @author Alexandre Passos */
 object NounPhraser2 extends DocumentAnnotator {
-  def prereqAttrs = Seq(classOf[NerLabel], classOf[PennPosLabel])
+  def prereqAttrs = Seq(classOf[NerTag], classOf[PennPosTag])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
 
@@ -20,8 +20,8 @@ object NounPhraser2 extends DocumentAnnotator {
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
     val spans = ArrayBuffer[(String,NounPhrase)]()
     for (s <- doc.sections;t <- s.tokens) {
-      if (t.attr[NerLabel].categoryValue != "O") {
-        val attr = t.attr[NerLabel].categoryValue.split("-")
+      if (t.attr[NerTag].categoryValue != "O") {
+        val attr = t.attr[NerTag].categoryValue.split("-")
         if (attr(0) == "U") {
           val lab = attr(1)
           spans += (lab -> new NounPhrase(s, t.positionInSection, 1))
@@ -29,7 +29,7 @@ object NounPhraser2 extends DocumentAnnotator {
           val lab = attr(1)
           if(t.hasNext) {
             var lookFor = t.next
-            while (lookFor.hasNext && lookFor.attr[NerLabel].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
+            while (lookFor.hasNext && lookFor.attr[NerTag].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
             spans += (lab -> new NounPhrase(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
           } else {
             spans += (lab -> new NounPhrase(s, t.positionInSection, 1))

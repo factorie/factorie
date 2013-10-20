@@ -4,7 +4,7 @@ package cc.factorie.app.nlp
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.parse.{ParseTree, ParseTreeLabelDomain}
 import cc.factorie.app.nlp.lemma.TokenLemma
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import java.lang.reflect.{Type, ParameterizedType}
@@ -121,7 +121,7 @@ object JsonDocumentSerialization {
       val token = new cc.factorie.app.nlp.Token(section, tokenStarts(i), tokenStarts(i) + tokenLengths(i))
       token.attr += new TokenString(token, tokenStrings(i))
       token.attr += new TokenLemma(token, tokenLemma(i))
-      token.attr += new PennPosLabel(token, tokenPOS(i))
+      token.attr += new PennPosTag(token, tokenPOS(i))
     }
 
     val sentenceStarts = s.senStarts

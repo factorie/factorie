@@ -502,7 +502,7 @@ object BPTestUtils {
   // a binary variable that takes values 0 or 1
   object BinDomain extends DiscreteDomain(2)
 
-  class BinVar(i: Int) extends DiscreteVariable {
+  class BinVar(i: Int) extends DiscreteVariable(i) {
     def domain = BinDomain
   }
   

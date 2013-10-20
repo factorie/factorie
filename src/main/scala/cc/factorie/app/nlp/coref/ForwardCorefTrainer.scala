@@ -4,7 +4,7 @@ import cc.factorie.app.nlp.{PerformanceChecking, DocumentAnnotatorPipeline, Muta
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.ner.{BasicConllNER, NerLabel}
+import cc.factorie.app.nlp.ner.{BasicConllNER, NerTag}
 import cc.factorie.util.HyperparameterMain
 
 /**
@@ -207,7 +207,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
       map(classOf[MentionList]) = () => NerAndPronounMentionFinder
-      map(classOf[NerLabel]) = () => BasicConllNER
+      map(classOf[NerTag]) = () => BasicConllNER
     } else {
       map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }

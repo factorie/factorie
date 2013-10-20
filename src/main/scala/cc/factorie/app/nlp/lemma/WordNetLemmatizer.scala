@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.lemma
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PennPosLabel,PennPosDomain}
+import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
 import java.io.{FileInputStream,InputStream}
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -85,7 +85,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     document
   }
   override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; l.value }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
   def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
 
   private def wordbase(w: String, pos: String): String = {

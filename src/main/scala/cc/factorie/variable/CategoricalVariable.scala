@@ -50,7 +50,12 @@ abstract class CategoricalVariable[C] extends MutableDiscreteVar with MutableCat
     this()
     val idx = domain.index(initialCategory)
     if (idx < 0) throw new Error("Initial category not in domain: "+initialCategory.toString)
-    _set(idx)
+    _initialize(idx)
+  }
+  def this(initialIntValue:Int) = {
+    this()
+    if (initialIntValue < 0 || initialIntValue >= domain.size) throw new Error("Initial intValue outside domain.")
+    _initialize(initialIntValue)
   }
 }
 
@@ -62,15 +67,15 @@ abstract class CategoricalVariable[C] extends MutableDiscreteVar with MutableCat
 // But then we couldn't use syntax like:  PersonDomain.size
 // But this doesn't matter any more.
 
-/** An Observation put into an index, and whose value is the Observation variable itself.  
-    For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
+/** A variable put into an index, and whose categorical value is the variable itself.  
+    For example, you can create 10 'Person extends ItemizedVar[Person]' objects, 
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.categoryValue == p1. 
     @author Andrew McCallum */
 trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[This] with VarWithConstantValue {
   this: This =>
   def domain: CategoricalDomain[This]
-  // Put the variable in the CategoricalDomain and remember it.
+  domain.index(this) // Put the variable in the CategoricalDomain and remember it.
   override def categoryValue = this
 }
 

@@ -76,7 +76,7 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
 //  def addSentence(): Sentence = addSentence(if (_sentences.length == 0) 0 else _sentences.last.end, 0)
   def addSentence(s:Sentence): Sentence = {
     if (s.section ne this) throw new Error("Trying to add Sentence to Section to which it does not belong.")
-    if (sentences.length > 0 && _sentences.last.end > s.start) throw new Error("Sentences must be added in order and not overlap.")
+    if (sentences.length > 0 && _sentences.last.end > s.start) throw new Error("Sentences must be added in order and not overlap.  Last Sentence ends at "+_sentences.last.end+" New sentence trying to start at "+s.start)
     if (s.start+s.length > this.length + 1) throw new Error("Trying to add a Sentence beyond the end of the Section. Adding at " + (s.start + s.length) + " instead of " + (this.length + 1))
     _sentences += s; s
   }

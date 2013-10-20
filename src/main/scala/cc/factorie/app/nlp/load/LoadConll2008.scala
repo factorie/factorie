@@ -17,7 +17,7 @@ import cc.factorie.app.nlp._
 
 
 import scala.io.Source
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -48,7 +48,7 @@ object LoadConll2008 {
     var document: Document = new Document
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-    document.annotators(classOf[pos.PennPosLabel]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadLemma) document.annotators(classOf[TokenLemma]) = UnknownDocumentAnnotator.getClass // register that we have lemma
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)
@@ -72,7 +72,7 @@ object LoadConll2008 {
         val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new PennPosLabel(token, partOfSpeech) // TODO Change this to PennPosLabel
+        token.attr += new PennPosTag(token, partOfSpeech) // TODO Change this to PennPosTag
         if (loadLemma)
           token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))

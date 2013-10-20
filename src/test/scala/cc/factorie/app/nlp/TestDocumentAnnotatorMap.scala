@@ -1,9 +1,9 @@
 package cc.factorie.app.nlp
 import org.junit.Test
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.WordNetTokenLemma
-import cc.factorie.app.nlp.ner.{BilouOntonotesNerLabel, BilouConllNerLabel}
+import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
 import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.GenericEntityMap
 
@@ -19,13 +19,13 @@ class TestDocumentAnnotatorMap {
     val map = new MutableDocumentAnnotatorMap
     object pos1 extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
-      def postAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
       def process(document: Document) = document
       def tokenAnnotationString(token: Token) = ""
     }
     map += pos1
     object parser1 extends DocumentAnnotator {
-      def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
+      def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
       def postAttrs = Seq(classOf[ParseTree])
       def process(d: Document) = d
       def tokenAnnotationString(t: Token) = ""
@@ -34,7 +34,7 @@ class TestDocumentAnnotatorMap {
     map += segment.PlainTokenNormalizer
     map += cc.factorie.app.nlp.segment.ClearSegmenter
     object wnLemma extends DocumentAnnotator {
-      def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
+      def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
       def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
       def process(d: Document) = d
       def tokenAnnotationString(t: Token) = ""
@@ -45,16 +45,16 @@ class TestDocumentAnnotatorMap {
     map += lemma.PorterLemmatizer
     map += lemma.LowercaseLemmatizer
     object ner1 extends DocumentAnnotator {
-      def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerLabel].categoryValue
+      def tokenAnnotationString(token:Token): String = token.attr[BilouConllNerTag].categoryValue
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence])
-      def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[BilouConllNerTag])
       def process(d: Document) = d
     }
     map += ner1
     object ner2 extends DocumentAnnotator {
-      override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
+      override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerTag].categoryValue
       def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])
-      def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
+      def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerTag])
       def process(document:Document): Document = document
     }
     map += ner2

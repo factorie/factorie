@@ -18,9 +18,6 @@ import cc.factorie.app.nlp._
 import cc.factorie.variable.{LabeledCategoricalVariable, EnumDomain, CategoricalDomain}
 
 
-// TODO Consider renaming PennPosDomain to PPosDomain, just because it is shorter and easier to pronounce
-// TODO Consider renaming classes POS1... to Pos1 to be consistent with PosLabel
-
 /** Penn Treebank part-of-speech tag domain. */
 object PennPosDomain extends CategoricalDomain[String] {
   this ++= Vector(
@@ -84,7 +81,7 @@ object PennPosDomain extends CategoricalDomain[String] {
   def isAdjective(pos:String) = pos(0) == 'J'
   def isPersonalPronoun(pos: String) = pos == "PRP"
 }
-class PennPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class PennPosTag(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = PennPosDomain
   def isNoun = PennPosDomain.isNoun(categoryValue)
   def isProperNoun = PennPosDomain.isProperNoun(categoryValue)
@@ -186,7 +183,7 @@ object UniversalPosDomain extends EnumDomain {
   def categoryFromPenn(PennPosCategory:String): String = Penn2universal(PennPosCategory)
 }
 
-class UniversalPosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def this(token:Token, other:PennPosLabel) = this(token, UniversalPosDomain.categoryFromPenn(other.categoryValue))
+class UniversalPosTag(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def this(token:Token, other:PennPosTag) = this(token, UniversalPosDomain.categoryFromPenn(other.categoryValue))
   def domain = UniversalPosDomain
 }

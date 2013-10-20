@@ -50,7 +50,7 @@ class MutableDocumentAnnotatorMap extends collection.mutable.LinkedHashMap[Class
 object DocumentAnnotatorPipeline extends FastLogging  {
   val defaultDocumentAnnotationMap: DocumentAnnotatorMap = new collection.immutable.ListMap ++ Seq(
     // Note that order matters here
-    classOf[pos.PennPosLabel] -> (() => pos.POS1),
+    classOf[pos.PennPosTag] -> (() => pos.POS1),
     classOf[parse.ParseTree] -> (() => parse.TransitionParser),
     classOf[segment.PlainNormalizedTokenString] -> (() => segment.PlainTokenNormalizer),
     classOf[Token] -> (() => cc.factorie.app.nlp.segment.BasicTokenizer),
@@ -60,9 +60,9 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[lemma.CollapseDigitsTokenLemma] -> (() => lemma.CollapseDigitsLemmatizer),
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
-    classOf[ner.NerLabel] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
-    classOf[ner.BilouConllNerLabel] -> (() => ner.BasicConllNER),
-    classOf[ner.BilouOntonotesNerLabel] -> (() => ner.NER2),
+    classOf[ner.NerTag] -> (() => ner.BasicConllNER), // TODO Should there be a different default?
+    classOf[ner.BilouConllNerTag] -> (() => ner.BasicConllNER),
+    classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),

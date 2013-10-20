@@ -14,7 +14,9 @@
 
 package cc.factorie.app.chain
 
-import cc.factorie._
+import cc.factorie.la
+import cc.factorie.maths
+import cc.factorie.la._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
 import java.io.{InputStream, OutputStream, DataInputStream, DataOutputStream}
 import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
@@ -22,9 +24,11 @@ import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
 import cc.factorie.model._
+import cc.factorie.optimize.Example
 
-// TODO We should add the ability to explictly permit and forbid label transitions
-class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: CategoricalVectorVar[String], Token <: Observation[Token]]
+// TODO We should add the ability to explicitly permit and forbid label transitions
+// Was Label <: LabeledMutableDiscreteVar
+class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[String], Token <: Observation[Token]]
 (val labelDomain: CategoricalDomain[String],
   val featuresDomain: CategoricalVectorDomain[String],
   val labelToFeatures: Label => Features,
@@ -167,12 +171,12 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
 
-  def getHammingLossScores(varying: Seq[Label]): Array[Tensor1] = {
+  def getHammingLossScores(varying: Seq[Label with LabeledMutableDiscreteVar]): Array[Tensor1] = {
      val domainSize = varying.head.domain.size
      val localScores = new Array[Tensor1](varying.size)
      for ((v, i) <- varying.zipWithIndex) {
        localScores(i) = new DenseTensor1(domainSize)
-       for (wrong <- 0 until domainSize if wrong != v.targetIntValue)
+       for (wrong <- 0 until domainSize if wrong != v.target.intValue)
          localScores(i)(wrong) += 1.0
      }
      localScores
@@ -249,11 +253,11 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
     InferenceResults(logZ, alphas, betas, localScores)
   }
 
-  class ChainStructuredSVMExample(varying: Seq[Label]) extends ChainViterbiExample(varying, () => Some(getHammingLossScores(varying)))
+  class ChainStructuredSVMExample(varying: Seq[Label with LabeledMutableDiscreteVar]) extends ChainViterbiExample(varying, () => Some(getHammingLossScores(varying)))
 
   def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obsMarginal: Tensor1, position: Int, labels: Seq[Label]): Unit = {}
 
-  class ChainViterbiExample(varying: Seq[Label], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
+  class ChainViterbiExample(varying: Seq[Label with LabeledMutableDiscreteVar], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val ViterbiResults(mapScore, mapValues, localScores) = viterbiFast(varying, addToLocalScoresOpt())
@@ -266,10 +270,10 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
       var i = 0
       while (i < len) {
         val curLabel = varying(i)
-        val prevLabel = if (i >= 1) varying(i - 1) else null.asInstanceOf[Label]
+        val prevLabel = if (i >= 1) varying(i - 1) else null.asInstanceOf[Label with LabeledMutableDiscreteVar]
         val curLocalScores = localScores(i)
-        val curTargetIntValue = curLabel.targetIntValue
-        val prevTargetIntValue = if (i >= 1) prevLabel.targetIntValue else -1
+        val curTargetIntValue = curLabel.target.intValue
+        val prevTargetIntValue = if (i >= 1) prevLabel.target.intValue else -1
         val curPredIntValue = mapValues(i)
         val prevPredIntValue = if (i >= 1) mapValues(i - 1) else -1
         if (value ne null) {
@@ -295,7 +299,7 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
     }
   }
 
-  class ChainLikelihoodExample(varying: Seq[Label], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
+  class ChainLikelihoodExample(varying: Seq[Label with LabeledMutableDiscreteVar], addToLocalScoresOpt: () => Option[Array[Tensor1]] = () => None) extends Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val InferenceResults(logZ, alphas, betas, localScores) = inferFast(varying, addToLocalScoresOpt())
@@ -309,13 +313,13 @@ class ChainModel[Label <: LabeledMutableDiscreteVarWithTarget, Features <: Categ
       var i = 0
       while (i < len) {
         val curLabel = varying(i)
-        val prevLabel = if (i >= 1) varying(i - 1) else null.asInstanceOf[Label]
+        val prevLabel = if (i >= 1) varying(i - 1) else null.asInstanceOf[Label with LabeledMutableDiscreteVar]
         val prevAlpha = if (i >= 1) alphas(i - 1) else null.asInstanceOf[Tensor1]
         val curAlpha = alphas(i)
         val curBeta = betas(i)
         val curLocalScores = localScores(i)
-        val curTargetIntValue = curLabel.targetIntValue
-        val prevTargetIntValue = if (i >= 1) prevLabel.targetIntValue else -1
+        val curTargetIntValue = curLabel.target.intValue
+        val prevTargetIntValue = if (i >= 1) prevLabel.target.intValue else -1
         if (value ne null) {
           value.accumulate(curLocalScores(curTargetIntValue))
           if (i >= 1) value.accumulate(transScores(prevTargetIntValue * domainSize + curTargetIntValue))
