@@ -11,14 +11,13 @@ import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomai
 import cc.factorie.model.Parameters
 import cc.factorie.optimize._
 
-/**
- * User: apassos
- * Date: 5/19/13
- * Time: 9:44 AM
- */
-class GraphProjectiveParser extends DocumentAnnotator {
+/** A graph-based projective dependency parser.
+    @author Alexandre Passos */
+class ProjectiveGraphBasedParser extends DocumentAnnotator {
   parser =>
 
+  def this(url:java.net.URL) = { this(); deserialize(url) }
+  
   object MyFeaturesDomain extends DiscreteDomain(1e7.toInt) // 10 million features
   class FeatureVector extends HashFeatureVectorVariable {
     def domain = MyFeaturesDomain
@@ -309,11 +308,13 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[ParseTree])
 }
 
-object GraphProjectiveParser extends GraphProjectiveParser {
-  deserialize(ClasspathURL[GraphProjectiveParser](".factorie"))
-}
+class WSJProjectiveGraphBasedParser(url:java.net.URL) extends ProjectiveGraphBasedParser(url)
+object WSJProjectiveGraphBasedParser extends ProjectiveGraphBasedParser(ClasspathURL[WSJProjectiveGraphBasedParser](".factorie"))
 
-object GraphProjectiveParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class OntonotesProjectiveGraphBasedParser(url:java.net.URL) extends ProjectiveGraphBasedParser(url)
+object OntonotesProjectiveGraphBasedParser extends ProjectiveGraphBasedParser(ClasspathURL[OntonotesProjectiveGraphBasedParser](".factorie"))
+
+object ProjectiveGraphBasedParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
   //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
   val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
@@ -321,12 +322,12 @@ object GraphProjectiveParserOpts extends cc.factorie.util.DefaultCmdOptions with
   val nThreads   = new CmdOption("nThreads", Runtime.getRuntime.availableProcessors(), "INT", "Number of threads to use.")
 }
 
-object GraphProjectiveParserTrainer extends HyperparameterMain {
+object ProjectiveGraphBasedParserTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
-    val opts = GraphProjectiveParserOpts
+    val opts = ProjectiveGraphBasedParserOpts
     opts.parse(args)
 
-    val parser = new GraphProjectiveParser
+    val parser = new ProjectiveGraphBasedParser
 
 
     val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head

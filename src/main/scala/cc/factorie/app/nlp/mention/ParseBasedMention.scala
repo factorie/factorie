@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.mention
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.parse.{TransitionParser, ParseTree}
+import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some

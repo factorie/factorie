@@ -18,14 +18,14 @@ import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTra
 import scala.collection.mutable
 
 /** Default transition-based dependency parser. */
-class TransitionParser extends DocumentAnnotator {
+class TransitionBasedParser extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("TransitionParser loading from "+url)
+    println("TransitionBasedParser loading from "+url)
     deserialize(stream)
   }
 
@@ -79,7 +79,7 @@ class TransitionParser extends DocumentAnnotator {
     import scala.language.reflectiveCalls
     model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("TransitionParser model parameters oneNorm "+model.parameters.oneNorm)
+    println("TransitionBasedParser model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
@@ -99,7 +99,7 @@ class TransitionParser extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("TransitionParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("TransitionBasedParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionDomain.size)
@@ -462,13 +462,15 @@ class TransitionParser extends DocumentAnnotator {
   }
 }
 
-object TransitionParser extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser](".factorie"))
+class WSJTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object WSJTransitionBasedParser extends WSJTransitionBasedParser(cc.factorie.util.ClasspathURL[WSJTransitionBasedParser](".factorie"))
 
-object TransitionParserOntonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
+class OntonotesTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.factorie.util.ClasspathURL[OntonotesTransitionBasedParser](".factorie"))
 
 
 
-class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -487,9 +489,9 @@ class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with Share
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
-object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
+object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
-    val opts = new TransitionParserArgs
+    val opts = new TransitionBasedParserArgs
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
@@ -514,13 +516,13 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
-    def testSingle(c: TransitionParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
+    def testSingle(c: TransitionBasedParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
         println(extraText + " " + c.testString(ss))
       }
     }
 
-    def testAll(c: TransitionParser, extraText: String = ""): Unit = {
+    def testAll(c: TransitionBasedParser, extraText: String = ""): Unit = {
       println("\n")
       testSingle(c, sentences,     "Train " + extraText)
       testSingle(c, devSentences,  "Dev "   + extraText)
@@ -529,7 +531,7 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = opts.bootstrapping.value.toInt
-    val c = new TransitionParser
+    val c = new TransitionBasedParser
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
@@ -557,7 +559,7 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
-      val d = new TransitionParser
+      val d = new TransitionBasedParser
       d.deserialize(new java.io.File(modelUrl))
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
@@ -568,9 +570,9 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
   }
 }
 
-object TransitionParserOptimizer {
+object TransitionBasedParserOptimizer {
   def main(args: Array[String]) {
-    val opts = new TransitionParserArgs
+    val opts = new TransitionBasedParserArgs
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -585,10 +587,10 @@ object TransitionParserOptimizer {
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.TransitionParser",
+      "cc.factorie.app.nlp.parse.TransitionBasedParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
