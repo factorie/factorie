@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
-import cc.factorie.app.nlp.segment.BasicTokenizer
+import cc.factorie.app.nlp.segment.DeterministicTokenizer
 import cc.factorie.variable.SpanVarList
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
@@ -16,7 +16,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      val sl = new MySpanList
      doc.attr += sl
        
-     BasicTokenizer.process(doc)
+     DeterministicTokenizer.process(doc)
      //doc.foreach(logger.debug(_))
      assertEquals(7, doc.tokenCount)
      val d = new DiffList

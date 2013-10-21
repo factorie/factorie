@@ -19,8 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Chain
 
 /** A part of a Document, delineated by character offsets into the Document's string,
-    and which can hold a sequence of Tokens, a sequence of Sentences and a sequence
-    of other arbitrary TokenSpans.
+    and which can hold a sequence of Tokens and a sequence of Sentences.
     
     By defining Section in terms of character offsets instead of by Token positions
     we gain the ability to (a) split the Document into Sections before tokenization, 
@@ -34,12 +33,12 @@ import cc.factorie.variable.Chain
     
     In addition to their canonical sequence of Sections, all Documents also have a Section that
     encompasses the entire Document (even if the Document grows in length).  This is accessed
-    via Document.asSection.  This is the sole member of the default Document.sections, but 
+    via Document.asSection.  This is the sole member of the initialized default Document.sections, but 
     be cautious about always using Document.asSection to get the Documents Tokens, sentences and
     their annotations, because some other processing may reset the canonical sequence of Sections
     to some other collection.
     
-    If you want to tokenize first, and then split a Document into Sections, you can tokenize
+    If you want to tokenize first and then split a Document into Sections, you can tokenize
     into Document.asSection, and then create new canonical Section at your desired boundaries,
     and then re-tokenize each Section.  (In the future we may provide a way to avoid the 
     computation of re-tokenizing.)  
@@ -66,14 +65,6 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
       Note that a Section can have Tokens but no Sentences. */
   def hasSentences: Boolean = _sentences.length > 0
   /** Create and return a new Sentence starting at token index "start" and continuing for "length" tokens. */
-//  def addSentence(start:Int, length:Int): Sentence = {
-//    if (_sentences.length > 0 && _sentences.last.end > start) throw new Error("Sentences must be added in order and not overlap.")
-//    if (start+length > this.length + 1) throw new Error("Trying to create a Sentence beyond the end of the Section.")
-//    val s = new Sentence(this, start, length); _sentences += s; s._indexInSection = _sentences.length - 1;  s
-//  }
-//  /** Create and return a new Sentence of length zero, starting at token index immediately beyond the end of the existing last Sentence.
-//      (The Document, Section and Sentence can grow later, as Tokens are added; this is used when reading annotated training data with one token per line.) */
-//  def addSentence(): Sentence = addSentence(if (_sentences.length == 0) 0 else _sentences.last.end, 0)
   def addSentence(s:Sentence): Sentence = {
     if (s.section ne this) throw new Error("Trying to add Sentence to Section to which it does not belong.")
     if (sentences.length > 0 && _sentences.last.end > s.start) throw new Error("Sentences must be added in order and not overlap.  Last Sentence ends at "+_sentences.last.end+" New sentence trying to start at "+s.start)
@@ -81,25 +72,7 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
     _sentences += s; s
   }
   
-//  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
-//  /** Add a new TokenSpan to this Section.  Since a Sentence is a TokenSpan, this is also used to add new Sentences. */
-//  override def +=(s:TokenSpan): Unit = s match {
-//    case s:Sentence => {
-//      s._chain = this // not already done in += be cause += is not on ChainWithSpans
-//      s._indexInSection = _sentences.length
-//      if (_sentences.length == 0 || _sentences.last.end <= s.start) _sentences += s
-//      else throw new Error("Sentences must be added in order and not overlap.")
-//    }
-//    case s:TokenSpan => super.+=(s)
-//  }
-//  /** Remove a TokenSpan from this Section.  Note that Sentences cannot be removed. */
-//  override def -=(s:TokenSpan): Unit = s match {
-//    case s:Sentence => throw new Error("Once added Sentences cannot be removed from a Section.") // _sentences -= s
-//    case s:TokenSpan => super.-=(s)
-//  }
 }
 
-// TODO Just make Section a class, and remove this "BasicSection"
 /** A simple concrete implementation of Section. */
 class BasicSection(val document:Document, val stringStart:Int, val stringEnd:Int) extends Section
-

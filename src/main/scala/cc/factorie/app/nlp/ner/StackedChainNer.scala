@@ -37,7 +37,7 @@ class TokenSequence[T<:NerTag](token: Token)(implicit m: Manifest[T]) extends co
   def key = this.mkString("-")
 }
 
-class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
+class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                         newLabel: (Token, String) => L,
                         labelToToken: L => Token,
                         embeddingMap: SkipGramEmbedding,
@@ -90,7 +90,7 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
     override def skipNonCategories = true
   }
 
-  class StackedNEREModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+  class StackedChainNereModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
                                                              labelToFeatures1:L=>Features,
                                                              labelToToken1:L=>Token,
                                                              tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
@@ -160,8 +160,8 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
       }
     }
   }
-  val model = new StackedNEREModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
-  val model2 = new StackedNEREModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
+  val model = new StackedChainNereModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
+  val model2 = new StackedChainNereModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
   val objective = cc.factorie.variable.HammingObjective //new HammingTemplate[LabeledMutableDiscreteVar]()
 
@@ -476,8 +476,8 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    if (embeddingMap != null) println("StackedNER #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
-    println("StackedNER #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("StackedChainNer #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    println("StackedChainNer #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
 
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(100)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(20)
@@ -536,11 +536,11 @@ class StackedNER[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
-class StackedConllNER(embeddingMap: SkipGramEmbedding,
+class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                 embeddingDim: Int,
                 scale: Double,
                 useOffsetEmbedding: Boolean,
-                url: java.net.URL=null) extends StackedNER[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                url: java.net.URL=null) extends StackedChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
@@ -550,11 +550,12 @@ class StackedConllNER(embeddingMap: SkipGramEmbedding,
     } else document
   }
 }
+object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 
-object StackedConllNER extends StackedConllNER(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[StackedNER[_]](".factorie"))
-object StackConllNerNoEmbeddings extends StackedConllNER(null, 0, 0.0, false, ClasspathURL[StackedNER[_]](".factorie-noembeddings"))
+class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url)
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie"))
 
-class StackedNEROpts extends CmdOptions with SharedNLPCmdOptions{
+class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
   val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
@@ -572,12 +573,12 @@ class StackedNEROpts extends CmdOptions with SharedNLPCmdOptions{
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
 }
 
-object StackedNERTrainer extends HyperparameterMain {
+object ConllStackedChainNerTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     // Parse command-line
-    val opts = new StackedNEROpts
+    val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new StackedConllNER(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new ConllStackedChainNer(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
@@ -603,21 +604,21 @@ object StackedNERTrainer extends HyperparameterMain {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
 
-    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(result,opts.targetAccuracy.value.toDouble)
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(result,opts.targetAccuracy.value.toDouble)
 
     result
   }
 }
 
-object StackedNEROptimizer {
+object ConllStackedChainNerOptimizer {
   def main(args: Array[String]) {
-    val opts = new StackedNEROpts
+    val opts = new StackedChainNerOpts
     opts.parse(args)
     opts.saveModel.setValue(false)
 
     if (opts.runOnlyHere.value) {
       opts.saveModel.setValue(true)
-      val result = StackedNERTrainer.evaluateParameters(args)
+      val result = ConllStackedChainNerTrainer.evaluateParameters(args)
       println("result: "+ result)
     }
     else {

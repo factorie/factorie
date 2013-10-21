@@ -22,15 +22,15 @@ class TokenNormalizer1[A<:TokenString](
     val americanize:Boolean = false
   )(implicit m:Manifest[A]) extends DocumentAnnotator {
   
-  val dashRegex = ("\\A("+BasicTokenizer.dash+")+\\Z").r
-  val mdashRegex = ("\\A("+BasicTokenizer.mdash+")+\\Z").r
+  val dashRegex = ("\\A("+DeterministicTokenizer.dash+")+\\Z").r
+  val mdashRegex = ("\\A("+DeterministicTokenizer.mdash+")+\\Z").r
   //val quote = "``|''|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[`\"\u201C\u201D\\p{Pf}]|$quot;|(?:['\u0092\u2019]|&apos;){1,2}"
-  val quoteRegex = ("\\A("+BasicTokenizer.quote+")\\Z").r
-  val ellipsisRegex = ("\\A("+BasicTokenizer.ellipsis+")\\Z").r
-  val apostropheRegex =  BasicTokenizer.ap2.replace("'", "").r // ("[\u0092\u2019`\u0091\u2018\u201B]|&(apos|rsquo|#00?39|#00?92|#2019);").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want; but we do include the single back quotes here
-  val currencyRegex = ("\\A("+BasicTokenizer.currency+")\\Z").r // Responsible for all cases, except "cents"
-  val htmlAccentRegex = BasicTokenizer.htmlAccentedLetter.r
-  val htmlSymbolRegex = ("\\A"+BasicTokenizer.htmlSymbol+"\\Z").r
+  val quoteRegex = ("\\A("+DeterministicTokenizer.quote+")\\Z").r
+  val ellipsisRegex = ("\\A("+DeterministicTokenizer.ellipsis+")\\Z").r
+  val apostropheRegex =  DeterministicTokenizer.ap2.replace("'", "").r // ("[\u0092\u2019`\u0091\u2018\u201B]|&(apos|rsquo|#00?39|#00?92|#2019);").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want; but we do include the single back quotes here
+  val currencyRegex = ("\\A("+DeterministicTokenizer.currency+")\\Z").r // Responsible for all cases, except "cents"
+  val htmlAccentRegex = DeterministicTokenizer.htmlAccentedLetter.r
+  val htmlSymbolRegex = ("\\A"+DeterministicTokenizer.htmlSymbol+"\\Z").r
   val htmlSymbolMap = new scala.collection.mutable.HashMap[String,String] {
     override def default(s:String) = s
   } ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'") // TODO complete this collection

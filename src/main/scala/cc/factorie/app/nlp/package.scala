@@ -40,4 +40,15 @@ package object nlp {
   }
   
   def bioBoundaries(labels:Seq[String]): Seq[(Int,Int)] = ???
+
+
+  /** Command-line options available on all NLP model trainers.
+      @author David Belanger */
+  trait SharedNLPCmdOptions extends cc.factorie.util.CmdOptions  {
+    val targetAccuracy = new CmdOption("target-accuracy", "", "FLOAT", "target accuracy for this NLP model. It will throw an exception if you don't hit this")
+    val trainPortion = new CmdOption("train-portion", "", "INT", "portion of train to load")
+    val testPortion = new CmdOption("test-portion", "", "INT", "portion of test to load")
+  
+  }
+
 }
