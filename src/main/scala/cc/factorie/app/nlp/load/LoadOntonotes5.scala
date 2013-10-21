@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.load
 
 import scala.io.Source
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.pos.{LabeledPennPosTag, PennPosTag}
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
@@ -65,7 +65,7 @@ object LoadOntonotes5 {
         var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)
-        if (loadPos) token.attr += new PennPosTag(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
+        if (loadPos) token.attr += new LabeledPennPosTag(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
         if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
