@@ -18,10 +18,8 @@ object NLP {
       val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding for reading document text, such as UTF-8")
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
       // TODO All these options should be replaced by something that will interpret object construction code. -akm
-      val token = new CmdOption("token", null, "", "Segment Document into Tokens but not Sentences") { override def invoke() = annotators += cc.factorie.app.nlp.segment.ClearTokenizer }
-      val token1 = new CmdOption("token1", null, "", "Segment Document into Tokens (but not Sentences) by regex") { override def invoke() = annotators += cc.factorie.app.nlp.segment.BasicTokenizer }
-      val sentence = new CmdOption("sentence", null, "", "Segment Document into Tokens and Sentences") { override def invoke() = annotators += cc.factorie.app.nlp.segment.ClearSegmenter }
-      val sentence1 = new CmdOption("sentence1", null, "", "Segment pre-tokenized Document into Sentences by simpler regex") { override def invoke() = annotators += cc.factorie.app.nlp.segment.BasicSentenceSegmenter }
+      val token = new CmdOption("token1", null, "", "Segment Document into Tokens (but not Sentences) by regex") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicTokenizer }
+      val sentence = new CmdOption("sentence1", null, "", "Segment pre-tokenized Document into Sentences by simpler regex") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter }
       val tnorm = new CmdOption("tnorm", null, "", "Normalize token strings") { override def invoke() = annotators += cc.factorie.app.nlp.segment.PlainTokenNormalizer }
       val forwardpos = new CmdOption[String]("forwardpos", null, "URL", "Annotate Penn-Treebank-style POS with model trained on WSJ") { override def invoke() = { if (value ne null) System.setProperty(classOf[pos.WSJForwardPosTagger].getName, value); annotators += cc.factorie.app.nlp.pos.WSJForwardPosTagger } }
       val forwardposontonotes = new CmdOption[String]("forwardposontonotes", null, "URL", "Annotate Penn-Treebank-style POS with model trained on Ontonotes") { override def invoke() = { if (value ne null) System.setProperty(classOf[pos.OntonotesForwardPosTagger].getName, value); annotators += cc.factorie.app.nlp.pos.OntonotesForwardPosTagger } }
