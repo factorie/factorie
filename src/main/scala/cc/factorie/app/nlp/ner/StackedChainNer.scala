@@ -604,7 +604,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
 	  }
 
-    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(result,opts.targetAccuracy.value.toDouble)
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(result,opts.targetAccuracy.value.toDouble)
 
     result
   }

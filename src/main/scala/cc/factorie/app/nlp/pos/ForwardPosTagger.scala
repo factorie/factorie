@@ -365,7 +365,7 @@ object ForwardPosTrainer extends HyperparameterMain {
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
     val acc = pos.accuracy(testDocs.flatMap(_.sentences))
-    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(acc,opts.targetAccuracy.value.toDouble)
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
     acc
   }
 }

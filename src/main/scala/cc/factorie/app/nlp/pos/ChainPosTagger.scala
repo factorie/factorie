@@ -144,7 +144,7 @@ object ChainPosTrainer extends HyperparameterMain {
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
-    if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(acc,opts.targetAccuracy.value.toDouble)
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
 
     acc
   }

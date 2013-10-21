@@ -234,7 +234,7 @@ object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
 
       val ret = ner.train(trainDocs, testDocs, opts.l1.value, opts.l2.value, opts.learningRate.value)
       if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
-      if(opts.targetAccuracy.wasInvoked) PerformanceChecking.assertAccuracy(ret,opts.targetAccuracy.value.toDouble)
+      if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(ret,opts.targetAccuracy.value.toDouble)
 
 
       return ret
