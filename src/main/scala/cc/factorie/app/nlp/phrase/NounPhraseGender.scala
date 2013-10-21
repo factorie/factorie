@@ -101,7 +101,7 @@ class NounPhraseGenderLabeler extends DocumentAnnotator {
       ("father", "mother"),
       ("father-in-law", "mother-in-law"),
       ("fiance", "fiancee"),
-      ("fiancé", "fiancée"),
+      ("fianc√©", "fianc√©e"),
       ("gigolo", "prostitute"),
       ("godfather", "godmother"),
       ("godson", "goddaughter"),
