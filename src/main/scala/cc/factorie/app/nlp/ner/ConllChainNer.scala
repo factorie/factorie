@@ -14,7 +14,7 @@ import cc.factorie.app.chain.ChainModel
     Trained by online stochastic gradient ascent with an L1 prior that leads to ~90% sparsity.
     Inference by Viterbi.
     Achieves ~91% field F1 on CoNLL 2003 dev set. */
-class BasicConllNER extends DocumentAnnotator {
+class ConllChainNer extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
@@ -64,7 +64,7 @@ class BasicConllNER extends DocumentAnnotator {
   
   // Feature creation
   def addFeatures(document:Document): Unit = {
-    document.annotators(classOf[FeaturesVariable]) = this.getClass
+    document.annotators(classOf[FeaturesVariable]) = ConllChainNer.this.getClass
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
       val features = new FeaturesVariable(token)
@@ -202,7 +202,7 @@ class BasicConllNER extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object BasicConllNER extends BasicConllNER(cc.factorie.util.ClasspathURL[BasicConllNER](".factorie"))
+object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie"))
 
 /** Example main function for training NER1 from CoNLL 2003 data. */
 object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
@@ -220,7 +220,7 @@ object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
     
-    val ner = new BasicConllNER
+    val ner = new ConllChainNer
     
     if (opts.train.wasInvoked) {
 
