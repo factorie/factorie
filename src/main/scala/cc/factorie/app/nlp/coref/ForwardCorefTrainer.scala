@@ -216,9 +216,10 @@ object ForwardCorefTrainer extends HyperparameterMain{
 
     val labeler = MentionEntityTypeLabeler
 
-    if(loadTrain)  trainDocs.foreach(labeler.process)
-    testDocs.foreach(labeler.process)
-
+    if(!useNerMentions){
+      if(loadTrain)  trainDocs.foreach(labeler.process)
+      testDocs.foreach(labeler.process)
+    }
     (trainDocs,trainMap,testDocs,testMap)
   }
 }
