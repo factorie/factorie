@@ -1,4 +1,4 @@
-package cc.factorie.app.classify
+package cc.factorie.app.classify.backend
 
 import cc.factorie._
 import cc.factorie.la._
@@ -11,7 +11,7 @@ import cc.factorie.model.Template2
 
 class DecisionTreeMulticlassTrainer[Label](treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)
-  extends MulticlassValueClassifierTrainer[DecisionTreeMulticlassClassifier] {
+  extends MulticlassClassifierTrainer[DecisionTreeMulticlassClassifier] {
 
   def baseTrain(classifier: DecisionTreeMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (DecisionTreeMulticlassClassifier) => Unit) {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
@@ -37,7 +37,7 @@ class DecisionTreeMulticlassTrainer[Label](treeTrainer: DecisionTreeTrainer = ne
 class RandomForestMulticlassTrainer(numTrees: Int, numFeaturesToUse: Int, numInstancesToSample: Int, maxDepth: Int = 25,
   useParallel: Boolean = true, numThreads: Int = Runtime.getRuntime.availableProcessors(), treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)
-  extends MulticlassValueClassifierTrainer[RandomForestMulticlassClassifier] {
+  extends MulticlassClassifierTrainer[RandomForestMulticlassClassifier] {
 
   def baseTrain(classifier: RandomForestMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (RandomForestMulticlassClassifier) => Unit) {
     val instances = features.zip(labels.map(new SingletonBinaryTensor1(classifier.labelSize, _))).zip(weights).map({
@@ -67,7 +67,7 @@ class RandomForestMulticlassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
   }
 }
 
-class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int) extends MulticlassValueClassifier[Tensor1] {
+class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int) extends MulticlassClassifier[Tensor1] {
   self =>
   def score(features: Tensor1) = {
     // TODO why not train an SVM on these predictions instead of just doing majority voting? -luke
@@ -80,7 +80,7 @@ class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int
     new ClassifierTemplate2(l2f, this)
 }
 
-class DecisionTreeMulticlassClassifier(var tree: DTree, val labelSize: Int) extends MulticlassValueClassifier[Tensor1] {
+class DecisionTreeMulticlassClassifier(var tree: DTree, val labelSize: Int) extends MulticlassClassifier[Tensor1] {
   def score(features: Tensor1) =
     DTree.score(features, tree)
   def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =

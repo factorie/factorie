@@ -13,21 +13,22 @@ import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, Cate
  * Date: 7/15/13
  * Time: 2:55 PM
  */
-class ChainPOSTagger extends DocumentAnnotator {
+class ChainPosTagger extends DocumentAnnotator {
+  def this(url:java.net.URL) = { this(); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
-        s.tokens.foreach(t => if (!t.attr.contains[PennPosLabel]) t.attr += new PennPosLabel(t, "NN"))
+        s.tokens.foreach(t => if (!t.attr.contains[PennPosTag]) t.attr += new PennPosTag(t, "NN"))
         initPOSFeatures(s)
-        model.maximize(s.tokens.map(_.posLabel))(null)
+        model.maximize(s.tokens.map(_.posTag))(null)
       }
     })
     document
   }
 
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
-  def postAttrs = Seq(classOf[PennPosLabel])
-  def tokenAnnotationString(token: Token) = { val label = token.attr[PennPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+  def postAttrs = Seq(classOf[PennPosTag])
+  def tokenAnnotationString(token: Token) = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
@@ -50,11 +51,11 @@ class ChainPOSTagger extends DocumentAnnotator {
     PosFeaturesDomain.freeze()
     testSentences.foreach(initPOSFeatures)
     def evaluate() {
-      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.posLabel))(null))
-      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.posLabel))))
-      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.posLabel))))
+      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[LabeledPennPosTag]))(null))
+      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
     }
-    val examples = trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.posLabel))).toSeq
+    val examples = trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[LabeledPennPosTag]))).toSeq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
@@ -65,11 +66,11 @@ class ChainPOSTagger extends DocumentAnnotator {
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
 
-  val model = new ChainModel[PennPosLabel, PosFeatures, Token](PennPosDomain,
+  val model = new ChainModel[PennPosTag, PosFeatures, Token](PennPosDomain,
     PosFeaturesDomain,
     l => l.token.attr[PosFeatures],
     l => l.token,
-    t => t.attr[PennPosLabel]){
+    t => t.attr[PennPosTag]){
     useObsMarkov = false
   }
 
@@ -103,20 +104,22 @@ class ChainPOSTagger extends DocumentAnnotator {
   }
 }
 
-object ChainPOSTagger extends ChainPOSTagger {
-  deserialize(ClasspathURL[ChainPOSTagger](".factorie").openConnection().getInputStream)
-}
+class WSJChainPosTagger(url:java.net.URL) extends ChainPosTagger(url)
+object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagger](".factorie"))
+
+class OntonotesChainPosTagger(url:java.net.URL) extends ChainPosTagger(url)
+object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
 
-object ChainPOSTrainer extends HyperparameterMain {
+object ChainPosTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new ChainPOSTagger
+    val pos = new ChainPosTagger
 
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
     val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
@@ -137,18 +140,19 @@ object ChainPOSTrainer extends HyperparameterMain {
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
-      val pos2 = new ChainPOSTagger
+      val pos2 = new ChainPosTagger
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
-    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.posLabel))))
-    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
+
     acc
   }
 }
 
-object ChainPOSOptimizer {
+object ChainPosOptimizer {
   def main(args: Array[String]) {
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -156,7 +160,7 @@ object ChainPOSOptimizer {
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq(List(0,1,2,3)))
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ChainPOSTrainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ChainPosTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

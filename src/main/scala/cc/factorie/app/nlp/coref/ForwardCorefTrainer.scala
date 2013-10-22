@@ -4,7 +4,7 @@ import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorM
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.ner.{BasicConllNER, NerLabel}
+import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.HyperparameterMain
 
 /**
@@ -66,7 +66,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
         val endingMents = endingTokMap.get(s(ti))
         val singleTokMents = singleTokMap.get(s(ti))
         assert(singleTokMents.size <= 1)
-        out.print(docName + " " + partNum.toInt + " " + (ti + 1) + " " + s(ti).string + " " + s(ti).posLabel.categoryValue + " - - - - - - - ")
+        out.print(docName + " " + partNum.toInt + " " + (ti + 1) + " " + s(ti).string + " " + s(ti).posTag.categoryValue + " - - - - - - - ")
         var ments = List[String]()
         if (beginningMents.isDefined) ments = beginningMents.get.reverse.map(m => "(" + map.reverseMap(m)).mkString("|") :: ments
         if (singleTokMents.isDefined) ments = singleTokMents.get.map(m => "(" + map.reverseMap(m) + ")").mkString("|") :: ments
@@ -178,7 +178,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
       conllFormatGold2.close()
     }
     val accuracy = 0.0
-    if(opts.targetAccuracy.wasInvoked) assert(accuracy > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(accuracy,opts.targetAccuracy.value.toDouble)
 
     accuracy
   }
@@ -207,7 +207,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
       map(classOf[MentionList]) = () => NerAndPronounMentionFinder
-      map(classOf[NerLabel]) = () => BasicConllNER
+      map(classOf[NerTag]) = () => ConllChainNer
     } else {
       map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }

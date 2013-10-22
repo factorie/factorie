@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 
 /** Segments a sequence of tokens into sentences.
     @author Andrew McCallum */
-class BasicSentenceSegmenter extends DocumentAnnotator {
+class DeterministicSentenceSegmenter extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -29,9 +29,11 @@ class BasicSentenceSegmenter extends DocumentAnnotator {
   /** Whitespace that should not be allowed between a closingRegex and closingContinuationRegex for a sentence continuation.  For example:  He ran.  "You shouldn't run!" */
   val spaceRegex = "[ \n\r\t\u00A0\\p{Z}]+".r
   
-  val emoticonRegex = ("\\A("+BasicTokenizer.emoticon+")\\Z").r
+  val emoticonRegex = ("\\A("+DeterministicTokenizer.emoticon+")\\Z").r
   
-  val charOffsetBoundary = 10 // If there are more than this number of characters between the end of the previous token and the beginning of this one, force a sentence start
+  /** If there are more than this number of characters between the end of the previous token and the beginning of this one, force a sentence start.
+      If negative, don't break sentences according to this criteria at all. */
+  val charOffsetBoundary = 10
   
   /** Returns true for strings that probably start a sentence after a word that ends with a period. */
   def possibleSentenceStart(s:String): Boolean = java.lang.Character.isUpperCase(s(0)) && (cc.factorie.app.nlp.lexicon.StopWords.containsWord(s) || s == "Mr." || s == "Mrs." || s == "Ms." || s == "\"" || s == "''") // Consider adding more honorifics and others here. -akm
@@ -46,15 +48,20 @@ class BasicSentenceSegmenter extends DocumentAnnotator {
       var i = 0
       var sentenceStart = 0
       // Create a new Sentence, register it with the section, and update sentenceStart.  Here sentenceEnd is non-inclusive
-      def newSentence(sentenceEnd:Int): Unit = { new Sentence(section, sentenceStart, sentenceEnd - sentenceStart); sentenceStart = sentenceEnd }
+      def newSentence(sentenceEnd:Int): Unit = {
+        assert(sentenceStart != sentenceEnd)
+        new Sentence(section, sentenceStart, sentenceEnd - sentenceStart); sentenceStart = sentenceEnd
+      }
       while (i < tokens.length) {
         val token = tokens(i)
         val string = tokens(i).string
         //println("SentenceSegmenter1 first char: "+Integer.toHexString(string(0))+" possibleClosingRegex "+possibleClosingRegex.findPrefixMatchOf(string))
         // Sentence boundary from a single newline
-        if (newlineBoundary && i > 0 && document.string.substring(tokens(i-1).stringEnd, token.stringStart).contains('\n')) newSentence(i)
+        if (newlineBoundary && i > sentenceStart && i > 0 && document.string.substring(tokens(i-1).stringEnd, token.stringStart).contains('\n')) {
+          newSentence(i)
+        }
         // Sentence boundary from a double newline
-        else if (doubleNewlineBoundary && i > 0 && document.string.substring(tokens(i-1).stringEnd, token.stringStart).contains("\n\n")) {
+        else if (doubleNewlineBoundary && i > sentenceStart && i > 0 && document.string.substring(tokens(i-1).stringEnd, token.stringStart).contains("\n\n")) {
           //println("SentenceSegmenter1 i="+i+" doubleNewline")
           newSentence(i)
         }
@@ -86,9 +93,9 @@ class BasicSentenceSegmenter extends DocumentAnnotator {
             //println("SentenceSegmenter1 i="+i+" possibleClosingRegex "+tokens(i+1).string)
             newSentence(i+1)
           }
-        } else if (charOffsetBoundary > 0 && token.hasPrev && token.stringStart - token.prev.stringEnd > charOffsetBoundary && document.string.substring(token.prev.stringEnd, token.prev.stringEnd+3).trim.toLowerCase != "<a") {
+        } else if (charOffsetBoundary > 0 && i > sentenceStart && token.hasPrev && token.stringStart - token.prev.stringEnd > charOffsetBoundary && document.string.substring(token.prev.stringEnd, token.prev.stringEnd+3).trim.toLowerCase != "<a") {
             // TODO The main way this can break a sentence incorrectly is when there is a long "<a href...>" tag.
-            newSentence(i)          
+          newSentence(i)          
         }
         i += 1
       }
@@ -101,12 +108,12 @@ class BasicSentenceSegmenter extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[Sentence])
 }
 
-object BasicSentenceSegmenter extends BasicSentenceSegmenter {
+object DeterministicSentenceSegmenter extends DeterministicSentenceSegmenter {
   def main(args: Array[String]): Unit = {
-    for (filename <- args) {
+    for (filename <- args) yield {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      BasicTokenizer.process(doc)
-      this.process(doc)
+      DeterministicTokenizer.process(doc)
+      DeterministicSentenceSegmenter.this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)
         print("\n\n" + sentence.tokens.map(_.string).mkString(" | "))

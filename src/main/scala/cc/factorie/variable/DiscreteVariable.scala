@@ -86,12 +86,10 @@ trait DiscreteVar extends VectorVar with VarWithDomain {
 
 /** A single discrete variable whose value can be changed. */
 trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettings with VarWithDomain {
-  self =>
-  private var __value: Int = 0
+  private var __value: Int = -1
   def domain: DiscreteDomain
   @inline final protected def _value = __value
-  @inline final protected def _set(newValue:Int): Unit = __value = newValue
-  //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
+  protected def _initialize(newValue:Int): Unit = if (__value == -1 && newValue >= 0) __value = newValue else throw new Error("_initialize method called after MutableDiscreteVar value already set; or newValue negative.")
   override def intValue = __value
   def value: Value = domain.apply(__value).asInstanceOf[Value] // TODO Is there a better way to coordinate A and domain?
   //def set(newValue:Value)(implicit d:DiffList): Unit
@@ -125,17 +123,12 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettin
   }
 }
 
-// TODO What is this?  Get rid of it. -akm
-trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar with IterableSettings {
-}
-
 /** A concrete single discrete variable whose value can be changed. */
-abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue] {
-  self =>
+abstract class DiscreteVariable extends MutableDiscreteVar {
   type Value = DiscreteValue
   def domain: DiscreteDomain
-  def this(initialValue:Int) = { this(); _set(initialValue) }
-  def this(initialValue:DiscreteValue) = { this(); require(initialValue.dim1 == domain.size); _set(initialValue.intValue) }
+  def this(initialValue:Int) = { this(); _initialize(initialValue) }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.dim1 == domain.size); _initialize(initialValue.intValue) }
 }
 
 

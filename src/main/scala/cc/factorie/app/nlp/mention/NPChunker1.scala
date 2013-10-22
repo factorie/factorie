@@ -16,12 +16,12 @@ object NounChunker1 extends DocumentAnnotator {
     var tempSpan: NounChunk = null
     for (section <- document.sections; token <- section.tokens) {
       // Put a span around contiguous sequences of NN or PR part-of-speech prefixes
-      val posPrefix = token.attr[pos.PennPosLabel].categoryValue.take(2)
-      if (posPrefix == "NN" || posPrefix == "PR" || (posPrefix == "JJ" && token.hasNext && token.next.attr[pos.PennPosLabel].categoryValue.take(2) == "NN")) {
+      val posPrefix = token.attr[pos.PennPosTag].categoryValue.take(2)
+      if (posPrefix == "NN" || posPrefix == "PR" || (posPrefix == "JJ" && token.hasNext && token.next.attr[pos.PennPosTag].categoryValue.take(2) == "NN")) {
         if (tempSpan eq null) tempSpan = new  NounChunk(section, token.position, 1)
         else tempSpan.append(1)(null)
       } else if (tempSpan ne null) {
-        if (token.string == "-" && token.hasNext && token.next.attr[pos.PennPosLabel].categoryValue.take(2) == "NN") tempSpan.append(1)(null) // Handle dashed nouns
+        if (token.string == "-" && token.hasNext && token.next.attr[pos.PennPosTag].categoryValue.take(2) == "NN") tempSpan.append(1)(null) // Handle dashed nouns
         else { chunks += tempSpan; tempSpan = null}
       }
     }
@@ -33,6 +33,6 @@ object NounChunker1 extends DocumentAnnotator {
     if (chunks.isEmpty) return null
     chunks.map(c => if (c.head == token) "B-NOUNCHUNK" else "I-NOUNCHUNK").mkString(",")
   }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[pos.PennPosLabel])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[pos.PennPosTag])
   def postAttrs: Iterable[Class[_]] = List(classOf[Mention])
 }

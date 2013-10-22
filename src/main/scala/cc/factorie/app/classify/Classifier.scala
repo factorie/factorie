@@ -15,53 +15,46 @@
 package cc.factorie.app.classify
 import cc.factorie.variable._
 import cc.factorie.infer._
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.variable.{LabeledDiscreteEvaluation, LabeledMutableDiscreteVar, CategoricalDomain}
 import cc.factorie.la.Tensor1
 import cc.factorie.optimize._
-import cc.factorie.util.DoubleSeq
 import cc.factorie.la.SingletonBinaryTensor1
+import cc.factorie.app.classify.backend._
 
 /** A record of the result of applying a Classifier to a variable. */
-class Classification[V<:DiscreteVar](val _1:V, score:Tensor1) extends MulticlassValueClassification(score) with DiscreteMarginal1[V] {
+class Classification[V<:DiscreteVar](val _1:V, score:Tensor1) extends MulticlassClassification(score) with DiscreteMarginal1[V] {
   def bestValue = _1.domain.apply(bestLabelIndex)
-  def bestValueString: String = bestValue match {
-    case cv:CategoricalValue[_] => cv.category.toString
-    case dv:DiscreteValue => dv.intValue.toString
-  }
 }
 
 // Classifiers
 
 /** Performs iid prediction of a DiscreteVar. */
 trait Classifier[L<:DiscreteVar] {
-  type ClassificationType <: Classification[L] // TODO Use this.
   // Get classification record without changing the value of the label
   def classification(v:L): Classification[L]
-  def classifications(labels: Iterable[L]): Seq[Classification[L]] = labels.toSeq.par.map(label => classification(label)).seq
+  def classifications(labels: Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classification(label))
   // Get classification record and also set the label to its best scoring value 
   def classify[L2<:L with MutableDiscreteVar](v:L2): Classification[L] = { val c = classification(v); v := c.bestLabelIndex; c }
-  def classify(labels: Iterable[L with MutableDiscreteVar]): Seq[Classification[L]] = labels.toSeq.par.map(classify(_)).seq
-  def bestIndex(v:L): Int = classification(v).bestLabelIndex
+  def classify(labels: Iterable[L with MutableDiscreteVar]): Seq[Classification[L]] = labels.toSeq.map(l => classify(l))
+  def bestLabelIndex(v:L): Int = classification(v).bestLabelIndex
   // TODO It might be nice to have a weighted version of this.  We could do this with a LabelList. :-) -akm
   def accuracy(labels:Iterable[L with LabeledDiscreteVar]): Double = {
     var correct = 0.0; var total = 0.0
-    labels.foreach(label => { total += 1.0; if (bestIndex(label) == label.targetIntValue) correct += 1.0 })
+    labels.foreach(label => { total += 1.0; if (bestLabelIndex(label) == label.target.intValue) correct += 1.0 })
     correct / total
   } 
 }
 
 /** A Classifier in which the "input, observed" object to be classified is a VectorVar (with value Tensor1). */
-trait VectorClassifier[V<:DiscreteVar, Features<:VectorVar] extends Classifier[V] with MulticlassValueClassifier[Tensor1] {
+trait VectorClassifier[V<:DiscreteVar, Features<:VectorVar] extends Classifier[V] with MulticlassClassifier[Tensor1] {
   def labelToFeatures: V=>Features
 }
 
 /** A VectorClassifier in which the score for each class is a dot-product between the observed feature vector and a vector of parameters.
     Examples include NaiveBayes, MultivariateLogisticRegression, LinearSVM, and many others.
     Counter-examples include KNearestNeighbor. */
-class LinearVectorClassifier[L<:DiscreteVar,F<:VectorVar](numLabels:Int, numFeatures:Int, val labelToFeatures:L=>F) extends LinearMulticlassValueClassifier(numLabels, numFeatures) with VectorClassifier[L,F] {
+class LinearVectorClassifier[L<:DiscreteVar,F<:VectorVar](numLabels:Int, numFeatures:Int, val labelToFeatures:L=>F) extends LinearMulticlassClassifier(numLabels, numFeatures) with VectorClassifier[L,F] {
   def classification(v:L): Classification[L] = new Classification(v, score(labelToFeatures(v).value))
-  override def bestIndex(v:L): Int = score(labelToFeatures(v).value).maxIndex
+  override def bestLabelIndex(v:L): Int = score(labelToFeatures(v).value).maxIndex
 }
 
 
@@ -72,8 +65,6 @@ trait VectorClassifierTrainer {
   def train[L<:LabeledDiscreteVar,F<:VectorVar](labels:Iterable[L], l2f:L=>F): VectorClassifier[L,F]
 }
 
-//trait ExistingVectorClassifierTrainer[C<:VectorClassifier[L,F]] { def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, labels:Iterable[L], l2f:L=>F): C }
-
 /** An object that can create and train a LinearVectorClassifier (or train a pre-existing LinearVectorClassifier) given labeled training data. */
 trait LinearVectorClassifierTrainer extends VectorClassifierTrainer {
   /** Create a new LinearVectorClassifier, not yet trained. */
@@ -83,9 +74,6 @@ trait LinearVectorClassifierTrainer extends VectorClassifierTrainer {
   /** Train (and return) an already-created (perhaps already partially-trained) LinearVectorClassifier. */
   def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], l2f:L=>F): C
 }
-
-///** An object that can train a pre-existing LinearVectorClassifier given labeled training data. */
-//trait ExistingLinearVectorClassifierTrainer { def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, labels:Iterable[L], l2f:L=>F): C }
 
 /** A LinearVectorClassifierTrainer that uses the cc.factorie.optimize package to estimate parameters. */
 class OptimizingLinearVectorClassifierTrainer(
@@ -100,7 +88,7 @@ class OptimizingLinearVectorClassifierTrainer(
   // TODO This is missing weights on Examples.  I think passing a Seq[Double] is error prone, and am tempted to go back to LabelList. -akm
   /** Create a sequence of Example instances for obtaining the gradients used for training. */
   def examples[L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], labels:Iterable[L], l2f:L=>F, objective:LinearObjectives.Multiclass): Seq[LinearMulticlassExample] =
-    labels.toSeq.map(l => new LinearMulticlassExample(classifier.weights, l2f(l).value, l.targetIntValue, objective))
+    labels.toSeq.map(l => new LinearMulticlassExample(classifier.weights, l2f(l).value, l.target.intValue, objective))
     
   /** Train the classifier to convergence, calling the diagnostic function once after each iteration.
       This is the base method called by the other simpler train methods. */
@@ -109,11 +97,11 @@ class OptimizingLinearVectorClassifierTrainer(
     classifier
   }
   /** Return a function suitable for passing in as the diagnostic to train which prints the accuracy on the testLabels */
-  def defaultTestDiagnostic[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], trainLabels:Iterable[L], testLabels:Iterable[L]): C=>Unit = 
-    (c:C) => println(f"Test accuracy: ${classifier.accuracy(testLabels)}%1.4f")
+  def defaultTestDiagnostic[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], trainLabels:Iterable[L], testLabels:Iterable[L]): C=>Unit =
+    (c:C) => println(f"Test accuracy: ${classifier.accuracy(testLabels.asInstanceOf[Iterable[L with LabeledDiscreteVar]])}%1.4f")
   /** Return a function suitable for passing in as the diagnostic to train which prints the accuracy on the trainLabels and the testLabels */
-  def defaultTrainAndTestDiagnostic[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], trainLabels:Iterable[L], testLabels:Iterable[L]): C=>Unit = 
-    (c:LinearVectorClassifier[L,F]) => println(f"Train accuracy: ${classifier.accuracy(trainLabels)}%1.4f\nTest  accuracy: ${classifier.accuracy(testLabels)}%1.4f")
+  def defaultTrainAndTestDiagnostic[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], trainLabels:Iterable[L], testLabels:Iterable[L]): C=>Unit =
+    (c:LinearVectorClassifier[L,F]) => println(f"Train accuracy: ${classifier.accuracy(trainLabels.asInstanceOf[Iterable[L with LabeledDiscreteVar]])}%1.4f\nTest  accuracy: ${classifier.accuracy(testLabels.asInstanceOf[Iterable[L with LabeledDiscreteVar]])}%1.4f")
   /** Train the classifier to convergence, calling a test-accuracy-printing diagnostic function once after each iteration. */
   def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], testLabels:Iterable[L], l2f:L=>F): C =
     train(classifier, trainLabels, l2f, defaultTestDiagnostic(classifier, trainLabels, testLabels))
@@ -145,7 +133,7 @@ class BatchOptimizingLinearVectorClassifierTrainer(useParallel:Boolean = true,
 /** An OptimizingLinearVectorClassifierTrainer pre-tuned with default arguments well-suited to training an L2-regularized linear SVM. */
 class SVMLinearVectorClassifierTrainer(parallel: Boolean=false)(implicit random: scala.util.Random) extends OptimizingLinearVectorClassifierTrainer(optimizer=null, useParallelTrainer=parallel, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
   override def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], l2f:L=>F, diagnostic:C=>Unit): C = {
-    val ll = trainLabels.map(_.targetIntValue).toArray
+    val ll = trainLabels.map(_.target.intValue).toArray
     val ff = trainLabels.map(label => l2f(label).value).toArray[Tensor1]
     val numLabels = classifier.weights.value.dim1
     val weightTensor = {
@@ -177,7 +165,7 @@ class NaiveBayesClassifierTrainer(pseudoCount:Double = 0.1) extends LinearVector
     for (li <- 0 until labelSize) evidence(li).masses += pseudoCount
     // Incorporate evidence
     for (label <- trainLabels) {
-      val targetIndex = label.targetIntValue
+      val targetIndex = label.target.intValue
       //bias.masses += (targetIndex, 1.0)
       val features = l2f(label)
       features.value.foreachActiveElement((featureIndex, featureValue) => {
@@ -206,7 +194,7 @@ class DecisionTreeClassifier[L<:DiscreteVar,F<:VectorVar](val tree:DTree, val la
 class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends VectorClassifierTrainer {
   def train[L<:LabeledDiscreteVar,F<:VectorVar](labels:Iterable[L], l2f:L=>F): DecisionTreeClassifier[L,F] = {
     val labelSize = labels.head.domain.size
-    val instances = labels.toSeq.map(label => DecisionTreeTrainer.Instance(l2f(label).value, new SingletonBinaryTensor1(labelSize, label.targetIntValue), 1.0))
+    val instances = labels.toSeq.map(label => DecisionTreeTrainer.Instance(l2f(label).value, new SingletonBinaryTensor1(labelSize, label.target.intValue), 1.0))
     val treeTrainer = new ID3DecisionTreeTrainer // TODO We could make this a flexible choice later. -akm
     val dtree = treeTrainer.train(instances)
     new DecisionTreeClassifier(dtree, l2f)

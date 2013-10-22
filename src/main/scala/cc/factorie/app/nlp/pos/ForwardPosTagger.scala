@@ -6,10 +6,10 @@ import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator}
 import java.io.{File,InputStream,FileInputStream}
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.app.classify.LinearMulticlassValueClassifier
 import cc.factorie.optimize.Trainer
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
-class ForwardPOSTagger extends DocumentAnnotator {
+class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
@@ -17,7 +17,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
   
   object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable(t:Tensor1) extends BinaryFeatureVectorVariable[String] { def domain = FeatureDomain; set(t)(null) } // Only used for printing diagnostics
-  lazy val model = new LinearMulticlassValueClassifier(PennPosDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMulticlassClassifier(PennPosDomain.size, FeatureDomain.dimensionSize)
   
   /** Local lemmatizer used for POS features. */
   protected def lemmatize(string:String): String = cc.factorie.app.strings.replaceDigits(string)
@@ -45,11 +45,11 @@ class ForwardPOSTagger extends DocumentAnnotator {
       var tokenCount = 0
       tokens.foreach(t => {
         tokenCount += 1
-        if (t.attr[PennPosLabel] eq null) {
+        if (t.attr[PennPosTag] eq null) {
           println("POS1.WordData.preProcess tokenCount "+tokenCount)
           println("POS1.WordData.preProcess token "+t.prev.string+" "+t.prev.attr)
           println("POS1.WordData.preProcess token "+t.string+" "+t.attr)
-          throw new Error("Found training token with no PennPosLabel.")
+          throw new Error("Found training token with no PennPosTag.")
         }
         val lemma = lemmatize(t.string).toLowerCase
         if (!wordCounts.contains(lemma)) {
@@ -57,7 +57,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
           posCounts(lemma) = Array.fill(PennPosDomain.size)(0)
         }
         wordCounts(lemma) += 1
-        posCounts(lemma)(t.attr[PennPosLabel].intValue) += 1
+        posCounts(lemma)(t.attr[PennPosTag].intValue) += 1
       })
       wordCounts.keys.foreach(w => {
         if (wordCounts(w) >= wordInclusionThreshold) {
@@ -75,7 +75,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
     def lemmaStringAtOffset(offset:Int): String = "L@"+offset+"="+lemmas.lc(lemmaIndex + offset) // this is lowercased
     def wordStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas(lemmaIndex + offset) // this is not lowercased, but still has digits replaced
     def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(lemmas.lc(lemmaIndex + offset), null)
-    def posTagAtOffset(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[PennPosLabel].categoryValue else null) }
+    def posTagAtOffset(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[PennPosTag].categoryValue else null) }
     def take(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(0,n) }
     def takeRight(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(l-n,l) }
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
@@ -186,15 +186,14 @@ class ForwardPOSTagger extends DocumentAnnotator {
   }
 
   var exampleSetsToPrediction = false
-  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMulticlassValueClassifier, lossAndGradient: optimize.LinearObjectives.Multiclass) extends optimize.Example {
+  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMulticlassClassifier, lossAndGradient: optimize.LinearObjectives.Multiclass) extends optimize.Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
-        val posLabel = token.attr[PennPosLabel]
+        val posLabel = token.attr[LabeledPennPosTag]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearMulticlassExample(model.weights, featureVector, posLabel.targetIntValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
-  //      new optimize.LinearMulticlassExample(featureVector, posLabel.targetIntValue, lossAndGradient).accumulateValueAndGradient(model, gradient, value)
+        new optimize.LinearMulticlassExample(model.weights, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
         if (exampleSetsToPrediction) {
           posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
         }
@@ -206,10 +205,10 @@ class ForwardPOSTagger extends DocumentAnnotator {
     val lemmaStrings = lemmas(tokens)
     for (index <- 0 until tokens.length) {
       val token = tokens(index)
-      val posLabel = token.attr[PennPosLabel]
+      val posLabel = token.attr[PennPosTag]
       val featureVector = features(token, index, lemmaStrings)
-      if (token.attr[PennPosLabel] eq null) token.attr += new PennPosLabel(token, "NNP")
-      token.attr[PennPosLabel].set(model.classification(featureVector).bestLabelIndex)(null)
+      if (token.attr[PennPosTag] eq null) token.attr += new PennPosTag(token, "NNP")
+      token.attr[PennPosTag].set(model.classification(featureVector).bestLabelIndex)(null)
     }
   }
   def predict(span: TokenSpan): Unit = predict(span.tokens)
@@ -259,7 +258,7 @@ class ForwardPOSTagger extends DocumentAnnotator {
       totalTime += (System.currentTimeMillis()-t0)
       for (token <- s.tokens) {
         total += 1
-        if (token.attr[PennPosLabel].valueIsTarget) correct += 1.0
+        if (token.attr[LabeledPennPosTag].valueIsTarget) correct += 1.0
       }
     })
     println(s"${total*1000/totalTime} tokens/sec")
@@ -287,12 +286,12 @@ class ForwardPOSTagger extends DocumentAnnotator {
       new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMulticlass else cc.factorie.optimize.LinearObjectives.sparseLogMulticlass)).seq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
-    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = true)
+    Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
     if (false) {
       // Print test results to file
       val source = new java.io.PrintStream(new File("pos1-test-output.txt"))
       for (s <- testSentences) {
-        for (t <- s.tokens) { val p = t.posLabel; source.println("%s %20s  %6s %6s".format(if (p.valueIsTarget) " " else "*", t.string, p.target.categoryValue, p.categoryValue)) }
+        for (t <- s.tokens) { val p = t.attr[LabeledPennPosTag]; source.println("%s %20s  %6s %6s".format(if (p.valueIsTarget) " " else "*", t.string, p.target.categoryValue, p.categoryValue)) }
         source.println()
       }
       source.close()
@@ -301,22 +300,19 @@ class ForwardPOSTagger extends DocumentAnnotator {
 
   def process(d: Document) = { predict(d); d }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
-  def postAttrs: Iterable[Class[_]] = List(classOf[PennPosLabel])
-  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosLabel]; if (label ne null) label.categoryValue else "(null)" }
+  def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
+  override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
 }
 
-// object POS1 is defined in app/nlp/pos/package.scala
+/** The default part-of-speech tagger, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
+class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
 
-/** The default POS1, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-object ForwardPOSTagger extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-WSJ.factorie"))
+/** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
+class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
 
-/** The default POS1, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-// TODO Set up so that POS1WSJ and POS1Ontonotes parameter loading locations can be set independently. 
-//class POS1Ontonotes(url:java.net.URL) extends POS1(url)
-//object POS1Ontonotes extends POS1Ontonotes(cc.factorie.util.ClasspathURL[POS1Ontonotes](".factorie"))
-object ForwardPOSTaggerOntonotes extends ForwardPOSTagger(cc.factorie.util.ClasspathURL[ForwardPOSTagger]("-Ontonotes.factorie"))
-
-class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
   val testFile = new CmdOption("test", "", "FILENAME", "OWPL test file.")
   val trainFile = new CmdOption("train", "", "FILENAME", "OWPL training file.")
@@ -333,15 +329,15 @@ class ForwardPOSOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 }
 
 
-object ForwardPOSTrainer extends HyperparameterMain {
+object ForwardPosTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new ForwardPOSTagger
+    val pos = new ForwardPosTagger
 
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
     val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
@@ -363,19 +359,19 @@ object ForwardPOSTrainer extends HyperparameterMain {
     if (opts.saveModel.value) {
       println("pre serialize accuracy: " + pos.accuracy(testDocs.flatMap(_.sentences)))
       pos.serialize(opts.modelFile.value)
-      val pos2 = new ForwardPOSTagger
+      val pos2 = new ForwardPosTagger
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       println(s"pre accuracy: ${pos.accuracy(testDocs.flatMap(_.sentences))} post accuracy: ${pos2.accuracy(testDocs.flatMap(_.sentences))}")
     }
     val acc = pos.accuracy(testDocs.flatMap(_.sentences))
-    if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
     acc
   }
 }
 
-object ForwardPOSOptimizer {
+object ForwardPosOptimizer {
   def main(args: Array[String]) {
-    val opts = new ForwardPOSOptions
+    val opts = new ForwardPosOptions
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
@@ -391,7 +387,7 @@ object ForwardPOSOptimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPOSTagger")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPosTagger")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

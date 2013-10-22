@@ -3,13 +3,13 @@ import cc.factorie.app.nlp._
 
 
 import scala.io.Source
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.variable._
 import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 
 /**
  * @author John Sullivan
@@ -27,7 +27,7 @@ object LoadConll2000 extends Load {
     val doc = new Document()
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
-    doc.annotators(classOf[PennPosLabel]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PennPosTag]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[BIOChunkTag]) = UnknownDocumentAnnotator.getClass
 
     var sent = new Sentence(doc)
@@ -42,7 +42,7 @@ object LoadConll2000 extends Load {
   private def processWordLine(doc:Document, sent:Sentence, line:String):Sentence = line match {
     case lineSplit(tokenType, posTagString, chunkTagString) => {
       val t = new Token(sent, tokenType + " ")
-      t.attr += new PennPosLabel(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
+      t.attr += new PennPosTag(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
       t.attr += new BIOChunkTag(t, chunkTagString)
       sent
     }

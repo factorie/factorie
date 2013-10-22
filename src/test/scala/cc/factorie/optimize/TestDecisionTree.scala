@@ -10,6 +10,7 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
 import cc.factorie.variable.{VectorDomain, DiscreteDomain}
 import cc.factorie.app.classify._
+import cc.factorie.app.classify.backend._
 
 class TestDecisionTree extends JUnitSuite {
   @Test def testRegression(): Unit = {
@@ -74,7 +75,7 @@ class TestDecisionTree extends JUnitSuite {
     val (trainSet, testSet) = (posExampleTensors.map(p => (p, 1)) ++ negExampleTensors.map(n => (n, 0))).shuffle.split(0.5)
     val trainers = Seq(
       new BoostingMulticlassTrainer(100),
-      new OnlineLinearMulticlassValueClassifierTrainer,
+      new OnlineLinearMulticlassTrainer,
       new RandomForestMulticlassTrainer(100, 100, 100),
       new DecisionTreeMulticlassTrainer(new C45DecisionTreeTrainer))
 
@@ -82,15 +83,15 @@ class TestDecisionTree extends JUnitSuite {
     val trainLabels = trainSet.map(_._2)
     val testFeatures = testSet.map(_._1)
     val testLabels = testSet.map(_._2)
-    def calcAccuracy(c: MulticlassValueClassifier[Tensor1]): Double =
+    def calcAccuracy(c: MulticlassClassifier[Tensor1]): Double =
       testFeatures.map(i => c.classification(i).bestLabelIndex)
         .zip(testLabels).count(i => i._1 == i._2).toDouble/testLabels.length
-    val evaluate = (c: MulticlassValueClassifier[Tensor1]) => {
+    val evaluate = (c: MulticlassClassifier[Tensor1]) => {
       val accuracy = calcAccuracy(c)
       println(f"Test accuracy: $accuracy%1.4f")
       assert(accuracy > 0.66)
     }
-    val evaluate2 = (c1: MulticlassValueClassifier[Tensor1], c2: MulticlassValueClassifier[Tensor1]) => {
+    val evaluate2 = (c1: MulticlassClassifier[Tensor1], c2: MulticlassClassifier[Tensor1]) => {
       val accuracy1 = calcAccuracy(c1)
       val accuracy2 = calcAccuracy(c2)
       println(f"Test accuracy: $accuracy1%1.4f")

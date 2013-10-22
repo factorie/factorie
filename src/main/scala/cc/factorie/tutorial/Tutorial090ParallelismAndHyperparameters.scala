@@ -3,7 +3,7 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp.{Document, Token}
 import cc.factorie.app.chain.ChainModel
-import cc.factorie.app.nlp.segment.{BasicSentenceSegmenter, BasicTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
 import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.infer.InferByBPChain
@@ -84,8 +84,8 @@ object Tutorial090ParallelismAndHyperparameters {
       l => l.token,
       t => t.attr[Label])
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    BasicTokenizer.process(document)
-    BasicSentenceSegmenter.process(document)
+    DeterministicTokenizer.process(document)
+    DeterministicSentenceSegmenter.process(document)
     document.tokens.foreach(t => t.attr += new Label(t, "A"))
     LabelDomain.index("B")
     document.tokens.foreach(t => {

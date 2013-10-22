@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosLabel}
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import mention.{MentionEntityType, MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
@@ -124,7 +124,7 @@ object ConllCorefLoader {
         }
         val token = new Token(currSent, word)
         PennPosDomain.unfreeze()     //todo: factorie PennPosDomain currently contains all of the ontonotes tags. Might want to freeze this up for thread safety
-        token.attr += new PennPosLabel(token,fields(4))
+        token.attr += new PennPosTag(token,fields(4))
         tokenId += 1
         if (tokId == 0) sentenceId += 1
 
@@ -265,7 +265,7 @@ object ConllCorefLoader {
 
   //this is a span-level offset. Since we don't have a dep parse, we just take the final noun in the span
   def getHeadToken(span: TokenSpan): Int = {
-    val toReturn = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+    val toReturn = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
     if(toReturn == -1){
       span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
     }else{

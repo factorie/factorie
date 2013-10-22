@@ -23,7 +23,7 @@ import cc.factorie.optimize._
 import language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.BoostingMulticlassTrainer
+import cc.factorie.app.classify.backend.BoostingMulticlassTrainer
 
 /**A document classifier that uses Decision Trees.
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */

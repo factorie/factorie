@@ -25,6 +25,7 @@ import cc.factorie.la.Tensor1
 import scala.Some
 import cc.factorie.variable._
 import scala.Some
+import cc.factorie.app.classify.backend.{LinearMulticlassClassifierCubbie, LinearMulticlassClassifier, MulticlassClassifierTrainer, MulticlassClassifier}
 
 // Feature and Label classes
 
@@ -113,7 +114,7 @@ object Classify {
       val validationPortion = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
       val localRandomSeed = new CmdOption("random-seed", 0, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
-      val trainer = new CmdOption("trainer", "new SVMMulticlassValueClassifierTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
+      val trainer = new CmdOption("trainer", "new SVMMulticlassClassifierTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
       val crossValidation = new CmdOption("cross-validation", 0, "N", "The number of folds for cross-validation (DEFAULT=0)")
 
@@ -242,7 +243,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val cubbie = new LinearMulticlassValueClassifierCubbie
+      val cubbie = new LinearMulticlassClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
       val classifications = labels.map(l => classifier.classification(l.features.value))
@@ -284,7 +285,7 @@ object Classify {
       writeInstances(bigll, instancesFile)
     }
 
-    val classifierTrainer = ScriptingUtils.eval[MulticlassValueClassifierTrainer[MulticlassValueClassifier[Tensor1]]](
+    val classifierTrainer = ScriptingUtils.eval[MulticlassClassifierTrainer[MulticlassClassifier[Tensor1]]](
       "{ implicit val rng = new scala.util.Random(0); " + opts.trainer.value + "}", Seq("cc.factorie.app.classify._", "cc.factorie.optimize._"))
 
     val start = System.currentTimeMillis
@@ -296,8 +297,8 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       classifier match {
-        case model: LinearMulticlassValueClassifier =>
-          val mc = new LinearMulticlassValueClassifierCubbie
+        case model: LinearMulticlassClassifier =>
+          val mc = new LinearMulticlassClassifierCubbie
           mc.store(model)
           BinarySerializer.serialize(mc, classifierFile)
       }

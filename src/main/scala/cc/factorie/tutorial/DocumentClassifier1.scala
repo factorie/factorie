@@ -19,6 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import variable._
 import cc.factorie.app.classify._
+import cc.factorie.app.classify.backend.{BatchLinearMulticlassTrainer, OnlineLinearMulticlassTrainer}
 
 object DocumentClassifier1 {
   
@@ -56,8 +57,8 @@ object DocumentClassifier1 {
     (trainVariables ++ testVariables).foreach(_.setRandomly)
 
     val valueTrainers = Seq(
-        new OnlineLinearMulticlassValueClassifierTrainer(), 
-        new BatchLinearMulticlassValueClassifierTrainer()
+        new OnlineLinearMulticlassTrainer(),
+        new BatchLinearMulticlassTrainer()
         )
     val trainers = Seq(    
         new OnlineOptimizingLinearVectorClassifierTrainer(),

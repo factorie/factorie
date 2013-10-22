@@ -18,14 +18,14 @@ import cc.factorie.infer._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.{LabeledDiscreteEvaluation, LabeledMutableDiscreteVar, CategoricalDomain}
 import cc.factorie.la.Tensor1
+import cc.factorie.app.classify.backend.{MulticlassClassifier, MulticlassClassification}
 
 
-
-case class LabeledClassification[L](label: L, classification: MulticlassValueClassification)
+case class LabeledClassification[L](label: L, classification: MulticlassClassification)
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
-class Trial[L<:LabeledMutableDiscreteVar,F](val classifier: MulticlassValueClassifier[F], labelDomain: CategoricalDomain[String], l2f: L => F)
+class Trial[L<:LabeledMutableDiscreteVar,F](val classifier: MulticlassClassifier[F], labelDomain: CategoricalDomain[String], l2f: L => F)
   extends LabeledDiscreteEvaluation(labelDomain) with IndexedSeq[LabeledClassification[L]] {
   private val classifications = new ArrayBuffer[LabeledClassification[L]]
   def length = classifications.length

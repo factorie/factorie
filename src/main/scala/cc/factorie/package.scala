@@ -38,6 +38,7 @@ package object factorie extends CubbieConversions {
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
 
   def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
+  def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")
 
   type DenseTensor1 = cc.factorie.la.DenseTensor1
   type DenseTensor2 = cc.factorie.la.DenseTensor2

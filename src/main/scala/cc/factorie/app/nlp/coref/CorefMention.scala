@@ -29,7 +29,7 @@ object CorefMention{
         throw new IllegalStateException("the constructor expects headTokenIndex to be an offset from the beginning of the span, not the document")
       }
       if(headTokenIndex == -1){
-        val idx = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+        val idx = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
         //assert(idx != -1, "failed to find a noun in the span") //todo: put this back in
         if(idx < 0)  span.length -1 else idx      //todo: this handles the case where it didn't find an NN anywhere. Should that be happening?
       }else
@@ -56,15 +56,15 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   val _head =  mention.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
   def parentEntity = mention.attr[Entity]
-  def mType = headToken.posLabel.categoryValue
+  def mType = headToken.posTag.categoryValue
   def span = mention
   def entityType: String = mention.attr[MentionEntityType].categoryValue
   def document = mention.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
-  val isProper = CorefMention.properSet.contains(mention.headToken.posLabel.categoryValue)
-  val isNoun = CorefMention.nounSet.contains(mention.headToken.posLabel.categoryValue)
-  val isPossessive = CorefMention.posSet.contains(mention.headToken.posLabel.categoryValue)
+  val isProper = CorefMention.properSet.contains(mention.headToken.posTag.categoryValue)
+  val isNoun = CorefMention.nounSet.contains(mention.headToken.posTag.categoryValue)
+  val isPossessive = CorefMention.posSet.contains(mention.headToken.posTag.categoryValue)
 
   def isAppositionOf(m : CorefMention) : Boolean = {
     val isAppo = headToken.parseLabel.categoryValue == "appos"
@@ -105,11 +105,11 @@ class MentionCache(m: CorefMention) {
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
   lazy val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
   lazy val nounWords: Set[String] =
-      m.span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
+      m.span.tokens.filter(_.posTag.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
   lazy val lowerCaseHead: String = m.span.phrase.toLowerCase
   lazy val headPhraseTrim: String = m.span.phrase.trim
   lazy val nonDeterminerWords: Seq[String] =
-    m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
+    m.span.tokens.filterNot(_.posTag.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
   lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
@@ -117,7 +117,7 @@ class MentionCache(m: CorefMention) {
 
   lazy val capitalization: Char = {
       if (m.span.length == 1 && m.span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
-          val s = m.span.value.filter(_.posLabel.categoryValue.startsWith("N")).map(_.string.trim)
+          val s = m.span.value.filter(_.posTag.categoryValue.startsWith("N")).map(_.string.trim)
           if (s.forall(_.forall(_.isUpper))) 'a'
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'

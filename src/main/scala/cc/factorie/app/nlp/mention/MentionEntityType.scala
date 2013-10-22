@@ -6,8 +6,8 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.LinearMulticlassValueClassifier
 import cc.factorie.optimize.{Trainer, LinearMulticlassExample, LinearObjectives}
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -30,7 +30,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMulticlassValueClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMulticlassClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable

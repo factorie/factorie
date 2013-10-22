@@ -2,22 +2,22 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
 import cc.factorie._
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import util.{HyperparameterMain, ClasspathURL, DoubleAccumulator}
+import cc.factorie.util.{Threading, HyperparameterMain, ClasspathURL, DoubleAccumulator}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
 import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
 import cc.factorie.model.Parameters
+import cc.factorie.optimize._
 
-/**
- * User: apassos
- * Date: 5/19/13
- * Time: 9:44 AM
- */
-class GraphProjectiveParser extends DocumentAnnotator {
+/** A graph-based projective dependency parser.
+    @author Alexandre Passos */
+class ProjectiveGraphBasedParser extends DocumentAnnotator {
   parser =>
 
+  def this(url:java.net.URL) = { this(); deserialize(url) }
+  
   object MyFeaturesDomain extends DiscreteDomain(1e7.toInt) // 10 million features
   class FeatureVector extends HashFeatureVectorVariable {
     def domain = MyFeaturesDomain
@@ -26,7 +26,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getTokenFeatureVector(t: Token): TensorVar = {
     val f = new FeatureVector
     val tWord = t.string
-    val tPos = t.attr[PennPosLabel].categoryValue
+    val tPos = t.attr[PennPosTag].categoryValue
     f += "TOKENPOS="+tPos
     f += "TOKENWORD="+tWord
     f += "TOKENID="+tPos+"&"+tWord
@@ -36,7 +36,7 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getParentFeatureVector(p: Token): TensorVar = {
     val f = new FeatureVector
     val pWord = if (p ne null) p.string else "ROOT"
-    val pPos = if (p ne null) p.attr[PennPosLabel].categoryValue else "ROOTPOS"
+    val pPos = if (p ne null) p.attr[PennPosTag].categoryValue else "ROOTPOS"
     f += "PARENTPOS="+pPos
     f += "PARENTWORD="+pWord
     f += "PARENTID="+pPos+"&"+pWord
@@ -54,39 +54,49 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def getPairwiseFeatureVector(t: Token, p: Token): TensorVar = {
     val f = new FeatureVector
     val tWord = t.string
-    val tPos = t.attr[PennPosLabel].categoryValue
+    val tPos = t.attr[PennPosTag].categoryValue
     val pWord = if (p ne null) p.string else "ROOT"
-    val pPos = if (p ne null) p.attr[PennPosLabel].categoryValue else "ROOTPOS"
-    f += "WORDPAIR="+tWord+"&"+pWord
-    f += "POSPAIR="+tPos+"&"+pPos
-    f += "PARENTPAIRCHILDPOS="+pPos+"&"+pWord+"&"+tPos
-    f += "PARENTPAIRCHILDWORD="+pPos+"&"+pWord+"&"+tWord
-    f += "CHILDPAIRPARENTPOS="+tPos+"&"+tWord+"&"+pPos
-    f += "CHILDPAIRPARENTWORD="+tPos+"&"+tWord+"&"+pWord
-    f += "JOINTALL="+tPos+"&"+tWord+"&"+pWord+"&"+pPos
+    val pPos = if (p ne null) p.attr[PennPosTag].categoryValue else "ROOTPOS"
+    val pPosition = if (p ne null) p.positionInSentence else -1
+    val tPosition = t.positionInSentence
+    val dir = if (pPosition < tPosition) "R" else "L"
+    f += dir+"WORDPAIR="+tWord+"&"+pWord
+    f += dir+"POSPAIR="+tPos+"&"+pPos
+    f += dir+"PARENTPAIRCHILDPOS="+pPos+"&"+pWord+"&"+tPos
+    f += dir+"PARENTPAIRCHILDWORD="+pPos+"&"+pWord+"&"+tWord
+    f += dir+"CHILDPAIRPARENTPOS="+tPos+"&"+tWord+"&"+pPos
+    f += dir+"CHILDPAIRPARENTWORD="+tPos+"&"+tWord+"&"+pWord
+    f += dir+"JOINTALL="+tPos+"&"+tWord+"&"+pWord+"&"+pPos
     if ((p ne null) && (t ne null)) {
       val first = if (p.positionInSentence < t.positionInSentence) p else t
       val second = if (p.positionInSentence < t.positionInSentence) t else p
       var x = first
       while (x.sentenceNext ne second) {
         x = x.sentenceNext
-        f += "BETWEENPOS="+pPos+"&"+x.attr[PennPosLabel].categoryValue+"&"+tPos
+        f += dir+"BETWEENPOS="+pPos+"&"+x.attr[PennPosTag].categoryValue+"&"+tPos
       }
-      val prevHeadPos = if (p.sentenceHasPrev) p.sentencePrev.attr[PennPosLabel].categoryValue else "NOPREV"
-      val prevTokPos = if (t.sentenceHasPrev) t.sentencePrev.attr[PennPosLabel].categoryValue else "NOPREV"
-      val nextHeadPos = if (p.sentenceHasNext) p.sentenceNext.attr[PennPosLabel].categoryValue else "NONEXT"
-      val nextTokPos = if (t.sentenceHasNext) t.sentenceNext.attr[PennPosLabel].categoryValue else "NONEXT"
-      f += "HNhPcC="+pPos+"&"+nextHeadPos+"&"+prevTokPos+"&"+tPos
-      f += "PhHPcC="+prevHeadPos+"&"+pPos+"&"+prevTokPos+"&"+tPos
-      f += "HNhCNc="+pPos+"&"+nextHeadPos+"&"+tPos+"&"+nextTokPos
-      f += "PhHCNc="+prevHeadPos+"&"+pPos+"&"+tPos+"&"+nextTokPos
+      val prevHeadPos = if (p.sentenceHasPrev) p.sentencePrev.attr[PennPosTag].categoryValue else "NOPREV"
+      val prevTokPos = if (t.sentenceHasPrev) t.sentencePrev.attr[PennPosTag].categoryValue else "NOPREV"
+      val nextHeadPos = if (p.sentenceHasNext) p.sentenceNext.attr[PennPosTag].categoryValue else "NONEXT"
+      val nextTokPos = if (t.sentenceHasNext) t.sentenceNext.attr[PennPosTag].categoryValue else "NONEXT"
+      def addFourGramFeature(f: FeatureVector, name: String, a: String, b: String, c: String, d: String): Unit = {
+        f += name+a+b+c+d
+        f += 1+name+a+b+c
+        f += 2+name+a+b+d
+        f += 3+name+a+c+d
+        f += 4+name+b+c+d
+      }
+      addFourGramFeature(f, dir+"HNhPcC=",pPos,nextHeadPos,prevTokPos,tPos)
+      addFourGramFeature(f, dir+"PhHPcC=", prevHeadPos, pPos, prevTokPos, tPos)
+      addFourGramFeature(f, dir+"HNhCNc=", pPos, nextHeadPos, tPos, nextTokPos)
+      addFourGramFeature(f, dir+"PhHCNc=", prevHeadPos, pPos, tPos, nextTokPos)
       val distance = math.abs(t.positionInSentence - p.positionInSentence)
       for (i <- 0 to distance) {
-        f += "EdgeLength>="+i
+        f += dir+"EdgeLength>="+i
       }
       val normDistance = distance*10/ t.sentence.length
       for (i <- 0 to normDistance) {
-        f += "NormDistance>="+i
+        f += dir+"NormDistance>="+i
       }
     }
     f
@@ -263,19 +273,21 @@ class GraphProjectiveParser extends DocumentAnnotator {
   def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], file: String, nThreads: Int, nIters: Int = 10) {
     val examples = trainSentences.map(new StructuredPerceptronParsingExample(_))
     val rng = new scala.util.Random(0)
-    val opt = new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.0001, 0.0001)
-    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = nThreads)
+    val opt = new AdaMira(0.1) with ParameterAveraging // new cc.factorie.optimize.AdaGradRDA(1.0, 0.0, 0.0001, 0.0001)
+    val trainer = new optimize.SynchronizedOptimizerOnlineTrainer(DependencyModel.parameters, opt, maxIterations = 10, nThreads = 1)
     for (iteration <- 0 until nIters) {
       trainer.processExamples(rng.shuffle(examples))
+      opt match { case op: ParameterAveraging => op.setWeightsToAverage(DependencyModel.parameters) }
       val t0 = System.currentTimeMillis()
-      println("Predicting train set..."); trainSentences.par.foreach { s => parse(s) } // Was par
-      println("Predicting test set...");  testSentences.par.foreach { s => parse(s) } // Was par
-      println("Processed in " + (trainSentences.length+testSentences.length)*1000.0/(System.currentTimeMillis()-t0) + " sentences per second")
+      println("Predicting train set..."); Threading.parForeach(trainSentences, nThreads) { s => parse(s) } // Was par
+      println("Predicting test set...");  Threading.parForeach(testSentences, nThreads) { s => parse(s) } // Was par
+      println("Processed in " + (trainSentences.map(_.tokens.length).sum+testSentences.map(_.tokens.length).sum)*1000.0/(System.currentTimeMillis()-t0) + " tokens per second")
       println("Training UAS = "+ ParserEval.calcUas(trainSentences.map(_.attr[ParseTree])))
       println(" Testing UAS = "+ ParserEval.calcUas(testSentences.map(_.attr[ParseTree])))
+      opt match { case op: ParameterAveraging => op.unSetWeightsToAverage(DependencyModel.parameters) }
       println()
-      println("Saving model...")
-      if (file != "") serialize(file + "-iter-"+iteration)
+      //println("Saving model...")
+      //if (file != "") serialize(file + "-iter-"+iteration)
     }
     println("Finished training.")
     opt.finalizeWeights(DependencyModel.parameters)
@@ -292,28 +304,30 @@ class GraphProjectiveParser extends DocumentAnnotator {
     document.sentences.foreach(parse)
     document
   }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[pos.PennPosLabel]) // TODO Also TokenLemma?  But we don't have a lemmatizer that matches the training data
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[Sentence], classOf[pos.PennPosTag]) // TODO Also TokenLemma?  But we don't have a lemmatizer that matches the training data
   def postAttrs: Iterable[Class[_]] = List(classOf[ParseTree])
 }
 
-object GraphProjectiveParser extends GraphProjectiveParser {
-  deserialize(ClasspathURL[GraphProjectiveParser](".factorie"))
-}
+class WSJProjectiveGraphBasedParser(url:java.net.URL) extends ProjectiveGraphBasedParser(url)
+object WSJProjectiveGraphBasedParser extends ProjectiveGraphBasedParser(ClasspathURL[WSJProjectiveGraphBasedParser](".factorie"))
 
-object GraphProjectiveParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class OntonotesProjectiveGraphBasedParser(url:java.net.URL) extends ProjectiveGraphBasedParser(url)
+object OntonotesProjectiveGraphBasedParser extends ProjectiveGraphBasedParser(ClasspathURL[OntonotesProjectiveGraphBasedParser](".factorie"))
+
+object ProjectiveGraphBasedParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
   //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
   val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
   val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
-  val nThreads   = new CmdOption("nThreads", 10, "INT", "Number of threads to use.")
+  val nThreads   = new CmdOption("nThreads", Runtime.getRuntime.availableProcessors(), "INT", "Number of threads to use.")
 }
 
-object GraphProjectiveParserTrainer extends HyperparameterMain {
+object ProjectiveGraphBasedParserTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
-    val opts = GraphProjectiveParserOpts
+    val opts = ProjectiveGraphBasedParserOpts
     opts.parse(args)
 
-    val parser = new GraphProjectiveParser
+    val parser = new ProjectiveGraphBasedParser
 
 
     val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
@@ -340,7 +354,8 @@ object GraphProjectiveParserTrainer extends HyperparameterMain {
     println("Testing UAS = "+ testUAS)
     println()
     println("Done.")
-    if(opts.targetAccuracy.wasInvoked) assert(testUAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(testUAS,opts.targetAccuracy.value.toDouble)
+
     testUAS
   }
 
