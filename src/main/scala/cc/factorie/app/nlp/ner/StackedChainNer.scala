@@ -550,7 +550,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
     } else document
   }
 }
-object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
+//object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 
 class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url)
 object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie"))
@@ -578,7 +578,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
