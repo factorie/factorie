@@ -16,8 +16,8 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.LinearMultiClassClassifier
-import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
+import cc.factorie.optimize.{Trainer, LinearMulticlassExample, LinearObjectives}
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
 class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
@@ -39,7 +39,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMultiClassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionDomain.size)
+  lazy val model = new LinearMulticlassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionDomain.size)
   
   def features(mention:NounPhrase): FeatureVariable = {
     val features = new FeatureVariable
@@ -105,7 +105,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     trainNounPhrases.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingNounPhrases(doc.attr[NounPhraseList])) yield
-      new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMultiClass)
+      new LinearMulticlassExample(model.weights, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMulticlass)
     val testNounPhrases = testDocs.flatMap(doc => filterTrainingNounPhrases(doc.attr[NounPhraseList]))
     println("Training ")
     def evaluate(): Unit = {

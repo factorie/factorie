@@ -18,7 +18,8 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import variable._
-import cc.factorie.app.classify.OnlineLinearMultiClassTrainer
+import cc.factorie.app.classify._
+import cc.factorie.app.classify.backend.{BatchLinearMulticlassTrainer, OnlineLinearMulticlassTrainer}
 
 object DocumentClassifier1 {
   
@@ -55,13 +56,29 @@ object DocumentClassifier1 {
     val (trainVariables, testVariables) = docLabels.shuffle.split(0.5)
     (trainVariables ++ testVariables).foreach(_.setRandomly)
 
-    //println(model)
-    //println(model.factors(trainVariables.head))
-    val classifier = new OnlineLinearMultiClassTrainer().train(trainVariables, trainVariables.map(_.document))
-    (trainVariables ++ testVariables).foreach(v => v.set(classifier.classification(v.document.value).bestLabelIndex)(null))
-    val objective = HammingObjective
-    println ("Train accuracy = "+ objective.accuracy(trainVariables))
-    println ("Test  accuracy = "+ objective.accuracy(testVariables))
+    val valueTrainers = Seq(
+        new OnlineLinearMulticlassTrainer(),
+        new BatchLinearMulticlassTrainer()
+        )
+    val trainers = Seq(    
+        new OnlineOptimizingLinearVectorClassifierTrainer(),
+        new BatchOptimizingLinearVectorClassifierTrainer(),
+        new NaiveBayesClassifierTrainer(),
+        new ID3DecisionTreeClassifier()
+        )
+    for (trainer <- valueTrainers) {
+      println(trainer.getClass)
+      val classifier = trainer.train(trainVariables, trainVariables.map(_.document))
+      (trainVariables ++ testVariables).foreach(label => { label := classifier.classification(label.document.value).bestLabelIndex })
+      println ("Train accuracy = "+ HammingObjective.accuracy(trainVariables))
+      println ("Test  accuracy = "+ HammingObjective.accuracy(testVariables))
+    }
+    for (trainer <- trainers) {
+      println(trainer.getClass)
+      val classifier = trainer.train(trainVariables, (label:Label)=>label.document)
+      println ("Train accuracy = "+ classifier.accuracy(trainVariables))
+      println ("Test  accuracy = "+ classifier.accuracy(testVariables))
+    }
 
   }
 }
