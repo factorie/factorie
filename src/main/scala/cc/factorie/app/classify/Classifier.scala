@@ -131,20 +131,10 @@ class BatchOptimizingLinearVectorClassifierTrainer(useParallel:Boolean = true,
   extends OptimizingLinearVectorClassifierTrainer(optimizer, useParallel, useOnlineTrainer = false, objective, maxIterations, -1, nThreads)
 
 /** An OptimizingLinearVectorClassifierTrainer pre-tuned with default arguments well-suited to training an L2-regularized linear SVM. */
-class SVMLinearVectorClassifierTrainer(parallel: Boolean=false)(implicit random: scala.util.Random) extends OptimizingLinearVectorClassifierTrainer(optimizer=null, useParallelTrainer=parallel, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
+class SVMLinearVectorClassifierTrainer(nThreads: Int = 1)(implicit random: scala.util.Random) extends OptimizingLinearVectorClassifierTrainer(optimizer=null, useParallelTrainer=false, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
+  val baseTrainer = new backend.SVMMulticlassTrainer(nThreads)
   override def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], l2f:L=>F, diagnostic:C=>Unit): C = {
-    val ll = trainLabels.map(_.target.intValue).toArray
-    val ff = trainLabels.map(label => l2f(label).value).toArray[Tensor1]
-    val numLabels = classifier.weights.value.dim1
-    val weightTensor = {
-      if (parallel) (0 until numLabels).par.map { label => (new LinearL2SVM).train(ff, ll, label) } // TODO We should allow setting of meta-parameters here. -akm
-      else (0 until numLabels).map { label => (new LinearL2SVM).train(ff, ll, label) }
-    }
-    val weightsValue = classifier.weights.value
-    for (f <- 0 until weightsValue.dim2; (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      weightsValue(f,l) = t(f)
-    }
-    diagnostic(classifier)
+    baseTrainer.baseTrain(classifier, trainLabels.map(_.target.intValue).toSeq, trainLabels.map(l2f(_).value).toSeq, trainLabels.map(l => 1.0).toSeq, c => ())
     classifier
   }
 }
@@ -153,32 +143,9 @@ class SVMLinearVectorClassifierTrainer(parallel: Boolean=false)(implicit random:
     Note that contrary to tradition, this naive Bayes classifier does not include a "bias" weight P(class); it only includes the feature weights, P(feature|class).
     If you want a "bias" weight you must include in your data a feature that always has value 1.0. */
 class NaiveBayesClassifierTrainer(pseudoCount:Double = 0.1) extends LinearVectorClassifierTrainer {
+  val baseTrainer = new backend.NaiveBayes(pseudoCount)
   def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], l2f:L=>F): C = {
-    val labelSize = trainLabels.head.domain.size
-    val featureSize = l2f(trainLabels.head).domain.dimensionSize
-     // Collecting the bias weights afterall, in case we change our minds later, and store them in the classifier -akm
-    //val bias = new DenseProportions1(labelSize)
-    val evidence = Seq.tabulate(labelSize)(i => new DenseProportions1(featureSize))
-    // Note: this doesn't actually build the graphical model, it just gathers smoothed counts, never creating factors
-    // Incorporate smoothing, with simple +m smoothing
-    //bias.masses += labelPseudoCount
-    for (li <- 0 until labelSize) evidence(li).masses += pseudoCount
-    // Incorporate evidence
-    for (label <- trainLabels) {
-      val targetIndex = label.target.intValue
-      //bias.masses += (targetIndex, 1.0)
-      val features = l2f(label)
-      features.value.foreachActiveElement((featureIndex, featureValue) => {
-        evidence(targetIndex).masses += (featureIndex, featureValue)
-      })
-    }
-    // Put results into the classifier parameters
-    val tensor2: cc.factorie.la.Tensor2 = classifier.weights.value
-    for (li <- 0 until labelSize) {
-      val p = evidence(li)
-      for (fi <- 0 until featureSize)
-        tensor2(fi, li) = math.log(p(fi))
-    }
+    baseTrainer.baseTrain(classifier, trainLabels.map(_.target.intValue).toSeq, trainLabels.map(l2f(_).value).toSeq, trainLabels.map(l => 1.0).toSeq, c => ())
     classifier
   }
 }
