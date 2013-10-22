@@ -1,4 +1,4 @@
-package cc.factorie.app.classify
+package cc.factorie.app.classify.backend
 
 import cc.factorie.la.{SingletonBinaryTensor1, DenseTensor2, DenseTensor1, Tensor1}
 import cc.factorie._
@@ -7,57 +7,58 @@ import cc.factorie.maths.ArrayOps
 import cc.factorie.util.StoreFetchCubbie
 import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar}
 import cc.factorie.model.Template2
+import cc.factorie.app.classify.backend._
 
-class BoostedBinaryClassifier(val weakClassifiers: Seq[(BaseBinaryClassifier[Tensor1], Double)]) extends BaseBinaryClassifier[Tensor1] {
+class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1], Double)]) extends BinaryClassifier[Tensor1] {
   def score(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.score(features) * t._2)
 }
 
 // TODO this multiclass doesn't work for >2 classes right now - also add gradient boosting -luke
-class BoostedMultiClassClassifier(var weakClassifiers: Seq[(MultiClassClassifier[Tensor1], Double)], val numLabels: Int) extends MultiClassClassifier[Tensor1] {
+class BoostedMulticlassClassifier(var weakClassifiers: Seq[(MulticlassClassifier[Tensor1], Double)], val numLabels: Int) extends MulticlassClassifier[Tensor1] {
   def score(features: Tensor1) =
     weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.score(features), t._2); acc})
   def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }
 
-class BoostingMultiClassTrainer(numWeakLearners: Int = 100, argTrainWeakLearner: MultiClassTrainerBase[MultiClassClassifier[Tensor1]] = null)(implicit random: scala.util.Random)
-  extends MultiClassTrainerBase[BoostedMultiClassClassifier] {
-  val trainWeakLearner = if (argTrainWeakLearner ne null) argTrainWeakLearner else new DecisionTreeMultiClassTrainer(treeTrainer = new DecisionStumpTrainer)
+class BoostingMulticlassTrainer(numWeakLearners: Int = 100, argTrainWeakLearner: MulticlassClassifierTrainer[MulticlassClassifier[Tensor1]] = null)(implicit random: scala.util.Random)
+  extends MulticlassClassifierTrainer[BoostedMulticlassClassifier] {
+  val trainWeakLearner = if (argTrainWeakLearner ne null) argTrainWeakLearner else new DecisionTreeMulticlassTrainer(treeTrainer = new DecisionStumpTrainer)
 
-  def baseTrain(classifier: BoostedMultiClassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (BoostedMultiClassClassifier) => Unit) {
+  def baseTrain(classifier: BoostedMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (BoostedMulticlassClassifier) => Unit) {
     classifier.weakClassifiers = AdaBoostTrainer.train(
       features, labels, classifier.numLabels, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(classifier.numLabels, features.head.length, labels, features, _, c => {}))
      evaluate(classifier)
   }
 
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: BoostedMultiClassClassifier => Unit): BoostedMultiClassClassifier = {
+  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: BoostedMulticlassClassifier => Unit): BoostedMulticlassClassifier = {
     val weightedWeakLearners = AdaBoostTrainer.train(
       features, labels, labelSize, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(labelSize, featureSize, labels, features, _, c => {}))
-    val classifier = new BoostedMultiClassClassifier(weightedWeakLearners, labelSize)
+    val classifier = new BoostedMulticlassClassifier(weightedWeakLearners, labelSize)
     evaluate(classifier)
     classifier
   }
 }
 
 // TODO add more ways of serializing sub-cubbies so that we can serialize different types of weak learners -luke
-class BoostedTreeCubbie extends StoreFetchCubbie[BoostedMultiClassClassifier] {
+class BoostedTreeCubbie extends StoreFetchCubbie[BoostedMulticlassClassifier] {
   val numLabels = IntSlot("numLabels")
   val weakLearners = CubbieListSlot[DecisionTreeCubbie]("weakLearners", () => new DecisionTreeCubbie)
   val weights = DoubleListSlot("weights")
   numLabels := 0; weakLearners := Seq(); weights := Seq()
-  def store(t: BoostedMultiClassClassifier): Unit = {
-    weakLearners := t.weakClassifiers.map(_._1).map(wc => {val c = new DecisionTreeCubbie; c.store(wc.asInstanceOf[DecisionTreeMultiClassClassifier]); c})
+  def store(t: BoostedMulticlassClassifier): Unit = {
+    weakLearners := t.weakClassifiers.map(_._1).map(wc => {val c = new DecisionTreeCubbie; c.store(wc.asInstanceOf[DecisionTreeMulticlassClassifier]); c})
     weights := t.weakClassifiers.map(_._2)
     numLabels := t.numLabels
   }
-  def fetch(): BoostedMultiClassClassifier = {
+  def fetch(): BoostedMulticlassClassifier = {
     val weighted = weakLearners.value.map(_.fetch()).zip(weights.value)
-    new BoostedMultiClassClassifier(weighted, numLabels.value)
+    new BoostedMulticlassClassifier(weighted, numLabels.value)
   }
 }
 
 object AdaBoostTrainer {
-  type WeakClassifier = MultiClassClassifier[Tensor1]
+  type WeakClassifier = MulticlassClassifier[Tensor1]
   def train(features: Seq[Tensor1], labels: Seq[Int], numLabels: Int, numIterations: Int, trainWeakClassifier: Seq[Double] => WeakClassifier): Seq[(WeakClassifier, Double)] = {
     val K = numLabels
     val numInstances = labels.length

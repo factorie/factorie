@@ -189,7 +189,7 @@ object Tutorial060Learning {
     trainer2.processContexts(document.tokens.toSeq.map(_.attr[Label]))
 
     /*&
-     * Finally, there are many other useful examples in factorie. The LinearMultiClassExample
+     * Finally, there are many other useful examples in factorie. The LinearMulticlassExample
      * implements generalized linear models for many classification loss functions, for example, and the
      * DominationLossExample knows how to do learning to rank.
      **/

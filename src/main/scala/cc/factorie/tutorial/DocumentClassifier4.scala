@@ -23,7 +23,7 @@ import cc.factorie.optimize._
 import language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.BoostingMultiClassTrainer
+import cc.factorie.app.classify.backend.BoostingMulticlassTrainer
 
 /**A document classifier that uses Decision Trees.
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
@@ -67,10 +67,10 @@ object DocumentClassifier4 {
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
 
     // Train and test the decision tree
-//    val trainer = new RandomForestMultiClassTrainer(numTrees = 100, numFeaturesToUse = 10000, numInstancesToSample = 500, treeTrainer = new C45DecisionTreeTrainer { maxDepth = 25 })
-    val trainer = new BoostingMultiClassTrainer(numWeakLearners = 1000)
+//    val trainer = new RandomForestMulticlassTrainer(numTrees = 100, numFeaturesToUse = 10000, numInstancesToSample = 500, treeTrainer = new C45DecisionTreeTrainer { maxDepth = 25 })
+    val trainer = new BoostingMulticlassTrainer(numWeakLearners = 1000)
 
-//    val trainer = new DecisionTreeMultiClassTrainer(new C45DecisionTreeTrainer { maxDepth = 1500 })
+//    val trainer = new DecisionTreeMulticlassTrainer(new C45DecisionTreeTrainer { maxDepth = 1500 })
     val start = System.currentTimeMillis()
     trainer.train[Label](trainSet, (_: Label).document, testSet, (_: Label) => 1.0)
     println(f"Elapsed time: ${System.currentTimeMillis() - start}%dms")
