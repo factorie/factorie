@@ -7,7 +7,7 @@ import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
 import java.io.{File,InputStream,FileInputStream}
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{BinarySerializer, FileUtils}
 import scala._
 import cc.factorie.optimize._
 import scala.concurrent.Await
@@ -101,7 +101,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     println("TransitionBasedParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
-    println("After pruning # features " + featuresDomain.dimensionDomain.size)
+    println("After pruning # features " + featuresDomain.dimensionSize)
     trainingVars = generateDecisions(trainSentences, 0, nThreads)
     featuresDomain.freeze()
     val numTrainSentences = trainSentences.size
@@ -124,12 +124,18 @@ class TransitionBasedParser extends DocumentAnnotator {
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
+    val(las, uas, tokSpeed, sentSpeed) = test(testSentences)
+    "LAS="+las+" UAS="+uas+s"  ${tokSpeed} tokens/sec"
+  }
+  
+  def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
     val t0 = System.currentTimeMillis()
     testSentences.foreach(process)
     val totalTime = System.currentTimeMillis() - t0
     val totalTokens = testSentences.map(_.tokens.length).sum
+    val totalSentences = testSentences.size
     val pred = testSentences.map(_.attr[ParseTree])
-    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)+s"  ${totalTokens*1000.0/totalTime} tokens/sec"
+    (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, totalSentences*1000.0/totalTime)
   }
 
 
@@ -472,6 +478,9 @@ object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.
 class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
+  val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing training files.")
+  val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing test files.")
+  val devDir = new CmdOption("devDir", "", "FILENAME", "Directory containing dev files.")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
   val cutoff    = new CmdOption("cutoff", 0, "", "")
@@ -494,23 +503,28 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
+    assert(opts.trainFiles.wasInvoked || opts.trainDir.wasInvoked)
+    
     // Load the sentences
-    def loadSentences(o: opts.CmdOption[List[String]]): Seq[Sentence] = {
-      if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
-      else Seq.empty[Sentence]
+    def loadSentences(listOpt: opts.CmdOption[List[String]], dirOpt: opts.CmdOption[String]): Seq[Sentence] = {
+      var fileExt = if (opts.ontonotes.value) ".dep.pmd" else ""
+      var fileList = Seq.empty[String]
+      if (listOpt.wasInvoked) fileList = listOpt.value.toSeq
+      else if (dirOpt.wasInvoked) fileList = FileUtils.getFileListFromDir(dirOpt.value, fileExt)
+      //if (listOpt.wasInvoked) listOpt.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
+      else fileList = Seq.empty[String]
+      fileList.flatMap(fname => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(fname) else load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq)
     }
 
-    val sentencesFull = loadSentences(opts.trainFiles)
-    val devSentencesFull = loadSentences(opts.devFiles)
-    val testSentencesFull = loadSentences(opts.testFiles)
+    val sentencesFull = loadSentences(opts.trainFiles, opts.trainDir)
+    val devSentencesFull = loadSentences(opts.devFiles, opts.devDir)
+    val testSentencesFull = loadSentences(opts.testFiles, opts.testDir)
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
     val sentences = sentencesFull.take((trainPortionToTake*sentencesFull.length).floor.toInt)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
     val devSentences = devSentencesFull.take((testPortionToTake*devSentencesFull.length).floor.toInt)
-
-
 
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)

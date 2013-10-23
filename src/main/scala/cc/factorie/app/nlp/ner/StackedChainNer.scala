@@ -167,6 +167,9 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   if (url != null) {
     deSerialize(url.openConnection.getInputStream)
+    // freeze!
+    ChainNerFeaturesDomain.freeze()
+    ChainNer2FeaturesDomain.freeze()
     println("Found model")
   }
   else {
@@ -508,6 +511,29 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     testDocuments.foreach(process)
     printEvaluation(trainDocuments, testDocuments, "FINAL")
   }
+
+  def test(testDocs: Seq[Document]): (Double, Double, Double) = {
+    var tokenTotal = 0.0
+    var sentenceTotal = 0.0
+    val t0 = System.currentTimeMillis()
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
+    testDocs.foreach(doc => {
+      process(doc)
+      for(sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
+      sentenceTotal += doc.sentenceCount
+      tokenTotal += doc.tokenCount
+    })
+    val totalTime = System.currentTimeMillis() - t0
+    var sentencesPerSecond = (sentenceTotal / totalTime) * 1000.0
+    var tokensPerSecond = (tokenTotal / totalTime) * 1000.0
+    (sentencesPerSecond, tokensPerSecond, segmentEvaluation.f1)
+  }
+  
+   def printEvaluation(testDocuments:Iterable[Document]): Double = {
+     val test = evaluationString(testDocuments)
+     println(test)
+     test
+   }
 
    def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Double = {
      println("TRAIN")
