@@ -24,7 +24,7 @@ limitations under the License.
   <inceptionYear>2009</inceptionYear>
 
   <properties>
-    <scala.version>2.10.1</scala.version>
+    <scala.version>2.10.2</scala.version>
     <scalatest.version>1.9.1</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
@@ -97,7 +97,7 @@ limitations under the License.
     <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
       <artifactId>jackson-module-scala_2.10</artifactId>
-      <version>2.2.2</version>
+      <version>2.2.3</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -155,6 +155,37 @@ limitations under the License.
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
+    <pluginManagement>
+      <plugins>
+          <!--This plugin's configuration is used to store Eclipse 
+              m2e 1.0 settings only. It has no influence on the Maven build itself. -->
+          <plugin>
+              <groupId>org.eclipse.m2e</groupId>
+              <artifactId>lifecycle-mapping</artifactId>
+              <version>1.0.0</version>
+              <configuration>
+                  <lifecycleMappingMetadata>
+                      <pluginExecutions>
+                          <pluginExecution>
+                              <pluginExecutionFilter>
+                                  <groupId>net.alchim31.maven</groupId>
+                                  <artifactId>scala-maven-plugin</artifactId>
+                                  <versionRange>[1.0,)</versionRange>
+                                  <goals>
+                                      <goal>testCompile</goal>
+                                      <goal>compile</goal>
+                                  </goals>
+                              </pluginExecutionFilter>
+                              <action>
+                                  <execute />
+                              </action>
+                          </pluginExecution>
+                      </pluginExecutions>
+                  </lifecycleMappingMetadata>
+              </configuration>
+          </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <!-- Adds support for building Scala -->
       <plugin>

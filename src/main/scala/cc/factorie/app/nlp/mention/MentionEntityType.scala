@@ -6,8 +6,8 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.LinearMultiClassClassifier
-import cc.factorie.optimize.{Trainer, LinearMultiClassExample, LinearObjectives}
+import cc.factorie.optimize.{Trainer, LinearMulticlassExample, LinearObjectives}
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -30,7 +30,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMultiClassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMulticlassClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
@@ -72,10 +72,13 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Mention): Int = {
-    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) MentionEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
+  def processMention(mention: Mention): Unit = {
+    val label = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O"))
+    label.set(entityTypeIndex(mention))(null)
+  }
   def process(document:Document): Document = {
     for (mention <- document.attr[MentionList]) processMention(mention)
     document
@@ -96,12 +99,12 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[MentionList])) yield
-      new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMultiClass)
+      new LinearMulticlassExample(model.weights, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMulticlass)
     val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
-      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
-      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
+      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
+      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
     }
     Trainer.onlineTrain(model.parameters, examples.toSeq, maxIterations=3, evaluate = evaluate)
   }
@@ -129,7 +132,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     val dstream = new java.io.DataInputStream(stream)
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
-    model.weights.set(new la.DenseLayeredTensor2(PennPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, MentionEntityTypeDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }

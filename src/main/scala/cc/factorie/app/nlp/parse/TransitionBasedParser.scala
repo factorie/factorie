@@ -2,30 +2,29 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
 import cc.factorie._
-import cc.factorie.app.nlp.pos.PennPosLabel
-import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
+import cc.factorie.app.nlp.pos.PennPosTag
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
 import java.io.{File,InputStream,FileInputStream}
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{BinarySerializer, FileUtils}
 import scala._
 import cc.factorie.optimize._
 import scala.concurrent.Await
-import scala.Some
-import java.util.concurrent.Executors
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.app.classify.{OnlineLinearMultiClassTrainer, SVMMultiClassTrainer, LinearMultiClassTrainer, LinearMultiClassClassifier}
 import scala.collection.mutable
+import cc.factorie.app.classify.backend._
+import scala.Some
 
 /** Default transition-based dependency parser. */
-class TransitionParser extends DocumentAnnotator {
+class TransitionBasedParser extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("TransitionParser loading from "+url)
+    println("TransitionBasedParser loading from "+url)
     deserialize(stream)
   }
 
@@ -40,7 +39,7 @@ class TransitionParser extends DocumentAnnotator {
   class ParseDecisionVariable(targetDecision: ParseDecision, val state: ParseState) extends LabeledCategoricalVariable(targetDecision.action) {
     def domain = labelDomain
     val features = new NonProjDependencyParserFeatures(this)
-    features ++= featureGenerators.map(_.apply(state))
+    featureGenerators.foreach(f => features += f.apply(state))
   }
   object featuresDomain extends CategoricalVectorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
@@ -79,18 +78,19 @@ class TransitionParser extends DocumentAnnotator {
     import scala.language.reflectiveCalls
     model.weights.set(new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
-    println("TransitionParser model parameters oneNorm "+model.parameters.oneNorm)
+    println("TransitionBasedParser model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?
   }
     
     
-    
-  def classify(v: ParseDecisionVariable) = new ParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
-  lazy val model = new LinearMultiClassClassifier(labelDomain.size, featuresDomain.dimensionSize)
+  val parseDecisionCache = collection.mutable.HashMap[String,ParseDecision]()
+  def getParseDecision(s: String): ParseDecision = parseDecisionCache.getOrElseUpdate(s, new ParseDecision(s))
+  def classify(v: ParseDecisionVariable) = getParseDecision(labelDomain.category(model.classification(v.features.value).bestLabelIndex))
+  lazy val model = new LinearMulticlassClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
 
-  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMultiClassTrainer, evaluate: (LinearMultiClassClassifier) => Unit) {
-    trainer.baseTrain(model, vs.map(_.targetIntValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
+  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMulticlassTrainer, evaluate: (LinearMulticlassClassifier) => Unit) {
+    trainer.baseTrain(model, vs.map(_.target.intValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
   }
   
   
@@ -98,10 +98,10 @@ class TransitionParser extends DocumentAnnotator {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
-    println("TransitionParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
+    println("TransitionBasedParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
-    println("After pruning # features " + featuresDomain.dimensionDomain.size)
+    println("After pruning # features " + featuresDomain.dimensionSize)
     trainingVars = generateDecisions(trainSentences, 0, nThreads)
     featuresDomain.freeze()
     val numTrainSentences = trainSentences.size
@@ -115,21 +115,27 @@ class TransitionParser extends DocumentAnnotator {
   }
   
   def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
-    def evaluate(c: LinearMultiClassClassifier) {
+    def evaluate(c: LinearMulticlassClassifier) {
       // println(model.weights.value.toSeq.count(x => x == 0).toFloat/model.weights.value.length +" sparsity")
       println(" TRAIN "+testString(trainSentences))
       println(" TEST  "+testString(testSentences))
     }
-    new OnlineLinearMultiClassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.targetIntValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
+    new OnlineLinearMulticlassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.target.intValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
   def testString(testSentences:Iterable[Sentence]): String = {
+    val(las, uas, tokSpeed, sentSpeed) = test(testSentences)
+    "LAS="+las+" UAS="+uas+s"  ${tokSpeed} tokens/sec"
+  }
+  
+  def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
     val t0 = System.currentTimeMillis()
     testSentences.foreach(process)
     val totalTime = System.currentTimeMillis() - t0
     val totalTokens = testSentences.map(_.tokens.length).sum
+    val totalSentences = testSentences.size
     val pred = testSentences.map(_.attr[ParseTree])
-    "LAS="+ParserEval.calcLas(pred)+" UAS="+ParserEval.calcUas(pred)+s"  ${totalTokens*1000.0/totalTime} tokens/sec"
+    (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, totalSentences*1000.0/totalTime)
   }
 
 
@@ -163,12 +169,12 @@ class TransitionParser extends DocumentAnnotator {
     })
     decs.flatten
   }
-  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMultiClassTrainer, evaluate: LinearMultiClassClassifier => Unit) =
+  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMulticlassTrainer, evaluate: LinearMulticlassClassifier => Unit) =
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
   def process(doc: Document) = { doc.sentences.foreach(process); doc }
-  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosLabel], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
+  def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {
     val sentence = token.sentence
@@ -186,7 +192,7 @@ class TransitionParser extends DocumentAnnotator {
     })
     s
   }
-
+  val defaultDecision = ParseDecision(defaultCategory)
   class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecision) {
     import ParserConstants._
     def parse(s: Sentence) = {
@@ -195,7 +201,7 @@ class TransitionParser extends DocumentAnnotator {
         if (state.stack < 0)
           noShift(state)
         else {
-          val label = predict(new ParseDecisionVariable(ParseDecision(defaultCategory), state))
+          val label = predict(new ParseDecisionVariable(defaultDecision, state))
           if (label.leftOrRightOrNo == LEFT) {
             if (state.stack == ROOT_ID) noShift(state)
             else if (state.inputToken(0).isDescendentOf(state.stackToken(0))) noPass(state)
@@ -421,7 +427,7 @@ class TransitionParser extends DocumentAnnotator {
   case class DepArc(depToken: DepToken, label: String)
 
   class ParseState(var stack: Int, var input: Int, val reducedIds: collection.mutable.HashSet[Int], sentence: Sentence) {
-    private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posLabel.categoryValue, thisIdx=idx, state=state)
+    private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posTag.categoryValue, thisIdx=idx, state=state)
     val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
     val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
     val sentenceTokens = (Seq(rootToken) ++ sentence.tokens.zipWithIndex.map(t => depToken(t._1, t._2+1, this))).toArray
@@ -461,45 +467,58 @@ class TransitionParser extends DocumentAnnotator {
   }
 }
 
-object TransitionParser extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser](".factorie"))
+class WSJTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object WSJTransitionBasedParser extends WSJTransitionBasedParser(cc.factorie.util.ClasspathURL[WSJTransitionBasedParser](".factorie"))
 
-object TransitionParserOntonotes extends TransitionParser(cc.factorie.util.ClasspathURL[TransitionParser]("-Ontonotes.factorie"))
+class OntonotesTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.factorie.util.ClasspathURL[OntonotesTransitionBasedParser](".factorie"))
 
 
 
-class TransitionParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
+class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
+  val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing training files.")
+  val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing test files.")
+  val devDir = new CmdOption("devDir", "", "FILENAME", "Directory containing dev files.")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
-  val cutoff    = new CmdOption("cutoff", "0", "", "")
+  val cutoff    = new CmdOption("cutoff", 0, "", "")
   val loadModel = new CmdOption("load", "", "", "")
   val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use during training.")
   val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
   val modelDir =  new CmdOption("model", "model", "FILENAME", "File in which to save the trained model.")
-  val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
+  val bootstrapping = new CmdOption("bootstrap", 0, "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
   val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
   val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val maxIters = new CmdOption("max-iterations", 5, "INT", "iterations of training per round")
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
-object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
+object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
-    val opts = new TransitionParserArgs
+    val opts = new TransitionBasedParserArgs
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
 
+    assert(opts.trainFiles.wasInvoked || opts.trainDir.wasInvoked)
+    
     // Load the sentences
-    def loadSentences(o: opts.CmdOption[List[String]]): Seq[Sentence] = {
-      if (o.wasInvoked) o.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
-      else Seq.empty[Sentence]
+    def loadSentences(listOpt: opts.CmdOption[List[String]], dirOpt: opts.CmdOption[String]): Seq[Sentence] = {
+      var fileExt = if (opts.ontonotes.value) ".dep.pmd" else ""
+      var fileList = Seq.empty[String]
+      if (listOpt.wasInvoked) fileList = listOpt.value.toSeq
+      else if (dirOpt.wasInvoked) fileList = FileUtils.getFileListFromDir(dirOpt.value, fileExt)
+      //if (listOpt.wasInvoked) listOpt.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
+      else fileList = Seq.empty[String]
+      fileList.flatMap(fname => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(fname) else load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq)
     }
 
-    val sentencesFull = loadSentences(opts.trainFiles)
-    val devSentencesFull = loadSentences(opts.devFiles)
-    val testSentencesFull = loadSentences(opts.testFiles)
+    val sentencesFull = loadSentences(opts.trainFiles, opts.trainDir)
+    val devSentencesFull = loadSentences(opts.devFiles, opts.devDir)
+    val testSentencesFull = loadSentences(opts.testFiles, opts.testDir)
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
@@ -507,18 +526,16 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
     val devSentences = devSentencesFull.take((testPortionToTake*devSentencesFull.length).floor.toInt)
 
-
-
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
 
-    def testSingle(c: TransitionParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
+    def testSingle(c: TransitionBasedParser, ss: Seq[Sentence], extraText: String = ""): Unit = {
       if (ss.nonEmpty) {
         println(extraText + " " + c.testString(ss))
       }
     }
 
-    def testAll(c: TransitionParser, extraText: String = ""): Unit = {
+    def testAll(c: TransitionBasedParser, extraText: String = ""): Unit = {
       println("\n")
       testSingle(c, sentences,     "Train " + extraText)
       testSingle(c, devSentences,  "Dev "   + extraText)
@@ -527,20 +544,20 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
 
     // Load other parameters
     val numBootstrappingIterations = opts.bootstrapping.value.toInt
-    val c = new TransitionParser
+    val c = new TransitionBasedParser
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
-    val trainer = if (opts.useSVM.value) new SVMMultiClassTrainer()
-      else new OnlineLinearMultiClassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMultiClass, maxIterations=5)
-    def evaluate(cls: LinearMultiClassClassifier) {
+    val trainer = if (opts.useSVM.value) new SVMMulticlassTrainer(opts.nThreads.value)
+      else new OnlineLinearMulticlassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=LinearObjectives.hingeMulticlass, maxIterations=opts.maxIters.value)
+    def evaluate(cls: LinearMulticlassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }
     c.featuresDomain.dimensionDomain.gatherCounts = true
     c.generateDecisions(sentences, 0, opts.nThreads.value)
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
-    c.featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
+    c.featuresDomain.dimensionDomain.trimBelowCount(2*opts.cutoff.value)
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
@@ -555,38 +572,41 @@ object TransitionParserTrainer extends cc.factorie.util.HyperparameterMain {
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
-      val d = new TransitionParser
+      val d = new TransitionBasedParser
       d.deserialize(new java.io.File(modelUrl))
       testSingle(c, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
-    if(opts.targetAccuracy.wasInvoked) assert(testLAS > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(testLAS,opts.targetAccuracy.value.toDouble)
+
     testLAS
   }
 }
 
-object TransitionParserOptimizer {
+object TransitionBasedParserOptimizer {
   def main(args: Array[String]) {
-    val opts = new TransitionParserArgs
+    val opts = new TransitionBasedParserArgs
     opts.parse(args)
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 10)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
       "/home/apassos/canvas/factorie-test",
       "try-log/",
-      "cc.factorie.app.nlp.parse.TransitionParser",
+      "cc.factorie.app.nlp.parse.TransitionBasedParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionParserTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta), qs.execute, 200, 180, 60)
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
-    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
     import scala.concurrent.duration._

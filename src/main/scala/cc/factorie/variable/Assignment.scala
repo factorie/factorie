@@ -53,7 +53,7 @@ trait MutableAssignment extends Assignment {
 object TargetAssignment extends Assignment {
   def variables = throw new Error("Cannot list all variables of the TargetAssignment.")
   def apply(v:Var): v.Value = v match {
-    case vv:LabeledVar => vv.targetValue.asInstanceOf[v.Value]
+    case vv:LabeledVar => vv.target.value.asInstanceOf[v.Value]
     case vv:Var => v.value
   }
   def get(v:Var): Option[v.Value] = Some(apply(v))

@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.load
 
 import cc.factorie._
-import cc.factorie.variable.LabeledCategoricalVariable
+import cc.factorie.variable.LabeledMutableCategoricalVar
 import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.UnknownDocumentAnnotator
 // word label1 label2 label3...
 
 object LoadOWPL {
-  def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], limitSentenceCount: Int = -1): Seq[Document] = {
+  def fromFilename(file: String, labelMaker: (Token, String) => LabeledMutableCategoricalVar[String], limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries

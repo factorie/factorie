@@ -162,12 +162,12 @@ class CmdOptions {
     var invokedCount = 0
     def required = false
     def setValue(v: T) { value = v }
-    def hasValue = valueClass != noValueClass
-    def noValueClass = classOf[Any] // This is the value of m.runtimeClass if no type is specified for T in CmdOption[T].
+    def hasValue = valueClass != noClass
+    def noClass = classOf[Any] // This is the value of m.runtimeClass if no type is specified for T in CmdOption[T].
     /** Attempt to match and process command-line option at position 'index' in 'args'.  
         Return the index of the next position to be processed. */
     def parse(args:Seq[String], index:Int): Int = {
-      if (valueClass == noValueClass && args(index) == "--"+name || args(index) == "-"+shortName) {
+      if (valueClass == noClass && args(index) == "--"+name || args(index) == "-"+shortName) {
         // support options like --help or -h (i.e. no arguments to option)
         invoke
         invokedCount += 1
@@ -285,7 +285,7 @@ class CmdOptions {
     // TODO Format long help messages more nicely.
     def helpString: String = {
       val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
-      if (valueClass != noValueClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
+      if (valueClass != noClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
       else "--%-15s %s\n".format(name, helpMsg)
     }
   }

@@ -161,8 +161,16 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
         result
       }
       case t: DenseTensor => {
+        val tArr = t.asArray
+        val len = activeDomainSize
+        val indices = _indices
+        val values = _values
+        var i = 0
         var dot = 0.0
-        foreachActiveElement((i, v) => dot += t(i)*v)
+        while (i < len) {
+          dot += tArr(indices(i)) * values(i)
+          i += 1
+        }
         dot
       }
       case t: Tensor =>
@@ -384,7 +392,16 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       t.foreachActiveElement((i, v) => this += (i, v * f))
   }
   /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multiplied by factor "f". */
-  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < __npos) { a(__indices(i)+offset) += f * __values(i); i += 1 }}
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = {
+    val indices = __indices
+    val values = __values
+    val npos = __npos
+    var i = 0
+    while (i < npos) {
+      a(indices(i) + offset) += f * values(i)
+      i += 1
+    }
+  }
   
   override def expNormalize(): Double = {
     var max = Double.MinValue

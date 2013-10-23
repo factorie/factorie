@@ -6,7 +6,7 @@ object ClasspathURL {
   def fromDirectory[C](suffix:String)(implicit m: Manifest[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
       case Some(url) =>
-        try { new java.net.URL(url + suffix) }
+        try { new java.net.URL(url + "/"+ suffix) }
         catch {
           case t: java.net.MalformedURLException => throw new Error(s"System property ${m.runtimeClass.getName} contains malformed url ${url+suffix}. Either fix the URL or unset the system property to open a file from the classpath.", t)
         }

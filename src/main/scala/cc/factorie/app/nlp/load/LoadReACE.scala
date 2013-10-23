@@ -2,8 +2,8 @@ package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
 import hcoref._
-import ner.NerSpan
-import pos.PennPosLabel
+import ner.ConllNerSpan
+import pos.PennPosTag
 import relation.RelationVariables.{RelationMention, RelationMentions}
 import xml.{XML, NodeSeq}
 import java.io.File
@@ -11,7 +11,7 @@ import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Array.fallbackCanBuildFrom
 
 trait ReACEMentionIdentifiers {
@@ -75,7 +75,7 @@ object LoadReACE {
     val doc = new Document().setName(xml)
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
-    doc.annotators(classOf[PennPosLabel]) = UnknownDocumentAnnotator.getClass
+    doc.annotators(classOf[PennPosTag]) = UnknownDocumentAnnotator.getClass
 
     doc.attr += new ACEFileIdentifier(xml)
     val xmlText: NodeSeq = XML.loadFile(xml + ".ttt.xml")
@@ -95,7 +95,7 @@ object LoadReACE {
           doc.appendString(" ")
           val annotations = makeTokenAnnotations(w)
           t.attr += annotations // TODO I think these annotations should go in more standard FACTORIE NLP form -akm
-          annotations.pos.foreach(p => t.attr += new PennPosLabel(t, p))
+          annotations.pos.foreach(p => t.attr += new PennPosTag(t, p))
         }
       }
     }
@@ -103,7 +103,7 @@ object LoadReACE {
   }
 
   private def lookupEntityMention(doc: Document, id: String): Option[PairwiseMention] = {
-    val opt = doc.attr[ner.NerSpanList].find {
+    val opt = doc.attr[ner.ConllNerSpanList].find {
       s => {
         val a = s.attr[ReACEMentionIdentifiers]
         (a ne null) && a.mId.get == id
@@ -114,7 +114,7 @@ object LoadReACE {
   }
 
   def addNrm(doc: Document, xml: String): Document = {
-    val spanList = doc.attr[ner.NerSpanList]
+    val spanList = doc.attr[ner.ConllNerSpanList]
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -135,7 +135,7 @@ object LoadReACE {
       val nerType = (mention \ "@t").text
       val nerSubType = (mention \ "@st").text
 
-      val m = new NerSpan(doc.asSection, nerType, start, length)(null) with PairwiseMention
+      val m = new ConllNerSpan(doc.asSection, start, length, nerType) with PairwiseMention
       spanList += m
 
       m.attr += new ReACEMentionIdentifiers {
@@ -191,7 +191,7 @@ object LoadReACE {
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
     for (d <- docs)
-      d.attr[ner.NerSpanList].foreach(s => println(s))
+      d.attr[ner.ConllNerSpanList].foreach(s => println(s))
   }
 
 }

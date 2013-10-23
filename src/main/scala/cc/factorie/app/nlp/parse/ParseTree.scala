@@ -21,45 +21,8 @@ import cc.factorie.util.Cubbie
 import cc.factorie.variable.{LabeledCategoricalVariable, EnumDomain}
 
 // Representation for a dependency parse
-//
-//object ParseLabelDomain extends CategoricalDomain[String]
-//class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = ParseLabelDomain }
-//
-//object ParseFeaturesDomain extends CategoricalVectorDomain[String]
-//class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
-//
-//class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable[Token,Token](theChild, initialParent) {
-//  @inline final def child = src
-//  @inline final def parent = dst
-//  val label = new ParseLabel(this, labelString)
-//  val childEdges = new ParseChildEdges
-//  def children = childEdges.value.map(_.child)
-//
-//  // Initialization
-//  child.attr += this // Add the edge as an attribute to the child node.
-//  if (initialParent ne null) initialParent.attr[ParseEdge].childEdges.add(this)(null)
-//  // Note that the line above requires that the parent already have a ParseEdge attribute.
-//  // One way to avoid this need is to create the ParseEdges with null parents, and then set them later.
-//  
-//  override def set(newParent: Token)(implicit d: DiffList): Unit =
-//    if (newParent ne parent) {
-//      // update parent's child pointers
-//      if (parent ne null) parent.attr[ParseEdge].childEdges.remove(this)
-//      if (newParent ne null) newParent.attr[ParseEdge].childEdges.add(this)
-//      super.set(newParent)(d)
-//    }
-//}
-//
-//class ParseChildEdges extends SetVariable[ParseEdge]
 
-// Example usages:
-// token.attr[ParseEdge].parent
-// token.attr[ParseEdge].childEdges.map(_.child)
-// token.attr[ParseChildEdges].map(_.child)
-
-
-// Proposed new style
-
+// TODO I think this should instead be "ParseEdgeLabelDomain". -akm
 object ParseTreeLabelDomain extends EnumDomain {
   val acomp, advcl, advmod, agent, amod, appos, attr, aux, auxpass, cc, ccomp, complm, conj, csubj, csubjpass, 
   dep, det, dobj, expl, hmod, hyph, infmod, intj, iobj, mark, meta, neg, nmod, nn, npadvmod, nsubj, nsubjpass, 
@@ -69,6 +32,7 @@ object ParseTreeLabelDomain extends EnumDomain {
   freeze()
   def defaultCategory = "nn"
 }
+// TODO I think this should instead be "ParseEdgeLabels extends LabeledCategoricalSeqVariable". -akm
 class ParseTreeLabel(val tree:ParseTree, targetValue:String = ParseTreeLabelDomain.defaultCategory) extends LabeledCategoricalVariable(targetValue) { def domain = ParseTreeLabelDomain }
 
 object ParseTree {
@@ -216,7 +180,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   /** Return the label on the edge from the child at sentence position 'index' to its parent. */
   def label(index:Int): ParseTreeLabel = _labels(index)
   def copy: ParseTree = {
-    val newTree = new ParseTree(sentence, targetParents, labels.map(_.targetCategory))
+    val newTree = new ParseTree(sentence, targetParents, labels.map(_.target.categoryValue))
     for (i <- 0 until sentence.length) {
       newTree._parents(i) = this._parents(i)
       newTree._labels(i).set(this._labels(i).intValue)(null)
@@ -227,8 +191,8 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
   override def toString: String = {
     val tokenStrings = {
-      if (sentence.tokens.forall(_.posLabel ne null))
-        sentence.tokens.map(t => t.string + "/" + t.posLabel.categoryValue)
+      if (sentence.tokens.forall(_.posTag ne null))
+        sentence.tokens.map(t => t.string + "/" + t.posTag.categoryValue)
       else
         sentence.tokens.map(_.string)
     }

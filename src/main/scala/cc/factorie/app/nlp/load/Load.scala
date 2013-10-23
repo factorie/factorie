@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
-/** The interface common to methods that create Documents from a data source,
+/** The interface common to objects that create Documents from a data source,
     such as plain text files, labeled data from Ontonotes, etc. 
     @author Andrew McCallum */
 trait Load {
@@ -26,6 +26,8 @@ trait Load {
   def fromFilename(filename:String): Seq[Document] = fromFile(new java.io.File(filename))
 }
 
+/** The interface common to objects that create Documents from the files in a directory.
+    @author Andrew McCallum */
 trait LoadDirectory {
   def fromDirectory(dir:java.io.File): Seq[Document]
 }

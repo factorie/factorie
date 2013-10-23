@@ -9,7 +9,7 @@ import cc.factorie.app.nlp
 import cc.factorie.util.{TensorCubbie, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.ner.NerLabel
+import cc.factorie.app.nlp.ner.NerTag
 import cc.factorie.variable._
 import cc.factorie.model._
 
@@ -20,7 +20,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    override def skipNonCategories = true
  }
 
- class OntoNerLabel(val token: nlp.Token, ta: String, val domain: CategoricalDomain[String]) extends NerLabel(ta) {
+ class OntoNerLabel(token: nlp.Token, ta: String, val domain: CategoricalDomain[String]) extends NerTag(token, ta) {
    type ContainedVariableType = this.type
  }
 
@@ -203,10 +203,10 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    m2.runtimeClass.isAssignableFrom(m1.runtimeClass) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
 
  @Test def testClassifierPosSerialization() {
-   val model = new app.nlp.pos.ForwardPOSTagger
+   val model = new app.nlp.pos.ForwardPosTagger
    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
    model.serialize(fileName)
-   val otherModel = new app.nlp.pos.ForwardPOSTagger(new File(fileName))
+   val otherModel = new app.nlp.pos.ForwardPosTagger(new File(fileName))
  }
 
  @Test def testInstanceSerialize(): Unit = {
