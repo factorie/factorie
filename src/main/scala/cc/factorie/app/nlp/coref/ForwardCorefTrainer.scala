@@ -214,9 +214,9 @@ object ForwardCorefTrainer extends HyperparameterMain{
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, map.toMap) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, map.toMap)
 
-    val labeler = MentionEntityTypeLabeler
 
     if(!useNerMentions){
+      val labeler = MentionEntityTypeLabeler
       if(loadTrain)  trainDocs.foreach(labeler.process)
       testDocs.foreach(labeler.process)
     }
