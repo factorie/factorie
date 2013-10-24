@@ -354,8 +354,8 @@ limitations under the License.
       <dependencies>
         <dependency>
           <groupId>cc.factorie.app.nlp</groupId>
-          <artifactId>factorie-nlp-resources</artifactId>
-          <version>0.0.3</version>
+          <artifactId>all-models</artifactId>
+          <version>0.1-SNAPSHOT</version>
         </dependency>
       </dependencies>
       <build>

@@ -61,7 +61,7 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[lemma.PorterTokenLemma] -> (() => lemma.PorterLemmatizer),
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
-    classOf[ner.BilouConllNerTag] -> (() => ner.ConllChainNer),
+    classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),

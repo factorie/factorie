@@ -126,7 +126,7 @@ class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) exten
 class LinearMulticlassClassifierCubbie extends Cubbie {
   val labelSize = IntSlot("labelSize")
   val featureSize = IntSlot("featureSize")
-  val parameters = CubbieSlot("parameters", () => null.asInstanceOf[TensorCubbie[Tensor2]])
+  val parameters = CubbieSlot("parameters", () => new TensorCubbie[Tensor2])
   store(new LinearMulticlassClassifier(1, 1))
 
   def store(model: LinearMulticlassClassifier) {
