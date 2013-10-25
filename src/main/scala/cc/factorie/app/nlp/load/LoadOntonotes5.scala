@@ -66,7 +66,7 @@ object LoadOntonotes5 {
         document.appendString(" ")
         val token = new Token(sentence, word)
         if (loadPos) token.attr += new LabeledPennPosTag(token, if (partOfSpeech == "XX") "PUNC" else partOfSpeech)
-        if (loadNer) token.attr += (if (nerBilou) new BilouOntonotesNerTag(token, ner) else new BioOntonotesNerTag(token, ner))
+        if (loadNer) token.attr += (if (nerBilou) new LabeledBilouOntonotesNerTag(token, ner) else new LabeledBioOntonotesNerTag(token, ner))
         if (loadLemma) token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
