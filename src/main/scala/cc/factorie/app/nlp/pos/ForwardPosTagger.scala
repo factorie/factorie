@@ -364,6 +364,8 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val trainFile = new CmdOption("trainFile", "", "FILENAME", "OWPL training file.")
   val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing OWPL test files (.dep.pmd).")
   val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing OWPL training files (.dep.pmd).")
+  val testFiles = new CmdOption("testFiles", "", "STRING", "comma-separated list of OWPL test files (.dep.pmd).")
+  val trainFiles = new CmdOption("trainFiles", "", "STRING", "comma-separated list of OWPL training files (.dep.pmd).")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
   val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
@@ -387,14 +389,20 @@ object ForwardPosTrainer extends HyperparameterMain {
     // the train and test files are supposed to be in OWPL format
     val pos = new ForwardPosTagger
 
+    assert(!(opts.trainDir.wasInvoked && opts.trainFiles.wasInvoked))
     var trainFileList = Seq(opts.trainFile.value)
     if(opts.trainDir.wasInvoked){
     	trainFileList = FileUtils.getFileListFromDir(opts.trainDir.value, ".dep.pmd")
+    } else if (opts.trainFiles.wasInvoked){
+      trainFileList =  opts.trainFiles.value.split(",")
     }
-    
+
+    assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     var testFileList = Seq(opts.testFile.value)
     if(opts.testDir.wasInvoked){
     	testFileList = FileUtils.getFileListFromDir(opts.testDir.value, ".dep.pmd")
+    }else if (opts.testFiles.wasInvoked){
+      testFileList =  opts.testFiles.value.split(",")
     }
     
     val trainDocs = trainFileList.map(load.LoadOntonotes5.fromFilename(_).head)
