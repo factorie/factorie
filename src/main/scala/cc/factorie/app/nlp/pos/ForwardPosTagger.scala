@@ -384,7 +384,7 @@ object ForwardPosTrainer extends HyperparameterMain {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
     opts.parse(args)
-    assert(opts.trainFile.wasInvoked || opts.trainDir.wasInvoked)
+    assert(opts.trainFile.wasInvoked || opts.trainDir.wasInvoked || opts.trainFiles.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model
     // the train and test files are supposed to be in OWPL format
     val pos = new ForwardPosTagger
