@@ -64,7 +64,7 @@ object Factorie {
   type LikelihoodExample[A<:Iterable[Var],B<:Model] = optimize.LikelihoodExample[A,B]
   type StructuredSVMExample[A<:Iterable[Var]] = optimize.StructuredSVMExample[A]
   val MiniBatchExample = optimize.MiniBatchExample
-  type LinearMultiClassExample = optimize.LinearMultiClassExample
+  type LinearMulticlassExample = optimize.LinearMulticlassExample
 
   type Factor = model.Factor
   type DotFamilyWithStatistics1[A<:TensorVar] = model.DotFamilyWithStatistics1[A]

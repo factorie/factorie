@@ -117,8 +117,7 @@ object Tensor {
     case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
   def newSparse(t:Tensor): Tensor = {
-    if (t.length <= 100) newDense(t)
-    else t match {
+    t match {
       case t:DenseLayeredTensor2 if t.inner(0).isInstanceOf[DenseDoubleSeq] => new DenseLayeredTensor2(t.dim1, t.dim2, i => new SparseIndexedTensor1(i))
       case t:Tensor1 => new SparseTensor1(t.dim1)
       case t:Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
@@ -127,26 +126,20 @@ object Tensor {
     }
   }
   def newSparse(dims:Int*): Tensor = {
-    if (dims.product <= 100)
-      newDense(dims.toArray)
-    else
-      dims match {
-        case Seq(d1) => new SparseTensor1(d1)
-        case Seq(d1, d2) => new SparseIndexedTensor2(d1, d2)
-        case Seq(d1, d2, d3) => new SparseIndexedTensor3(d1, d2, d3)
-        case Seq(d1, d2, d3, d4) => new SparseIndexedTensor4(d1, d2, d3, d4)
-      }
+    dims match {
+      case Seq(d1) => new SparseTensor1(d1)
+      case Seq(d1, d2) => new SparseIndexedTensor2(d1, d2)
+      case Seq(d1, d2, d3) => new SparseIndexedTensor3(d1, d2, d3)
+      case Seq(d1, d2, d3, d4) => new SparseIndexedTensor4(d1, d2, d3, d4)
+    }
   }
   def newSparse(dims:Array[Int]): Tensor = {
-    if (dims.product <= 100)
-      newDense(dims)
-    else
-      dims.length match {
-        case 1 => new SparseTensor1(dims(0))
-        case 2 => new SparseIndexedTensor2(dims(0), dims(1))
-        case 3 => new SparseIndexedTensor3(dims(0), dims(1), dims(2))
-        case 4 => new SparseIndexedTensor4(dims(0), dims(1), dims(2), dims(3))
-      }
+    dims.length match {
+      case 1 => new SparseTensor1(dims(0))
+      case 2 => new SparseIndexedTensor2(dims(0), dims(1))
+      case 3 => new SparseIndexedTensor3(dims(0), dims(1), dims(2))
+      case 4 => new SparseIndexedTensor4(dims(0), dims(1), dims(2), dims(3))
+    }
   }
   
 //  def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {

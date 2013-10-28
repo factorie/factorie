@@ -9,7 +9,7 @@ import org.junit.Test
 class TestBigramStatistics {
   @Test def testBigramStatistics() {
     val gpl = new cc.factorie.app.nlp.Document(cc.factorie.tutorial.WordSegmenterDemo.data.mkString("\n"))
-    BasicTokenizer.process(gpl)
+    DeterministicTokenizer.process(gpl)
     val bg = new BigramStatistics
     bg.process(gpl)
     val phrases = bg.getLikelyPhrases(5, 40)

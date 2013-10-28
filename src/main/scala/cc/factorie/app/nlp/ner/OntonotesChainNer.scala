@@ -26,9 +26,9 @@ class BasicOntonotesNER extends DocumentAnnotator {
   }
   
   class Model1 extends TemplateModel with cc.factorie.model.Parameters {
-    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
+    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag, FeaturesVariable] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionSize))
-      def unroll1(label:BilouOntonotesNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
+      def unroll1(label:BilouOntonotesNerTag) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't be inferred.")
     }
   }
@@ -37,73 +37,73 @@ class BasicOntonotesNER extends DocumentAnnotator {
   // The forward model
   class Model2 extends TemplateModel with Parameters {
     // Bias term on each individual label
-    val bias = this += new DotTemplateWithStatistics1[BilouOntonotesNerLabel] {
+    val bias = this += new DotTemplateWithStatistics1[BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor1(BilouOntonotesNerDomain.size))
     }
     // Transition factors between two successive labels
-//    val markov3 = this += new DotTemplateWithStatistics3[BilouOntonotesNerLabel, BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+//    val markov3 = this += new DotTemplateWithStatistics3[BilouOntonotesNerTag, BilouOntonotesNerTag,BilouOntonotesNerTag] {
 //      val weights = Weights(new la.DenseTensor3(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-//      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
-//      def unroll1(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerLabel], label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
-//      def unroll2(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext && label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label, label.token.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
-//      def unroll3(label:BilouOntonotesNerLabel) = if (label.token.hasPrev(2)) Factor(label.token.prev.prev.attr[BilouOntonotesNerLabel], label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
+//      //val docStartLabel = new BilouOntonotesNerTag(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+//      def unroll1(label:BilouOntonotesNerTag) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerTag], label.token.next.next.attr[BilouOntonotesNerTag]) else Nil // Make this feedforward
+//      def unroll2(label:BilouOntonotesNerTag) = Nil //if (label.token.hasNext && label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerTag], label, label.token.next.attr[BilouOntonotesNerTag]) else Nil // Make this feedforward
+//      def unroll3(label:BilouOntonotesNerTag) = if (label.token.hasPrev(2)) Factor(label.token.prev.prev.attr[BilouOntonotesNerTag], label.token.prev.attr[BilouOntonotesNerTag], label) else Nil
 //    }
-    val markovPrev1 = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val markovPrev1 = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
-      def unroll1(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerLabel], label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
-      def unroll2(label:BilouOntonotesNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
+      //val docStartLabel = new BilouOntonotesNerTag(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+      def unroll1(label:BilouOntonotesNerTag) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerTag], label.token.next.next.attr[BilouOntonotesNerTag]) else Nil // Make this feedforward
+      def unroll2(label:BilouOntonotesNerTag) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerTag], label) else Nil
     }
-    val markovPrev2 = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val markovPrev2 = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
-      def unroll1(label:BilouOntonotesNerLabel) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerLabel], label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil // Make this feedforward
-      def unroll2(label:BilouOntonotesNerLabel) = if (label.token.hasPrev(2)) Factor(label.token.prev.prev.attr[BilouOntonotesNerLabel], label) else Nil
+      //val docStartLabel = new BilouOntonotesNerTag(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+      def unroll1(label:BilouOntonotesNerTag) = Nil //if (label.token.hasNext(2) Factor(label, label.token.next.attr[BilouOntonotesNerTag], label.token.next.next.attr[BilouOntonotesNerTag]) else Nil // Make this feedforward
+      def unroll2(label:BilouOntonotesNerTag) = if (label.token.hasPrev(2)) Factor(label.token.prev.prev.attr[BilouOntonotesNerTag], label) else Nil
     }
-    val markovNext1 = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val markovNext1 = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
-      def unroll1(label:BilouOntonotesNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouOntonotesNerLabel]) else Nil
-      def unroll2(label:BilouOntonotesNerLabel) = Nil
+      //val docStartLabel = new BilouOntonotesNerTag(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+      def unroll1(label:BilouOntonotesNerTag) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouOntonotesNerTag]) else Nil
+      def unroll2(label:BilouOntonotesNerTag) = Nil
     }
-    val markovNext2 = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val markovNext2 = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      //val docStartLabel = new BilouOntonotesNerLabel(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
-      def unroll1(label:BilouOntonotesNerLabel) = if (label.token.hasNext(2)) Factor(label, label.token.next.next.attr[BilouOntonotesNerLabel]) else Nil
-      def unroll2(label:BilouOntonotesNerLabel) = Nil
+      //val docStartLabel = new BilouOntonotesNerTag(null, "O")  // TODO consider this, if we want to have this factor from the beginning of the document
+      def unroll1(label:BilouOntonotesNerTag) = if (label.token.hasNext(2)) Factor(label, label.token.next.next.attr[BilouOntonotesNerTag]) else Nil
+      def unroll2(label:BilouOntonotesNerTag) = Nil
     }
     // Factor between label and observed token
-    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
+    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag, FeaturesVariable] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionSize))
-      def unroll1(label:BilouOntonotesNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
+      def unroll1(label:BilouOntonotesNerTag) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't be inferred.")
     }
     // Factor between this label and the previous label with a Token having the same spelling, with the statistics comparing the label values with the BILOU prefixes removed
-    val history = this += new DotTemplate2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val history = this += new DotTemplate2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(OntonotesNerDomain.size, OntonotesNerDomain.size))
-      override def statistics(v1:BilouOntonotesNerLabel#Value, v2:BilouOntonotesNerLabel#Value): la.Tensor = 
+      override def statistics(v1:BilouOntonotesNerTag#Value, v2:BilouOntonotesNerTag#Value): la.Tensor = 
         OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(v1.intValue)) outer  OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(v2.intValue))
-      def unroll1(label:BilouOntonotesNerLabel) = Nil
-      def unroll2(label:BilouOntonotesNerLabel) = predictionHistory.mostFrequentLabel(label.token) match { case l:BilouOntonotesNerLabel => Factor(l, label); case _ => Nil }
+      def unroll1(label:BilouOntonotesNerTag) = Nil
+      def unroll2(label:BilouOntonotesNerTag) = predictionHistory.mostFrequentLabel(label.token) match { case l:BilouOntonotesNerTag => Factor(l, label); case _ => Nil }
     }
   }
   object model2 extends Model2
   
   class Model3 extends TemplateModel with Parameters {
     // Bias term on each individual label
-    val bias = this += new DotTemplateWithStatistics1[BilouOntonotesNerLabel] {
+    val bias = this += new DotTemplateWithStatistics1[BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor1(BilouOntonotesNerDomain.size))
     }
     // Factor on transitions
-    val markov = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel,BilouOntonotesNerLabel] {
+    val markov = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag,BilouOntonotesNerTag] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, BilouOntonotesNerDomain.size))
-      def unroll1(label:BilouOntonotesNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouOntonotesNerLabel]) else Nil
-      def unroll2(label:BilouOntonotesNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerLabel], label) else Nil
+      def unroll1(label:BilouOntonotesNerTag) = if (label.token.hasNext) Factor(label, label.token.next.attr[BilouOntonotesNerTag]) else Nil
+      def unroll2(label:BilouOntonotesNerTag) = if (label.token.hasPrev) Factor(label.token.prev.attr[BilouOntonotesNerTag], label) else Nil
     }
     // Factor between label and observed token
-    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerLabel, FeaturesVariable] {
+    val evidence = this += new DotTemplateWithStatistics2[BilouOntonotesNerTag, FeaturesVariable] {
       val weights = Weights(new la.DenseTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionSize))
-      def unroll1(label:BilouOntonotesNerLabel) = Factor(label, label.token.attr[FeaturesVariable])
+      def unroll1(label:BilouOntonotesNerTag) = Factor(label, label.token.attr[FeaturesVariable])
       def unroll2(token:FeaturesVariable) = throw new Error("FeaturesVariable values shouldn't be inferred.")
     }
   }
@@ -114,20 +114,22 @@ class BasicOntonotesNER extends DocumentAnnotator {
   val objective = HammingObjective
 
   // Methods of DocumentAnnotator
-  override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerLabel].categoryValue
+  override def tokenAnnotationString(token:Token): String = token.attr[BilouOntonotesNerTag].categoryValue
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[segment.PlainNormalizedTokenString])
-  def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerLabel])
+  def postAttrs: Iterable[Class[_]] = List(classOf[BilouOntonotesNerTag])
   def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val alreadyHadFeatures = document.hasAnnotation(classOf[FeaturesVariable])
       if (!alreadyHadFeatures) addFeatures(document)
-      for (token <- document.tokens) if (token.attr[BilouOntonotesNerLabel] eq null) token.attr += new BilouOntonotesNerLabel(token, "O")
+      for (token <- document.tokens) if (token.attr[BilouOntonotesNerTag] eq null) token.attr += new BilouOntonotesNerTag(token, "O")
       mainModel match {
         case model:Model1 => indepedentPredictDocument(document)
         case model:Model2 => forwardPredictDocument(document)
         case model:Model3 => bpPredictDocument(document)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
+      // Add and populated NerSpanList attr to the document 
+      document.attr.+=(new ner.OntonotesNerSpanList ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section)))
     }
     document
   }
@@ -138,13 +140,13 @@ class BasicOntonotesNER extends DocumentAnnotator {
   // Predict using model2, assuming that model1 has already been run
   def forwardPredictToken(token:Token): Unit = {
     // This assumes that model1 has already been run on all tokens, so we get reasonable predictions on forward labels.
-    val label = token.attr[BilouOntonotesNerLabel]
+    val label = token.attr[BilouOntonotesNerTag]
     variable.MaximizeDiscrete(label, model2)
     predictionHistory += token
   }
   // Predict using model1 only
   def indepedentPredictDocument(document:Document): Unit = {
-    for (token <- document.tokens) variable.MaximizeDiscrete(token.attr[BilouOntonotesNerLabel], model1)
+    for (token <- document.tokens) variable.MaximizeDiscrete(token.attr[BilouOntonotesNerTag], model1)
   }  
   // Predict using model1 and then model2
   def forwardPredictDocument(document:Document): Unit = {
@@ -154,7 +156,7 @@ class BasicOntonotesNER extends DocumentAnnotator {
     //predictionHistory.clear()
   }
   def bpPredictDocument(document:Document): Unit = {
-    for (sentence <- document.sentences) MaximizeByBPChain(sentence.tokens.toIndexedSeq.map(_.attr[BilouOntonotesNerLabel]), model3)
+    for (sentence <- document.sentences) MaximizeByBPChain(sentence.tokens.toIndexedSeq.map(_.attr[BilouOntonotesNerTag]), model3)
   }
  
   
@@ -194,13 +196,13 @@ class BasicOntonotesNER extends DocumentAnnotator {
   
   def sampleOutputString(tokens:Iterable[Token]): String = {
     val sb = new StringBuffer
-    //for (token <- tokens) sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue))
-    for (token <- tokens) sb.append("%s %20s %10s %10s  %s\n".format(if (token.attr[BilouOntonotesNerLabel].valueIsTarget) " " else "*", token.string, token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, token.attr[FeaturesVariable]))
+    //for (token <- tokens) sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue))
+    for (token <- tokens) sb.append("%s %20s %10s %10s  %s\n".format(if (token.attr[LabeledBilouOntonotesNerTag].valueIsTarget) " " else "*", token.string, token.attr[LabeledBilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, token.attr[FeaturesVariable]))
     sb.toString
   }
   
-  def segmentEvaluationString(labels:IndexedSeq[BilouOntonotesNerLabel]): String = {
-    val se = new app.chain.SegmentEvaluation[BilouOntonotesNerLabel]("(B|U)-", "(I|L)-", BilouOntonotesNerDomain)
+  def segmentEvaluationString(labels:IndexedSeq[LabeledBilouOntonotesNerTag]): String = {
+    val se = new app.chain.SegmentEvaluation[LabeledBilouOntonotesNerTag]("(B|U)-", "(I|L)-", BilouOntonotesNerDomain)
     se += labels
     se.toString
   }
@@ -217,7 +219,7 @@ class BasicOntonotesNER extends DocumentAnnotator {
   
   def trainModel1(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
     // This depends on calling trainPrep alrady
-    def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
+    def labels(docs:Iterable[Document]): Iterable[LabeledBilouOntonotesNerTag] = docs.flatMap(doc => doc.tokens.map(_.attr[LabeledBilouOntonotesNerTag]))
     val examples = labels(trainDocs).map(label => new optimize.DiscreteLikelihoodExample(label, model1))
     def evaluate() {
       (trainDocs ++ testDocs).foreach(indepedentPredictDocument)
@@ -231,14 +233,14 @@ class BasicOntonotesNER extends DocumentAnnotator {
   
   // Parameter estimation
   def trainModel2(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
-    def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
+    def labels(docs:Iterable[Document]): Iterable[LabeledBilouOntonotesNerTag] = docs.flatMap(doc => doc.tokens.map(_.attr[LabeledBilouOntonotesNerTag]))
     trainPrep(trainDocs, testDocs)
     // Model2 depends on Model1, so train Model1 also
     trainModel1(trainDocs, testDocs)
     val predictor = new DiscreteProposalMaximizer(model2, objective) {
       override def process1(context:DiscreteVar): DiffList = {
         val result = super.process1(context)
-        val label = context.asInstanceOf[BilouOntonotesNerLabel]
+        val label = context.asInstanceOf[BilouOntonotesNerTag]
         predictionHistory += label.token
         result
       }
@@ -260,9 +262,9 @@ class BasicOntonotesNER extends DocumentAnnotator {
   }
   
   def trainModel3(trainDocs:Iterable[Document], testDocs:Iterable[Document])(implicit random: scala.util.Random): Unit = {
-    def labels(docs:Iterable[Document]): Iterable[BilouOntonotesNerLabel] = docs.flatMap(doc => doc.tokens.map(_.attr[BilouOntonotesNerLabel]))
+    def labels(docs:Iterable[Document]): Iterable[LabeledBilouOntonotesNerTag] = docs.flatMap(doc => doc.tokens.map(_.attr[LabeledBilouOntonotesNerTag]))
     trainPrep(trainDocs, testDocs)
-    val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerLabel])
+    val labelChains = for (document <- trainDocs; sentence <- document.sentences) yield sentence.tokens.map(_.attr[BilouOntonotesNerTag])
     val examples = labelChains.par.map(v => new LikelihoodExample(v, model3, InferByBPChain)).seq.toSeq
     def evaluate() {
       trainDocs.par.foreach(process); println("Train accuracy "+objective.accuracy(labels(trainDocs)))
@@ -330,16 +332,16 @@ class BasicOntonotesNER extends DocumentAnnotator {
     } else Nil
     def filterByToken(token:Token): Seq[Token] = {
       val tokens = filterByString(token.string)
-//      if ((debugPrintCount % 1 == 0) && tokens.length > 0) println("HashedTokenQueue %20s %20s  %-20s  true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(tokens).baseCategoryValue, tokens.map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
+//      if ((debugPrintCount % 1 == 0) && tokens.length > 0) println("HashedTokenQueue %20s %20s  %-20s  true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), token.attr[BilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, mostFrequentLabel(tokens).baseCategoryValue, tokens.map(_.attr[BilouOntonotesNerTag].categoryValue).mkString(" ")))
 //      debugPrintCount += 1
       tokens
     }
     // A label having the most frequent value of all labels associated with all Tokens having the same string as the given Token, or null if there is no Token with matching string
-    def mostFrequentLabel(token:Token): BilouOntonotesNerLabel = filterByToken(token) match {
+    def mostFrequentLabel(token:Token): BilouOntonotesNerTag = filterByToken(token) match {
       case Nil => null
-      case tokens: Seq[Token] => tokens.groupBy(_.attr[BilouOntonotesNerLabel].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerLabel]
+      case tokens: Seq[Token] => tokens.groupBy(_.attr[BilouOntonotesNerTag].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
     }
-    private def mostFrequentLabel(tokens:Seq[Token]): BilouOntonotesNerLabel = tokens.groupBy(_.attr[BilouOntonotesNerLabel].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerLabel]
+    private def mostFrequentLabel(tokens:Seq[Token]): BilouOntonotesNerTag = tokens.groupBy(_.attr[BilouOntonotesNerTag].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
 
     // Add a Token to the Queue and also to the internal hash
     override def +=(token:Token): this.type = {
@@ -347,7 +349,7 @@ class BasicOntonotesNER extends DocumentAnnotator {
       if (java.lang.Character.isUpperCase(str(0)) && !lexicon.StopWords.containsWord(str.toLowerCase)) { // Only add capitalized, non-stopword Tokens
         super.+=(token)
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
-        if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[BilouOntonotesNerLabel].valueIsTarget) " " else "*", token.attr[BilouOntonotesNerLabel].target.categoryValue, token.attr[BilouOntonotesNerLabel].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerLabel].categoryValue).mkString(" ")))
+        if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[LabeledBilouOntonotesNerTag].valueIsTarget) " " else "*", token.attr[LabeledBilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerTag].categoryValue).mkString(" ")))
         debugPrintCount += 1
         if (length > maxSize) dequeue()
       }
@@ -366,7 +368,7 @@ class BasicOntonotesNER extends DocumentAnnotator {
     }
     override def toString(): String = {
       (for (token <- this) yield
-          "%s = %s".format(token.string, filterByToken(token).map(token => OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(token.attr[BilouOntonotesNerLabel].intValue)).category).mkString(" "))
+          "%s = %s".format(token.string, filterByToken(token).map(token => OntonotesNerDomain(BilouOntonotesNerDomain.bilouSuffixIntValue(token.attr[BilouOntonotesNerTag].intValue)).category).mkString(" "))
       ).mkString("\n")
     }
   }

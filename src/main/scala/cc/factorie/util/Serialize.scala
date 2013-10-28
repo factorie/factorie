@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 import cc.factorie.variable._
 import scala.Some
 import cc.factorie.model.{WeightsSetCubbie, Parameters}
-import cc.factorie.app.classify.{DecisionTreeCubbie, RandomForestCubbie, BoostedTreeCubbie}
+import cc.factorie.app.classify.backend.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie}
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {

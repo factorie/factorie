@@ -4,19 +4,19 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import junit.framework._
 import Assert._
-import cc.factorie.app.nlp.segment.BasicTokenizer
-import cc.factorie.variable.SpanList
+import cc.factorie.app.nlp.segment.DeterministicTokenizer
+import cc.factorie.variable.SpanVarList
 
 class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
   
-  class MySpanList extends SpanList[TokenSpan,Section,Token]
+  class MySpanList extends SpanVarList[TokenSpan,Section,Token]
 
   def testDiffLists(): Unit = {
      val doc = load.LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
      val sl = new MySpanList
      doc.attr += sl
        
-     BasicTokenizer.process(doc)
+     DeterministicTokenizer.process(doc)
      //doc.foreach(logger.debug(_))
      assertEquals(7, doc.tokenCount)
      val d = new DiffList
@@ -32,7 +32,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      //logger.debug("DiffList "+d)
      //logger.debug(doc.spans.mkString("\n"))
      assert(sl.length == 0)
-     val s2 = new NerSpan(doc.asSection, "PER", 2, 2)(d)
+     val s2 = new ConllNerSpan(doc.asSection, 2, 2, "PER")
      sl += s2
      assert(s2.phrase == "John Smith")
      val s3 = new TokenSpan(doc.asSection, 4, 1)

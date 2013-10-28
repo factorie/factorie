@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
-import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
+import cc.factorie.variable.{CategoricalVariable, CategoricalDomain}
 
 /** A Phrase is a TokenSpan that has a head token. */
 class Phrase(section:Section, start:Int, length:Int, val headTokenOffset: Int = -1) extends TokenSpan(section, start, length) with Attr {
@@ -25,16 +25,8 @@ class NounPhraseList extends TokenSpanList[NounPhrase]
 
 
 /** Categorical variable indicating whether the noun phrase is a pronoun, nominal or proper noun. */
-class NounPhraseType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class NounPhraseType(val phrase:NounPhrase, targetValue:String) extends CategoricalVariable(targetValue) {
   def domain = OntonotesNounPhraseTypeDomain
 }
 object OntonotesNounPhraseTypeDomain extends CategoricalDomain(List("PRO", "NOM", "NAM"))
 
-/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
-class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNounPhraseEntityTypeDomain
-}
-object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
-  this ++= ner.OntonotesNerDomain.categories
-  this += "MISC"
-}

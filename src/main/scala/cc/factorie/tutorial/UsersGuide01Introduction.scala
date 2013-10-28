@@ -48,7 +48,7 @@ FACTORIE comes with pre-built model structures and command-line tools for:
 - linear regression
 - linear-chain conditional random fields
 - topic modeling (including latent Dirichlet allocation, as well as several variants)
-- natural language processing, including many standard NLP pipeline components, such as tokenization, sentence segmentation, part-of-speech tagging, named entity recognition, dependency parsing.
+- natural language processing, including many standard NLP pipeline components, such as tokenization, sentence segmentation, part-of-speech tagging, named entity recognition, dependency parsing and within-document coreference.
 
 FACTORIE has been successfully applied to many tasks, including:
 
@@ -219,13 +219,13 @@ Alexandre Passos and Luke Vilnis began contributing extensively.
 Version 0.10 was released January 2011.  Version 1.0 milestone 1 was released in fall 2012.
 
 Work in 2013 focused on parameter estimation and preparations for the version 1.0 release.
-A flexible and efficient interface for parameter estimation was refined to separate gradient optimizers (which take a gradient and change parameters, including traditional methods like LBFGS and modern online methods such as AdaGrad), examples (which take data and produce a gradient), and trainers (which take an optimizer and examples and schedule the updates, batch or online, serial or parallel, HogWild, etc).
+A flexible and efficient interface for parameter estimation was refined to separate `GradientOptimizers` (which take a gradient and change parameters, including traditional methods like LBFGS and modern online methods such as AdaGrad), `Examples` (which take data and produce a gradient), and `Trainers` (which take an optimizer and examples and schedule the updates, batch or online, serial or parallel, HogWild, etc).
 Core interfaces for variables, factors, models and inference were minor adjusted for clarity.
 Writing user guide documentation began in earnest in summer 2013.  
-In addition, core natural language processing infrastructure was vastly expanded; 
-FACTORIE now provides state-of-the-art tokenization, sentence segmentation, part-of-speech, NER, dependency parser, and within-document coreference.
+In addition, core natural language processing infrastructure was vastly expanded 
+with the addition of state-of-the-art tokenization, sentence segmentation, part-of-speech, NER, dependency parser, and within-document coreference.
 
-FACTORIE version 1.0 is anticipated to be released in fall 2013.
+FACTORIE version 1.0 is anticipated to be released in November 2013.
 
 
 
@@ -233,7 +233,7 @@ FACTORIE version 1.0 is anticipated to be released in fall 2013.
 
 ### Machine learning toolkits
 
-Although at its core FACTORIE is a graphical models toolkit, since classification, clustering and regression can be expressed as trivial graphical models, FACTORIE can also be used as a tool for traditional non-structured machine learning.
+Although at its core FACTORIE is a toolkit for graphical models, since classification, clustering and regression can be expressed as trivial graphical models, FACTORIE can also be used as a tool for traditional non-structured machine learning.
 
 [MALLET](http://mallet.cs.umass.edu) provides facilities for classification, finite-state (linear chain) conditional random fields, and a few topic models.
 However, it was not designed to support arbitrarily-structured graphical models.  FACTORIE strives to supersede MALLET in all ways.
@@ -257,7 +257,7 @@ models.
 
 [Apache Mahout](http://mahout.apache.org/) provides a set of
 large-scale machine learning algorithms implemented on top of Apache
-Hadoop's mapreduce system. Factorie is mostly a single-machine
+Hadoop's MapReduce system. Factorie is mostly a single-machine
 framework, working at smaller scale but benefitting from the locality
 efficiency that arise form this.
 

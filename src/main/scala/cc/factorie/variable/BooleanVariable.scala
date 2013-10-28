@@ -19,6 +19,16 @@ import cc.factorie.variable
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
 trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }
+object TrueValue extends BooleanValue{
+  val singleIndex: Int = 1
+  val dim1: Int = 2
+  val category: Boolean = true
+}
+object FalseValue extends BooleanValue{
+  val singleIndex: Int = 0
+  val dim1: Int = 2
+  val category: Boolean = false
+}
 
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
@@ -49,7 +59,10 @@ object BooleanValue {
     @author Andrew McCallum */
 trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
   type Value = BooleanValue
-  def value: BooleanValue
+  def value: BooleanValue = intValue match {
+    case 1 => TrueValue
+    case 0 => FalseValue
+  }
   //def domain: CategoricalDomain[Boolean] = BooleanDomain
   def domain: BooleanDomain = BooleanDomain
   override def categoryValue = intValue == 1 // Efficiently avoid a lookup in the domain
@@ -61,16 +74,22 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
   override def toString = if (intValue == 0) printName+"(false)" else printName+"(true)"
 }
 
-/** A class for mutable Boolean variables. 
-    @author Andrew McCallum */ 
-// TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain // TODO I think this is no longer true.
-class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
-  //type Value = BooleanValue
-  // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
-  def this(initialValue:Boolean) = { this(); _set(if (initialValue) 1 else 0) }
+/** An abstract mutable Boolean variable. 
+    @author Andrew McCallum */
+trait MutableBooleanVar extends MutableCategoricalVar[Boolean] with BooleanVar {
+  override def value = _value match {
+    case 1 => TrueValue
+    case 0 => FalseValue
+  }
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   // If you want to coordinate with changes to this variable value, override set(ValueType)
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
+}
+
+/** A concrete  mutable Boolean variable. 
+    @author Andrew McCallum */ 
+class BooleanVariable(initialValue:Boolean = false) extends MutableCategoricalVar[Boolean] with MutableBooleanVar {
+  _initialize(if (initialValue) 1 else 0)
 }

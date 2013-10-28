@@ -44,9 +44,9 @@ object Tutorial060Learning {
 
     // The Document class implements documents as sequences of sentences and tokens.
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    val tokenizer = new app.nlp.segment.BasicTokenizer
+    val tokenizer = new app.nlp.segment.DeterministicTokenizer
     tokenizer.process(document)
-    val segmenter = new app.nlp.segment.BasicSentenceSegmenter
+    val segmenter = new app.nlp.segment.DeterministicSentenceSegmenter
     segmenter.process(document)
     assertStringEquals(document.tokenCount, "10")
     assertStringEquals(document.sentenceCount, "1")
@@ -189,7 +189,7 @@ object Tutorial060Learning {
     trainer2.processContexts(document.tokens.toSeq.map(_.attr[Label]))
 
     /*&
-     * Finally, there are many other useful examples in factorie. The LinearMultiClassExample
+     * Finally, there are many other useful examples in factorie. The LinearMulticlassExample
      * implements generalized linear models for many classification loss functions, for example, and the
      * DominationLossExample knows how to do learning to rank.
      **/
