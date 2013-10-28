@@ -49,6 +49,50 @@ object LoadConll2000 extends Load {
     case empty if empty.isEmpty => new Sentence(doc)
     case otw => throw new Exception("Expected either a line with token pos tag chunk tag, or an empty line, received: %s".format(otw))
   }
+
+  def convertBIOtoBILOU(sentences: Seq[Sentence]){
+    for(sentence <- sentences) {
+      for(token <- sentence.tokens) {
+        var prev : Token = null
+        var next : Token = null
+        if(token.sentenceHasPrev) prev = token.sentencePrev
+        if(token.sentenceHasNext) next = token.sentenceNext
+        token.sentenceNext
+        val newLabel : String = BIOtoBILOU(prev, token, next)
+        token.attr += new BILOUChunkTag(token, newLabel)
+      }
+    }
+  }
+
+  def BIOtoBILOU(prev : Token, token : Token,  next : Token) : String = {
+    if(token.attr[BIOChunkTag].categoryValue == "O") return "O"
+    val ts = token.attr[BIOChunkTag].categoryValue.split("-")
+    var ps : Array[String] = null
+    var ns : Array[String] = null
+    if(next != null)
+      ns = splitLabel(next)
+    if(prev != null)
+      ps = splitLabel(prev)
+
+    if(token.attr[BIOChunkTag].categoryValue.contains("B-")) {
+      if(next == null || ns(1) != ts(1) || ns(0) == "B")
+        return "U-" + ts(1)
+      else
+        return token.attr[BIOChunkTag].categoryValue
+    }
+
+    if(next == null || ns(1) != ts(1) || ns(0) == "B")
+      return "L-" + ts(1)
+    "I-" + ts(1)
+
+  }
+
+  private def splitLabel(token : Token) : Array[String] = {
+    if(token.attr[BIOChunkTag].categoryValue.contains("-"))
+      token.attr[BIOChunkTag].categoryValue.split("-")
+    else
+      Array("", "O")
+  }
 }
 
 object BIOChunkDomain extends CategoricalDomain[String] {
@@ -80,4 +124,35 @@ object BIOChunkDomain extends CategoricalDomain[String] {
 
 class BIOChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue) {
   def domain = BIOChunkDomain
+}
+
+object BILOUChunkDomain extends CategoricalDomain[String] {
+  this ++= BIOChunkDomain.categories
+  this ++= Vector( "L-ADVP",
+    "L-ADJP",
+    "L-CONJP",
+    "L-INTJ",
+    "L-LST",
+    "L-NP",
+    "L-PP",
+    "L-PRT",
+    "L-SBAR",
+    "L-UCP",
+    "L-VP",
+    "U-ADJP",
+    "U-ADVP",
+    "U-CONJP",
+    "U-INTJ",
+    "U-LST",
+    "U-NP",
+    "U-PP",
+    "U-PRT",
+    "U-SBAR",
+    "U-UCP",
+    "U-VP")
+  freeze()
+}
+
+class BILOUChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue) {
+  def domain = BILOUChunkDomain
 }
