@@ -15,9 +15,8 @@
 package cc.factorie.app.classify
 import cc.factorie.variable._
 import cc.factorie.infer._
-import cc.factorie.la.Tensor1
+import cc.factorie.la.{WeightsMapAccumulator, Tensor1, SingletonBinaryTensor1}
 import cc.factorie.optimize._
-import cc.factorie.la.SingletonBinaryTensor1
 import cc.factorie.app.classify.backend._
 
 /** A record of the result of applying a Classifier to a variable. */
@@ -87,8 +86,8 @@ class OptimizingLinearVectorClassifierTrainer(
 {
   // TODO This is missing weights on Examples.  I think passing a Seq[Double] is error prone, and am tempted to go back to LabelList. -akm
   /** Create a sequence of Example instances for obtaining the gradients used for training. */
-  def examples[L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], labels:Iterable[L], l2f:L=>F, objective:LinearObjectives.Multiclass): Seq[LinearMulticlassExample] =
-    labels.toSeq.map(l => new LinearMulticlassExample(classifier.weights, l2f(l).value, l.target.intValue, objective))
+  def examples[L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], labels:Iterable[L], l2f:L=>F, objective:LinearObjectives.Multiclass): Seq[Example] =
+    labels.toSeq.map(l => new LinearExample(classifier, l2f(l).value, l.target.intValue, objective))
     
   /** Train the classifier to convergence, calling the diagnostic function once after each iteration.
       This is the base method called by the other simpler train methods. */

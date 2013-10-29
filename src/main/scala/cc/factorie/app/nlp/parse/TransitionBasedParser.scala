@@ -89,7 +89,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   lazy val model = new LinearMulticlassClassifier(labelDomain.size, featuresDomain.dimensionSize)
 
 
-  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: LinearMulticlassTrainer, evaluate: (LinearMulticlassClassifier) => Unit) {
+  def trainFromVariables(vs: Iterable[ParseDecisionVariable], trainer: MulticlassClassifierTrainer[LinearMulticlassClassifier], evaluate: (LinearMulticlassClassifier) => Unit) {
     trainer.baseTrain(model, vs.map(_.target.intValue).toSeq, vs.map(_.features.value).toSeq, vs.map(v => 1.0).toSeq, evaluate)
   }
   
@@ -169,7 +169,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     })
     decs.flatten
   }
-  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: LinearMulticlassTrainer, evaluate: LinearMulticlassClassifier => Unit) =
+  def boosting(ss: Iterable[Sentence], nThreads: Int, trainer: MulticlassClassifierTrainer[LinearMulticlassClassifier], evaluate: LinearMulticlassClassifier => Unit) =
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait

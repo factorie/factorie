@@ -25,7 +25,8 @@ import cc.factorie.la.Tensor1
 import scala.Some
 import cc.factorie.variable._
 import scala.Some
-import cc.factorie.app.classify.backend.{LinearMulticlassClassifierCubbie, LinearMulticlassClassifier, MulticlassClassifierTrainer, MulticlassClassifier}
+import cc.factorie.app.classify.backend._
+import scala.Some
 
 // Feature and Label classes
 
@@ -285,7 +286,7 @@ object Classify {
       writeInstances(bigll, instancesFile)
     }
 
-    val classifierTrainer = ScriptingUtils.eval[MulticlassClassifierTrainer[MulticlassClassifier[Tensor1]]](
+    val classifierTrainer = ScriptingUtils.eval[MulticlassClassifierTrainer[LinearMulticlassClassifier]](
       "{ implicit val rng = new scala.util.Random(0); " + opts.trainer.value + "}", Seq("cc.factorie.app.classify._", "cc.factorie.optimize._"))
 
     val start = System.currentTimeMillis

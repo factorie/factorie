@@ -73,7 +73,6 @@ package object factorie extends CubbieConversions {
   type GlobalLogging = util.GlobalLogging
 
   type Example = optimize.Example
-  type LinearMulticlassExample = optimize.LinearMulticlassExample
 
   type Factor = model.Factor
 
