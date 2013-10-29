@@ -63,13 +63,35 @@ trait MulticlassClassifier[Features] extends Classifier[Tensor1, Features] {
   def asTemplate[Value<:DiscreteValue, T <: LabeledMutableDiscreteVar, F<: Var { type Value = Features }](l2f: T => F)(implicit ml: Manifest[T], mf: Manifest[F]) = new ClassifierTemplate[Features,Value,T,F](MulticlassClassifier.this, l2f)
 }
 
-/** Base trait for training multi-class classifiers, but it requires the input to be a Tensor1 feature vector. */
-trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] {
+trait BaseLinearTrainer[Features,Prediction,Label, C<:ClassificationModel[Prediction,Features]] {
+  def newModel(featureSize: Int, labelSize: Int): C
   /** Estimate the parameters of a classifier that has already been created. */
-  def baseTrain(classifier: C, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: C => Unit)
+  def baseTrain(classifier: C, labels: Seq[Label], features: Seq[Features], weights: Seq[Double], evaluate: C => Unit)
   /** Create a Classifier and estimate its parameters. */
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: C => Unit): C
+  final def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Label], features: Seq[Features], weights: Seq[Double], evaluate: C => Unit): C = {
+    val model = newModel(featureSize, labelSize)
+    baseTrain(model, labels, features, weights, evaluate)
+    model
+  }
+}
 
+trait OptimizingBaseLinearTrainer[Features,Prediction,Label, C<:LinearModel[Prediction,Features] with Parameters] extends BaseLinearTrainer[Features,Prediction,Label,C] {
+  def objective: LinearObjective[Prediction,Label]
+  def maxIterations: Int
+  def optimizer: GradientOptimizer
+  def useParallelTrainer: Boolean
+  def useOnlineTrainer: Boolean
+  def miniBatch: Int
+  def nThreads: Int
+  implicit def random: scala.util.Random
+  final def baseTrain(classifier: C, labels: Seq[Label], features: Seq[Features], weights: Seq[Double], evaluate: C => Unit) {
+    val examples = (0 until labels.length).map(i => new LinearExample(classifier, features(i), labels(i), objective, weight=weights(i)))
+    Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer, miniBatch=miniBatch, nThreads=nThreads)
+  }
+}
+
+/** Base trait for training multi-class classifiers, but it requires the input to be a Tensor1 feature vector. */
+trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends BaseLinearTrainer[Tensor1,Tensor1,Int,C] {
   // Various methods for creating and training a classifier
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C= {
     val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex)
@@ -161,20 +183,13 @@ class LinearMulticlassTrainer(val optimizer: GradientOptimizer,
                         val objective: LinearObjectives.Multiclass,
                         val maxIterations: Int,
                         val miniBatch: Int,
-                        val nThreads: Int)(implicit random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] {
-  def baseTrain(classifier: LinearMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) {
-    val examples = (0 until labels.length).map(i => new LinearExample(classifier, features(i), labels(i), objective, weight=weights(i)))
-    Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer, miniBatch=miniBatch, nThreads=nThreads)
-  }
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) = {
-    val classifier = new LinearMulticlassClassifier(labelSize, featureSize)
-    baseTrain(classifier, labels, features, weights, evaluate)
-    classifier
-  }
+                        val nThreads: Int)(implicit val random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] with OptimizingBaseLinearTrainer[Tensor1, Tensor1, Int, LinearMulticlassClassifier]{
+  def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
 }
 
-class SVMMulticlassTrainer(nThreads: Int = 1)(implicit random: scala.util.Random) extends LinearMulticlassTrainer(optimizer=null, useParallelTrainer=false, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
-  override def baseTrain(classifier: LinearMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) {
+class SVMMulticlassTrainer(nThreads: Int = 1)(implicit val random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] {
+  def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
+  def baseTrain(classifier: LinearMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) {
     val ll = labels.toArray
     val ff = features.toArray
     val numLabels = classifier.weights.value.dim2

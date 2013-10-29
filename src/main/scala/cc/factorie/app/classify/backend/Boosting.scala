@@ -32,14 +32,7 @@ class BoostingMulticlassTrainer(numWeakLearners: Int = 100, argTrainWeakLearner:
       features, labels, classifier.numLabels, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(classifier.numLabels, features.head.length, labels, features, _, c => {}))
      evaluate(classifier)
   }
-
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: BoostedMulticlassClassifier => Unit): BoostedMulticlassClassifier = {
-    val weightedWeakLearners = AdaBoostTrainer.train(
-      features, labels, labelSize, numIterations = numWeakLearners, trainWeakLearner.simpleTrain(labelSize, featureSize, labels, features, _, c => {}))
-    val classifier = new BoostedMulticlassClassifier(weightedWeakLearners, labelSize)
-    evaluate(classifier)
-    classifier
-  }
+  def newModel(featureSize: Int, labelSize: Int) = new BoostedMulticlassClassifier(null, labelSize)
 }
 
 // TODO add more ways of serializing sub-cubbies so that we can serialize different types of weak learners -luke

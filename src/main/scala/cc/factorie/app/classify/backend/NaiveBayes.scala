@@ -37,10 +37,5 @@ class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MulticlassClas
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
       evWeightsValue(li * numFeatures + fi) = math.log(evid(li).apply(fi))
   }
-
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: (LinearMulticlassClassifier) => Unit) = {
-    val classifier = new LinearMulticlassClassifier(labelSize, featureSize)
-    baseTrain(classifier, labels, features, weights, evaluate)
-    classifier
-  }
+  def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
 }
