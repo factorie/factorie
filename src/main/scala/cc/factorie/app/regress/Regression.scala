@@ -46,9 +46,11 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
-trait MultivariateModel extends Parameters {
+trait MultivariateModel extends Parameters with app.classify.backend.LinearModel[Tensor1,Tensor1] {
   val weights: Weights2
-  def predict(feats: Tensor1): Tensor1 = weights.value * feats
+  def predict(feats: Tensor1): Tensor1 = weights.value.leftMultiply(feats)
+  def score(features: Tensor1) = predict(features)
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1) = accumulator.accumulate(weights, features outer gradient)
 }
 
 trait UnivariateModel extends Parameters {
@@ -81,7 +83,7 @@ object LinearRegressionTrainer {
     val explanatorySize = exampleExplanatory.value.dimensions.product
     val model = new LinearRegressionModel(explanatorySize, dependentSize)
     val trainer = trainerMaker(model.parameters)
-    val trainingExamples = examples.map(e => new LinearMultivariateExample[Tensor1](model.weights, dependant2Explanatory(e).value.asInstanceOf[Tensor1], e.value.asInstanceOf[Tensor1], objective))
+    val trainingExamples = examples.map(e => new LinearExample(model, dependant2Explanatory(e).value.asInstanceOf[Tensor1], e.value.asInstanceOf[Tensor1], objective))
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }

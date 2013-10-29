@@ -1,11 +1,15 @@
 package cc.factorie.app.classify.backend
 
 import cc.factorie._
-import cc.factorie.la.{Tensor2, DenseTensor2, Tensor1, DenseTensor1}
+import cc.factorie.la._
 import cc.factorie.util.{Threading, TensorCubbie, Cubbie}
 import cc.factorie.variable._
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, Template2}
 import cc.factorie.optimize._
+import cc.factorie.la.Tensor1
+import cc.factorie.la.DenseTensor1
+import cc.factorie.la.Tensor2
+import cc.factorie.la.DenseTensor2
 
 // "Classifier"s take "values" of variables as input rather than the variables themselves.
 // This is in contrast to "Classifier"s, which take variables as input.
@@ -17,8 +21,15 @@ trait Classification[Pred] {
   def proportions: Proportions1
 }
 
-trait Classifier[Pred, Features] {
+trait ClassificationModel[Pred, Features] {
   def score(features: Features): Pred
+}
+
+trait LinearModel[Pred, Features] extends ClassificationModel[Pred, Features] {
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Features, gradient: Pred): Unit
+}
+
+trait Classifier[Pred, Features] extends ClassificationModel[Pred, Features] {
   def classification(features: Features): Classification[Pred]
 }
 
@@ -108,14 +119,16 @@ class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: Mul
   def score(v1: T#Value, v2: TensorVar#Value): Double = classifier.score(v2.asInstanceOf[Tensor1])(v1.asInstanceOf[DiscreteValue].intValue)
 }
 
-class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters {
+class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with LinearModel[Double, Tensor1] {
   val weights = Weights(new DenseTensor1(featureSize))
   def score(features: Tensor1) = weights.value.dot(features)
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(weights, features, gradient)
 }
 
-class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters {
+class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with LinearModel[Tensor1,Tensor1] {
   val weights = Weights(new DenseTensor2(featureSize, labelSize))
   def score(features: Tensor1): Tensor1 = weights.value.leftMultiply(features)
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1) = accumulator.accumulate(weights, features outer gradient)
   def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
@@ -150,7 +163,7 @@ class LinearMulticlassTrainer(val optimizer: GradientOptimizer,
                         val miniBatch: Int,
                         val nThreads: Int)(implicit random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] {
   def baseTrain(classifier: LinearMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) {
-    val examples = (0 until labels.length).map(i => new LinearMulticlassExample(classifier.weights, features(i), labels(i), objective, weight=weights(i)))
+    val examples = (0 until labels.length).map(i => new LinearExample(classifier, features(i), labels(i), objective, weight=weights(i)))
     Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer, miniBatch=miniBatch, nThreads=nThreads)
   }
   def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) = {

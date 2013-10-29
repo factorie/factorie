@@ -1,6 +1,6 @@
 package cc.factorie.app.classify.backend
 
-import cc.factorie.la.{SingletonBinaryTensor1, DenseTensor2, DenseTensor1, Tensor1}
+import cc.factorie.la._
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.maths.ArrayOps
@@ -8,6 +8,8 @@ import cc.factorie.util.StoreFetchCubbie
 import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar}
 import cc.factorie.model.Template2
 import cc.factorie.app.classify.backend._
+import cc.factorie.la.Tensor1
+import cc.factorie.la.DenseTensor1
 
 class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1], Double)]) extends BinaryClassifier[Tensor1] {
   def score(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.score(features) * t._2)

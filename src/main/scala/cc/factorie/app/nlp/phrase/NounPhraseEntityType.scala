@@ -16,7 +16,7 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.optimize.{Trainer, LinearMulticlassExample, LinearObjectives}
+import cc.factorie.optimize.{LinearExample, Trainer, LinearObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
@@ -105,7 +105,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     trainNounPhrases.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingNounPhrases(doc.attr[NounPhraseList])) yield
-      new LinearMulticlassExample(model.weights, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMulticlass)
+      new LinearExample(model, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMulticlass)
     val testNounPhrases = testDocs.flatMap(doc => filterTrainingNounPhrases(doc.attr[NounPhraseList]))
     println("Training ")
     def evaluate(): Unit = {
