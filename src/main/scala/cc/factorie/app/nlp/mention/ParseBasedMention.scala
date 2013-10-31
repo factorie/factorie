@@ -115,7 +115,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
       val sTokens = tokens.sortBy(_.positionInSection)
       val start = sTokens.head.positionInSection
       val end = sTokens.last.positionInSection
-      mentions += new Mention(section, start, end-start, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2)
+      mentions += new Mention(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2)
     }
     mentions
   }

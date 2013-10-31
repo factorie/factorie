@@ -14,6 +14,7 @@ class MentionList extends TokenSpanList[Mention]
 class Mention(section:Section, start:Int, length:Int, val headTokenIndex: Int = -1) extends TokenSpan(section, start, length) with Attr {
   def this(span:TokenSpan, headTokenIndex:Int = -1) = this(span.section, span.start, span.length, headTokenIndex)
   assert( headTokenIndex == -1 || headTokenIndex >= 0 && headTokenIndex <= length,"if provided, the headTokenIndex passed to the constructor must be an offset w.r.t the start of the mention. Specified " + headTokenIndex + ", but span is only " + length + " long")
+  assert(length > 0)
   def headToken: Token = this.apply(headTokenIndex)
 }
 
