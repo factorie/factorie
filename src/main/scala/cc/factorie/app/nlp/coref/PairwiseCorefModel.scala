@@ -31,7 +31,7 @@ trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1
   object MentionPairLabelThing {
     val tokFreq = new mutable.HashMap[String, Int]()
   }
-  def getExample(label: MentionPairLabel, scale: Double): Example = new LinearExample(this, label.features.value, label.target.intValue, LinearObjectives.hingeScaledBinary(1.0, 3.0))
+  def getExample(label: MentionPairLabel, scale: Double): Example = new LinearExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, LinearObjectives.hingeScaledBinary(1.0, 3.0))
 
   def deserialize(stream: DataInputStream) {
     BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)
@@ -69,7 +69,6 @@ trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1
 class BaseCorefModel extends PairwiseCorefModel {
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
   def score(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
-
   def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(pairwise, features, gradient)
 }
 

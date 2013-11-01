@@ -217,7 +217,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
      val len = ments.length
      var i = 1
      while(i < len){
-       assert(ments(i).tokens.head.stringStart >= ments(i-1).tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
+       // assert(ments(i).tokens.head.stringStart >= ments(i-1).tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + len)
        i +=1
      }
   }
