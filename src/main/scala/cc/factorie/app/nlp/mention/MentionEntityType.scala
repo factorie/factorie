@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.optimize.{Trainer, LinearMulticlassExample, LinearObjectives}
+import cc.factorie.optimize.{LinearExample, Trainer, LinearObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
@@ -99,7 +99,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[MentionList])) yield
-      new LinearMulticlassExample(model.weights, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMulticlass)
+      new LinearExample(model, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMulticlass)
     val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {

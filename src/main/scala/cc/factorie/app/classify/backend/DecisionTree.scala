@@ -21,16 +21,7 @@ class DecisionTreeMulticlassTrainer[Label](treeTrainer: DecisionTreeTrainer = ne
     classifier.tree = dtree
     evaluate(classifier)
   }
-
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: DecisionTreeMulticlassClassifier => Unit): DecisionTreeMulticlassClassifier = {
-    val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
-    })
-    val dtree = treeTrainer.train(instances)
-    val classifier = new DecisionTreeMulticlassClassifier(dtree, labelSize)
-    evaluate(classifier)
-    classifier
-  }
+  def newModel(featureSize: Int, labelSize: Int) = new DecisionTreeMulticlassClassifier(null, labelSize)
 }
 
 // TODO this threading stuff makes it non-deterministic, fix -luke
@@ -52,19 +43,7 @@ class RandomForestMulticlassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
     evaluate(classifier)
   }
 
-  def simpleTrain(labelSize: Int, featureSize: Int, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: RandomForestMulticlassClassifier => Unit): RandomForestMulticlassClassifier = {
-    val instances = features.zip(labels.map(new SingletonBinaryTensor1(labelSize, _))).zip(weights).map({
-      case ((feat, label), weight) => DecisionTreeTrainer.Instance(feat, label, weight)
-    })
-    val trees = util.Threading.parMap(0 until numTrees, numThreads)(_ => {
-      val bootstrap = (0 until numInstancesToSample).map(_ => instances(random.nextInt(instances.length)))
-      treeTrainer.maxDepth = maxDepth // TODO ugh but otherwise we can't override it in the trait - just use maxdepth stopping like before -luke
-      treeTrainer.train(bootstrap, numFeaturesToUse = numFeaturesToUse)
-    })
-    val classifier = new RandomForestMulticlassClassifier(trees.toSeq, labelSize)
-    evaluate(classifier)
-    classifier
-  }
+  def newModel(featureSize: Int, labelSize: Int) = new RandomForestMulticlassClassifier(null, labelSize)
 }
 
 class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int) extends MulticlassClassifier[Tensor1] {

@@ -6,6 +6,7 @@ import cc.factorie.la._
 import cc.factorie.model._
 import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
 import cc.factorie.variable._
+import cc.factorie.app.classify.backend.{LinearModel, Classifier}
 
 /**
  * Created by IntelliJ IDEA.
@@ -382,65 +383,20 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 
 /**
  * Base example for all linear multivariate models
- * @param weights The weights of the classifier
+ * @param model The linear classifier
  * @param featureVector The feature vector
  * @param label The label
  * @param objective The objective function
  * @param weight The weight of this example
  * @tparam Label The type of the label
  */
-class LinearMultivariateExample[Label](weights: Weights2, featureVector: Tensor1, label: Label, objective: MultivariateLinearObjective[Label], weight: Double = 1.0)
+class LinearExample[Label,Prediction,Features](model: LinearModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = weights.value.leftMultiply(featureVector)
+    val prediction = model.score(featureVector)
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) gradient.accumulate(weights, featureVector outer sgrad, weight)
+    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) model.accumulateStats(gradient, featureVector, sgrad)
   }
-}
-
-/**
- * Example for all linear multiclass classifiers
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label
- * @param objective The objective function
- * @param weight The weight of this example
- */
-class LinearMulticlassExample(weights: Weights2, featureVector: Tensor1, label: Int, objective: LinearObjectives.Multiclass, weight: Double = 1.0)
-  extends LinearMultivariateExample(weights, featureVector, label, objective, weight) {
-  assert(label >= 0, "Label must be nonnegative for LinearMultiClassExample. Instead got: " + label)
-}
-
-/**
- * Base example for linear univariate models
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label
- * @param objective The objective
- * @param weight The weight of this example
- * @tparam Label The type of label
- */
-class LinearUnivariateExample[Label](weights: Weights1, featureVector: Tensor1, label: Label, objective: UnivariateLinearObjective[Label], weight: Double = 1.0)
-  extends Example {
-  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val score = weights.value dot featureVector
-    val (obj, sgrad) = objective.valueAndGradient(score, label)
-    if (value != null) value.accumulate(obj)
-    if (gradient != null) gradient.accumulate(weights, featureVector.copy, weight * sgrad)
-  }
-}
-
-/**
- * Base example for linear binary classifiers
- * @param weights The weights of the classifier
- * @param featureVector The feature vector
- * @param label The label (+1 or -1)
- * @param objective The objective function
- * @param weight The weight of this example
- */
-class LinearBinaryExample(weights: Weights1, featureVector: Tensor1, label: Int, objective: LinearObjectives.Binary, weight: Double = 1.0)
-  extends LinearUnivariateExample(weights, featureVector, label, objective, weight) {
-  assert(label == 1 || label == -1, "Label must be -1 or 1 for LinearBinaryExample. Instead got: " + label)
 }
 

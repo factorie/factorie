@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.coref
 import cc.factorie._
 import scala.collection.mutable
 import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
-import cc.factorie.optimize.Example
+import cc.factorie.optimize.{LinearObjectives, LinearExample, Example}
 import java.io.{DataOutputStream, File, FileInputStream, DataInputStream}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.mention.Mention
@@ -17,7 +17,7 @@ import cc.factorie.model.Parameters
  * Time: 12:20 PM
  */
 
-trait PairwiseCorefModel extends Parameters {
+trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1] with Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
@@ -31,9 +31,7 @@ trait PairwiseCorefModel extends Parameters {
   object MentionPairLabelThing {
     val tokFreq = new mutable.HashMap[String, Int]()
   }
-  def score(pairwiseStats: Tensor1): Double
-  def accumulate(acc: WeightsMapAccumulator, pairwiseStats: Tensor1, f: Double)
-  def getExample(label: MentionPairLabel, scale: Double): Example
+  def getExample(label: MentionPairLabel, scale: Double): Example = new LinearExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, LinearObjectives.hingeScaledBinary(1.0, 3.0))
 
   def deserialize(stream: DataInputStream) {
     BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)
@@ -70,12 +68,8 @@ trait PairwiseCorefModel extends Parameters {
 
 class BaseCorefModel extends PairwiseCorefModel {
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
-  def accumulate(acc: WeightsMapAccumulator, pairwiseStats: Tensor1, f: Double) {
-    acc.accumulate(pairwise, pairwiseStats, f)
-  }
   def score(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
-
-  def getExample(label: MentionPairLabel, scale: Double) = new LeftRightExample(pairwise, label,scale)
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(pairwise, features, gradient)
 }
 
 class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
@@ -90,6 +84,10 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
         MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain), f)
   }
 
-  def getExample(label: MentionPairLabel, scale: Double) = new LeftRightImplicitConjunctionExample(this, label,scale)
+  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = {
+    accumulator.accumulate(pairwise, features, gradient)
+    accumulator.accumulate(products, new ImplicitFeatureConjunctionTensor(
+            MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient)
+  }
 }
 
