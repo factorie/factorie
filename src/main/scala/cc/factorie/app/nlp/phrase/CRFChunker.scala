@@ -60,8 +60,8 @@ class CRFChunker extends DocumentAnnotator {
     testSentences.foreach(features)
     def evaluate() {
       (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[BILOUChunkTag]))(null))
-      val buf = new StringBuffer
-      buf.append(new LabeledDiscreteEvaluation(testSentences.flatMap(_.tokens.map(_.attr[BILOUChunkTag]))))
+     // val buf = new StringBuffer
+      //buf.append(new LabeledDiscreteEvaluation(testSentences.flatMap(_.tokens.map(_.attr[BILOUChunkTag]))))
       val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[BILOUChunkTag](BILOUChunkDomain.categories.filter(_.length > 2).map(_.substring(2)))
       for (sentence <- testSentences) segmentEvaluation += sentence.tokens.map(_.attr[BILOUChunkTag])
       println(segmentEvaluation)
@@ -149,6 +149,7 @@ object CRFChunkingTrainer extends HyperparameterMain {
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOUChunkTag]))))
     if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
+    //testSentences.flatMap(_.tokens.map(t => { if(!t.attr[BILOUChunkTag].valueIsTarget) println(t.string + " " + t.attr[BILOUChunkTag].target.categoryValue + " " + t.attr[BILOUChunkTag].categoryValue+ " " + t.sentence.string)}))
     acc
   }
 }
