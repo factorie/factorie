@@ -511,9 +511,7 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       var fileExt = if (opts.ontonotes.value) ".dep.pmd" else ""
       var fileList = Seq.empty[String]
       if (listOpt.wasInvoked) fileList = listOpt.value.toSeq
-      else if (dirOpt.wasInvoked) fileList = FileUtils.getFileListFromDir(dirOpt.value, fileExt)
-      //if (listOpt.wasInvoked) listOpt.value.toIndexedSeq.flatMap(filename => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(filename) else load.LoadConll2008.fromFilename(filename)).head.sentences.toSeq)
-      else fileList = Seq.empty[String]
+      if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value, fileExt)
       fileList.flatMap(fname => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(fname) else load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq)
     }
 
