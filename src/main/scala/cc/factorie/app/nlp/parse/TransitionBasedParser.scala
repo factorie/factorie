@@ -45,6 +45,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
+    this += "BIAS"
   }
   
   // Serialization
