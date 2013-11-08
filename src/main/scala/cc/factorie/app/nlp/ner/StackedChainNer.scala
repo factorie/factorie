@@ -658,7 +658,7 @@ object ConllStackedChainNerOptimizer {
         "cc.factorie.app.nlp.parse.DepParser2",
         10, 5)
         */
-      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.StackedNERTrainer")
+      val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.ner.ConllStackedChainNerTrainer")
       val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 200, 180, 60)
       val result = optimizer.optimize()
       println("Got results: " + result.mkString(" "))
