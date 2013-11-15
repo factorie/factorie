@@ -60,8 +60,8 @@ object LoadOntonotes5 {
         val word = fields(1)
         val lemma = fields(2) // was 3
         val partOfSpeech = fields(4)
-        val parentIdx = fields(8).toInt - 1
-        val depLabel = fields(10)
+        val parentIdx = fields(7).toInt - 1
+        val depLabel = fields(9)
         var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)
@@ -102,8 +102,8 @@ object LoadOntonotes5 {
         val word = fields(1)
         val lemma = fields(2) // was 3
         val partOfSpeech = fields(4)
-        val parentIdx = fields(8).toInt - 1
-        val depLabel = fields(10)
+        val parentIdx = fields(7).toInt - 1
+        val depLabel = fields(9)
         var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         document.appendString(" ")
         val token = new Token(sentence, word)

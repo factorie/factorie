@@ -49,8 +49,7 @@ class DeterministicSentenceSegmenter extends DocumentAnnotator {
       var sentenceStart = 0
       // Create a new Sentence, register it with the section, and update sentenceStart.  Here sentenceEnd is non-inclusive
       def newSentence(sentenceEnd:Int): Unit = {
-        assert(sentenceStart != sentenceEnd)
-        new Sentence(section, sentenceStart, sentenceEnd - sentenceStart); sentenceStart = sentenceEnd
+         if(sentenceStart != sentenceEnd) new Sentence(section, sentenceStart, sentenceEnd - sentenceStart); sentenceStart = sentenceEnd
       }
       while (i < tokens.length) {
         val token = tokens(i)

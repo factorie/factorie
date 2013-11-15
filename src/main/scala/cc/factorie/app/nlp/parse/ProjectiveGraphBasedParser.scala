@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import cc.factorie._
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import cc.factorie.util.{Threading, HyperparameterMain, ClasspathURL, DoubleAccumulator}
+import cc.factorie.util.{Threading, HyperparameterMain, ClasspathURL, DoubleAccumulator, FileUtils}
 import scala.collection.mutable.ArrayBuffer
 import java.io._
 import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
@@ -292,6 +292,16 @@ class ProjectiveGraphBasedParser extends DocumentAnnotator {
     println("Finished training.")
     opt.finalizeWeights(DependencyModel.parameters)
   }
+  
+  def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
+    val t0 = System.currentTimeMillis()
+    testSentences.foreach(parse)
+    val totalTime = System.currentTimeMillis() - t0
+    val totalTokens = testSentences.map(_.tokens.length).sum
+    val totalSentences = testSentences.size
+    val pred = testSentences.map(_.attr[ParseTree])
+    (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, totalSentences*1000.0/totalTime)
+  }
 
   def parse(sent: Sentence) {
     val tree = sent.attr.getOrElseUpdate(new ParseTree(sent))
@@ -315,9 +325,12 @@ class OntonotesProjectiveGraphBasedParser(url:java.net.URL) extends ProjectiveGr
 object OntonotesProjectiveGraphBasedParser extends ProjectiveGraphBasedParser(ClasspathURL[OntonotesProjectiveGraphBasedParser](".factorie"))
 
 object ProjectiveGraphBasedParserOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
-  val trainFile = new CmdOption("train", "", "FILES", "CoNLL-2008 train file.")
-  //val devFile =   new CmdOption("dev", "", "FILES", "CoNLL-2008 dev file")
-  val testFile =  new CmdOption("test", "", "FILES", "CoNLL-2008 test file.")
+  val trainFile = new CmdOption("train", "", "FILENAME", "Training file.")
+  val testFile =  new CmdOption("test", "", "FILENAME", "Testing file.")
+  //val devFile =   new CmdOption("dev", Nil.asInstanceOf[String], "FILENAME", "CoNLL-2008 dev file")
+  val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing training files.")
+  val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing testing files.")
+  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "Whether training and testing files are in Ontonotes or CoNLL-2008 format")
   val model      = new CmdOption("model", "parser-model", "FILE", "File in which to save the trained model.")
   val nThreads   = new CmdOption("nThreads", Runtime.getRuntime.availableProcessors(), "INT", "Number of threads to use.")
 }
@@ -329,29 +342,59 @@ object ProjectiveGraphBasedParserTrainer extends HyperparameterMain {
 
     val parser = new ProjectiveGraphBasedParser
 
+    assert(opts.trainFile.wasInvoked || opts.trainDir.wasInvoked)
+    
+    // Load the sentences
+    def loadSentences(fileOpt: opts.CmdOption[String], dirOpt: opts.CmdOption[String]): Seq[Sentence] = {
+      var fileExt = if (opts.ontonotes.value) ".dep.pmd" else ""
+      var fileList = Seq.empty[String]
+      if (fileOpt.wasInvoked) fileList = Seq(fileOpt.value)
+      if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value, fileExt)
+      fileList.flatMap(fname => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(fname) else load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq)
+    }
 
-    val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
-    val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
+    val trainSentencesFull = loadSentences(opts.trainFile, opts.trainDir)
+    //val devSentencesFull = loadSentences(opts.devFile, opts.devDir)
+    val testSentencesFull = loadSentences(opts.testFile, opts.testDir)
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
-    val trainSentencesFull = trainDoc.sentences.toSeq
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
-    val testSentencesFull = testDoc.sentences.toSeq
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    //val devSentences = devSentencesFull.take((testPortionToTake*devSentencesFull.length).floor.toInt)
 
+    println("Total train sentences: " + trainSentences.size)
+    println("Total test sentences: " + testSentences.size)
+//    val trainDoc = load.LoadOntonotes5.fromFilename(opts.trainFile.value).head
+//    val testDoc = load.LoadOntonotes5.fromFilename(opts.testFile.value).head
+//
+//    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+//    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+//    val trainSentencesFull = trainDoc.sentences.toSeq
+//    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+//    val testSentencesFull = testDoc.sentences.toSeq
+//    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
 
     // Train
     parser.train(trainSentences, testSentences, opts.model.value, math.min(opts.nThreads.value, Runtime.getRuntime.availableProcessors()))
+    
     // Test
-
+    println("Predicting train set...");
+    val(trainLAS, trainUAS, trainTokSpeed, trainSentSpeed) = parser.test(trainSentences)
+    println(s"Training UAS=${trainUAS}, LAS=${trainLAS}, ${trainTokSpeed} tokens/sec, ${trainSentSpeed} sentences/sec")
+    println()
+    
+    println("Predicting test set...");
+    val(testLAS, testUAS, testTokSpeed, testSentSpeed) = parser.test(testSentences)
+    println(s"Training UAS=${testUAS}, LAS=${testLAS}, ${testTokSpeed} tokens/sec, ${testSentSpeed} sentences/sec")
+    
     // Print accuracy diagnostics
-    println("Predicting train set..."); parser.process(trainDoc)
-    println("Predicting test set...");  parser.process(testDoc)
-    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
-    val testUAS = ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree]))
-    println("Testing UAS = "+ testUAS)
+    //println("Predicting train set..."); parser.process(trainDoc)
+    //println("Predicting test set...");  parser.process(testDoc)
+//    println("Training UAS = "+ ParserEval.calcUas(trainDoc.sentences.toSeq.map(_.attr[ParseTree])))
+//    val testUAS = ParserEval.calcUas(testDoc.sentences.toSeq.map(_.attr[ParseTree]))
+//    println("Testing UAS = "+ testUAS)
     println()
     println("Done.")
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(testUAS,opts.targetAccuracy.value.toDouble)

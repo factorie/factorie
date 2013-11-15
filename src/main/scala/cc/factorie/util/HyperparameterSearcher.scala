@@ -169,7 +169,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
    */
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val prefix = s"hyper-search-$date/"
+  val prefix = s"hyper-search-$date"
   println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
@@ -179,7 +179,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
     import scala.concurrent.ExecutionContext.Implicits.global
     future {
       import sys.process._
-      val thisPrefix = s"$prefix-job-$thisId"
+      val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       new java.io.File(thisPrefix).getParentFile.mkdirs()
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
