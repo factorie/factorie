@@ -64,6 +64,7 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
+    classOf[mention.ChunkBasedMentionList] -> (() => mention.ChunkBasedMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
