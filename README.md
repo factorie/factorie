@@ -48,7 +48,7 @@ $ ./sbt -J-Xmx2G with-nlp-resources:assembly
 Then you can run some FACTORIE tools from the command-line. For example, you can run many natural language processing tools.
 
 ```
-$ bin/fac nlp --pos1 --ner1
+$ bin/fac nlp --wsj-forward-pos --conll-chain-ner
 ```
 
 will launch an NLP server that will perform part-of-speech tagging and named entity recognition in its input.  The server listens for text on a socket, and spawns a parallel document processor on each request.  To feed it input, type in a separate shell
