@@ -5,7 +5,7 @@ import cc.factorie.app.nlp._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.phrase.{ChunkerOpts, CRFChunker}
 import cc.factorie.app.nlp.load.{BILOUChunkTag}
-import cc.factorie.app.nlp.coref.{ForwardCoref, Coref1Options, MentionAlignment, ConllCorefLoader}
+import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.app.nlp.coref.ForwardCorefTrainer.opts
@@ -22,10 +22,10 @@ import cc.factorie.app.nlp.coref.ForwardCorefTrainer.opts
 class ChunkBasedMentionList extends MentionList
 
 object ChunkBasedMentionFinder extends DocumentAnnotator {
-  var chunk = initChunker(new CRFChunker)
-  def initChunker(chunker: CRFChunker):CRFChunker = {
-    chunker.deserialize(new FileInputStream(new java.io.File("2011NestedTrainedChunkerModel.factorie")))
-    chunker
+  var chunk = new CRFChunker
+  def initChunker(chunkerFileName: String):CRFChunker = {
+    chunk.deserialize(new FileInputStream(new java.io.File(chunkerFileName)))
+    chunk
   }
   def prereqAttrs = Seq(classOf[Token])
   def postAttrs = Seq(classOf[ChunkBasedMentionList], classOf[MentionEntityType])
@@ -49,11 +49,8 @@ object ChunkBasedMentionFinder extends DocumentAnnotator {
           else if(t.attr[BILOUChunkTag].categoryValue == "B-NP"){
             if(t.hasNext) {
               var lookFor = t.next
-              while (lookFor.hasNext && lookFor.attr[BILOUChunkTag].categoryValue.matches("(I)-NP")) lookFor = lookFor.next
-              spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, lookFor.next.positionInSection - t.positionInSection))
-              //while(lookFor.next.hasNext && lookFor.attr[BILOUChunkTag].categoryValue.matches("(I|L)-NP")) lookFor = lookFor.next
-              //spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, lookFor.next.positionInSection - t.positionInSection))
-
+              while (lookFor.hasNext && lookFor.attr[BILOUChunkTag].categoryValue.matches("(I|L)-NP")) lookFor = lookFor.next
+              spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
             } else  spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, 1))
           }
         }  else {
@@ -110,13 +107,12 @@ object ChunkBasedMentionFinder extends DocumentAnnotator {
 
   }
 
-  def tagBILOUtoMentions(sentence: Sentence, mentions: ArrayBuffer[Mention]){
-    sentence.tokens.map(t => t.attr += new BILOUChunkTag(t,"O"))
+  def tagBILOUtoMentions(sentences: Iterable[Sentence], mentions: ArrayBuffer[Mention]): Iterable[Sentence]={
+    sentences.map(s=>s.tokens.map(t => t.attr += new BILOUChunkTag(t,"O")))
     //Negative length for descending sort
     mentions.sortBy(m => m.tokens.length).foreach{mention =>
-      //if(mention.forall(t => t.attr[BILOUChunkTag].categoryValue == "O"))
-      mention.tokens.map{t =>
-        if(t.attr[BILOUChunkTag].categoryValue == "O"){
+      if(mention.forall(t => t.attr[BILOUChunkTag].categoryValue == "O")){
+        mention.tokens.map{t =>
           if(mention.tokens.length == 1)  t.attr += new BILOUChunkTag(t, "U-NP")
           else if(t == mention.head) t.attr += new BILOUChunkTag(t, "B-NP")
           else if(t == mention.last) t.attr += new BILOUChunkTag(t,"L-NP")
@@ -124,12 +120,13 @@ object ChunkBasedMentionFinder extends DocumentAnnotator {
         }
       }
     }
+    sentences
   }
 }
 
 
 
-object CreateChunkingTrainingData{
+object CreateTrainingData{
   def main(args: Array[String]){
     implicit val random = new scala.util.Random(0)
     val opts = new ChunkerOpts
@@ -140,59 +137,30 @@ object CreateChunkingTrainingData{
     println("Train: " + trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
     println("Test: " + testDocs.length+" documents, " + testDocs.map(d => d.attr[MentionList].length).sum.toFloat / testDocs.length + " mentions/doc")
 
-    val trainSentencesMentions = trainDocs.flatMap(d => d.attr[MentionList].groupBy(mention=>mention.sentence))
-    val testSentencesMentions = testDocs.flatMap(d => d.attr[MentionList].groupBy(mention=>mention.sentence))
-    trainSentencesMentions.map(s => ChunkBasedMentionFinder.tagBILOUtoMentions(s._1,s._2))
-    testSentencesMentions.map(s => ChunkBasedMentionFinder.tagBILOUtoMentions(s._1,s._2))
-    val trainSentences = trainSentencesMentions.map(_._1)
-    val testSentences = testSentencesMentions.map(_._1)
-    println("Mentions Tagged")
-    val p = new java.io.PrintWriter(new File("src/main/resources/taggedSmallerMentions.txt"))
-    try {
-      testSentences.foreach(_.tokens.map{t =>  p.println(t.string + " " + t.attr[PennPosTag].categoryValue + " " + t.attr[BILOUChunkTag].categoryValue)})
-    } finally { p.close() }
+    val trainSentences = trainDocs.flatMap(d=>ChunkBasedMentionFinder.tagBILOUtoMentions(d.sentences,d.attr[MentionList]).map(_.sentence))
 
-    println("Starting Training")
-    //val chunk = new CRFChunker
-    //println("TrainSentences: " + trainSentences.length)
-    //println("TestSentences: " + testSentences.length)
-    //chunk.train(trainSentences, testSentences)
-    //if (opts.saveModel.value) chunk.serialize(new FileOutputStream(new File(opts.modelFile.value)))
+    println("Mentions Tagged")
+    val p = new java.io.PrintWriter(new File("src/main/resources/taggedMentionsTrain.txt"))
+    try {
+      trainSentences.foreach{s => s.tokens.map{t =>  p.println(t.string + " " + t.attr[PennPosTag].categoryValue + " " + t.attr[BILOUChunkTag].categoryValue)};p.println()}
+    } finally { p.close() }
   }
-  def mentionprint(args:Array[String]){
+}
+
+object ChunkingExperiments{
+
+  def main(args:Array[String]){
+    /*opts.parse(args)
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     map(classOf[MentionList]) = () => ChunkBasedMentionFinder
     val options = new ForwardCoref().options
-    //options that get serialized with the model
-    val train = ConllCorefLoader.loadWithParse(opts.trainFile.value)
-    train.map(s => println(s.sentences.mkString))
-    options.setConfig("useEntityType",opts.useEntityType.value)
-    options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
-    // options which affect only learning
-    options.useAverageIterate = opts.useAverageIterate.value
-    options.numTrainingIterations = opts.numTrainingIterations.value
-    options.trainPortionForTest = opts.trainPortionForTest.value
-    options.useEntityLR = opts.entityLR.value
-    options.saveFrequency =  opts.saveFrequency.value
-    options.numThreads = opts.numThreads.value
-    options.featureComputationsPerThread = opts.featureComputationsPerThread.value
-    options.pruneNegTrain = opts.numPositivePairsTrain.value > 0
-    options.pruneNegTest = opts.numPositivePairsTest.value > 0
-    options.numPositivePairsTrain = opts.numPositivePairsTrain.value
-    options.numPositivePairsTest = opts.numPositivePairsTest.value
-    options.useExactEntTypeMatch = opts.useExactEntTypeMatch.value
-    options.slackRescale = opts.slackRescale.value
-    options.mentionAlignmentShiftWidth = opts.mentionAlignmentShiftWidth.value
-    options.useNonGoldBoundaries = opts.useNonGoldBoundaries.value
-    options.mergeMentionWithApposition = opts.mergeAppositions.value
-    options.setConfig("usePronounRules",opts.usePronounRules.value)
-    options.numCompareToTheLeft = opts.numCompareToTheLeft.value
-    // options still in flux
-    options.mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
-    options.learningRate = opts.learningRate.value
 
     val (trainDocs,trainMap) = MentionAlignment.makeLabeledData(opts.trainFile.value,null,opts.portion.value,options.useEntityType, options, map.toMap)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(opts.trainFile.value,null,opts.portion.value,options.useEntityType, options, map.toMap)
+    */
+    ChunkBasedMentionFinder.initChunker("2011CM.factorie")
+    println("2011 Exact Boundaries with no Headword")
+    ForwardCorefTrainer.evaluateParameters(args:+"--alignment-width=0")
 
   }
 }
