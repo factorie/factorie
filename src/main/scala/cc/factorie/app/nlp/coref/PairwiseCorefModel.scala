@@ -68,15 +68,15 @@ trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1
 
 class BaseCorefModel extends PairwiseCorefModel {
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
-  def score(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
-  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(pairwise, features, gradient)
+  def predict(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(pairwise, features, gradient)
 }
 
 class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
   val products = Weights(new DenseTensor1(MentionPairCrossFeaturesDomain.dimensionDomain.size))
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
   val domain = new ImplicitDomain(MentionPairFeaturesDomain.dimensionSize)
-  def score(pairwiseStats: Tensor1) =
+  def predict(pairwiseStats: Tensor1) =
     pairwise.value.dot(pairwiseStats) + products.value.dot(new ImplicitFeatureConjunctionTensor(MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain))
   def accumulate(acc: WeightsMapAccumulator, pairwiseStats: Tensor1, f: Double) {
     acc.accumulate(pairwise, pairwiseStats, f)
@@ -84,7 +84,7 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
         MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain), f)
   }
 
-  def accumulateStats(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = {
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = {
     accumulator.accumulate(pairwise, features, gradient)
     accumulator.accumulate(products, new ImplicitFeatureConjunctionTensor(
             MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient)

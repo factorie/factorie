@@ -393,10 +393,10 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 class LinearExample[Label,Prediction,Features](model: LinearModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = model.score(featureVector)
+    val prediction = model.predict(featureVector)
     val (obj, sgrad) = objective.valueAndGradient(prediction, label)
     if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) model.accumulateStats(gradient, featureVector, sgrad)
+    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) model.accumulateObjectiveGradient(gradient, featureVector, sgrad)
   }
 }
 

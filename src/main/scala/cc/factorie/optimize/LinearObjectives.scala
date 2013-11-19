@@ -3,15 +3,15 @@ import cc.factorie.la._
 
 /**
  * Abstract trait for any objective function used in generalized linear models
- * @tparam Pred The type of the prediction: is it a tensor or a scalar?
- * @tparam Label The type of the label: is it integer or real-valued or tensor-valued?
+ * @tparam Prediction The type of the prediction: is it a tensor or a scalar?
+ * @tparam Output The type of the output/label: is it integer or real-valued or tensor-valued?
  */
-trait LinearObjective[Pred, Label] {
-  def valueAndGradient(prediction: Pred, label: Label): (Double, Pred)
+trait LinearObjective[Prediction, Output] {
+  def valueAndGradient(prediction: Prediction, label: Output): (Double, Prediction)
 }
 
-trait UnivariateLinearObjective[Label] extends LinearObjective[Double, Label]
-trait MultivariateLinearObjective[Label] extends LinearObjective[Tensor1, Label]
+trait UnivariateLinearObjective[Output] extends LinearObjective[Double, Output]
+trait MultivariateLinearObjective[Output] extends LinearObjective[Tensor1, Output]
 
 object LinearObjectives {
   /**

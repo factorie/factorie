@@ -48,7 +48,7 @@ class RandomForestMulticlassTrainer(numTrees: Int, numFeaturesToUse: Int, numIns
 
 class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int) extends MulticlassClassifier[Tensor1] {
   self =>
-  def score(features: Tensor1) = {
+  def predict(features: Tensor1) = {
     // TODO why not train an SVM on these predictions instead of just doing majority voting? -luke
     val res = trees.map(t => DTree.score(features, t)).map(t => {t.maxNormalize(); t}).reduce(_ + _)
     res.normalize()
@@ -60,7 +60,7 @@ class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int
 }
 
 class DecisionTreeMulticlassClassifier(var tree: DTree, val labelSize: Int) extends MulticlassClassifier[Tensor1] {
-  def score(features: Tensor1) =
+  def predict(features: Tensor1) =
     DTree.score(features, tree)
   def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
