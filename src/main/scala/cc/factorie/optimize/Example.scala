@@ -6,7 +6,7 @@ import cc.factorie.la._
 import cc.factorie.model._
 import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
 import cc.factorie.variable._
-import cc.factorie.app.classify.backend.{LinearModel, Classifier}
+import cc.factorie.app.classify.backend.{OptimizablePredictionModel, Classifier}
 
 /**
  * Created by IntelliJ IDEA.
@@ -390,7 +390,7 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
  * @param weight The weight of this example
  * @tparam Label The type of the label
  */
-class LinearExample[Label,Prediction,Features](model: LinearModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
+class LinearExample[Label,Prediction,Features](model: OptimizablePredictionModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val prediction = model.predict(featureVector)

@@ -17,7 +17,7 @@ import cc.factorie.model.Parameters
  * Time: 12:20 PM
  */
 
-trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1] with Parameters {
+trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictionModel[Double,Tensor1] with Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false

@@ -25,8 +25,7 @@ trait PredictionModel[Prediction, Input] {
   def predict(input: Input): Prediction
 }
 
-// TODO: need to change this name, there's nothing linear about it -luke
-trait LinearModel[Prediction, Input] extends PredictionModel[Prediction, Input] {
+trait OptimizablePredictionModel[Prediction, Input] extends PredictionModel[Prediction, Input] {
   // TODO: change this to "accumulateParameterGradient"? -luke
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, input: Input, objectiveByPredictionGradient: Prediction): Unit
 }
@@ -79,7 +78,7 @@ trait BaseLinearTrainer[Input, Prediction, Label, C <: PredictionModel[Predictio
   }
 }
 
-trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: LinearModel[Prediction, Input] with Parameters] extends BaseLinearTrainer[Input, Prediction, Output, C] {
+trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: OptimizablePredictionModel[Prediction, Input] with Parameters] extends BaseLinearTrainer[Input, Prediction, Output, C] {
   def objective: LinearObjective[Prediction, Output]
   def maxIterations: Int
   def optimizer: GradientOptimizer
@@ -145,13 +144,13 @@ class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: Mul
   def score(v1: T#Value, v2: TensorVar#Value): Double = classifier.predict(v2.asInstanceOf[Tensor1])(v1.asInstanceOf[DiscreteValue].intValue)
 }
 
-class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with LinearModel[Double, Tensor1] {
+class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with OptimizablePredictionModel[Double, Tensor1] {
   val weights = Weights(new DenseTensor1(featureSize))
   def predict(features: Tensor1) = weights.value.dot(features)
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(weights, features, gradient)
 }
 
-class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with LinearModel[Tensor1,Tensor1] {
+class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with OptimizablePredictionModel[Tensor1,Tensor1] {
   val weights = Weights(new DenseTensor2(featureSize, labelSize))
   def predict(features: Tensor1): Tensor1 = weights.value.leftMultiply(features)
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1) = accumulator.accumulate(weights, features outer gradient)
