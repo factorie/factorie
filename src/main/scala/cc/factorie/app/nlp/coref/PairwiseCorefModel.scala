@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.coref
 import cc.factorie._
 import scala.collection.mutable
 import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
-import cc.factorie.optimize.{LinearObjectives, LinearExample, Example}
+import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io.{DataOutputStream, File, FileInputStream, DataInputStream}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.mention.Mention
@@ -17,7 +17,7 @@ import cc.factorie.model.Parameters
  * Time: 12:20 PM
  */
 
-trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictionModel[Double,Tensor1] with Parameters {
+trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
@@ -31,7 +31,7 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictionModel
   object MentionPairLabelThing {
     val tokFreq = new mutable.HashMap[String, Int]()
   }
-  def getExample(label: MentionPairLabel, scale: Double): Example = new LinearExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, LinearObjectives.hingeScaledBinary(1.0, 3.0))
+  def getExample(label: MentionPairLabel, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
 
   def deserialize(stream: DataInputStream) {
     BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)

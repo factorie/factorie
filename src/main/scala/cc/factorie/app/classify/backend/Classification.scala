@@ -21,23 +21,22 @@ trait Classification[Prediction] {
   def proportions: Proportions1
 }
 
-trait PredictionModel[Prediction, Input] {
+trait Predictor[Prediction, Input] {
   def predict(input: Input): Prediction
 }
 
-trait OptimizablePredictionModel[Prediction, Input] extends PredictionModel[Prediction, Input] {
-  // TODO: change this to "accumulateParameterGradient"? -luke
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, input: Input, objectiveByPredictionGradient: Prediction): Unit
+trait OptimizablePredictor[Prediction, Input] extends Predictor[Prediction, Input] {
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, input: Input, objectiveByPredictionGradient: Prediction, weight: Double): Unit
 }
 
-trait Classifier[Prediction, Input] extends PredictionModel[Prediction, Input] {
+trait Classifier[Prediction, Input] extends Predictor[Prediction, Input] {
   def classification(input: Input): Classification[Prediction]
 }
 
 class BinaryClassification(val prediction: Double) extends Classification[Double] {
   lazy val proportions = {
       val t = new DenseTensor1(2)
-      t(1) = LinearObjectives.logisticLinkFunction(prediction)
+      t(1) = OptimizableObjectives.logisticLinkFunction(prediction)
       t(0) = 1.0-t(1)
       new DenseTensorProportions1(t)
   }
@@ -66,7 +65,7 @@ trait MulticlassClassifier[Input] extends Classifier[Tensor1, Input] {
     new ClassifierTemplate[Input, Value, T, F](MulticlassClassifier.this, l2f)
 }
 
-trait BaseLinearTrainer[Input, Prediction, Label, C <: PredictionModel[Prediction, Input]] {
+trait BaseLinearTrainer[Input, Prediction, Label, C <: Predictor[Prediction, Input]] {
   def newModel(featureSize: Int, labelSize: Int): C
   /** Estimate the parameters of a classifier that has already been created. */
   def baseTrain(classifier: C, labels: Seq[Label], features: Seq[Input], weights: Seq[Double], evaluate: C => Unit)
@@ -78,8 +77,8 @@ trait BaseLinearTrainer[Input, Prediction, Label, C <: PredictionModel[Predictio
   }
 }
 
-trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: OptimizablePredictionModel[Prediction, Input] with Parameters] extends BaseLinearTrainer[Input, Prediction, Output, C] {
-  def objective: LinearObjective[Prediction, Output]
+trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: OptimizablePredictor[Prediction, Input] with Parameters] extends BaseLinearTrainer[Input, Prediction, Output, C] {
+  def objective: OptimizableObjective[Prediction, Output]
   def maxIterations: Int
   def optimizer: GradientOptimizer
   def useParallelTrainer: Boolean
@@ -88,7 +87,7 @@ trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: OptimizablePre
   def nThreads: Int
   implicit def random: scala.util.Random
   final def baseTrain(classifier: C, labels: Seq[Output], features: Seq[Input], weights: Seq[Double], evaluate: C => Unit) {
-    val examples = (0 until labels.length).map(i => new LinearExample(classifier, features(i), labels(i), objective, weight=weights(i)))
+    val examples = (0 until labels.length).map(i => new PredictorExample(classifier, features(i), labels(i), objective, weight=weights(i)))
     Trainer.train(parameters=classifier.parameters, examples=examples, maxIterations=maxIterations, evaluate = () => evaluate(classifier), optimizer=optimizer, useParallelTrainer=useParallelTrainer, useOnlineTrainer=useOnlineTrainer, miniBatch=miniBatch, nThreads=nThreads)
   }
 }
@@ -144,16 +143,16 @@ class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: Mul
   def score(v1: T#Value, v2: TensorVar#Value): Double = classifier.predict(v2.asInstanceOf[Tensor1])(v1.asInstanceOf[DiscreteValue].intValue)
 }
 
-class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with OptimizablePredictionModel[Double, Tensor1] {
+class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with OptimizablePredictor[Double, Tensor1] {
   val weights = Weights(new DenseTensor1(featureSize))
   def predict(features: Tensor1) = weights.value.dot(features)
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(weights, features, gradient)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = accumulator.accumulate(weights, features, gradient * weight)
 }
 
-class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with OptimizablePredictionModel[Tensor1,Tensor1] {
+class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with OptimizablePredictor[Tensor1,Tensor1] {
   val weights = Weights(new DenseTensor2(featureSize, labelSize))
   def predict(features: Tensor1): Tensor1 = weights.value.leftMultiply(features)
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1) = accumulator.accumulate(weights, features outer gradient)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1, weight: Double) = accumulator.accumulate(weights, features outer gradient)
   def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
@@ -183,7 +182,7 @@ class LinearMulticlassClassifierCubbie extends Cubbie {
 class LinearMulticlassTrainer(val optimizer: GradientOptimizer,
                         val useParallelTrainer: Boolean,
                         val useOnlineTrainer: Boolean,
-                        val objective: LinearObjectives.Multiclass,
+                        val objective: OptimizableObjectives.Multiclass,
                         val maxIterations: Int,
                         val miniBatch: Int,
                         val nThreads: Int)(implicit val random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] with OptimizingBaseLinearTrainer[Tensor1, Tensor1, Int, LinearMulticlassClassifier]{
@@ -207,7 +206,7 @@ class SVMMulticlassTrainer(nThreads: Int = 1)(implicit val random: scala.util.Ra
 
 class OnlineLinearMulticlassTrainer(useParallel:Boolean = false,
                               optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging,
-                              objective: LinearObjectives.Multiclass = LinearObjectives.sparseLogMulticlass,
+                              objective: OptimizableObjectives.Multiclass = OptimizableObjectives.sparseLogMulticlass,
                               maxIterations: Int = 3,
                               miniBatch: Int = -1,
                               nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
@@ -215,7 +214,7 @@ class OnlineLinearMulticlassTrainer(useParallel:Boolean = false,
 
 class BatchLinearMulticlassTrainer(useParallel:Boolean = true,
                              optimizer: GradientOptimizer = new LBFGS with L2Regularization,
-                             objective: LinearObjectives.Multiclass = LinearObjectives.sparseLogMulticlass,
+                             objective: OptimizableObjectives.Multiclass = OptimizableObjectives.sparseLogMulticlass,
                              maxIterations: Int = 200,
                              nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
   extends LinearMulticlassTrainer(optimizer, useParallel, useOnlineTrainer = false, objective, maxIterations, -1, nThreads) {}
