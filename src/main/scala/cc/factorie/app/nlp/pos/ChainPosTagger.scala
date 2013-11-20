@@ -32,14 +32,14 @@ class ChainPosTagger extends DocumentAnnotator {
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
-    val dstream = new DataOutputStream(stream)
+    val dstream = new DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(PosFeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     dstream.close()
   }
   def deserialize(stream: InputStream) {
     import cc.factorie.util.CubbieConversions._
-    val dstream = new DataInputStream(stream)
+    val dstream = new DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(PosFeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(model, dstream)
     dstream.close()

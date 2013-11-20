@@ -179,7 +179,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
-    val is = new DataOutputStream(stream)
+    val is = new DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(ChainNerFeaturesDomain.dimensionDomain, is)
     BinarySerializer.serialize(ChainNer2FeaturesDomain.dimensionDomain, is)
     BinarySerializer.serialize(NERModelOpts.argsList, is)
@@ -190,7 +190,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def deSerialize(stream: InputStream) {
     import cc.factorie.util.CubbieConversions._
-    val is = new DataInputStream(stream)
+    val is = new DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(ChainNerFeaturesDomain.dimensionDomain, is)
     BinarySerializer.deserialize(ChainNer2FeaturesDomain.dimensionDomain, is)
     BinarySerializer.deserialize(NERModelOpts.argsList, is)

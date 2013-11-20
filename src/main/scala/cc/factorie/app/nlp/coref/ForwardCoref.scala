@@ -67,7 +67,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   def serialize(filename: String) {
     import cc.factorie.util.CubbieConversions._
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
+    val stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(filename))))
     BinarySerializer.serialize(options.getConfigHash, stream)
     model.serialize(stream)
     println("model weights 1norm = " + model.parameters.oneNorm)
