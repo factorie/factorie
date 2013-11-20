@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
-import java.io.{File,InputStream,FileInputStream}
+import java.io._
 import cc.factorie.util.{BinarySerializer, FileUtils}
 import scala._
 import cc.factorie.optimize._
@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import scala.collection.mutable
 import cc.factorie.app.classify.backend._
+import scala.Some
 import scala.Some
 
 /** Default transition-based dependency parser. */
@@ -64,7 +65,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(featuresDomain.dimensionDomain.size, labelDomain.size, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(labelDomain, dstream)
     BinarySerializer.serialize(model, dstream)
@@ -73,7 +74,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   def deserialize(stream: java.io.InputStream): Unit = {
     import cc.factorie.util.CubbieConversions._
     // Get ready to read sparse evidence weights
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(featuresDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     import scala.language.reflectiveCalls
