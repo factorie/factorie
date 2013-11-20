@@ -42,7 +42,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     features ++= words
     features += "HEAD="+mention.headToken.string
     features += "LAST="+words.last
-    features += "FIRST="+words.last
+    features += "FIRST="+words.head
     mention.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
     mention.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
     for (lexicon <- lexicons) {
