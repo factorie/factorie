@@ -49,7 +49,7 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
 trait MultivariateModel extends Parameters with app.classify.backend.OptimizablePredictor[Tensor1,Tensor1] {
   val weights: Weights2
   def predict(feats: Tensor1): Tensor1 = weights.value.leftMultiply(feats)
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1) = accumulator.accumulate(weights, features outer gradient)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1, weight: Double) = accumulator.accumulate(weights, features outer gradient, weight)
 }
 
 trait UnivariateModel extends Parameters {

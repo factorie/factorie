@@ -69,7 +69,7 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
 class BaseCorefModel extends PairwiseCorefModel {
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
   def predict(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = accumulator.accumulate(pairwise, features, gradient)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = accumulator.accumulate(pairwise, features, gradient * weight)
 }
 
 class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
@@ -84,10 +84,10 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
         MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain), f)
   }
 
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double) = {
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = {
     accumulator.accumulate(pairwise, features, gradient)
     accumulator.accumulate(products, new ImplicitFeatureConjunctionTensor(
-            MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient)
+            MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient * weight)
   }
 }
 
