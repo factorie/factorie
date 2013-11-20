@@ -123,14 +123,14 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import cc.factorie.util.CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
     model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, MentionEntityTypeDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)

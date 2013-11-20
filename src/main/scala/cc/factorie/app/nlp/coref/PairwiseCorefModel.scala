@@ -4,7 +4,7 @@ import cc.factorie._
 import scala.collection.mutable
 import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
 import cc.factorie.optimize.{LinearObjectives, LinearExample, Example}
-import java.io.{DataOutputStream, File, FileInputStream, DataInputStream}
+import java.io._
 import cc.factorie.util.BinarySerializer
 import cc.factorie.app.nlp.mention.Mention
 import cc.factorie.util.coref.GenericEntityMap
@@ -43,7 +43,7 @@ trait PairwiseCorefModel extends app.classify.backend.LinearModel[Double,Tensor1
   }
 
   def deserialize(filename: String) {
-    deserialize(new DataInputStream(new FileInputStream(filename)))
+    deserialize(new DataInputStream(new BufferedInputStream(new FileInputStream(filename))))
   }
 
   def serialize(stream: DataOutputStream) {

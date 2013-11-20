@@ -3,7 +3,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.la._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator, FileUtils}
-import java.io.{File,InputStream,FileInputStream}
+import java.io._
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
@@ -243,7 +243,7 @@ class ForwardPosTagger extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
@@ -252,7 +252,7 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
     model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, PennPosDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)

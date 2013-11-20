@@ -18,13 +18,14 @@ import cc.factorie.la
 import cc.factorie.maths
 import cc.factorie.la._
 import scala.collection.mutable.{ListBuffer,ArrayBuffer}
-import java.io.{InputStream, OutputStream, DataInputStream, DataOutputStream}
+import java.io._
 import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
 import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
 import cc.factorie.model._
 import cc.factorie.optimize.Example
+import scala.Some
 
 // TODO We should add the ability to explicitly permit and forbid label transitions
 // Was Label <: LabeledMutableDiscreteVar
@@ -59,7 +60,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   var useObsMarkov = false
 
   def serialize(stream: OutputStream) {
-    val dstream = new DataOutputStream(stream)
+    val dstream = new DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(featuresDomain, dstream)
     BinarySerializer.serialize(labelDomain, dstream)
     BinarySerializer.serialize(this, dstream)
@@ -67,7 +68,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   }
 
   def deserialize(stream: InputStream) {
-    val dstream = new DataInputStream(stream)
+    val dstream = new DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(featuresDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
     BinarySerializer.deserialize(this, dstream)
