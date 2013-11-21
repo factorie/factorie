@@ -2,28 +2,29 @@ package cc.factorie.optimize
 import cc.factorie.la._
 
 /**
- * Abstract trait for any objective function used in generalized linear models
- * @tparam Pred The type of the prediction: is it a tensor or a scalar?
- * @tparam Label The type of the label: is it integer or real-valued or tensor-valued?
+ * Abstract trait for any (sub)differentiable objective function used to train predictors.
+ * More accurately, this defines a family of objective functions indexed by each possible output.
+ * @tparam Prediction The type of the prediction: is it a tensor or a scalar?
+ * @tparam Output The type of the output/label: is it integer or real-valued or tensor-valued?
  */
-trait LinearObjective[Pred, Label] {
-  def valueAndGradient(prediction: Pred, label: Label): (Double, Pred)
+trait OptimizableObjective[Prediction, Output] {
+  def valueAndGradient(prediction: Prediction, label: Output): (Double, Prediction)
 }
 
-trait UnivariateLinearObjective[Label] extends LinearObjective[Double, Label]
-trait MultivariateLinearObjective[Label] extends LinearObjective[Tensor1, Label]
+trait UnivariateOptimizableObjective[Output] extends OptimizableObjective[Double, Output]
+trait MultivariateOptimizableObjective[Output] extends OptimizableObjective[Tensor1, Output]
 
-object LinearObjectives {
+object OptimizableObjectives {
   /**
    * General type for multivariate linear objective functions for clasification
    */
-  type Multiclass = MultivariateLinearObjective[Int]
+  type Multiclass = MultivariateOptimizableObjective[Int]
   /**
    * General type for objective functions for binary classification
    */
-  type Binary = UnivariateLinearObjective[Int]
+  type Binary = UnivariateOptimizableObjective[Int]
 
-  class HingeMulticlass extends MultivariateLinearObjective[Int] {
+  class HingeMulticlass extends MultivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
@@ -39,7 +40,7 @@ object LinearObjectives {
     }
   }
 
-  class HingeSqMulticlass extends MultivariateLinearObjective[Int] {
+  class HingeSqMulticlass extends MultivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val lossAugmented = { val c = prediction.copy; c -= (label, 1.0); c }
       val maxLabel = lossAugmented.maxIndex
@@ -55,7 +56,7 @@ object LinearObjectives {
     }
   }
 
-  class LogMulticlass extends MultivariateLinearObjective[Int] {
+  class LogMulticlass extends MultivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val normed = prediction.expNormalized.asInstanceOf[Tensor1]
       val loss = math.log(normed(label))
@@ -65,7 +66,7 @@ object LinearObjectives {
     }
   }
 
-  class SparseLogMulticlass extends MultivariateLinearObjective[Int] {
+  class SparseLogMulticlass extends MultivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Tensor1, label: Int): (Double, Tensor1) = {
       val normed = prediction.expNormalized.asInstanceOf[Tensor1]
       val loss = math.log(normed(label))
@@ -82,7 +83,7 @@ object LinearObjectives {
     }
   }
 
-  class SquaredMultivariate extends MultivariateLinearObjective[Tensor1] {
+  class SquaredMultivariate extends MultivariateOptimizableObjective[Tensor1] {
     def valueAndGradient(prediction: Tensor1, label: Tensor1): (Double, Tensor1) = {
       for (i <- prediction.activeDomain)
         prediction(i) -= label(i)
@@ -92,7 +93,7 @@ object LinearObjectives {
     }
   }
 
-  class EpsilonInsensitiveSqMultivariate(epsilon: Double) extends MultivariateLinearObjective[Tensor1] {
+  class EpsilonInsensitiveSqMultivariate(epsilon: Double) extends MultivariateOptimizableObjective[Tensor1] {
     def valueAndGradient(prediction: Tensor1, label: Tensor1): (Double, Tensor1) = {
       var objective = 0.0
       val gradient = new SparseIndexedTensor1(prediction.size)
@@ -106,7 +107,7 @@ object LinearObjectives {
     }
   }
 
-  class EpsilonInsensitiveAbsMultivariate(epsilon: Double) extends MultivariateLinearObjective[Tensor1] {
+  class EpsilonInsensitiveAbsMultivariate(epsilon: Double) extends MultivariateOptimizableObjective[Tensor1] {
     def valueAndGradient(prediction: Tensor1, label: Tensor1): (Double, Tensor1) = {
       var objective = 0.0
       val gradient = new SparseBinaryTensor1(prediction.size)
@@ -120,14 +121,14 @@ object LinearObjectives {
     }
   }
 
-  class LogBinary extends UnivariateLinearObjective[Int] {
+  class LogBinary extends UnivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Double, label: Int): (Double, Double) = {
       val probCorrect = 1.0 / (1 + math.exp(-label * prediction))
       (math.log(probCorrect), (1 - probCorrect) * label)
     }
   }
 
-  class HingeBinary extends UnivariateLinearObjective[Int] {
+  class HingeBinary extends UnivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Double, label: Int): (Double, Double) =
       if (prediction * label < 1.0)
         (prediction * label - 1.0, label)
@@ -135,7 +136,7 @@ object LinearObjectives {
         (0.0, 0.0)
   }
 
-  class HingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) extends UnivariateLinearObjective[Int] {
+  class HingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) extends UnivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Double, label: Int): (Double, Double) = {
       val slackRescale = if (label == 1.0) negSlackRescale else posSlackRescale
       if (prediction * label < 1.0)
@@ -145,24 +146,24 @@ object LinearObjectives {
     }
   }
 
-  class SquaredUnivariate extends UnivariateLinearObjective[Double] {
+  class SquaredUnivariate extends UnivariateOptimizableObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
       (-0.5 * (prediction - label) * (prediction - label), label - prediction)
   }
 
-  class AbsoluteUnivariate extends UnivariateLinearObjective[Double] {
+  class AbsoluteUnivariate extends UnivariateOptimizableObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
       (-math.abs(label - prediction), math.signum(label - prediction))
   }
 
-  class EpsilonInsensitiveAbsUnivariate(epsilon: Double = 1.0) extends UnivariateLinearObjective[Double] {
+  class EpsilonInsensitiveAbsUnivariate(epsilon: Double = 1.0) extends UnivariateOptimizableObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) = {
       val value = -math.max(math.abs(label - prediction) - epsilon, 0)
       (value, if (value != 0.0) math.signum(label - prediction) else 0.0)
     }
   }
 
-  class EpsilonInsensitiveSqUnivariate(epsilon: Double = 1.0) extends UnivariateLinearObjective[Double] {
+  class EpsilonInsensitiveSqUnivariate(epsilon: Double = 1.0) extends UnivariateOptimizableObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) = {
       val value = -0.5 * math.pow(math.max(math.abs(label - prediction) - epsilon, 0), 2)
       (value, if (value != 0.0) label - prediction else 0.0)

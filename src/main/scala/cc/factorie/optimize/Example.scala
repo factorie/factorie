@@ -6,7 +6,7 @@ import cc.factorie.la._
 import cc.factorie.model._
 import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
 import cc.factorie.variable._
-import cc.factorie.app.classify.backend.{LinearModel, Classifier}
+import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
 
 /**
  * Created by IntelliJ IDEA.
@@ -382,21 +382,21 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 
 
 /**
- * Base example for all linear multivariate models
- * @param model The linear classifier
- * @param featureVector The feature vector
+ * Base example for all OptimizablePredictors
+ * @param model The optimizable predictor
+ * @param input The example input (such as a feature vector)
  * @param label The label
  * @param objective The objective function
- * @param weight The weight of this example
- * @tparam Label The type of the label
+ * @param weight The weight of the example
+ * @tparam Output The type of the label
  */
-class LinearExample[Label,Prediction,Features](model: LinearModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
+class PredictorExample[Output, Prediction, Input](model: OptimizablePredictor[Prediction, Input], input: Input, label: Output, objective: OptimizableObjective[Prediction, Output], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = model.score(featureVector)
-    val (obj, sgrad) = objective.valueAndGradient(prediction, label)
-    if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) model.accumulateStats(gradient, featureVector, sgrad)
+    val prediction = model.predict(input)
+    val (obj, ograd) = objective.valueAndGradient(prediction, label)
+    if (value != null) value.accumulate(obj * weight)
+    if (gradient != null) model.accumulateObjectiveGradient(gradient, input, ograd, weight)
   }
 }
 
