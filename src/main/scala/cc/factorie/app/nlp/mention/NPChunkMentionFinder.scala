@@ -32,33 +32,15 @@ class NPChunkBasedMentionFinder(val chunk:CRFChunker) extends DocumentAnnotator 
 
   val upperCase = "[A-Z]+".r
 
-  def getNPChunkSpans(document: Document): Seq[(String,TokenSpan)] ={
-    val spans = ArrayBuffer[(String,TokenSpan)]()
-    document.sections.foreach{s => s.tokens.map{
-      t =>
-        if (t.attr[BILOUChunkTag].categoryValue != "O") {
-          if(t.attr[BILOUChunkTag].categoryValue == "U-NP") spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, 1))
-          else if(t.attr[BILOUChunkTag].categoryValue == "B-NP"){
-            if(t.hasNext) {
-              var lookFor = t.next
-              while (lookFor.hasNext && lookFor.attr[BILOUChunkTag].categoryValue.matches("(I|L)-NP")) lookFor = lookFor.next
-              spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
-            } else  spans += (t.attr[BILOUChunkTag].categoryValue -> new TokenSpan(s, t.positionInSection, 1))
-          }
-        }  else {
-          if ( t.string.length > 2 && !t.containsLowerCase && upperCase.findFirstIn(t.string).nonEmpty && (t.getNext ++ t.getPrev).exists(i => i.containsLowerCase)) {
-            spans += ("ORG" -> new TokenSpan(s, t.positionInSection, 1))
-          } else if (t.posTag.categoryValue == "NNP") {
-            spans += ("MISC" -> new TokenSpan(s, t.positionInSection, 1))
-          }
-        }
-      }
-    }
-    spans.toSeq
+  def process(document: Document) = {
+    chunk.process(document)
+    val mentions = getChunkMentions(document)
+    document.attr += new MentionList() ++= mentions.sortBy(m => (m.head.stringStart, m.length))
+    document
   }
-
+  //Todo: convert to multiple encoding capable
   def getChunkMentions(document: Document): Seq[Mention] = {
-    getNPChunkSpans(document).map{labelSpan =>
+    getMultiLayerMentionSpans(document).map{labelSpan =>
       val label = labelSpan._1
       val s = labelSpan._2
       val m = new Mention(s, s.length-1)
@@ -67,12 +49,41 @@ class NPChunkBasedMentionFinder(val chunk:CRFChunker) extends DocumentAnnotator 
     }
   }
 
-  def process(document: Document) = {
-    chunk.process(document)
-    val mentions = getChunkMentions(document)
-    document.attr += new MentionList() ++= mentions.sortBy(m => (m.head.stringStart, m.length))
-    document
+  //Could be combined with method above
+  def getMultiLayerMentionSpans(document: Document): Seq[(String,TokenSpan)] ={
+    val mentionSpans = ArrayBuffer[(String,TokenSpan)]()
+    document.sections.foreach{s=>
+      val chunkTags = s.tokens.map(_.attr[BILOU2LayerChunkTag].tags)
+      val (innerTags,outerTags) = chunkTags.unzip
+      mentionSpans ++= getNPChunkSpans(s,innerTags)
+      mentionSpans ++= getNPChunkSpans(s,outerTags)
+    }
+    mentionSpans.seq
   }
+
+  def getNPChunkSpans(s: Section,chunkTags: Seq[String]):Seq[(String,TokenSpan)]={
+    val spans = ArrayBuffer[(String,TokenSpan)]()
+    val tokenTags = s.tokens.zip(chunkTags).toMap
+    tokenTags.map{case (t,chunk) =>
+      if (chunk != "O") {
+        if(chunk == "U-NP") spans += (chunk -> new TokenSpan(s, t.positionInSection, 1))
+        else if(chunk == "B-NP"){
+          if(t.hasNext) {
+            var lookFor = t.next
+            while (lookFor.hasNext && tokenTags.get(lookFor).get.matches("(I|L)-NP")) lookFor = lookFor.next
+            spans += (chunk -> new TokenSpan(s, t.positionInSection, lookFor.positionInSection - t.positionInSection))
+          } else  spans += (chunk -> new TokenSpan(s, t.positionInSection, 1))
+        }
+      }
+    }
+    spans.toSeq
+  }
+
+
+
+
+
+
 
   def tagBILOUtoMentions(sentences: Iterable[Sentence], mentions: ArrayBuffer[Mention]): (ListBuffer[Mention])={
     sentences.map(s=>s.tokens.map(t => t.attr += new BILOU2LayerChunkTag(t,"O:O")))
@@ -141,6 +152,7 @@ object ChunkingExperiments{
     opts.parse(args)
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     map(classOf[MentionList]) = () => NPChunkBasedMentionFinder
+    map(classOf[BILOU2LayerChunkTag]) = () => CRFChunker
     val options = new ForwardCoref().options
 
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(opts.testFile.value,null,opts.portion.value,options.useEntityType, options, map.toMap)
