@@ -59,10 +59,10 @@ abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Ran
   def bestConfigHook(): Unit = {}
   
   /** Specialization of cc.factorie.Proposal that adds a MH forward-backward transition ratio, typically notated as a ratio of Qs. */
-  case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, bfRatio:Double, temperature:Double) extends cc.factorie.infer.Proposal(diff, modelScore, objectiveScore,acceptanceScore)
+  case class Proposal[C](override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, bfRatio:Double, temperature:Double, override val context:C) extends cc.factorie.infer.Proposal(diff, modelScore, objectiveScore,acceptanceScore, context)
   
   var proposalsCount = 0
-  def proposals(context:C): Seq[Proposal] = {
+  def proposals(context:C): Seq[Proposal[C]] = {
     numProposedMoves += 1
     proposalAccepted = false
     val difflist = new DiffList
@@ -87,8 +87,8 @@ abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Ran
     //println("MHSampler modelScore="+modelScore+" objectiveScore="+objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
     val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Double.NegativeInfinity else math.log(1-math.exp(logAcceptanceScore))
-    val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature)
-    val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Double.NaN,0)
+    val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature, context)
+    val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Double.NaN,0, context)
     List(goProposal,stayProposal)
   }
   
@@ -113,9 +113,9 @@ abstract class MHSampler[C](val model:Model)(implicit val random: scala.util.Ran
 */
 
 
-  override def proposalHook(proposal:cc.factorie.infer.Proposal): Unit = {
+  override def proposalHook(proposal:cc.factorie.infer.Proposal[C]): Unit = {
     super.proposalHook(proposal)
-    val p = proposal.asInstanceOf[Proposal]
+    val p = proposal.asInstanceOf[Proposal[C]]
     //if (p.bfRatio != Double.NaN) {
     if(!p.bfRatio.isNaN) {
       numAcceptedMoves += 1
