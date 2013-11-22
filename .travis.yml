@@ -3,4 +3,4 @@ scala:
          - 2.10.1
 script:
         - "sudo apt-get install libgfortran3"
-        - "bash -c \"MAVEN_OPTS='-Xmx3G -XX:MaxPermSize=512m' mvn test & for i in \$(seq 20); do echo $i; sleep 60; done & wait\""
+        - "MAVEN_OPTS='-Xmx3G -XX:MaxPermSize=512m' mvn test & for i in \$(seq 20); do echo $i; sleep 60; done & wait"
