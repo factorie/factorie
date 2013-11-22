@@ -22,8 +22,8 @@ import cc.factorie.variable.DiffList
     "objectiveScore" is the difference in score after-before, according to the objective function.
     "acceptanceScore" is the score that will be used to accept/rank/select among multiple proposals.  It is typically the modelScore multiplied by a temperature.
     Note that objectiveScore may not be truly set, in which case it will have value Double.NaN. */
-class Proposal(val diff:DiffList, val modelScore:Double, val objectiveScore:Double,  val acceptanceScore:Double) {
-  override def toString = "Proposal("+diff+", "+modelScore+", "+objectiveScore+", "+acceptanceScore+")"
+class Proposal[C](val diff:DiffList, val modelScore:Double, val objectiveScore:Double,  val acceptanceScore:Double, val context:C) {
+  override def toString = "Proposal("+diff+", "+modelScore+", "+objectiveScore+", "+acceptanceScore+", "+context+")"
 }
 
 // TODO The following trait is currently unused.  Remove it?

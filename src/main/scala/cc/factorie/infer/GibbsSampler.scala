@@ -41,33 +41,33 @@ class GibbsSampler(val model:Model, val objective:Model = null)(implicit val ran
     d
   }
 
-  def proposals(v:V): Seq[Proposal] = model match {
+  def proposals(v:V): Seq[Proposal[V]] = model match {
     case m:DirectedModel => throw new Error("Not yet implemented")
     case m:Model => v match {
       case v:DiscreteVariable => proposals(v)
-      case v:Var with IterableSettings => proposals(v.settings)
+      case v:Var with IterableSettings => proposals(v.settings, v)
     } 
   }
-  def proposals(si:SettingIterator): Seq[Proposal] = {
+  def proposals(si:SettingIterator, v:V): Seq[Proposal[V]] = {
     val dmodel = model: Model
     val dobjective = objective: Model
-    val props = new ArrayBuffer[Proposal]()
+    val props = new ArrayBuffer[Proposal[V]]()
     while (si.hasNext) {
       val d = si.next()
       val (m,o) = d.scoreAndUndo(dmodel,dobjective)
-      props += new Proposal(d, m, o, m/temperature)
+      props += new Proposal(d, m, o, m/temperature, v)
     }
     props
   }
   // Special case for a bit more efficiency
-  def proposals(dv:DiscreteVariable): Seq[Proposal] = {
+  def proposals(dv:DiscreteVariable): Seq[Proposal[V]] = {
     var i = 0; val len = dv.domain.size
-    val result = new ArrayBuffer[Proposal](len)
+    val result = new ArrayBuffer[Proposal[V]](len)
     while (i < len) {
       val diff = new DiffList
       dv.set(i)(diff)
       val (modelScore, objectiveScore) = diff.scoreAndUndo(model, objective)
-      result += new Proposal(diff, modelScore, objectiveScore, modelScore/temperature)
+      result += new Proposal(diff, modelScore, objectiveScore, modelScore/temperature, dv)
       i += 1
     }
     result
