@@ -62,7 +62,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
   private trait AdaGradRDATensor extends Tensor with DenseDoubleSeq {
     def activeDomain = new RangeIntSeq(0, length)
     val gradients: Array[Double]
-    val gradSquares = Array.fill(length)(0.0)
+    val gradSquares: Array[Double]
     var t = 0
     val delta: Double
     val rate: Double
@@ -135,12 +135,14 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
 
   private class AdaGradRDATensor1(baseTensor: Tensor1, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor1 {
     val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
     val dim1 = baseTensor.dim1
     def isDense = false
     override def copy = copyToDense(new DenseTensor1(dim1))
   }
   private class AdaGradRDATensor2(baseTensor: Tensor2, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor2 {
     val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
     val dim1 = baseTensor.dim1
     val dim2 = baseTensor.dim2
     def activeDomain1 = new RangeIntSeq(0, dim1)
@@ -150,6 +152,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
   }
   private class AdaGradRDATensor3(baseTensor: Tensor3, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor3 {
     val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
     val dim1 = baseTensor.dim1
     val dim2 = baseTensor.dim2
     val dim3 = baseTensor.dim3
@@ -161,6 +164,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
   }
   private class AdaGradRDATensor4(baseTensor: Tensor4, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor4 {
     val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
     val dim1 = baseTensor.dim1
     val dim2 = baseTensor.dim2
     val dim3 = baseTensor.dim3
