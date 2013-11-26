@@ -996,7 +996,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     }
   }
 
-  override def proposals(c:Null):Seq[Proposal] ={
+  override def proposals(c:Null):Seq[Proposal[Null]] ={
     val result = super.proposals(c)
     settingsSamplerCount += 1
     if(totalTime==0L){totalTime = System.currentTimeMillis}
@@ -1069,7 +1069,7 @@ class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
     def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
     def reset = i = 0
   }
-  override def proposalHook(proposal:Proposal) = {
+  override def proposalHook(proposal:Proposal[Null]) = {
     super.proposalHook(proposal)
     /*
     if(printInfo){
@@ -1927,7 +1927,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
-  override def proposalHook(proposal:Proposal) = {
+  override def proposalHook(proposal:Proposal[Null]) = {
     super.proposalHook(proposal)
     if(proposal.diff.size>0){
       numAccepted += 1
@@ -2044,7 +2044,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     }
   }
   */
-  override def pickProposal(proposals:Seq[Proposal]): Proposal = {
+  override def pickProposal(proposals:Seq[Proposal[Null]]): Proposal[Null] = {
     for(p <- proposals)allDiffVarsInWindow += p.diff.size
     super.pickProposal(proposals)
   }

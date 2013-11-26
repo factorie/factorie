@@ -97,7 +97,7 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
     val maxdiff = new DiffList
     val origSamplerTemperature = sampler.temperature
     val variablesTouched = new HashSet[Var]
-    def updateMaxScore(p:Proposal): Unit = {
+    def updateMaxScore(p:Proposal[C]): Unit = {
       currentScore += p.modelScore // TODO Check proper handling of fbRatio
       //println("SamplingMaximizer modelScore="+p.modelScore+" currentScore="+currentScore)
       variablesTouched ++= p.diff.map(_.variable)
@@ -110,7 +110,7 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
         //println("SamplingMaximizer diff.size="+diff.size)
       }
     }
-    val updateHook: Proposal=>Unit = updateMaxScore _ 
+    val updateHook: Proposal[C]=>Unit = updateMaxScore _
     sampler.proposalHooks += updateHook // Add temporary hook
     sampler.processAll(varying, iterations)
     sampler.proposalHooks -= updateHook // Remove our temporary hook

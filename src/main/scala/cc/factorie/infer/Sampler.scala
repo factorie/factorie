@@ -112,10 +112,10 @@ trait Sampler[C] {
 trait ProposalSampler[C] extends Sampler[C] {
   def model: Model
   var temperature = 1.0
-  def proposals(context:C): Seq[Proposal]
+  def proposals(context:C): Seq[Proposal[C]]
   def skipEmptyProposals = true
   def process1(context:C): DiffList = processProposals(proposals(context))
-  def processProposals(props: Seq[Proposal]): DiffList = {
+  def processProposals(props: Seq[Proposal[C]]): DiffList = {
     if (props.size == 0 && skipEmptyProposals) return newDiffList
     proposalsHook(props)
     val proposal = props.size match {
@@ -127,11 +127,11 @@ trait ProposalSampler[C] extends Sampler[C] {
     proposalHook(proposal)
     proposal.diff
   }
-  def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore / temperature)
-  val proposalsHooks = new Hooks1[Seq[Proposal]] // Allows non-overriders to add hooks
-  def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
-  val proposalHooks = new Hooks1[Proposal]
-  def proposalHook(proposal:Proposal): Unit = proposalHooks(proposal)
+  def pickProposal(proposals:Seq[Proposal[C]]): Proposal[C] = proposals.sampleExpProportionally((p:Proposal[C]) => p.acceptanceScore / temperature)
+  val proposalsHooks = new Hooks1[Seq[Proposal[C]]] // Allows non-overriders to add hooks
+  def proposalsHook(proposals:Seq[Proposal[C]]): Unit = proposalsHooks(proposals)
+  val proposalHooks = new Hooks1[Proposal[C]]
+  def proposalHook(proposal:Proposal[C]): Unit = proposalHooks(proposal)
 }
 
 /** A proposal sampler that considers each of the values of a DiscreteVar 
@@ -139,7 +139,7 @@ trait ProposalSampler[C] extends Sampler[C] {
     Will not work for case factor diagrams.
     @author Andrew McCallum */
 class DiscreteProposalSampler(val model:Model, val objective:Model = null)(implicit val random: scala.util.Random) extends ProposalSampler[DiscreteVar] {
-  def proposals(context:DiscreteVar): Seq[Proposal] = {
+  def proposals(context:DiscreteVar): Seq[Proposal[DiscreteVar]] = {
     val modelFactors = model.factors(context)
     val objectiveFactors = if (objective ne null) objective.factors(context) else null
     val domainSize = context.domain.size
@@ -147,7 +147,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
     var modelScore = 0.0
     var objectiveScore = 0.0
     var i = 0
-    val result = new ArrayBuffer[Proposal](domainSize)
+    val result = new ArrayBuffer[Proposal[DiscreteVar]](domainSize)
     while (i < domainSize) {
       assignment.intValue1 = i
       modelScore = 0.0; modelFactors.foreach(f => modelScore += f.assignmentScore(assignment))   // compute score of variable with value 'i'
@@ -155,7 +155,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
       val d = new DiffList; d.done = false
       context.cast[MutableDiscreteVar].foreach(v =>  d += new v.DiscreteVariableDiff(0, i))
       //context match { case context:MutableDiscreteVar[_] => d += new context.DiscreteVariableDiff(0, i); case _ => {} } // This crashes the Scala 2.10.1 compiler
-      result += new Proposal(d, modelScore, objectiveScore, modelScore)
+      result += new Proposal(d, modelScore, objectiveScore, modelScore, context)
       i += 1
     }
     result
@@ -163,7 +163,7 @@ class DiscreteProposalSampler(val model:Model, val objective:Model = null)(impli
 }
 
 class DiscreteProposalMaximizer(override val model:Model, override val objective:Model = null) extends DiscreteProposalSampler(model, objective)(null) {
-  override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxBy(_.modelScore)
+  override def pickProposal(proposals:Seq[Proposal[DiscreteVar]]): Proposal[DiscreteVar] = proposals.maxBy(_.modelScore)
 }
 
 
@@ -179,8 +179,8 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(imp
   def settings(context:C) : SettingIterator
 
   //val proposalsCache = collection.mutable.ArrayBuffer[Proposal]() // TODO This is not thread-safe; remove it
-  def proposals(context:C): Seq[Proposal] = {
-    val result = new ArrayBuffer[Proposal]
+  def proposals(context:C): Seq[Proposal[C]] = {
+    val result = new ArrayBuffer[Proposal[C]]
     // the call to 'next' is actually what causes the change in state to happen
     var i = 0
     val si = settings(context)
@@ -189,7 +189,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(imp
       assert(model ne null) // TODO!!! Clean up and delete this
       val (m,o) = d.scoreAndUndo(model, objective)
       //if (proposalsCache.length == i) proposalsCache.append(null)
-      result += new Proposal(d, m, o, m/temperature)
+      result += new Proposal(d, m, o, m/temperature, context)
       i += 1
     }
     //if (proposalsCache.length > i) proposalsCache.trimEnd(proposalsCache.length - i)
@@ -203,7 +203,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null)(imp
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
 abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective)(null) {
-  override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
+  override def pickProposal(proposals:Seq[Proposal[C]]): Proposal[C] = proposals.maxByDouble(_.acceptanceScore)
 }
 
 /** Tries each one of the settings of the given variable, 
