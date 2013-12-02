@@ -150,6 +150,7 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
   def sortReverse(extractor: A => Double): Seq[A] =
     t.toSeq.sortWith((x1:A, x2:A) => extractor(x1) > extractor(x2))
 
+  // TODO this is way slower than it should be considering shuffling examples is in an inner loop of online learning
   def shuffle(implicit random: Random) : Seq[A] = {
     val s2 = t.map(x => (x, random.nextInt())).toSeq
     Sorting.stableSort(s2, (t1: (A, Int), t2: (A, Int)) => t1._2 > t2._2).map(t => t._1)

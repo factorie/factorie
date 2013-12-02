@@ -5,18 +5,19 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
 /**
  * Simple efficient l2-regularized SGD with a constant learning rate
  *
- * Note that the learning rate has to be less than l2 or the weights will oscillate.
+ * Note that we must have |rate * l2 / numExamples| < 1.0 or the weights will oscillate.
  *
  * @param l2 The l2 regularization parameter
  * @param rate The learning rate
+ * @param numExamples The number of examples for online training, used to scale regularizer
  */
-class L2RegularizedConstantRate(l2: Double = 0.1, rate: Double = 0.1) extends GradientOptimizer {
+class L2RegularizedConstantRate(l2: Double = 0.1, rate: Double = 0.1, numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (!initialized) initializeWeights(weights)
     weights += (gradient, rate)
-    weights *= (1.0 - rate * l2)
+    weights *= (1.0 - rate * l2 / numExamples)
   }
 
   def initializeWeights(weights: WeightsSet): Unit = {

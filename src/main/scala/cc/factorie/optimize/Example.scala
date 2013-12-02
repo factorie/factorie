@@ -21,8 +21,12 @@ import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
  * which are accumulated into accumulators and then given to the optimizer.
  */
 trait Example {
-  // gradient or value can be null if they don't need to be computed.
-  // TODO should this be called (compute|accumulate)ValueAndGradient or something? -luke
+  /**
+   * Put objective value and gradient into the accumulators.
+   * Either argument can be null if they don't need to be computed.
+   * @param value Accumulator to hold value
+   * @param gradient Accumulator to hold gradient
+   */
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit
 }
 
@@ -380,6 +384,21 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
   }
 }
 
+
+class SimpleLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, model: B, infer: Infer[A,B]) extends Example {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
+    val summary = infer.infer(labels, model)
+    if (value != null)
+      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
+    val factors = summary.factorMarginals
+    if (gradient != null) {
+      for (factorMarginal <- factors; factorU <- factorMarginal.factor; if factorU.isInstanceOf[DotFamily#Factor]; factor <- factorU.asInstanceOf[DotFamily#Factor]) {
+        gradient.accumulate(factor.family.weights, factor.assignmentStatistics(TargetAssignment), 1.0)
+        gradient.accumulate(factor.family.weights, summary.marginal(factor).tensorStatistics, -1.0)
+      }
+    }
+  }
+}
 
 /**
  * Base example for all OptimizablePredictors

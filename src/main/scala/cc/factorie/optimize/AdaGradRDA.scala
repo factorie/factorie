@@ -24,11 +24,12 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
  * The regularizers, however, are per-example, which mean that their value should be set to be a very
  * small number, on the order of 0.01/num_training_examples, and these values should be tuned.
  * @param delta A large value of delta slows the rate at which the learning rates go down initially
- * @param rate The initial learning rate.
+ * @param rate The initial learning rate
  * @param l1 The strength of l1 regularization
- * @param l2 The strength of l2 regularization.
+ * @param l2 The strength of l2 regularization
+ * @param numExamples The number of examples for online training, used to scale regularizers
  */
-class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
+class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, val numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
@@ -40,10 +41,10 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     for (key <- weights.keys) {
       key.value match {
         case t: AdaGradRDATensor => println("Warning: creating two AdaGradRDA optimizers on the same tensors. Reusing old one...")
-        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t, delta, rate, l1, l2)
-        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t, delta, rate, l1, l2)
-        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t, delta, rate, l1, l2)
-        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t, delta, rate, l1, l2)
+        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t, delta, rate, l1 / numExamples, l2 / numExamples)
       }
     }
     initialized = true
