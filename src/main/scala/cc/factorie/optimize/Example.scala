@@ -6,7 +6,7 @@ import cc.factorie.la._
 import cc.factorie.model._
 import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
 import cc.factorie.variable._
-import cc.factorie.app.classify.backend.{LinearModel, Classifier}
+import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,8 +21,12 @@ import cc.factorie.app.classify.backend.{LinearModel, Classifier}
  * which are accumulated into accumulators and then given to the optimizer.
  */
 trait Example {
-  // gradient or value can be null if they don't need to be computed.
-  // TODO should this be called (compute|accumulate)ValueAndGradient or something? -luke
+  /**
+   * Put objective value and gradient into the accumulators.
+   * Either argument can be null if they don't need to be computed.
+   * @param value Accumulator to hold value
+   * @param gradient Accumulator to hold gradient
+   */
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit
 }
 
@@ -381,22 +385,37 @@ class SemiSupervisedLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, mode
 }
 
 
+class SimpleLikelihoodExample[A<:Iterable[Var],B<:Model](labels: A, model: B, infer: Infer[A,B]) extends Example {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
+    val summary = infer.infer(labels, model)
+    if (value != null)
+      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
+    val factors = summary.factorMarginals
+    if (gradient != null) {
+      for (factorMarginal <- factors; factorU <- factorMarginal.factor; if factorU.isInstanceOf[DotFamily#Factor]; factor <- factorU.asInstanceOf[DotFamily#Factor]) {
+        gradient.accumulate(factor.family.weights, factor.assignmentStatistics(TargetAssignment), 1.0)
+        gradient.accumulate(factor.family.weights, summary.marginal(factor).tensorStatistics, -1.0)
+      }
+    }
+  }
+}
+
 /**
- * Base example for all linear multivariate models
- * @param model The linear classifier
- * @param featureVector The feature vector
+ * Base example for all OptimizablePredictors
+ * @param model The optimizable predictor
+ * @param input The example input (such as a feature vector)
  * @param label The label
  * @param objective The objective function
- * @param weight The weight of this example
- * @tparam Label The type of the label
+ * @param weight The weight of the example
+ * @tparam Output The type of the label
  */
-class LinearExample[Label,Prediction,Features](model: LinearModel[Prediction,Features], featureVector: Features, label: Label, objective: LinearObjective[Prediction,Label], weight: Double = 1.0)
+class PredictorExample[Output, Prediction, Input](model: OptimizablePredictor[Prediction, Input], input: Input, label: Output, objective: OptimizableObjective[Prediction, Output], weight: Double = 1.0)
   extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
-    val prediction = model.score(featureVector)
-    val (obj, sgrad) = objective.valueAndGradient(prediction, label)
-    if (value != null) value.accumulate(obj)
-    if (gradient != null && !sgrad.isInstanceOf[UniformTensor]) model.accumulateStats(gradient, featureVector, sgrad)
+    val prediction = model.predict(input)
+    val (obj, ograd) = objective.valueAndGradient(prediction, label)
+    if (value != null) value.accumulate(obj * weight)
+    if (gradient != null) model.accumulateObjectiveGradient(gradient, input, ograd, weight)
   }
 }
 

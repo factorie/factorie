@@ -52,8 +52,8 @@ trait VectorClassifier[V<:DiscreteVar, Features<:VectorVar] extends Classifier[V
     Examples include NaiveBayes, MultivariateLogisticRegression, LinearSVM, and many others.
     Counter-examples include KNearestNeighbor. */
 class LinearVectorClassifier[L<:DiscreteVar,F<:VectorVar](numLabels:Int, numFeatures:Int, val labelToFeatures:L=>F) extends LinearMulticlassClassifier(numLabels, numFeatures) with VectorClassifier[L,F] {
-  def classification(v:L): Classification[L] = new Classification(v, score(labelToFeatures(v).value))
-  override def bestLabelIndex(v:L): Int = score(labelToFeatures(v).value).maxIndex
+  def classification(v:L): Classification[L] = new Classification(v, predict(labelToFeatures(v).value))
+  override def bestLabelIndex(v:L): Int = predict(labelToFeatures(v).value).maxIndex
 }
 
 
@@ -79,15 +79,15 @@ class OptimizingLinearVectorClassifierTrainer(
   val optimizer: GradientOptimizer,
   val useParallelTrainer: Boolean,
   val useOnlineTrainer: Boolean,
-  val objective: LinearObjectives.Multiclass,
+  val objective: OptimizableObjectives.Multiclass,
   val maxIterations: Int,
   val miniBatch: Int,
   val nThreads: Int)(implicit random: scala.util.Random) extends LinearVectorClassifierTrainer
 {
   // TODO This is missing weights on Examples.  I think passing a Seq[Double] is error prone, and am tempted to go back to LabelList. -akm
   /** Create a sequence of Example instances for obtaining the gradients used for training. */
-  def examples[L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], labels:Iterable[L], l2f:L=>F, objective:LinearObjectives.Multiclass): Seq[Example] =
-    labels.toSeq.map(l => new LinearExample(classifier, l2f(l).value, l.target.intValue, objective))
+  def examples[L<:LabeledDiscreteVar,F<:VectorVar](classifier:LinearVectorClassifier[L,F], labels:Iterable[L], l2f:L=>F, objective:OptimizableObjectives.Multiclass): Seq[Example] =
+    labels.toSeq.map(l => new PredictorExample(classifier, l2f(l).value, l.target.intValue, objective))
     
   /** Train the classifier to convergence, calling the diagnostic function once after each iteration.
       This is the base method called by the other simpler train methods. */
@@ -115,7 +115,7 @@ class OptimizingLinearVectorClassifierTrainer(
 class OnlineOptimizingLinearVectorClassifierTrainer(
   useParallel:Boolean = false,
   optimizer: GradientOptimizer = new AdaGrad with ParameterAveraging,
-  objective: LinearObjectives.Multiclass = LinearObjectives.sparseLogMulticlass,
+  objective: OptimizableObjectives.Multiclass = OptimizableObjectives.sparseLogMulticlass,
   maxIterations: Int = 3,
   miniBatch: Int = -1,
   nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
@@ -124,7 +124,7 @@ class OnlineOptimizingLinearVectorClassifierTrainer(
 /** An OptimizingLinearVectorClassifierTrainer pre-tuned with default arguments well-suited to batch training, operating on all the gradients of the Examples together. */
 class BatchOptimizingLinearVectorClassifierTrainer(useParallel:Boolean = true,
   optimizer: GradientOptimizer = new LBFGS with L2Regularization,
-  objective: LinearObjectives.Multiclass = LinearObjectives.sparseLogMulticlass,
+  objective: OptimizableObjectives.Multiclass = OptimizableObjectives.sparseLogMulticlass,
   maxIterations: Int = 200,
   nThreads: Int = Runtime.getRuntime.availableProcessors())(implicit random: scala.util.Random)
   extends OptimizingLinearVectorClassifierTrainer(optimizer, useParallel, useOnlineTrainer = false, objective, maxIterations, -1, nThreads)
@@ -153,8 +153,8 @@ class NaiveBayesClassifierTrainer(pseudoCount:Double = 0.1) extends LinearVector
 // Decision trees.  Just one simple example so far. -akm
 
 class DecisionTreeClassifier[L<:DiscreteVar,F<:VectorVar](val tree:DTree, val labelToFeatures:L=>F) extends VectorClassifier[L,F] {
-  def classification(label:L): Classification[L] = new Classification(label, score(labelToFeatures(label).value))
-  def score(features: Tensor1) = DTree.score(features, tree)
+  def classification(label:L): Classification[L] = new Classification(label, predict(labelToFeatures(label).value))
+  def predict(features: Tensor1) = DTree.score(features, tree)
 }
 
 class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends VectorClassifierTrainer {

@@ -24,11 +24,12 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
  * The regularizers, however, are per-example, which mean that their value should be set to be a very
  * small number, on the order of 0.01/num_training_examples, and these values should be tuned.
  * @param delta A large value of delta slows the rate at which the learning rates go down initially
- * @param rate The initial learning rate.
+ * @param rate The initial learning rate
  * @param l1 The strength of l1 regularization
- * @param l2 The strength of l2 regularization.
+ * @param l2 The strength of l2 regularization
+ * @param numExamples The number of examples for online training, used to scale regularizers
  */
-class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
+class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, val numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
@@ -40,10 +41,10 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     for (key <- weights.keys) {
       key.value match {
         case t: AdaGradRDATensor => println("Warning: creating two AdaGradRDA optimizers on the same tensors. Reusing old one...")
-        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t.length, delta, rate, l1, l2)
-        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t.dim1, t.dim2, delta, rate, l1, l2)
-        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t.dim1, t.dim2, t.dim3, delta, rate, l1, l2)
-        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t.dim1, t.dim2, t.dim3, t.dim4, delta, rate, l1, l2)
+        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t, delta, rate, l1 / numExamples, l2 / numExamples)
       }
     }
     initialized = true
@@ -61,8 +62,8 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
 
   private trait AdaGradRDATensor extends Tensor with DenseDoubleSeq {
     def activeDomain = new RangeIntSeq(0, length)
-    val gradients = Array.fill(length)(0.0)
-    val gradSquares = Array.fill(length)(0.0)
+    val gradients: Array[Double]
+    val gradSquares: Array[Double]
     var t = 0
     val delta: Double
     val rate: Double
@@ -133,24 +134,42 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     def zero(): Unit = for (i <- 0 until length) { gradients(i) = 0; gradSquares(i) = 0 }
   }
 
-  private class AdaGradRDATensor1(val dim1: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor1 {
+  private class AdaGradRDATensor1(baseTensor: Tensor1, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor1 {
+    val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
+    val dim1 = baseTensor.dim1
     def isDense = false
     override def copy = copyToDense(new DenseTensor1(dim1))
   }
-  private class AdaGradRDATensor2(val dim1: Int, val dim2: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor2 {
+  private class AdaGradRDATensor2(baseTensor: Tensor2, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor2 {
+    val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
+    val dim1 = baseTensor.dim1
+    val dim2 = baseTensor.dim2
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def isDense = false
     override def copy = copyToDense(new DenseTensor2(dim1, dim2))
   }
-  private class AdaGradRDATensor3(val dim1: Int, val dim2: Int, val dim3: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor3 {
+  private class AdaGradRDATensor3(baseTensor: Tensor3, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor3 {
+    val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
+    val dim1 = baseTensor.dim1
+    val dim2 = baseTensor.dim2
+    val dim3 = baseTensor.dim3
     def isDense = false
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)
     def activeDomain3 = new RangeIntSeq(0, dim3)
     override def copy = copyToDense(new DenseTensor3(dim1, dim2, dim3))
   }
-  private class AdaGradRDATensor4(val dim1: Int, val dim2: Int, val dim3: Int, val dim4: Int, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor4 {
+  private class AdaGradRDATensor4(baseTensor: Tensor4, val rate: Double, val delta: Double, val l1: Double, val l2: Double) extends AdaGradRDATensor with Tensor4 {
+    val gradients = baseTensor.asArray
+    val gradSquares = Array.fill(gradients.length)(0.0)
+    val dim1 = baseTensor.dim1
+    val dim2 = baseTensor.dim2
+    val dim3 = baseTensor.dim3
+    val dim4 = baseTensor.dim4
     def isDense = false
     def activeDomain1 = new RangeIntSeq(0, dim1)
     def activeDomain2 = new RangeIntSeq(0, dim2)

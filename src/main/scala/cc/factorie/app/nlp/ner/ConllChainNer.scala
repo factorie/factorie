@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
-import java.io.{File, InputStream, FileInputStream}
+import java.io._
 import cc.factorie.util.{LogUniformDoubleSampler, BinarySerializer, CubbieConversions}
 import scala.concurrent.Await
 import cc.factorie.optimize.Trainer
@@ -182,7 +182,7 @@ class ConllChainNer extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(FeaturesDomain.dimensionSize, BilouConllNerDomain.size, new la.SparseIndexedTensor1(_))
     model.obs.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.obs.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
@@ -190,7 +190,7 @@ class ConllChainNer extends DocumentAnnotator {
   def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
     // Get ready to read sparse evidence weights
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
     import scala.language.reflectiveCalls
     model.obs.weights.set(new la.DenseLayeredTensor2(FeaturesDomain.dimensionSize, BilouConllNerDomain.size, new la.SparseIndexedTensor1(_)))

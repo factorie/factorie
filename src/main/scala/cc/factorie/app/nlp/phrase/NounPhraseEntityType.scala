@@ -16,7 +16,7 @@ import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.optimize.{LinearExample, Trainer, LinearObjectives}
+import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
@@ -105,7 +105,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     trainNounPhrases.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingNounPhrases(doc.attr[NounPhraseList])) yield
-      new LinearExample(model, features(mention).value, mention.attr[NounPhraseEntityType].intValue, LinearObjectives.hingeMulticlass)
+      new PredictorExample(model, features(mention).value, mention.attr[NounPhraseEntityType].intValue, OptimizableObjectives.hingeMulticlass)
     val testNounPhrases = testDocs.flatMap(doc => filterTrainingNounPhrases(doc.attr[NounPhraseList]))
     println("Training ")
     def evaluate(): Unit = {
@@ -129,14 +129,14 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import cc.factorie.util.CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
     model.weights.set(new la.DenseLayeredTensor2(PennPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)

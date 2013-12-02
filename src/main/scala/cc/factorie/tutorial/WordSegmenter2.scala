@@ -22,7 +22,7 @@ import cc.factorie._
 import cc.factorie.optimize._
 import cc.factorie.variable._
 import cc.factorie.model._
-import cc.factorie.infer.{MaximizeByBPLoopy, InferByMPLP}
+import cc.factorie.infer.{MaximizeByBPLoopy, MaximizeByMPLP}
 import cc.factorie.app.chain.{Observation, ChainModel}
 
 object WordSegmenter2 {
@@ -89,7 +89,7 @@ object WordSegmenter2 {
     val opt = new AdaGrad
     val examples = trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model, infer=MaximizeByBPLoopy))
     Trainer.onlineTrain(model.parameters, examples, maxIterations=15, optimizer=opt)
-    for (sentence <- sentences) InferByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.setVariables(null)
+    for (sentence <- sentences) MaximizeByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.setVariables(null)
     println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
     println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")

@@ -80,10 +80,10 @@ class DeterministicSentenceSegmenter extends DocumentAnnotator {
           if (i+1 < tokens.length && possibleSentenceStart(tokens(i+1).string)) { // If the next word is a capitalized stopword, then say it is a sentence
             //println("SentenceSegmenter1 i="+i+" possibleSentenceStart "+tokens(i+1).string)
             val t2 = new Token(token.stringEnd-1, token.stringEnd)
-            t2._sentence = section.sentences.last
             section.insert(i+1, t2) // Insert a token containing just the last (punctuation) character
             i += 1
             newSentence(i+1)
+            t2._sentence = section.sentences.last // need to have this down here in case this was the first sentence
           }
         // Possible sentence boundary from the dash in something like LONDON - Today Prime Minister... 
         } else if (possibleClosingRegex.findPrefixMatchOf(string) != None) {

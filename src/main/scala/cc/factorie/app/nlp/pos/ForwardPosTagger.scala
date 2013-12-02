@@ -3,7 +3,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.la._
 import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator, FileUtils}
-import java.io.{File,InputStream,FileInputStream}
+import java.io._
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
@@ -194,14 +194,14 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
 
   var exampleSetsToPrediction = false
-  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMulticlassClassifier, lossAndGradient: optimize.LinearObjectives.Multiclass) extends optimize.Example {
+  class SentenceClassifierExample(val tokens:Seq[Token], model:LinearMulticlassClassifier, lossAndGradient: optimize.OptimizableObjectives.Multiclass) extends optimize.Example {
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
       val lemmaStrings = lemmas(tokens)
       for (index <- 0 until tokens.length) {
         val token = tokens(index)
         val posLabel = token.attr[LabeledPennPosTag]
         val featureVector = features(token, index, lemmaStrings)
-        new optimize.LinearExample(model, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
+        new optimize.PredictorExample(model, featureVector, posLabel.target.intValue, lossAndGradient, 1.0).accumulateValueAndGradient(value, gradient)
         if (exampleSetsToPrediction) {
           posLabel.set(model.classification(featureVector).bestLabelIndex)(null)
         }
@@ -243,7 +243,7 @@ class ForwardPosTagger extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
@@ -252,7 +252,7 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
     model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, PennPosDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
@@ -329,7 +329,7 @@ class ForwardPosTagger extends DocumentAnnotator {
       println(s"Sparsity: ${model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length}")
     }
     val examples = trainSentences.shuffle.par.map(sentence =>
-      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.LinearObjectives.hingeMulticlass else cc.factorie.optimize.LinearObjectives.sparseLogMulticlass)).seq
+      new SentenceClassifierExample(sentence.tokens, model, if (useHingeLoss) cc.factorie.optimize.OptimizableObjectives.hingeMulticlass else cc.factorie.optimize.OptimizableObjectives.sparseLogMulticlass)).seq
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)

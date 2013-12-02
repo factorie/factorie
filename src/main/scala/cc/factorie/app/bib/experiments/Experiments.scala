@@ -200,7 +200,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
     } else println("  Passed test 3.")
   }
   */
-  override def proposalHook(proposal:Proposal) ={
+  override def proposalHook(proposal:Proposal[Null]) ={
     super.proposalHook(proposal)
     curScore += proposal.modelScore
     if(curScore>maxScore)maxScore=curScore

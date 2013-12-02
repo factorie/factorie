@@ -3,7 +3,7 @@ import cc.factorie._
 import model._
 import variable._
 import cc.factorie.app.nlp._
-import java.io.File
+import java.io.{BufferedInputStream, BufferedOutputStream, File}
 import cc.factorie.util.{BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
@@ -303,14 +303,14 @@ class BasicOntonotesNER extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_))
     model3.evidence.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model3.evidence.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model3, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
     model3.evidence.weights.set(new la.DenseLayeredTensor2(BilouOntonotesNerDomain.size, FeaturesDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model3, dstream)

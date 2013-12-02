@@ -12,13 +12,13 @@ import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
 
 class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1], Double)]) extends BinaryClassifier[Tensor1] {
-  def score(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.score(features) * t._2)
+  def predict(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.predict(features) * t._2)
 }
 
 // TODO this multiclass doesn't work for >2 classes right now - also add gradient boosting -luke
 class BoostedMulticlassClassifier(var weakClassifiers: Seq[(MulticlassClassifier[Tensor1], Double)], val numLabels: Int) extends MulticlassClassifier[Tensor1] {
-  def score(features: Tensor1) =
-    weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.score(features), t._2); acc})
+  def predict(features: Tensor1) =
+    weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.predict(features), t._2); acc})
   def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }

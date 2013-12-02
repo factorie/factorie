@@ -6,7 +6,7 @@ import cc.factorie.app.chain._
 import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
 import cc.factorie.infer.{GibbsSampler, InferByBPChain}
 
-object Tutorial060Learning {
+object Tutorial60Learning {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     /*& Here we set up a simple linear chain CRF, such as the one used for part-of-speech tagging,

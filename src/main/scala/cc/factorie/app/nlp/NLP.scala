@@ -13,6 +13,7 @@ object NLP {
   var logStream = System.err
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
+    val t0 = System.currentTimeMillis()
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val socket = new CmdOption("socket", 3228, "SOCKETNUM", "On which socket number NLP server should listen.")
       val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding for reading document text, such as UTF-8")
@@ -46,7 +47,7 @@ object NLP {
     for (annotator <- annotators) map += annotator
     val pipeline = DocumentAnnotatorPipeline(map=map.toMap, prereqs=Nil, annotators.flatMap(_.postAttrs))
     if (opts.logFile.value != "-") logStream = new PrintStream(new File(opts.logFile.value))
-
+    println(System.currentTimeMillis()-t0)
     try {
       val listener = new ServerSocket(opts.socket.value)
       println("Listening on port "+opts.socket.value)

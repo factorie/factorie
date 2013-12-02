@@ -67,7 +67,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   def serialize(filename: String) {
     import cc.factorie.util.CubbieConversions._
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    val stream = new DataOutputStream(new FileOutputStream(new File(filename)))
+    val stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(filename))))
     BinarySerializer.serialize(options.getConfigHash, stream)
     model.serialize(stream)
     println("model weights 1norm = " + model.parameters.oneNorm)
@@ -326,7 +326,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
         mergeFeatures(candLabel, mergeables)
         candLabels += candLabel
         val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains)  || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
-        else model.score(candLabel.value)
+        else model.predict(candLabel.value)
         // Pronouns should always link to something
         if (score > 0.0) {
           numPositivePairs += 1
@@ -368,7 +368,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
         candLabels += candLabel
         // Always link exact head matches
         val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) &&  m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
-             else model.score(candLabel.value)
+             else model.predict(candLabel.value)
         // Pronouns should always link to something
         if (score > 0.0) {
           numPositivePairs += 1
@@ -398,7 +398,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
             candLabels += candLabel
             // Always link exact head matches
             val score = if (m1.isProper && m1.nounWords.forall(m2.nounWords.contains) && m2.nounWords.forall(m1.nounWords.contains) || options.mergeMentionWithApposition && (m1.isAppositionOf(m2) || m2.isAppositionOf(m1))) Double.PositiveInfinity
-            else model.score(candLabel.value)
+            else model.predict(candLabel.value)
             // Pronouns should always link to something
             if (score > 0.0) {
               numPositivePairs += 1

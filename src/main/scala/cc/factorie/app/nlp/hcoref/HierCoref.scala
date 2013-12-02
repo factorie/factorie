@@ -305,7 +305,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
     }
   }
   /**Identify entities that are created by accepted jumps so we can add them to our master entity list.*/
-  override def proposalHook(proposal:Proposal) = {
+  override def proposalHook(proposal:Proposal[Null]) = {
     super.proposalHook(proposal)
     val newEntities = new HashSet[T]
     for(diff<-proposal.diff){

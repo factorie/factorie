@@ -218,7 +218,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     }
 
     // Testing MPLP
-    val mplpSummary = InferByMPLP.infer(Seq(l0, l1, l2, l3), model)
+    val mplpSummary = MaximizeByMPLP.infer(Seq(l0, l1, l2, l3), model)
     val mapSummary = MaximizeByBPChain.infer(Seq(l0, l1, l2, l3), model)
     for (v <- Seq(l0, l1, l2, l3)) {
       val mfm = mplpSummary.mapAssignment(v)

@@ -8,16 +8,21 @@ if len(argv) != 2:
     exit(1)
 
 def makeHeader(title):
+    if title[0] == "T":
+        group = "tutorial"
+    else:
+        group = "usersguide"
     return """---
 title: "%s"
 layout: default
-group: tutorial
+group: %s
+weight: 3
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
 
 
-""" % (title)
+""" % (title,group)
 
 title_map = {
     'Tutorial01Introduction.scala.md' : 'Tutorial 0: Introduction',
@@ -28,8 +33,11 @@ title_map = {
     'Tutorial30Model.scala.md': 'Tutorial 3: Model',
     'Tutorial32Template.scala.md': 'Tutorial 3.2: Templates',
     'Tutorial40InferenceAndLearning.scala.md': 'Tutorial 4: Inference and Learning',
-    'Tutorial060Learning.scala.md': 'Tutorial 6: Optimization and Learning',
-    'Tutorial090ParallelismAndHyperparameters.scala.md': 'Tutorial 9: Parallelism and Hyperparameter Optimization',
+    'Tutorial60Learning.scala.md': 'Tutorial 6: Optimization and Learning',
+    'Tutorial90ParallelismAndHyperparameters.scala.md': 'Tutorial 9: Parallelism and Hyperparameter Optimization',
+    'UsersGuide01Introduction.scala.md': "Users Guide 01: Introduction",
+    'UsersGuide02Installation.scala.md': "Users Guide 02: Installation",
+    'UsersGuide03Overview.scala.md': "Users Guide 03: Overview",
 }
 
 print makeHeader(title_map[path.basename(argv[1])])
