@@ -153,6 +153,42 @@ object BILOUChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-class BILOUChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue) {
+object BILOU2LayerChunkDomain extends CategoricalDomain[String] {
+  this ++= Vector( "B-NP:B-NP",
+    "B-NP:I-NP",
+    "B-NP:L-NP",
+    "B-NP:U-NP",
+    "B-NP:O",
+    "I-NP:B-NP",
+    "I-NP:I-NP",
+    "I-NP:L-NP",
+    "I-NP:U-NP",
+    "I-NP:O",
+    "L-NP:B-NP",
+    "L-NP:I-NP",
+    "L-NP:L-NP",
+    "L-NP:U-NP",
+    "L-NP:O",
+    "U-NP:B-NP",
+    "U-NP:I-NP",
+    "U-NP:L-NP",
+    "U-NP:U-NP",
+    "U-NP:O",
+    "O:B-NP",
+    "O:I-NP",
+    "O:L-NP",
+    "O:U-NP",
+    "O:O"
+    )
+  freeze()
+}
+
+abstract class ChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue)
+
+class BILOUChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
   def domain = BILOUChunkDomain
+}
+
+class BILOU2LayerChunkTag(token:Token,tagValue:String) extends ChunkTag(token,tagValue) {
+  def domain = BILOU2LayerChunkDomain
 }

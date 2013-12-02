@@ -164,7 +164,7 @@ object ConllCorefLoader {
           for (close <- bracketCloses) {
             val (phrase, start) = parseStack.pop()
             val parentPhrase = if(!parseStack.isEmpty) parseStack(0)._1 else ""
-            if (phrase == "NP" && !filterMention(phrase,parentPhrase,prevPhrase,prevWord)) {
+            if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
               val m = new Mention(span, getHeadToken(span))
               currDoc.attr[MentionList] += m
