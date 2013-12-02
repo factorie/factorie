@@ -1,7 +1,7 @@
 ---
 title: "Users Guide 02: Installation"
 layout: default
-group: tutorial
+group: usersguide
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
