@@ -2,7 +2,6 @@
 title: "Tutorial 9: Parallelism and Hyperparameter Optimization"
 layout: default
 group: tutorial
-weight: 90
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
@@ -14,8 +13,10 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp.{Document, Token}
 import cc.factorie.app.chain.ChainModel
-import cc.factorie.app.nlp.segment.{SentenceSegmenter, RegexTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
 import cc.factorie.optimize.Trainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.infer.InferByBPChain
 
 object Tutorial090ParallelismAndHyperparameters {
   def main(args: Array[String]) {
@@ -73,7 +74,7 @@ be writing to it.
 
 
 Other objects which also use CategoricalDomains as their back ends, such as the
-CategoricalTensorDomain are then also thread-safe.
+CategoricalVectorDomain are then also thread-safe.
 
 Also for all DocumentAnnotators calling annotator.process in multiple threads
 is safe.
@@ -94,7 +95,7 @@ Here we create a simple chain model and one document, with some labels and featu
     class Label(val token: Token, s: String) extends LabeledCategoricalVariable(s) {
       def domain = LabelDomain
     }
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalVectorDomain[String]
     class Features(val token: Token) extends BinaryFeatureVectorVariable[String] {
       def domain = FeaturesDomain
     }
@@ -105,8 +106,8 @@ Here we create a simple chain model and one document, with some labels and featu
       l => l.token,
       t => t.attr[Label])
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    RegexTokenizer.process1(document)
-    SentenceSegmenter.process1(document)
+    DeterministicTokenizer.process(document)
+    DeterministicSentenceSegmenter.process(document)
     document.tokens.foreach(t => t.attr += new Label(t, "A"))
     LabelDomain.index("B")
     document.tokens.foreach(t => {
@@ -114,7 +115,7 @@ Here we create a simple chain model and one document, with some labels and featu
       features += "W=" + t.string.toLowerCase
       features += "IsCapitalized=" + t.string(0).isUpper.toString
     })
-    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
+    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChain)
 
 
 ```

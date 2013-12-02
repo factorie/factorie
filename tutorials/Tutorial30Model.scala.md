@@ -2,7 +2,6 @@
 title: "Tutorial 3: Model"
 layout: default
 group: tutorial
-weight: 30
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
@@ -27,6 +26,8 @@ package cc.factorie.tutorial
 
 import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.variable.BooleanVariable
+import cc.factorie.model.{ItemizedModel, DotFactorWithStatistics2}
 
 object TutorialModel {
   def main(args:Array[String]): Unit = {

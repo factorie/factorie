@@ -2,7 +2,6 @@
 title: "Tutorial 6: Optimization and Learning"
 layout: default
 group: tutorial
-weight: 60
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
@@ -11,10 +10,11 @@ weight: 60
 
 package cc.factorie.tutorial
 import cc.factorie._
+import variable._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
-import Implicits.defaultDocumentAnnotatorMap
+import cc.factorie.infer.{GibbsSampler, InferByBPChain}
 
 object Tutorial060Learning {
   def main(args:Array[String]): Unit = {
@@ -31,7 +31,7 @@ tutorial, but most of the things we'll discuss generalize all across factorie.
     class Label(val token: Token, s: String) extends LabeledCategoricalVariable(s) {
       def domain = LabelDomain
     }
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalVectorDomain[String]
     class Features(val token: Token) extends BinaryFeatureVectorVariable[String] {
       def domain = FeaturesDomain
     }
@@ -62,9 +62,9 @@ are used by the ChainModel class to generate factors.
 
     // The Document class implements documents as sequences of sentences and tokens.
     val document = new Document("The quick brown fox jumped over the lazy dog.")
-    val tokenizer = new app.nlp.segment.RegexTokenizer
+    val tokenizer = new app.nlp.segment.DeterministicTokenizer
     tokenizer.process(document)
-    val segmenter = new app.nlp.segment.SentenceSegmenter
+    val segmenter = new app.nlp.segment.DeterministicSentenceSegmenter
     segmenter.process(document)
     document.tokenCount
 
@@ -115,7 +115,7 @@ The most commonly used Infer objects are those in the BP package.
 
 ```scala
 
-    val summary = InferByBPChainSum.infer(document.tokens.toSeq.map(_.attr[Label]), model)
+    val summary = InferByBPChain.infer(document.tokens.toSeq.map(_.attr[Label]), model)
     summary.logZ
 
 ``` 
@@ -128,7 +128,7 @@ The most commonly used Infer objects are those in the BP package.
 
 ``` 
 
- `` = Proportions(0.5,0.5)`` 
+ `` = Proportions(0.49999999999999994,0.49999999999999994)`` 
 
 ```scala
 
@@ -170,7 +170,7 @@ gradient for maximum likelihood training. Here's how to construct one for this s
 using Factorie's BP inferencer.
 
 ```scala
-    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChainSum)
+    val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChain)
 
 
 ```
@@ -247,12 +247,12 @@ For more information see the java docs of the cc.factorie.optimize package.
 ```scala
 
     // Now we can run inference and see that we have learned
-    val summary2 = InferByBPChainSum(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
+    val summary2 = InferByBPChain(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
     summary2.logZ
 
 ``` 
 
- `` = 48.636078087078786`` 
+ `` = 48.63607808729122`` 
 
 ```scala
 
@@ -260,7 +260,7 @@ For more information see the java docs of the cc.factorie.optimize package.
 
 ``` 
 
- `` = Proportions(0.9999308678897908,6.913211020917962E-5)`` 
+ `` = Proportions(0.9999308678897892,6.913211020966629E-5)`` 
 
 ```scala
 
@@ -288,7 +288,7 @@ arbitrary loss function.
 ```
 
 
-Finally, there are many other useful examples in factorie. The LinearMultiClassExample
+Finally, there are many other useful examples in factorie. The LinearMulticlassExample
 implements generalized linear models for many classification loss functions, for example, and the
 DominationLossExample knows how to do learning to rank.
 

@@ -2,7 +2,6 @@
 title: "Tutorial 1.1: Domain"
 layout: default
 group: tutorial
-weight: 11
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
@@ -13,6 +12,7 @@ package cc.factorie.tutorial
 
 import org.junit.Assert._
 import cc.factorie._
+import cc.factorie.variable.{DoubleDomain, DoubleVariable, DiscreteDomain, DiffList}
 
 
 ```
@@ -138,7 +138,7 @@ of DiscreteValues, where each such value is accessible by its index.
 
 ```
 
- DiscreteTensorDomain and CategoricalTensorDomain 
+ VectorDomain and CategoricalVectorDomain 
 
 ```scala
   }
