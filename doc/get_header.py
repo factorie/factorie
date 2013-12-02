@@ -39,7 +39,7 @@ title_map = {
     'UsersGuide02Installation.scala.md': "Users Guide 02: Installation",
     'UsersGuide03Overview.scala.md': "Users Guide 03: Overview",
     'UsersGuide06Inference.scala.md': "Users Guide 06: Inference",
-    'UsersGuide07Learning.scala.md': "Users Guide 07: Learning and optimization",
+    'UsersGuide07LearningAndOptimization.scala.md': "Users Guide 07: Learning and optimization",
 }
 
 print makeHeader(title_map[path.basename(argv[1])])
