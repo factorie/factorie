@@ -167,7 +167,7 @@ class TestExamples {
   }
 
   @Test def testTutorial40() {
-    cc.factorie.tutorial.Tutorial060Learning.main(emptyArgs)
+    cc.factorie.tutorial.Tutorial60Learning.main(emptyArgs)
   }
 
   @Test def testTutorial040() {
