@@ -1,0 +1,7 @@
+{% for node in pages_list %}
+      {% if group == node.group %}
+            <li><a href="{{ site.baseurl }}{{node.url}}"><i class="icon-white"></i>{{node.title}}</a></li>
+      {% endif %}
+{% endfor %}
+{% assign pages_list = nil %}
+{% assign group = nil %}

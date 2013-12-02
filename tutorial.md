@@ -5,10 +5,10 @@ weight: 2
 group: doc
 ---
 
-# Tutorials
+# Tutorials and Users guide
 
 <ul>
-  {% assign pages_list = site.pages %}
+  {% assign pages_list = site.pages  %}
   {% assign group = 'tutorial' %}
-  {% include pages_list %}
+  {% include tut_pages_list %}
 </ul>
