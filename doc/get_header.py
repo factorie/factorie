@@ -30,6 +30,9 @@ title_map = {
     'Tutorial40InferenceAndLearning.scala.md': 'Tutorial 4: Inference and Learning',
     'Tutorial060Learning.scala.md': 'Tutorial 6: Optimization and Learning',
     'Tutorial090ParallelismAndHyperparameters.scala.md': 'Tutorial 9: Parallelism and Hyperparameter Optimization',
+    'UsersGuide01Introduction.scala.md': "Users Guide 01: Introduction",
+    'UsersGuide02Installation.scala.md': "Users Guide 02: Installation",
+    'UsersGuide03Overview.scala.md': "Users Guide 03: Overview",
 }
 
 print makeHeader(title_map[path.basename(argv[1])])
