@@ -6,12 +6,13 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
 
 
 /**
- * Implements the Regularized Dual Averaging algorithm of Xiao (by way of Nesterov) with support for l1 and l2 regularization
+ * Implements the Regularized Dual Averaging algorithm of Xiao with support for l1 and l2 regularization
  * @param rate The base learning rate
  * @param l1 l1 regularization constant. Should be set similarly to that in AdaGradRDA
  * @param l2 l2 regularization constant. Should be set similarly to that in AdaGradRDA
+ * @param numExamples The number of examples for online training, used to scale regularizers
  */
-class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) extends GradientOptimizer {
+class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
@@ -21,10 +22,10 @@ class RDA(val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0) ex
   def initializeWeights(weights: WeightsSet): Unit = {
     if (initialized) return
     for (key <- weights.keys) key.value match {
-      case t: Tensor1 => weights(key) = new RDATensor1(t, rate, l1, l2)
-      case t: Tensor2 => weights(key) = new RDATensor2(t, rate, l1, l2)
-      case t: Tensor3 => weights(key) = new RDATensor3(t, rate, l1, l2)
-      case t: Tensor4 => weights(key) = new RDATensor4(t, rate, l1, l2)
+      case t: Tensor1 => weights(key) = new RDATensor1(t, rate, l1 / numExamples, l2 / numExamples)
+      case t: Tensor2 => weights(key) = new RDATensor2(t, rate, l1 / numExamples, l2 / numExamples)
+      case t: Tensor3 => weights(key) = new RDATensor3(t, rate, l1 / numExamples, l2 / numExamples)
+      case t: Tensor4 => weights(key) = new RDATensor4(t, rate, l1 / numExamples, l2 / numExamples)
     }
     initialized = true
   }
