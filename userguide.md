@@ -1,14 +1,14 @@
 ---
-title: "Tutorials"
+title: "Users Guide"
 layout: default
 weight: 2
 group: doc
 ---
 
-# Tutorials
+# Users Guide
 
 <ul>
   {% assign pages_list = site.pages  %}
-  {% assign group = 'tutorial' %}
+  {% assign group = 'usersguide' %}
   {% include tut_pages_list %}
 </ul>
