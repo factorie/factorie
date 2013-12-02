@@ -130,8 +130,8 @@ class BatchOptimizingLinearVectorClassifierTrainer(useParallel:Boolean = true,
   extends OptimizingLinearVectorClassifierTrainer(optimizer, useParallel, useOnlineTrainer = false, objective, maxIterations, -1, nThreads)
 
 /** An OptimizingLinearVectorClassifierTrainer pre-tuned with default arguments well-suited to training an L2-regularized linear SVM. */
-class SVMLinearVectorClassifierTrainer(nThreads: Int = 1)(implicit random: scala.util.Random) extends OptimizingLinearVectorClassifierTrainer(optimizer=null, useParallelTrainer=false, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
-  val baseTrainer = new backend.SVMMulticlassTrainer(nThreads)
+class SVMLinearVectorClassifierTrainer(nThreads: Int = 1, l2: Double = 0.1)(implicit random: scala.util.Random) extends OptimizingLinearVectorClassifierTrainer(optimizer=null, useParallelTrainer=false, useOnlineTrainer=false, objective=null, miniBatch= -1, maxIterations= -1, nThreads= -1) {
+  val baseTrainer = new backend.SVMMulticlassTrainer(nThreads, l2)
   override def train[C<:LinearVectorClassifier[L,F],L<:LabeledDiscreteVar,F<:VectorVar](classifier:C, trainLabels:Iterable[L], l2f:L=>F, diagnostic:C=>Unit): C = {
     baseTrainer.baseTrain(classifier, trainLabels.map(_.target.intValue).toSeq, trainLabels.map(l2f(_).value).toSeq, trainLabels.map(l => 1.0).toSeq, c => ())
     classifier
