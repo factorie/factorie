@@ -16,6 +16,7 @@ def makeHeader(title):
 title: "%s"
 layout: default
 group: %s
+weight: 3
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
