@@ -1,43 +1,30 @@
 Downloading and compiling
 =========================
 
-If you don't already have Mercurial (hg), install it:
-http://mercurial.selenic.com/wiki/Download
+Factorie's source code is kept on Github, on a git repository. To
+download it you need git. If you don't alreayd have it installed, find
+it in
+http://git-scm.com/
 
-If you don't already have maven, version 2, install it.
+If you don't already have maven, version 3, install it.
 http://maven.apache.org/download.html
 
 Check out source code:
-$ hg clone https://factorie.googlecode.com/hg/ factorie
+$ git clone https://github.com/factorie/factorie.git
 
 $ cd factorie
 $ mvn compile
 $ mvn test
 
 
-For those with Google Code check-in privileges
+Contributing
 ===============================
 
-Please set your "username", for example in ~/.hgrc:
-[ui]
-username = Andrew McCallum <mccallum@cs.umass.edu>
-
-To be able to check in you must also add to ~/.hgrc:
-[auth]
-factorie.prefix = https://factorie.googlecode.com/hg
-factorie.username = <<google username>>
-factorie.password = <<password indicated at https://code.google.com/hosting/settings>>
-
-hg clone https://factorie.googlecode.com/hg/ factorie
-cd factorie
-<<make changes>>
-hg commit -m 'Descriptive message here'
-hg push
-
-To get changes:
-hg pull
-hg update
-
+The standard form of contributing to factorie is via Github pull
+requests. To create one, make your own fork of factorie (by signing up
+for a github account and clicking the "fork" button on factorie's
+page), commit your changes to that fork, and use github's
+functionality to create a pull request.
 
 Development
 ===========
@@ -52,7 +39,7 @@ Increase Eclipse available memory:
   Open Contents/MacOS/eclipse.ini
   Change -Xmx256m to -Xmx1024m or higher, save file and open Eclipse
 
-As of June 2013 FACTORIE uses Scala 2.10.1
+As of June 2013 FACTORIE uses Scala 2.10.2
 Install Eclipse Maven plugin:
  Within Eclipse, select menu "Help" -> "Install New Software"
  Enter this URL:  http://m2eclipse.sonatype.org/sites/m2e
@@ -73,9 +60,11 @@ Import Factorie, (assuming that it has already been checked out to "~/workspace/
  Wait for it to compile.
 
 
-For IntelliJ
+For IntelliJ IDEA
 
-Works with IntelliJ "community edition" out of the box.
+Works with IntelliJ "community edition" out of the box, if it has the
+scala plugin installed. Increasing the amount of memory available to
+IntelliJ is recommended.
 
 
 
