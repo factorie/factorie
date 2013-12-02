@@ -10,5 +10,5 @@ group: doc
 <ul>
   {% assign pages_list = site.pages  %}
   {% assign group = 'usersguide' %}
-  {% include tut_pages_list %}
+  {% include pages_list %}
 </ul>
