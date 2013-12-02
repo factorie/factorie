@@ -26,6 +26,14 @@ trait Predictor[Prediction, Input] {
 }
 
 trait OptimizablePredictor[Prediction, Input] extends Predictor[Prediction, Input] {
+  /**
+   * Put gradient of objective with respect to parameters into the accumulator.
+   * The contract states we cannot mutate the "input" argument inside this method.
+   * @param accumulator Accumulator to hold gradient
+   * @param input Input to predict on
+   * @param objectiveByPredictionGradient Gradient of objective with respect to the prediction
+   * @param weight Weight mutliplier for gradient
+   */
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, input: Input, objectiveByPredictionGradient: Prediction, weight: Double): Unit
 }
 
@@ -146,7 +154,7 @@ class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: Mul
 class LinearBinaryClassifier(val featureSize: Int) extends BinaryClassifier[Tensor1] with Parameters with OptimizablePredictor[Double, Tensor1] {
   val weights = Weights(new DenseTensor1(featureSize))
   def predict(features: Tensor1) = weights.value.dot(features)
-  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = accumulator.accumulate(weights, features, gradient * weight)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = accumulator.accumulate(weights, features.copy, gradient * weight)
 }
 
 class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) extends MulticlassClassifier[Tensor1] with Parameters with OptimizablePredictor[Tensor1,Tensor1] {

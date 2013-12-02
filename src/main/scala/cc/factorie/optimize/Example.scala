@@ -21,8 +21,12 @@ import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
  * which are accumulated into accumulators and then given to the optimizer.
  */
 trait Example {
-  // gradient or value can be null if they don't need to be computed.
-  // TODO should this be called (compute|accumulate)ValueAndGradient or something? -luke
+  /**
+   * Put objective value and gradient into the accumulators.
+   * Either argument can be null if they don't need to be computed.
+   * @param value Accumulator to hold value
+   * @param gradient Accumulator to hold gradient
+   */
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit
 }
 
