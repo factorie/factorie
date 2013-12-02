@@ -17,7 +17,7 @@ import cc.factorie.app.chain._
 import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
 import cc.factorie.infer.{GibbsSampler, InferByBPChain}
 
-object Tutorial060Learning {
+object Tutorial60Learning {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
 
