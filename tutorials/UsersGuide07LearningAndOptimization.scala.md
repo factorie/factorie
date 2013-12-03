@@ -45,10 +45,12 @@ encapsulated by having optimizers rewrite the model's weights.
 To allow that, the tensors which are going to be optimized have to be
 placed inside special slots designed for this. Here is an example model:
 
+```
 class MyModel extends Parameters {
   val bias = Weights(new DenseTensor1(labelSize))
   val observations = Weights(new DenseTensor2(featureSize, labelSize))
 }
+```
 
 then to use the weights, just do bias.value or observations.value and
 things will work.
