@@ -44,7 +44,7 @@ class ForwardPosTagger extends DocumentAnnotator {
     val wordInclusionThreshold = 1
     val sureTokenThreshold = -1		// -1 means don't consider any tokens "sure"
 
-    def getWordFormsByDocumentFrequencySentences(sentences: Iterable[Sentence], cutoff: Integer) = {
+    def computeWordFormsByDocumentFrequencySentences(sentences: Iterable[Sentence], cutoff: Integer) = {
       val docSize = 1000
       var begin = 0
       for(i <- docSize.to(sentences.size).by(docSize)){
@@ -73,7 +73,7 @@ class ForwardPosTagger extends DocumentAnnotator {
       docWordCounts = docWordCounts.filter(_._2 > cutoff)
     }
     
-   def getWordFormsByDocumentFrequency(tokens: Iterable[Token], cutoff: Integer, numToksPerDoc: Int) = {
+   def computeWordFormsByDocumentFrequency(tokens: Iterable[Token], cutoff: Integer, numToksPerDoc: Int) = {
       var begin = 0
       for(i <- numToksPerDoc.to(tokens.size).by(numToksPerDoc)){
         val docTokens = tokens.slice(begin,i)
@@ -107,7 +107,7 @@ class ForwardPosTagger extends DocumentAnnotator {
       (simplifiedForms.toIndexedSeq, lowerSimplifiedForms.toIndexedSeq)
     }
     
-    def getAmbiguityClasses(tokens: Iterable[Token]) = {
+    def computeAmbiguityClasses(tokens: Iterable[Token]) = {
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       val wordCounts = collection.mutable.HashMap[String,Double]()
       var tokenCount = 0
@@ -129,8 +129,6 @@ class ForwardPosTagger extends DocumentAnnotator {
         posCounts(lemma)(t.attr[PennPosTag].intValue) += 1
       })
       lemmas.foreach(w => {
-          val counts = wordCounts(w)
-          val pos = posCounts(w)    
           val posFrequencies = posCounts(w).map(_/wordCounts(w))
           val bestPosTags = posFrequencies.zip(PennPosDomain.categories).filter(_._1 > ambiguityClassThreshold).unzip._2
           val ambiguityString = bestPosTags.mkString("_")
@@ -149,13 +147,11 @@ class ForwardPosTagger extends DocumentAnnotator {
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
     def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor += i }
     // Original word, with digits replaced, no @
-    val Wm3 = if (lemmaIndex > 2) lemmas(lemmaIndex-3) else ""
     val Wm2 = if (lemmaIndex > 1) lemmas(lemmaIndex-2) else ""
     val Wm1 = if (lemmaIndex > 0) lemmas(lemmaIndex-1) else ""
     val W = lemmas(lemmaIndex)
     val Wp1 = if (lemmaIndex < lemmas.length-1) lemmas(lemmaIndex+1) else ""
     val Wp2 = if (lemmaIndex < lemmas.length-2) lemmas(lemmaIndex+2) else ""
-    val Wp3 = if (lemmaIndex < lemmas.length-3) lemmas(lemmaIndex+3) else ""
     // Original words at offsets, with digits replaced, marked with @
     val wm3 = wordStringAtOffset(-3)
     val wm2 = wordStringAtOffset(-2)
@@ -165,13 +161,11 @@ class ForwardPosTagger extends DocumentAnnotator {
     val wp2 = wordStringAtOffset(2)
     val wp3 = wordStringAtOffset(3)
     // Lemmas at offsets
-    val lm3 = lemmaStringAtOffset(-3)
     val lm2 = lemmaStringAtOffset(-2)
     val lm1 = lemmaStringAtOffset(-1)
     val l0 = lemmaStringAtOffset(0)
     val lp1 = lemmaStringAtOffset(1)
     val lp2 = lemmaStringAtOffset(2)
-    val lp3 = lemmaStringAtOffset(3)
     // Affinity classes at next offsets
     val a0 = affinityTagAtOffset(0)
     val ap1 = affinityTagAtOffset(1)
@@ -341,8 +335,8 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
   
   def printAccuracy(sentences: Iterable[Sentence], extraText: String) = {
-    var(tokAcc, senAcc, speed, toks) = accuracy(sentences)
-    println(extraText + s"${tokAcc} token accuracy, ${senAcc} sentence accuracy, ${speed} tokens/sec")
+    var(tokAcc, senAcc, speed, _) = accuracy(sentences)
+    println(extraText + s"$tokAcc token accuracy, $senAcc sentence accuracy, $speed tokens/sec")
   }
   
   def accuracy(sentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
@@ -364,13 +358,13 @@ class ForwardPosTagger extends DocumentAnnotator {
       sentenceCorrect += thisSentenceCorrect
       sentenceTotal += 1.0
     })
-    var tokensPerSecond = (tokenTotal/totalTime)*1000.0
+    val tokensPerSecond = (tokenTotal/totalTime)*1000.0
     (tokenCorrect/tokenTotal, sentenceCorrect/sentenceTotal, tokensPerSecond, tokenTotal)
   }
   
   def test(sentences:Iterable[Sentence]) = {
     println("Testing on " + sentences.size + " sentences...")
-    var(tokAccuracy, sentAccuracy, speed, tokens) = accuracy(sentences)
+    val (tokAccuracy, sentAccuracy, speed, tokens) = accuracy(sentences)
     println("Tested on " + tokens + " tokens at " + speed + " tokens/sec")
     println("Token accuracy: " + tokAccuracy)
     println("Sentence accuracy: " + sentAccuracy)
@@ -382,8 +376,8 @@ class ForwardPosTagger extends DocumentAnnotator {
     
 	val cutoff = 1
     val toksPerDoc = 5000
-    WordData.getWordFormsByDocumentFrequency(trainSentences.flatMap(_.tokens), cutoff, toksPerDoc)
-    WordData.getAmbiguityClasses(trainSentences.flatMap(_.tokens))
+    WordData.computeWordFormsByDocumentFrequency(trainSentences.flatMap(_.tokens), cutoff, toksPerDoc)
+    WordData.computeAmbiguityClasses(trainSentences.flatMap(_.tokens))
     
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
@@ -456,7 +450,7 @@ object ForwardPosTester {
 	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
 	  
 	// load model from file if given, else use default model
-	var pos = if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value)) else OntonotesForwardPosTagger
+	val pos = if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value)) else OntonotesForwardPosTagger
 	
 	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     var testFileList = Seq(opts.testFile.value)
@@ -466,7 +460,7 @@ object ForwardPosTester {
       testFileList =  opts.testFiles.value.split(",")
     }
   
-	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
 	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
@@ -508,8 +502,8 @@ object ForwardPosTrainer extends HyperparameterMain {
     println("Read %d training tokens from %d files.".format(trainDocs.map(_.tokenCount).sum, trainDocs.size))
     println("Read %d testing tokens from %d files.".format(testDocs.map(_.tokenCount).sum, testDocs.size))
 
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
     val trainSentencesFull = trainDocs.flatMap(_.sentences)
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
     val testSentencesFull = testDocs.flatMap(_.sentences)
