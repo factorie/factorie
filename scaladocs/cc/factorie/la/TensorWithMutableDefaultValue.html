@@ -1,0 +1,1817 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>TensorWithMutableDefaultValue - Factorie 1.0-SNAPSHOT API - cc.factorie.la.TensorWithMutableDefaultValue</title>
+          <meta name="description" content="TensorWithMutableDefaultValue - Factorie 1.0 - SNAPSHOT API - cc.factorie.la.TensorWithMutableDefaultValue" />
+          <meta name="keywords" content="TensorWithMutableDefaultValue Factorie 1.0 SNAPSHOT API cc.factorie.la.TensorWithMutableDefaultValue" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'cc.factorie.la.TensorWithMutableDefaultValue';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../lib/trait_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="package.html" class="extype" name="cc.factorie.la">la</a></p>
+        <h1>TensorWithMutableDefaultValue</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <span class="name">TensorWithMutableDefaultValue</span><span class="result"> extends <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a>, <a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a>, <a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a>, <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a href="../variable/DenseMasses1.html" class="extype" name="cc.factorie.variable.DenseMasses1">DenseMasses1</a>, <a href="../variable/DenseMasses2.html" class="extype" name="cc.factorie.variable.DenseMasses2">DenseMasses2</a>, <a href="../variable/DenseMasses3.html" class="extype" name="cc.factorie.variable.DenseMasses3">DenseMasses3</a>, <a href="../variable/DenseMasses4.html" class="extype" name="cc.factorie.variable.DenseMasses4">DenseMasses4</a>, <a href="../variable/DenseMassesWithTotal.html" class="extype" name="cc.factorie.variable.DenseMassesWithTotal">DenseMassesWithTotal</a>, <a href="DenseTensor.html" class="extype" name="cc.factorie.la.DenseTensor">DenseTensor</a>, <a href="DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">DenseTensor1</a>, <a href="DenseTensor2.html" class="extype" name="cc.factorie.la.DenseTensor2">DenseTensor2</a>, <a href="DenseTensor3.html" class="extype" name="cc.factorie.la.DenseTensor3">DenseTensor3</a>, <a href="DenseTensor4.html" class="extype" name="cc.factorie.la.DenseTensor4">DenseTensor4</a>, <a href="DenseTensorLike1.html" class="extype" name="cc.factorie.la.DenseTensorLike1">DenseTensorLike1</a>, <a href="DenseTensorLike2.html" class="extype" name="cc.factorie.la.DenseTensorLike2">DenseTensorLike2</a>, <a href="DenseTensorLike3.html" class="extype" name="cc.factorie.la.DenseTensorLike3">DenseTensorLike3</a>, <a href="DenseTensorLike4.html" class="extype" name="cc.factorie.la.DenseTensorLike4">DenseTensorLike4</a>, <a href="../variable/DenseTensorProportions.html" class="extype" name="cc.factorie.variable.DenseTensorProportions">DenseTensorProportions</a>, <a href="../variable/DenseTensorProportions1.html" class="extype" name="cc.factorie.variable.DenseTensorProportions1">DenseTensorProportions1</a>, <a href="../variable/DenseTensorProportions2.html" class="extype" name="cc.factorie.variable.DenseTensorProportions2">DenseTensorProportions2</a>, <a href="../variable/DenseTensorProportions3.html" class="extype" name="cc.factorie.variable.DenseTensorProportions3">DenseTensorProportions3</a>, <a href="../variable/DenseTensorProportions4.html" class="extype" name="cc.factorie.variable.DenseTensorProportions4">DenseTensorProportions4</a>, <a href="../variable/GrowableDenseMasses1.html" class="extype" name="cc.factorie.variable.GrowableDenseMasses1">GrowableDenseMasses1</a>, <a href="GrowableDenseTensor1.html" class="extype" name="cc.factorie.la.GrowableDenseTensor1">GrowableDenseTensor1</a>, <a href="GrowableDenseTensor2.html" class="extype" name="cc.factorie.la.GrowableDenseTensor2">GrowableDenseTensor2</a>, <a href="GrowableDenseTensor3.html" class="extype" name="cc.factorie.la.GrowableDenseTensor3">GrowableDenseTensor3</a>, <a href="ProxyGrowableDenseTensor1.html" class="extype" name="cc.factorie.la.ProxyGrowableDenseTensor1">ProxyGrowableDenseTensor1</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.la.TensorWithMutableDefaultValue"><span>TensorWithMutableDefaultValue</span></li><li class="in" name="cc.factorie.la.Tensor"><span>Tensor</span></li><li class="in" name="cc.factorie.util.MutableDoubleSeq"><span>MutableDoubleSeq</span></li><li class="in" name="cc.factorie.util.IncrementableDoubleSeq"><span>IncrementableDoubleSeq</span></li><li class="in" name="cc.factorie.util.DoubleSeq"><span>DoubleSeq</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="cc.factorie.la.Tensor#+=" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="+=(i:Int,incr:Double):Unit"></a>
+      <a id="+=(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="incr">incr: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a> → <a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a> → <a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#=+" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="=+(a:Array[Double],offset:Int,f:Double):Unit"></a>
+      <a id="=+(Array[Double],Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$plus" class="name">=+</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>, <span name="f">f: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Increment given array (starting at offset index) with contents of this DoubleSeq, multiplied by factor f.</p><div class="fullcomment"><div class="comment cmt"><p>Increment given array (starting at offset index) with contents of this DoubleSeq, multiplied by factor f.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#activeDomain" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="activeDomain:cc.factorie.util.IntSeq"></a>
+      <a id="activeDomain:IntSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">activeDomain</span><span class="result">: <a href="../util/IntSeq.html" class="extype" name="cc.factorie.util.IntSeq">IntSeq</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#activeDomainSize" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="activeDomainSize:Int"></a>
+      <a id="activeDomainSize:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">activeDomainSize</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#activeDomains" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="activeDomains:Array[cc.factorie.util.IntSeq]"></a>
+      <a id="activeDomains:Array[IntSeq]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">activeDomains</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../util/IntSeq.html" class="extype" name="cc.factorie.util.IntSeq">IntSeq</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#apply" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="apply(i:Int):Double"></a>
+      <a id="apply(Int):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#blankCopy" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="blankCopy:cc.factorie.la.Tensor"></a>
+      <a id="blankCopy:Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">blankCopy</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#contains" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="contains(d:Double):Boolean"></a>
+      <a id="contains(Double):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#containsNaN" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="containsNaN:Boolean"></a>
+      <a id="containsNaN:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">containsNaN</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#copy" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="copy:cc.factorie.la.Tensor"></a>
+      <a id="copy:Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">copy</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.TensorWithMutableDefaultValue#defaultValue_=" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="defaultValue_=(v:Double):Unit"></a>
+      <a id="defaultValue_=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: defaultValue_$eq" class="name">defaultValue_=</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.la.Tensor#dimensions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="dimensions:Array[Int]"></a>
+      <a id="dimensions:Array[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dimensions</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#dot" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="dot(ds:cc.factorie.util.DoubleSeq):Double"></a>
+      <a id="dot(DoubleSeq):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dot</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#forallActiveElements" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="forallActiveElements(f:(Int,Double)=&gt;Boolean):Boolean"></a>
+      <a id="forallActiveElements((Int,Double)⇒Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">forallActiveElements</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#foreachActiveElement" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="foreachActiveElement(f:(Int,Double)=&gt;Unit):Unit"></a>
+      <a id="foreachActiveElement((Int,Double)⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachActiveElement</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#indexOf" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="indexOf(d:Double):Int"></a>
+      <a id="indexOf(Double):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">indexOf</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#infinityNorm" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="infinityNorm:Double"></a>
+      <a id="infinityNorm:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">infinityNorm</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#isDense" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="isDense:Boolean"></a>
+      <a id="isDense:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDense</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#length" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="length:Int"></a>
+      <a id="length:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">length</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#max" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="max:Double"></a>
+      <a id="max:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">max</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#maxIndex" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="maxIndex:Int"></a>
+      <a id="maxIndex:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxIndex</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#maxIndex2" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="maxIndex2:(Int,Int)"></a>
+      <a id="maxIndex2:(Int,Int)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxIndex2</span><span class="result">: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>)</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#min" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="min:Double"></a>
+      <a id="min:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">min</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#numDimensions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="numDimensions:Int"></a>
+      <a id="numDimensions:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">numDimensions</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#oneNorm" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="oneNorm:Double"></a>
+      <a id="oneNorm:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">oneNorm</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#sampleIndex" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="sampleIndex(normalizer:Double)(implicitr:scala.util.Random):Int"></a>
+      <a id="sampleIndex(Double)(Random):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampleIndex</span><span class="params">(<span name="normalizer">normalizer: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="r">r: <span class="extype" name="scala.util.Random">Random</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#sum" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="sum:Double"></a>
+      <a id="sum:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sum</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#toArray" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="toArray:Array[Double]"></a>
+      <a id="toArray:Array[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toArray</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the values as an Array[Double].</p><div class="fullcomment"><div class="comment cmt"><p>Return the values as an Array[Double].  Guaranteed to be a copy, not just a pointer to an internal array that would change with changes to the DoubleSeq</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#twoNormSquared" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="twoNormSquared:Double"></a>
+      <a id="twoNormSquared:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">twoNormSquared</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#update" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="update(i:Int,v:Double):Unit"></a>
+      <a id="update(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">update</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a> → <a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#zero" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="zero():Unit"></a>
+      <a id="zero():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">zero</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a> → <a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a> → <a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Concrete Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#*" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="*(v:Double):cc.factorie.la.Tensor"></a>
+      <a id="*(Double):Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $times" class="name">*</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#*=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="*=(ds:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id="*=(DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $times$eq" class="name">*=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#*=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="*=(d:Double):Unit"></a>
+      <a id="*=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $times$eq" class="name">*=</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#*=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="*=(i:Int,incr:Double):Unit"></a>
+      <a id="*=(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $times$eq" class="name">*=</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="incr">incr: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#+" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+(that:cc.factorie.la.Tensor):cc.factorie.la.Tensor"></a>
+      <a id="+(Tensor):Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus" class="name">+</span><span class="params">(<span name="that">that: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>)</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#++=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="++=(tensors:Iterable[cc.factorie.la.Tensor]):Tensor.this.type"></a>
+      <a id="++=(Iterable[Tensor]):TensorWithMutableDefaultValue.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$plus$eq" class="name">++=</span><span class="params">(<span name="tensors">tensors: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a>]</span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.la.TensorWithMutableDefaultValue">TensorWithMutableDefaultValue</a>.this.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(ds:cc.factorie.util.DoubleSeq,factor:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id="+=(DoubleSeq,DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>, <span name="factor">factor: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Increment by the element-wise product of ds and factor.</p><div class="fullcomment"><div class="comment cmt"><p>Increment by the element-wise product of ds and factor.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(a:Array[Double],factor:Double):Unit"></a>
+      <a id="+=(Array[Double],Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="factor">factor: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(ds:cc.factorie.util.DoubleSeq,factor:Double):Unit"></a>
+      <a id="+=(DoubleSeq,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>, <span name="factor">factor: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(a:Array[Double]):Unit"></a>
+      <a id="+=(Array[Double]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(ds:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id="+=(DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(d:Double):Unit"></a>
+      <a id="+=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#-" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="-(that:cc.factorie.la.Tensor):cc.factorie.la.Tensor"></a>
+      <a id="-(Tensor):Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus" class="name">-</span><span class="params">(<span name="that">that: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>)</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#-=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="-=(ds:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id="-=(DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#-=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="-=(d:Double):Unit"></a>
+      <a id="-=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.IncrementableDoubleSeq#-=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="-=(i:Int,incr:Double):Unit"></a>
+      <a id="-=(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="incr">incr: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#/" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="/(v:Double):cc.factorie.la.Tensor"></a>
+      <a id="/(Double):Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $div" class="name">/</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#/=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="/=(ds:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id="/=(DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $div$eq" class="name">/=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#/=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="/=(d:Double):Unit"></a>
+      <a id="/=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $div$eq" class="name">/=</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#/=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="/=(i:Int,incr:Double):Unit"></a>
+      <a id="/=(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $div$eq" class="name">/=</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="incr">incr: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#:=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id=":=(a:Array[Double],offset:Int):Unit"></a>
+      <a id=":=(Array[Double],Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#:=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id=":=(a:Array[Double]):Unit"></a>
+      <a id=":=(Array[Double]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#:=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id=":=(ds:cc.factorie.util.DoubleSeq):Unit"></a>
+      <a id=":=(DoubleSeq):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="ds">ds: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#:=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id=":=(d:Double):Unit"></a>
+      <a id=":=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="d">d: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#=+" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="=+(a:Array[Double],f:Double):Unit"></a>
+      <a id="=+(Array[Double],Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$plus" class="name">=+</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="f">f: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#=+" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="=+(a:Array[Double],offset:Int):Unit"></a>
+      <a id="=+(Array[Double],Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$plus" class="name">=+</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#=+" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="=+(a:Array[Double]):Unit"></a>
+      <a id="=+(Array[Double]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$plus" class="name">=+</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#abs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="abs():Unit"></a>
+      <a id="abs():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">abs</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#activeElements" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="activeElements:Iterator[(Int,Double)]"></a>
+      <a id="activeElements:Iterator[(Int,Double)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">activeElements</span><span class="result">: <a href="../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#addString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addString(b:StringBuilder,start:String,sep:String,end:String):StringBuilder"></a>
+      <a id="addString(StringBuilder,String,String,String):StringBuilder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addString</span><span class="params">(<span name="b">b: <a href="../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>, <span name="start">start: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sep">sep: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="end">end: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Append a string representation of this DoubleSeq to the StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Append a string representation of this DoubleSeq to the StringBuilder.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#asArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asArray:Array[Double]"></a>
+      <a id="asArray:Array[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asArray</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the values as an Array[Double].</p><div class="fullcomment"><div class="comment cmt"><p>Return the values as an Array[Double].  Not guaranteed to be a copy; in fact if it is possible to return a pointer to an internal array, it will simply return this.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#asSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asSeq:Seq[Double]"></a>
+      <a id="asSeq:Seq[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asSeq</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">With uncopied contents</p><div class="fullcomment"><div class="comment cmt"><p>With uncopied contents</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#cosineSimilarity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cosineSimilarity(t:cc.factorie.util.DoubleSeq):Double"></a>
+      <a id="cosineSimilarity(DoubleSeq):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cosineSimilarity</span><span class="params">(<span name="t">t: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#defaultValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultValue:Double"></a>
+      <a id="defaultValue:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultValue</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The default value at indices not covered by activeDomain.</p><div class="fullcomment"><div class="comment cmt"><p>The default value at indices not covered by activeDomain.  Subclasses may override this</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.TensorWithMutableDefaultValue#defaultValue_*=" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultValue_*=(v:Double):Unit"></a>
+      <a id="defaultValue_*=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: defaultValue_$times$eq" class="name">defaultValue_*=</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.la.TensorWithMutableDefaultValue#defaultValue_+=" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultValue_+=(v:Double):Unit"></a>
+      <a id="defaultValue_+=(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: defaultValue_$plus$eq" class="name">defaultValue_+=</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.util.DoubleSeq#different" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="different(t:cc.factorie.util.DoubleSeq,threshold:Double):Boolean"></a>
+      <a id="different(DoubleSeq,Double):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">different</span><span class="params">(<span name="t">t: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>, <span name="threshold">threshold: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#dimensionsMatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dimensionsMatch(t:cc.factorie.la.Tensor):Boolean"></a>
+      <a id="dimensionsMatch(Tensor):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dimensionsMatch</span><span class="params">(<span name="t">t: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#ensureDimensionsMatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ensureDimensionsMatch(t:cc.factorie.la.Tensor):Unit"></a>
+      <a id="ensureDimensionsMatch(Tensor):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ensureDimensionsMatch</span><span class="params">(<span name="t">t: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#entropy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entropy:Double"></a>
+      <a id="entropy:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entropy</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Assumes that the values are already normalized to sum to 1.</p><div class="fullcomment"><div class="comment cmt"><p>Assumes that the values are already normalized to sum to 1.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#exists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="exists(f:Double=&gt;Boolean):Boolean"></a>
+      <a id="exists((Double)⇒Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">exists</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#expNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="expNormalize(logZ:Double):Unit"></a>
+      <a id="expNormalize(Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">expNormalize</span><span class="params">(<span name="logZ">logZ: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Exponential the elements of the array such that they are normalized to sum to one,
+      but do so efficiently by providing logZ.</p><div class="fullcomment"><div class="comment cmt"><p>Exponential the elements of the array such that they are normalized to sum to one,
+      but do so efficiently by providing logZ.  Note that to maximize efficiency, this method
+      does not verify that the logZ value was the correct one to cause proper normalization.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#expNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="expNormalize():Double"></a>
+      <a id="expNormalize():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">expNormalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Exponentiate the elements of the array, and then normalize them to sum to one.</p><div class="fullcomment"><div class="comment cmt"><p>Exponentiate the elements of the array, and then normalize them to sum to one.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#expNormalized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="expNormalized:cc.factorie.la.Tensor"></a>
+      <a id="expNormalized:Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">expNormalized</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#exponentiate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="exponentiate():Unit"></a>
+      <a id="exponentiate():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">exponentiate</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#foldActiveElements" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foldActiveElements(seed:Double,f:(Int,Double,Double)=&gt;Double):Double"></a>
+      <a id="foldActiveElements(Double,(Int,Double,Double)⇒Double):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foldActiveElements</span><span class="params">(<span name="seed">seed: <span class="extype" name="scala.Double">Double</span></span>, <span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#foldLeft" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foldLeft[B](z:B)(f:(B,Double)=&gt;B):B"></a>
+      <a id="foldLeft[B](B)((B,Double)⇒B):B"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foldLeft</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="z">z: <span class="extype" name="cc.factorie.util.DoubleSeq.foldLeft.B">B</span></span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="cc.factorie.util.DoubleSeq.foldLeft.B">B</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="cc.factorie.util.DoubleSeq.foldLeft.B">B</span></span>)</span><span class="result">: <span class="extype" name="cc.factorie.util.DoubleSeq.foldLeft.B">B</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#forall" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="forall(f:Double=&gt;Boolean):Boolean"></a>
+      <a id="forall((Double)⇒Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">forall</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#forallElements" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="forallElements(f:(Int,Double)=&gt;Boolean):Boolean"></a>
+      <a id="forallElements((Int,Double)⇒Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">forallElements</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreach(f:Double=&gt;Unit):Unit"></a>
+      <a id="foreach((Double)⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreach</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#foreachElement" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachElement(f:(Int,Double)=&gt;Unit):Unit"></a>
+      <a id="foreachElement((Int,Double)⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachElement</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#isUniform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isUniform:Boolean"></a>
+      <a id="isUniform:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isUniform</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#jsDivergence" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="jsDivergence(p:cc.factorie.util.DoubleSeq):Double"></a>
+      <a id="jsDivergence(DoubleSeq):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">jsDivergence</span><span class="params">(<span name="p">p: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Assumes that the values are already normalized to sum to 1.</p><div class="fullcomment"><div class="comment cmt"><p>Assumes that the values are already normalized to sum to 1.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#klDivergence" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="klDivergence(p:cc.factorie.util.DoubleSeq):Double"></a>
+      <a id="klDivergence(DoubleSeq):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">klDivergence</span><span class="params">(<span name="p">p: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Assumes that the values in both DoubleSeq are already normalized to sum to 1.</p><div class="fullcomment"><div class="comment cmt"><p>Assumes that the values in both DoubleSeq are already normalized to sum to 1.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#l2Similarity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="l2Similarity(t:cc.factorie.util.DoubleSeq):Double"></a>
+      <a id="l2Similarity(DoubleSeq):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">l2Similarity</span><span class="params">(<span name="t">t: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="map(f:Double=&gt;Double):cc.factorie.util.DoubleSeq"></a>
+      <a id="map((Double)⇒Double):DoubleSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">map</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Double">Double</span>) ⇒ <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#maxNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="maxNormalize():Unit"></a>
+      <a id="maxNormalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxNormalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mkString:String"></a>
+      <a id="mkString:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mkString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mkString(sep:String):String"></a>
+      <a id="mkString(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mkString</span><span class="params">(<span name="sep">sep: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#mkString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mkString(start:String,sep:String,end:String):String"></a>
+      <a id="mkString(String,String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mkString</span><span class="params">(<span name="start">start: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sep">sep: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="end">end: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#normalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalize():Double"></a>
+      <a id="normalize():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#normalizeLogProb" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeLogProb():Double"></a>
+      <a id="normalizeLogProb():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeLogProb</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">expNormalize, then put back into log-space.</p><div class="fullcomment"><div class="comment cmt"><p>expNormalize, then put back into log-space.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#normalized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalized:cc.factorie.la.Tensor"></a>
+      <a id="normalized:Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalized</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#oneNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="oneNormalize():Double"></a>
+      <a id="oneNormalize():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">oneNormalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#outer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outer(t:cc.factorie.la.Tensor):cc.factorie.la.Tensor"></a>
+      <a id="outer(Tensor):Tensor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">outer</span><span class="params">(<span name="t">t: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>)</span><span class="result">: <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#printLength" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="printLength:Int"></a>
+      <a id="printLength:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">printLength</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#sampleIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sampleIndex(implicitr:scala.util.Random):Int"></a>
+      <a id="sampleIndex(Random):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampleIndex</span><span class="params">(<span class="implicit">implicit </span><span name="r">r: <span class="extype" name="scala.util.Random">Random</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Careful, for many subclasses this is inefficient because it calls the method &quot;sum&quot; to get the normalizer.</p><div class="fullcomment"><div class="comment cmt"><p>Careful, for many subclasses this is inefficient because it calls the method &quot;sum&quot; to get the normalizer.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#size" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="size:Int"></a>
+      <a id="size:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">size</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#stringPrefix" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringPrefix:String"></a>
+      <a id="stringPrefix:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringPrefix</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#substitute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="substitute(oldValue:Double,newValue:Double):Unit"></a>
+      <a id="substitute(Double,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">substitute</span><span class="params">(<span name="oldValue">oldValue: <span class="extype" name="scala.Double">Double</span></span>, <span name="newValue">newValue: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#toSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toSeq:Seq[Double]"></a>
+      <a id="toSeq:Seq[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSeq</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">With copied contents</p><div class="fullcomment"><div class="comment cmt"><p>With copied contents</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.la.Tensor#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#top" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="top(n:Int):cc.factorie.util.TopN[String]"></a>
+      <a id="top(Int):TopN[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">top</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../util/TopN.html" class="extype" name="cc.factorie.util.TopN">TopN</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return records for the n elements with the largest values.</p><div class="fullcomment"><div class="comment cmt"><p>Return records for the n elements with the largest values.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.DoubleSeq#twoNorm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="twoNorm:Double"></a>
+      <a id="twoNorm:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">twoNorm</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#twoNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="twoNormalize():Double"></a>
+      <a id="twoNormalize():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">twoNormalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="cc.factorie.util.MutableDoubleSeq#twoSquaredNormalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="twoSquaredNormalize():Double"></a>
+      <a id="twoSquaredNormalize():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">twoSquaredNormalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.la.Tensor">
+              <h3>Inherited from <a href="Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a></h3>
+            </div><div class="parent" name="cc.factorie.util.MutableDoubleSeq">
+              <h3>Inherited from <a href="../util/MutableDoubleSeq.html" class="extype" name="cc.factorie.util.MutableDoubleSeq">MutableDoubleSeq</a></h3>
+            </div><div class="parent" name="cc.factorie.util.IncrementableDoubleSeq">
+              <h3>Inherited from <a href="../util/IncrementableDoubleSeq.html" class="extype" name="cc.factorie.util.IncrementableDoubleSeq">IncrementableDoubleSeq</a></h3>
+            </div><div class="parent" name="cc.factorie.util.DoubleSeq">
+              <h3>Inherited from <a href="../util/DoubleSeq.html" class="extype" name="cc.factorie.util.DoubleSeq">DoubleSeq</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../lib/template.js"></script>
+    </body>
+      </html>

@@ -1,0 +1,1035 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>optimize - Factorie 1.0-SNAPSHOT API - cc.factorie.optimize</title>
+          <meta name="description" content="optimize - Factorie 1.0 - SNAPSHOT API - cc.factorie.optimize" />
+          <meta name="keywords" content="optimize Factorie 1.0 SNAPSHOT API cc.factorie.optimize" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'cc.factorie.optimize.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a></p>
+        <h1>optimize</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optimize</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.optimize.AdaGrad" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AdaGradextendsAdaptiveLearningRate"></a>
+      <a id="AdaGrad:AdaGrad"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AdaGrad.html"><span class="name">AdaGrad</span></a><span class="result"> extends <a href="AdaptiveLearningRate.html" class="extype" name="cc.factorie.optimize.AdaptiveLearningRate">AdaptiveLearningRate</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The AdaGrad algorithm.</p>
+    </li><li name="cc.factorie.optimize.AdaGradRDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AdaGradRDAextendsGradientOptimizer"></a>
+      <a id="AdaGradRDA:AdaGradRDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AdaGradRDA.html"><span class="name">AdaGradRDA</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms
+for Online Learning and Stochastic Optimization.</p>
+    </li><li name="cc.factorie.optimize.AdaMira" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AdaMiraextendsAdaptiveLearningRatewithMarginScaled"></a>
+      <a id="AdaMira:AdaMira"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AdaMira.html"><span class="name">AdaMira</span></a><span class="result"> extends <a href="AdaptiveLearningRate.html" class="extype" name="cc.factorie.optimize.AdaptiveLearningRate">AdaptiveLearningRate</a> with <a href="MarginScaled.html" class="extype" name="cc.factorie.optimize.MarginScaled">MarginScaled</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The combination of AdaGrad with MIRA</p>
+    </li><li name="cc.factorie.optimize.AdaptiveLearningRate" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AdaptiveLearningRateextendsGradientStep"></a>
+      <a id="AdaptiveLearningRate:AdaptiveLearningRate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="AdaptiveLearningRate.html"><span class="name">AdaptiveLearningRate</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This implements the adaptive learning rates from the AdaGrad algorithm
+(with Composite Mirror Descent update) from &quot;Adaptive Subgradient Methods for
+Online Learning and Stochastic Optimization&quot; by Duchi et al.</p>
+    </li><li name="cc.factorie.optimize.AveragedPerceptron" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AveragedPerceptronextendsConstantLearningRatewithParameterAveraging"></a>
+      <a id="AveragedPerceptron:AveragedPerceptron"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AveragedPerceptron.html"><span class="name">AveragedPerceptron</span></a><span class="result"> extends <a href="ConstantLearningRate.html" class="extype" name="cc.factorie.optimize.ConstantLearningRate">ConstantLearningRate</a> with <a href="ParameterAveraging.html" class="extype" name="cc.factorie.optimize.ParameterAveraging">ParameterAveraging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Convenience name for the averaged perceptron.</p>
+    </li><li name="cc.factorie.optimize.BackTrackLineOptimizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BackTrackLineOptimizerextendsGradientOptimizerwithFastLogging"></a>
+      <a id="BackTrackLineOptimizer:BackTrackLineOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BackTrackLineOptimizer.html"><span class="name">BackTrackLineOptimizer</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A backtracking line optimizer.</p>
+    </li><li name="cc.factorie.optimize.BatchTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BatchTrainerextendsTrainerwithFastLogging"></a>
+      <a id="BatchTrainer:BatchTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchTrainer.html"><span class="name">BatchTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Learns the parameters of a Model by summing the gradients and values of all Examples,
+ and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS).</p>
+    </li><li name="cc.factorie.optimize.CaseFactorDiscreteLikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CaseFactorDiscreteLikelihoodExampleextendsExample"></a>
+      <a id="CaseFactorDiscreteLikelihoodExample:CaseFactorDiscreteLikelihoodExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CaseFactorDiscreteLikelihoodExample.html"><span class="name">CaseFactorDiscreteLikelihoodExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A gradient from a single DiscreteVar, where the set of factors is allowed to change based on its value.</p>
+    </li><li name="cc.factorie.optimize.CompositeLikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CompositeLikelihoodExampleextendsExample"></a>
+      <a id="CompositeLikelihoodExample:CompositeLikelihoodExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CompositeLikelihoodExample.html"><span class="name">CompositeLikelihoodExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Generalization of pseudo likelihood to sets of variables, instead of a single one</p>
+    </li><li name="cc.factorie.optimize.ConjugateGradient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConjugateGradientextendsGradientOptimizerwithFastLogging"></a>
+      <a id="ConjugateGradient:ConjugateGradient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConjugateGradient.html"><span class="name">ConjugateGradient</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A conjugate gradient optimizer.</p>
+    </li><li name="cc.factorie.optimize.ConstantLearningRate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConstantLearningRateextendsConstantStepSize"></a>
+      <a id="ConstantLearningRate:ConstantLearningRate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConstantLearningRate.html"><span class="name">ConstantLearningRate</span></a><span class="result"> extends <a href="ConstantStepSize.html" class="extype" name="cc.factorie.optimize.ConstantStepSize">ConstantStepSize</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A simple gradient descent algorithm with constant learning rate.</p>
+    </li><li name="cc.factorie.optimize.ConstantLengthLearningRate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConstantLengthLearningRateextendsConstantLengthStepSize"></a>
+      <a id="ConstantLengthLearningRate:ConstantLengthLearningRate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConstantLengthLearningRate.html"><span class="name">ConstantLengthLearningRate</span></a><span class="result"> extends <a href="ConstantLengthStepSize.html" class="extype" name="cc.factorie.optimize.ConstantLengthStepSize">ConstantLengthStepSize</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A simple gradient descent algorithm with constant norm-independent learning rate.</p>
+    </li><li name="cc.factorie.optimize.ConstantLengthStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ConstantLengthStepSizeextendsGradientStep"></a>
+      <a id="ConstantLengthStepSize:ConstantLengthStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ConstantLengthStepSize.html"><span class="name">ConstantLengthStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a step size which is normalized by the length of the gradient and is constant
+</p>
+    </li><li name="cc.factorie.optimize.ConstantStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ConstantStepSizeextendsGradientStep"></a>
+      <a id="ConstantStepSize:ConstantStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ConstantStepSize.html"><span class="name">ConstantStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a constant step size
+</p>
+    </li><li name="cc.factorie.optimize.ContrastiveDivergenceExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ContrastiveDivergenceExample[C]extendsExample"></a>
+      <a id="ContrastiveDivergenceExample[C]:ContrastiveDivergenceExample[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ContrastiveDivergenceExample.html"><span class="name">ContrastiveDivergenceExample</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A training example for using contrastive divergence.</p>
+    </li><li name="cc.factorie.optimize.ContrastiveDivergenceHingeExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ContrastiveDivergenceHingeExample[C&lt;:cc.factorie.variable.Var]extendsExample"></a>
+      <a id="ContrastiveDivergenceHingeExample[C&lt;:variable.Var]:ContrastiveDivergenceHingeExample[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ContrastiveDivergenceHingeExample.html"><span class="name">ContrastiveDivergenceHingeExample</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Contrastive divergence with the hinge loss.</p>
+    </li><li name="cc.factorie.optimize.DiscreteLikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteLikelihoodExampleextendsExample"></a>
+      <a id="DiscreteLikelihoodExample:DiscreteLikelihoodExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteLikelihoodExample.html"><span class="name">DiscreteLikelihoodExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An example for a single labeled discrete variable.</p>
+    </li><li name="cc.factorie.optimize.DominationLossExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DominationLossExampleextendsExample"></a>
+      <a id="DominationLossExample:DominationLossExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DominationLossExample.html"><span class="name">DominationLossExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implements the domination loss function: it penalizes models that rank any of
+the badCandidates above any of the goodCandidates.</p>
+    </li><li name="cc.factorie.optimize.DominationLossExampleAllGood" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DominationLossExampleAllGoodextendsExample"></a>
+      <a id="DominationLossExampleAllGood:DominationLossExampleAllGood"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DominationLossExampleAllGood.html"><span class="name">DominationLossExampleAllGood</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implements a variant of the the domination loss function.</p>
+    </li><li name="cc.factorie.optimize.Example" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExampleextendsAnyRef"></a>
+      <a id="Example:Example"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Example.html"><span class="name">Example</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Main abstraction over a training example.</p>
+    </li><li name="cc.factorie.optimize.ExponentiatedGradient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExponentiatedGradientextendsGradientOptimizer"></a>
+      <a id="ExponentiatedGradient:ExponentiatedGradient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExponentiatedGradient.html"><span class="name">ExponentiatedGradient</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This implements the Exponentiated Gradient algorithm of Kivinen and Warmuth
+- also known as Entropic Mirror Descent (Beck and Teboulle)</p>
+    </li><li name="cc.factorie.optimize.GradientOptimizer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GradientOptimizerextendsAnyRef"></a>
+      <a id="GradientOptimizer:GradientOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GradientOptimizer.html"><span class="name">GradientOptimizer</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Base trait for optimizers that update weights according to a gradient.</p>
+    </li><li name="cc.factorie.optimize.GradientStep" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GradientStepextendsGradientOptimizer"></a>
+      <a id="GradientStep:GradientStep"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GradientStep.html"><span class="name">GradientStep</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Base trait for optimizers whose operational form can be described as</p>
+    </li><li name="cc.factorie.optimize.HogwildTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HogwildTrainerextendsTrainerwithFastLogging"></a>
+      <a id="HogwildTrainer:HogwildTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HogwildTrainer.html"><span class="name">HogwildTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A parallel online trainer which has no locks or synchronization.</p>
+    </li><li name="cc.factorie.optimize.InvSqrtTLengthStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InvSqrtTLengthStepSizeextendsGradientStep"></a>
+      <a id="InvSqrtTLengthStepSize:InvSqrtTLengthStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InvSqrtTLengthStepSize.html"><span class="name">InvSqrtTLengthStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a step size which is normalized by the length of the gradient and looks like 1/sqrt(T)
+</p>
+    </li><li name="cc.factorie.optimize.InvSqrtTStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InvSqrtTStepSizeextendsGradientStep"></a>
+      <a id="InvSqrtTStepSize:InvSqrtTStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InvSqrtTStepSize.html"><span class="name">InvSqrtTStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a step size which looks like 1/sqrt(T)
+</p>
+    </li><li name="cc.factorie.optimize.InvTLengthStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InvTLengthStepSizeextendsGradientStep"></a>
+      <a id="InvTLengthStepSize:InvTLengthStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InvTLengthStepSize.html"><span class="name">InvTLengthStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a step size which is normalized by the length of the gradient and looks like 1/T
+</p>
+    </li><li name="cc.factorie.optimize.InvTStepSize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InvTStepSizeextendsGradientStep"></a>
+      <a id="InvTStepSize:InvTStepSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InvTStepSize.html"><span class="name">InvTStepSize</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for a step size which looks like 1/T
+</p>
+    </li><li name="cc.factorie.optimize.L2Regularization" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="L2RegularizationextendsGradientOptimizer"></a>
+      <a id="L2Regularization:L2Regularization"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="L2Regularization.html"><span class="name">L2Regularization</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Include L2 regularization (Gaussian with given scalar as the spherical covariance) in the gradient and value.</p>
+    </li><li name="cc.factorie.optimize.L2RegularizedConjugateGradient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="L2RegularizedConjugateGradientextendsConjugateGradient"></a>
+      <a id="L2RegularizedConjugateGradient:L2RegularizedConjugateGradient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="L2RegularizedConjugateGradient.html"><span class="name">L2RegularizedConjugateGradient</span></a><span class="result"> extends <a href="ConjugateGradient.html" class="extype" name="cc.factorie.optimize.ConjugateGradient">ConjugateGradient</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.L2RegularizedConstantRate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="L2RegularizedConstantRateextendsGradientOptimizer"></a>
+      <a id="L2RegularizedConstantRate:L2RegularizedConstantRate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="L2RegularizedConstantRate.html"><span class="name">L2RegularizedConstantRate</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Simple efficient l2-regularized SGD with a constant learning rate</p>
+    </li><li name="cc.factorie.optimize.LBFGS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LBFGSextendsGradientOptimizerwithFastLogging"></a>
+      <a id="LBFGS:LBFGS"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LBFGS.html"><span class="name">LBFGS</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Maximize using Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, &quot;Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods&quot;</p>
+    </li><li name="cc.factorie.optimize.LikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LikelihoodExample[A&lt;:Iterable[cc.factorie.variable.Var],B&lt;:cc.factorie.model.Model]extendsExample"></a>
+      <a id="LikelihoodExample[A&lt;:Iterable[variable.Var],B&lt;:model.Model]:LikelihoodExample[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LikelihoodExample.html"><span class="name">LikelihoodExample</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Base example for maximizing log likelihood.</p>
+    </li><li name="cc.factorie.optimize.LineSearchGradientAscent" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LineSearchGradientAscentextendsGradientOptimizerwithFastLogging"></a>
+      <a id="LineSearchGradientAscent:LineSearchGradientAscent"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LineSearchGradientAscent.html"><span class="name">LineSearchGradientAscent</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill.</p>
+    </li><li name="cc.factorie.optimize.LinearL2SVM" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LinearL2SVMextendsAnyRef"></a>
+      <a id="LinearL2SVM:LinearL2SVM"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LinearL2SVM.html"><span class="name">LinearL2SVM</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An implementation of the liblinear algorithm.</p>
+    </li><li name="cc.factorie.optimize.MIRA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MIRAextendsMarginScaled"></a>
+      <a id="MIRA:MIRA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MIRA.html"><span class="name">MIRA</span></a><span class="result"> extends <a href="MarginScaled.html" class="extype" name="cc.factorie.optimize.MarginScaled">MarginScaled</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The MIRA algorithm</p>
+    </li><li name="cc.factorie.optimize.MarginScaled" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MarginScaledextendsGradientStep"></a>
+      <a id="MarginScaled:MarginScaled"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MarginScaled.html"><span class="name">MarginScaled</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait for implementing a MIRA step
+</p>
+    </li><li name="cc.factorie.optimize.MiniBatchExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MiniBatchExampleextendsExample"></a>
+      <a id="MiniBatchExample:MiniBatchExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MiniBatchExample.html"><span class="name">MiniBatchExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Treats many examples as one.</p>
+    </li><li name="cc.factorie.optimize.MultivariateOptimizableObjective" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MultivariateOptimizableObjective[Output]extendsOptimizableObjective[cc.factorie.la.Tensor1,Output]"></a>
+      <a id="MultivariateOptimizableObjective[Output]:MultivariateOptimizableObjective[Output]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MultivariateOptimizableObjective.html"><span class="name">MultivariateOptimizableObjective</span></a><span class="tparams">[<span name="Output">Output</span>]</span><span class="result"> extends <a href="OptimizableObjective.html" class="extype" name="cc.factorie.optimize.OptimizableObjective">OptimizableObjective</a>[<a href="../la/Tensor1.html" class="extype" name="cc.factorie.la.Tensor1">la.Tensor1</a>, <span class="extype" name="cc.factorie.optimize.MultivariateOptimizableObjective.Output">Output</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.OnlineTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OnlineTrainerextendsTrainerwithFastLogging"></a>
+      <a id="OnlineTrainer:OnlineTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineTrainer.html"><span class="name">OnlineTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Learns the parameters of a model by computing the gradient and calling the
+optimizer one example at a time.</p>
+    </li><li name="cc.factorie.optimize.OptimizableObjective" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OptimizableObjective[Prediction,Output]extendsAnyRef"></a>
+      <a id="OptimizableObjective[Prediction,Output]:OptimizableObjective[Prediction,Output]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OptimizableObjective.html"><span class="name">OptimizableObjective</span></a><span class="tparams">[<span name="Prediction">Prediction</span>, <span name="Output">Output</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Abstract trait for any (sub)differentiable objective function used to train predictors.</p>
+    </li><li name="cc.factorie.optimize.ParallelBatchTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParallelBatchTrainerextendsTrainerwithFastLogging"></a>
+      <a id="ParallelBatchTrainer:ParallelBatchTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParallelBatchTrainer.html"><span class="name">ParallelBatchTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.ParallelOnlineTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParallelOnlineTrainerextendsTrainerwithFastLogging"></a>
+      <a id="ParallelOnlineTrainer:ParallelOnlineTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParallelOnlineTrainer.html"><span class="name">ParallelOnlineTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.ParameterAveraging" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ParameterAveragingextendsGradientStep"></a>
+      <a id="ParameterAveraging:ParameterAveraging"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ParameterAveraging.html"><span class="name">ParameterAveraging</span></a><span class="result"> extends <a href="GradientStep.html" class="extype" name="cc.factorie.optimize.GradientStep">GradientStep</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Mixin trait to add parameter averaging to any GradientStep
+</p>
+    </li><li name="cc.factorie.optimize.Pegasos" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PegasosextendsGradientOptimizer"></a>
+      <a id="Pegasos:Pegasos"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Pegasos.html"><span class="name">Pegasos</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This implements an efficient version of the Pegasos SGD algorithm for l2-regularized hinge loss
+it won't necessarily work with other losses because of the aggressive projection steps
+note that adding a learning rate here is nontrivial since the update relies on baseRate / step &lt; 1.</p>
+    </li><li name="cc.factorie.optimize.Perceptron" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PerceptronextendsConstantLearningRate"></a>
+      <a id="Perceptron:Perceptron"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Perceptron.html"><span class="name">Perceptron</span></a><span class="result"> extends <a href="ConstantLearningRate.html" class="extype" name="cc.factorie.optimize.ConstantLearningRate">ConstantLearningRate</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Convenience name for the perceptron.</p>
+    </li><li name="cc.factorie.optimize.PersistentContrastiveDivergenceExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PersistentContrastiveDivergenceExample[C&lt;:cc.factorie.variable.LabeledMutableVar]extendsExample"></a>
+      <a id="PersistentContrastiveDivergenceExample[C&lt;:LabeledMutableVar]:PersistentContrastiveDivergenceExample[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PersistentContrastiveDivergenceExample.html"><span class="name">PersistentContrastiveDivergenceExample</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../variable/LabeledMutableVar.html" class="extype" name="cc.factorie.variable.LabeledMutableVar">LabeledMutableVar</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A variant of the contrastive divergence algorithm which does not reset to the ground truth.</p>
+    </li><li name="cc.factorie.optimize.PersistentContrastiveDivergenceHingeExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PersistentContrastiveDivergenceHingeExample[C&lt;:cc.factorie.variable.LabeledMutableVar]extendsExample"></a>
+      <a id="PersistentContrastiveDivergenceHingeExample[C&lt;:LabeledMutableVar]:PersistentContrastiveDivergenceHingeExample[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PersistentContrastiveDivergenceHingeExample.html"><span class="name">PersistentContrastiveDivergenceHingeExample</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../variable/LabeledMutableVar.html" class="extype" name="cc.factorie.variable.LabeledMutableVar">LabeledMutableVar</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A contrastive divergence hinge example which keeps the chain going.</p>
+    </li><li name="cc.factorie.optimize.PredictorExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PredictorExample[Output,Prediction,Input]extendsExample"></a>
+      <a id="PredictorExample[Output,Prediction,Input]:PredictorExample[Output,Prediction,Input]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PredictorExample.html"><span class="name">PredictorExample</span></a><span class="tparams">[<span name="Output">Output</span>, <span name="Prediction">Prediction</span>, <span name="Input">Input</span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Base example for all OptimizablePredictors</p>
+    </li><li name="cc.factorie.optimize.PseudolikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PseudolikelihoodExampleextendsExample"></a>
+      <a id="PseudolikelihoodExample:PseudolikelihoodExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PseudolikelihoodExample.html"><span class="name">PseudolikelihoodExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Trains a model with pseudo likelihood.</p>
+    </li><li name="cc.factorie.optimize.PseudomaxExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PseudomaxExampleextendsExample"></a>
+      <a id="PseudomaxExample:PseudomaxExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PseudomaxExample.html"><span class="name">PseudomaxExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An example which independently maximizes each label with respect to its neighbors' true assignments.</p>
+    </li><li name="cc.factorie.optimize.PseudomaxMarginExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PseudomaxMarginExampleextendsExample"></a>
+      <a id="PseudomaxMarginExample:PseudomaxMarginExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PseudomaxMarginExample.html"><span class="name">PseudomaxMarginExample</span></a><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A variant of PseudomaxExample which enforces a margin.</p>
+    </li><li name="cc.factorie.optimize.RDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RDAextendsGradientOptimizer"></a>
+      <a id="RDA:RDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RDA.html"><span class="name">RDA</span></a><span class="result"> extends <a href="GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implements the Regularized Dual Averaging algorithm of Xiao with support for l1 and l2 regularization</p>
+    </li><li name="cc.factorie.optimize.SampleRankExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleRankExample[C]extendsExample"></a>
+      <a id="SampleRankExample[C]:SampleRankExample[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleRankExample.html"><span class="name">SampleRankExample</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Provides a gradient that encourages the model.</p>
+    </li><li name="cc.factorie.optimize.SampleRankTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleRankTrainer[C]extendsOnlineTrainer"></a>
+      <a id="SampleRankTrainer[C]:SampleRankTrainer[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleRankTrainer.html"><span class="name">SampleRankTrainer</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="OnlineTrainer.html" class="extype" name="cc.factorie.optimize.OnlineTrainer">OnlineTrainer</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.SemiSupervisedLikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SemiSupervisedLikelihoodExample[A&lt;:Iterable[cc.factorie.variable.Var],B&lt;:cc.factorie.model.Model]extendsExample"></a>
+      <a id="SemiSupervisedLikelihoodExample[A&lt;:Iterable[variable.Var],B&lt;:model.Model]:SemiSupervisedLikelihoodExample[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SemiSupervisedLikelihoodExample.html"><span class="name">SemiSupervisedLikelihoodExample</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Maximum likelihood in one semi supervised setting.</p>
+    </li><li name="cc.factorie.optimize.SimpleLikelihoodExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SimpleLikelihoodExample[A&lt;:Iterable[cc.factorie.variable.Var],B&lt;:cc.factorie.model.Model]extendsExample"></a>
+      <a id="SimpleLikelihoodExample[A&lt;:Iterable[variable.Var],B&lt;:model.Model]:SimpleLikelihoodExample[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleLikelihoodExample.html"><span class="name">SimpleLikelihoodExample</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="Example.html" class="extype" name="cc.factorie.optimize.Example">Example</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.StructuredPerceptronExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StructuredPerceptronExample[A&lt;:Iterable[cc.factorie.variable.Var],B&lt;:cc.factorie.model.Model]extendsLikelihoodExample[A,B]"></a>
+      <a id="StructuredPerceptronExample[A&lt;:Iterable[variable.Var],B&lt;:model.Model]:StructuredPerceptronExample[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredPerceptronExample.html"><span class="name">StructuredPerceptronExample</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="LikelihoodExample.html" class="extype" name="cc.factorie.optimize.LikelihoodExample">LikelihoodExample</a>[<span class="extype" name="cc.factorie.optimize.StructuredPerceptronExample.A">A</span>, <span class="extype" name="cc.factorie.optimize.StructuredPerceptronExample.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implements the structured perceptron.</p>
+    </li><li name="cc.factorie.optimize.StructuredSVMExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StructuredSVMExample[A&lt;:Iterable[cc.factorie.variable.Var]]extendsStructuredPerceptronExample[A,cc.factorie.model.CombinedModelwithcc.factorie.model.Parameters]"></a>
+      <a id="StructuredSVMExample[A&lt;:Iterable[variable.Var]]:StructuredSVMExample[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredSVMExample.html"><span class="name">StructuredSVMExample</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>]</span><span class="result"> extends <a href="StructuredPerceptronExample.html" class="extype" name="cc.factorie.optimize.StructuredPerceptronExample">StructuredPerceptronExample</a>[<span class="extype" name="cc.factorie.optimize.StructuredSVMExample.A">A</span>, <a href="../model/CombinedModel.html" class="extype" name="cc.factorie.model.CombinedModel">model.CombinedModel</a> with <a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">model.Parameters</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implements the structured SVM objective function, by doing loss-augmented inference.</p>
+    </li><li name="cc.factorie.optimize.SynchronizedOptimizerOnlineTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SynchronizedOptimizerOnlineTrainerextendsTrainerwithFastLogging"></a>
+      <a id="SynchronizedOptimizerOnlineTrainer:SynchronizedOptimizerOnlineTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SynchronizedOptimizerOnlineTrainer.html"><span class="name">SynchronizedOptimizerOnlineTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.ThreadLocalBatchTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ThreadLocalBatchTrainerextendsTrainerwithFastLogging"></a>
+      <a id="ThreadLocalBatchTrainer:ThreadLocalBatchTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ThreadLocalBatchTrainer.html"><span class="name">ThreadLocalBatchTrainer</span></a><span class="result"> extends <a href="Trainer.html" class="extype" name="cc.factorie.optimize.Trainer">Trainer</a> with <a href="../util/FastLogging.html" class="extype" name="cc.factorie.util.FastLogging">FastLogging</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.Trainer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TrainerextendsAnyRef"></a>
+      <a id="Trainer:Trainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Trainer.html"><span class="name">Trainer</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Learns the parameters of a Model by processing the gradients and values from a collection of Examples.</p>
+    </li><li name="cc.factorie.optimize.TwoStageTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TwoStageTrainerextendsAnyRef"></a>
+      <a id="TwoStageTrainer:TwoStageTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TwoStageTrainer.html"><span class="name">TwoStageTrainer</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Train using one trainer, until it has converged, and then use the second trainer instead.</p>
+    </li><li name="cc.factorie.optimize.UnivariateOptimizableObjective" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UnivariateOptimizableObjective[Output]extendsOptimizableObjective[Double,Output]"></a>
+      <a id="UnivariateOptimizableObjective[Output]:UnivariateOptimizableObjective[Output]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="UnivariateOptimizableObjective.html"><span class="name">UnivariateOptimizableObjective</span></a><span class="tparams">[<span name="Output">Output</span>]</span><span class="result"> extends <a href="OptimizableObjective.html" class="extype" name="cc.factorie.optimize.OptimizableObjective">OptimizableObjective</a>[<span class="extype" name="scala.Double">Double</span>, <span class="extype" name="cc.factorie.optimize.UnivariateOptimizableObjective.Output">Output</span>]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="cc.factorie.optimize.GoodBadExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GoodBadExample"></a>
+      <a id="GoodBadExample:GoodBadExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GoodBadExample$.html"><span class="name">GoodBadExample</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.ISTAHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ISTAHelper"></a>
+      <a id="ISTAHelper:ISTAHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ISTAHelper$.html"><span class="name">ISTAHelper</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.MiniBatchExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MiniBatchExample"></a>
+      <a id="MiniBatchExample:MiniBatchExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MiniBatchExample$.html"><span class="name">MiniBatchExample</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.MutableScalableWeights" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MutableScalableWeights"></a>
+      <a id="MutableScalableWeights:MutableScalableWeights"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MutableScalableWeights$.html"><span class="name">MutableScalableWeights</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.OptimizableObjectives" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OptimizableObjectives"></a>
+      <a id="OptimizableObjectives:OptimizableObjectives"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OptimizableObjectives$.html"><span class="name">OptimizableObjectives</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.Trainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Trainer"></a>
+      <a id="Trainer:Trainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Trainer$.html"><span class="name">Trainer</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.optimize.TrainerHelpers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TrainerHelpers"></a>
+      <a id="TrainerHelpers:TrainerHelpers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TrainerHelpers$.html"><span class="name">TrainerHelpers</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../lib/template.js"></script>
+    </body>
+      </html>

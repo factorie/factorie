@@ -1,0 +1,368 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>lda - Factorie 1.0-SNAPSHOT API - cc.factorie.app.topics.lda</title>
+          <meta name="description" content="lda - Factorie 1.0 - SNAPSHOT API - cc.factorie.app.topics.lda" />
+          <meta name="keywords" content="lda Factorie 1.0 SNAPSHOT API cc.factorie.app.topics.lda" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'cc.factorie.app.topics.lda.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="cc">cc</a>.<a href="../../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../../package.html" class="extype" name="cc.factorie.app">app</a>.<a href="../package.html" class="extype" name="cc.factorie.app.topics">topics</a></p>
+        <h1>lda</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lda</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.app.topics.lda.Doc" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DocextendsSeqBreaks"></a>
+      <a id="Doc:Doc"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Doc.html"><span class="name">Doc</span></a><span class="result"> extends <a href="../../../variable/SeqBreaks.html" class="extype" name="cc.factorie.variable.SeqBreaks">SeqBreaks</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The abstract document variable required by LDA.</p>
+    </li><li name="cc.factorie.app.topics.lda.Document" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DocumentextendsCategoricalSeqVariable[String]withDoc"></a>
+      <a id="Document:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Document.html"><span class="name">Document</span></a><span class="result"> extends <a href="../../../variable/CategoricalSeqVariable.html" class="extype" name="cc.factorie.variable.CategoricalSeqVariable">CategoricalSeqVariable</a>[<span class="extype" name="scala.Predef.String">String</span>] with <a href="Doc.html" class="extype" name="cc.factorie.app.topics.lda.Doc">Doc</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A simple concrete implementation of DocumentVar.</p>
+    </li><li name="cc.factorie.app.topics.lda.LDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LDAextendsAnyRef"></a>
+      <a id="LDA:LDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LDA.html"><span class="name">LDA</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Typical recommended value for alpha1 is 50/numTopics.</p>
+    </li><li name="cc.factorie.app.topics.lda.LDACmd" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LDACmdextendsAnyRef"></a>
+      <a id="LDACmd:LDACmd"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LDACmd.html"><span class="name">LDACmd</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.LREval" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LREvalextendsAnyRef"></a>
+      <a id="LREval:LREval"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LREval.html"><span class="name">LREval</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt"> Left-to-right evaluation algorithm described on page 65 in Wallach's PhD thesis.</p>
+    </li><li name="cc.factorie.app.topics.lda.RecursiveDocument" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RecursiveDocumentextendsDocument"></a>
+      <a id="RecursiveDocument:RecursiveDocument"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RecursiveDocument.html"><span class="name">RecursiveDocument</span></a><span class="result"> extends <a href="Document.html" class="extype" name="cc.factorie.app.topics.lda.Document">Document</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.RecursiveLDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RecursiveLDAextendsLDA"></a>
+      <a id="RecursiveLDA:RecursiveLDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RecursiveLDA.html"><span class="name">RecursiveLDA</span></a><span class="result"> extends <a href="LDA.html" class="extype" name="cc.factorie.app.topics.lda.LDA">LDA</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.SparseLDAInferencer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparseLDAInferencerextendsAnyRef"></a>
+      <a id="SparseLDAInferencer:SparseLDAInferencer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparseLDAInferencer.html"><span class="name">SparseLDAInferencer</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.SparseOnlineLDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparseOnlineLDAextendsAnyRef"></a>
+      <a id="SparseOnlineLDA:SparseOnlineLDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparseOnlineLDA.html"><span class="name">SparseOnlineLDA</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.Tag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TagextendsAnyRef"></a>
+      <a id="Tag:Tag"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Tag.html"><span class="name">Tag</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.TaggedDocument" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaggedDocumentextendsDocument"></a>
+      <a id="TaggedDocument:TaggedDocument"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaggedDocument.html"><span class="name">TaggedDocument</span></a><span class="result"> extends <a href="Document.html" class="extype" name="cc.factorie.app.topics.lda.Document">Document</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.TimeStampedDocument" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TimeStampedDocumentextendsDocument"></a>
+      <a id="TimeStampedDocument:TimeStampedDocument"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TimeStampedDocument.html"><span class="name">TimeStampedDocument</span></a><span class="result"> extends <a href="Document.html" class="extype" name="cc.factorie.app.topics.lda.Document">Document</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.TopicPhraseCounts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TopicPhraseCountsextendsAnyRef"></a>
+      <a id="TopicPhraseCounts:TopicPhraseCounts"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TopicPhraseCounts.html"><span class="name">TopicPhraseCounts</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="cc.factorie.app.topics.lda.Document" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Document"></a>
+      <a id="Document:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Document$.html"><span class="name">Document</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.LDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LDA"></a>
+      <a id="LDA:LDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LDA$.html"><span class="name">LDA</span></a><span class="result"> extends <a href="LDACmd.html" class="extype" name="cc.factorie.app.topics.lda.LDACmd">LDACmd</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.RecursiveLDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RecursiveLDA"></a>
+      <a id="RecursiveLDA:RecursiveLDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RecursiveLDA$.html"><span class="name">RecursiveLDA</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.SparseLDAInferencer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparseLDAInferencer"></a>
+      <a id="SparseLDAInferencer:SparseLDAInferencer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparseLDAInferencer$.html"><span class="name">SparseLDAInferencer</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.SparseOnlineLDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparseOnlineLDA"></a>
+      <a id="SparseOnlineLDA:SparseOnlineLDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparseOnlineLDA$.html"><span class="name">SparseOnlineLDA</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.Tag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Tag"></a>
+      <a id="Tag:Tag"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Tag$.html"><span class="name">Tag</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.TaggedLDA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaggedLDA"></a>
+      <a id="TaggedLDA:TaggedLDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaggedLDA$.html"><span class="name">TaggedLDA</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.topics.lda.TopicsOverTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TopicsOverTime"></a>
+      <a id="TopicsOverTime:TopicsOverTime"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TopicsOverTime$.html"><span class="name">TopicsOverTime</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>

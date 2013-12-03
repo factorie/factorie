@@ -1,0 +1,1548 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>infer - Factorie 1.0-SNAPSHOT API - cc.factorie.infer</title>
+          <meta name="description" content="infer - Factorie 1.0 - SNAPSHOT API - cc.factorie.infer" />
+          <meta name="keywords" content="infer Factorie 1.0 SNAPSHOT API cc.factorie.infer" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'cc.factorie.infer.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a></p>
+        <h1>infer</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">infer</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.infer.AssignmentSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AssignmentSummaryextendsSummary"></a>
+      <a id="AssignmentSummary:AssignmentSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AssignmentSummary.html"><span class="name">AssignmentSummary</span></a><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Summary with all its probability on one variable-value Assignment.</p>
+    </li><li name="cc.factorie.infer.BPEdge" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPEdgeextendsAnyRef"></a>
+      <a id="BPEdge:BPEdge"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPEdge.html"><span class="name">BPEdge</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A dumb container for messages factor-&gt;variable and variable-&gt;factor</p>
+    </li><li name="cc.factorie.infer.BPFactor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BPFactorextendsFactorMarginal"></a>
+      <a id="BPFactor:BPFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor.html"><span class="name">BPFactor</span></a><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BPFactor1extendsSimpleDiscreteMarginal1[cc.factorie.variable.DiscreteVar]withBPFactor"></a>
+      <a id="BPFactor1:BPFactor1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor1.html"><span class="name">BPFactor1</span></a><span class="result"> extends <a href="SimpleDiscreteMarginal1.html" class="extype" name="cc.factorie.infer.SimpleDiscreteMarginal1">SimpleDiscreteMarginal1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="BPFactor.html" class="extype" name="cc.factorie.infer.BPFactor">BPFactor</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor1Factor1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor1Factor1extendsBPFactor1withDiscreteMarginal1[cc.factorie.variable.DiscreteVar]withDiscreteMarginal1Factor1[cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor1Factor1:BPFactor1Factor1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor1Factor1.html"><span class="name">BPFactor1Factor1</span></a><span class="result"> extends <a href="BPFactor1.html" class="extype" name="cc.factorie.infer.BPFactor1">BPFactor1</a> with <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="DiscreteMarginal1Factor1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1Factor1">DiscreteMarginal1Factor1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor1Factor2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor1Factor2extendsBPFactor1withDiscreteMarginal1[cc.factorie.variable.DiscreteVar]withDiscreteMarginal1Factor2[cc.factorie.variable.DiscreteVar,cc.factorie.variable.VectorVar]"></a>
+      <a id="BPFactor1Factor2:BPFactor1Factor2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor1Factor2.html"><span class="name">BPFactor1Factor2</span></a><span class="result"> extends <a href="BPFactor1.html" class="extype" name="cc.factorie.infer.BPFactor1">BPFactor1</a> with <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="DiscreteMarginal1Factor2.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1Factor2">DiscreteMarginal1Factor2</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor1Factor2Left" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor1Factor2LeftextendsBPFactor1withDiscreteMarginal1[cc.factorie.variable.DiscreteVar]withDiscreteMarginal1Factor2Other[cc.factorie.variable.VectorVar,cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor1Factor2Left:BPFactor1Factor2Left"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor1Factor2Left.html"><span class="name">BPFactor1Factor2Left</span></a><span class="result"> extends <a href="BPFactor1.html" class="extype" name="cc.factorie.infer.BPFactor1">BPFactor1</a> with <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="DiscreteMarginal1Factor2Other.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1Factor2Other">DiscreteMarginal1Factor2Other</a>[<a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor1Factor3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor1Factor3extendsBPFactor1withDiscreteMarginal1Factor3[cc.factorie.variable.VectorVar,cc.factorie.variable.VectorVar,cc.factorie.variable.VectorVar,cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor1Factor3:BPFactor1Factor3"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor1Factor3.html"><span class="name">BPFactor1Factor3</span></a><span class="result"> extends <a href="BPFactor1.html" class="extype" name="cc.factorie.infer.BPFactor1">BPFactor1</a> with <a href="DiscreteMarginal1Factor3.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1Factor3">DiscreteMarginal1Factor3</a>[<a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>, <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>, <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BPFactor2extendsDiscreteMarginal2[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]withBPFactor"></a>
+      <a id="BPFactor2:BPFactor2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor2.html"><span class="name">BPFactor2</span></a><span class="result"> extends <a href="DiscreteMarginal2.html" class="extype" name="cc.factorie.infer.DiscreteMarginal2">DiscreteMarginal2</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="BPFactor.html" class="extype" name="cc.factorie.infer.BPFactor">BPFactor</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor2Factor2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor2Factor2extendsBPFactor2withDiscreteMarginal2Factor2[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor2Factor2:BPFactor2Factor2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor2Factor2.html"><span class="name">BPFactor2Factor2</span></a><span class="result"> extends <a href="BPFactor2.html" class="extype" name="cc.factorie.infer.BPFactor2">BPFactor2</a> with <a href="DiscreteMarginal2Factor2.html" class="extype" name="cc.factorie.infer.DiscreteMarginal2Factor2">DiscreteMarginal2Factor2</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor2Factor3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor2Factor3extendsBPFactor2withDiscreteMarginal2Factor3[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.VectorVar]"></a>
+      <a id="BPFactor2Factor3:BPFactor2Factor3"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor2Factor3.html"><span class="name">BPFactor2Factor3</span></a><span class="result"> extends <a href="BPFactor2.html" class="extype" name="cc.factorie.infer.BPFactor2">BPFactor2</a> with <a href="DiscreteMarginal2Factor3.html" class="extype" name="cc.factorie.infer.DiscreteMarginal2Factor3">DiscreteMarginal2Factor3</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor3Factor3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor3Factor3extendsDiscreteMarginal3[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]withBPFactorwithDiscreteMarginal3Factor3[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor3Factor3:BPFactor3Factor3"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor3Factor3.html"><span class="name">BPFactor3Factor3</span></a><span class="result"> extends <a href="DiscreteMarginal3.html" class="extype" name="cc.factorie.infer.DiscreteMarginal3">DiscreteMarginal3</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="BPFactor.html" class="extype" name="cc.factorie.infer.BPFactor">BPFactor</a> with <a href="DiscreteMarginal3Factor3.html" class="extype" name="cc.factorie.infer.DiscreteMarginal3Factor3">DiscreteMarginal3Factor3</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactor4Factor4" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactor4Factor4extendsDiscreteMarginal4[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]withBPFactorwithDiscreteMarginal4Factor4[cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar,cc.factorie.variable.DiscreteVar]"></a>
+      <a id="BPFactor4Factor4:BPFactor4Factor4"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactor4Factor4.html"><span class="name">BPFactor4Factor4</span></a><span class="result"> extends <a href="DiscreteMarginal4.html" class="extype" name="cc.factorie.infer.DiscreteMarginal4">DiscreteMarginal4</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="BPFactor.html" class="extype" name="cc.factorie.infer.BPFactor">BPFactor</a> with <a href="DiscreteMarginal4Factor4.html" class="extype" name="cc.factorie.infer.DiscreteMarginal4Factor4">DiscreteMarginal4Factor4</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>, <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPRing" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BPRingextendsAnyRef"></a>
+      <a id="BPRing:BPRing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BPRing.html"><span class="name">BPRing</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPSummaryextendsSummary"></a>
+      <a id="BPSummary:BPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPSummary.html"><span class="name">BPSummary</span></a><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A collection of marginals inferred by belief propagation.</p>
+    </li><li name="cc.factorie.infer.BPVariable" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BPVariableextendsAnyRef"></a>
+      <a id="BPVariable:BPVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BPVariable.html"><span class="name">BPVariable</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPVariable1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPVariable1extendsDiscreteMarginal1[cc.factorie.variable.DiscreteVar]withBPVariable"></a>
+      <a id="BPVariable1:BPVariable1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BPVariable1.html"><span class="name">BPVariable1</span></a><span class="result"> extends <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>] with <a href="BPVariable.html" class="extype" name="cc.factorie.infer.BPVariable">BPVariable</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginalextendsMarginal"></a>
+      <a id="DiscreteMarginal:DiscreteMarginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal.html"><span class="name">DiscreteMarginal</span></a><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Marginal in which all the variables are discrete (either singleton or tensors).</p>
+    </li><li name="cc.factorie.infer.DiscreteMarginal1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal1[V1&lt;:cc.factorie.variable.VectorVar]extendsMarginal1withDiscreteMarginal"></a>
+      <a id="DiscreteMarginal1[V1&lt;:VectorVar]:DiscreteMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal1.html"><span class="name">DiscreteMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="Marginal1.html" class="extype" name="cc.factorie.infer.Marginal1">Marginal1</a> with <a href="DiscreteMarginal.html" class="extype" name="cc.factorie.infer.DiscreteMarginal">DiscreteMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal1Factor1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal1Factor1[V1&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal1Factor1[V1&lt;:VectorVar]:DiscreteMarginal1Factor1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal1Factor1.html"><span class="name">DiscreteMarginal1Factor1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal1Factor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal1Factor2[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal1Factor2[V1&lt;:VectorVar,V2&lt;:VectorVar]:DiscreteMarginal1Factor2[V1,V2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal1Factor2.html"><span class="name">DiscreteMarginal1Factor2</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal1Factor2Other" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal1Factor2Other[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal1Factor2Other[V1&lt;:VectorVar,V2&lt;:VectorVar]:DiscreteMarginal1Factor2Other[V1,V2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal1Factor2Other.html"><span class="name">DiscreteMarginal1Factor2Other</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal1Factor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal1Factor3[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar,V4&lt;:cc.factorie.variable.DiscreteVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal1Factor3[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar,V4&lt;:DiscreteVar]:DiscreteMarginal1Factor3[V1,V2,V3,V4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal1Factor3.html"><span class="name">DiscreteMarginal1Factor3</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V4">V4 &lt;: <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal2[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar]extendsDiscreteMarginalwithMarginal2"></a>
+      <a id="DiscreteMarginal2[V1&lt;:VectorVar,V2&lt;:VectorVar]:DiscreteMarginal2[V1,V2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal2.html"><span class="name">DiscreteMarginal2</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="DiscreteMarginal.html" class="extype" name="cc.factorie.infer.DiscreteMarginal">DiscreteMarginal</a> with <a href="Marginal2.html" class="extype" name="cc.factorie.infer.Marginal2">Marginal2</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal2Factor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal2Factor2[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar]extendsDiscreteMarginal2[V1,V2]withFactorMarginal"></a>
+      <a id="DiscreteMarginal2Factor2[V1&lt;:VectorVar,V2&lt;:VectorVar]:DiscreteMarginal2Factor2[V1,V2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal2Factor2.html"><span class="name">DiscreteMarginal2Factor2</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="DiscreteMarginal2.html" class="extype" name="cc.factorie.infer.DiscreteMarginal2">DiscreteMarginal2</a>[<span class="extype" name="cc.factorie.infer.DiscreteMarginal2Factor2.V1">V1</span>, <span class="extype" name="cc.factorie.infer.DiscreteMarginal2Factor2.V2">V2</span>] with <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal2Factor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal2Factor3[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal2Factor3[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar]:DiscreteMarginal2Factor3[V1,V2,V3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal2Factor3.html"><span class="name">DiscreteMarginal2Factor3</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal3[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar]extendsDiscreteMarginal"></a>
+      <a id="DiscreteMarginal3[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar]:DiscreteMarginal3[V1,V2,V3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal3.html"><span class="name">DiscreteMarginal3</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="DiscreteMarginal.html" class="extype" name="cc.factorie.infer.DiscreteMarginal">DiscreteMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal3Factor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal3Factor3[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal3Factor3[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar]:DiscreteMarginal3Factor3[V1,V2,V3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal3Factor3.html"><span class="name">DiscreteMarginal3Factor3</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal4" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal4[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar,V4&lt;:cc.factorie.variable.VectorVar]extendsDiscreteMarginal"></a>
+      <a id="DiscreteMarginal4[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar,V4&lt;:VectorVar]:DiscreteMarginal4[V1,V2,V3,V4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal4.html"><span class="name">DiscreteMarginal4</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V4">V4 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="DiscreteMarginal.html" class="extype" name="cc.factorie.infer.DiscreteMarginal">DiscreteMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal4Factor4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal4Factor4[V1&lt;:cc.factorie.variable.VectorVar,V2&lt;:cc.factorie.variable.VectorVar,V3&lt;:cc.factorie.variable.VectorVar,V4&lt;:cc.factorie.variable.VectorVar]extendsFactorMarginal"></a>
+      <a id="DiscreteMarginal4Factor4[V1&lt;:VectorVar,V2&lt;:VectorVar,V3&lt;:VectorVar,V4&lt;:VectorVar]:DiscreteMarginal4Factor4[V1,V2,V3,V4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal4Factor4.html"><span class="name">DiscreteMarginal4Factor4</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V2">V2 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V3">V3 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>, <span name="V4">V4 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMeanField" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMeanFieldextendsMeanField"></a>
+      <a id="DiscreteMeanField:DiscreteMeanField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMeanField.html"><span class="name">DiscreteMeanField</span></a><span class="result"> extends <a href="MeanField.html" class="extype" name="cc.factorie.infer.MeanField">MeanField</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Performs naive mean field inference with a Q Summary that is a set of independent Discrete distributions</p>
+    </li><li name="cc.factorie.infer.DiscreteProposalMaximizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteProposalMaximizerextendsDiscreteProposalSampler"></a>
+      <a id="DiscreteProposalMaximizer:DiscreteProposalMaximizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteProposalMaximizer.html"><span class="name">DiscreteProposalMaximizer</span></a><span class="result"> extends <a href="DiscreteProposalSampler.html" class="extype" name="cc.factorie.infer.DiscreteProposalSampler">DiscreteProposalSampler</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteProposalSampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteProposalSamplerextendsProposalSampler[cc.factorie.variable.DiscreteVar]"></a>
+      <a id="DiscreteProposalSampler:DiscreteProposalSampler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteProposalSampler.html"><span class="name">DiscreteProposalSampler</span></a><span class="result"> extends <a href="ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A proposal sampler that considers each of the values of a DiscreteVar
+    and scores them efficiently by unrolling factors from the Model just once.</p>
+    </li><li name="cc.factorie.infer.DiscreteSeqMarginal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteSeqMarginal[V&lt;:cc.factorie.variable.DiscreteSeqVariable]extendsMarginal1"></a>
+      <a id="DiscreteSeqMarginal[V&lt;:DiscreteSeqVariable]:DiscreteSeqMarginal[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteSeqMarginal.html"><span class="name">DiscreteSeqMarginal</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../variable/DiscreteSeqVariable.html" class="extype" name="cc.factorie.variable.DiscreteSeqVariable">DiscreteSeqVariable</a></span>]</span><span class="result"> extends <a href="Marginal1.html" class="extype" name="cc.factorie.infer.Marginal1">Marginal1</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteSummary1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteSummary1[V&lt;:cc.factorie.variable.DiscreteVar]extendsIncrementableSummary"></a>
+      <a id="DiscreteSummary1[V&lt;:DiscreteVar]:DiscreteSummary1[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteSummary1.html"><span class="name">DiscreteSummary1</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a></span>]</span><span class="result"> extends <a href="IncrementableSummary.html" class="extype" name="cc.factorie.infer.IncrementableSummary">IncrementableSummary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A summary with a separate Proportions distribution for each of its DiscreteVars</p>
+    </li><li name="cc.factorie.infer.DualDecomposition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DualDecompositionextendsGlobalLogging"></a>
+      <a id="DualDecomposition:DualDecomposition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DualDecomposition.html"><span class="name">DualDecomposition</span></a><span class="result"> extends <a href="../util/GlobalLogging.html" class="extype" name="cc.factorie.util.GlobalLogging">util.GlobalLogging</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.FactorMarginal" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FactorMarginalextendsAnyRef"></a>
+      <a id="FactorMarginal:FactorMarginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FactorMarginal.html"><span class="name">FactorMarginal</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Marginal associated with a Factor.</p>
+    </li><li name="cc.factorie.infer.FactorQueue" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FactorQueue[C]extendsSampler[C]"></a>
+      <a id="FactorQueue[C]:FactorQueue[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FactorQueue.html"><span class="name">FactorQueue</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a>[<span class="extype" name="cc.factorie.infer.FactorQueue.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Manage and use a queue to more often revisit low-scoring factors and re-sample their variables.</p>
+    </li><li name="cc.factorie.infer.GibbsSampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GibbsSamplerextendsProposalSampler[cc.factorie.Var]"></a>
+      <a id="GibbsSampler:GibbsSampler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GibbsSampler.html"><span class="name">GibbsSampler</span></a><span class="result"> extends <a href="ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Sample a value for a single variable.</p>
+    </li><li name="cc.factorie.infer.GibbsSamplerClosure" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GibbsSamplerClosureextendsAnyRef"></a>
+      <a id="GibbsSamplerClosure:GibbsSamplerClosure"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GibbsSamplerClosure.html"><span class="name">GibbsSamplerClosure</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.GibbsSamplerHandler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GibbsSamplerHandlerextendsAnyRef"></a>
+      <a id="GibbsSamplerHandler:GibbsSamplerHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GibbsSamplerHandler.html"><span class="name">GibbsSamplerHandler</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.IncrementableSummary" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="IncrementableSummaryextendsSummary"></a>
+      <a id="IncrementableSummary:IncrementableSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="IncrementableSummary.html"><span class="name">IncrementableSummary</span></a><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Summary that can be used to gather weighted samples into its Marginals.</p>
+    </li><li name="cc.factorie.infer.Infer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Infer[-A&lt;:Iterable[cc.factorie.variable.Var],-B&lt;:cc.factorie.model.Model]extendsAnyRef"></a>
+      <a id="Infer[-A&lt;:Iterable[variable.Var],-B&lt;:model.Model]:Infer[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Infer.html"><span class="name">Infer</span></a><span class="tparams">[<span name="A">-A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">-B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByBP" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InferByBPextendsInfer[Iterable[cc.factorie.variable.DiscreteVar],cc.factorie.model.Model]"></a>
+      <a id="InferByBP:InferByBP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByBP.html"><span class="name">InferByBP</span></a><span class="result"> extends <a href="Infer.html" class="extype" name="cc.factorie.infer.Infer">Infer</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByGibbsSampling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByGibbsSamplingextendsInfer[Iterable[cc.factorie.variable.MutableDiscreteVar],cc.factorie.model.Model]"></a>
+      <a id="InferByGibbsSampling:InferByGibbsSampling"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByGibbsSampling.html"><span class="name">InferByGibbsSampling</span></a><span class="result"> extends <a href="Infer.html" class="extype" name="cc.factorie.infer.Infer">Infer</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/MutableDiscreteVar.html" class="extype" name="cc.factorie.variable.MutableDiscreteVar">MutableDiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByMPLP" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByMPLPextendsMaximize[Iterable[cc.factorie.variable.DiscreteVar],cc.factorie.model.Model]"></a>
+      <a id="InferByMPLP:InferByMPLP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByMPLP.html"><span class="name">InferByMPLP</span></a><span class="result"> extends <a href="Maximize.html" class="extype" name="cc.factorie.infer.Maximize">Maximize</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferBySampling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferBySampling[C]extendsAnyRef"></a>
+      <a id="InferBySampling[C]:InferBySampling[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InferBySampling.html"><span class="name">InferBySampling</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.IteratedConditionalModes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IteratedConditionalModesextendsSettingsMaximizer[cc.factorie.Varwithcc.factorie.variable.IterableSettings]"></a>
+      <a id="IteratedConditionalModes:IteratedConditionalModes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IteratedConditionalModes.html"><span class="name">IteratedConditionalModes</span></a><span class="result"> extends <a href="SettingsMaximizer.html" class="extype" name="cc.factorie.infer.SettingsMaximizer">SettingsMaximizer</a>[<a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a> with <a href="../variable/IterableSettings.html" class="extype" name="cc.factorie.variable.IterableSettings">IterableSettings</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Besag's Iterated Conditional Modes.</p>
+    </li><li name="cc.factorie.infer.LoopyBPSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LoopyBPSummaryextendsBPSummary"></a>
+      <a id="LoopyBPSummary:LoopyBPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LoopyBPSummary.html"><span class="name">LoopyBPSummary</span></a><span class="result"> extends <a href="BPSummary.html" class="extype" name="cc.factorie.infer.BPSummary">BPSummary</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.LoopyBPSummaryMaxProduct" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LoopyBPSummaryMaxProductextendsBPSummary"></a>
+      <a id="LoopyBPSummaryMaxProduct:LoopyBPSummaryMaxProduct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LoopyBPSummaryMaxProduct.html"><span class="name">LoopyBPSummaryMaxProduct</span></a><span class="result"> extends <a href="BPSummary.html" class="extype" name="cc.factorie.infer.BPSummary">BPSummary</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MAPSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MAPSummaryextendsSummary"></a>
+      <a id="MAPSummary:MAPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MAPSummary.html"><span class="name">MAPSummary</span></a><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Summary with all its probability on one variable-value Assignment,
+    and which can also be used for learning because it includes factors.</p>
+    </li><li name="cc.factorie.infer.MHSampler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MHSampler[C]extendsProposalSampler[C]"></a>
+      <a id="MHSampler[C]:MHSampler[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MHSampler.html"><span class="name">MHSampler</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<span class="extype" name="cc.factorie.infer.MHSampler.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Metropolis-Hastings sampler.</p>
+    </li><li name="cc.factorie.infer.MPLP" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MPLPextendsGlobalLogging"></a>
+      <a id="MPLP:MPLP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MPLP.html"><span class="name">MPLP</span></a><span class="result"> extends <a href="../util/GlobalLogging.html" class="extype" name="cc.factorie.util.GlobalLogging">util.GlobalLogging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">User: apassos
+Date: 5/29/13
+Time: 8:46 AM
+</p>
+    </li><li name="cc.factorie.infer.Marginal" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MarginalextendsAnyRef"></a>
+      <a id="Marginal:Marginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Marginal.html"><span class="name">Marginal</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Stores a marginal distribution containing a joint distribution over a set of variables.</p>
+    </li><li name="cc.factorie.infer.Marginal1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Marginal1extendsMarginal"></a>
+      <a id="Marginal1:Marginal1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Marginal1.html"><span class="name">Marginal1</span></a><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Marginal2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Marginal2extendsMarginal"></a>
+      <a id="Marginal2:Marginal2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Marginal2.html"><span class="name">Marginal2</span></a><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Maximize" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Maximize[-A&lt;:Iterable[cc.factorie.variable.Var],-B&lt;:cc.factorie.model.Model]extendsInfer[A,B]"></a>
+      <a id="Maximize[-A&lt;:Iterable[variable.Var],-B&lt;:model.Model]:Maximize[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Maximize.html"><span class="name">Maximize</span></a><span class="tparams">[<span name="A">-A &lt;: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="B">-B &lt;: <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>]</span><span class="result"> extends <a href="Infer.html" class="extype" name="cc.factorie.infer.Infer">Infer</a>[<span class="extype" name="cc.factorie.infer.Maximize.A">A</span>, <span class="extype" name="cc.factorie.infer.Maximize.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">An inference engine that finds score-maximizing values.</p>
+    </li><li name="cc.factorie.infer.MaximizeByBP" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByBPextendsInferByBPwithMaximize[Iterable[cc.factorie.variable.DiscreteVar],cc.factorie.model.Model]"></a>
+      <a id="MaximizeByBP:MaximizeByBP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByBP.html"><span class="name">MaximizeByBP</span></a><span class="result"> extends <a href="InferByBP.html" class="extype" name="cc.factorie.infer.InferByBP">InferByBP</a> with <a href="Maximize.html" class="extype" name="cc.factorie.infer.Maximize">Maximize</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeSuite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeSuiteextendsMaximize[Iterable[cc.factorie.variable.Var],cc.factorie.model.Model]"></a>
+      <a id="MaximizeSuite:MaximizeSuite"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeSuite.html"><span class="name">MaximizeSuite</span></a><span class="result"> extends <a href="Maximize.html" class="extype" name="cc.factorie.infer.Maximize">Maximize</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MeanField" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MeanFieldextendsAnyRef"></a>
+      <a id="MeanField:MeanField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MeanField.html"><span class="name">MeanField</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An inferencer for mean field inference.</p>
+    </li><li name="cc.factorie.infer.ModelWithInference" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ModelWithInference[M,V]extendsProductwithSerializable"></a>
+      <a id="ModelWithInference[M,V]:ModelWithInference[M,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ModelWithInference.html"><span class="name">ModelWithInference</span></a><span class="tparams">[<span name="M">M</span>, <span name="V">V</span>]</span><span class="params">(<span name="vars">vars: <span class="extype" name="cc.factorie.infer.ModelWithInference.V">V</span></span>, <span name="model">model: <span class="extype" name="cc.factorie.infer.ModelWithInference.M">M</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="infer">infer: (<span class="extype" name="cc.factorie.infer.ModelWithInference.V">V</span>, <span class="extype" name="cc.factorie.infer.ModelWithInference.M">M</span>) ⇒ <a href="WarmStartWeightedSummary.html" class="extype" name="cc.factorie.infer.WarmStartWeightedSummary">WarmStartWeightedSummary</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MultivariateGaussianMarginal1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MultivariateGaussianMarginal1[V1&lt;:cc.factorie.directed.DirectedTypeHelpers.MutableTensorVarTensor1]extendsMarginal"></a>
+      <a id="MultivariateGaussianMarginal1[V1&lt;:MutableTensorVarTensor1]:MultivariateGaussianMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MultivariateGaussianMarginal1.html"><span class="name">MultivariateGaussianMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../directed/DirectedTypeHelpers$.html#MutableTensorVarTensor1=cc.factorie.variable.MutableTensorVar{typeValue=cc.factorie.la.Tensor1}" class="extmbr" name="cc.factorie.directed.DirectedTypeHelpers.MutableTensorVarTensor1">MutableTensorVarTensor1</a></span>]</span><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.ProportionsDirichletMarginal1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ProportionsDirichletMarginal1[V&lt;:cc.factorie.variable.ProportionsVar]extendsMarginal"></a>
+      <a id="ProportionsDirichletMarginal1[V&lt;:ProportionsVar]:ProportionsDirichletMarginal1[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProportionsDirichletMarginal1.html"><span class="name">ProportionsDirichletMarginal1</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../variable/ProportionsVar.html" class="extype" name="cc.factorie.variable.ProportionsVar">ProportionsVar</a></span>]</span><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Proposal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Proposal[C]extendsAnyRef"></a>
+      <a id="Proposal[C]:Proposal[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Proposal.html"><span class="name">Proposal</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">For storing one of the MCMC sampling proposals considered.</p>
+    </li><li name="cc.factorie.infer.ProposalSampler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ProposalSampler[C]extendsSampler[C]"></a>
+      <a id="ProposalSampler[C]:ProposalSampler[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ProposalSampler.html"><span class="name">ProposalSampler</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a>[<span class="extype" name="cc.factorie.infer.ProposalSampler.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore.</p>
+    </li><li name="cc.factorie.infer.RealGaussianMarginal1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RealGaussianMarginal1[V1&lt;:cc.factorie.variable.RealVar]extendsMarginal"></a>
+      <a id="RealGaussianMarginal1[V1&lt;:RealVar]:RealGaussianMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RealGaussianMarginal1.html"><span class="name">RealGaussianMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/RealVar.html" class="extype" name="cc.factorie.variable.RealVar">RealVar</a></span>]</span><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.RealMarginal1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RealMarginal1[V1&lt;:cc.factorie.variable.RealVar]extendsMarginal"></a>
+      <a id="RealMarginal1[V1&lt;:RealVar]:RealMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="RealMarginal1.html"><span class="name">RealMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/RealVar.html" class="extype" name="cc.factorie.variable.RealVar">RealVar</a></span>]</span><span class="result"> extends <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.RealSpikeMarginal1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RealSpikeMarginal1[V1&lt;:cc.factorie.variable.RealVar]extendsAbstractAssignment1[V1]withMarginal"></a>
+      <a id="RealSpikeMarginal1[V1&lt;:RealVar]:RealSpikeMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RealSpikeMarginal1.html"><span class="name">RealSpikeMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/RealVar.html" class="extype" name="cc.factorie.variable.RealVar">RealVar</a></span>]</span><span class="result"> extends <a href="../variable/AbstractAssignment1.html" class="extype" name="cc.factorie.variable.AbstractAssignment1">AbstractAssignment1</a>[<span class="extype" name="cc.factorie.infer.RealSpikeMarginal1.V1">V1</span>] with <a href="Marginal.html" class="extype" name="cc.factorie.infer.Marginal">Marginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Sampler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Sampler[C]extendsAnyRef"></a>
+      <a id="Sampler[C]:Sampler[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Sampler.html"><span class="name">Sampler</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Samplers that key off of particular contexts.</p>
+    </li><li name="cc.factorie.infer.SamplingFactorMarginal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingFactorMarginalextendsFactorMarginal"></a>
+      <a id="SamplingFactorMarginal:SamplingFactorMarginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingFactorMarginal.html"><span class="name">SamplingFactorMarginal</span></a><span class="result"> extends <a href="FactorMarginal.html" class="extype" name="cc.factorie.infer.FactorMarginal">FactorMarginal</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SamplingInferencer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingInferencer[C,S&lt;:cc.factorie.infer.IncrementableSummary]extendsAnyRef"></a>
+      <a id="SamplingInferencer[C,S&lt;:IncrementableSummary]:SamplingInferencer[C,S]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingInferencer.html"><span class="name">SamplingInferencer</span></a><span class="tparams">[<span name="C">C</span>, <span name="S">S &lt;: <a href="IncrementableSummary.html" class="extype" name="cc.factorie.infer.IncrementableSummary">IncrementableSummary</a></span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SamplingMaximizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingMaximizer[C]extendsAnyRef"></a>
+      <a id="SamplingMaximizer[C]:SamplingMaximizer[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingMaximizer.html"><span class="name">SamplingMaximizer</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SamplingSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingSummaryextendsSummary"></a>
+      <a id="SamplingSummary:SamplingSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingSummary.html"><span class="name">SamplingSummary</span></a><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SamplingVariableMarginal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingVariableMarginalextendsDiscreteMarginal1[cc.factorie.variable.MutableDiscreteVar]"></a>
+      <a id="SamplingVariableMarginal:SamplingVariableMarginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingVariableMarginal.html"><span class="name">SamplingVariableMarginal</span></a><span class="result"> extends <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<a href="../variable/MutableDiscreteVar.html" class="extype" name="cc.factorie.variable.MutableDiscreteVar">MutableDiscreteVar</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SettingsMaximizer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SettingsMaximizer[C]extendsSettingsSampler[C]"></a>
+      <a id="SettingsMaximizer[C]:SettingsMaximizer[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SettingsMaximizer.html"><span class="name">SettingsMaximizer</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<span class="extype" name="cc.factorie.infer.SettingsMaximizer.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore.</p>
+    </li><li name="cc.factorie.infer.SettingsSampler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SettingsSampler[C]extendsProposalSampler[C]"></a>
+      <a id="SettingsSampler[C]:SettingsSampler[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SettingsSampler.html"><span class="name">SettingsSampler</span></a><span class="tparams">[<span name="C">C</span>]</span><span class="result"> extends <a href="ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<span class="extype" name="cc.factorie.infer.SettingsSampler.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Tries each one of the settings in the Iterator provided by the abstract method &quot;settings(C)&quot;,
+    scores each, builds a distribution from the scores, and samples from it.</p>
+    </li><li name="cc.factorie.infer.SimpleDiscreteMarginal1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SimpleDiscreteMarginal1[V1&lt;:cc.factorie.variable.VectorVar]extendsDiscreteMarginal1[V1]"></a>
+      <a id="SimpleDiscreteMarginal1[V1&lt;:VectorVar]:SimpleDiscreteMarginal1[V1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleDiscreteMarginal1.html"><span class="name">SimpleDiscreteMarginal1</span></a><span class="tparams">[<span name="V1">V1 &lt;: <a href="../variable/VectorVar.html" class="extype" name="cc.factorie.variable.VectorVar">VectorVar</a></span>]</span><span class="result"> extends <a href="DiscreteMarginal1.html" class="extype" name="cc.factorie.infer.DiscreteMarginal1">DiscreteMarginal1</a>[<span class="extype" name="cc.factorie.infer.SimpleDiscreteMarginal1.V1">V1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SingletonSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SingletonSummary[M&lt;:cc.factorie.infer.Marginal1]extendsSummary"></a>
+      <a id="SingletonSummary[M&lt;:Marginal1]:SingletonSummary[M]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SingletonSummary.html"><span class="name">SingletonSummary</span></a><span class="tparams">[<span name="M">M &lt;: <a href="Marginal1.html" class="extype" name="cc.factorie.infer.Marginal1">Marginal1</a></span>]</span><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Summary containing only one Marginal.</p>
+    </li><li name="cc.factorie.infer.Summary" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SummaryextendsAnyRef"></a>
+      <a id="Summary:Summary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Summary.html"><span class="name">Summary</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The result of inference: a collection of Marginal objects.</p>
+    </li><li name="cc.factorie.infer.Summary1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Summary1[V&lt;:cc.factorie.variable.Var,M&lt;:cc.factorie.infer.Marginal1]extendsSummary"></a>
+      <a id="Summary1[V&lt;:variable.Var,M&lt;:Marginal1]:Summary1[V,M]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Summary1.html"><span class="name">Summary1</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="M">M &lt;: <a href="Marginal1.html" class="extype" name="cc.factorie.infer.Marginal1">Marginal1</a></span>]</span><span class="result"> extends <a href="Summary.html" class="extype" name="cc.factorie.infer.Summary">Summary</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Summary that contains multiple Marginals of type M, each a marginal distribution over a single variable.</p>
+    </li><li name="cc.factorie.infer.VariableSettingsSampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VariableSettingsSampler[V&lt;:cc.factorie.Varwithcc.factorie.variable.IterableSettings]extendsSettingsSampler[V]"></a>
+      <a id="VariableSettingsSampler[V&lt;:VarwithIterableSettings]:VariableSettingsSampler[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VariableSettingsSampler.html"><span class="name">VariableSettingsSampler</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a> with <a href="../variable/IterableSettings.html" class="extype" name="cc.factorie.variable.IterableSettings">IterableSettings</a></span>]</span><span class="result"> extends <a href="SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<span class="extype" name="cc.factorie.infer.VariableSettingsSampler.V">V</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Tries each one of the settings of the given variable,
+    scores each, builds a distribution from the scores, and samples from it.</p>
+    </li><li name="cc.factorie.infer.VariablesSettingsSampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VariablesSettingsSampler[V&lt;:cc.factorie.Varwithcc.factorie.variable.IterableSettings]extendsSettingsSampler[Seq[V]]"></a>
+      <a id="VariablesSettingsSampler[V&lt;:VarwithIterableSettings]:VariablesSettingsSampler[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VariablesSettingsSampler.html"><span class="name">VariablesSettingsSampler</span></a><span class="tparams">[<span name="V">V &lt;: <a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a> with <a href="../variable/IterableSettings.html" class="extype" name="cc.factorie.variable.IterableSettings">IterableSettings</a></span>]</span><span class="result"> extends <a href="SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.infer.VariablesSettingsSampler.V">V</span>]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.WarmStartWeightedSummary" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="WarmStartWeightedSummaryextendsAnyRef"></a>
+      <a id="WarmStartWeightedSummary:WarmStartWeightedSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="WarmStartWeightedSummary.html"><span class="name">WarmStartWeightedSummary</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">User: apassos
+Date: 6/15/13
+Time: 7:38 AM
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="cc.factorie.infer.BP" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BP"></a>
+      <a id="BP:BP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BP$.html"><span class="name">BP</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPFactorFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPFactorFactory"></a>
+      <a id="BPFactorFactory:BPFactorFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BPFactorFactory$.html"><span class="name">BPFactorFactory</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPMaxProductRing" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPMaxProductRing"></a>
+      <a id="BPMaxProductRing:BPMaxProductRing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BPMaxProductRing$.html"><span class="name">BPMaxProductRing</span></a><span class="result"> extends <a href="BPRing.html" class="extype" name="cc.factorie.infer.BPRing">BPRing</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPSumProductRing" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPSumProductRing"></a>
+      <a id="BPSumProductRing:BPSumProductRing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BPSumProductRing$.html"><span class="name">BPSumProductRing</span></a><span class="result"> extends <a href="BPRing.html" class="extype" name="cc.factorie.infer.BPRing">BPRing</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPSummary"></a>
+      <a id="BPSummary:BPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BPSummary$.html"><span class="name">BPSummary</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.BPUtil" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BPUtil"></a>
+      <a id="BPUtil:BPUtil"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BPUtil$.html"><span class="name">BPUtil</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DiscreteMarginal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DiscreteMarginal"></a>
+      <a id="DiscreteMarginal:DiscreteMarginal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DiscreteMarginal$.html"><span class="name">DiscreteMarginal</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.DualDecomposition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DualDecomposition"></a>
+      <a id="DualDecomposition:DualDecomposition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DualDecomposition$.html"><span class="name">DualDecomposition</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.GeneratedVarGibbsSamplerHandler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GeneratedVarGibbsSamplerHandler"></a>
+      <a id="GeneratedVarGibbsSamplerHandler:GeneratedVarGibbsSamplerHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GeneratedVarGibbsSamplerHandler$.html"><span class="name">GeneratedVarGibbsSamplerHandler</span></a><span class="result"> extends <a href="GibbsSamplerHandler.html" class="extype" name="cc.factorie.infer.GibbsSamplerHandler">GibbsSamplerHandler</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.GibbsSamplerDefaultHandlers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GibbsSamplerDefaultHandlers"></a>
+      <a id="GibbsSamplerDefaultHandlers:GibbsSamplerDefaultHandlers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GibbsSamplerDefaultHandlers$.html"><span class="name">GibbsSamplerDefaultHandlers</span></a><span class="result"> extends <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="GibbsSamplerHandler.html" class="extype" name="cc.factorie.infer.GibbsSamplerHandler">GibbsSamplerHandler</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByBPChain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByBPChain"></a>
+      <a id="InferByBPChain:InferByBPChain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByBPChain$.html"><span class="name">InferByBPChain</span></a><span class="result"> extends <a href="InferByBP.html" class="extype" name="cc.factorie.infer.InferByBP">InferByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByBPLoopy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByBPLoopy"></a>
+      <a id="InferByBPLoopy:InferByBPLoopy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByBPLoopy$.html"><span class="name">InferByBPLoopy</span></a><span class="result"> extends <a href="InferByBP.html" class="extype" name="cc.factorie.infer.InferByBP">InferByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByBPLoopyTreewise" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByBPLoopyTreewise"></a>
+      <a id="InferByBPLoopyTreewise:InferByBPLoopyTreewise"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByBPLoopyTreewise$.html"><span class="name">InferByBPLoopyTreewise</span></a><span class="result"> extends <a href="InferByBP.html" class="extype" name="cc.factorie.infer.InferByBP">InferByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByBPTree" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByBPTree"></a>
+      <a id="InferByBPTree:InferByBPTree"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByBPTree$.html"><span class="name">InferByBPTree</span></a><span class="result"> extends <a href="InferByBP.html" class="extype" name="cc.factorie.infer.InferByBP">InferByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByDualDecomposition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByDualDecomposition"></a>
+      <a id="InferByDualDecomposition:InferByDualDecomposition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByDualDecomposition$.html"><span class="name">InferByDualDecomposition</span></a><span class="result"> extends <a href="DualDecomposition.html" class="extype" name="cc.factorie.infer.DualDecomposition">DualDecomposition</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByGibbsSampling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByGibbsSampling"></a>
+      <a id="InferByGibbsSampling:InferByGibbsSampling"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByGibbsSampling$.html"><span class="name">InferByGibbsSampling</span></a><span class="result"> extends <a href="InferByGibbsSampling.html" class="extype" name="cc.factorie.infer.InferByGibbsSampling">InferByGibbsSampling</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByMPLP" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByMPLP"></a>
+      <a id="InferByMPLP:InferByMPLP"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByMPLP$.html"><span class="name">InferByMPLP</span></a><span class="result"> extends <a href="Maximize.html" class="extype" name="cc.factorie.infer.Maximize">Maximize</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferByMeanField" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferByMeanField"></a>
+      <a id="InferByMeanField:InferByMeanField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferByMeanField$.html"><span class="name">InferByMeanField</span></a><span class="result"> extends <a href="Infer.html" class="extype" name="cc.factorie.infer.Infer">Infer</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/MutableDiscreteVar.html" class="extype" name="cc.factorie.variable.MutableDiscreteVar">MutableDiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.InferDiscrete1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InferDiscrete1"></a>
+      <a id="InferDiscrete1:InferDiscrete1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InferDiscrete1$.html"><span class="name">InferDiscrete1</span></a><span class="result"> extends <a href="Infer.html" class="extype" name="cc.factorie.infer.Infer">Infer</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVariable.html" class="extype" name="cc.factorie.variable.DiscreteVariable">variable.DiscreteVariable</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.LoopyBPSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LoopyBPSummary"></a>
+      <a id="LoopyBPSummary:LoopyBPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LoopyBPSummary$.html"><span class="name">LoopyBPSummary</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.LoopyBPSummaryMaxProduct" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LoopyBPSummaryMaxProduct"></a>
+      <a id="LoopyBPSummaryMaxProduct:LoopyBPSummaryMaxProduct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LoopyBPSummaryMaxProduct$.html"><span class="name">LoopyBPSummaryMaxProduct</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Maximize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Maximize"></a>
+      <a id="Maximize:Maximize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Maximize$.html"><span class="name">Maximize</span></a><span class="result"> extends <a href="MaximizeSuite.html" class="extype" name="cc.factorie.infer.MaximizeSuite">MaximizeSuite</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeByBPChain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByBPChain"></a>
+      <a id="MaximizeByBPChain:MaximizeByBPChain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByBPChain$.html"><span class="name">MaximizeByBPChain</span></a><span class="result"> extends <a href="MaximizeByBP.html" class="extype" name="cc.factorie.infer.MaximizeByBP">MaximizeByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeByBPLoopy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByBPLoopy"></a>
+      <a id="MaximizeByBPLoopy:MaximizeByBPLoopy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByBPLoopy$.html"><span class="name">MaximizeByBPLoopy</span></a><span class="result"> extends <a href="MaximizeByBP.html" class="extype" name="cc.factorie.infer.MaximizeByBP">MaximizeByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeByBPLoopyTreewise" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByBPLoopyTreewise"></a>
+      <a id="MaximizeByBPLoopyTreewise:MaximizeByBPLoopyTreewise"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByBPLoopyTreewise$.html"><span class="name">MaximizeByBPLoopyTreewise</span></a><span class="result"> extends <a href="MaximizeByBP.html" class="extype" name="cc.factorie.infer.MaximizeByBP">MaximizeByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeByBPTree" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByBPTree"></a>
+      <a id="MaximizeByBPTree:MaximizeByBPTree"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByBPTree$.html"><span class="name">MaximizeByBPTree</span></a><span class="result"> extends <a href="MaximizeByBP.html" class="extype" name="cc.factorie.infer.MaximizeByBP">MaximizeByBP</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.MaximizeByIteratedConditionalModes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaximizeByIteratedConditionalModes"></a>
+      <a id="MaximizeByIteratedConditionalModes:MaximizeByIteratedConditionalModes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MaximizeByIteratedConditionalModes$.html"><span class="name">MaximizeByIteratedConditionalModes</span></a><span class="result"> extends <a href="Maximize.html" class="extype" name="cc.factorie.infer.Maximize">Maximize</a>[<a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/MutableDiscreteVar.html" class="extype" name="cc.factorie.variable.MutableDiscreteVar">MutableDiscreteVar</a>], <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SamplingMaximizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplingMaximizer"></a>
+      <a id="SamplingMaximizer:SamplingMaximizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplingMaximizer$.html"><span class="name">SamplingMaximizer</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../lib/template.js"></script>
+    </body>
+      </html>
