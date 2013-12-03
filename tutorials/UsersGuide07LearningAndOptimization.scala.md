@@ -2,7 +2,7 @@
 title: "Users Guide 07: Learning and optimization"
 layout: default
 group: usersguide
-weight: 3
+weight: 7
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;

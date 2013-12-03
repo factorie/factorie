@@ -35,13 +35,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">PosModel</span><span class="result"> extends <a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">model.TemplateModel</a> with <a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">model.Parameters</a></span>
+        <span class="name">PosModel</span><span class="result"> extends <a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>, <a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">model.Parameters</a>, <a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">model.TemplateModel</a>, <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>, <a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>], <a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">model.Parameters</a>, <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="cc.factorie.tutorial.ForwardBackwardPOS.PosModel"><span>PosModel</span></li><li class="in" name="cc.factorie.model.Parameters"><span>Parameters</span></li><li class="in" name="cc.factorie.model.TemplateModel"><span>TemplateModel</span></li><li class="in" name="cc.factorie.model.Model"><span>Model</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="cc.factorie.tutorial.ForwardBackwardPOS.PosModel"><span>PosModel</span></li><li class="in" name="cc.factorie.app.chain.ChainModel"><span>ChainModel</span></li><li class="in" name="cc.factorie.model.Parameters"><span>Parameters</span></li><li class="in" name="cc.factorie.model.Model"><span>Model</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -79,7 +79,75 @@
         <div id="allMembers">
         
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.app.chain.ChainModel.ChainLikelihoodExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChainLikelihoodExampleextendsExample"></a>
+      <a id="ChainLikelihoodExample:ChainLikelihoodExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="../app/chain/ChainModel$ChainLikelihoodExample.html"><span class="name">ChainLikelihoodExample</span></a><span class="result"> extends <a href="../optimize/Example.html" class="extype" name="cc.factorie.optimize.Example">optimize.Example</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel.ChainStructuredSVMExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChainStructuredSVMExampleextendsChainModel.this.ChainViterbiExample"></a>
+      <a id="ChainStructuredSVMExample:ChainStructuredSVMExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="../app/chain/ChainModel$ChainStructuredSVMExample.html"><span class="name">ChainStructuredSVMExample</span></a><span class="result"> extends <a href="../app/chain/ChainModel$ChainViterbiExample.html" class="extype" name="cc.factorie.app.chain.ChainModel.ChainViterbiExample">ChainViterbiExample</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel.ChainViterbiExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChainViterbiExampleextendsExample"></a>
+      <a id="ChainViterbiExample:ChainViterbiExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="../app/chain/ChainModel$ChainViterbiExample.html"><span class="name">ChainViterbiExample</span></a><span class="result"> extends <a href="../optimize/Example.html" class="extype" name="cc.factorie.optimize.Example">optimize.Example</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel.InferenceResults" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InferenceResultsextendsProductwithSerializable"></a>
+      <a id="InferenceResults:InferenceResults"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../app/chain/ChainModel$InferenceResults.html"><span class="name">InferenceResults</span></a><span class="params">(<span name="logZ">logZ: <span class="extype" name="scala.Double">Double</span></span>, <span name="alphas">alphas: <span class="extype" name="scala.Array">Array</span>[<a href="../la/DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">la.DenseTensor1</a>]</span>, <span name="betas">betas: <span class="extype" name="scala.Array">Array</span>[<a href="../la/DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">la.DenseTensor1</a>]</span>, <span name="localScores">localScores: <span class="extype" name="scala.Array">Array</span>[<a href="../la/DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">la.DenseTensor1</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel.ViterbiResults" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ViterbiResultsextendsProductwithSerializable"></a>
+      <a id="ViterbiResults:ViterbiResults"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../app/chain/ChainModel$ViterbiResults.html"><span class="name">ViterbiResults</span></a><span class="params">(<span name="mapScore">mapScore: <span class="extype" name="scala.Double">Double</span></span>, <span name="mapValues">mapValues: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="localScores">localScores: <span class="extype" name="scala.Array">Array</span>[<a href="../la/DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">la.DenseTensor1</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li></ol>
+            </div>
 
         
 
@@ -124,32 +192,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#++=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="++=[T&lt;:cc.factorie.model.Template](templates:Iterable[T]):Iterable[T]"></a>
-      <a id="++=[T&lt;:Template](Iterable[T]):Iterable[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span title="gt4s: $plus$plus$eq" class="name">++=</span><span class="tparams">[<span name="T">T &lt;: <a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>]</span><span class="params">(<span name="templates">templates: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.model.TemplateModel.++=.T">T</span>]</span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.model.TemplateModel.++=.T">T</span>]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="+=[T&lt;:cc.factorie.model.Template](template:T):T"></a>
-      <a id="+=[T&lt;:Template](T):T"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span title="gt4s: $plus$eq" class="name">+=</span><span class="tparams">[<span name="T">T &lt;: <a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>]</span><span class="params">(<span name="template">template: <span class="extype" name="cc.factorie.model.TemplateModel.+=.T">T</span></span>)</span><span class="result">: <span class="extype" name="cc.factorie.model.TemplateModel.+=.T">T</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:AnyRef):Boolean"></a>
       <a id="==(AnyRef):Boolean"></a>
@@ -228,32 +270,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">Parameters</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#addFactors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addFactors(variables:Iterable[cc.factorie.variable.Var],result:scala.collection.mutable.Set[cc.factorie.model.Factor]):Unit"></a>
-      <a id="addFactors(Iterable[variable.Var],Set[model.Factor]):Unit"></a>
+    </li><li name="cc.factorie.app.chain.ChainModel#accumulateExtraObsGradients" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="accumulateExtraObsGradients(gradient:cc.factorie.la.WeightsMapAccumulator,obsMarginal:cc.factorie.la.Tensor1,position:Int,labels:Seq[Label]):Unit"></a>
+      <a id="accumulateExtraObsGradients(WeightsMapAccumulator,la.Tensor1,Int,Seq[LabeledPennPosTag]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">addFactors</span><span class="params">(<span name="variables">variables: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="result">result: <span class="extype" name="scala.collection.mutable.Set">Set</span>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">accumulateExtraObsGradients</span><span class="params">(<span name="gradient">gradient: <a href="../la/WeightsMapAccumulator.html" class="extype" name="cc.factorie.la.WeightsMapAccumulator">WeightsMapAccumulator</a></span>, <span name="obsMarginal">obsMarginal: <a href="../la/Tensor1.html" class="extype" name="cc.factorie.la.Tensor1">la.Tensor1</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="labels">labels: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Append to &quot;result&quot; all Factors in this Model that touch any of the given &quot;variables&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Append to &quot;result&quot; all Factors in this Model that touch any of the given &quot;variables&quot;.  This method must not append duplicates.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#addFactors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addFactors(variable:cc.factorie.variable.Var,result:scala.collection.mutable.Set[cc.factorie.model.Factor]):Unit"></a>
-      <a id="addFactors(variable.Var,Set[model.Factor]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">addFactors</span><span class="params">(<span name="variable">variable: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="result">result: <span class="extype" name="scala.collection.mutable.Set">Set</span>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Append to &quot;result&quot; all Factors in this Model that touch the given &quot;variable&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Append to &quot;result&quot; all Factors in this Model that touch the given &quot;variable&quot;.  This method must not append duplicates.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="cc.factorie.model.Model#addFactors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addFactors(dl:cc.factorie.variable.DiffList,result:scala.collection.mutable.Set[cc.factorie.model.Factor]):Unit"></a>
       <a id="addFactors(variable.DiffList,Set[model.Factor]):Unit"></a>
@@ -280,32 +309,32 @@
       </span>
       </h4>
       <p class="shortcomment cmt">Append to &quot;result&quot; all Factors in this Model that are affected by the given Diff.</p><div class="fullcomment"><div class="comment cmt"><p>Append to &quot;result&quot; all Factors in this Model that are affected by the given Diff.  This method must not append duplicates.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#addTemplate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addTemplate[T&lt;:cc.factorie.model.Template](template:T):T"></a>
-      <a id="addTemplate[T&lt;:Template](T):T"></a>
+    </li><li name="cc.factorie.model.Model#addFactors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addFactors(variable:cc.factorie.variable.Var,result:scala.collection.mutable.Set[cc.factorie.model.Factor]):Unit"></a>
+      <a id="addFactors(variable.Var,Set[model.Factor]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">addTemplate</span><span class="tparams">[<span name="T">T &lt;: <a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>]</span><span class="params">(<span name="template">template: <span class="extype" name="cc.factorie.model.TemplateModel.addTemplate.T">T</span></span>)</span><span class="result">: <span class="extype" name="cc.factorie.model.TemplateModel.addTemplate.T">T</span></span>
+        <span class="name">addFactors</span><span class="params">(<span name="variable">variable: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="result">result: <span class="extype" name="scala.collection.mutable.Set">Set</span>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#addTemplates" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addTemplates[T&lt;:cc.factorie.model.Template](templates:T*):Iterable[T]"></a>
-      <a id="addTemplates[T&lt;:Template](T*):Iterable[T]"></a>
+      <p class="shortcomment cmt">Append to &quot;result&quot; all Factors in this Model that touch the given &quot;variable&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Append to &quot;result&quot; all Factors in this Model that touch the given &quot;variable&quot;.  This method must not append duplicates.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+    </li><li name="cc.factorie.model.Model#addFactors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addFactors(variables:Iterable[cc.factorie.variable.Var],result:scala.collection.mutable.Set[cc.factorie.model.Factor]):Unit"></a>
+      <a id="addFactors(Iterable[variable.Var],Set[model.Factor]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">addTemplates</span><span class="tparams">[<span name="T">T &lt;: <a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>]</span><span class="params">(<span name="templates">templates: <span class="extype" name="cc.factorie.model.TemplateModel.addTemplates.T">T</span>*</span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.model.TemplateModel.addTemplates.T">T</span>]</span>
+        <span class="name">addFactors</span><span class="params">(<span name="variables">variables: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>, <span name="result">result: <span class="extype" name="scala.collection.mutable.Set">Set</span>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
+      <p class="shortcomment cmt">Append to &quot;result&quot; all Factors in this Model that touch any of the given &quot;variables&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Append to &quot;result&quot; all Factors in this Model that touch any of the given &quot;variables&quot;.  This method must not append duplicates.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -371,6 +400,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#bias" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bias:cc.factorie.model.DotFamilyWithStatistics1[Label]{valweights:cc.factorie.model.Weights1}"></a>
+      <a id="bias:DotFamilyWithStatistics1[LabeledPennPosTag]{valweights:cc.factorie.model.Weights1}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bias</span><span class="result">: <a href="../model/DotFamilyWithStatistics1.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics1">DotFamilyWithStatistics1</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>] { val weights: cc.factorie.model.Weights1 }</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -442,6 +484,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#deserialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deserialize(stream:java.io.InputStream):Unit"></a>
+      <a id="deserialize(InputStream):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserialize</span><span class="params">(<span name="stream">stream: <span class="extype" name="java.io.InputStream">InputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -468,8 +523,8 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#factors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="factors(variable:cc.factorie.variable.Var):Iterable[cc.factorie.model.Factor]"></a>
+    </li><li name="cc.factorie.app.chain.ChainModel#factors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="factors(v:cc.factorie.variable.Var):Iterable[cc.factorie.model.Factor]"></a>
       <a id="factors(variable.Var):Iterable[model.Factor]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -477,11 +532,11 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">factors</span><span class="params">(<span name="variable">variable: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>
+        <span class="name">factors</span><span class="params">(<span name="v">v: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Return all Factors in this Model that touch the given &quot;variable&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Return all Factors in this Model that touch the given &quot;variable&quot;.  The result will not have any duplicate Factors.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#factors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <p class="shortcomment cmt">Return all Factors in this Model that touch the given &quot;variable&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Return all Factors in this Model that touch the given &quot;variable&quot;.  The result will not have any duplicate Factors.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#factors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="factors(variables:Iterable[cc.factorie.variable.Var]):Iterable[cc.factorie.model.Factor]"></a>
       <a id="factors(Iterable[variable.Var]):Iterable[model.Factor]"></a>
       <h4 class="signature">
@@ -493,7 +548,7 @@
         <span class="name">factors</span><span class="params">(<span name="variables">variables: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a>]</span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Return all Factors in this Model that touch any of the given &quot;variables&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Return all Factors in this Model that touch any of the given &quot;variables&quot;.  The result will not have any duplicate Factors.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
+      <p class="shortcomment cmt">Return all Factors in this Model that touch any of the given &quot;variables&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Return all Factors in this Model that touch any of the given &quot;variables&quot;.  The result will not have any duplicate Factors.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a> → <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
     </li><li name="cc.factorie.model.Model#factors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="factors(dl:cc.factorie.variable.DiffList):Iterable[cc.factorie.model.Factor]"></a>
       <a id="factors(variable.DiffList):Iterable[model.Factor]"></a>
@@ -756,32 +811,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#families" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="families:Seq[cc.factorie.model.Template]"></a>
-      <a id="families:Seq[Template]"></a>
+    </li><li name="cc.factorie.app.chain.ChainModel#featureClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="featureClass:Class[_]"></a>
+      <a id="featureClass:Class[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">families</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a>]</span>
+        <span class="name">featureClass</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#familiesOfClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="familiesOfClass[F&lt;:cc.factorie.model.Template](fclass:Class[F]):Iterable[F]"></a>
-      <a id="familiesOfClass[F&lt;:Template](Class[F]):Iterable[F]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#featuresDomain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="featuresDomain:cc.factorie.variable.CategoricalVectorDomain[String]"></a>
+      <a id="featuresDomain:CategoricalVectorDomain[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">familiesOfClass</span><span class="tparams">[<span name="F">F &lt;: <a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>]</span><span class="params">(<span name="fclass">fclass: <span class="extype" name="scala.Predef.Class">Class</span>[<span class="extype" name="cc.factorie.model.TemplateModel.familiesOfClass.F">F</span>]</span>)</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.model.TemplateModel.familiesOfClass.F">F</span>]</span>
+        <span class="name">featuresDomain</span><span class="result">: <a href="../variable/CategoricalVectorDomain.html" class="extype" name="cc.factorie.variable.CategoricalVectorDomain">CategoricalVectorDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="cc.factorie.model.Model#filterByFactorClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="filterByFactorClass[F&lt;:cc.factorie.model.Factor](factors:Iterable[cc.factorie.model.Factor],fclass:Class[F]):Iterable[F]"></a>
       <a id="filterByFactorClass[F&lt;:model.Factor](Iterable[model.Factor],Class[F]):Iterable[F]"></a>
@@ -879,6 +934,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#getHammingLossScores" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHammingLossScores(varying:Seq[Labelwithcc.factorie.variable.LabeledMutableDiscreteVar]):Array[cc.factorie.la.Tensor1]"></a>
+      <a id="getHammingLossScores(Seq[LabeledPennPosTagwithLabeledMutableDiscreteVar]):Array[la.Tensor1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHammingLossScores</span><span class="params">(<span name="varying">varying: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a> with <a href="../variable/LabeledMutableDiscreteVar.html" class="extype" name="cc.factorie.variable.LabeledMutableDiscreteVar">LabeledMutableDiscreteVar</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../la/Tensor1.html" class="extype" name="cc.factorie.la.Tensor1">la.Tensor1</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#getLocalScores" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getLocalScores(varying:Seq[Label]):Array[cc.factorie.la.DenseTensor1]"></a>
+      <a id="getLocalScores(Seq[LabeledPennPosTag]):Array[la.DenseTensor1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getLocalScores</span><span class="params">(<span name="varying">varying: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../la/DenseTensor1.html" class="extype" name="cc.factorie.la.DenseTensor1">la.DenseTensor1</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -892,6 +973,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#inferFast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inferFast(varying:Seq[Label],addToLocalScoresOpt:Option[Array[cc.factorie.la.Tensor1]]):ChainModel.this.InferenceResults"></a>
+      <a id="inferFast(Seq[LabeledPennPosTag],Option[Array[la.Tensor1]]):InferenceResults"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inferFast</span><span class="params">(<span name="varying">varying: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>]</span>, <span name="addToLocalScoresOpt">addToLocalScoresOpt: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../la/Tensor1.html" class="extype" name="cc.factorie.la.Tensor1">la.Tensor1</a>]] = <span class="symbol"><span class="name"><a href="../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <a href="#InferenceResultsextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.chain.ChainModel.InferenceResults">InferenceResults</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -957,32 +1051,84 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">Model</a></dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#limitDiscreteValuesAsIn" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="limitDiscreteValuesAsIn(vars:Iterable[cc.factorie.variable.DiscreteVar]):Unit"></a>
-      <a id="limitDiscreteValuesAsIn(Iterable[DiscreteVar]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">limitDiscreteValuesAsIn</span><span class="params">(<span name="vars">vars: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../variable/DiscreteVar.html" class="extype" name="cc.factorie.variable.DiscreteVar">DiscreteVar</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
-    </li><li name="cc.factorie.tutorial.ForwardBackwardPOS.PosModel#localTemplate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="localTemplate:cc.factorie.model.DotTemplateWithStatistics2[cc.factorie.app.nlp.pos.PennPosTag,cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures]{valweights:cc.factorie.model.Weights2}"></a>
-      <a id="localTemplate:DotTemplateWithStatistics2[PennPosTag,PosFeatures]{valweights:cc.factorie.model.Weights2}"></a>
+    </li><li name="cc.factorie.app.chain.ChainModel#labelClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="labelClass:Class[_]"></a>
+      <a id="labelClass:Class[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">localTemplate</span><span class="result">: <a href="../model/DotTemplateWithStatistics2.html" class="extype" name="cc.factorie.model.DotTemplateWithStatistics2">DotTemplateWithStatistics2</a>[<a href="../app/nlp/pos/PennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.PennPosTag">PennPosTag</a>, <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>] { val weights: cc.factorie.model.Weights2 }</span>
+        <span class="name">labelClass</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#labelDomain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="labelDomain:cc.factorie.variable.CategoricalDomain[String]"></a>
+      <a id="labelDomain:CategoricalDomain[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">labelDomain</span><span class="result">: <a href="../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#labelToFeatures" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="labelToFeatures:Label=&gt;Features"></a>
+      <a id="labelToFeatures:(LabeledPennPosTag)⇒PosFeatures"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">labelToFeatures</span><span class="result">: (<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>) ⇒ <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#labelToToken" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="labelToToken:Label=&gt;Token"></a>
+      <a id="labelToToken:(LabeledPennPosTag)⇒Token"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">labelToToken</span><span class="result">: (<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>) ⇒ <a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#markov" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="markov:cc.factorie.model.DotFamilyWithStatistics2[Label,Label]{valweights:cc.factorie.model.Weights2}"></a>
+      <a id="markov:DotFamilyWithStatistics2[LabeledPennPosTag,LabeledPennPosTag]{valweights:cc.factorie.model.Weights2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">markov</span><span class="result">: <a href="../model/DotFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics2">DotFamilyWithStatistics2</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>] { val weights: cc.factorie.model.Weights2 }</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#maximize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="maximize(vars:Seq[Label])(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="maximize(Seq[LabeledPennPosTag])(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maximize</span><span class="params">(<span name="vars">vars: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1035,6 +1181,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#obs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="obs:cc.factorie.model.DotFamilyWithStatistics2[Features,Label]{valweights:cc.factorie.model.Weights2}"></a>
+      <a id="obs:DotFamilyWithStatistics2[PosFeatures,LabeledPennPosTag]{valweights:cc.factorie.model.Weights2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">obs</span><span class="result">: <a href="../model/DotFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics2">DotFamilyWithStatistics2</a>[<a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>, <a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>] { val weights: cc.factorie.model.Weights2 }</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#obsmarkov" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="obsmarkov:cc.factorie.model.DotFamilyWithStatistics3[Label,Label,Features]{valweights:cc.factorie.model.Weights3}"></a>
+      <a id="obsmarkov:DotFamilyWithStatistics3[LabeledPennPosTag,LabeledPennPosTag,PosFeatures]{valweights:cc.factorie.model.Weights3}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">obsmarkov</span><span class="result">: <a href="../model/DotFamilyWithStatistics3.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics3">DotFamilyWithStatistics3</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>] { val weights: cc.factorie.model.Weights3 }</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="cc.factorie.model.Parameters#parameters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parameters:cc.factorie.model.WeightsSet"></a>
       <a id="parameters:WeightsSet"></a>
@@ -1048,6 +1220,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">Parameters</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#serialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize(stream:java.io.OutputStream):Unit"></a>
+      <a id="serialize(OutputStream):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="params">(<span name="stream">stream: <span class="extype" name="java.io.OutputStream">OutputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1061,19 +1246,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="cc.factorie.model.TemplateModel#templates" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="templates:scala.collection.mutable.ArrayBuffer[cc.factorie.model.Template]"></a>
-      <a id="templates:ArrayBuffer[Template]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">templates</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../model/Template.html" class="extype" name="cc.factorie.model.Template">Template</a>]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">TemplateModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -1087,19 +1259,58 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="cc.factorie.tutorial.ForwardBackwardPOS.PosModel#transTemplate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="transTemplate:cc.factorie.model.DotTemplateWithStatistics2[cc.factorie.app.nlp.pos.PennPosTag,cc.factorie.app.nlp.pos.PennPosTag]{valweights:cc.factorie.model.Weights2}"></a>
-      <a id="transTemplate:DotTemplateWithStatistics2[PennPosTag,PennPosTag]{valweights:cc.factorie.model.Weights2}"></a>
+    </li><li name="cc.factorie.app.chain.ChainModel#tokenClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tokenClass:Class[_]"></a>
+      <a id="tokenClass:Class[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">transTemplate</span><span class="result">: <a href="../model/DotTemplateWithStatistics2.html" class="extype" name="cc.factorie.model.DotTemplateWithStatistics2">DotTemplateWithStatistics2</a>[<a href="../app/nlp/pos/PennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.PennPosTag">PennPosTag</a>, <a href="../app/nlp/pos/PennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.PennPosTag">PennPosTag</a>] { val weights: cc.factorie.model.Weights2 }</span>
+        <span class="name">tokenClass</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#tokenToLabel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tokenToLabel:Token=&gt;Label"></a>
+      <a id="tokenToLabel:(Token)⇒LabeledPennPosTag"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tokenToLabel</span><span class="result">: (<a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>) ⇒ <a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#useObsMarkov" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="useObsMarkov:Boolean"></a>
+      <a id="useObsMarkov:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">useObsMarkov</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
+    </li><li name="cc.factorie.app.chain.ChainModel#viterbiFast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="viterbiFast(varying:Seq[Label],addToLocalScoresOpt:Option[Array[cc.factorie.la.Tensor1]]):ChainModel.this.ViterbiResults"></a>
+      <a id="viterbiFast(Seq[LabeledPennPosTag],Option[Array[la.Tensor1]]):ViterbiResults"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">viterbiFast</span><span class="params">(<span name="varying">varying: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>]</span>, <span name="addToLocalScoresOpt">addToLocalScoresOpt: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Array">Array</span>[<a href="../la/Tensor1.html" class="extype" name="cc.factorie.la.Tensor1">la.Tensor1</a>]] = <span class="symbol"><span class="name"><a href="../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <a href="#ViterbiResultsextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.chain.ChainModel.ViterbiResults">ViterbiResults</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1166,10 +1377,10 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="cc.factorie.model.Parameters">
+        <div class="parent" name="cc.factorie.app.chain.ChainModel">
+              <h3>Inherited from <a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a>[<a href="../app/nlp/pos/LabeledPennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.LabeledPennPosTag">LabeledPennPosTag</a>, <a href="ForwardBackwardPOS$$PosFeatures.html" class="extype" name="cc.factorie.tutorial.ForwardBackwardPOS.PosFeatures">PosFeatures</a>, <a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</h3>
+            </div><div class="parent" name="cc.factorie.model.Parameters">
               <h3>Inherited from <a href="../model/Parameters.html" class="extype" name="cc.factorie.model.Parameters">model.Parameters</a></h3>
-            </div><div class="parent" name="cc.factorie.model.TemplateModel">
-              <h3>Inherited from <a href="../model/TemplateModel.html" class="extype" name="cc.factorie.model.TemplateModel">model.TemplateModel</a></h3>
             </div><div class="parent" name="cc.factorie.model.Model">
               <h3>Inherited from <a href="../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></h3>
             </div><div class="parent" name="scala.AnyRef">

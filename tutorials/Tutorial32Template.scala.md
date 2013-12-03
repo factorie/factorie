@@ -2,7 +2,7 @@
 title: "Tutorial 3.2: Templates"
 layout: default
 group: tutorial
-weight: 3
+weight: 32
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;

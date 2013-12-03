@@ -163,7 +163,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.util.Attr.attr#all" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.util.Attr.attr#all" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="all[C&lt;:AnyRef]()(implicitm:scala.reflect.ClassTag[C]):Seq[C]"></a>
       <a id="all[C&lt;:AnyRef]()(ClassTag[C]):Seq[C]"></a>
       <h4 class="signature">
@@ -175,8 +175,8 @@
         <span class="name">all</span><span class="tparams">[<span name="C">C &lt;: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="m">m: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="cc.factorie.util.Attr.attr.all.C">C</span>]</span>)</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.util.Attr.attr.all.C">C</span>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Returns a sequence of all attributes with classes that are equal to or subclasses of C.</p>
-    </li><li name="cc.factorie.util.Attr.attr#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Returns a sequence of all attributes with classes assignable to C (i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sequence of all attributes with classes assignable to C (i.e. that are either C or a subclass of C).</p></div></div>
+    </li><li name="cc.factorie.util.Attr.attr#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply[C&lt;:AnyRef](key:Class[C]):C"></a>
       <a id="apply[C&lt;:AnyRef](Class[C]):C"></a>
       <h4 class="signature">
@@ -188,7 +188,7 @@
         <span class="name">apply</span><span class="tparams">[<span name="C">C &lt;: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.Class">Class</span>[<span class="extype" name="cc.factorie.util.Attr.attr.apply.C">C</span>]</span>)</span><span class="result">: <span class="extype" name="cc.factorie.util.Attr.attr.apply.C">C</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Fetch the first value associated with the given class.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch the first value associated with the given class.  If none present, return null.</p></div></div>
     </li><li name="cc.factorie.util.Attr.attr#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply[C&lt;:AnyRef]()(implicitm:scala.reflect.ClassTag[C]):C"></a>
       <a id="apply[C&lt;:AnyRef]()(ClassTag[C]):C"></a>
@@ -215,7 +215,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.util.Attr.attr#capacity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.util.Attr.attr#capacity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="capacity:Int"></a>
       <a id="capacity:Int"></a>
       <h4 class="signature">
@@ -227,7 +227,7 @@
         <span class="name">capacity</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">The capacity of the array holding the attributes.</p><div class="fullcomment"><div class="comment cmt"><p>The capacity of the array holding the attributes.  May be more than &quot;length&quot;, the number of attributes present.</p></div></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -259,7 +259,7 @@
         <span class="name">contains</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return true if there is an attribute of class equal to or subclass of the argument.</p>
     </li><li name="cc.factorie.util.Attr.attr#contains" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="contains[C&lt;:AnyRef]()(implicitm:scala.reflect.ClassTag[C]):Boolean"></a>
       <a id="contains[C&lt;:AnyRef]()(ClassTag[C]):Boolean"></a>
@@ -272,7 +272,7 @@
         <span class="name">contains</span><span class="tparams">[<span name="C">C &lt;: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="m">m: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="cc.factorie.util.Attr.attr.contains.C">C</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return true if there is an attribute of class equal to or subclass of the argument.</p>
     </li><li name="cc.factorie.util.Attr.attr#ensureCapacity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ensureCapacity(cap:Int):Unit"></a>
       <a id="ensureCapacity(Int):Unit"></a>
@@ -312,7 +312,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="cc.factorie.util.Attr.attr#exactly" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.util.Attr.attr#exactly" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="exactly[C&lt;:AnyRef]()(implicitm:scala.reflect.ClassTag[C]):C"></a>
       <a id="exactly[C&lt;:AnyRef]()(ClassTag[C]):C"></a>
       <h4 class="signature">
@@ -324,7 +324,7 @@
         <span class="name">exactly</span><span class="tparams">[<span name="C">C &lt;: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="m">m: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="cc.factorie.util.Attr.attr.exactly.C">C</span>]</span>)</span><span class="result">: <span class="extype" name="cc.factorie.util.Attr.attr.exactly.C">C</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Fetch the first attribute who class is exactly equal to the given class.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch the first attribute who class is exactly equal to the given class.  If none present, return null.</p></div></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -434,7 +434,9 @@
         <span class="name">index</span><span class="tparams">[<span name="C">C &lt;: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="m">m: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="cc.factorie.util.Attr.attr.index.C">C</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Returns the index of the last attribute whose class is assignable from the argument.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the index of the last attribute whose class is assignable from the argument.
+        Attributes occur in the order in which they were inserted.
+        Note this means you can add a:MyClass, then add b:SubclassOfMyClass, then index[MyClass] will return the index of &quot;b&quot;.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
@@ -450,9 +452,9 @@
         <span class="name">index</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Returns the index of the last attribute with class that is assignable from the argument.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the index of the last attribute with class that is assignable from the argument.
+      <p class="shortcomment cmt">Returns the index of the last attribute whose class is assignable from the argument.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the index of the last attribute whose class is assignable from the argument.
         Attributes occur in the order in which they were inserted.
-        Note this means you can add a:MyClass, then add b:MySubclass, then index[MyClass] will return the index of a.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+        Note this means you can add a:MyClass, then add b:SubclassOfMyClass, then index[MyClass] will return the index of &quot;b&quot;.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
@@ -468,7 +470,7 @@
         <span class="name">indexExactly</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Returns the index of the last attribute with class that is exactly the argument.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the index of the last attribute with class that is exactly the argument.
+      <p class="shortcomment cmt">Return the index of the last attribute whose class is exactly the argument.</p><div class="fullcomment"><div class="comment cmt"><p>Return the index of the last attribute whose class is exactly the argument.
         Attributes occur in the order in which they were inserted.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
               
@@ -565,7 +567,7 @@
         <span class="name">removeIndex</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Remove the attribute at index i.</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -604,7 +606,7 @@
         <span class="name">trimCapacity</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Re-allocate to remove any unused capacity</p>
+      <p class="shortcomment cmt">Re-allocate the attribute array to remove any excess capacity</p>
     </li><li name="cc.factorie.util.Attr.attr#values" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="values:Seq[AnyRef]"></a>
       <a id="values:Seq[AnyRef]"></a>

@@ -2,7 +2,7 @@
 title: "Users Guide 06: Inference"
 layout: default
 group: usersguide
-weight: 3
+weight: 6
 ---
 
 <a href="{{ site.baseurl }}/tutorial.html">Tutorials</a> &gt;
