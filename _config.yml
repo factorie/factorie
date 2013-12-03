@@ -6,7 +6,7 @@ redcarpet:
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"
 author_luke: "<a href='http://www.cs.umass.edu/~luke'>Luke Vilnis</a>"
 factorie_version: "1.0.0-M7"
-baseurl: "http://factorie.github.io/factorie"
+baseurl: "http://factorie.cs.umass.edu"
 factorie_logo: "factorie-logo55.png"
 safe: true
 lsi: false
