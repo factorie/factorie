@@ -1,0 +1,1009 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>WSJTransitionBasedParser - Factorie 1.0-SNAPSHOT API - cc.factorie.app.nlp.parse.WSJTransitionBasedParser</title>
+          <meta name="description" content="WSJTransitionBasedParser - Factorie 1.0 - SNAPSHOT API - cc.factorie.app.nlp.parse.WSJTransitionBasedParser" />
+          <meta name="keywords" content="WSJTransitionBasedParser Factorie 1.0 SNAPSHOT API cc.factorie.app.nlp.parse.WSJTransitionBasedParser" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'cc.factorie.app.nlp.parse.WSJTransitionBasedParser';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <a href="WSJTransitionBasedParser$.html" title="Go to companion"><img src="../../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="cc">cc</a>.<a href="../../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../../package.html" class="extype" name="cc.factorie.app">app</a>.<a href="../package.html" class="extype" name="cc.factorie.app.nlp">nlp</a>.<a href="package.html" class="extype" name="cc.factorie.app.nlp.parse">parse</a></p>
+        <h1><a href="WSJTransitionBasedParser$.html" title="Go to companion">WSJTransitionBasedParser</a></h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">WSJTransitionBasedParser</span><span class="result"> extends <a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a>, <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a href="WSJTransitionBasedParser$.html" class="extype" name="cc.factorie.app.nlp.parse.WSJTransitionBasedParser">WSJTransitionBasedParser</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.app.nlp.parse.WSJTransitionBasedParser"><span>WSJTransitionBasedParser</span></li><li class="in" name="cc.factorie.app.nlp.parse.TransitionBasedParser"><span>TransitionBasedParser</span></li><li class="in" name="cc.factorie.app.nlp.DocumentAnnotator"><span>DocumentAnnotator</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="cc.factorie.app.nlp.parse.WSJTransitionBasedParser#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(url:java.net.URL):cc.factorie.app.nlp.parse.WSJTransitionBasedParser"></a>
+      <a id="&lt;init&gt;:WSJTransitionBasedParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">WSJTransitionBasedParser</span><span class="params">(<span name="url">url: <span class="extype" name="java.net.URL">URL</span></span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.DepArc" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DepArcextendsProductwithSerializable"></a>
+      <a id="DepArc:DepArc"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$DepArc.html"><span class="name">DepArc</span></a><span class="params">(<span name="depToken">depToken: <a href="TransitionBasedParser$DepToken.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser.DepToken">DepToken</a></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.DepToken" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DepTokenextendsAnyRef"></a>
+      <a id="DepToken:DepToken"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$DepToken.html"><span class="name">DepToken</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonProjDependencyParserFeatures" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NonProjDependencyParserFeaturesextendsBinaryFeatureVectorVariable[String]"></a>
+      <a id="NonProjDependencyParserFeatures:NonProjDependencyParserFeatures"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$NonProjDependencyParserFeatures.html"><span class="name">NonProjDependencyParserFeatures</span></a><span class="result"> extends <a href="../../../variable/BinaryFeatureVectorVariable.html" class="extype" name="cc.factorie.variable.BinaryFeatureVectorVariable">BinaryFeatureVectorVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonProjectiveOracle" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="NonProjectiveOracleextendsAnyRef"></a>
+      <a id="NonProjectiveOracle:NonProjectiveOracle"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$NonProjectiveOracle.html"><span class="name">NonProjectiveOracle</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonProjectiveShiftReduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NonProjectiveShiftReduceextendsAnyRef"></a>
+      <a id="NonProjectiveShiftReduce:NonProjectiveShiftReduce"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$NonProjectiveShiftReduce.html"><span class="name">NonProjectiveShiftReduce</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonprojectiveBoostingOracle" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NonprojectiveBoostingOracleextendsTransitionBasedParser.this.NonProjectiveOracle"></a>
+      <a id="NonprojectiveBoostingOracle:NonprojectiveBoostingOracle"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$NonprojectiveBoostingOracle.html"><span class="name">NonprojectiveBoostingOracle</span></a><span class="result"> extends <a href="TransitionBasedParser$NonProjectiveOracle.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonProjectiveOracle">NonProjectiveOracle</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonprojectiveGoldOracle" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NonprojectiveGoldOracleextendsTransitionBasedParser.this.NonProjectiveOracle"></a>
+      <a id="NonprojectiveGoldOracle:NonprojectiveGoldOracle"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$NonprojectiveGoldOracle.html"><span class="name">NonprojectiveGoldOracle</span></a><span class="result"> extends <a href="TransitionBasedParser$NonProjectiveOracle.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser.NonProjectiveOracle">NonProjectiveOracle</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecision" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ParseDecisionextendsProductwithSerializable"></a>
+      <a id="ParseDecision:ParseDecision"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$ParseDecision.html"><span class="name">ParseDecision</span></a><span class="params">(<span name="action">action: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecisionVariable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ParseDecisionVariableextendsLabeledCategoricalVariable[String]"></a>
+      <a id="ParseDecisionVariable:ParseDecisionVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$ParseDecisionVariable.html"><span class="name">ParseDecisionVariable</span></a><span class="result"> extends <a href="../../../variable/LabeledCategoricalVariable.html" class="extype" name="cc.factorie.variable.LabeledCategoricalVariable">LabeledCategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ParseStateextendsAnyRef"></a>
+      <a id="ParseState:ParseState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$ParseState.html"><span class="name">ParseState</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.DependencyFeatures" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DependencyFeatures"></a>
+      <a id="DependencyFeatures:DependencyFeatures"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$DependencyFeatures$.html"><span class="name">DependencyFeatures</span></a>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParserConstants" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ParserConstants"></a>
+      <a id="ParserConstants:ParserConstants"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$ParserConstants$.html"><span class="name">ParserConstants</span></a>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#boosting" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="boosting(ss:Iterable[cc.factorie.app.nlp.Sentence],nThreads:Int,trainer:cc.factorie.app.classify.backend.MulticlassClassifierTrainer[cc.factorie.app.classify.backend.LinearMulticlassClassifier],evaluate:cc.factorie.app.classify.backend.LinearMulticlassClassifier=&gt;Unit):Unit"></a>
+      <a id="boosting(Iterable[Sentence],Int,MulticlassClassifierTrainer[LinearMulticlassClassifier],(LinearMulticlassClassifier)⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">boosting</span><span class="params">(<span name="ss">ss: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>, <span name="nThreads">nThreads: <span class="extype" name="scala.Int">Int</span></span>, <span name="trainer">trainer: <a href="../../classify/backend/MulticlassClassifierTrainer.html" class="extype" name="cc.factorie.app.classify.backend.MulticlassClassifierTrainer">MulticlassClassifierTrainer</a>[<a href="../../classify/backend/LinearMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassClassifier">LinearMulticlassClassifier</a>]</span>, <span name="evaluate">evaluate: (<a href="../../classify/backend/LinearMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassClassifier">LinearMulticlassClassifier</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#classify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="classify(v:TransitionBasedParser.this.ParseDecisionVariable):TransitionBasedParser.this.ParseDecision"></a>
+      <a id="classify(ParseDecisionVariable):ParseDecision"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">classify</span><span class="params">(<span name="v">v: <a href="#ParseDecisionVariableextendsLabeledCategoricalVariable[String]" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecisionVariable">ParseDecisionVariable</a></span>)</span><span class="result">: <a href="#ParseDecisionextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecision">ParseDecision</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#defaultCategory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultCategory:String"></a>
+      <a id="defaultCategory:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultCategory</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#defaultDecision" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultDecision:TransitionBasedParser.this.ParseDecision"></a>
+      <a id="defaultDecision:ParseDecision"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultDecision</span><span class="result">: <a href="#ParseDecisionextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecision">ParseDecision</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#deserialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deserialize(stream:java.io.InputStream):Unit"></a>
+      <a id="deserialize(InputStream):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserialize</span><span class="params">(<span name="stream">stream: <span class="extype" name="java.io.InputStream">InputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#deserialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deserialize(file:java.io.File):Unit"></a>
+      <a id="deserialize(File):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserialize</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.DocumentAnnotator#documentAnnotationString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="documentAnnotationString(document:cc.factorie.app.nlp.Document):String"></a>
+      <a id="documentAnnotationString(Document):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">documentAnnotationString</span><span class="params">(<span name="document">document: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">How the annotation of this DocumentAnnotator should be printed as extra information after a one-word-per-line (OWPL) format.</p><div class="fullcomment"><div class="comment cmt"><p>How the annotation of this DocumentAnnotator should be printed as extra information after a one-word-per-line (OWPL) format.
+      If there is no document annotation, return the empty string.  Used in Document.owplString.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#featureGenerators" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="featureGenerators:Seq[TransitionBasedParser.this.DependencyFeatures.DependencyFeatureGenerator]"></a>
+      <a id="featureGenerators:Seq[DependencyFeatureGenerator]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">featureGenerators</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="TransitionBasedParser$DependencyFeatures$$DependencyFeatureGenerator.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser.DependencyFeatures.DependencyFeatureGenerator">DependencyFeatureGenerator</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.featuresDomain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="featuresDomain"></a>
+      <a id="featuresDomain:featuresDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$featuresDomain$.html"><span class="name">featuresDomain</span></a><span class="result"> extends <a href="../../../variable/CategoricalVectorDomain.html" class="extype" name="cc.factorie.variable.CategoricalVectorDomain">CategoricalVectorDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#generateDecisions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateDecisions(ss:Iterable[cc.factorie.app.nlp.Sentence],mode:Int,nThreads:Int):Iterable[TransitionBasedParser.this.ParseDecisionVariable]"></a>
+      <a id="generateDecisions(Iterable[Sentence],Int,Int):Iterable[ParseDecisionVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateDecisions</span><span class="params">(<span name="ss">ss: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>, <span name="mode">mode: <span class="extype" name="scala.Int">Int</span></span>, <span name="nThreads">nThreads: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="#ParseDecisionVariableextendsLabeledCategoricalVariable[String]" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecisionVariable">ParseDecisionVariable</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#getParseDecision" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getParseDecision(s:String):TransitionBasedParser.this.ParseDecision"></a>
+      <a id="getParseDecision(String):ParseDecision"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getParseDecision</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="#ParseDecisionextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecision">ParseDecision</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser.labelDomain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="labelDomain"></a>
+      <a id="labelDomain:labelDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TransitionBasedParser$labelDomain$.html"><span class="name">labelDomain</span></a><span class="result"> extends <a href="../../../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.DocumentAnnotator#mentionAnnotationString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mentionAnnotationString(mention:cc.factorie.app.nlp.mention.Mention):String"></a>
+      <a id="mentionAnnotationString(Mention):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mentionAnnotationString</span><span class="params">(<span name="mention">mention: <a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#model" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="model:cc.factorie.app.classify.backend.LinearMulticlassClassifier"></a>
+      <a id="model:LinearMulticlassClassifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">model</span><span class="result">: <a href="../../classify/backend/LinearMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassClassifier">LinearMulticlassClassifier</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#parseDecisionCache" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parseDecisionCache:scala.collection.mutable.HashMap[String,TransitionBasedParser.this.ParseDecision]"></a>
+      <a id="parseDecisionCache:HashMap[String,ParseDecision]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parseDecisionCache</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="java.lang.String">String</span>, <a href="#ParseDecisionextendsProductwithSerializable" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecision">ParseDecision</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.DocumentAnnotator#phraseAnnotationString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="phraseAnnotationString(phrase:cc.factorie.app.nlp.phrase.Phrase):String"></a>
+      <a id="phraseAnnotationString(Phrase):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">phraseAnnotationString</span><span class="params">(<span name="phrase">phrase: <a href="../phrase/Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#postAttrs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postAttrs:Seq[Class[cc.factorie.app.nlp.parse.ParseTree]]"></a>
+      <a id="postAttrs:Seq[Class[ParseTree]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">postAttrs</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<span class="extype" name="java.lang.Class">Class</span>[<a href="ParseTree.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTree">ParseTree</a>]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#prereqAttrs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="prereqAttrs:Seq[Class[_&gt;:cc.factorie.app.nlp.lemma.WordNetTokenLemmawithcc.factorie.app.nlp.pos.PennPosTagwithcc.factorie.app.nlp.Sentence&lt;:cc.factorie.variable.MutableVar{defvalue:Object;typeValue&gt;:Stringwithcc.factorie.variable.CategoricalValue[String]withcc.factorie.variable.Span[cc.factorie.app.nlp.Section,cc.factorie.app.nlp.Token]&lt;:Object}]]"></a>
+      <a id="prereqAttrs:Seq[Class[_&gt;:WordNetTokenLemmawithPennPosTagwithSentence&lt;:MutableVar{.../*2definitionsintyperefinement*/}]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prereqAttrs</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<span class="extype" name="java.lang.Class">Class</span>[_ &gt;: <a href="../lemma/WordNetTokenLemma.html" class="extype" name="cc.factorie.app.nlp.lemma.WordNetTokenLemma">WordNetTokenLemma</a> with <a href="../pos/PennPosTag.html" class="extype" name="cc.factorie.app.nlp.pos.PennPosTag">PennPosTag</a> with <a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a> &lt;: <a href="../../../variable/MutableVar.html" class="extype" name="cc.factorie.variable.MutableVar">MutableVar</a> { ... /* 2 definitions in type refinement */ }]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#process" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process(s:cc.factorie.app.nlp.Sentence):cc.factorie.app.nlp.Sentence"></a>
+      <a id="process(Sentence):Sentence"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process</span><span class="params">(<span name="s">s: <a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a></span>)</span><span class="result">: <a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#process" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process(doc:cc.factorie.app.nlp.Document):cc.factorie.app.nlp.Document"></a>
+      <a id="process(Document):Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.DocumentAnnotator#processParallel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processParallel(documents:Iterable[cc.factorie.app.nlp.Document],nThreads:Int):Iterable[cc.factorie.app.nlp.Document]"></a>
+      <a id="processParallel(Iterable[Document],Int):Iterable[Document]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processParallel</span><span class="params">(<span name="documents">documents: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="nThreads">nThreads: <span class="extype" name="scala.Int">Int</span> = <span class="defval" name="Runtime.getRuntime.availableProcessors()">...</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.DocumentAnnotator#processSequential" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processSequential(documents:Iterable[cc.factorie.app.nlp.Document]):Iterable[cc.factorie.app.nlp.Document]"></a>
+      <a id="processSequential(Iterable[Document]):Iterable[Document]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processSequential</span><span class="params">(<span name="documents">documents: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#serialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize(stream:java.io.OutputStream):Unit"></a>
+      <a id="serialize(OutputStream):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="params">(<span name="stream">stream: <span class="extype" name="java.io.OutputStream">OutputStream</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#serialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize(file:java.io.File):Unit"></a>
+      <a id="serialize(File):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#test" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="test(testSentences:Iterable[cc.factorie.app.nlp.Sentence]):(Double,Double,Double,Double)"></a>
+      <a id="test(Iterable[Sentence]):(Double,Double,Double,Double)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">test</span><span class="params">(<span name="testSentences">testSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>)</span><span class="result">: (<span class="extype" name="scala.Double">Double</span>, <span class="extype" name="scala.Double">Double</span>, <span class="extype" name="scala.Double">Double</span>, <span class="extype" name="scala.Double">Double</span>)</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#testFeatureSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="testFeatureSpec:String"></a>
+      <a id="testFeatureSpec:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">testFeatureSpec</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#testString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="testString(testSentences:Iterable[cc.factorie.app.nlp.Sentence]):String"></a>
+      <a id="testString(Iterable[Sentence]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">testString</span><span class="params">(<span name="testSentences">testSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#tokenAnnotationString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tokenAnnotationString(token:cc.factorie.app.nlp.Token):String"></a>
+      <a id="tokenAnnotationString(Token):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tokenAnnotationString</span><span class="params">(<span name="token">token: <a href="../Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.</p><div class="fullcomment"><div class="comment cmt"><p>How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
+      If there is no per-token annotation, return null.  Used in Document.owplString.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="train(trainSentences:Iterable[cc.factorie.app.nlp.Sentence],testSentences:Iterable[cc.factorie.app.nlp.Sentence],numBootstrappingIterations:Int,l1Factor:Double,l2Factor:Double,nThreads:Int)(implicitrandom:scala.util.Random):Unit"></a>
+      <a id="train(Iterable[Sentence],Iterable[Sentence],Int,Double,Double,Int)(Random):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">train</span><span class="params">(<span name="trainSentences">trainSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>, <span name="testSentences">testSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>, <span name="numBootstrappingIterations">numBootstrappingIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>, <span name="l1Factor">l1Factor: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">0.00001</span></span>, <span name="l2Factor">l2Factor: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">0.00001</span></span>, <span name="nThreads">nThreads: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="random">random: <span class="extype" name="scala.util.Random">Random</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#trainDecisions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="trainDecisions(trainDecisions:Iterable[TransitionBasedParser.this.ParseDecisionVariable],optimizer:cc.factorie.optimize.GradientOptimizer,trainSentences:Iterable[cc.factorie.app.nlp.Sentence],testSentences:Iterable[cc.factorie.app.nlp.Sentence])(implicitrandom:scala.util.Random):Unit"></a>
+      <a id="trainDecisions(Iterable[ParseDecisionVariable],GradientOptimizer,Iterable[Sentence],Iterable[Sentence])(Random):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trainDecisions</span><span class="params">(<span name="trainDecisions">trainDecisions: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="#ParseDecisionVariableextendsLabeledCategoricalVariable[String]" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecisionVariable">ParseDecisionVariable</a>]</span>, <span name="optimizer">optimizer: <a href="../../../optimize/GradientOptimizer.html" class="extype" name="cc.factorie.optimize.GradientOptimizer">GradientOptimizer</a></span>, <span name="trainSentences">trainSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>, <span name="testSentences">testSentences: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="random">random: <span class="extype" name="scala.util.Random">Random</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.parse.TransitionBasedParser#trainFromVariables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="trainFromVariables(vs:Iterable[TransitionBasedParser.this.ParseDecisionVariable],trainer:cc.factorie.app.classify.backend.MulticlassClassifierTrainer[cc.factorie.app.classify.backend.LinearMulticlassClassifier],evaluate:cc.factorie.app.classify.backend.LinearMulticlassClassifier=&gt;Unit):Unit"></a>
+      <a id="trainFromVariables(Iterable[ParseDecisionVariable],MulticlassClassifierTrainer[LinearMulticlassClassifier],(LinearMulticlassClassifier)⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trainFromVariables</span><span class="params">(<span name="vs">vs: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="#ParseDecisionVariableextendsLabeledCategoricalVariable[String]" class="extmbr" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParseDecisionVariable">ParseDecisionVariable</a>]</span>, <span name="trainer">trainer: <a href="../../classify/backend/MulticlassClassifierTrainer.html" class="extype" name="cc.factorie.app.classify.backend.MulticlassClassifierTrainer">MulticlassClassifierTrainer</a>[<a href="../../classify/backend/LinearMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassClassifier">LinearMulticlassClassifier</a>]</span>, <span name="evaluate">evaluate: (<a href="../../classify/backend/LinearMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassClassifier">LinearMulticlassClassifier</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.app.nlp.parse.TransitionBasedParser">
+              <h3>Inherited from <a href="TransitionBasedParser.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser">TransitionBasedParser</a></h3>
+            </div><div class="parent" name="cc.factorie.app.nlp.DocumentAnnotator">
+              <h3>Inherited from <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>

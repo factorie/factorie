@@ -1,0 +1,1821 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>EpiDBExperimentOptions - Factorie 1.0-SNAPSHOT API - cc.factorie.app.bib.experiments.EpiDBExperimentOptions</title>
+          <meta name="description" content="EpiDBExperimentOptions - Factorie 1.0 - SNAPSHOT API - cc.factorie.app.bib.experiments.EpiDBExperimentOptions" />
+          <meta name="keywords" content="EpiDBExperimentOptions Factorie 1.0 SNAPSHOT API cc.factorie.app.bib.experiments.EpiDBExperimentOptions" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'cc.factorie.app.bib.experiments.EpiDBExperimentOptions$';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/object_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="cc">cc</a>.<a href="../../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../../package.html" class="extype" name="cc.factorie.app">app</a>.<a href="../package.html" class="extype" name="cc.factorie.app.bib">bib</a>.<a href="package.html" class="extype" name="cc.factorie.app.bib.experiments">experiments</a></p>
+        <h1>EpiDBExperimentOptions</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">EpiDBExperimentOptions</span><span class="result"> extends <a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a> with <a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a> with <a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a> with <a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a> with <a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a> with <a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a> with <a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a>, <a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a>, <a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a>, <a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a>, <a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a>, <a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a>, <a href="ExperimentOptions.html" class="extype" name="cc.factorie.app.bib.experiments.ExperimentOptions">ExperimentOptions</a>, <a href="../../../util/DefaultCmdOptions.html" class="extype" name="cc.factorie.util.DefaultCmdOptions">DefaultCmdOptions</a>, <a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions"><span>EpiDBExperimentOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.EDBExpOpts"><span>EDBExpOpts</span></li><li class="in" name="cc.factorie.app.bib.experiments.HumanEditOptions"><span>HumanEditOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.AuthorModelOptions"><span>AuthorModelOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.InferenceOptions"><span>InferenceOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.DataOptions"><span>DataOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.MongoOptions"><span>MongoOptions</span></li><li class="in" name="cc.factorie.app.bib.experiments.ExperimentOptions"><span>ExperimentOptions</span></li><li class="in" name="cc.factorie.util.DefaultCmdOptions"><span>DefaultCmdOptions</span></li><li class="in" name="cc.factorie.util.CmdOptions"><span>CmdOptions</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.util.CmdOptions.CmdOption" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CmdOption[T]extendsCmdOption[T]"></a>
+      <a id="CmdOption[T]:CmdOption[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="../../../util/CmdOptions$CmdOption.html"><span class="name">CmdOption</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[<span class="extype" name="cc.factorie.util.CmdOptions.CmdOption.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#+=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="+=(c:cc.factorie.util.CmdOption[_]):CmdOptions.this.type"></a>
+      <a id="+=(util.CmdOption[_]):EpiDBExperimentOptions.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="c">c: <a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[_]</span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions">EpiDBExperimentOptions</a>.this.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#-=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="-=(c:cc.factorie.util.CmdOption[_]):CmdOptions.this.type"></a>
+      <a id="-=(util.CmdOption[_]):EpiDBExperimentOptions.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="c">c: <a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[_]</span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions">EpiDBExperimentOptions</a>.this.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#advanceSeed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="advanceSeed:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="advanceSeed:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">advanceSeed</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(key:String):cc.factorie.util.CmdOption[_]"></a>
+      <a id="apply(String):util.CmdOption[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#aronData" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aronData:DataOptions.this.CmdOption[String]"></a>
+      <a id="aronData:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aronData</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagCoAuthorEntropy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagCoAuthorEntropy:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagCoAuthorEntropy:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagCoAuthorEntropy</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagCoAuthorPrior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagCoAuthorPrior:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagCoAuthorPrior:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagCoAuthorPrior</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagCoAuthorShift" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagCoAuthorShift:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagCoAuthorShift:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagCoAuthorShift</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagCoAuthorWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagCoAuthorWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagCoAuthorWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagCoAuthorWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstInitialWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstInitialWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstInitialWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstInitialWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstNamePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstNamePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstNamePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstNamePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstNameWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstNameWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstNameWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstNameWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstNoNamePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstNoNamePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstNoNamePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstNoNamePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstSaturation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstSaturation:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstSaturation:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstSaturation</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagFirstWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagFirstWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagFirstWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagFirstWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagKeywordsEntropy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagKeywordsEntropy:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagKeywordsEntropy:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagKeywordsEntropy</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagKeywordsPrior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagKeywordsPrior:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagKeywordsPrior:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagKeywordsPrior</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagKeywordsShift" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagKeywordsShift:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagKeywordsShift:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagKeywordsShift</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagKeywordsWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagKeywordsWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagKeywordsWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagKeywordsWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleInitialWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleInitialWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleInitialWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleInitialWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleNamePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleNamePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleNamePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleNamePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleNameWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleNameWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleNameWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleNameWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleNoNamePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleNoNamePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleNoNamePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleNoNamePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleSaturation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleSaturation:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleSaturation:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleSaturation</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagMiddleWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagMiddleWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagMiddleWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagMiddleWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagTopicsEntropy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagTopicsEntropy:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagTopicsEntropy:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagTopicsEntropy</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagTopicsEntropyOrdering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagTopicsEntropyOrdering:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagTopicsEntropyOrdering:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagTopicsEntropyOrdering</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagTopicsPrior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagTopicsPrior:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagTopicsPrior:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagTopicsPrior</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagTopicsShift" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagTopicsShift:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagTopicsShift:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagTopicsShift</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagTopicsWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagTopicsWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagTopicsWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagTopicsWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagVenuesEntropy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagVenuesEntropy:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagVenuesEntropy:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagVenuesEntropy</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagVenuesPrior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagVenuesPrior:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagVenuesPrior:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagVenuesPrior</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagVenuesShift" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagVenuesShift:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagVenuesShift:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagVenuesShift</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#bagVenuesWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bagVenuesWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="bagVenuesWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bagVenuesWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#batchSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="batchSize:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="batchSize:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchSize</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#bibDirectory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bibDirectory:DataOptions.this.CmdOption[String]"></a>
+      <a id="bibDirectory:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bibDirectory</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.MongoOptions#database" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="database:MongoOptions.this.CmdOption[String]"></a>
+      <a id="database:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">database</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#dblpLocation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dblpLocation:DataOptions.this.CmdOption[String]"></a>
+      <a id="dblpLocation:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dblpLocation</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#depthPenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="depthPenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="depthPenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">depthPenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#dropDB" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropDB:DataOptions.this.CmdOption[Boolean]"></a>
+      <a id="dropDB:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropDB</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#entityExistencePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entityExistencePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="entityExistencePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entityExistencePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#entitySizeExponent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entitySizeExponent:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="entitySizeExponent:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entitySizeExponent</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#entitySizeWeight" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entitySizeWeight:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="entitySizeWeight:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entitySizeWeight</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#error" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="error(msg:String):Unit"></a>
+      <a id="error(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">error</span><span class="params">(<span name="msg">msg: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#evaluateOnly" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evaluateOnly:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="evaluateOnly:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluateOnly</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#evidenceBatchSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evidenceBatchSize:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="evidenceBatchSize:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evidenceBatchSize</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#evidenceStreamType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evidenceStreamType:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="evidenceStreamType:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evidenceStreamType</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#experimentName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimentName:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="experimentName:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">experimentName</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#filterPapersOnLabeledCanopies" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="filterPapersOnLabeledCanopies:DataOptions.this.CmdOption[Boolean]"></a>
+      <a id="filterPapersOnLabeledCanopies:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">filterPapersOnLabeledCanopies</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#fold" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fold:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="fold:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fold</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(key:String):Option[cc.factorie.util.CmdOption[_]]"></a>
+      <a id="get(String):Option[util.CmdOption[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[_]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heAddPctConflict" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heAddPctConflict:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heAddPctConflict:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heAddPctConflict</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heAdvanceSeed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heAdvanceSeed:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heAdvanceSeed:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heAdvanceSeed</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heExperimentType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heExperimentType:HumanEditOptions.this.CmdOption[String]"></a>
+      <a id="heExperimentType:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heExperimentType</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heIncludeCorruptiveAttributeEdits" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heIncludeCorruptiveAttributeEdits:HumanEditOptions.this.CmdOption[Boolean]"></a>
+      <a id="heIncludeCorruptiveAttributeEdits:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heIncludeCorruptiveAttributeEdits</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heInitializeEdits" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heInitializeEdits:HumanEditOptions.this.CmdOption[Boolean]"></a>
+      <a id="heInitializeEdits:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heInitializeEdits</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heMergeExpEMinPurity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heMergeExpEMinPurity:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heMergeExpEMinPurity:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heMergeExpEMinPurity</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heMergeExpEMinSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heMergeExpEMinSize:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heMergeExpEMinSize:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heMergeExpEMinSize</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heMoreEvidenceAtEndPct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heMoreEvidenceAtEndPct:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heMoreEvidenceAtEndPct:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heMoreEvidenceAtEndPct</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heNumBatches" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heNumBatches:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heNumBatches:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heNumBatches</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heNumEditRounds" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heNumEditRounds:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heNumEditRounds:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heNumEditRounds</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heNumSynthesisSamples" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heNumSynthesisSamples:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heNumSynthesisSamples:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heNumSynthesisSamples</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heProminentReq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heProminentReq:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heProminentReq:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heProminentReq</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heReliabilitySensitivity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heReliabilitySensitivity:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heReliabilitySensitivity:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heReliabilitySensitivity</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heReliabilityUsers" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heReliabilityUsers:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heReliabilityUsers:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heReliabilityUsers</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heSaveInitialDB" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heSaveInitialDB:HumanEditOptions.this.CmdOption[Boolean]"></a>
+      <a id="heSaveInitialDB:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heSaveInitialDB</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heShouldLinkReward" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heShouldLinkReward:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heShouldLinkReward:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heShouldLinkReward</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heShouldNotLinkPenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heShouldNotLinkPenalty:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heShouldNotLinkPenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heShouldNotLinkPenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heSpecializedTemperature" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heSpecializedTemperature:HumanEditOptions.this.CmdOption[Double]"></a>
+      <a id="heSpecializedTemperature:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heSpecializedTemperature</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heUseNIncorrectSplits" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heUseNIncorrectSplits:HumanEditOptions.this.CmdOption[Int]"></a>
+      <a id="heUseNIncorrectSplits:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heUseNIncorrectSplits</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.HumanEditOptions#heUseParallel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="heUseParallel:HumanEditOptions.this.CmdOption[Boolean]"></a>
+      <a id="heUseParallel:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">heUseParallel</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#inferenceInitialSteps" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inferenceInitialSteps:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="inferenceInitialSteps:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inferenceInitialSteps</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#inferenceStepsPerBatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inferenceStepsPerBatch:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="inferenceStepsPerBatch:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inferenceStepsPerBatch</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#initialDBPercent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initialDBPercent:EDBExpOpts.this.CmdOption[Double]"></a>
+      <a id="initialDBPercent:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initialDBPercent</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#ldaModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ldaModel:DataOptions.this.CmdOption[String]"></a>
+      <a id="ldaModel:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ldaModel</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="main(argsIn:Array[String]):Unit"></a>
+      <a id="main(Array[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">main</span><span class="params">(<span name="argsIn">argsIn: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#metaDir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="metaDir:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="metaDir:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metaDir</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#numEpochs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="numEpochs:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="numEpochs:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">numEpochs</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#numFolds" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="numFolds:EDBExpOpts.this.CmdOption[Int]"></a>
+      <a id="numFolds:CmdOption[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">numFolds</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#outputDir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outputDir:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="outputDir:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">outputDir</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#outputFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outputFile:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="outputFile:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">outputFile</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#parse" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parse(args:Seq[String]):Unit"></a>
+      <a id="parse(Seq[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parse</span><span class="params">(<span name="args">args: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Parse sequence of command-line arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Parse sequence of command-line arguments.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#partitionByYear" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="partitionByYear[T&lt;:cc.factorie.util.Attr](seq:Seq[T]):scala.collection.mutable.HashMap[Int,Seq[T]]"></a>
+      <a id="partitionByYear[T&lt;:Attr](Seq[T]):HashMap[Int,Seq[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionByYear</span><span class="tparams">[<span name="T">T &lt;: <a href="../../../util/Attr.html" class="extype" name="cc.factorie.util.Attr">Attr</a></span>]</span><span class="params">(<span name="seq">seq: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.partitionByYear.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Int">Int</span>, <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.partitionByYear.T">T</span>]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.MongoOptions#port" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="port:MongoOptions.this.CmdOption[String]"></a>
+      <a id="port:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">port</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#randomEqualPartitioning" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="randomEqualPartitioning[T](seq:Seq[T],partitionSize:Int):Seq[Seq[T]]"></a>
+      <a id="randomEqualPartitioning[T](Seq[T],Int):Seq[Seq[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">randomEqualPartitioning</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="seq">seq: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomEqualPartitioning.T">T</span>]</span>, <span name="partitionSize">partitionSize: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomEqualPartitioning.T">T</span>]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#randomSubset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="randomSubset[T](seq:Seq[T],n:Int):Seq[T]"></a>
+      <a id="randomSubset[T](Seq[T],Int):Seq[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">randomSubset</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="seq">seq: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomSubset.T">T</span>]</span>, <span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomSubset.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#randomSubset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="randomSubset[T](seq:Seq[T],pct:Double):Seq[T]"></a>
+      <a id="randomSubset[T](Seq[T],Double):Seq[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">randomSubset</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="seq">seq: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomSubset.T">T</span>]</span>, <span name="pct">pct: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.randomSubset.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.ExperimentOptions#readOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readOptions(file:java.io.File):Unit"></a>
+      <a id="readOptions(File):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readOptions</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ExperimentOptions.html" class="extype" name="cc.factorie.app.bib.experiments.ExperimentOptions">ExperimentOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#remaining" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="remaining:Seq[String]"></a>
+      <a id="remaining:Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">remaining</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#resultsDir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resultsDir:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="resultsDir:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resultsDir</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#rexaData" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="rexaData:DataOptions.this.CmdOption[String]"></a>
+      <a id="rexaData:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rexaData</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.DataOptions#saveDB" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="saveDB:DataOptions.this.CmdOption[Boolean]"></a>
+      <a id="saveDB:CmdOption[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">saveDB</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EDBExpOpts#scratchDir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scratchDir:EDBExpOpts.this.CmdOption[String]"></a>
+      <a id="scratchDir:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">scratchDir</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.MongoOptions#server" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="server:MongoOptions.this.CmdOption[String]"></a>
+      <a id="server:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">server</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#size" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="size:Int"></a>
+      <a id="size:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">size</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions#split" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="split[T](seq:Seq[T],numFolds:Int,fold:Int):(Seq[T],Seq[T])"></a>
+      <a id="split[T](Seq[T],Int,Int):(Seq[T],Seq[T])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">split</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="seq">seq: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.split.T">T</span>]</span>, <span name="numFolds">numFolds: <span class="extype" name="scala.Int">Int</span></span>, <span name="fold">fold: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: (<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.split.T">T</span>], <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.bib.experiments.EpiDBExperimentOptions.split.T">T</span>])</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#stepMultiplierA" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stepMultiplierA:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="stepMultiplierA:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stepMultiplierA</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#stepMultiplierB" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stepMultiplierB:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="stepMultiplierB:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stepMultiplierB</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.InferenceOptions#stepMultiplierC" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stepMultiplierC:InferenceOptions.this.CmdOption[String]"></a>
+      <a id="stepMultiplierC:CmdOption[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stepMultiplierC</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#strict" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="strict:Boolean"></a>
+      <a id="strict:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">strict</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.AuthorModelOptions#subEntityExistencePenalty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="subEntityExistencePenalty:AuthorModelOptions.this.CmdOption[Double]"></a>
+      <a id="subEntityExistencePenalty:CmdOption[Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">subEntityExistencePenalty</span><span class="result">: <a href="#CmdOption[T]extendsCmdOption[T]" class="extmbr" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a>[<span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#usageString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="usageString:String"></a>
+      <a id="usageString:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">usageString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.util.CmdOptions#values" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="values:Iterable[cc.factorie.util.CmdOption[_]]"></a>
+      <a id="values:Iterable[util.CmdOption[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">values</span><span class="result">: <span class="extype" name="scala.collection.Iterable">Iterable</span>[<a href="../../../util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">util.CmdOption</a>[_]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.ExperimentOptions#writeOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="writeOptions(pw:java.io.PrintWriter):Unit"></a>
+      <a id="writeOptions(PrintWriter):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeOptions</span><span class="params">(<span name="pw">pw: <span class="extype" name="java.io.PrintWriter">PrintWriter</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ExperimentOptions.html" class="extype" name="cc.factorie.app.bib.experiments.ExperimentOptions">ExperimentOptions</a></dd></dl></div>
+    </li><li name="cc.factorie.app.bib.experiments.ExperimentOptions#writeOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="writeOptions(file:java.io.File):Unit"></a>
+      <a id="writeOptions(File):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeOptions</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ExperimentOptions.html" class="extype" name="cc.factorie.app.bib.experiments.ExperimentOptions">ExperimentOptions</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.app.bib.experiments.EDBExpOpts">
+              <h3>Inherited from <a href="EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.HumanEditOptions">
+              <h3>Inherited from <a href="HumanEditOptions.html" class="extype" name="cc.factorie.app.bib.experiments.HumanEditOptions">HumanEditOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.AuthorModelOptions">
+              <h3>Inherited from <a href="AuthorModelOptions.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorModelOptions">AuthorModelOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.InferenceOptions">
+              <h3>Inherited from <a href="InferenceOptions.html" class="extype" name="cc.factorie.app.bib.experiments.InferenceOptions">InferenceOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.DataOptions">
+              <h3>Inherited from <a href="DataOptions.html" class="extype" name="cc.factorie.app.bib.experiments.DataOptions">DataOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.MongoOptions">
+              <h3>Inherited from <a href="MongoOptions.html" class="extype" name="cc.factorie.app.bib.experiments.MongoOptions">MongoOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.app.bib.experiments.ExperimentOptions">
+              <h3>Inherited from <a href="ExperimentOptions.html" class="extype" name="cc.factorie.app.bib.experiments.ExperimentOptions">ExperimentOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.util.DefaultCmdOptions">
+              <h3>Inherited from <a href="../../../util/DefaultCmdOptions.html" class="extype" name="cc.factorie.util.DefaultCmdOptions">DefaultCmdOptions</a></h3>
+            </div><div class="parent" name="cc.factorie.util.CmdOptions">
+              <h3>Inherited from <a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>
