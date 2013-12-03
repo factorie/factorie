@@ -91,29 +91,12 @@ object Grid {
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
     val objective = new HammingTemplate[Pixel]
-    // println("True accuracy: " + objective.accuracy(pixels))
-    /// printImage(image)
-    pixels.foreach(_.setUsingObserved)
-    // println("Local accuracy: " + objective.accuracy(pixels))
-    // printImage(image)
+    pixels.foreach(_.setUsingObserved())
     implicit val random = new scala.util.Random(0)
     pixels.foreach(_.setRandomly)
     //*
     val sampler = new SamplingMaximizer[Pixel](new VariableSettingsSampler(gridModel))
     sampler.maximize(pixels, iterations=10, rounds=10)
-    //sampler.iterations = 10
-    //sampler.rounds = 10
-    //sampler.infer(pixels)
-    //*/
-    /*
-    val lattice = new LatticeBP(gridModel, pixels.toSet) with MaxProductLattice
-    val bp = new InferencerBPWorker(lattice)
-    bp.inferLoopyBP(2)
-    lattice.finalPass = true
-    bp.inferLoopyBP(1)
-    lattice.setToMaxMarginal()
-    */
     println("Accuracy: %f".format(objective.accuracy(pixels)))
-    // printImage(image)
   }
 }

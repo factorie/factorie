@@ -8,16 +8,14 @@ import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain, LabeledPennPosTag}
 import app.chain.Observations.addNeighboringFeatureConjunctions
 import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{LabeledVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, TemplateModel}
-import cc.factorie.infer.{InferByBPChain, BP}
 import cc.factorie.app.nlp.load.LoadOWPL
+import cc.factorie.app.chain.ChainModel
 
 /**
  * Author: martin
  * Date: 2/8/12
  *
- * A simple chain POS tagger trained using L-BFGS on forward-backawrd gradients.
- * Prediction uses Viterbi.
+ * A simple chain POS tagger using the ChainModel's examples and inference.
  */
 
 /** A simple demonstration of part-of-speech tagging with a finite-state linear-chain CRF.
@@ -27,24 +25,9 @@ object ForwardBackwardPOS {
   object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
-  object PosModel extends TemplateModel with Parameters {
-    // Factor between label and observed token
-    val localTemplate = this += new DotTemplateWithStatistics2[PennPosTag,PosFeatures] {
-      //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
-      val weights = Weights(new la.DenseTensor2(PennPosDomain.size, PosFeaturesDomain.dimensionSize))
-      def unroll1(label: PennPosTag) = Factor(label, label.token.attr[PosFeatures])
-      def unroll2(tf: PosFeatures) = Factor(tf.token.posTag, tf)
-    }
-    // Transition factors between two successive labels
-    val transTemplate = this += new DotTemplateWithStatistics2[PennPosTag, PennPosTag] {
-      //override def statisticsDomains = ((PosDomain, PosDomain))
-      val weights = Weights(new la.DenseTensor2(PennPosDomain.size, PennPosDomain.size))
-      def unroll1(label: PennPosTag) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posTag, label) else Nil
-      def unroll2(label: PennPosTag) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posTag) else Nil
-    }
-  }
+  object PosModel extends ChainModel[LabeledPennPosTag,PosFeatures,Token](PennPosDomain, PosFeaturesDomain, l => l.token.attr[PosFeatures], l => l.token, t => t.attr[LabeledPennPosTag])
 
-  def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures(_))
+  def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures)
   def initPosFeatures(document: Document): Unit = {
     for (token <- document.tokens) {
       val rawWord = token.string
@@ -72,10 +55,9 @@ object ForwardBackwardPOS {
     numCorrect / ls.size * 100
   }
 
-  def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posTag))
-  def predictSentence(vs: Seq[PennPosTag], oldBp: Boolean = false): Unit =
-    BP.inferChainMax(vs, PosModel).setToMaximize(null)
-    //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+  def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.attr[LabeledPennPosTag]))
+  def predictSentence(vs: Seq[LabeledPennPosTag], oldBp: Boolean = false): Unit =
+    PosModel.maximize(vs)(null)
 
   def train(
         documents: Seq[Document],
@@ -98,7 +80,7 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceTags = sentences.map(_.posTags).filter(_.size > 0)
 
-    val examples = sentenceTags.map(s => new optimize.LikelihoodExample(s, PosModel, InferByBPChain))
+    val examples = sentenceTags.map(s => new PosModel.ChainLikelihoodExample(s.asInstanceOf[Seq[LabeledPennPosTag]]))
     Trainer.onlineTrain(PosModel.parameters, examples, maxIterations=10)
     testSavePrint("final")
   }
@@ -108,14 +90,14 @@ object ForwardBackwardPOS {
     val sentences = documents.flatMap(_.sentences)
     val labels = sentences.map(_.tokens).flatMap(_.map(t => t.attr[LabeledPennPosTag]))
     labels.map(_.setRandomly)
-    sentences.map(predictSentence(_))
+    sentences.map(predictSentence)
     println(label + " accuracy: " + percentageSetToTarget(labels) + "%")
   }
 
   var modelLoaded = false
   def load(modelFile: String) = { BinarySerializer.deserialize(PosFeaturesDomain, PosModel, new File(modelFile), gzip = true); modelLoaded = true }
 
-  def process(documents: Seq[Document]): Unit = documents.map(process(_))
+  def process(documents: Seq[Document]): Unit = documents.map(process)
   def process(document: Document): Unit = {
     if (!modelLoaded) throw new Error("The model should be loaded before documents are processed.")
 
@@ -125,7 +107,7 @@ object ForwardBackwardPOS {
       initPosFeatures(document)
     }
 
-    document.sentences.foreach(predictSentence(_))
+    document.sentences.foreach(predictSentence)
   }
 
   lazy val defaultCategory = {
@@ -155,14 +137,8 @@ object ForwardBackwardPOS {
       val trainDocs = load(trainFile.value)
       val devDocs = load(devFile.value)
       val testDocs = load(testFile.value)
-      //println("train sentences: " + trainDocs.flatMap(_.sentences).size)
-      //println("dev   sentences: " + devDocs.flatMap(_.sentences).size)
-      //println("test  sentences: " + testDocs.flatMap(_.sentences).size)
-      //println("docs loaded")
 
-      // calculate features
       initPosFeatures(trainDocs ++ devDocs ++ testDocs)
-      //println("train, dev, and test features calculated")
 
       train(trainDocs, devDocs, testDocs,
         iterations = iterations.value.toInt,

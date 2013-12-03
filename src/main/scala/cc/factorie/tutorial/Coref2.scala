@@ -15,7 +15,7 @@ import cc.factorie.model.{Parameters, TemplateModel, Model}
  */
 
 
-object Coref4{
+object Coref2{
   /**The model: entities and their attribute variables and a hierarchical model*/
   class Name(val entity:Entity,s:String) extends StringVariable(s) with EntityAttr
   class Bow(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag) with EntityAttr

@@ -33,28 +33,12 @@ class TestExamples {
     dir.getAbsolutePath+"2"
   }
 
-  @Test def testCards4() {
-    cc.factorie.tutorial.Cards4.main(emptyArgs)
-  }
-
   val dummyNERFile = dummyFileWithContents("train", "A NN C I-PER\nA NNS D O\nA NNP C I-LOC")
 
   //@Test def testChainNer1() { cc.factorie.tutorial.ChainNER1a.main(Array(dummyNERFile, dummyNERFile)) }
 
   @Test def testChainNER1ML() {
-    cc.factorie.tutorial.ChainNER1ML.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER2() {
-    cc.factorie.tutorial.ChainNER2.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER2b() {
-    cc.factorie.tutorial.ChainNER2b.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER4() {
-    cc.factorie.tutorial.ChainNER4.main(Array(dummyNERFile, dummyNERFile))
+    cc.factorie.tutorial.ChainNERExample.main(Array(dummyNERFile, dummyNERFile))
   }
 
   @Test def testCoref1() {
@@ -79,18 +63,6 @@ class TestExamples {
 
   @Test def testDocumentClassifier1() {
     cc.factorie.tutorial.DocumentClassifier1.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier2() {
-    cc.factorie.tutorial.DocumentClassifier2.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier3() {
-    cc.factorie.tutorial.DocumentClassifier3.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier4() {
-    cc.factorie.tutorial.DocumentClassifier4.main(Array(dummyDir1, dummyDir2))
   }
 
   val posFile = dummyFileWithContents("POS", "\nNN WORD=Hello\nNN WORD=World\n")
@@ -172,10 +144,6 @@ class TestExamples {
 
   @Test def testTutorial040() {
     cc.factorie.tutorial.Tutorial090ParallelismAndHyperparameters.main(emptyArgs)
-  }
-
-  @Test def testVarArgs() {
-    cc.factorie.tutorial.VarArgsDemo.main(emptyArgs)
   }
 
   @Test def testWordSegmenter() {

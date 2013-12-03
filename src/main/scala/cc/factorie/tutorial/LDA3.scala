@@ -1,14 +1,9 @@
 package cc.factorie.tutorial
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer}
-import scala.util.matching.Regex
-import scala.io.Source
+import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie._
-import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
-import cc.factorie.util.DoubleSeq
 import cc.factorie.directed._
 import cc.factorie.variable._
 
@@ -23,15 +18,9 @@ object LDA3 {
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { 
     def domain = ZSeqDomain
-    //def words: Words = model.childFactors(this).first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
   }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-//  class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
-//    def domain = WordSeqDomain
-//    def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
-//  }
-  //class Document(val file:String, val theta:ProportionsVar, strings:Seq[String]) extends Words(strings)
   class Document(name:String, myTheta:ProportionsVariable, myZs:Zs, words:Seq[String]) extends cc.factorie.app.topics.lda.Document(WordSeqDomain, name, words) {
     this.theta = myTheta
     this.zs = myZs

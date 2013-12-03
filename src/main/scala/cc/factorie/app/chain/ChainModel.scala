@@ -168,6 +168,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   }
 
   def maximize(vars: Seq[Label])(implicit d: DiffList): Unit = {
+    if (vars.isEmpty) return
     val result = viterbiFast(vars)
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
