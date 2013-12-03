@@ -5,15 +5,9 @@ import cc.factorie.la.Tensor2
 import scala.annotation.tailrec
 
 /**
- * User: apassos
- * Date: 6/3/13
- * Time: 11:19 AM
- */
-
-/**
  * A solver for weighted bipartite matching, also known as the assignment problem.
  *
- * This does not use the hungarian algorithm; instead it uses the augmenting paths
+ * This does not use the Hungarian algorithm; instead it uses the augmenting paths
  * algorithm which works by finding in sequence a best matching with one edge, a
  * best matching with two edges, etc, until it find a best matching with maximal
  * size. Then it goes back and returns the best overall matching out of those.
@@ -40,6 +34,8 @@ import scala.annotation.tailrec
  * resolution, which assign scores between pairs of truth and returned entities and
  * define the precision and recall of a clustering as a function of the best
  * possible matching between truth and returned clusters.
+ * 
+ * @author Alexandre Passos
  */
 class AssignmentSolver(val weights: Tensor2) {
   // This is the bellman-ford algorithm applied to the specific graph we

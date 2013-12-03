@@ -38,7 +38,7 @@ FACTORIE's limitations include the following:
 - It does not yet have extensive support for inference and learning with continuous random variables.  Support for discrete random variables has been our main emphasis thus far.
 - It has only minimal support for automatically selecting an appropriate inference method given a particular graphical model.  Our users instead specify which family of inference method they wish to use.
 - It does not yet have convenient infrastructure for defining simple non-relational graphical models (such as the [Sprinkler/Rain/Grass example](http://en.wikipedia.org/wiki/Bayesian_network)).  Our emphasis thus far has been on large relational data.  
-- It does not yet have a simple declarative syntax for specifying model structure.  It has an extremely flexible mechanism for definition model structure directly in Scala; a simpler front-end syntax for beginners will be added in the future. 
+- It does not yet have a simple declarative syntax for specifying model structure.  It has an extremely flexible mechanism for definition model structure directly in Scala.  A simpler front-end syntax for beginners will be added in the future. 
 - It is not yet connected to a tool for directly producing graphs or other visualizations.
 For further discussion of FACTORIE's comparison to other related tools see [Tutorial010SimilarTools.scala.html].
 
@@ -65,7 +65,7 @@ FACTORIE has been successfully applied to many tasks, including:
 
 ## First Examples
 
-Before descending into details, here are three brief examples providing a taste of FACTORIE usage.
+Here are three brief examples providing a brief sense of FACTORIE usage.
 
 ### Topic Modeling, Document Classification, and NLP on the Command-line
 
@@ -87,7 +87,7 @@ will train a log-linear classifier by maximum likelihood (same as maximum entrop
 If you also have the Maven-supplied factorie-nlp-resources JAR in your classpath, you can run many natural language processing tools.  For example,
 
 ```
-$ bin/fac nlp --pos1 --parser1 --ner1
+$ bin/fac nlp --wsj-forward-pos --transition-based-parser --conll-chain-ner
 ```
 
 will launch an NLP server that will perform part-of-speech tagging, dependency parsing and named entity recognition on its input.  
@@ -243,14 +243,13 @@ The [GRMM](http://mallet.cs.umass.edu/grmm/) extension to MALLET, written by Cha
 tools for classification, regression, clustering, dimensionality
 reduction and model selection.  It is more mature than FACTORIE, and
 it is easily integratable with matplotlib, a graphics package, so it
-can produce pretty graphs directly.  However, it does not support
-graphical models.  SciKit-Learn is implemented in Python, with
-cpu-heavy functions written in cython and compiled down to C, and in
-many cases it can be less efficient than FACTORIE, which is JVM-based.
+can produce high-quality graphs directly.  However, it does not support
+graphical models.  SciKit-Learn is implemented in Python; in 
+many cases it is less efficient than FACTORIE, which is JVM-based.
 
 [Weka](http://www.cs.waikato.ac.nz/ml/weka/) is a collection of
 machine learning algorithms, mostly for classification and
-regression. Weka comes with a nice GUI interface for visualization and
+regression. Weka comes with a convenient GUI for visualization and
 experimentation with small datasets, but it is not focused on large
 sparse problems like factorie. It also does not support graphical
 models.
@@ -302,6 +301,8 @@ Stanford Core NLP...
 Apache Mahout...
 
 GraphLab...
+
+OptiML...
 
 [Vowpal Wabbit](https://github.com/JohnLangford/vowpal_wabbit/wiki) is
 a very efficient library for doing binary classification and, via
