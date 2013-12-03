@@ -64,10 +64,16 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
             val t2 = t.copy
             t2 *= d
             map(key) = t2
+          case t: SparseTensor =>
+            stateMap(key) = ACCUMULATOR
+            val t2 = t.copy
+            t2 *= d
+            map(key) = t2
           case t: Tensor =>
-            stateMap(key) = SINGLE_TENSOR
-            t *= d
-            map(key) = t
+            stateMap(key) = ACCUMULATOR
+            val t2 = Tensor.newDense(t)
+            t2 += (t,d)
+            map(key) = t2
         }
     }
   }
