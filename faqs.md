@@ -10,40 +10,6 @@ FAQs
 
 If your concerns are not addressed by any of the following, please email us at discuss@factorie.cs.umass.edu.
 
-### How do I set the size of the Domain of a discrete variable?
-
-Use the DomainSize annotation as follows.
-
-    @DomainSize(6) class DieRoll(initialFaceValue:Int) extends Discrete(initialFaceValue)
-
-### How do I perform Gibbs/BlockGibbs Sampling for Undirected models?
-
-See VariableSettingsSampler for Gibbs, and VariablesSettingsSampler for Block Gibbs (notice the "s" after Variable)
-
-### How do I print the weights?
-
-Here example code for TemplateWithDotStatistics2:
-
-    def printTemplate2Weights[X<:DiscreteVectorVar,Y<:DiscreteVectorVar](template:TemplateWithDotStatistics2[X,Y]) {
-      def name0(idx: Int) = template.statisticsDomains(0).dimensionName(idx)
-      def name1(idx: Int) = template.statisticsDomains(1).dimensionName(idx)
-      val dom0 = template.statisticsDomains(0).dimensionDomain
-      val dom1 = template.statisticsDomains(1).dimensionDomain
-      val namedWeights =
-        for ((val0, idx0) <- dom0.values.zipWithIndex; (val1, idx1) <- dom1.values.zipWithIndex) yield {
-          val w = template.weight(idx0, idx1)
-          ((name0(val0.intValue), name1(val1.intValue)), w)
-        }
-      for (((cat0, cat1), w) <- namedWeights.sortBy(-_._2)) {
-        println(cat0 + " " + cat1 + " " + w)
-      }
-    }
- 
-If you don't see names of CategoricalVectorDomains, add the following to that domain
-
-    override def dimensionName(idx:Int):String = {
-      AffinityDomain.getCategory(idx).toString
-    }
 
 ### My Maven build is failing because it cannot retrieve dependencies from the IESL repository?
 
