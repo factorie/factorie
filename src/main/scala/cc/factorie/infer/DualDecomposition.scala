@@ -61,8 +61,6 @@ class DualDecomposition(stepSize: (Int,Int) => Double = DualDecomposition.Learni
   }
 }
 
-object InferByDualDecomposition extends DualDecomposition
-
 object DualDecomposition {
   class WeightedSummaryWithBP(vars: Iterable[DiscreteVar], model: Model, baseInfer: MaximizeByBP) extends WarmStartWeightedSummary {
     val weightedModel = new ItemizedModel
