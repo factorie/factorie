@@ -14,18 +14,17 @@
 
 
 package cc.factorie.tutorial
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer}
-import scala.util.matching.Regex
-import scala.io.Source
+import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie._
-import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.directed._
 import cc.factorie.variable._
 
-object LDA2 {
+/**
+ * LDA example using collapsed gibbs sampling; very flexible.
+ */
+object SimpleLDA {
   
   val numTopics = 10
   implicit val model = DirectedModel()
@@ -48,37 +47,21 @@ object LDA2 {
     val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
-      // println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if file.isFile) {
-        // print("."); Console.flush
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }
-      // println()
     }
 
     val collapse = new ArrayBuffer[Var]
     collapse += phis
     collapse ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapse, model)
-    //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
 
-    val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       for (doc <- documents) sampler.process(doc.zs)
-      if (i % 5 == 0) {
-        // println("Iteration " + i)
-        // Turned off hyperparameter optimization
-        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
-        //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        // phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.value.massTotal.toInt))
-        // println("Total words "+phis.map(_.value.massTotal).sum.toInt)
-        // println
-      }
-    }
-    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-    // println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+   }
   }
 }

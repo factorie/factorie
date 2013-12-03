@@ -7,7 +7,10 @@ import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.directed._
 import cc.factorie.variable._
 
-object LDA3 {
+/**
+ * LDA example using the SparseLDAInferencer, very efficient.
+ */
+object EfficientLDA {
   val numTopics = 15
   val beta1 = 0.1
   val alpha1 = 0.1
@@ -39,44 +42,26 @@ object LDA3 {
     val documents = new ArrayBuffer[Document]
     val stopwords = new Stopwords; stopwords += "rainbownum"
     for (directory <- directories) {
-      // println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if file.isFile) {
-        // print("."); Console.flush
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, zs, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }
-      // println()
     }
-    // println("Read "+documents.size+" documents, "+WordDomain.size+" word types, "+documents.map(_.length).sum+" word tokens.")
-    
-    //val collapse = new ArrayBuffer[Variable]
-    //collapse += phis
-    //collapse ++= documents.map(_.theta)
-    //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
-    //val sampler = new SparseLDAInferencer(numTopics, documents, alphas.tensor, beta1)
+
     val sampler = SparseLDAInferencer(ZDomain, WordDomain, documents, alphas.value, beta1, model)
 
-    val startTime = System.currentTimeMillis
     for (i <- 1 to 30) {
       for (doc <- documents) sampler.process(doc.zs)
       if (i % 5 == 0) {
-        // println("Iteration " + i)
         sampler.export(phis)
         if (fitDirichlet) {
           sampler.exportThetas(documents)
           MaximizeDirichletByMomentMatching(alphas, model)
           sampler.resetSmoothing(alphas.value, beta1)
-          // println("alpha = " + alphas.tensor.toSeq.mkString(" "))
-          // phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
-        } else {
-          // phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         }
-        // println
       }
     }
-    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-    // println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
 }

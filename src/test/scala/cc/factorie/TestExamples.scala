@@ -35,19 +35,12 @@ class TestExamples {
 
   val dummyNERFile = dummyFileWithContents("train", "A NN C I-PER\nA NNS D O\nA NNP C I-LOC")
 
-  //@Test def testChainNer1() { cc.factorie.tutorial.ChainNER1a.main(Array(dummyNERFile, dummyNERFile)) }
-
   @Test def testChainNER1ML() {
     cc.factorie.tutorial.ChainNERExample.main(Array(dummyNERFile, dummyNERFile))
   }
 
   @Test def testCoref1() {
     cc.factorie.tutorial.Coref1.main(emptyArgs)
-  }
-
-  @Test def testCoref4() {
-    // Uncomment after removing mongo dependency
-    // cc.factorie.example.Coref4.main(emptyArgs)
   }
 
   @Test def testCorefMentions() {
@@ -91,32 +84,21 @@ class TestExamples {
     cc.factorie.tutorial.Grid.main(emptyArgs)
   }
 
-  @Test def testLDA2() {
-    cc.factorie.tutorial.LDA2.main(Array(dummyDir1))
+  @Test def testSimpleLDA() {
+    cc.factorie.tutorial.SimpleLDA.main(Array(dummyDir1))
   }
 
-  @Test def testLDA3() {
-    cc.factorie.tutorial.LDA3.main(Array(dummyDir1))
+  @Test def testEfficientLDA() {
+    cc.factorie.tutorial.EfficientLDA.main(Array(dummyDir1))
   }
 
-  val saxDir = dummyDirectoryWithFileWithContents("saxDir", "<abstract>Hello</abstract><year>2012</year>", ext=".xml")
-
-  @Test def testLDA4() {
-    // TODO: uncomment this after figuring out the specific XML format for fuse docs
-    // cc.factorie.example.LDA4.main(Array(saxDir))
-  }
-
-  @Test def testLDA5() {
-    cc.factorie.tutorial.LDA5.main(Array(dummyDir1, dummyDir2))
+  @Test def testTopicsOverTime() {
+    cc.factorie.tutorial.TopicsOverTime.main(Array(dummyDir1, dummyDir2))
   }
 
   @Test def testMultinomialDemo() {
     cc.factorie.tutorial.MultinomialDemo.main(emptyArgs)
   }
-
-  //@Test def testPerceptronPOS() {
-  //  cc.factorie.example.PerceptronPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))
-  //}
 
   @Test def testTutorial10() {
     cc.factorie.tutorial.TutorialVariables.main(emptyArgs)
@@ -146,7 +128,7 @@ class TestExamples {
     cc.factorie.tutorial.Tutorial090ParallelismAndHyperparameters.main(emptyArgs)
   }
 
-  @Test def testWordSegmenter2() {
+  @Test def testWordSegmenter() {
     cc.factorie.tutorial.WordSegmenter.main(emptyArgs)
   }
 }
