@@ -67,7 +67,7 @@ class TestExamples {
   }
 
   @Test def testCorefMentions() {
-    cc.factorie.tutorial.CorefMentionsDemo.main(emptyArgs)
+    cc.factorie.tutorial.CorefMentions.main(emptyArgs)
   }
 
   @Test def testDirichletDemo() {

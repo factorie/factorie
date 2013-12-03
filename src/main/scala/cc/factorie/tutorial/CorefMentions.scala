@@ -26,7 +26,7 @@ import cc.factorie.infer.MHSampler
 
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */
-object CorefMentionsDemo {
+object CorefMentions {
 
   /** random variable that defines the entity each mention refers to */
   class EntityRef(val mention:Mention, initialEntity:Entity) extends RefVariable(initialEntity) {

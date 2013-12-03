@@ -28,23 +28,90 @@ class ForwardPosTagger extends DocumentAnnotator {
     val length: Int = inner.length
     def apply(i:Int): String = if (i < 0 || i > length-1) null else inner(i)
     def lc(i:Int): String = if (i < 0 || i > length-1) null else innerlc(i)
+    def docFreq(i:Int): String = if ((i < 0 || i > length-1) || !WordData.docWordCounts.contains(innerlc(i))) null else inner(i)
+    def docFreqLc(i:Int): String = if (i < 0 || i > length-1 || !WordData.docWordCounts.contains(innerlc(i))) null else innerlc(i)
   }
   protected def lemmas(tokens:Seq[Token]) = new Lemmas(tokens)
   
-  /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
+/** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
       Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger.
       The key into the ambiguityClasses is app.strings.replaceDigits().toLowerCase */
   object WordData {
     val ambiguityClasses = collection.mutable.HashMap[String,String]()
     val sureTokens = collection.mutable.HashMap[String,Int]()
-    val ambiguityClassThreshold = 0.7
+    var docWordCounts = collection.mutable.HashMap[String,Int]()
+    val ambiguityClassThreshold = 0.4
     val wordInclusionThreshold = 1
-    val sureTokenThreshold = 1000
+    val sureTokenThreshold = -1		// -1 means don't consider any tokens "sure"
 
-    def preProcess(tokens: Iterable[Token]) {
-      val wordCounts = collection.mutable.HashMap[String,Int]()
+    def computeWordFormsByDocumentFrequencySentences(sentences: Iterable[Sentence], cutoff: Integer) = {
+      val docSize = 1000
+      var begin = 0
+      for(i <- docSize.to(sentences.size).by(docSize)){
+        val docTokens = sentences.slice(begin,i).flatMap(_.tokens)
+        val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
+        for(lemma <- docUniqueLemmas){
+          if (!docWordCounts.contains(lemma)) {
+        	docWordCounts(lemma) = 0
+          }
+          docWordCounts(lemma) += 1
+        }
+        begin = i
+      }
+      
+      // deal with last chunk of sentences
+      if(begin < sentences.size){
+    	val docTokens = sentences.slice(begin,sentences.size).flatMap(_.tokens)
+    	val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
+    	for(lemma <- docUniqueLemmas){
+    	  if (!docWordCounts.contains(lemma)) {
+    		docWordCounts(lemma) = 0
+    	  }
+    	  docWordCounts(lemma) += 1
+    	}
+      }
+      docWordCounts = docWordCounts.filter(_._2 > cutoff)
+    }
+    
+   def computeWordFormsByDocumentFrequency(tokens: Iterable[Token], cutoff: Integer, numToksPerDoc: Int) = {
+      var begin = 0
+      for(i <- numToksPerDoc.to(tokens.size).by(numToksPerDoc)){
+        val docTokens = tokens.slice(begin,i)
+        val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
+        for(lemma <- docUniqueLemmas){
+          if (!docWordCounts.contains(lemma)) {
+        	docWordCounts(lemma) = 0
+          }
+          docWordCounts(lemma) += 1
+        }
+        begin = i
+      }
+      
+      // deal with last chunk of sentences
+      if(begin < tokens.size){
+    	val docTokens = tokens.slice(begin,tokens.size)
+    	val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
+    	for(lemma <- docUniqueLemmas){
+    	  if (!docWordCounts.contains(lemma)) {
+    		docWordCounts(lemma) = 0
+    	  }
+    	  docWordCounts(lemma) += 1
+    	}
+      }
+      docWordCounts = docWordCounts.filter(_._2 > cutoff)
+    }
+    
+    def getLemmas(tokens:Seq[Token]): (IndexedSeq[String],IndexedSeq[String]) = {
+      val simplifiedForms = tokens.map(x => lemmatize(x.string))
+      val lowerSimplifiedForms = simplifiedForms.map(_.toLowerCase)
+      (simplifiedForms.toIndexedSeq, lowerSimplifiedForms.toIndexedSeq)
+    }
+    
+    def computeAmbiguityClasses(tokens: Iterable[Token]) = {
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
+      val wordCounts = collection.mutable.HashMap[String,Double]()
       var tokenCount = 0
+      val lemmas = docWordCounts.keySet
       tokens.foreach(t => {
         tokenCount += 1
         if (t.attr[PennPosTag] eq null) {
@@ -61,55 +128,44 @@ class ForwardPosTagger extends DocumentAnnotator {
         wordCounts(lemma) += 1
         posCounts(lemma)(t.attr[PennPosTag].intValue) += 1
       })
-      wordCounts.keys.foreach(w => {
-        if (wordCounts(w) >= wordInclusionThreshold) {
-          val counts = wordCounts(w)
-          val pos = posCounts(w)
-          val bestPos = (0 until 45).maxBy(i => pos(i))
-          if (pos(bestPos) > ambiguityClassThreshold*counts)
-            ambiguityClasses(w) = PennPosDomain.category(bestPos)
-        }
-        if (wordCounts(w) > sureTokenThreshold) {
-          val pos = posCounts(w)
-          if (pos.max == wordCounts(w)) {
-            sureTokens(w) = pos.zipWithIndex.maxBy(_._1)._2
-          }
-        }
+      lemmas.foreach(w => {
+          val posFrequencies = posCounts(w).map(_/wordCounts(w))
+          val bestPosTags = posFrequencies.zip(PennPosDomain.categories).filter(_._1 > ambiguityClassThreshold).unzip._2
+          val ambiguityString = bestPosTags.mkString("_")
+          ambiguityClasses(w) = ambiguityString
       })
     }
   }
   
   def features(token:Token, lemmaIndex:Int, lemmas:Lemmas): SparseBinaryTensor1 = {
-    def lemmaStringAtOffset(offset:Int): String = "L@"+offset+"="+lemmas.lc(lemmaIndex + offset) // this is lowercased
-    def wordStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas(lemmaIndex + offset) // this is not lowercased, but still has digits replaced
+    def lemmaStringAtOffset(offset:Int): String = "L@"+offset+"="+lemmas.docFreqLc(lemmaIndex + offset) // this is lowercased
+    def wordStringAtOffset(offset:Int): String = "W@"+offset+"="+lemmas.docFreq(lemmaIndex + offset) // this is not lowercased, but still has digits replaced
     def affinityTagAtOffset(offset:Int): String = "A@"+offset+"="+WordData.ambiguityClasses.getOrElse(lemmas.lc(lemmaIndex + offset), null)
     def posTagAtOffset(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[PennPosTag].categoryValue else null) }
-    def take(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(0,n) }
-    def takeRight(s:String, n:Int): String = { val l = s.length; if (l < n) s else s.substring(l-n,l) }
+    def takePrefix(s:String, n:Int): String = {if (n <= s.length) "PREFIX="+s.substring(0,n) else null }
+    def takeSuffix(s:String, n:Int): String = { val l = s.length; if (n <= l) "SUFFIX="+s.substring(l-n,l) else null }
     val tensor = new SparseBinaryTensor1(FeatureDomain.dimensionSize); tensor.sizeHint(40)
     def addFeature(s:String): Unit = if (s ne null) { val i = FeatureDomain.dimensionDomain.index(s); if (i >= 0) tensor += i }
     // Original word, with digits replaced, no @
-    val Wm3 = if (lemmaIndex > 2) lemmas(lemmaIndex-3) else ""
     val Wm2 = if (lemmaIndex > 1) lemmas(lemmaIndex-2) else ""
     val Wm1 = if (lemmaIndex > 0) lemmas(lemmaIndex-1) else ""
     val W = lemmas(lemmaIndex)
     val Wp1 = if (lemmaIndex < lemmas.length-1) lemmas(lemmaIndex+1) else ""
     val Wp2 = if (lemmaIndex < lemmas.length-2) lemmas(lemmaIndex+2) else ""
-    val Wp3 = if (lemmaIndex < lemmas.length-3) lemmas(lemmaIndex+3) else ""
     // Original words at offsets, with digits replaced, marked with @
+    val wm3 = wordStringAtOffset(-3)
     val wm2 = wordStringAtOffset(-2)
     val wm1 = wordStringAtOffset(-1)
     val w0 = wordStringAtOffset(0)
     val wp1 = wordStringAtOffset(1)
     val wp2 = wordStringAtOffset(2)
+    val wp3 = wordStringAtOffset(3)
     // Lemmas at offsets
-    val lm3 = lemmaStringAtOffset(-3)
     val lm2 = lemmaStringAtOffset(-2)
     val lm1 = lemmaStringAtOffset(-1)
     val l0 = lemmaStringAtOffset(0)
     val lp1 = lemmaStringAtOffset(1)
     val lp2 = lemmaStringAtOffset(2)
-    val lp3 = lemmaStringAtOffset(3)
     // Affinity classes at next offsets
     val a0 = affinityTagAtOffset(0)
     val ap1 = affinityTagAtOffset(1)
@@ -119,19 +175,24 @@ class ForwardPosTagger extends DocumentAnnotator {
     val pm1 = posTagAtOffset(-1)
     val pm2 = posTagAtOffset(-2)
     val pm3 = posTagAtOffset(-3)
+    addFeature(wm3)
     addFeature(wm2)
     addFeature(wm1)
     addFeature(w0)
     addFeature(wp1)
     addFeature(wp2)
-    // The paper also includes wp3 and wn3
-    addFeature(lp3)
-    addFeature(lp2)
-    addFeature(lp1)
-    addFeature(l0)
-    addFeature(lm1)
-    addFeature(lm2)
-    addFeature(lm3)
+    addFeature(wp3)
+    // The paper also includes wp3 and wm3
+    
+    // not in ClearNLP
+//    addFeature(lp3)
+//    addFeature(lp2)
+//    addFeature(lp1)
+//    addFeature(l0)
+//    addFeature(lm1)
+//    addFeature(lm2)
+//    addFeature(lm3)
+    
     addFeature(pm3)
     addFeature(pm2)
     addFeature(pm1)
@@ -147,8 +208,10 @@ class ForwardPosTagger extends DocumentAnnotator {
     addFeature(pm2+pm1)
     addFeature(ap1+ap2)
     addFeature(pm1+ap1)
-    addFeature(pm1+a0) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
-    addFeature(a0+ap1) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
+    
+//    addFeature(pm1+a0) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
+//    addFeature(a0+ap1) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
+    
     addFeature(lm2+lm1+l0)
     addFeature(lm1+l0+lp1)
     addFeature(l0+lp1+lp2)
@@ -158,24 +221,32 @@ class ForwardPosTagger extends DocumentAnnotator {
     addFeature(pm1+a0+ap1)
     addFeature(pm2+pm1+ap1)
     addFeature(pm1+ap1+ap2)
-    addFeature(a0+ap1+ap2) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
-    addFeature("PREFIX2="+take(W, 2))
-    addFeature("PREFIX3="+take(W, 3))
-    addFeature("PREFIX2@1="+take(Wp1, 2))
-    addFeature("PREFIX3@1="+take(Wp1, 3))
-    addFeature("PREFIX2@2="+take(Wp2, 2))
-    addFeature("PREFIX3@2="+take(Wp2, 3))
-    addFeature("SUFFIX1="+takeRight(W, 1))
-    addFeature("SUFFIX2="+takeRight(W, 2))
-    addFeature("SUFFIX3="+takeRight(W, 3))
-    addFeature("SUFFIX4="+takeRight(W, 4))
-    addFeature("SUFFIX1@1="+takeRight(Wp1, 1))
-    addFeature("SUFFIX2@1="+takeRight(Wp1, 2))
-    addFeature("SUFFIX3@1="+takeRight(Wp1, 3))
-    addFeature("SUFFIX4@1="+takeRight(Wp1, 4))
-    addFeature("SUFFIX2@2="+takeRight(Wp2, 2))
-    addFeature("SUFFIX3@2="+takeRight(Wp2, 3))
-    addFeature("SUFFIX4@2="+takeRight(Wp2, 4))
+    
+//    addFeature(a0+ap1+ap2) // Not in http://www.aclweb.org/anthology-new/P/P12/P12-2071.pdf
+    
+    addFeature(takePrefix(W, 1))
+    addFeature(takePrefix(W, 2))
+    addFeature(takePrefix(W, 3))
+    
+    // not in ClearNLP
+//    addFeature("PREFIX2@1="+takePrefix(Wp1, 2))
+//    addFeature("PREFIX3@1="+takePrefix(Wp1, 3))
+//    addFeature("PREFIX2@2="+takePrefix(Wp2, 2))
+//    addFeature("PREFIX3@2="+takePrefix(Wp2, 3))
+    
+    addFeature(takeSuffix(W, 1))
+    addFeature(takeSuffix(W, 2))
+    addFeature(takeSuffix(W, 3))
+    addFeature(takeSuffix(W, 4))
+    
+    // not in ClearNLP
+//    addFeature("SUFFIX1@1="+takeRight(Wp1, 1))
+//    addFeature("SUFFIX2@1="+takeRight(Wp1, 2))
+//    addFeature("SUFFIX3@1="+takeRight(Wp1, 3))
+//    addFeature("SUFFIX4@1="+takeRight(Wp1, 4))
+//    addFeature("SUFFIX2@2="+takeRight(Wp2, 2))
+//    addFeature("SUFFIX3@2="+takeRight(Wp2, 3))
+//    addFeature("SUFFIX4@2="+takeRight(Wp2, 4))
     addFeature("SHAPE@-2="+cc.factorie.app.strings.stringShape(Wm2, 2))
     addFeature("SHAPE@-1="+cc.factorie.app.strings.stringShape(Wm1, 2))
     addFeature("SHAPE@0="+cc.factorie.app.strings.stringShape(W, 2))
@@ -248,6 +319,7 @@ class ForwardPosTagger extends DocumentAnnotator {
     BinarySerializer.serialize(model, dstream)
     BinarySerializer.serialize(WordData.ambiguityClasses, dstream)
     BinarySerializer.serialize(WordData.sureTokens, dstream)
+    BinarySerializer.serialize(WordData.docWordCounts, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   def deserialize(stream: java.io.InputStream): Unit = {
@@ -258,26 +330,13 @@ class ForwardPosTagger extends DocumentAnnotator {
     BinarySerializer.deserialize(model, dstream)
     BinarySerializer.deserialize(WordData.ambiguityClasses, dstream)
     BinarySerializer.deserialize(WordData.sureTokens, dstream)
+    BinarySerializer.deserialize(WordData.docWordCounts, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   
   def printAccuracy(sentences: Iterable[Sentence], extraText: String) = {
-    var(tokAcc, senAcc, speed, toks) = accuracy(sentences)
-    println(extraText + s"${tokAcc} token accuracy, ${senAcc} sentence accuracy, ${speed} tokens/sec")
-//    var total = 0.0
-//    var correct = 0.0
-//    var totalTime = 0L
-//    sentences.foreach(s => {
-//      val t0 = System.currentTimeMillis()
-//      predict(s)
-//      totalTime += (System.currentTimeMillis()-t0)
-//      for (token <- s.tokens) {
-//        total += 1
-//        if (token.attr[PennPosLabel].valueIsTarget) correct += 1.0
-//      }
-//    })
-//    println(s"${total*1000/totalTime} tokens/sec")
-//    correct/total
+    var(tokAcc, senAcc, speed, _) = accuracy(sentences)
+    println(extraText + s"$tokAcc token accuracy, $senAcc sentence accuracy, $speed tokens/sec")
   }
   
   def accuracy(sentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
@@ -289,7 +348,7 @@ class ForwardPosTagger extends DocumentAnnotator {
     sentences.foreach(s => {
       var thisSentenceCorrect = 1.0
       val t0 = System.currentTimeMillis()
-      predict(s)
+      process(s) //predict(s)
       totalTime += (System.currentTimeMillis()-t0)
       for (token <- s.tokens) {      
         tokenTotal += 1
@@ -299,13 +358,13 @@ class ForwardPosTagger extends DocumentAnnotator {
       sentenceCorrect += thisSentenceCorrect
       sentenceTotal += 1.0
     })
-    var tokensPerSecond = (tokenTotal/totalTime)*1000.0
+    val tokensPerSecond = (tokenTotal/totalTime)*1000.0
     (tokenCorrect/tokenTotal, sentenceCorrect/sentenceTotal, tokensPerSecond, tokenTotal)
   }
   
   def test(sentences:Iterable[Sentence]) = {
     println("Testing on " + sentences.size + " sentences...")
-    var(tokAccuracy, sentAccuracy, speed, tokens) = accuracy(sentences)
+    val (tokAccuracy, sentAccuracy, speed, tokens) = accuracy(sentences)
     println("Tested on " + tokens + " tokens at " + speed + " tokens/sec")
     println("Token accuracy: " + tokAccuracy)
     println("Sentence accuracy: " + sentAccuracy)
@@ -313,8 +372,13 @@ class ForwardPosTagger extends DocumentAnnotator {
   
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
-    for (sentence <- trainSentences ++ testSentences; token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
-    WordData.preProcess(trainSentences.flatMap(_.tokens))
+    //for (sentence <- trainSentences ++ testSentences; token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
+    
+	val cutoff = 1
+    val toksPerDoc = 5000
+    WordData.computeWordFormsByDocumentFrequency(trainSentences.flatMap(_.tokens), cutoff, toksPerDoc)
+    WordData.computeAmbiguityClasses(trainSentences.flatMap(_.tokens))
+    
     // Prune features by count
     FeatureDomain.dimensionDomain.gatherCounts = true
     for (sentence <- trainSentences) features(sentence.tokens) // just to create and count all features
@@ -345,6 +409,7 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
 
   def process(d: Document) = { predict(d); d }
+  def process(s: Sentence) = { predict(s); s }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
   override def tokenAnnotationString(token:Token): String = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
@@ -378,6 +443,31 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
 }
 
+object ForwardPosTester {
+  def main(args: Array[String]) {
+	val opts = new ForwardPosOptions
+	opts.parse(args)
+	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+	  
+	// load model from file if given, else use default model
+	val pos = if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value)) else OntonotesForwardPosTagger
+	
+	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    var testFileList = Seq(opts.testFile.value)
+    if(opts.testDir.wasInvoked){
+    	testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
+    }else if (opts.testFiles.wasInvoked){
+      testFileList =  opts.testFiles.value.split(",")
+    }
+  
+	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+    pos.test(testSentences)
+  }
+}
 
 object ForwardPosTrainer extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
@@ -392,7 +482,7 @@ object ForwardPosTrainer extends HyperparameterMain {
     assert(!(opts.trainDir.wasInvoked && opts.trainFiles.wasInvoked))
     var trainFileList = Seq(opts.trainFile.value)
     if(opts.trainDir.wasInvoked){
-    	trainFileList = FileUtils.getFileListFromDir(opts.trainDir.value, ".dep.pmd")
+    	trainFileList = FileUtils.getFileListFromDir(opts.trainDir.value)
     } else if (opts.trainFiles.wasInvoked){
       trainFileList =  opts.trainFiles.value.split(",")
     }
@@ -400,7 +490,7 @@ object ForwardPosTrainer extends HyperparameterMain {
     assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     var testFileList = Seq(opts.testFile.value)
     if(opts.testDir.wasInvoked){
-    	testFileList = FileUtils.getFileListFromDir(opts.testDir.value, ".dep.pmd")
+    	testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
@@ -412,8 +502,8 @@ object ForwardPosTrainer extends HyperparameterMain {
     println("Read %d training tokens from %d files.".format(trainDocs.map(_.tokenCount).sum, trainDocs.size))
     println("Read %d testing tokens from %d files.".format(testDocs.map(_.tokenCount).sum, testDocs.size))
 
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
     val trainSentencesFull = trainDocs.flatMap(_.sentences)
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
     val testSentencesFull = testDocs.flatMap(_.sentences)
