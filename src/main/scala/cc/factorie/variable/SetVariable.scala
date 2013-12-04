@@ -54,9 +54,19 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
     if (d != null) d += new SetVariableAddDiff(x)
     _members += x
   }
+  def addAll(xs:Iterable[A])(implicit d: DiffList) {
+    val toAdd = xs.filterNot(_members.contains)
+    if(d != null) d += new SetVariableAddAllDiff(toAdd)
+    _members ++= toAdd
+  }
   def remove(x: A)(implicit d: DiffList): Unit = if (_members.contains(x)) {
     if (d != null) d += new SetVariableRemoveDiff(x)
     _members -= x
+  }
+  def removeAll(xs:Iterable[A])(implicit d: DiffList) {
+    val toRemove = xs.toSet.intersect(_members)
+    if(d != null) d += new SetVariableRemoveAllDiff(toRemove)
+    _members --= toRemove
   }
   final def +=(x:A): Unit = add(x)(null)
   final def -=(x:A): Unit = remove(x)(null)
@@ -68,11 +78,23 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
     def undo() = _members -= added
     override def toString = "SetVariableAddDiff of " + added + " to " + SetVariable.this
   }
+  case class SetVariableAddAllDiff(added:Iterable[A]) extends Diff {
+    def variable = SetVariable.this
+    def redo(): Unit = _members ++= added
+    def undo(): Unit = _members --= added
+    override def toString = "SetVariableAddAllDiff of " + added + " to " + SetVariable.this
+  }
   case class SetVariableRemoveDiff(removed: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
     def redo() = _members -= removed
     def undo() = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "SetVariableRemoveDiff of " + removed + " from " + SetVariable.this
+  }
+  case class SetVariableRemoveAllDiff(removed: Iterable[A]) extends Diff {
+    def variable: SetVariable[A] = SetVariable.this
+    def redo() = _members --= removed
+    def undo() = _members ++= removed
+    override def toString = "SetVariableRemoveAllDiff of " + removed + " from " + SetVariable.this
   }
 }
 
