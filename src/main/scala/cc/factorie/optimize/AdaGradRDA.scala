@@ -83,7 +83,7 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
 
     override def update(i: Int, v: Double) { throw new Error("DualAveragingTensors can't be updated") }
     override def apply(i: Int): Double = {
-      if (gradSquares(i) == 0.0) 0.0
+      if (gradSquares(i) == 0.0) gradients(i)
       else {
         val h = (1.0/rate) *(math.sqrt(gradSquares(i)) + delta) + t*l2
         val t1 = 1.0/h
