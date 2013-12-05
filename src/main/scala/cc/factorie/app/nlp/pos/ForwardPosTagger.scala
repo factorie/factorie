@@ -374,9 +374,8 @@ class ForwardPosTagger extends DocumentAnnotator {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     //for (sentence <- trainSentences ++ testSentences; token <- sentence.tokens) cc.factorie.app.nlp.segment.PlainTokenNormalizer.processToken(token)
     
-	val cutoff = 1
     val toksPerDoc = 5000
-    WordData.computeWordFormsByDocumentFrequency(trainSentences.flatMap(_.tokens), cutoff, toksPerDoc)
+    WordData.computeWordFormsByDocumentFrequency(trainSentences.flatMap(_.tokens), 1, toksPerDoc)
     WordData.computeAmbiguityClasses(trainSentences.flatMap(_.tokens))
     
     // Prune features by count
