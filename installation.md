@@ -32,18 +32,11 @@ Step-by-step Installation
         Java home: /usr/lib/jvm/java-6-sun-1.6.0.15/jre
         ...
 
-2. Obtain the FACTORIE source. You can do this by downloading and unpacking the FACTORIE tar.gz available from the Download page.
-
-        $ wget http://factorie.googlecode.com/files/factorie-1.0.0-M7-src.tar.gz
-        $ tar xzf factorie-1.0.0-M7-src.tar.gz
-        $ cd factorie-1.0.0-M7
-        $ ls
-        LICENSE.txt pom.xml src
-
-    Alternatively you can get the most recent FACTORIE source directly from the git source code revision control system. Git is freely available from its download page.
+2. Obtain the FACTORIE source. You can get the most recent FACTORIE source directly from the git source code revision control system. Git is freely available from its download page.
 
         $ git clone https://github.com/factorie/factorie.git factorie
         $ cd factorie
+        $ git checkout "factorie-{{ site.factorie_version }}"
 
 3. Tell Maven to compile the project. In this step might take several minutes because not only must it compile all of FACTORIE, but it will also download many dependent packages. This step will print many messages; no need to be concerned about them unless they start with [ERROR]
 
@@ -98,7 +91,7 @@ Then add the following in the dependencies section:
       <dependency>
         <groupId>cc.factorie</groupId>
         <artifactId>factorie</artifactId>
-        <version>1.0.0-M7</version>
+        <version>{{ site.factorie_version }}</version>
       </dependency>
     <dependencies>
 ```
@@ -109,5 +102,5 @@ In your `build.sbt` file, add the following:
 
 ```
 resolvers += "IESL Release" at "http://dev-iesl.cs.umass.edu/nexus/content/groups/public"
-libraryDependencies += "cc.factorie" % "factorie" % "1.0.0-M7"
+libraryDependencies += "cc.factorie" % "factorie" % "{{ site.factorie_version }}"
 ```

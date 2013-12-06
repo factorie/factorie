@@ -8,10 +8,10 @@ group: prefix
 Download
 ===
 
-The latest release of Factorie is 1.0.0-M7.
+The latest release of Factorie is {{ site.factorie_version }}.
 
-- Executable Jar: [factorie-1.0.0-M7.jar](http://factorie.googlecode.com/files/factorie-1.0.0-M7.jar)
-- Source files: [factorie-1.0.0-M7-src.tar.gz](http://factorie.googlecode.com/files/factorie-1.0.0-M7-src.tar.gz)
+- Executable Jar: [factorie-{{ site.factorie_version }}.jar]({{ site.factorie_executable_url }})
+- Source files: [factorie-{{ site.factorie_version }}-sources.jar]({{ site.factorie_source_url }})
 
 Or, you can can check out the latest snapshot version by:
 
@@ -24,6 +24,7 @@ See [Installation](installation.html) for details.
 Earlier Versions
 ---
 
+* factorie-1.0.0-M7
 * factorie-1.0.0-M6
 * factorie-1.0.0-M5
 * factorie-1.0.0-M4
