@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>Diff - Factorie 1.0-SNAPSHOT API - cc.factorie.variable.Diff</title>
-          <meta name="description" content="Diff - Factorie 1.0 - SNAPSHOT API - cc.factorie.variable.Diff" />
-          <meta name="keywords" content="Diff Factorie 1.0 SNAPSHOT API cc.factorie.variable.Diff" />
+          <title>SetVariableAddAllDiff - Factorie 1.0-SNAPSHOT API - cc.factorie.variable.SetVariable.SetVariableAddAllDiff</title>
+          <meta name="description" content="SetVariableAddAllDiff - Factorie 1.0 - SNAPSHOT API - cc.factorie.variable.SetVariable.SetVariableAddAllDiff" />
+          <meta name="keywords" content="SetVariableAddAllDiff Factorie 1.0 SNAPSHOT API cc.factorie.variable.SetVariable.SetVariableAddAllDiff" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../index.html';
-            var hash = 'cc.factorie.variable.Diff';
+            var hash = 'cc.factorie.variable.SetVariable$SetVariableAddAllDiff';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -24,27 +24,24 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img src="../../../lib/trait_big.png" />
-        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="package.html" class="extype" name="cc.factorie.variable">variable</a></p>
-        <h1>Diff</h1>
+        <img src="../../../lib/class_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="package.html" class="extype" name="cc.factorie.variable">variable</a>.<a href="SetVariable.html" class="extype" name="cc.factorie.variable.SetVariable">SetVariable</a></p>
+        <h1>SetVariableAddAllDiff</h1>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Diff</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">SetVariableAddAllDiff</span><span class="params">(<span name="added">added: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.variable.SetVariable.A">A</span>]</span>)</span><span class="result"> extends <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A change record for a variable, holding its old and new values, with capability to undo and redo the change.</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a href="SpanVarList$AddSpanListDiff.html" class="extype" name="cc.factorie.variable.SpanVarList.AddSpanListDiff">AddSpanListDiff</a>, <a href="MutableSpanVar$Append.html" class="extype" name="cc.factorie.variable.MutableSpanVar.Append">Append</a>, <a href="MutableSeqVar$Append1Diff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.Append1Diff">Append1Diff</a>, <a href="MutableSeqVar$AppendDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.AppendDiff">AppendDiff</a>, <a href="ArrowVariable$ArrowDiff.html" class="extype" name="cc.factorie.variable.ArrowVariable.ArrowDiff">ArrowDiff</a>, <a href="AutoDiff.html" class="extype" name="cc.factorie.variable.AutoDiff">AutoDiff</a>, <a href="../app/nlp/hcoref/BagOfWordsVariable$BagOfWordsVariableAddBagDiff.html" class="extype" name="cc.factorie.app.nlp.hcoref.BagOfWordsVariable.BagOfWordsVariableAddBagDiff">BagOfWordsVariableAddBagDiff</a>, <a href="../app/nlp/hcoref/BagOfWordsVariable$BagOfWordsVariableAddStringDiff.html" class="extype" name="cc.factorie.app.nlp.hcoref.BagOfWordsVariable.BagOfWordsVariableAddStringDiff">BagOfWordsVariableAddStringDiff</a>, <a href="../app/nlp/hcoref/BagOfWordsVariable$BagOfWordsVariableRemoveBagDiff.html" class="extype" name="cc.factorie.app.nlp.hcoref.BagOfWordsVariable.BagOfWordsVariableRemoveBagDiff">BagOfWordsVariableRemoveBagDiff</a>, <a href="../app/nlp/hcoref/BagOfWordsVariable$BagOfWordsVariableRemoveStringDiff.html" class="extype" name="cc.factorie.app.nlp.hcoref.BagOfWordsVariable.BagOfWordsVariableRemoveStringDiff">BagOfWordsVariableRemoveStringDiff</a>, <a href="MutableDiscreteVar$DiscreteVariableDiff.html" class="extype" name="cc.factorie.variable.MutableDiscreteVar.DiscreteVariableDiff">DiscreteVariableDiff</a>, <a href="DoubleVariable$DoubleDiff.html" class="extype" name="cc.factorie.variable.DoubleVariable.DoubleDiff">DoubleDiff</a>, <a href="EdgeVariable$EdgeDiff.html" class="extype" name="cc.factorie.variable.EdgeVariable.EdgeDiff">EdgeDiff</a>, <a href="ProportionsVariable$IncrementProportionsMassesDiff.html" class="extype" name="cc.factorie.variable.ProportionsVariable.IncrementProportionsMassesDiff">IncrementProportionsMassesDiff</a>, <a href="ProportionsVariable$IncrementProportionsMassesIndexDiff.html" class="extype" name="cc.factorie.variable.ProportionsVariable.IncrementProportionsMassesIndexDiff">IncrementProportionsMassesIndexDiff</a>, <a href="MutableTensorVar$IncrementTensorDiff.html" class="extype" name="cc.factorie.variable.MutableTensorVar.IncrementTensorDiff">IncrementTensorDiff</a>, <a href="MutableTensorVar$IncrementTensorIndexDiff.html" class="extype" name="cc.factorie.variable.MutableTensorVar.IncrementTensorIndexDiff">IncrementTensorIndexDiff</a>, <a href="IntegerVariable$IntegerVariableDiff.html" class="extype" name="cc.factorie.variable.IntegerVariable.IntegerVariableDiff">IntegerVariableDiff</a>, <a href="MutableSpanVar$MutableSpanDiff.html" class="extype" name="cc.factorie.variable.MutableSpanVar.MutableSpanDiff">MutableSpanDiff</a>, <a href="NoopDiff.html" class="extype" name="cc.factorie.variable.NoopDiff">NoopDiff</a>, <a href="MutableSpanVar$Prepend.html" class="extype" name="cc.factorie.variable.MutableSpanVar.Prepend">Prepend</a>, <a href="MutableSeqVar$PrependDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.PrependDiff">PrependDiff</a>, <a href="RealVariable$RealDiff.html" class="extype" name="cc.factorie.variable.RealVariable.RealDiff">RealDiff</a>, <a href="RefVariable$RefVariableDiff.html" class="extype" name="cc.factorie.variable.RefVariable.RefVariableDiff">RefVariableDiff</a>, <a href="MutableSeqVar$Remove1Diff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.Remove1Diff">Remove1Diff</a>, <a href="SpanVarList$RemoveSpanListDiff.html" class="extype" name="cc.factorie.variable.SpanVarList.RemoveSpanListDiff">RemoveSpanListDiff</a>, <a href="MutableSeqVar$SeqVariableDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.SeqVariableDiff">SeqVariableDiff</a>, <a href="MutableSpanVar$Set.html" class="extype" name="cc.factorie.variable.MutableSpanVar.Set">Set</a>, <a href="MutableSpanVar$SetLength.html" class="extype" name="cc.factorie.variable.MutableSpanVar.SetLength">SetLength</a>, <a href="MutableSpanVar$SetStart.html" class="extype" name="cc.factorie.variable.MutableSpanVar.SetStart">SetStart</a>, <a href="MutableTensorVar$SetTensorDiff.html" class="extype" name="cc.factorie.variable.MutableTensorVar.SetTensorDiff">SetTensorDiff</a>, <a href="SetVariable$SetVariableAddAllDiff.html" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff">SetVariableAddAllDiff</a>, <a href="SetVariable$SetVariableAddDiff.html" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddDiff">SetVariableAddDiff</a>, <a href="SetVariable$SetVariableRemoveAllDiff.html" class="extype" name="cc.factorie.variable.SetVariable.SetVariableRemoveAllDiff">SetVariableRemoveAllDiff</a>, <a href="SetVariable$SetVariableRemoveDiff.html" class="extype" name="cc.factorie.variable.SetVariable.SetVariableRemoveDiff">SetVariableRemoveDiff</a>, <a href="SpanVarList$SpanListDiff.html" class="extype" name="cc.factorie.variable.SpanVarList.SpanListDiff">SpanListDiff</a>, <a href="StringVariable$StringVariableDiff.html" class="extype" name="cc.factorie.variable.StringVariable.StringVariableDiff">StringVariableDiff</a>, <a href="MutableSeqVar$Swap1Diff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.Swap1Diff">Swap1Diff</a>, <a href="MutableSpanVar$TrimEnd.html" class="extype" name="cc.factorie.variable.MutableSpanVar.TrimEnd">TrimEnd</a>, <a href="MutableSeqVar$TrimEndDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.TrimEndDiff">TrimEndDiff</a>, <a href="MutableSpanVar$TrimStart.html" class="extype" name="cc.factorie.variable.MutableSpanVar.TrimStart">TrimStart</a>, <a href="MutableSeqVar$TrimStartDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.TrimStartDiff">TrimStartDiff</a>, <a href="MutableSeqVar$UpdateDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.UpdateDiff">UpdateDiff</a>, <a href="MutableTensorVar$UpdateTensorDiff.html" class="extype" name="cc.factorie.variable.MutableTensorVar.UpdateTensorDiff">UpdateTensorDiff</a>, <a href="WeakSetVariable$WeakSetVariableAddDiff.html" class="extype" name="cc.factorie.variable.WeakSetVariable.WeakSetVariableAddDiff">WeakSetVariableAddDiff</a>, <a href="WeakSetVariable$WeakSetVariableRemoveDiff.html" class="extype" name="cc.factorie.variable.WeakSetVariable.WeakSetVariableRemoveDiff">WeakSetVariableRemoveDiff</a>, <a href="ProportionsVariable$ZeroProportionsMassesDiff.html" class="extype" name="cc.factorie.variable.ProportionsVariable.ZeroProportionsMassesDiff">ZeroProportionsMassesDiff</a>, <a href="MutableTensorVar$ZeroTensorDiff.html" class="extype" name="cc.factorie.variable.MutableTensorVar.ZeroTensorDiff">ZeroTensorDiff</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -62,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="cc.factorie.variable.Diff"><span>Diff</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff"><span>SetVariableAddAllDiff</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="cc.factorie.variable.Diff"><span>Diff</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -80,56 +77,30 @@
 
       <div id="template">
         <div id="allMembers">
-        
-
-        
-
-        <div id="values" class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="cc.factorie.variable.Diff#redo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="redo():Unit"></a>
-      <a id="redo():Unit"></a>
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(added:Iterable[A]):SetVariable.this.SetVariableAddAllDiff"></a>
+      <a id="&lt;init&gt;:SetVariableAddAllDiff"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
+        <span class="modifier"></span>
+        <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">redo</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.variable.Diff#undo" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="undo():Unit"></a>
-      <a id="undo():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">undo</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.variable.Diff#variable" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="variable:cc.factorie.variable.Var"></a>
-      <a id="variable:Var"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">variable</span><span class="result">: <a href="Var.html" class="extype" name="cc.factorie.variable.Var">Var</a></span>
+        <span class="name">SetVariableAddAllDiff</span><span class="params">(<span name="added">added: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.variable.SetVariable.A">A</span>]</span>)</span>
       </span>
       </h4>
       
     </li></ol>
             </div>
 
+        
+
+        
+
         <div id="values" class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:AnyRef):Boolean"></a>
       <a id="!=(AnyRef):Boolean"></a>
@@ -195,6 +166,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#added" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="added:Iterable[A]"></a>
+      <a id="added:Iterable[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">added</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.variable.SetVariable.A">A</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -240,19 +224,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a>
-      <a id="equals(Any):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -282,19 +253,6 @@
       </span>
       <span class="symbol">
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
-      <a id="hashCode():Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
@@ -350,6 +308,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#redo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="redo():Unit"></a>
+      <a id="redo():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">redo</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff">SetVariableAddAllDiff</a> → <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -363,7 +334,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -375,7 +346,33 @@
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff">SetVariableAddAllDiff</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#undo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="undo():Unit"></a>
+      <a id="undo():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">undo</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff">SetVariableAddAllDiff</a> → <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a></dd></dl></div>
+    </li><li name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff#variable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="variable:cc.factorie.variable.SetVariable[A]"></a>
+      <a id="variable:SetVariable[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">variable</span><span class="result">: <a href="SetVariable.html" class="extype" name="cc.factorie.variable.SetVariable">SetVariable</a>[<span class="extype" name="cc.factorie.variable.SetVariable.A">A</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.variable.SetVariable.SetVariableAddAllDiff">SetVariableAddAllDiff</a> → <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -442,7 +439,17 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+            </div><div class="parent" name="cc.factorie.variable.Diff">
+              <h3>Inherited from <a href="Diff.html" class="extype" name="cc.factorie.variable.Diff">Diff</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

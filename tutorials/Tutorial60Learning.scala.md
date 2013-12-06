@@ -253,7 +253,7 @@ For more information see the java docs of the cc.factorie.optimize package.
 
 ``` 
 
- `` = 48.63607808733321`` 
+ `` = 48.63607808729122`` 
 
 ```scala
 
@@ -261,7 +261,7 @@ For more information see the java docs of the cc.factorie.optimize package.
 
 ``` 
 
- `` = Proportions(0.9999308678897892,6.913211020986326E-5)`` 
+ `` = Proportions(0.9999308678897892,6.913211020966629E-5)`` 
 
 ```scala
 
