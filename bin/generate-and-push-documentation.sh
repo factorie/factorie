@@ -4,6 +4,7 @@ rm -rf html && \
 sh htmlify-all-tutorials.sh && \
 cd .. && \
 git checkout gh-pages && \
+git pull && \
 git rm tutorials/*md && \
 mkdir tutorials && \
 cp doc/html/*md tutorials/ && \
