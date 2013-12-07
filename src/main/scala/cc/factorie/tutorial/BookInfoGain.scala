@@ -6,6 +6,7 @@ import app.classify
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.app.classify.backend.OnlineLinearMulticlassTrainer
 
+/** Demonstration of calculating class-word information gain where data coming from book-length */
 object BookInfoGain {
   object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(labelString: String, words:Seq[String]) extends BinaryFeatureVectorVariable[String](words) {
