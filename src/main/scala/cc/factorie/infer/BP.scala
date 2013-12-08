@@ -861,7 +861,11 @@ object MaximizeByBPChain extends MaximizeByBP {
     if (marginalizing ne null) throw new Error("Marginalizing case not yet implemented.")
     apply(variables, model)
   }
-  def apply(varying:Iterable[DiscreteVar], model:Model): MAPSummary = BP.inferChainMax(varying.toSeq, model)
+  def apply(varying:Iterable[DiscreteVar], model:Model): MAPSummary = {
+    val s = BP.inferChainMax(varying.toSeq, model)
+    s.setToMaximize(null)
+    s
+  }
 }
 
 object MaximizeByBPTree extends MaximizeByBP {
