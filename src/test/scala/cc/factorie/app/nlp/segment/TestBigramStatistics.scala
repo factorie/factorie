@@ -8,7 +8,7 @@ import org.junit.Test
  */
 class TestBigramStatistics {
   @Test def testBigramStatistics() {
-    val gpl = new cc.factorie.app.nlp.Document(cc.factorie.tutorial.WordSegmenterDemo.data.mkString("\n"))
+    val gpl = new cc.factorie.app.nlp.Document(cc.factorie.tutorial.WordSegmenter.data.mkString("\n"))
     DeterministicTokenizer.process(gpl)
     val bg = new BigramStatistics
     bg.process(gpl)

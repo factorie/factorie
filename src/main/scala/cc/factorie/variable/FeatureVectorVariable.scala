@@ -18,7 +18,8 @@ import cc.factorie.la._
 import scala.util.MurmurHash
 
 /** A super trait for feature vectors, both (a) those based on CategoricalDomain[C] and
-    (b) those without explicitly stored categories in their domains, such as HashFeatureVectorVariable. */
+    (b) those without explicitly stored categories in their domains, such as HashFeatureVectorVariable.
+    @author Andrew McCallum */
 trait FeatureVectorVar[-C] extends VectorVar {
   def +=(elt:C, incr:Double): Unit
   def +=(elt:C): Unit
@@ -26,7 +27,7 @@ trait FeatureVectorVar[-C] extends VectorVar {
 }
 
 /** The standard variable for holding binary feature vectors.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    It is a CategoricalVectorVariable initialized with a GrowableSparseBinaryTensor1 value.
     @author Andrew McCallum */
 abstract class BinaryFeatureVectorVariable[C] extends CategoricalVectorVariable[C] with FeatureVectorVar[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
@@ -35,7 +36,7 @@ abstract class BinaryFeatureVectorVariable[C] extends CategoricalVectorVariable[
 }
 
 /** The standard variable for holding feature vectors with non-binary values.
-    It is a CategoricalDimensionTensorVariable initialized with a GrowableSparseBinaryTensor1 value.
+    It is a CategoricalVectorVariable initialized with a GrowableSparseTensor1 value.
     @author Andrew McCallum */
 abstract class FeatureVectorVariable[C] extends CategoricalVectorVariable[C] with FeatureVectorVar[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }

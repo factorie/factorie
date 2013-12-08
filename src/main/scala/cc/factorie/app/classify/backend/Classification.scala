@@ -197,13 +197,13 @@ class LinearMulticlassTrainer(val optimizer: GradientOptimizer,
   def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
 }
 
-class SVMMulticlassTrainer(nThreads: Int = 1)(implicit val random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] {
+class SVMMulticlassTrainer(nThreads: Int = 1, l2: Double = 0.1)(implicit val random: scala.util.Random) extends MulticlassClassifierTrainer[LinearMulticlassClassifier] {
   def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
   def baseTrain(classifier: LinearMulticlassClassifier, labels: Seq[Int], features: Seq[Tensor1], weights: Seq[Double], evaluate: LinearMulticlassClassifier => Unit) {
     val ll = labels.toArray
     val ff = features.toArray
     val numLabels = classifier.weights.value.dim2
-    val weightTensor = Threading.parMap(0 until numLabels, nThreads) { label => (new LinearL2SVM).train(ff, ll, label) }
+    val weightTensor = Threading.parMap(0 until numLabels, nThreads) { label => new LinearL2SVM(cost = 1 / l2).train(ff, ll, label) }
     val weightsValue = classifier.weights.value
     for (f <- 0 until weightsValue.dim1; (l,t) <- (0 until numLabels).zip(weightTensor)) {
       weightsValue(f,l) = t(f)

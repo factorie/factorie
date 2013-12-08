@@ -13,7 +13,6 @@
    limitations under the License. */
 
 package cc.factorie.tutorial
-import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.directed.{Discrete, MaximizeDirichletByMomentMatching, Dirichlet}
 import cc.factorie.variable._
@@ -32,23 +31,12 @@ object DirichletDemo {
     val p1 = new ProportionsVariable(new DenseProportions1(WordDomain.size))
     p1 :~ Dirichlet(masses)
 
-    //println("Demonstrating Proportions estimation")
-    //println("Initial Proportions "+p1.value)
     val data = for (i <- 0 until 500) yield new Word :~ Discrete(p1)
     MaximizeProportions.infer(Seq(p1), model)
     Maximize(Seq(p1), model)
-    //println("Estimated Proportions "+p1.value)
-    
-    //println("Demonstrating Dirichlet parameter estimation")
-    //println("Initial Masses "+masses.value)
+
     val ps = for (i <- 0 until 1000) yield ProportionsVariable.dense(WordDomain.size) :~ Dirichlet(masses)
     MaximizeDirichletByMomentMatching(masses, model)
-    //println("Estimated Masses "+masses.value)
-    
-    // TODO I'm seeing consistent over-estimates of precision from MaximizeDirichletByMomentMatching
-    // It could be a problem in the estimator, or in the Dirichlet.sample implementations.
-    // Needs investigation -akm
-
   }
   
 }

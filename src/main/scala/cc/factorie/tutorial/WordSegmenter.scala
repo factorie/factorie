@@ -1,117 +1,53 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
-   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License. */
+///* Copyright (C) 2008-2010 University of Massachusetts Amherst,
+//   Department of Computer Science.
+//   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+//   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License. */
 
 
 
 package cc.factorie.tutorial
 
-import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
-import scala.util.Sorting
 import cc.factorie._
-import java.io.File
-import cc.factorie.util.BinarySerializer
-import cc.factorie.optimize.Trainer
+import cc.factorie.optimize._
 import cc.factorie.variable._
-import cc.factorie.model._
-import cc.factorie.infer.IteratedConditionalModes
+import cc.factorie.infer.{MaximizeByBPLoopy, MaximizeByMPLP}
+import cc.factorie.app.chain.{Observation, ChainModel}
 
-object WordSegmenterDemo { 
-  
+object WordSegmenter {
+
   // The variable types:
-  //object LabelDomain extends CategoricalDomain[Boolean]
-  class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)  // { def domain = LabelDomain }
+  object LabelDomain extends CategoricalDomain[String] {
+    this ++= Seq("YES", "NO")
+    freeze()
+  }
+  class Label(b:Boolean, val token:Token) extends LabeledCategoricalVariable[String](if (b) "YES" else "NO") { def domain = LabelDomain }
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
+  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] with Observation[Token] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)
     this += char.toString
+    def string = char.toString
     if ("aeiou".contains(char)) this += "VOWEL"
   }
   class Sentence extends Chain[Sentence,Token]
 
-    // The factor templates that define the model
-  val model = new TemplateModel with Parameters
-  /** Bias term just on labels */
-  model += new DotTemplateWithStatistics1[Label] {
-    val weights = model.Weights(new la.DenseTensor1(BooleanDomain.size))
-    factorName = "Label"
-    //def statistics(t:Label#Value) = Stat(t)
-    //def statisticsDomains = Tuple1(BooleanDomain)
-  }
-//  /** Factor between label and observed token */
-//  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
-//    factorName = "Label,Token"
-//    def statisticsDomains = ((BooleanDomain,TokenDomain))
-//    def unroll1 (label:Label) = Factor(label, label.token)
-//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
-//  }
-//  /** A token bi-gram conjunction  */
-//  model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
-//    factorName = "Label,Token,Token"
-//    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
-//    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
-//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
-//    def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
-//  }
-  /** Factor between label and observed token */
-  model += new DotTemplateWithStatistics2[Label,Token] {
-    factorName = "Label,Token"
-    //def statisticsDomains = ((BooleanDomain,TokenDomain))
-    val weights = model.Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
-    def unroll1 (label:Label) = Factor(label, label.token)
-    def unroll2 (token:Token) = Factor(token.label, token)
-  }
-  /** A token bi-gram conjunction  */
-  model += new DotTemplateWithStatistics3[Label,Token,Token] {
-    factorName = "Label,Token,Token"
-    //def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
-    val weights = model.Weights(new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_)))
-    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token.prev, label.token) else Nil
-    def unroll2 (token:Token) = if (token.hasPrev) Factor(token.label, token.prev, token) else Nil
-    def unroll3 (token:Token) = if (token.hasNext) Factor(token.next.label, token, token.next) else Nil
-  }
-  /** Factor between two successive labels */
-  model += new DotTemplateWithStatistics2[Label,Label] {
-    factorName = "Label,Label"
-    val weights = model.Weights(new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size))
-    //def statisticsDomains = ((BooleanDomain,BooleanDomain))
-    def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
-    def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
-  }
-  /** Skip edge */
-  val skipTemplate = new DotTemplate2[Label,Label] {
-    factorName = "Label,Label:Boolean"
-    val weights = model.Weights(new la.DenseTensor1(BooleanDomain.size))
-    //def statisticsDomains = Tuple1(BooleanDomain)
-    def unroll1 (label:Label) =  
-      // could cache this search in label.similarSeq for speed
-      for (other <- label.token.chain.links; if label.token.char == other.char) yield
-        if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
-    def unroll2 (label:Label) = Nil // We handle symmetric case above
-    override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
-  }
-  //model += skipTemplate
+  val model = new ChainModel[Label,Token,Token](LabelDomain, TokenDomain, l => l.token, l => l.token, t => t.label)
 
   val objective = HammingObjective
 
-
-
   def main(args: Array[String]) : Unit = {
-    implicit val random = new scala.util.Random 
-    var startTime:Long = 0
-  
     // Read data and create Variables
+    implicit val random = new scala.util.Random(0)
+
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
       var beginword = true
@@ -128,41 +64,22 @@ object WordSegmenterDemo {
       }
       sentence
     }
-    // println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
 
     // Make a test/train split
-    val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
-    var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
-    var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
-    //var sampler = new VariableSettingsSampler[Label](model); val predictor = new SamplingMaximizer(sampler)
-    val predictor = new IteratedConditionalModes(model)
-    
-    // println ("Read "+(trainVariables.size+testVariables.size)+" characters")
-    // println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    (trainVariables ++ testVariables).foreach(_.setRandomly)
-    println ("Initial train accuracy = "+ objective.accuracy(testVariables))
-    println ("Initial test  accuracy = "+ objective.accuracy(testVariables))
-    
-    val exampleFactors = model.factors(trainVariables.tail.head)
-    // println("Example Factors: "+exampleFactors.mkString(", "))
-    //println("Example Factors score: "+exampleFactors.map(_.score).sum)
-  
-    // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
-    if (args.length > 0) {
-      println("Loading model parameters from "+args(0))
-      BinarySerializer.deserialize(TokenDomain, model, new File(args(0)))
-      //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-      //predictor.maximize(testVariables, iterations=6, rounds=2)
-      predictor.processAll(testVariables)
-      println ("Test  accuracy = "+ objective.accuracy(testVariables))
-      System.exit(0)
-    }
+    val (testSet, trainSet) = sentences.shuffle.split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
+    val trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
+    val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
 
-    // Sample and Learn!
-    val examples = trainSet.map(_.asSeq.map(_.label)).map(new optimize.PseudolikelihoodExample(_, model))
-    Trainer.onlineTrain(model.parameters, examples, maxIterations =15)
-    predictor.processAll(testVariables)
+    testVariables.foreach(_.setRandomly)
+
+    val startTime = System.currentTimeMillis
+    val opt = new AdaGrad
+    val examples = trainSet.map(sentence => new StructuredSVMExample(sentence.asSeq.map(_.label), model, infer=MaximizeByBPLoopy))
+    Trainer.onlineTrain(model.parameters, examples, maxIterations=15, optimizer=opt)
+    for (sentence <- sentences) MaximizeByMPLP.infer(sentence.asSeq.map(_.label), model).mapAssignment.setVariables(null)
+    println ("Train accuracy = "+ objective.accuracy(trainVariables))
     println ("Test  accuracy = "+ objective.accuracy(testVariables))
+    println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
   }
 
   val data = Array(

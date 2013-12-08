@@ -16,18 +16,20 @@
 
 package cc.factorie.tutorial
 
-import java.io.File
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import collection.mutable.{ArrayBuffer, Seq => MSeq}
 import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 import cc.factorie.infer.InferByBPChain
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
-import cc.factorie.app.nlp.load.LoadConll2003
 
-object ChainNER1ML {
+/**
+ * An example of a linear-chain CRF system NER which manually defines the model.
+ *
+ * For an example using actual factorie infrastructure see app.nlp.ner.ConllChainNer
+ */
+object ChainNERExample {
   object TokenFeaturesDomain extends CategoricalVectorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
@@ -62,40 +64,28 @@ object ChainNER1ML {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     val trainDocuments = load.LoadConll2003.fromFilename(args(0))
     val testDocuments = load.LoadConll2003.fromFilename(args(1))
-    for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
+    for (document <- trainDocuments ++ testDocuments; token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[IobConllNerTag]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[IobConllNerTag]) //.take(2000)
-    
-    // Get the variables to be inferred
+
     val trainLabelsSentences: Seq[Seq[LabeledIobConllNerTag]] = trainDocuments.map(_.tokens.toSeq.map(_.attr[LabeledIobConllNerTag]))
     val  testLabelsSentences: Seq[Seq[LabeledIobConllNerTag]] = testDocuments.map(_.tokens.toSeq.map(_.attr[LabeledIobConllNerTag]))
     assert(!testLabelsSentences.contains(null))
-    //val trainVariables = trainLabels
-    //val testVariables = testLabels
-    //val allTestVariables = testVariables.flatMap(l => l)
-    //val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
-    // To enable Template.cachedStatistics
-    //for (doc <- (trainDocuments ++ testDocuments); token <- doc.tokens) token.attr[TokenFeatures].freeze
 
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))
     val start = System.currentTimeMillis
-    //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
     val examples = trainLabelsSentences.map(s => new LikelihoodExample(s, model, InferByBPChain))
     Trainer.batchTrain(model.parameters, examples)
-    val objective = HammingObjective
-    // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
       variables => cc.factorie.infer.BP.inferChainMax(variables, model).setToMaximize(null)
     }
-    println("test token accuracy=" + objective.accuracy(testLabelsSentences.flatten))
+    println("test token accuracy=" + HammingObjective.accuracy(testLabelsSentences.flatten))
 
     println("Total training took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
   }
