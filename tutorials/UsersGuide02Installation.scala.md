@@ -132,7 +132,8 @@ To add support for different models, just change the artifactId accordingly. We 
 
 To import FACTORIE as a project in Eclipse or IDEA, start by cloning the git repository. 
 
-Eclipse (Kepler):
+# Eclipse (Kepler):
+
 1. Install the Scala plugin for Eclipse through the Eclipse Marketplace. Once installed the plugin should prompt you to make sure Eclipse is configured properly to run Scala, e.g. you may want to add a line to your eclipse.ini file that increased the default amount of Java heap space that Eclipse runs with
 2. If you want to manage git source control through Eclipse, make sure you have the latest version of the EGit plugin installed.
 3. Before you can import a Maven Scala project, you’ll also need to install the m2eclipse-scala connector (the Maven plugin that comes with Eclipse doesn’t support Scala by default) by installing the connector from the following Eclipse plugin site: http://alchim31.free.fr/m2e-scala/update-site (via Help->Install New Software)
@@ -141,7 +142,8 @@ Eclipse (Kepler):
 6. To compile, right click on pom.xml and select Run As->Maven Build. Enter "compile" as the goal. Apply and run (in the future you can just do Run As->Maven Build)
 7. To run different launchers defined in your pom.xml you will have to add new Maven run configurations. For e.g. a launcher called "LauncherExample", you would want to create a new run configuration for the project with the goal "scala:run" and parameter "Dlauncher" with value "LauncherExample"
 
-IntelliJ IDEA (12 CE):
+# IntelliJ IDEA (12 CE):
+
 1. Select Import Project from the Quick Start menu.
 2. Select the top-level directory from your cloned FACTORIE project, the directory containing the pom.xml file.
 3. Select "Import project from external model" then highlight Maven as the type.
