@@ -126,17 +126,7 @@ To use FACTORIE's pre-trained NLP models in a Maven project, you can add additio
 </dependency>
 ```
 
-To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref). You may also need to include our lexicons (lexicon).
-
-If you choose to use our state-of-the-art ConllStackedChainNer model for named entity recognition, you will also need to include WordNet data provided by the following dependency:
-
-```
-<dependency>
-  <groupId>cc.factorie.app.nlp</groupId>
-  <artifactId>factorie-nlp-resources-ner</artifactId>
-  <version>0.1-SNAPSHOT</version>
-</dependency>
-```
+To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref). You may also need to include our lexicons (lexicon), and if you choose to use our state-of-the-art ConllStackedChainNer model for named entity recognition, you will also need to include WordNet data (wordnet).
 
 ## Eclipse and IntelliJ IDEA Setup
 
