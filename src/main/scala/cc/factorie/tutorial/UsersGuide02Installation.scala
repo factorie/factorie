@@ -112,16 +112,7 @@ To use FACTORIE's pre-trained NLP models in a Maven project, you can add additio
 </dependency>
 ```
 
-To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref).
-
-To include all of the models, use the artifactID all-models.
-
-## Questions, Bug Reports and Feature Requests
-
-The FACTORIE mailing list at factorie-discuss@googlegroups.com is a good place to ask general questions and discuss broad points.
-
-Please report specific problems with the installation, bugs in the code, or feature requests in the FACTORIE GitHub issues tracker at 
-https://github.com/factorie/factorie/issues  
+To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref). You may also need to include our lexicons (lexicon).
 
 ## Eclipse and IntelliJ IDEA Setup
 
@@ -151,6 +142,13 @@ IntelliJ IDEA (12 CE):
 12. To run different launchers defined in your pom.xml, go to Run -> Edit Configurations then click on the + in the top left to create a new Maven run configuration. For e.g. a launcher called "LauncherExample" you would want to add the command line "scala:run -Dlauncher=LauncherExample". The default working directory should be the project root, which is correct.
 
 If you find you are running out of Java heap space or PermGen space when compiling, add the JVM arguments "-Xms2g -Xmx2g -XX:MaxPermSize=256m" in your run configuration.
+
+## Questions, Bug Reports and Feature Requests
+
+The FACTORIE mailing list at factorie-discuss@googlegroups.com is a good place to ask general questions and discuss broad points.
+
+Please report specific problems with the installation, bugs in the code, or feature requests in the FACTORIE GitHub issues tracker at 
+https://github.com/factorie/factorie/issues  
 
 ## Coding Standards
 
