@@ -9,7 +9,6 @@ import cc.factorie.la.{SingletonTensor1, Tensor1, SparseIndexedTensor1, SparseBi
 import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
 import cc.factorie.variable.{VectorDomain, DiscreteDomain}
-import cc.factorie.app.classify._
 import cc.factorie.app.classify.backend._
 
 class TestDecisionTree extends JUnitSuite {
