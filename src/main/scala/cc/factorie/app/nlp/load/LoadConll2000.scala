@@ -122,9 +122,7 @@ object BIOChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-class BIOChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue) {
-  def domain = BIOChunkDomain
-}
+
 
 object BILOUChunkDomain extends CategoricalDomain[String] {
   this ++= BIOChunkDomain.categories
@@ -183,12 +181,16 @@ object BILOU2LayerChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-abstract class ChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue)
+abstract class ChunkTag(val token:Token, tagValue:String = "O") extends LabeledCategoricalVariable(tagValue)
 
-class BILOUChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
+class BIOChunkTag(token:Token, tagValue:String ="O") extends ChunkTag(token, tagValue) {
+  def domain = BIOChunkDomain
+}
+
+class BILOUChunkTag(token:Token, tagValue:String="O") extends ChunkTag(token,tagValue) {
   def domain = BILOUChunkDomain
 }
 
-class BILOU2LayerChunkTag(token:Token,tagValue:String) extends ChunkTag(token,tagValue) {
+class BILOU2LayerChunkTag(token:Token,tagValue:String = "O:O") extends ChunkTag(token,tagValue) {
   def domain = BILOU2LayerChunkDomain
 }
