@@ -48,8 +48,19 @@ To accomplish the same with sbt, type
 ```
 $ ./sbt -J-Xmx2G with-nlp-resources:assembly
 ```
+##Try out a simple example
 
-## Try it out
+To get an idea what a simple FACTORIE program might look like, open one of the tutorials package
+```
+$ ls factorie/main/scala/cc/factorie/tutorial
+```
+To run any of these examples using maven type
+```
+$ mvn scala:run -DmainClass=cc.factorie.tutorial.Grid
+```
+
+
+## Try it out NLP tools
 
 Then you can run some FACTORIE tools from the command-line. For example, you can run many natural language processing tools.
 
