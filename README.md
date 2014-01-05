@@ -55,7 +55,7 @@ To get an idea what a simple FACTORIE program might look like, open one of the c
 ```
 $ ls factorie/main/scala/cc/factorie/tutorial
 ```
-To run any of these examples using maven type
+To run one of these examples using maven type
 ```
 $ mvn scala:run -DmainClass=cc.factorie.tutorial.Grid
 ```
