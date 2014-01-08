@@ -30,6 +30,58 @@ trait Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit
 }
 
+object Example {
+  def testGradient(parameters: WeightsSet, example: Example, epsilon: Double = 1e-6, lipschitz: Double = 10, verbose: Boolean = false, returnOnFirstError: Boolean = true): Boolean = {
+    val g = parameters.blankSparseMap
+    val acc = new LocalWeightsMapAccumulator(g)
+    val value = new LocalDoubleAccumulator()
+    example.accumulateValueAndGradient(value, acc)
+    var correct = true
+    for (k <- parameters.keys) {
+      for (i <- 0 until k.value.length) {
+        val value2 = new LocalDoubleAccumulator()
+        k.value(i) += epsilon
+        example.accumulateValueAndGradient(value2, null)
+        k.value(i) -= epsilon
+        val grad = value2.value - value.value
+        val computedGrad = g(k)(i)
+        val m = math.max(math.abs(grad), math.abs(computedGrad))
+        if (math.abs(computedGrad - grad) > lipschitz*m) {
+          correct = false
+          if (verbose) System.err.println(s"Error in gradient for key $k coordinate $i, expected $computedGrad obtained $grad")
+          if (returnOnFirstError) return correct
+        }
+      }
+    }
+    correct
+  }
+
+  def sparseTestGradient(parameters: WeightsSet, example: Example, epsilon: Double = 1e-6, lipschitz: Double = 10, verbose: Boolean = false, returnOnFirstError: Boolean = true): Boolean = {
+    val g = parameters.blankSparseMap
+    val acc = new LocalWeightsMapAccumulator(g)
+    val value = new LocalDoubleAccumulator()
+    example.accumulateValueAndGradient(value, acc)
+    var correct = true
+    for (k <- parameters.keys) {
+      g(k).foreachActiveElement((i, _) => {
+        val value2 = new LocalDoubleAccumulator()
+        k.value(i) += epsilon
+        example.accumulateValueAndGradient(value2, null)
+        k.value(i) -= epsilon
+        val grad = value2.value - value.value
+        val computedGrad = g(k)(i)
+        val m = math.max(math.abs(grad), math.abs(computedGrad))
+        if (math.abs(computedGrad - grad) > lipschitz*m) {
+          correct = false
+          if (verbose) System.err.println(s"Error in gradient for key $k coordinate $i, expected $computedGrad obtained $grad")
+          if (returnOnFirstError) return correct
+        }
+      })
+    }
+    correct
+  }
+}
+
 /**
  * Treats many examples as one. Useful in online training with a lot of parallelism.
  * @param baseExamples The examples in this batch.

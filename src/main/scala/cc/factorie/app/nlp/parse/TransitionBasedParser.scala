@@ -499,6 +499,27 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
 }
 
+object TransitionBasedParserTester {
+  def main(args: Array[String]) {
+	val opts = new TransitionBasedParserArgs
+	opts.parse(args)
+	assert(opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+	  
+	// load model from file if given, else use default model
+	val parser = if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value)) else OntonotesTransitionBasedParser
+	
+	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
+  
+	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+    println(parser.testString(testSentences))
+  }
+}
+
 object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
   def evaluateParameters(args: Array[String]) = {
     val opts = new TransitionBasedParserArgs
