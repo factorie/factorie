@@ -33,6 +33,19 @@ class TestTensor extends cc.factorie.util.FastLogging {
     // assert(ts.head.toSeq == ts.last.toSeq)
   }
 
+  @Test def testOuter(): Unit = {
+    val t1 = new SparseIndexedTensor1(10)
+    val t2 = new SparseIndexedTensor1(10)
+    val t3 = new SparseIndexedTensor1(10)
+
+    t1 += (1, 2.0)
+    t2 += (2, 1.0)
+    t3 += (3, 4.0)
+
+    assert(((t1 outer t2 outer t3) dot (t1 outer t2 outer t3)) == 64)
+    assert(((t1 outer (t2 outer t3)) dot (t1 outer (t2 outer t3))) == 64)
+  }
+
   @Test def testBinary(): Unit = {
     val foo = new SparseBinaryTensor1(100)
     foo += (50, 1.0)
