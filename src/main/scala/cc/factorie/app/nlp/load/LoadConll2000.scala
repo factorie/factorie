@@ -5,11 +5,8 @@ import cc.factorie.app.nlp._
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.variable._
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
+import scala.Predef._
 
 /**
  * @author John Sullivan

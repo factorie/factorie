@@ -13,6 +13,7 @@ import cc.factorie.app.nlp.load._
 import scala._
 import cc.factorie.app.nlp.pos.PennPosTag
 import com.sun.javaws.exceptions.InvalidArgumentException
+import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 
 /**
  * User: cellier
@@ -21,19 +22,19 @@ import com.sun.javaws.exceptions.InvalidArgumentException
  * Time: 2:49 PM
  */
 
-class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLabel: (Token, String) => L)(implicit m: Manifest[L]) extends DocumentAnnotator {
+class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLabel: (Token) => L, url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
+  //def this(url:java.net.URL,chunktag:L)(implicit m: Manifest[L]) = { this(BILOU2LayerChunkDomain,(t) => chunktag); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
-        s.tokens.foreach(t => if (!t.attr.contains(m.runtimeClass)) t.attr += newChunkLabel(t, "O:O"))
+        s.tokens.foreach(t => if (!t.attr.contains(m.runtimeClass)) t.attr += newChunkLabel(t))
         features(s)
         model.maximize(s.tokens.map(_.attr[L]))(null)
       }
     })
-
     document
   }
-
+  type tag = L
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
   def postAttrs = Seq(m.runtimeClass)
   def tokenAnnotationString(token: Token) = { val label = token.attr[L]; if (label ne null) label.categoryValue else "(null)" }
@@ -55,9 +56,10 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
 
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     trainSentences.foreach(s=>features(s))
-    ChunkFeaturesDomain.freeze()
     println("Features for Training Generated")
+    ChunkFeaturesDomain.freeze()
     testSentences.foreach(features)
+
     def evaluate() {
       (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[L]))(null))
       val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[L](chunkDomain.categories.filter(_.length > 2).map(_.substring(2)))
@@ -90,29 +92,19 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
       if(token.attr[ChunkFeatures] ne null)
         token.attr.remove[ChunkFeatures]
       val features = token.attr += new ChunkFeatures(token)
-
+      //def pastTag(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[BILOU2LayerChunkTag].target.aimer.categoryValue else null) }
       val rawWord = token.string
       val posTag = token.attr[PennPosTag]
       val word = simplifyDigits(rawWord).toLowerCase
       features += "SENTLOC="+i
       features += "P="+posTag
-      features += "W="+word
+      //features += "Past="+pastTag(-2)
+      //features += "W="+word
       features += "Raw="+rawWord
       val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
-      features += "WS="+word+"&"+shape // word conjoined with shape
-      if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
+      features += "WS="+shape // word conjoined with shape
+      //if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
-      if (lexicon.iesl.Money.containsLemmatizedWord(word)) features += "MONEY"
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
       //features += "STEM=" + cc.factorie.app.strings.porterStem(word)
       //features += "WSIZE=" + rawWord.length
       //val j = 3
@@ -125,34 +117,46 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
   }
 }
 
-object BILOUCRFChunker extends CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t, s) => new BILOUChunkTag(t, s)) {
+object BILOUCRFChunker extends CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O")) {
   deserialize(ClasspathURL[CRFChunker[BILOUChunkTag]](".factorie").openConnection().getInputStream)
 }
 
-object BIOCRFChunker extends CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t, s) => new BIOChunkTag(t, s)) {
+object BIOCRFChunker extends CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O")) {
   deserialize(ClasspathURL[CRFChunker[BIOChunkTag]](".factorie").openConnection().getInputStream)
 }
 
-
-object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t, s) => new BILOU2LayerChunkTag(t, s)) {
-  deserialize(ClasspathURL[CRFChunker[BILOU2LayerChunkTag]](".factorie").openConnection().getInputStream)
+object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t,"O:O"))
+{
+  deserialize(new FileInputStream(new java.io.File("NestedCRFChunker.factorie")))
 }
+
+//object NestedCRFChunker extends NestedCRFChunker()
+////  //new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t)).deserialize(new FileInputStream(new File("NestedCRFChunker.factorie")))
+////  deserialize(ClasspathURL[NestedCRFChunker](".factorie").openConnection().getInputStream)
+////}
 
 
 object CRFChunkingTrainer extends HyperparameterMain {
+  def generateErrorOutput(sentences: Seq[Sentence]): String ={
+    val sb = new StringBuffer
+    //for (token <- tokens) sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue))
+    sentences.map{s=> s.tokens.map{t=>sb.append("%s %20s %10s %10s  %s\n".format(if (t.attr[ChunkTag].valueIsTarget) " " else "*", t.string, t.attr[PennPosTag], t.attr[ChunkTag].target.categoryValue, t.attr[ChunkTag].categoryValue))}.mkString("\n")}.mkString("\n")
+  }
+
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ChunkerOpts
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
-    val chunk = opts.inputEncoding.value match {
-      case "BILOU" => new CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t, s) => new BILOUChunkTag(t, s))
-      case "BIO" => new CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t, s) => new BIOChunkTag(t, s))
-      case "NESTED" => new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t, s) => new BILOU2LayerChunkTag(t, s))
+    val chunk = opts.trainingEncoding.value match {
+      case "BILOU" => new CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O"))
+      case "BIO" => new CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O"))
+      case "NESTED" => new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t,"O:O"))
     }
 
-    val trainDocs = LoadConll2000.fromSource(Source.fromFile(opts.trainFile.value))
-    val testDocs =  LoadConll2000.fromSource(Source.fromFile(opts.testFile.value))
+
+    val trainDocs = LoadConll2000.fromSource(Source.fromFile(opts.trainFile.value),opts.inputEncoding.value)
+    val testDocs =  LoadConll2000.fromSource(Source.fromFile(opts.testFile.value),opts.inputEncoding.value)
 
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
@@ -163,18 +167,21 @@ object CRFChunkingTrainer extends HyperparameterMain {
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
     val testSentencesFull = testDocs.flatMap(_.sentences).filter(!_.isEmpty)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
-    //if(opts.inputEncoding.value == "BIO")
 
     chunk.train(trainSentences, testSentences,
       opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       chunk.serialize(new FileOutputStream(new File(opts.modelFile.value)))
+//      val chunk2 = new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t,s) => new BILOU2LayerChunkTag(t,s))
+//      chunk2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
+//      val acc2 = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOU2LayerChunkTag]))))
+//      println(acc2)
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOU2LayerChunkTag]))))
     if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
     val writer = new PrintWriter(new File("ErrorOutputNested2011.txt" ))
-
-    testSentences.flatMap(_.tokens.map{t => if(!t.attr[BILOU2LayerChunkTag].valueIsTarget) writer.write("e:  "+ t.string + " " + t.attr[PennPosTag].categoryValue + " " + t.attr[BILOU2LayerChunkTag].target.categoryValue + " " + t.attr[BILOU2LayerChunkTag].categoryValue) else writer.write("c:  " + t.string + " " + t.attr[PennPosTag].categoryValue + " " + t.attr[BILOU2LayerChunkTag].target.categoryValue + " " + t.attr[BILOU2LayerChunkTag].categoryValue); writer.write("\n")})
+    writer.write(generateErrorOutput(testSentences))
+    //testSentences.flatMap(_.tokens.map{t => if(!t.attr[BILOU2LayerChunkTag].valueIsTarget) writer.write("*\t"+ t.string + "\t" + t.attr[PennPosTag].categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].target.categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].categoryValue) else writer.write(" \t" + t.string + "\t" + t.attr[PennPosTag].categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].target.categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].categoryValue); writer.write("\n")})
     writer.close()
     acc
   }
@@ -221,5 +228,7 @@ class ChunkerOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOp
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
-  val inputEncoding = new CmdOption("encoding","BILOU","String","NESTED, BIO, BILOU")
+  val inputEncoding = new CmdOption("input-encoding","BILOU","String","NESTED, BIO, BILOU - Encoding training file is in.")
+  val trainingEncoding = new CmdOption("train-encoding", "BILOU","String","NESTED, BIO, BILOU - labels to use during training.")
+
 }
