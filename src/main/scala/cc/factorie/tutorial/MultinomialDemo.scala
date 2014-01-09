@@ -21,6 +21,7 @@ import cc.factorie.directed.Discrete
 import cc.factorie.variable.{DenseProportions1, ProportionsVariable, DiscreteVariable, DiscreteDomain}
 import cc.factorie.infer.Maximize
 
+/** A simple example of generating data by rolling a die, then re-estimating the parameters of the die from that data. */
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain(numSides)
@@ -30,6 +31,7 @@ object MultinomialDemo {
   def main(args:Array[String]) : Unit = {
     implicit val random = new scala.util.Random(0)
     val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .15, .05)))
+    // println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
     Maximize(die)
   }

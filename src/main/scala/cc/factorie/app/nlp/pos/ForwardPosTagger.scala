@@ -44,38 +44,9 @@ class ForwardPosTagger extends DocumentAnnotator {
     val wordInclusionThreshold = 1
     val sureTokenThreshold = -1		// -1 means don't consider any tokens "sure"
 
-    def computeWordFormsByDocumentFrequencySentences(sentences: Iterable[Sentence], cutoff: Integer) = {
-      val docSize = 1000
-      var begin = 0
-      for(i <- docSize.to(sentences.size).by(docSize)){
-        val docTokens = sentences.slice(begin,i).flatMap(_.tokens)
-        val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
-        for(lemma <- docUniqueLemmas){
-          if (!docWordCounts.contains(lemma)) {
-        	docWordCounts(lemma) = 0
-          }
-          docWordCounts(lemma) += 1
-        }
-        begin = i
-      }
-      
-      // deal with last chunk of sentences
-      if(begin < sentences.size){
-    	val docTokens = sentences.slice(begin,sentences.size).flatMap(_.tokens)
-    	val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
-    	for(lemma <- docUniqueLemmas){
-    	  if (!docWordCounts.contains(lemma)) {
-    		docWordCounts(lemma) = 0
-    	  }
-    	  docWordCounts(lemma) += 1
-    	}
-      }
-      docWordCounts = docWordCounts.filter(_._2 > cutoff)
-    }
-    
    def computeWordFormsByDocumentFrequency(tokens: Iterable[Token], cutoff: Integer, numToksPerDoc: Int) = {
       var begin = 0
-      for(i <- numToksPerDoc.to(tokens.size).by(numToksPerDoc)){
+      for(i <- numToksPerDoc to tokens.size by numToksPerDoc){
         val docTokens = tokens.slice(begin,i)
         val docUniqueLemmas = docTokens.map(x => lemmatize(x.string).toLowerCase).toSet
         for(lemma <- docUniqueLemmas){
@@ -101,12 +72,6 @@ class ForwardPosTagger extends DocumentAnnotator {
       docWordCounts = docWordCounts.filter(_._2 > cutoff)
     }
     
-    def getLemmas(tokens:Seq[Token]): (IndexedSeq[String],IndexedSeq[String]) = {
-      val simplifiedForms = tokens.map(x => lemmatize(x.string))
-      val lowerSimplifiedForms = simplifiedForms.map(_.toLowerCase)
-      (simplifiedForms.toIndexedSeq, lowerSimplifiedForms.toIndexedSeq)
-    }
-    
     def computeAmbiguityClasses(tokens: Iterable[Token]) = {
       val posCounts = collection.mutable.HashMap[String,Array[Int]]()
       val wordCounts = collection.mutable.HashMap[String,Double]()
@@ -129,10 +94,13 @@ class ForwardPosTagger extends DocumentAnnotator {
         posCounts(lemma)(t.attr[PennPosTag].intValue) += 1
       })
       lemmas.foreach(w => {
-          val posFrequencies = posCounts(w).map(_/wordCounts(w))
-          val bestPosTags = posFrequencies.zip(PennPosDomain.categories).filter(_._1 > ambiguityClassThreshold).unzip._2
-          val ambiguityString = bestPosTags.mkString("_")
-          ambiguityClasses(w) = ambiguityString
+        val posFrequencies = posCounts(w).map(_/wordCounts(w))
+        val bestPosTags = posFrequencies.zip(PennPosDomain.categories).filter(_._1 > ambiguityClassThreshold).unzip._2
+        val ambiguityString = bestPosTags.mkString("_")
+        ambiguityClasses(w) = ambiguityString
+        if (wordCounts(w) >= 1000) {
+          posFrequencies.zipWithIndex.filter(i => i._1 >= 0.999).foreach(c => sureTokens(w) = c._2)
+        }
       })
     }
   }
@@ -285,8 +253,9 @@ class ForwardPosTagger extends DocumentAnnotator {
     for (index <- 0 until tokens.length) {
       val token = tokens(index)
       if (token.attr[PennPosTag] eq null) token.attr += new PennPosTag(token, "NNP")
-      if (WordData.sureTokens.contains(token.string)) {
-        token.attr[PennPosTag].set(WordData.sureTokens(token.string))(null)
+      val l = lemmatize(token.string).toLowerCase
+      if (WordData.sureTokens.contains(l)) {
+        token.attr[PennPosTag].set(WordData.sureTokens(l))(null)
       } else {
         val featureVector = features(token, index, lemmaStrings)
         token.attr[PennPosTag].set(model.classification(featureVector).bestLabelIndex)(null)
@@ -335,7 +304,7 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
   
   def printAccuracy(sentences: Iterable[Sentence], extraText: String) = {
-    var(tokAcc, senAcc, speed, _) = accuracy(sentences)
+    val (tokAcc, senAcc, speed, _) = accuracy(sentences)
     println(extraText + s"$tokAcc token accuracy, $senAcc sentence accuracy, $speed tokens/sec")
   }
   

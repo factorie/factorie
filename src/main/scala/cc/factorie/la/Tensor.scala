@@ -165,6 +165,7 @@ object Tensor {
   def outer(t1:Tensor, t2:Tensor): Tensor = t1 match {
     case t1:Tensor1 => t2 match {
       case t2:Tensor1 => outer(t1, t2)
+      case t2:Tensor2 => outer(t1, t2)
     }
     case t1:Tensor2 => t2 match {
       case t2:Tensor2 => outer(t1, t2)

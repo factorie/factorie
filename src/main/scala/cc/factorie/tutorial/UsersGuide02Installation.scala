@@ -52,6 +52,20 @@ mvn test
 
 If you are running the latest version from git, rather than a milestone release, then some tests may fail. If tests fail for a milestone release, please contact the mailing list: factorie-discuss@googlegroups.com
 
+## Packaging JARs
+
+The following command will generate a jar in the 'target' folder containing FACTORIE and all of its dependencies, including the Scala runtime:
+
+```
+mvn -Dmaven.test.skip=true package -Pjar-with-dependencies
+```
+
+To additionally include all of the pre-trained NLP models, execute the following:
+
+```
+mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
+```
+
 ## Adding to a Maven Project
 
 If you'd like to add FACTORIE as a dependency in a Maven-manged project, first add the FACTORIE repository in the repositories section of the project's pom.xml:
@@ -81,27 +95,30 @@ Then add FACTORIE as a dependency in the dependencies section:
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>1.0.0-M8</version>
+    <version>1.0.0-RC1</version>
   </dependency>
 <dependencies>
 ```
 
-## NLP Resources JAR
+## NLP Resources
 
+To use FACTORIE's pre-trained NLP models in a Maven project, you can add additional dependencies on a per-model basis. For example, to use our pre-trained part-of-speech models, you would add the entry:
 
+```
+<dependency>
+  <groupId>cc.factorie.app.nlp</groupId>
+  <artifactId>pos</artifactId>
+  <version>1.0-RC5</version>
+</dependency>
+```
 
-## Questions, Bug Reports and Feature Requests
-
-The FACTORIE mailing list at factorie-discuss@googlegroups.com is a good place to ask general questions and discuss broad points.
-
-Please report specific problems with the installation, bugs in the code, or feature requests in the FACTORIE GitHub issues tracker at 
-https://github.com/factorie/factorie/issues  
+To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref). You may also need to include our lexicons (lexicon), and if you choose to use our state-of-the-art ConllStackedChainNer model for named entity recognition, you will also need to include WordNet data (wordnet).
 
 ## Eclipse and IntelliJ IDEA Setup
 
 To import FACTORIE as a project in Eclipse or IDEA, start by cloning the git repository. 
 
-Eclipse (Kepler):
+**Eclipse (Kepler):**
 
 1. Install the Scala plugin for Eclipse through the Eclipse Marketplace. Once installed the plugin should prompt you to make sure Eclipse is configured properly to run Scala, e.g. you may want to add a line to your eclipse.ini file that increased the default amount of Java heap space that Eclipse runs with
 
@@ -117,7 +134,7 @@ Eclipse (Kepler):
 
 7. To run different launchers defined in your pom.xml you will have to add new Maven run configurations. For e.g. a launcher called "LauncherExample", you would want to create a new run configuration for the project with the goal "scala:run" and parameter "Dlauncher" with value "LauncherExample"
 
-IntelliJ IDEA (12 CE):
+**IntelliJ IDEA (12 CE):**
 
 1. Select Import Project from the Quick Start menu.
 
@@ -137,13 +154,20 @@ IntelliJ IDEA (12 CE):
 
 9. IDEA should detect that this is a git project and ask if you want to register it as such. If you'd like to manage git version control through IDEA you should say yes.
 
-10. When IDEA asks whether you'd like to enable type-aware highlighting, it is probably best to say yes.
+10. When IDEA asks whether you'd like to enable type-aware highlighting, it is probably best to say yes. 
 
 11. To compile FACTORIE, do Build -> Make Project
 
 12. To run different launchers defined in your pom.xml, go to Run -> Edit Configurations then click on the + in the top left to create a new Maven run configuration. For e.g. a launcher called "LauncherExample" you would want to add the command line "scala:run -Dlauncher=LauncherExample". The default working directory should be the project root, which is correct.
 
 If you find you are running out of Java heap space or PermGen space when compiling, add the JVM arguments "-Xms2g -Xmx2g -XX:MaxPermSize=256m" in your run configuration.
+
+## Questions, Bug Reports and Feature Requests
+
+The FACTORIE mailing list at factorie-discuss@googlegroups.com is a good place to ask general questions and discuss broad points.
+
+Please report specific problems with the installation, bugs in the code, or feature requests in the FACTORIE GitHub issues tracker at 
+https://github.com/factorie/factorie/issues  
 
 ## Coding Standards
 

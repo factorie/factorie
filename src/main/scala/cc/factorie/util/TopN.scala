@@ -1,7 +1,7 @@
 package cc.factorie.util
 
 class TopEntry[A<:AnyRef](val index:Int, val score:Double, val category:A) {
-  override def toString = category.toString+" "+score
+  override def toString = (if (category eq null) "(null)" else category.toString)+" "+score
 }
 
 /** For gathering a sorted list of at most N indexed entries, sorted by a floating-point score. */
