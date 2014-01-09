@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
 /** A sequence of DocumentAnnotators packaged as a single DocumentAnnotator.
     This class also properly populates the Document.annotators with a record of which DocumentAnnotator classes provided which annotation classes. */
 class DocumentAnnotationPipeline(val annotators: Seq[DocumentAnnotator], val prereqAttrs: Seq[Class[_]] = Seq()) extends DocumentAnnotator {
-  var profile = false
+  var profile = true
   var tokensProcessed = 0
   var msProcessed = 0L
   val timePerAnnotator = collection.mutable.LinkedHashMap[DocumentAnnotator,Long]()
@@ -64,7 +64,6 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
-    classOf[mention.ChunkBasedMentionList] -> (() => mention.ChunkBasedMentionFinder),
     classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),

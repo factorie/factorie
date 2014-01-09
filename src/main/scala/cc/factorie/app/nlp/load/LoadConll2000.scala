@@ -21,29 +21,35 @@ import cc.factorie.app.nlp.pos.PennPosTag
  * 2 gold POS Tag
  * 3 gold chunk (BIO notation)
  */
-object LoadConll2000 extends Load {
-  def fromSource(source: Source): Seq[Document] = {
 
+object LoadConll2000 extends Load {
+  def fromSource(source: Source) = fromSource(source,"BIO")
+  def fromSource(source: Source,encoding:String): Seq[Document] = {
     val doc = new Document()
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[PennPosTag]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[BIOChunkTag]) = UnknownDocumentAnnotator.getClass
-
+    val newChunkLabel = encoding match {
+      case "BILOU" => (t:Token,s:String) => new BILOUChunkTag(t,s)
+      case "BIO" => (t:Token,s:String) => new BIOChunkTag(t,s)
+      case "NESTED" => (t:Token,s:String) => new BILOU2LayerChunkTag(t,s)
+      case _ => (t:Token,s:String) => new BIOChunkTag(t,s)
+    }
     var sent = new Sentence(doc)
     source.getLines().foreach{ line =>
-      sent = processWordLine(doc, sent, line)
+      sent = processWordLine(doc, sent, line, newChunkLabel)
     }
     Seq(doc)
   }
 
   val lineSplit = """([^\s]+) ([^\s]+) ([^\s]+)""".r
   val posTranslations = Map("(" -> "-LRB-", ")" -> "-RRB-")
-  private def processWordLine(doc:Document, sent:Sentence, line:String):Sentence = line match {
+  private def processWordLine(doc:Document, sent:Sentence, line:String,newChunkLabel: (Token,String) => ChunkTag):Sentence = line match {
     case lineSplit(tokenType, posTagString, chunkTagString) => {
       val t = new Token(sent, tokenType + " ")
       t.attr += new PennPosTag(t, posTranslations.getOrElse(posTagString, identity(posTagString)))
-      t.attr += new BIOChunkTag(t, chunkTagString)
+      t.attr += newChunkLabel(t, chunkTagString)
       sent
     }
     case empty if empty.isEmpty => new Sentence(doc)
@@ -181,16 +187,16 @@ object BILOU2LayerChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-abstract class ChunkTag(val token:Token, tagValue:String = "O") extends LabeledCategoricalVariable(tagValue)
+abstract class ChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue)
 
-class BIOChunkTag(token:Token, tagValue:String ="O") extends ChunkTag(token, tagValue) {
+class BIOChunkTag(token:Token, tagValue:String) extends ChunkTag(token, tagValue) {
   def domain = BIOChunkDomain
 }
 
-class BILOUChunkTag(token:Token, tagValue:String="O") extends ChunkTag(token,tagValue) {
+class BILOUChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
   def domain = BILOUChunkDomain
 }
 
-class BILOU2LayerChunkTag(token:Token,tagValue:String = "O:O") extends ChunkTag(token,tagValue) {
+class BILOU2LayerChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
   def domain = BILOU2LayerChunkDomain
 }
