@@ -46,7 +46,8 @@ class TransitionBasedParserNEW extends DocumentAnnotator {
     featureGenerators.foreach(f => features += f.apply(state))
     
     /* DO NOT include <NULL>s */
-    // TODO if we want to keep this in here, change implementation to use Option?
+    // TODO if we want to keep this in here, change implementation to use Option instead of <NULL> string?
+    // TODO this removes everying involving a null, really only want to remove only-nulls
 //    featureGenerators.foreach(f => {
 //      val featString = f.apply(state)
 //      if(!featString.contains("<NULL>")) features += featString
@@ -58,7 +59,7 @@ class TransitionBasedParserNEW extends DocumentAnnotator {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
     
-    /* TODO remove bias for now */
+    /* remove bias for now */
     //this += "BIAS"
   }
   
@@ -489,11 +490,6 @@ class TransitionBasedParserNEW extends DocumentAnnotator {
           state.leftmostDeps(head.depToken.thisIdx) = thisIdx
         else
           state.rightmostDeps(head.depToken.thisIdx) = thisIdx
-//      if (thisIdx < head.depToken.thisIdx && (state.leftmostDeps(head.depToken.thisIdx) == -1 || thisIdx < state.leftmostDeps(head.depToken.thisIdx)))
-//        state.leftmostDeps(head.depToken.thisIdx) = thisIdx
-//      else if(thisIdx > state.rightmostDeps(head.depToken.thisIdx))
-//        state.rightmostDeps(head.depToken.thisIdx) = thisIdx
-//      }
       }
     }
     
@@ -619,11 +615,11 @@ class TransitionBasedParserNEW extends DocumentAnnotator {
   }
 }
 
-//class WSJTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
-//object WSJTransitionBasedParser extends WSJTransitionBasedParser(cc.factorie.util.ClasspathURL[WSJTransitionBasedParser](".factorie"))
+class WSJTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object WSJTransitionBasedParser extends WSJTransitionBasedParser(cc.factorie.util.ClasspathURL[WSJTransitionBasedParser](".factorie"))
 
-//class OntonotesTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
-//object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.factorie.util.ClasspathURL[OntonotesTransitionBasedParser](".factorie"))
+class OntonotesTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
+object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.factorie.util.ClasspathURL[OntonotesTransitionBasedParser](".factorie"))
 
 class TransitionBasedParserArgsNEW extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -713,7 +709,6 @@ object TransitionBasedParserTrainerNEW extends cc.factorie.util.HyperparameterMa
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
     println("Training...")
     
-    // why does this happen twice?
     var trainingVs = c.generateDecisions(sentences, c.ParserConstants.TRAINING, opts.nThreads.value)
     
     /* Print out features */
@@ -739,7 +734,6 @@ object TransitionBasedParserTrainerNEW extends cc.factorie.util.HyperparameterMa
     }
     
     testSentences.par.foreach(c.process)
-//    testSentences.foreach(c.process)
     
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
@@ -782,7 +776,7 @@ object TransitionBasedParserOptimizerNEW {
     opts.saveModel.setValue(true)
     println("Running best configuration...")
     import scala.concurrent.duration._
-    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 2.hours)
     println("Done")
   }
 }
