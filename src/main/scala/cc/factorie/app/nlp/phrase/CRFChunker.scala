@@ -32,7 +32,7 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
     })
     document
   }
-  def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
+  def prereqAttrs = Seq(classOf[Token], classOf[Sentence],classOf[PennPosTag])
   def postAttrs = Seq(m.runtimeClass)
   def tokenAnnotationString(token: Token) = { val label = token.attr[L]; if (label ne null) label.categoryValue else "(null)" }
 
