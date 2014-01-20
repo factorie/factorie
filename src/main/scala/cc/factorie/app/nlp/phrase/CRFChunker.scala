@@ -47,13 +47,16 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
     import cc.factorie.util.CubbieConversions._
     val dstream = new DataInputStream(stream)
     BinarySerializer.deserialize(ChunkFeaturesDomain.dimensionDomain, dstream)
+    //BinarySerializer.deserialize(ChunkFeaturesDomain.fullFeatureSet,dstream)
     BinarySerializer.deserialize(model, dstream)
     dstream.close()
   }
 
-  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], useFullFeatures:Boolean = false, lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
+    ChunkFeaturesDomain.setFeatureSet(useFullFeatures)
     trainSentences.foreach(s=>features(s))
-    println("Features for Training Generated")
+    print("Features for Training Generated: ")
+    if(useFullFeatures) println("Full Set") else println("Subset Set")
     ChunkFeaturesDomain.freeze()
     testSentences.foreach(features)
 
@@ -70,7 +73,7 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
   }
 
-  object ChunkFeaturesDomain extends CategoricalVectorDomain[String]
+  object ChunkFeaturesDomain extends CategoricalVectorDomain[String]{var fullFeatureSet: Boolean = false; def setFeatureSet(full:Boolean){fullFeatureSet = full}}
 
   class ChunkFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ChunkFeaturesDomain; override def skipNonCategories = true }
 
@@ -89,24 +92,20 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
       if(token.attr[ChunkFeatures] ne null)
         token.attr.remove[ChunkFeatures]
       val features = token.attr += new ChunkFeatures(token)
-      //def pastTag(offset:Int): String = { val t = token.next(offset); "P@"+offset+(if (t ne null) t.attr[BILOU2LayerChunkTag].target.aimer.categoryValue else null) }
       val rawWord = token.string
       val posTag = token.attr[PennPosTag]
-      val word = simplifyDigits(rawWord).toLowerCase
       features += "SENTLOC="+i
       features += "P="+posTag
-      //features += "Past="+pastTag(-2)
-      //features += "W="+word
       features += "Raw="+rawWord
-      val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
-      features += "WS="+shape // word conjoined with shape
-      //if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
-      //features += "STEM=" + cc.factorie.app.strings.porterStem(word)
-      //features += "WSIZE=" + rawWord.length
-      //val j = 3
-      //features += "SUFFIX" + j + "=" + word.takeRight(j)
-      //features += "PREFIX" + j + "=" + word.take(j)
+      if(ChunkFeaturesDomain.fullFeatureSet){
+        val word = simplifyDigits(rawWord).toLowerCase
+        if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
+        features += "STEM=" + cc.factorie.app.strings.porterStem(word)
+        features += "WSIZE=" + rawWord.length
+        val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
+        features += "WS="+shape // word conjoined with shape
+      }
       features += "BIAS"
     }
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[ChunkFeatures], "W=[^@]*$", List(-2), List(-1), List(1),List(2), List(-1,0), List(0,1))
@@ -115,11 +114,11 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
 }
 
 object BILOUCRFChunker extends CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O")) {
-  deserialize(ClasspathURL[CRFChunker[BILOUChunkTag]](".factorie").openConnection().getInputStream)
+  deserialize(new FileInputStream(new java.io.File("BILOUCRFChunker.factorie")))
 }
 
 object BIOCRFChunker extends CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O")) {
-  deserialize(ClasspathURL[CRFChunker[BIOChunkTag]](".factorie").openConnection().getInputStream)
+  deserialize(new FileInputStream(new java.io.File("BIOCRFChunker.factorie")))
 }
 
 object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t,"O:O"))
@@ -158,20 +157,15 @@ object CRFChunkingTrainer extends HyperparameterMain {
     val testSentencesFull = testDocs.flatMap(_.sentences).filter(!_.isEmpty)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
-    chunk.train(trainSentences, testSentences,
+    chunk.train(trainSentences, testSentences, opts.useFullFeatures.value,
       opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       chunk.serialize(new FileOutputStream(new File(opts.modelFile.value)))
-//      val chunk2 = new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t,s) => new BILOU2LayerChunkTag(t,s))
-//      chunk2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
-//      val acc2 = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOU2LayerChunkTag]))))
-//      println(acc2)
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOU2LayerChunkTag]))))
     if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
     val writer = new PrintWriter(new File("ErrorOutputNested2011.txt" ))
     writer.write(generateErrorOutput(testSentences))
-    //testSentences.flatMap(_.tokens.map{t => if(!t.attr[BILOU2LayerChunkTag].valueIsTarget) writer.write("*\t"+ t.string + "\t" + t.attr[PennPosTag].categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].target.categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].categoryValue) else writer.write(" \t" + t.string + "\t" + t.attr[PennPosTag].categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].target.categoryValue + "\t" + t.attr[BILOU2LayerChunkTag].categoryValue); writer.write("\n")})
     writer.close()
     acc
   }
@@ -220,5 +214,6 @@ class ChunkerOpts extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOp
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
   val inputEncoding = new CmdOption("input-encoding","BILOU","String","NESTED, BIO, BILOU - Encoding training file is in.")
   val trainingEncoding = new CmdOption("train-encoding", "BILOU","String","NESTED, BIO, BILOU - labels to use during training.")
+  val useFullFeatures = new CmdOption("full-features", false,"BOOL", "True to use the full feature set, False to use a smaller feature set which is the default.")
 
 }
