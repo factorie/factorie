@@ -18,12 +18,10 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 /**
  * User: cellier
  * Date: 10/7/13
- *
  * Time: 2:49 PM
  */
 
 class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLabel: (Token) => L, url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
-  //def this(url:java.net.URL,chunktag:L)(implicit m: Manifest[L]) = { this(BILOU2LayerChunkDomain,(t) => chunktag); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
@@ -34,7 +32,6 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
     })
     document
   }
-  type tag = L
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
   def postAttrs = Seq(m.runtimeClass)
   def tokenAnnotationString(token: Token) = { val label = token.attr[L]; if (label ne null) label.categoryValue else "(null)" }
@@ -130,16 +127,9 @@ object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunk
   deserialize(new FileInputStream(new java.io.File("NestedCRFChunker.factorie")))
 }
 
-//object NestedCRFChunker extends NestedCRFChunker()
-////  //new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t)).deserialize(new FileInputStream(new File("NestedCRFChunker.factorie")))
-////  deserialize(ClasspathURL[NestedCRFChunker](".factorie").openConnection().getInputStream)
-////}
-
-
 object CRFChunkingTrainer extends HyperparameterMain {
   def generateErrorOutput(sentences: Seq[Sentence]): String ={
     val sb = new StringBuffer
-    //for (token <- tokens) sb.append("%20s %-20s  %10s %10s\n".format(token.string, token.lemmaString, token.attr[BilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue))
     sentences.map{s=> s.tokens.map{t=>sb.append("%s %20s %10s %10s  %s\n".format(if (t.attr[ChunkTag].valueIsTarget) " " else "*", t.string, t.attr[PennPosTag], t.attr[ChunkTag].target.categoryValue, t.attr[ChunkTag].categoryValue))}.mkString("\n")}.mkString("\n")
   }
 
