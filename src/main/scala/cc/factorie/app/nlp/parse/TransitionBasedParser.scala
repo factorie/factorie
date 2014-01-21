@@ -47,10 +47,11 @@ class TransitionBasedParser extends DocumentAnnotator {
     
     /* DO NOT include <NULL>s */
     // TODO if we want to keep this in here, change implementation to use Option instead of <NULL> string?
-    // TODO this removes everying involving a null, really only want to remove only-nulls
+//    val nullRegex = "<NULL>".r
+//    val multiRegex= "|".r
 //    featureGenerators.foreach(f => {
 //      val featString = f.apply(state)
-//      if(!featString.contains("<NULL>")) features += featString
+//      if(nullRegex.findAllIn(featString).length != multiRegex.findAllIn(featString).length-1) features += featString
 //    })
   }
   
@@ -122,6 +123,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     
     val numTrainSentences = trainSentences.size
     val optimizer = new AdaGradRDA(1.0, 0.1, l1Factor / numTrainSentences, l2Factor / numTrainSentences)
+    
     trainDecisions(trainingVars, optimizer, trainSentences, testSentences)
     trainingVars = null // Allow them to be GC'ed
     for (i <- 0 until numBootstrappingIterations) {
@@ -718,6 +720,7 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
 //    })
     
     c.trainFromVariables(trainingVs, trainer, evaluate)
+    
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + i)
@@ -737,6 +740,27 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(testLAS,opts.targetAccuracy.value.toDouble)
 
     testLAS
+  }
+}
+
+object TransitionBasedParserTester {
+  def main(args: Array[String]) {
+	val opts = new TransitionBasedParserArgs
+	opts.parse(args)
+	assert(opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+	  
+	// load model from file if given, else use default model
+	val parser = if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value)) else OntonotesTransitionBasedParser
+	
+	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
+  
+	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+    println(parser.testString(testSentences))
   }
 }
 
