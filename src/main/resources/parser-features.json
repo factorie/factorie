@@ -15,68 +15,101 @@
    ["l:m", "b:m"],
 
   # 1-gram features
-   ["s-2:f"],
-   ["l-2:f"],
-   ["l-1:f"],
-   ["l+1:f"],
-   ["l+2:f"],
-   ["b-2:f"],
-   ["b-1:f"],
-   ["b+1:f"],
-   ["b+2:f"],
+   ["s-1:m"],
+   ["l-1:m"],
+   ["l+1:m"],
+   ["b-2:m"],
+   ["b-1:m"],
+   ["b+1:m"],
+   ["b+2:m"],
+
+   ["l-2:p"],
+   ["l-1:p"],
+   ["l+1:p"],
+   ["l+2:p"],
+   ["b-1:p"],
+   ["b+1:p"],
 
   # 2-gram features
-   ["s-1:p", "l:p"],
-   ["s-1:m", "l:m"],
-   ["s-1:p", "b:p"],
-   ["s-1:m", "b:p"],
-   ["s-1:p", "b:m"],
-
    ["b+1:p", "l:p"],
+   ["s-1:p", "l:p"],
+   ["s-1:p", "b:p"],
+
+   ["b-1:m", "l:m"],
    ["b+1:p", "l:m"],
    ["b+1:p", "b:m"],
-   ["b+1:m", "b:m"],
 
-   ["b-1:p", "b:m"],
+   ["b+1:m", "l:p"],
+   ["b+1:m", "b:p"],
+
+   ["l+1:m", "l:m"],
+   ["l+1:m", "b:m"],
 
   # 3-gram features
-   ["s-2:p", "s-1:p", "l:p"],
    ["l-2:p", "l-1:p", "l:p"],
    ["l-1:p", "l+1:p", "l:p"],
    ["l+1:p", "l+2:p", "l:p"],
    ["b-1:p", "b+1:p", "b:p"],
    ["b+1:p", "b+2:p", "b:p"],
 
-   ["s-3:p", "l:p", "b:p"],
    ["s-2:p", "l:p", "b:p"],
+   ["l-1:p", "l:p", "b:p"],
    ["l+1:p", "l:p", "b:p"],
    ["b-2:p", "l:p", "b:p"],
    ["b-1:p", "l:p", "b:p"],
    ["b+1:p", "l:p", "b:p"],
+   ["b+2:p", "l:p", "b:p"],
    ["b+3:p", "l:p", "b:p"],
 
-  # dependency features
-   ["l:d"], # lambda head label // TODO : check that this actually shows up
-   ["b:d"],
-   #["l:lmdr"]
-   #["l:rmdr"]
+  # 2nd-order features
+   ["l_h:m"], # lambda head label // TODO : check that this actually shows up
+   ["l_lmd:m"],
+   ["l_rmd:m"],
+   ["b_lmd:m"],
 
-   ["l_h:m", "l:p"], # l_h is the head of lambda
+   ["l_h:p"],
+   ["l_lmd:p"],
+   ["l_rmd:p"],
+   ["b_lmd:p"],
 
-   ["l_h:p", "l:p", "b:p"],
+   ["l:d"],
+   ["l_lmd:d"],
+   ["l_rmd:d"],
+
+   ["l:d", "b:m"],
+
    ["l_lmd:p", "l:p", "b:p"],
    ["b_lmd:p", "l:p", "b:p"],
+   ["b_lmd:p", "l:p", "b:p"],
+   ["l_lns:d", "l:p", "b:p"],   # left-nearest sibling of the stack
+
+  # 3rd-order features
+   ["l_h2:m"],       # the grand-head of the stack
+   ["l_lmd2:m"],     # 2nd left-most dependent of the stack
+   ["l_rmd2:m"],     # 2nd right-most dependent of the stack
+   ["b_lmd2:m"],
+
+   ["l_h2:p"],
+   ["l_lmd2:p"],
+   ["l_rmd2:p"],
+   ["b_lmd2:p"],
+
+   ["l_h:d"],
+   ["l_lmd2:d"],
+   ["l_rmd2:d"],
+   ["b_lmd2:d"],
+
+   ["l_lmd2:p", "l_lmd:p", "l:p"],
+   ["b_lmd2:p", "b_lmd:p", "b:p"],
+   ["l_h2:p"  , "l_h:p"  , "l:p"],
+
+   ["l_lmd2:p", "l:p", "b:p"],
+   ["b_lmd2:p", "l:p", "b:p"],
+   ["l_lmd2:d", "l:p", "b:p"],
 
   # binary features
    ["l:b0"], # lambda is the leftmost token
    ["b:b1"], # beta is the righttmost token
    ["l:b2"] # lambda and beta are adjacent
-
-  # punctuation features
-    #["b:lnpb"] # left-nearest punctuation of beta
-    #["l:rnpl"], # right-nearest punctuation of lambda
-    #["l:lnpl"], # left-nearest punctuation of lambda
-    #["b:rnpb"], # right-nearest punctuation of beta
-
   ]
 }
