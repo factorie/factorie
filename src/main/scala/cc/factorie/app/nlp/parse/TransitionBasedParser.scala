@@ -47,11 +47,9 @@ class TransitionBasedParser extends DocumentAnnotator {
     
     /* DO NOT include <NULL>s */
     // TODO if we want to keep this in here, change implementation to use Option instead of <NULL> string?
-//    val nullRegex = "<NULL>".r
-//    val multiRegex= "|".r
 //    featureGenerators.foreach(f => {
 //      val featString = f.apply(state)
-//      if(nullRegex.findAllIn(featString).length != multiRegex.findAllIn(featString).length-1) features += featString
+//      if("<NULL>".r.findAllIn(featString).length-1 != "\\|".r.findAllIn(featString).length) features += featString
 //    })
   }
   
@@ -756,7 +754,7 @@ object TransitionBasedParserTester {
     val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
   
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head)
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
