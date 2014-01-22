@@ -19,9 +19,9 @@ import java.io.PrintWriter
   6   auto POS tag
   7   gold feats
   8	  auto feats
-  9   auto head ID				// why are these switched???
+  9   auto head ID				
   10  gold head ID
-  11  auto dependency label		// why are these switched???
+  11  auto dependency label		
   12  gold dependency label
   13  gold secondary dependencies
   14  gold semantic arguments
