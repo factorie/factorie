@@ -43,14 +43,14 @@ class TransitionBasedParser extends DocumentAnnotator {
     val features = new NonProjDependencyParserFeatures(this)
     
     /* Include <NULL>s */
-    featureGenerators.foreach(f => features += f.apply(state))
+//    featureGenerators.foreach(f => features += f.apply(state))
     
     /* DO NOT include <NULL>s */
     // TODO if we want to keep this in here, change implementation to use Option instead of <NULL> string?
-//    featureGenerators.foreach(f => {
-//      val featString = f.apply(state)
-//      if("<NULL>".r.findAllIn(featString).length-1 != "\\|".r.findAllIn(featString).length) features += featString
-//    })
+    featureGenerators.foreach(f => {
+      val featString = f.apply(state)
+      if("<NULL>".r.findAllIn(featString).length-1 != "\\|".r.findAllIn(featString).length) features += featString
+    })
   }
   
   object featuresDomain extends CategoricalVectorDomain[String]
