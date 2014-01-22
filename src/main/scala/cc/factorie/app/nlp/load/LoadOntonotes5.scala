@@ -13,12 +13,12 @@ import java.io.PrintWriter
    @author Brian Martin, Andrew McCallum
   1   token ID
   2   word form
-  3   gold lemma
-  4   auto lemma
-  5   gold POS tag
-  6   auto POS tag
-  7   gold feats
-  8	  auto feats
+  3   auto lemma
+  4   gold lemma
+  5   auto POS tag
+  6   gold POS tag
+  7   auto feats
+  8	  gold feats
   9   auto head ID				
   10  gold head ID
   11  auto dependency label		
@@ -80,8 +80,6 @@ object LoadOntonotes5 {
         
         var ner = fields(14); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         
-          
-        //var ner = "O" // NER reader needs to be revisited to make this work
         document.appendString(" ")
         val token = new Token(sentence, word)
         loadPos match{

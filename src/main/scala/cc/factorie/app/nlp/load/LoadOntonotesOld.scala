@@ -73,8 +73,8 @@ object LoadOntonotesOld {
         val autoDepLabel = fields(9)
         val goldDepLabel = fields(10)
         
-//        var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
-        var ner = "O" // NER reader needs to be revisited to make this work
+        var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
+        
         document.appendString(" ")
         val token = new Token(sentence, word)
         loadPos match{
