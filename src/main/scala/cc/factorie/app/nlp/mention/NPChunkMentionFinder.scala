@@ -1,12 +1,12 @@
 package cc.factorie.app.nlp.mention
 
-import java.io.{File, FileOutputStream, FileInputStream}
+import java.io.{File}
 import cc.factorie.app.nlp._
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
-import cc.factorie.app.nlp.phrase.{ChunkerOpts, CRFChunker}
-import cc.factorie.app.nlp.load.{ChunkTag, BILOU2LayerChunkTag, BILOUChunkTag}
-import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
-
+import cc.factorie.app.nlp.phrase.{ChunkerOpts}
+import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
+import cc.factorie.app.nlp.coref.ConllCorefLoader
+import cc.factorie.app.nlp.pos.PennPosTag
 
 
 /**
@@ -15,15 +15,16 @@ import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
  * Time: 11:24 PM
  */
 
+
 /*
- * Object to retrieve Multilayered BILOU Tags
+ * Object to retrieve Nested BILOU Tags
  */
-object MultiLayerNPChunkMentionFinder extends NPChunkMentionFinder[BILOU2LayerChunkTag]{
+object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkTag]{
   //Splits tag value and calls to retrieve NPs for the inner tags and outer tags
   override def getMentionSpans(document: Document): Seq[TokenSpan] ={
     val mentionSpans = ArrayBuffer[TokenSpan]()
     document.sentences.foreach{s=>
-      val chunkTags = s.tokens.map(t => t.attr[BILOU2LayerChunkTag].categoryValue.split(":").map(layer => t -> layer)).map(layer => (layer(0),layer(1)))
+      val chunkTags = s.tokens.map(t => t.attr[BILOUNestedChunkTag].categoryValue.split(":").map(layer => t -> layer)).map(layer => (layer(0),layer(1)))
       val (innerTags,outerTags) = chunkTags.unzip
       mentionSpans ++= getNPChunkSpans(s,innerTags)
       mentionSpans ++= getNPChunkSpans(s,outerTags)
@@ -31,6 +32,7 @@ object MultiLayerNPChunkMentionFinder extends NPChunkMentionFinder[BILOU2LayerCh
     mentionSpans.seq
   }
 }
+//Default for MentionFinder is BILOU Notation since BILOU performed best for NP mention finding
 object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
 
 class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
@@ -46,11 +48,11 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
     document
   }
 
+  //Sets mention entity type to empty in case an entity type labeler is not run on the mentions retrieved
   def addChunkMentions(document: Document): Seq[Mention] = {
     getMentionSpans(document).map{labelSpan =>
       val s = labelSpan
       val m = new Mention(s, s.length-1)
-      //m.attr += new MentionType(m, "NAM")
       m.attr += new MentionEntityType(m,"")
       m
     }

@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 
 import java.io._
-import cc.factorie.util.{HyperparameterMain, ClasspathURL, BinarySerializer}
+import cc.factorie.util.{HyperparameterMain, BinarySerializer}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.app.chain.ChainModel
@@ -12,8 +12,7 @@ import scala.io.Source
 import cc.factorie.app.nlp.load._
 import scala._
 import cc.factorie.app.nlp.pos.PennPosTag
-import com.sun.javaws.exceptions.InvalidArgumentException
-import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
+
 
 /**
  * User: cellier
@@ -21,7 +20,7 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
  * Time: 2:49 PM
  */
 
-class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLabel: (Token) => L, url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
+class ChainChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLabel: (Token) => L, url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
@@ -114,20 +113,20 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
   }
 }
 
-object BILOUCRFChunker extends CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O")) {
-  deserialize(new FileInputStream(new java.io.File("BILOUCRFChunker.factorie")))
+object BILOUChainChunker extends ChainChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O")) {
+  deserialize(new FileInputStream(new java.io.File("BILOUChainChunker.factorie")))
 }
 
-object BIOCRFChunker extends CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O")) {
-  deserialize(new FileInputStream(new java.io.File("BIOCRFChunker.factorie")))
+object BIOChainChunker extends ChainChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O")) {
+  deserialize(new FileInputStream(new java.io.File("BIOChainChunker.factorie")))
 }
 
-object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t,"O:O"))
+object NestedChainChunker extends ChainChunker[BILOUNestedChunkTag](BILOUNestedChunkDomain.dimensionDomain, (t) => new BILOUNestedChunkTag(t,"O:O"))
 {
-  deserialize(new FileInputStream(new java.io.File("NestedCRFChunker.factorie")))
+  deserialize(new FileInputStream(new java.io.File("NestedChainChunker.factorie")))
 }
 
-object CRFChunkingTrainer extends HyperparameterMain {
+object ChainChunkerTrainer extends HyperparameterMain {
   def generateErrorOutput(sentence: Sentence): String ={
     val sb = new StringBuffer
     sentence.tokens.map{t=>sb.append("%s %20s %10s %10s  %s\n".format(if (t.attr.all[ChunkTag].head.valueIsTarget) " " else "*", t.string, t.attr[PennPosTag], t.attr.all[ChunkTag].head.target.categoryValue, t.attr.all[ChunkTag].head.categoryValue))}.mkString("\n")
@@ -139,14 +138,16 @@ object CRFChunkingTrainer extends HyperparameterMain {
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
     val chunk = opts.trainingEncoding.value match {
-      case "BILOU" => new CRFChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O"))
-      case "BIO" => new CRFChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O"))
-      case "NESTED" => new CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunkDomain.dimensionDomain, (t) => new BILOU2LayerChunkTag(t,"O:O"))
+      case "BILOU" => new ChainChunker[BILOUChunkTag](BILOUChunkDomain.dimensionDomain, (t) => new BILOUChunkTag(t,"O"))
+      case "BIO" => new ChainChunker[BIOChunkTag](BIOChunkDomain.dimensionDomain, (t) => new BIOChunkTag(t,"O"))
+      //Nested NP Chunker has to be trained from custom training data annotated in the NestedBILOUChunkTag domain style
+      case "NESTED" => new ChainChunker[BILOUNestedChunkTag](BILOUNestedChunkDomain.dimensionDomain, (t) => new BILOUNestedChunkTag(t,"O:O"))
     }
-
 
     val trainDocs = LoadConll2000.fromSource(Source.fromFile(opts.trainFile.value),opts.inputEncoding.value)
     val testDocs =  LoadConll2000.fromSource(Source.fromFile(opts.testFile.value),opts.inputEncoding.value)
+
+
 
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
     println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
@@ -157,6 +158,11 @@ object CRFChunkingTrainer extends HyperparameterMain {
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
     val testSentencesFull = testDocs.flatMap(_.sentences).filter(!_.isEmpty)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+    if(opts.trainingEncoding.value == "BILOU" && opts.inputEncoding.value =="BIO") {
+      LoadConll2000.convertBIOtoBILOU(testSentences)
+      LoadConll2000.convertBIOtoBILOU(trainSentences)
+    }
 
     chunk.train(trainSentences, testSentences, opts.useFullFeatures.value,
       opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
@@ -174,7 +180,7 @@ object CRFChunkingTrainer extends HyperparameterMain {
 }
 
 
-object CRFChunkOptimizer {
+object ChainChunkerOptimizer {
   def main(args: Array[String]) {
     val opts = new ChunkerOpts
     opts.parse(args)
@@ -184,7 +190,7 @@ object CRFChunkOptimizer {
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq(List(0,1,2,3)))
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.chunk.CRFChunkingTrainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.chunk.ChainChunkingTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))

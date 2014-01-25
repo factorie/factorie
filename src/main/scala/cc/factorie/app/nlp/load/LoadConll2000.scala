@@ -1,9 +1,7 @@
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
 
-
+import cc.factorie.app.nlp.{Document,Sentence,Token,UnknownDocumentAnnotator}
 import scala.io.Source
-import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.variable._
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Predef._
@@ -20,6 +18,7 @@ import scala.Predef._
  */
 
 object LoadConll2000 extends Load {
+  //Default BIO encoding for loadConll2000 from Source since this is the standard encoding for conll2000 training data
   def fromSource(source: Source) = fromSource(source,"BIO")
   def fromSource(source: Source,encoding:String): Seq[Document] = {
     val doc = new Document()
@@ -30,7 +29,7 @@ object LoadConll2000 extends Load {
     val newChunkLabel = encoding match {
       case "BILOU" => (t:Token,s:String) => new BILOUChunkTag(t,s)
       case "BIO" => (t:Token,s:String) => new BIOChunkTag(t,s)
-      case "NESTED" => (t:Token,s:String) => new BILOU2LayerChunkTag(t,s)
+      case "NESTED" => (t:Token,s:String) => new BILOUNestedChunkTag(t,s)
       case _ => (t:Token,s:String) => new BIOChunkTag(t,s)
     }
     var sent = new Sentence(doc)
@@ -125,8 +124,6 @@ object BIOChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-
-
 object BILOUChunkDomain extends CategoricalDomain[String] {
   this ++= BIOChunkDomain.categories
   this ++= Vector( "L-ADVP",
@@ -154,7 +151,7 @@ object BILOUChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
-object BILOU2LayerChunkDomain extends CategoricalDomain[String] {
+object BILOUNestedChunkDomain extends CategoricalDomain[String] {
   this ++= Vector( "B-NP:B-NP",
     "B-NP:I-NP",
     "B-NP:L-NP",
@@ -183,7 +180,7 @@ object BILOU2LayerChunkDomain extends CategoricalDomain[String] {
     )
   freeze()
 }
-
+//This could be combined into a single LabeledCategoricalVariable with a changable domain
 abstract class ChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue)
 
 class BIOChunkTag(token:Token, tagValue:String) extends ChunkTag(token, tagValue) {
@@ -194,6 +191,6 @@ class BILOUChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValu
   def domain = BILOUChunkDomain
 }
 
-class BILOU2LayerChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
-  def domain = BILOU2LayerChunkDomain
+class BILOUNestedChunkTag(token:Token, tagValue:String) extends ChunkTag(token,tagValue) {
+  def domain = BILOUNestedChunkDomain
 }
