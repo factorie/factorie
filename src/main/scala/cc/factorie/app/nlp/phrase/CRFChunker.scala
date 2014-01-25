@@ -97,14 +97,15 @@ class CRFChunker[L<:ChunkTag](chunkDomain: CategoricalDomain[String], newChunkLa
       features += "SENTLOC="+i
       features += "P="+posTag
       features += "Raw="+rawWord
+      val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "WS="+shape
       if (token.isPunctuation) features += "PUNCTUATION"
       if(ChunkFeaturesDomain.fullFeatureSet){
         val word = simplifyDigits(rawWord).toLowerCase
         if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
         features += "STEM=" + cc.factorie.app.strings.porterStem(word)
         features += "WSIZE=" + rawWord.length
-        val shape = cc.factorie.app.strings.stringShape(rawWord, 2)
-        features += "WS="+shape // word conjoined with shape
+
       }
       features += "BIAS"
     }
