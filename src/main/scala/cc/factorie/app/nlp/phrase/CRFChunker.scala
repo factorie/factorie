@@ -127,9 +127,9 @@ object NestedCRFChunker extends CRFChunker[BILOU2LayerChunkTag](BILOU2LayerChunk
 }
 
 object CRFChunkingTrainer extends HyperparameterMain {
-  def generateErrorOutput(sentences: Seq[Sentence]): String ={
+  def generateErrorOutput(sentence: Sentence): String ={
     val sb = new StringBuffer
-    sentences.map{s=> s.tokens.map{t=>sb.append("%s %20s %10s %10s  %s\n".format(if (t.attr[ChunkTag].valueIsTarget) " " else "*", t.string, t.attr[PennPosTag], t.attr[ChunkTag].target.categoryValue, t.attr[ChunkTag].categoryValue))}.mkString("\n")}.mkString("\n")
+    sentence.tokens.map{t=>sb.append("%s %20s %10s %10s  %s\n".format(if (t.attr.all[ChunkTag].head.valueIsTarget) " " else "*", t.string, t.attr[PennPosTag], t.attr.all[ChunkTag].head.target.categoryValue, t.attr.all[ChunkTag].head.categoryValue))}.mkString("\n")
   }
 
   def evaluateParameters(args: Array[String]): Double = {
@@ -161,11 +161,12 @@ object CRFChunkingTrainer extends HyperparameterMain {
       opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       chunk.serialize(new FileOutputStream(new File(opts.modelFile.value)))
+      println("Model Serialized")
     }
-    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[BILOU2LayerChunkTag]))))
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr.all[ChunkTag].head))))
     if(opts.targetAccuracy.wasInvoked) assert(acc > opts.targetAccuracy.value.toDouble, "Did not reach accuracy requirement")
     val writer = new PrintWriter(new File("ErrorOutputNested2011.txt" ))
-    writer.write(generateErrorOutput(testSentences))
+    testSentences.foreach{s=>writer.write(generateErrorOutput(s)); writer.write("")}
     writer.close()
     acc
   }

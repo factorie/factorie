@@ -190,7 +190,6 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     val a = Array.fill[DenseTensor1](varying.size)(null)
     var i = 0
     while (i < varying.length) {
-      //println(varying(i))
       val scores = obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
       scores += biasScores
       a(i) = scores

@@ -13,10 +13,8 @@ import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
  * User: cellier
  * Date: 10/28/13
  * Time: 11:24 PM
- * Finite State machine implementation to grab NP spans
  */
 
-class ChunkBasedMentionList extends MentionList
 /*
  * Object to retrieve Multilayered BILOU Tags
  */
