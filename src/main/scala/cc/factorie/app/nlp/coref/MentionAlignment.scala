@@ -100,8 +100,8 @@ object MentionAlignment {
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
-        // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
-        // m.attr += new MentionEntityType(m,predictedEntityType)
+       // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
+       // m.attr += new MentionEntityType(m,predictedEntityType)
         unAlignedEntityCount += 1
         falsePositives1 += m
       }

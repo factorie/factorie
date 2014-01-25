@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
 /** A sequence of DocumentAnnotators packaged as a single DocumentAnnotator.
     This class also properly populates the Document.annotators with a record of which DocumentAnnotator classes provided which annotation classes. */
 class DocumentAnnotationPipeline(val annotators: Seq[DocumentAnnotator], val prereqAttrs: Seq[Class[_]] = Seq()) extends DocumentAnnotator {
-  var profile = true
+  var profile = false
   var tokensProcessed = 0
   var msProcessed = 0L
   val timePerAnnotator = collection.mutable.LinkedHashMap[DocumentAnnotator,Long]()
