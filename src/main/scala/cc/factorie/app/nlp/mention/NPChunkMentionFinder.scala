@@ -17,7 +17,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 
 
 /*
- * Object to retrieve Nested BILOU Tags
+ * Object to retrieve two layers of Nested BILOU Tags
  */
 object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkTag]{
   //Splits tag value and calls to retrieve NPs for the inner tags and outer tags
@@ -26,13 +26,15 @@ object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkT
     document.sentences.foreach{s=>
       val chunkTags = s.tokens.map(t => t.attr[BILOUNestedChunkTag].categoryValue.split(":").map(layer => t -> layer)).map(layer => (layer(0),layer(1)))
       val (innerTags,outerTags) = chunkTags.unzip
+      //splitting up the tags into the inner and outer tags and grabbing noun span separately seemed like the safest option
+      //but might not be the fastest
       mentionSpans ++= getNPChunkSpans(s,innerTags)
       mentionSpans ++= getNPChunkSpans(s,outerTags)
     }
     mentionSpans.seq
   }
 }
-//Default for MentionFinder is BILOU Notation since BILOU performed best for NP mention finding
+//Default for MentionFinder is BILOU Notation over BIO since BILOU performed best for NP mention finding
 object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
 
 class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
@@ -83,7 +85,6 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
     }
     spans.toSeq
   }
-
 }
 
 
