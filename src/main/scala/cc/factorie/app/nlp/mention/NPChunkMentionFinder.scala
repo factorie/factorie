@@ -2,11 +2,8 @@ package cc.factorie.app.nlp.mention
 
 import java.io.{File}
 import cc.factorie.app.nlp._
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
-import cc.factorie.app.nlp.phrase.{ChunkerOpts}
+import scala.collection.mutable.{ArrayBuffer}
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
-import cc.factorie.app.nlp.coref.ConllCorefLoader
-import cc.factorie.app.nlp.pos.PennPosTag
 
 
 /**

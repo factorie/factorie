@@ -14,7 +14,7 @@ import scala.Predef._
  *
  * 1 token type
  * 2 gold POS Tag
- * 3 gold chunk (BIO notation)
+ * 3 gold chunk (BIO notation default)
  */
 
 object LoadConll2000 extends Load {
@@ -26,6 +26,8 @@ object LoadConll2000 extends Load {
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[PennPosTag]) = UnknownDocumentAnnotator.getClass
     doc.annotators(classOf[BIOChunkTag]) = UnknownDocumentAnnotator.getClass
+
+    //Enable multiple input encodings
     val newChunkLabel = encoding match {
       case "BILOU" => (t:Token,s:String) => new BILOUChunkTag(t,s)
       case "BIO" => (t:Token,s:String) => new BIOChunkTag(t,s)
@@ -97,6 +99,7 @@ object LoadConll2000 extends Load {
   }
 }
 
+//Standard conll2000 Chunk Tags
 object BIOChunkDomain extends CategoricalDomain[String] {
   this ++= Vector("B-ADJP",
     "B-ADVP",
@@ -151,6 +154,8 @@ object BILOUChunkDomain extends CategoricalDomain[String] {
   freeze()
 }
 
+//For Noun Phrase Chunk Tagging
+//Requires custom training data tagged in this notation
 object BILOUNestedChunkDomain extends CategoricalDomain[String] {
   this ++= Vector( "B-NP:B-NP",
     "B-NP:I-NP",
@@ -180,7 +185,8 @@ object BILOUNestedChunkDomain extends CategoricalDomain[String] {
     )
   freeze()
 }
-//This could be combined into a single LabeledCategoricalVariable with a changable domain
+
+//This could be combined into a single LabeledCategoricalVariable with a settable domain
 abstract class ChunkTag(val token:Token, tagValue:String) extends LabeledCategoricalVariable(tagValue)
 
 class BIOChunkTag(token:Token, tagValue:String) extends ChunkTag(token, tagValue) {
