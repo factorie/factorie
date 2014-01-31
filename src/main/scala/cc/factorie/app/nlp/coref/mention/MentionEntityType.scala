@@ -1,4 +1,5 @@
-package cc.factorie.app.nlp.mention
+package cc.factorie.app.nlp.coref.mention
+
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._

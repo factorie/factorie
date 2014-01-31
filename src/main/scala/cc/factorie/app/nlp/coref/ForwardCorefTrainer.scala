@@ -6,8 +6,9 @@ import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.HyperparameterMain
-import cc.factorie.app.nlp.coref.mention.{NerAndPronounMentionFinder, ParseBasedMentionFinding, MentionList, Mention}
+import cc.factorie.app.nlp.coref.mention._
 import cc.factorie.app.nlp.phrase.{NounPhraseNumberLabeler, NounPhraseGenderLabeler}
+import cc.factorie.app.nlp.load.LoadConll2011
 
 /**
  * User: apassos
@@ -190,12 +191,12 @@ object ForwardCorefTrainer extends HyperparameterMain{
     var trainDocs: Seq[Document] = null
     var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[Mention]] = null
     if (loadTrain){
-      val allTrainDocs = ConllCorefLoader.loadWithParse(trainFile)
+      val allTrainDocs = LoadConll2011.loadWithParse(trainFile)
       trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
       println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
       trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
     }
-    val allTestDocs  =  ConllCorefLoader.loadWithParse(testFile)
+    val allTestDocs  =  LoadConll2011.loadWithParse(testFile)
     val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
     println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[MentionList].length).sum.toFloat / testDocs.length + " mention/doc")
     val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)

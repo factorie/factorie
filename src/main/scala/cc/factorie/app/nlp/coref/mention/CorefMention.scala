@@ -1,12 +1,11 @@
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.coref.mention
 
-import cc.factorie.app.nlp.mention._
+import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
-import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
-import cc.factorie.app.nlp.coref.mention.{Entity, MentionType, Mention}
+import cc.factorie.app.nlp.mention.{MentionNumberLabel, MentionGenderLabel}
 
 /**
  * User: apassos

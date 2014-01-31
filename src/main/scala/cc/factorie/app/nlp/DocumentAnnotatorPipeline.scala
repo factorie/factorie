@@ -3,6 +3,7 @@ package cc.factorie.app.nlp
 import cc.factorie.util.FastLogging
 
 import scala.reflect.ClassTag
+import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, MentionEntityType}
 
 /**
  * User: apassos
@@ -67,7 +68,7 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[coref.mention.ParseBasedMentionList] -> (() => coref.mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
-    classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
+    classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
   )
 

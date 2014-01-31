@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.lemma.WordNetTokenLemma
 import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
 import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.app.nlp.coref.mention.{MentionType, MentionList, Mention}
+import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionType, MentionList, Mention}
 
 /**
  * User: apassos

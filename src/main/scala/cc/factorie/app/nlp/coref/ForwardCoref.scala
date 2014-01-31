@@ -9,7 +9,7 @@ import cc.factorie.optimize._
 import java.io._
 import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.coref.mention.{NerMentionList, MentionType, MentionList, Mention}
+import cc.factorie.app.nlp.coref.mention._
 
 /**
  * User: apassos

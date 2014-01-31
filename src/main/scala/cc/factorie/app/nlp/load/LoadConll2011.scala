@@ -1,17 +1,16 @@
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.load
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
-import mention.{MentionList, Mention, Entity}
+import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionList, Mention, Entity}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, Map, Stack}
 import scala.collection.mutable
 import scala.util.control.Breaks._
-import cc.factorie.app.nlp.mention.MentionEntityType
 
 class EntityKey(val name: String)
 
 // TODO This should be moved to app.nlp.LoadConll2011 -akm
-object ConllCorefLoader {
+object LoadConll2011 {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader
   // only uses the entity type if its boundaries exactly match the boundaries of the annotated mention
