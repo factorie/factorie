@@ -11,6 +11,7 @@ import collection.mutable.{ArrayBuffer, HashMap}
 import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
 import scala.Some
+import cc.factorie.app.nlp.coref.mention.{ParseBasedMentionFinding, Entity, MentionList, Mention}
 
 /**
  * User: apassos
@@ -154,7 +155,7 @@ object MentionAlignment {
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
-    cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
+    cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding.FILTER_APPOS = true
     DocumentAnnotatorPipeline[MentionList](annotatorMap).process(d)
   }
 

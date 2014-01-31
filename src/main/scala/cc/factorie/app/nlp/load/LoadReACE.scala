@@ -13,6 +13,7 @@ import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Array.fallbackCanBuildFrom
+import scala.collection.mutable.ListBuffer
 
 trait ReACEMentionIdentifiers {
   val mId: Option[String]
@@ -114,7 +115,8 @@ object LoadReACE {
   }
 
   def addNrm(doc: Document, xml: String): Document = {
-    val spanList = doc.attr[ner.ConllNerSpanList]
+    val spanList = new ListBuffer[ConllNerSpan]
+    spanList ++= doc.attr[ner.ConllNerSpanList]
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -151,7 +153,7 @@ object LoadReACE {
       // set the head of the mention
       m.attr[ReACEMentionIdentifiers].headEnd.foreach(he => m._head = doc.asSection(he))
     }
-
+    doc.attr+= new ner.ConllNerSpanList(spanList)
 
     // Add relations
     xmlText = XML.loadFile(xml + ".nrm.xml") // is there a way to avoid rereading?

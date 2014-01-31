@@ -1,10 +1,12 @@
-package cc.factorie.app.nlp.mention
+package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.ner._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Span
+import cc.factorie.app.nlp.coref.mention.{MentionType, MentionList, Mention}
+import cc.factorie.app.nlp.mention.MentionEntityType
 
 /**
  * User: apassos
@@ -12,7 +14,7 @@ import cc.factorie.variable.Span
  * Time: 3:34 PM
  */
 
-class NerMentionList extends MentionList
+class NerMentionList(spans:Iterable[Mention]) extends MentionList(spans)
 
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosTag])
@@ -82,8 +84,7 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
       m.attr += new MentionEntityType(m,label)
       m
     })
-    document.attr += new NerMentionList() ++= (nerMentions ++ pronounMentions).sortBy(m => (m.head.stringStart, m.length))
-
+    document.attr += new NerMentionList((nerMentions ++ pronounMentions).sortBy(m => (m.head.stringStart, m.length)))
     document
   }
 }

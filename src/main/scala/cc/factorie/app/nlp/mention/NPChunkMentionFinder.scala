@@ -1,9 +1,9 @@
 package cc.factorie.app.nlp.mention
 
-import java.io.{File}
 import cc.factorie.app.nlp._
-import scala.collection.mutable.{ArrayBuffer}
+import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
+import cc.factorie.app.nlp.coref.mention.{MentionType, MentionList, Mention}
 
 
 /**
@@ -19,7 +19,7 @@ import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
 object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkTag]{
   //Splits tag value and calls to retrieve NPs for the inner tags and outer tags
   override def getMentionSpans(document: Document): Seq[TokenSpan] ={
-    val mentionSpans = ArrayBuffer[TokenSpan]()
+    val mentionSpans = ListBuffer[TokenSpan]()
     document.sentences.foreach{s=>
       val chunkTags = s.tokens.map(t => t.attr[BILOUNestedChunkTag].categoryValue.split(":").map(layer => t -> layer)).map(layer => (layer(0),layer(1)))
       val (innerTags,outerTags) = chunkTags.unzip
@@ -43,7 +43,7 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
 
   def process(document: Document) = {
     val mentions = addChunkMentions(document)
-    document.attr += new MentionList() ++= mentions.sortBy(m => (m.head.stringStart, m.length))
+    document.attr += new MentionList(mentions.sortBy(m => (m.head.stringStart, m.length)))
     document
   }
 
@@ -58,7 +58,7 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
   }
 
   def getMentionSpans(document: Document): Seq[TokenSpan] ={
-    val mentionSpans = ArrayBuffer[TokenSpan]()
+    val mentionSpans = ListBuffer[TokenSpan]()
     document.sentences.foreach{s=>
       val chunkTags = s.tokens.map(t => t-> t.attr[BILOUChunkTag].categoryValue)
       mentionSpans ++= getNPChunkSpans(s,chunkTags)
@@ -67,7 +67,7 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
   }
 
   def getNPChunkSpans(s: Sentence,chunkTags: IndexedSeq[(Token, String)]):Seq[TokenSpan]={
-    val spans = ArrayBuffer[TokenSpan]()
+    val spans = ListBuffer[TokenSpan]()
     chunkTags.map{case (t,chunk) =>
       if (chunk != "O") {
         if(chunk == "U-NP") spans += new TokenSpan(s.section, t.positionInSection, 1)

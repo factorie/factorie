@@ -63,12 +63,12 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
-    classOf[mention.NerMentionList] -> (() => mention.NerAndPronounMentionFinder),
-    classOf[mention.ParseBasedMentionList] -> (() => mention.ParseBasedMentionFinding),
+    classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
+    classOf[coref.mention.ParseBasedMentionList] -> (() => coref.mention.ParseBasedMentionFinding),
     classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
     classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
     classOf[mention.MentionEntityType] ->  (() => mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[mention.Mention]] -> (() => coref.NerForwardCoref)
+    classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)

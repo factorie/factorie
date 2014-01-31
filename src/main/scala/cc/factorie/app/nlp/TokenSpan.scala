@@ -50,7 +50,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
 }
 
 /** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanList[S<:TokenSpan] extends SpanVarList[S, Section, Token]
+class TokenSpanList[S<:TokenSpan](spans:Iterable[S]) extends SpanVarList[S, Section, Token](spans)
 
 object TokenSpan {
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {

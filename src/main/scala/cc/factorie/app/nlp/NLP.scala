@@ -3,6 +3,7 @@ package cc.factorie.app.nlp
 import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
+import cc.factorie.app.nlp.coref.mention.{NerAndPronounMentionFinder, ParseBasedMentionFinding, MentionList}
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -27,8 +28,8 @@ object NLP {
       val chainpos = new CmdOption[String]("ontonotes-chain-pos", null, "URL", "Annotate Penn-Treebank-style POS with linear chain model") { override def invoke() = { if (value ne null) System.setProperty(classOf[pos.OntonotesChainPosTagger].getName, value); annotators += cc.factorie.app.nlp.pos.OntonotesChainPosTagger } }
       val wnlemma = new CmdOption("wordnet-lemma", "classpath:cc/factorie/app/nlp/wordnet/WordNet", "URL", "Annotate lemma using WordNet's lemmatizer.") { override def invoke() = annotators += cc.factorie.app.nlp.lemma.WordNetLemmatizer }
       //val npchunk1 = new CmdOption("pos-based-mention", null, "", "Annotate noun mention boundaries using simple rules on POS tag sequences.  Low quality.") { override def invoke() = annotators += cc.factorie.app.nlp.mention.NounChunker1 }
-      val mention2 = new CmdOption("parse-based-mention", null, "", "Annotate noun mention boundaries using a dependency parser.") { override def invoke() = annotators += cc.factorie.app.nlp.mention.ParseBasedMentionFinding }
-      val mention3 = new CmdOption("ner-mention", null, "", "Annotate noun mention boundaries using NER tagger and pronoun patterns.") { override def invoke() = annotators += cc.factorie.app.nlp.mention.NerAndPronounMentionFinder }
+      val mention2 = new CmdOption("parse-based-mention", null, "", "Annotate noun mention boundaries using a dependency parser.") { override def invoke() = annotators += cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding }
+      val mention3 = new CmdOption("ner-mention", null, "", "Annotate noun mention boundaries using NER tagger and pronoun patterns.") { override def invoke() = annotators += cc.factorie.app.nlp.coref.mention.NerAndPronounMentionFinder }
       val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.ConllChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.ConllChainNer } }
       val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.BasicOntonotesNER].getName, value); annotators += cc.factorie.app.nlp.ner.NER2 } }
       val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
@@ -72,7 +73,7 @@ object NLP {
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
-      val mentions = document.attr[mention.MentionList]
+      val mentions = document.attr[MentionList]
       if (mentions ne null) {
         out.println("Mentions:")
         for (mention <- mentions) {

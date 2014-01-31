@@ -2,10 +2,11 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
-import mention.{MentionEntityType, MentionList, Mention, Entity}
-import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
+import mention.{MentionList, Mention, Entity}
+import scala.collection.mutable.{ListBuffer, ArrayBuffer, Map, Stack}
 import scala.collection.mutable
 import scala.util.control.Breaks._
+import cc.factorie.app.nlp.mention.MentionEntityType
 
 class EntityKey(val name: String)
 
@@ -54,6 +55,7 @@ object ConllCorefLoader {
       entityTypeTokenizer.findAllIn(s).map(x => asteriskStripper.replaceAllIn(x,"")).toArray
     }
 
+    var mentionList = new ListBuffer[Mention]()
     var currDoc: Document = null
     var currSent: Sentence = null
     var currEntId: Int = 0
@@ -85,8 +87,10 @@ object ConllCorefLoader {
         currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
-        currDoc.attr += new MentionList
+        //currDoc.attr += new MentionList
       } else if (l.startsWith("#end document")) {
+        currDoc.attr += new MentionList(mentionList.toList)
+        mentionList.clear()
         currDoc = null
         currEntId = 0
         mentions.clear()
@@ -167,7 +171,7 @@ object ConllCorefLoader {
             if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
               val m = new Mention(span, getHeadToken(span))
-              currDoc.attr[MentionList] += m
+              mentionList += m
               numMentions += 1
 
               if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
@@ -213,7 +217,7 @@ object ConllCorefLoader {
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
           val m = new Mention(span, getHeadToken(span))
-          currDoc.attr[MentionList] += m
+          mentionList += m
           if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){

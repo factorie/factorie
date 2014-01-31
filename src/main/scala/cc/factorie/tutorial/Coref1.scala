@@ -5,11 +5,12 @@ import cc.factorie.app.nlp.hcoref._
 import cc.factorie.variable._
 import cc.factorie.model._
 import cc.factorie.infer.SettingsSampler
+import scala.collection.mutable.ListBuffer
 
 object Coref1 {
   
   class SpanMention(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) with TokenSpanMention
-  class SpanMentionList extends TokenSpanList[SpanMention]
+  class SpanMentionList(spans:Iterable[SpanMention]) extends TokenSpanList[SpanMention](spans)
 
   abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
     override def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
@@ -108,18 +109,20 @@ object Coref1 {
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {
-    val spanList = doc.attr += new SpanMentionList
+    val spanList = new ListBuffer[SpanMention]
     val section = doc.asSection
     for (token <- section.tokens) {
       // Make a mention for simple pronouns
-      if (token.string.matches("[Hh]e|[Ss]he|[Ii]t") && spanList.spansContaining(token).length == 0) spanList += new SpanMention(section, token.position, 1)
+      //Is this an okay change to enable the use of immutable span list?
+      if (token.string.matches("[Hh]e|[Ss]he|[Ii]t") && !spanList.contains(token)) spanList += new SpanMention(section, token.position, 1)
       // Make a mention for sequences of capitalized words
-      if (token.isCapitalized && spanList.spansContaining(token).length == 0) {
+      if (token.isCapitalized && !spanList.contains(token)) {
         var len = 1
         while (token.position + len < section.length && section(token.position+len).isCapitalized) len += 1
         spanList += new SpanMention(section, token.position, len)
       }
     }
+    doc.attr += new SpanMentionList(spanList)
   }
 
 //  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))(new scala.util.Random(0))

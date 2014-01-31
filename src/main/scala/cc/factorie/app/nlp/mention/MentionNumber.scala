@@ -5,6 +5,7 @@ import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 import org.jblas.Singular
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.coref.mention.{MentionList, Mention}
 
 object MentionNumberDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 

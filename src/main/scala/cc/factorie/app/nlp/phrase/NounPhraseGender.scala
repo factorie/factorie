@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.coref.mention.MentionList
 
 object NounPhraseGenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 
@@ -17,11 +18,10 @@ class NounPhraseGenderLabel(val phrase:NounPhrase, initialCategory:String) exten
 }
 
 /** Cheap gender predictor based on rules and lexicons. */
-class NounPhraseGenderLabeler extends DocumentAnnotator {
-  
+class NounPhraseGenderLabeler[L<:TokenSpanList[NounPhrase]] extends DocumentAnnotator {
   def process(document:Document): Document = {
     import NounPhraseGenderDomain._
-    for (phrase <- document.attr[NounPhraseList]) {
+    for (phrase <- document.attr[L]) {
       val gender = new NounPhraseGenderLabel(phrase, UNKNOWN)
       phrase.attr += gender
       if (phrase.length > 0) {
@@ -158,5 +158,5 @@ class NounPhraseGenderLabeler extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseGenderLabel])
 }
 
-object NounPhraseGenderLabeler extends NounPhraseGenderLabeler
+object NounPhraseGenderLabeler extends NounPhraseGenderLabeler[MentionList]
 

@@ -8,6 +8,7 @@ import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.app.nlp.coref.mention.{Entity, MentionList, Mention}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 

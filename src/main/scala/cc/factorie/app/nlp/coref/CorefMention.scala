@@ -6,6 +6,7 @@ import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
+import cc.factorie.app.nlp.coref.mention.{Entity, MentionType, Mention}
 
 /**
  * User: apassos

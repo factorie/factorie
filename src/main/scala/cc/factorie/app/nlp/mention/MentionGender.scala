@@ -2,6 +2,7 @@ package cc.factorie.app.nlp.mention
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.coref.mention.{MentionList, Mention}
 
 object MentionGenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 

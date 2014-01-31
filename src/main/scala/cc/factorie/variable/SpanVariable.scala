@@ -19,6 +19,7 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.util.Sorting
 import cc.factorie.variable._
+import cc.factorie.util.SubclassableVector
 
 /** An immutable value indicating a subsequence of a Chain (and whether this span is to be considered present or "active" now). */
 case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int, present:Boolean = true) extends IndexedSeq[E] {
@@ -157,37 +158,8 @@ class SpanList[S<:Span[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer
   def spansOfClassPreceeding[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassPreceeding(m.runtimeClass.asInstanceOf[Class[A]], e)
 }
 
-/** A collection of SpanVars, with various methods for retrieving subsets, and tracking additions and removals via DiffLists. */
-class SpanVarList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] {
-  /** Add the span to the list of spans.  Unlike +=, make a DiffList entry for the change. */
-  def add(s:S)(implicit d:DiffList): Unit = {
-    if (d ne null) d += AddSpanListDiff(s)
-    +=(s)
-  }
-  /** Remove the span from the list of spans.  Unlike -=, make a DiffList entry for the change. */
-  def remove(s:S)(implicit d:DiffList): Unit = {
-    if (d ne null) d += RemoveSpanListDiff(s)
-    -=(s)
-  }
-  
-  trait SpanListDiff extends Diff { def list = SpanVarList.this }
-  case class AddSpanListDiff(span:S) extends SpanListDiff {
-    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
-    var done = true
-    def variable: S = if (span.value.present || span.diffIfNotPresent) span else null.asInstanceOf[S]
-    def redo() = { SpanVarList.this.+=(span); assert(!done); done = true }
-    def undo() = { SpanVarList.this.-=(span); assert(done); done = false }
-    override def toString = "AddSpanVariable("+span+")"
-  }
-  case class RemoveSpanListDiff(span:S) extends SpanListDiff {
-    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
-    var done = true
-    def variable: S = if (span.value.present || span.diffIfNotPresent) span else null.asInstanceOf[S]
-    def redo() = { SpanVarList.this.-=(span); assert(!done); done = true }
-    def undo() = { SpanVarList.this.+=(span); assert(done); done = false }
-    override def toString = "RemoveSpanVariable("+span+")"
-  }
-  
+/** An abstract collection of SpanVars, with various methods for retrieving subsets. */
+trait SpanVarCollection[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Seq[S] {
   def spansOfClass[A<:S](c:Class[A]): Seq[A] = this.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.runtimeClass.asInstanceOf[Class[A]])
   // Spans sorted by their start position
@@ -215,4 +187,39 @@ class SpanVarList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Array
   def spansOfClassEndingAt[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassEndingAt(m.runtimeClass.asInstanceOf[Class[A]], e)
   def spansOfClassFollowing[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassFollowing(m.runtimeClass.asInstanceOf[Class[A]], e)
   def spansOfClassPreceeding[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassPreceeding(m.runtimeClass.asInstanceOf[Class[A]], e)
+}
+
+/** An immutable concrete collection of SpanVars. */
+class SpanVarList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]](spans:Iterable[S]) extends SubclassableVector[S](spans) with SpanVarCollection[S,C,E]
+
+/** A mutable concrete collection of SpanVars, with various methods for tracking additions and removals via DiffLists. */
+class SpanVarBuffer[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] with SpanVarCollection[S,C,E] {
+  /** Add the span to the list of spans.  Unlike +=, make a DiffList entry for the change. */
+  def add(s:S)(implicit d:DiffList): Unit = {
+    if (d ne null) d += AddSpanListDiff(s)
+    +=(s)
+  }
+  /** Remove the span from the list of spans.  Unlike -=, make a DiffList entry for the change. */
+  def remove(s:S)(implicit d:DiffList): Unit = {
+    if (d ne null) d += RemoveSpanListDiff(s)
+    -=(s)
+  }
+
+  trait SpanListDiff extends Diff { def list = SpanVarBuffer.this }
+  case class AddSpanListDiff(span:S) extends SpanListDiff {
+    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
+    var done = true
+    def variable: S = if (span.value.present || span.diffIfNotPresent) span else null.asInstanceOf[S]
+    def redo() = { SpanVarBuffer.this.+=(span); assert(!done); done = true }
+    def undo() = { SpanVarBuffer.this.-=(span); assert(done); done = false }
+    override def toString = "AddSpanVariable("+span+")"
+  }
+  case class RemoveSpanListDiff(span:S) extends SpanListDiff {
+    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
+    var done = true
+    def variable: S = if (span.value.present || span.diffIfNotPresent) span else null.asInstanceOf[S]
+    def redo() = { SpanVarBuffer.this.-=(span); assert(!done); done = true }
+    def undo() = { SpanVarBuffer.this.+=(span); assert(done); done = false }
+    override def toString = "RemoveSpanVariable("+span+")"
+  }
 }

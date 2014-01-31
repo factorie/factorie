@@ -18,6 +18,7 @@ import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.app.nlp.coref.mention.Entity
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
 class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
@@ -96,7 +97,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
   def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseEntityType])
  
   def filterTrainingNounPhrases(mentions:Seq[NounPhrase]): Iterable[NounPhrase] = 
-    mentions.groupBy(m => m.attr[mention.Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
+    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
