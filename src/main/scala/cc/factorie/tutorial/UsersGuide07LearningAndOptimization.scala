@@ -1,3 +1,4 @@
+/*& Users Guide 07: Learning and Optimization */
 /*&
 
 # Optimization
@@ -7,7 +8,7 @@ problem trading off having low error on the training data with having a
 simple predictor which should generalize well. These optimization problems
 are usually of the form
 
-  theta* = argmax_theta sum_i loss(x_i, y_i, theta) - R(theta)
+`\[ \theta^* = \mathop{\arg\max}_\theta \sum_i loss(x_i, y_i, \theta) - R(\theta) \]`
 
 FACTORIE includes an optimization package directly designed to solve
 optimization problems of the form above, with many variants of batch and
@@ -31,7 +32,7 @@ encapsulated by having optimizers rewrite the model's weights.
 To allow that, the tensors which are going to be optimized have to be
 placed inside special slots designed for this. Here is an example model:
 
-```
+```scala
 class MyModel extends Parameters {
   val bias = Weights(new DenseTensor1(labelSize))
   val observations = Weights(new DenseTensor2(featureSize, labelSize))

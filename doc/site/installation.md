@@ -25,13 +25,13 @@ Step-by-step Installation
 ---
 
 1. Make sure you have all the required Maven software. Type `mvn -version` and verify that the Maven version is greater than 2.2 and that the Java version is greater than 1.5.
-
+```
         $ mvn -version
         Apache Maven 2.2.1 (rdebian-1)
         Java version: 1.6.0_15
         Java home: /usr/lib/jvm/java-6-sun-1.6.0.15/jre
         ...
-
+```
 2. Obtain the FACTORIE source. You can do this by cloning the FACTORIE github repo
 
         $ git clone https://github.com/factorie/factorie.git

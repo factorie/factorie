@@ -1,4 +1,4 @@
-
+/*& Users Guide 02: Installation */
 /*&
 
 # Installation
@@ -70,7 +70,7 @@ mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
 
 If you'd like to add FACTORIE as a dependency in a Maven-manged project, first add the FACTORIE repository in the repositories section of the project's pom.xml:
 
-```
+```xml
 <repositories>
   ...
   <repository>
@@ -89,7 +89,7 @@ If you'd like to add FACTORIE as a dependency in a Maven-manged project, first a
 
 Then add FACTORIE as a dependency in the dependencies section:
 
-```
+```xml
 <dependencies>
   ...
   <dependency>
@@ -104,7 +104,7 @@ Then add FACTORIE as a dependency in the dependencies section:
 
 To use FACTORIE's pre-trained NLP models in a Maven project, you can add additional dependencies on a per-model basis. For example, to use our pre-trained part-of-speech models, you would add the entry:
 
-```
+```xml
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>pos</artifactId>

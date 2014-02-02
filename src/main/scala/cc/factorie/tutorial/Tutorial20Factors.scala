@@ -1,3 +1,5 @@
+/*& Tutorial 2: Factor */
+
 /*&
  * Factor Tutorial
  * ==============
@@ -5,19 +7,15 @@
  * Factors are a container for an ordered set of neighboring variables, 
  * and can return "scores" and "statistics" based on values for those neighbors.
  **/
-
 package cc.factorie.tutorial
-
-import org.junit.Assert._
-import cc.factorie._
-import cc.factorie.la._
-import cc.factorie.variable._
-import scala.Tuple2
-import cc.factorie.model._
-import scala.Tuple2
-
-object TutorialFactors {
-  def main(args:Array[String]): Unit = {
+object TutorialFactors extends App {
+  import org.junit.Assert._
+  import cc.factorie._
+  import cc.factorie.la._
+  import cc.factorie.variable._
+  import scala.Tuple2
+  import cc.factorie.model._
+  import scala.Tuple2
     
     // First we'll create some variables for us as Factor neighbors. 
     val v1 = new IntegerVariable(1)
@@ -277,7 +275,7 @@ object TutorialFactors {
       }
     }
     println("When scoring "+a1+" the highest scoring label value is "+maxLabeling)
-    
+}
     /*&
      * Of course there is much more rich and efficient support for classification
      * (including pre-built large-vocabulary document classification) available in FACTORIE.
@@ -288,9 +286,3 @@ object TutorialFactors {
      * FACTORIE has special support for representing commonalities between Factors
      * that belong to the same "Family".
      **/
-    
-  }
-  
-}
-
-

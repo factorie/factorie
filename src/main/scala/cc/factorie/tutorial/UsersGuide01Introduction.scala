@@ -1,3 +1,4 @@
+/*& Users Guide 01: Introduction */
 /*&
 
 # FACTORIE User's Guide
@@ -134,7 +135,7 @@ which then produces the output:
 The following code creates a model for holding factors that connect random variables for holding mean and variance with 1000 samples from a Gaussian.
 Then it re-estimates by maximum likelihood the mean and variance from the sampled data. 
 
-```
+```scala
 package cc.factorie.tutorial
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
@@ -159,7 +160,7 @@ object ExampleGaussian extends App {
 
 The following code declares data, model, inference and learning for a linear-chain CRF for part-of-speech tagging.
 
-```
+```scala
 object ExampleLinearChainCRF extends App {
   import cc.factorie._            // The base library: variables, factors
   import cc.factorie.la           // Linear algebra: tensors, dot-products, etc.

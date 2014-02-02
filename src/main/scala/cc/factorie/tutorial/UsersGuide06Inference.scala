@@ -1,3 +1,4 @@
+/*& Users Guide 06: Inference */
 /*&
 
 # Inference
