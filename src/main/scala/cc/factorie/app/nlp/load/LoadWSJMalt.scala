@@ -19,18 +19,17 @@ import java.io.PrintWriter
   6   auto POS tag
   7   gold feats
   8	  auto feats
-  9   auto head ID				// why are these switched???
+  9   auto head ID				
   10  gold head ID
-  11  auto dependency label		// why are these switched???
+  11  auto dependency label		
   12  gold dependency label
   13  gold secondary dependencies
   14  gold semantic arguments
   15  gold named entity tags
   16  gold coreference
-
  */
 
-object LoadOntonotesOld {
+object LoadWSJMalt {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     //assert(depInfoSeq.map(_._1) == Seq.tabulate(depInfoSeq.length)(i => i), "Token indices: "+depInfoSeq.map(_._1).mkString(" ")) // Assert that we have an entry for each token index, in order
     val tree = new ParseTree(s, depInfoSeq.map(_._2), depInfoSeq.map(_._3))

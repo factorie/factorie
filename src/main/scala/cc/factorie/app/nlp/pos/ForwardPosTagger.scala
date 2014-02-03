@@ -409,6 +409,7 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
+  val wsj = new CmdOption("wsj", false, "BOOL", "Whether the data is WSJ or otherwise (Ontonotes)")
 }
 
 object ForwardPosTester {
@@ -429,7 +430,7 @@ object ForwardPosTester {
     }
   
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+	val testDocs =  testFileList.map(if(opts.wsj.value) load.LoadWSJMalt.fromFilename(_).head else load.LoadOntonotes5.fromFilename(_).head)
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
