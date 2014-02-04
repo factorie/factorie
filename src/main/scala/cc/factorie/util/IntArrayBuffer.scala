@@ -20,8 +20,8 @@ trait ProtectedIntArrayBuffer {
   protected def _capacityGrowthFactor: Double = 1.5
   @inline final protected def _ensureCapacity(cap:Int): Unit = 
     if (cap > _arr.length) _setCapacity(math.max(cap, (_arr.length * _capacityGrowthFactor).toInt))
-  protected def _considerShrinkingCapacity: Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
-  protected def _trimCapacity: Unit = _setCapacity(_size) // What if _size == 0?
+  protected def _considerShrinkingCapacity(): Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
+  protected def _trimCapacity(): Unit = _setCapacity(_size) // What if _size == 0?
   protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)
@@ -123,7 +123,7 @@ trait ProtectedIntArrayBuffer {
     else if (x < midval) _containsSorted(x, start, middle)
     else _containsSorted(x, middle+1, end)
   }
-  protected def _containsSorted(x:Int): Boolean = _indexForInsertSorted(x) != -1 // _containsSorted(x, 0, _size)
+  protected def _containsSorted(x:Int): Boolean = _indexOfSorted(x) != -1 // _containsSorted(x, 0, _size)
 
   protected def _clear(): Unit = { _arr = new Array[Int](_initialCapacity); _size = 0; _lastIndex = 0 }
   protected def _sizeHint(len: Int) = if (len >= _size && len >= 1) _setCapacity(len)

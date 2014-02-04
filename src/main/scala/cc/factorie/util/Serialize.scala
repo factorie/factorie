@@ -3,17 +3,15 @@ package cc.factorie.util
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import collection.mutable
-import cc.factorie._
 import cc.factorie.la._
 import scala.language.implicitConversions
-import cc.factorie.optimize.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie, RandomForestMultiClassClassifier}
-
-// TODO I need to add a suite of serializers for various tensors so we can really streamline model serialization -luke
-// We also need to write fast special cases for (de)serializing arrays of ints and doubles (DoubleListSlot, etc) -luke
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.model.{WeightsSetCubbie, Parameters}
+import cc.factorie.app.classify.backend.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie}
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {
-//  implicit def cct2alt[T, C[_]](m: C[T])(implicit cc: CopyingCubbie[C[T]]) = { cc.store(m); cc }
   implicit def m2cc[T](m: T)(implicit cc: StoreFetchCubbie[T]): Cubbie = { cc.store(m); cc }
   implicit def ccts[T <: Seq[Tensor]]: StoreFetchCubbie[T] = new TensorListCubbie[T]
   implicit def cct[T <: Tensor]: StoreFetchCubbie[T] = new TensorCubbie[T]
@@ -26,7 +24,7 @@ trait CubbieConversions {
   implicit def cdm(m: CategoricalDomain[_]): Cubbie = new CategoricalDomainCubbie(m)
   implicit def smm(m: mutable.HashMap[String, String]): Cubbie = new StringMapCubbie(m)
   implicit def csdm(m: CategoricalSeqDomain[_]): Cubbie = new CategoricalSeqDomainCubbie(m)
-  implicit def cdtdm(m: CategoricalTensorDomain[_]): Cubbie = new CategoricalTensorDomainCubbie(m)
+  implicit def cdtdm(m: CategoricalVectorDomain[_]): Cubbie = new CategoricalVectorDomainCubbie(m)
   implicit def simm(m: mutable.HashMap[String,Int]): Cubbie = new StringMapCubbie(m) //StringMapCubbie is parametrized by T, as String -> T, so this knows that it's an Int
 }
 
@@ -34,6 +32,7 @@ trait CubbieConversions {
 object CubbieConversions extends CubbieConversions
 
 object BinarySerializer extends GlobalLogging {
+  import cc.factorie._
   private def getLazyCubbieSeq(vals: Seq[() => Cubbie]): Seq[Cubbie] = vals.view.map(_())
   // We lazily create the cubbies because, for example, model cubbies will force their model's weightsSet lazy vals
   // so we need to control the order of cubbie creation and serialization (domains are deserialized before model cubbies are even created)
@@ -114,10 +113,26 @@ object BinarySerializer extends GlobalLogging {
     new DataInputStream(if (gzip) new BufferedInputStream(new GZIPInputStream(fileStream)) else fileStream)
   }
 
+  val currentVersion = "1.0"
   def serialize(c: Cubbie, s: DataOutputStream): Unit = {
+    serialize(Some("version"), currentVersion, s)
+    serialize(Some("cubbieVersion"), c.version, s)
+    serialize(Some("cubbieName"), c.cubbieName, s)
     for ((k, v) <- c._map.toSeq) serialize(Some(k), v, s)
   }
   def deserialize(c: Cubbie, s: DataInputStream): Unit = {
+    def readField(fieldName: String): String = {
+      assert(readString(s) == fieldName, "Cubbie must have \"%s\" field serialized." format fieldName)
+      s.readByte() // throw out tag
+      deserializeInner(null, STRING, s).asInstanceOf[String]
+    }
+    def assertSame(fieldName: String, written: String, expected: String): Unit =
+      assert(written == expected, "Expected written cubbie %s to be \"%s\", instead got \"%s\"" format (fieldName, written, expected))
+
+    assertSame("version", readField("version"), currentVersion)
+    assertSame("cubbieVersion", readField("cubbieVersion"), c.version)
+    assertSame("cubbieName", readField("cubbieName"), c.cubbieName)
+
     for ((k, v) <- c._map.toSeq) {
       val key = readString(s)
       assert(k == key, "Cubbie keys don't match with serialized data! (got \"%s\", expected \"%s\")" format (key, k))
@@ -136,12 +151,6 @@ object BinarySerializer extends GlobalLogging {
   private val SPARSE_INDEXED_TENSOR: Byte = 0x09
   private val SPARSE_BINARY_TENSOR: Byte = 0x10
   private val DENSE_TENSOR: Byte = 0x11
-  
-  private def tensorTypeMatch(tag:Byte, tensor:Tensor): Boolean = tag match {
-    case SPARSE_INDEXED_TENSOR => tensor.isInstanceOf[SparseDoubleSeq]
-    case SPARSE_BINARY_TENSOR => tensor.isInstanceOf[SparseBinaryTensor]
-    case DENSE_TENSOR => tensor.isInstanceOf[DenseDoubleSeq]
-  }
 
   private def deserializeInner(preexisting: Any, tag: Byte, s: DataInputStream): Any = tag match {
     case DOUBLE => s.readDouble()
@@ -155,10 +164,9 @@ object BinarySerializer extends GlobalLogging {
       // use pre-existing if there is one, and it has the right dimensions
       val preexistingTensor = preexisting.toNotNull.flatMap(_.cast[Tensor])
       val newBlank =
-        // With the last condition below, deserialization could substitute a different sparsity/density than was allocated.
+        // Deserialization can substitute a different sparsity/density than was allocated.
         // Useful for training Dense, sparsifying, serializing, and deserializing without changing the Model's Dense initialization. -akm
-        // No commented out -akm 10 June 2013
-        if (preexistingTensor.exists(_.dimensions.sameElements(dims)) /*&& preexistingTensor.exists(tensorTypeMatch(tag, _))*/)
+        if (preexistingTensor.exists(_.dimensions.sameElements(dims)))
           preexistingTensor.get
         else (tag, order) match {
           case (SPARSE_INDEXED_TENSOR, 1) => new SparseIndexedTensor1(dims(0))
@@ -215,6 +223,7 @@ object BinarySerializer extends GlobalLogging {
       s.readByte()
       null
   }
+  // TODO come back and make these fast and read/write whole blocks of bytes at once
   private def readDoubleArray(s: DataInputStream, arr: Array[Double]): Array[Double] = { val length = s.readInt(); var i = 0; while (i < length) { arr(i) = s.readDouble(); i += 1 }; arr }
   private def readDoubleArray(s: DataInputStream): Array[Double] = { val arr = new Array[Double](s.readInt()); var i = 0; while (i < arr.length) { arr(i) = s.readDouble(); i += 1 }; arr }
   private def writeDoubleArray(s: DataOutputStream, arr: Array[Double]): Unit = writeDoubleArray(s, arr, arr.length)
@@ -251,7 +260,6 @@ object BinarySerializer extends GlobalLogging {
   }
   private def isPrimitive(value: Any): Boolean = isPrimitiveTag(tagForType(value))
   private def serialize(key: Option[String], value: Any, s: DataOutputStream): Unit = {
-    //println("Serialize.serialize key="+key+" value="+(if (value != null) value.toString.take(20) else null))
     key.foreach(writeString(_, s))
     if (key.isDefined || !isPrimitive(value)) s.writeByte(tagForType(value))
     value match {
@@ -332,16 +340,3 @@ class TensorListCubbie[T <: Seq[Tensor]] extends StoreFetchCubbie[T] {
   def store(t: T): Unit = tensors := t
   def fetch(): T = tensors.value.asInstanceOf[T]
 }
-
-//class ParametersCopyingCubbie[T <: Parameters](ctor: => T = null /*can still store without constructing*/) extends CopyingCubbie[T] {
-//  val weightsTensors = new TensorListSlot("tensors")
-//  // Hit this nasty behavior again - should not have to specify a default value in order to get a slot to serialize into
-//  weightsTensors := Seq[Tensor]()
-//  def store(t: T): Unit = weightsTensors := t.parameters.tensors
-//  def fetch(): T = {
-//    val newParams = ctor
-//    for ((newTensor, storedTensor) <- newParams.parameters.tensors.zip(weightsTensors.value))
-//      newTensor := storedTensor
-//    newParams
-//  }
-//}

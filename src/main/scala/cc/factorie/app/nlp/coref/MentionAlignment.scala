@@ -1,11 +1,12 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Token, DocumentAnnotator, Document, DocumentAnnotatorLazyMap}
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Token, Document}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.mention._
-import cc.factorie.app.nlp.pos.PTBPosLabel
+import cc.factorie.app.nlp.pos.PennPosTag
 import collection.mutable.{ArrayBuffer, HashMap}
 import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
@@ -18,7 +19,7 @@ import scala.Some
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref2Options)(implicit map: DocumentAnnotatorLazyMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = ConllCorefLoader.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -29,10 +30,10 @@ object MentionAlignment {
     //make sure that they have the same names, i.e. they were loaded in the same order and subspampled consistently
     documents.zip(documentsToBeProcessed).foreach(dd => assert(dd._1.name == dd._2.name))
 
-    documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PTBPosLabel]))  //remove the gold POS annotation
+    documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))  //remove the gold POS annotation
     documentsToBeProcessed.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    documentsToBeProcessed.par.foreach(findMentions(_))
+    cc.factorie.util.Threading.parForeach(documentsToBeProcessed, Runtime.getRuntime.availableProcessors())(findMentions(_)(map))
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist
@@ -62,7 +63,7 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref2Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
     val detectedMentions: MentionList = detectedDoc.attr[MentionList]
 
@@ -93,9 +94,9 @@ object MentionAlignment {
         //val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
         //m.attr += new MentionEntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
-        if(debug) println("aligned: " + gtMention.span.string +":" + gtMention.start   + "  " + m.span.string + ":" + m.start)
+        if(debug) println("aligned: " + gtMention.string +":" + gtMention.start   + "  " + m.string + ":" + m.start)
       }else{
-        if(debug) println("not aligned: "  +  m.span.string + ":" + m.start)
+        if(debug) println("not aligned: "  +  m.string + ":" + m.start)
         val entityUID = m.document.name + unAlignedEntityCount
         val newEntity = new Entity(entityUID)
         m.attr += newEntity
@@ -127,7 +128,7 @@ object MentionAlignment {
   def getHeadTokenInDoc(m: Mention): Int = {
     m.start + m.headTokenIndex
   }
-  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref2Options, shifts: Seq[Int]): Option[Mention] = {
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
     val start = m.start
     val length = m.length
     val headTokIdxInDoc = m.headTokenIndex + m.start
@@ -152,15 +153,9 @@ object MentionAlignment {
   }
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
-  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorLazyMap) {
+  def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
-    val a = new DocumentAnnotator {
-      def tokenAnnotationString(token: Token) = null
-      def process1(document: Document) = document
-      def prereqAttrs = Seq(classOf[MentionList])
-      def postAttrs = Nil
-    }
-    a.process(d)
+    DocumentAnnotatorPipeline[MentionList](annotatorMap).process(d)
   }
 
   def assertParse(tokens: Seq[Token],parse: ParseTree): Unit = {

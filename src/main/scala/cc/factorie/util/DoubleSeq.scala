@@ -133,7 +133,7 @@ trait DoubleSeq {
     }
     b.append(end); b
   }
-  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString
+  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString()
   def mkString(sep:String): String = mkString("", sep, "")
   def mkString: String = mkString(" ")
 }
@@ -320,7 +320,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   final def /=(d:Double): Unit = *=(1.0/d)
   def *=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { *=(i, ds(i)); i += 1 }}
   def /=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { /=(i, ds(i)); i += 1 }}
-  def abs: Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
+  def abs(): Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
   def normalize(): Double = { val n = oneNorm; /=(n); n }
   def oneNormalize(): Double = normalize()
   def twoNormalize(): Double = { val n = twoNorm; /=(n); n }

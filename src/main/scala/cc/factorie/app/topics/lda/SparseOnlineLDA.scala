@@ -7,14 +7,7 @@ import cc.factorie.directed._
 import cc.factorie.la.DenseTensor1
 import java.io.{File, PrintWriter}
 import scala.util.matching.Regex
-
-/**
- * Created with IntelliJ IDEA.
- * User: vineet
- * Date: 6/23/13
- * Time: 6:03 PM
- * To change this template use File | Settings | File Templates.
- */
+import cc.factorie.variable._
 
 /* Implementation for Sparse Stochastic inference by Mimno et.al */
 class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
@@ -75,7 +68,7 @@ class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
   var currChanges = 0
 
   def approximateExpDigamma(x: Double) = {
-    var correction = 0.0;
+    var correction = 0.0
     var y = x
 
     while (y < 5.0) {
@@ -303,7 +296,7 @@ class SparseOnlineLDA(val wordDomain: CategoricalDomain[String],
 
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).value.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).value.massTotal.toInt)
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d".format(topicIndex, topicWords(topicIndex, numWords).mkString(" "), phis(topicIndex).value.massTotal.toInt)
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def sortAndPrune(cutoff: Double) {

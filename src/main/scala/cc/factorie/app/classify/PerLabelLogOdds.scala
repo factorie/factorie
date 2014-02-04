@@ -1,6 +1,7 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
+import cc.factorie.variable._
 
 /** Calculate the weighted log-odds ratio:
     p(w|c) * log(p(w|c)/p(w|!c)) for each word w and label c.
@@ -8,8 +9,8 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class PerLabelLogOdds[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], labelToFeatures:L=>F) {
-  val instanceDomain: DiscreteTensorDomain = labelToFeatures(labels.head).domain
+class PerLabelLogOdds[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], labelToFeatures:L=>F) {
+  val instanceDomain: VectorDomain = labelToFeatures(labels.head).domain
   val featureDomain: DiscreteDomain = instanceDomain.dimensionDomain
   val labelDomain: DiscreteDomain = labels.head.domain
   private val logodds = Array.ofDim[Double](labelDomain.size, featureDomain.size)

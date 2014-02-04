@@ -28,17 +28,16 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
   def this(name:String, s:String) = this (name, new File(s))
   /**  Try to parse the level string into an Int from System.getenv, but if it fails to parse, do nothing.  
        Return true if level was set, false otherwise. */
-  setLevelFromEnv
-  def setLevelFromEnv: Boolean = {
+  setLevelFromEnv()
+  def setLevelFromEnv(): Boolean = {
     val envLevelString = java.lang.System.getenv(name+".level")
-    if (envLevelString != null) try { level = envLevelString.toInt } catch { case _: Throwable => return false }
-    else return false
-    return true
+    if (envLevelString != null) try { level = envLevelString.toInt; true } catch { case _: Throwable => false }
+    else false
   }
   def setLevel(theLevel:Int): Unit = level = theLevel
   if (Logger.loggerMap.contains(name)) throw new Error("There is already a logger named "+name)
   Logger.loggerMap(name) = this
-  var printWriter = new PrintWriter(outputStream);
+  var printWriter = new PrintWriter(outputStream)
   protected def out = printWriter
   def close() = out.close()
   def verbosePrefix(theLevel: Int): String = "["+theLevel+"] ("+Logger.sourceDescription(2)+") "
@@ -85,8 +84,8 @@ object Logger {
   val TRACE = 100
 
   @noinline protected def sourceDescription(framesUp:Int): String = {
-    val e = new Exception().getStackTrace()(framesUp+1);
-    e.getFileName() + ":" + e.getLineNumber();
+    val e = new Exception().getStackTrace()(framesUp+1)
+    e.getFileName + ":" + e.getLineNumber
   }
 
 }

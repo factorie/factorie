@@ -18,7 +18,10 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.directed.Discrete
+import cc.factorie.variable.{DenseProportions1, ProportionsVariable, DiscreteVariable, DiscreteDomain}
+import cc.factorie.infer.Maximize
 
+/** A simple example of generating data by rolling a die, then re-estimating the parameters of the die from that data. */
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain(numSides)
@@ -30,16 +33,7 @@ object MultinomialDemo {
     val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .15, .05)))
     // println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
-    Maximize(die, model)
-    // println("Est  distribution "+die)
-
-    /*
-    val r = new scala.util.Random
-    val die2 = new GrowableDenseCountsProportions
-    val rolls2 = for (i <- 1 to 1000) yield new Roll ~ Discrete(die2) := r.nextInt(6) 
-    Maximize(die2)
-    println("Die2 "+die2)
-    */
+    Maximize(die)
   }
 
 }

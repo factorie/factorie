@@ -34,15 +34,17 @@ trait Lexicon {
   /** The string lemmatizer that simplifies lexicon entries and queries before searching for a match.
       For example, a common lemmatizer is one that lowercases all strings. */
   def lemmatizer:Lemmatizer
-  /** Is this single word in the lexicon.  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
+  /** Is this single word in the lexicon?  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
   def containsLemmatizedWord(word:String): Boolean
   // For querying the lexicon
-  /** Is this single word in the lexicon.  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
+  /** Is this single word in the lexicon?  The input String will not be processed by tokenizer, but will be processed by the lemmatizer. */
   def containsWord(word:String): Boolean = containsLemmatizedWord(lemmatizer.lemmatize(word))
-  /** Is the pre-tokenized sequence of words in the lexicon.  Each of the input words is processed by the lemmatizer. */
+  /** Is the pre-tokenized sequence of words in the lexicon?  The input words are expected to already be processed by the lemmatizer. */
   def containsLemmatizedWords(words: Seq[String]): Boolean
+  /** Is the pre-tokenized sequence of words in the lexicon?  Each of the input words will be processed by the lemmatizer. */
   def containsWords(words: Seq[String]): Boolean = containsLemmatizedWords(words.map(lemmatizer.lemmatize(_)))
-  /** Is this Token (or more generally Observation) a member of a phrase in the lexicon (including single-word phrases).
+  /** Is this Token (or more generally Observation) a member of a phrase in the lexicon (including single-word phrases)?
+      The query.string will be processed by the lemmatizer.
       For example if query.string is "New" and query.next.string is "York" and the two-word phrase "New York" is in the lexicon, 
       then this method will return true.  But if query.next.string is "shoes" (and "New shoes" is not in the lexicon) this method will return false. */
   def contains[T<:Observation[T]](query:T): Boolean
@@ -152,7 +154,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
     }
     result
   }
-  val contents = new HashMap[String,List[LexiconToken]];
+  val contents = new HashMap[String,List[LexiconToken]]
   private def +=(t:LexiconPhraseToken): Unit = {
     val key = lemmatizer.lemmatize(t.string)
     val old: List[LexiconToken] = contents.getOrElse(key, Nil)
@@ -205,7 +207,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         if (te.string != lemmatizer.lemmatize(tq.string)) result = false
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) result = false
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && result == true)   
+      } while (te != null && tq != null && result)
       if (result && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return true
@@ -234,7 +236,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         if (te.string != lemmatizer.lemmatize(tq.string)) result = false
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) result = false
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && result == true)   
+      } while (te != null && tq != null && result)
       if (result && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return true
@@ -260,7 +262,7 @@ class PhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie
         //if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) found = false
         len += 1
         te = te.next; tq = tq.next
-      } while (te != null && tq != null && found == true)   
+      } while (te != null && tq != null && found)
       if (found && te == null) {
         //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
         return len

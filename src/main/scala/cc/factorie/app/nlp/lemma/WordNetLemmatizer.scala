@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.lemma
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PTBPosLabel,PTBPosDomain}
+import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
 import java.io.{FileInputStream,InputStream}
 import cc.factorie.util.ClasspathURL
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -50,13 +50,13 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   )
 
   for ((f, pos) <- Seq(("adj", ADJC), ("adv", ADVB), ("noun", NOUN), ("verb", VERB))) {
-    for (line <- sourceFactory(f + ".exc").getLines) {
+    for (line <- sourceFactory(f + ".exc").getLines()) {
       val fields = line.split(" ")
       if (fields(0).indexOf('_') == -1) // For now skip multi-word phrases (indicated by underscore in WordNet)
         exceptionMap(pos)(fields(0)) = fields(1)
     }
 
-    for (line <- sourceFactory("index." + f).getLines) {
+    for (line <- sourceFactory("index." + f).getLines()) {
       val word = line.split(" ")(0)
       if (!word.contains('_')) wordNetWords(pos) += word.toLowerCase
     }
@@ -65,9 +65,9 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
   def lemma(raw:String, partOfSpeech:String): String = {
     val rawlc = raw.toLowerCase
     val pos = {
-      if (PTBPosDomain.isAdjective(partOfSpeech)) ADJC
-      else if (PTBPosDomain.isNoun(partOfSpeech)) NOUN
-      else if (PTBPosDomain.isVerb(partOfSpeech)) VERB
+      if (PennPosDomain.isAdjective(partOfSpeech)) ADJC
+      else if (PennPosDomain.isNoun(partOfSpeech)) NOUN
+      else if (PennPosDomain.isVerb(partOfSpeech)) VERB
       else ADVB
     }
 
@@ -76,16 +76,16 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     else if (pos == ADVB && rawlc.endsWith("ly")) rawlc.dropRight(2)  /* this rule does not appear in wordnet */
     else if (pos == ADVB) rawlc                                       /* wordnet contains many unlemmatized adverbs */
     else if (rawlc.length <= 2) rawlc
-    else if (PTBPosDomain.isNoun(pos) && rawlc.endsWith("ss")) rawlc
-    else if (PTBPosDomain.isNoun(pos) && rawlc.endsWith("ful")) this.wordbase(rawlc.dropRight(3), NOUN) + "ful"
+    else if (PennPosDomain.isNoun(pos) && rawlc.endsWith("ss")) rawlc
+    else if (PennPosDomain.isNoun(pos) && rawlc.endsWith("ful")) this.wordbase(rawlc.dropRight(3), NOUN) + "ful"
     else wordbase(rawlc, pos)
   }
-  def process1(document:Document): Document = {
-    for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posLabel.categoryValue))
+  def process(document:Document): Document = {
+    for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posTag.categoryValue))
     document
   }
   override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; l.value }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PTBPosLabel])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
   def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
 
   private def wordbase(w: String, pos: String): String = {

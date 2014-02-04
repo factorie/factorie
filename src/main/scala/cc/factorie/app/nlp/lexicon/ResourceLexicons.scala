@@ -52,14 +52,14 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     
     object Demonym extends PhraseLexicon(dir+"/demonyms") {
       try {
-        for (line <- sourceFactory(dir + "/demonyms.txt").getLines; entry <- line.trim.split("\t")) this += entry
+        for (line <- sourceFactory(dir + "/demonyms.txt").getLines(); entry <- line.trim.split("\t")) this += entry
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
     }
     
     // Map from Chilean->Chile and Chileans->Chile
     object DemonymMap extends scala.collection.mutable.HashMap[String,String] {
       try {
-        for (line <- sourceFactory(dir + "/demonyms.txt").getLines) {
+        for (line <- sourceFactory(dir + "/demonyms.txt").getLines()) {
           val entries = line.trim.split("\t")
           val value = entries.head
           entries.foreach(e => this.update(e, value))

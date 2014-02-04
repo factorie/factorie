@@ -33,43 +33,18 @@ class TestExamples {
     dir.getAbsolutePath+"2"
   }
 
-  @Test def testCards4() {
-    cc.factorie.tutorial.Cards4.main(emptyArgs)
-  }
-
   val dummyNERFile = dummyFileWithContents("train", "A NN C I-PER\nA NNS D O\nA NNP C I-LOC")
 
-  @Test def testChainNer1() {
-    cc.factorie.tutorial.ChainNER1a.main(Array(dummyNERFile, dummyNERFile))
-  }
-
   @Test def testChainNER1ML() {
-    cc.factorie.tutorial.ChainNER1ML.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER2() {
-    cc.factorie.tutorial.ChainNER2.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER2b() {
-    cc.factorie.tutorial.ChainNER2b.main(Array(dummyNERFile, dummyNERFile))
-  }
-
-  @Test def testChainNER4() {
-    cc.factorie.tutorial.ChainNER4.main(Array(dummyNERFile, dummyNERFile))
+    cc.factorie.tutorial.ChainNERExample.main(Array(dummyNERFile, dummyNERFile))
   }
 
   @Test def testCoref1() {
     cc.factorie.tutorial.Coref1.main(emptyArgs)
   }
 
-  @Test def testCoref4() {
-    // Uncomment after removing mongo dependency
-    // cc.factorie.example.Coref4.main(emptyArgs)
-  }
-
   @Test def testCorefMentions() {
-    cc.factorie.tutorial.CorefMentionsDemo.main(emptyArgs)
+    cc.factorie.tutorial.CorefMentions.main(emptyArgs)
   }
 
   @Test def testDirichletDemo() {
@@ -81,18 +56,6 @@ class TestExamples {
 
   @Test def testDocumentClassifier1() {
     cc.factorie.tutorial.DocumentClassifier1.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier2() {
-    cc.factorie.tutorial.DocumentClassifier2.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier3() {
-    cc.factorie.tutorial.DocumentClassifier3.main(Array(dummyDir1, dummyDir2))
-  }
-
-  @Test def testDocumentClassifier4() {
-    cc.factorie.tutorial.DocumentClassifier4.main(Array(dummyDir1, dummyDir2))
   }
 
   val posFile = dummyFileWithContents("POS", "\nNN WORD=Hello\nNN WORD=World\n")
@@ -121,32 +84,21 @@ class TestExamples {
     cc.factorie.tutorial.Grid.main(emptyArgs)
   }
 
-  @Test def testLDA2() {
-    cc.factorie.tutorial.LDA2.main(Array(dummyDir1))
+  @Test def testSimpleLDA() {
+    cc.factorie.tutorial.SimpleLDA.main(Array(dummyDir1))
   }
 
-  @Test def testLDA3() {
-    cc.factorie.tutorial.LDA3.main(Array(dummyDir1))
+  @Test def testEfficientLDA() {
+    cc.factorie.tutorial.EfficientLDA.main(Array(dummyDir1))
   }
 
-  val saxDir = dummyDirectoryWithFileWithContents("saxDir", "<abstract>Hello</abstract><year>2012</year>", ext=".xml")
-
-  @Test def testLDA4() {
-    // TODO: uncomment this after figuring out the specific XML format for fuse docs
-    // cc.factorie.example.LDA4.main(Array(saxDir))
-  }
-
-  @Test def testLDA5() {
-    cc.factorie.tutorial.LDA5.main(Array(dummyDir1, dummyDir2))
+  @Test def testTopicsOverTime() {
+    cc.factorie.tutorial.TopicsOverTime.main(Array(dummyDir1, dummyDir2))
   }
 
   @Test def testMultinomialDemo() {
     cc.factorie.tutorial.MultinomialDemo.main(emptyArgs)
   }
-
-  //@Test def testPerceptronPOS() {
-  //  cc.factorie.example.PerceptronPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))
-  //}
 
   @Test def testTutorial10() {
     cc.factorie.tutorial.TutorialVariables.main(emptyArgs)
@@ -169,22 +121,14 @@ class TestExamples {
   }
 
   @Test def testTutorial40() {
-    cc.factorie.tutorial.Tutorial060Learning.main(emptyArgs)
+    cc.factorie.tutorial.Tutorial60Learning.main(emptyArgs)
   }
 
   @Test def testTutorial040() {
     cc.factorie.tutorial.Tutorial090ParallelismAndHyperparameters.main(emptyArgs)
   }
 
-  @Test def testVarArgs() {
-    cc.factorie.tutorial.VarArgsDemo.main(emptyArgs)
-  }
-
   @Test def testWordSegmenter() {
-    cc.factorie.tutorial.WordSegmenterDemo.main(emptyArgs)
-  }
-
-  @Test def testWordSegmenter2() {
-    cc.factorie.tutorial.WordSegmenterDemo2.main(emptyArgs)
+    cc.factorie.tutorial.WordSegmenter.main(emptyArgs)
   }
 }

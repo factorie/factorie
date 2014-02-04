@@ -32,7 +32,7 @@ package object maths {
     def /=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) / d; i += 1 } }
     def incr(s:A, t:A): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i); i += 1 } }
     def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i) * factor; i += 1 } }
-    def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; return false }
+    def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; false }
     def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * t(i); i += 1 }; result }
     /** Divide each element of the array by the sum of the elements. */
     def normalize(s:A): Double = { val sum = oneNorm(s); var i = 0; while (i < s.length) { s(i) /= sum; i += 1 }; sum }
@@ -383,14 +383,46 @@ package object maths {
    *  we would if we calculated <tt>e^a</tt> or <tt>e^b</tt> directly.
    */
   def sumLogProb(a: Double, b: Double) =   {
-    if (a == Double.NegativeInfinity) 
+    if (a.isNegInfinity)
       b
-    else if (b == Double.NegativeInfinity)
+    else if (b.isNegInfinity)
       a
     else if (b < a)
       a + math.log1p(math.exp(b-a))
     else
       b + math.log1p(math.exp(a-b))
+  }
+
+  def sumLogProbs(vals: Array[Double]): Double = {
+    val LOGTOLERANCE = 30.0
+
+    val len = vals.length
+    var max = vals(0)
+    var maxIdx = 0
+    var i = 1
+    while (i < len) {
+      val v = vals(i)
+      if (v > max) {
+        max = v
+        maxIdx = i
+      }
+      i += 1
+    }
+    var anyAdded = false
+    var intermediate = 0.0
+    val cutoff = max - LOGTOLERANCE
+    i = 0
+    while (i < len) {
+      if (vals(i) >= cutoff && i != maxIdx) {
+        anyAdded = true
+        intermediate += math.exp(vals(i) - max)
+      }
+      i += 1
+    }
+    if (anyAdded)
+      max + math.log1p(intermediate)
+    else
+      max
   }
 
   def sumLogProbs(vals: DoubleSeq): Double = {
@@ -426,7 +458,7 @@ package object maths {
   }
 
   def subtractLogProb(a: Double, b: Double) =
-    if (b == Double.NegativeInfinity) a else a + math.log (1 - math.exp(b-a))
+    if (b.isNegInfinity) a else a + math.log (1 - math.exp(b-a))
 
 // Poly
 

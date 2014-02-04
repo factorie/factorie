@@ -6,6 +6,7 @@ import cc.factorie._
 import java.util.concurrent.{ExecutorService, Executors, Callable}
 import util._
 import util.FastLogging
+import cc.factorie.model.WeightsSet
 
 /**
  * User: apassos
@@ -61,7 +62,6 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
  * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
  */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
-  var gradientAccumulator = new SmartGradientAccumulator
   var iteration = 0
   val valueAccumulator = new LocalDoubleAccumulator
   override def processExamples(examples: Iterable[Example]): Unit = {
@@ -69,8 +69,12 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
     iteration += 1
     var valuesSeenSoFar = 0.0
     var timePerIteration = 0L
-    examples.zipWithIndex.foreach({ case (example, i) => {
-      if ((i % logEveryN == 0) && (i != 0)) {
+    var i = 0
+    val iter = examples.iterator
+    while (iter.hasNext) {
+      val example = iter.next()
+      val gradientAccumulator = new SmartGradientAccumulator
+      if ((logEveryN != 0) && (i % logEveryN == 0) && (i != 0)) {
         logger.info(TrainerHelpers.getOnlineTrainerStatus(i, logEveryN, timePerIteration, valuesSeenSoFar))
         valuesSeenSoFar = 0.0
         timePerIteration = 0
@@ -82,7 +86,8 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
       valuesSeenSoFar += valueAccumulator.value
       optimizer.step(weightsSet, gradientAccumulator.getMap, valueAccumulator.value)
       timePerIteration += System.currentTimeMillis() - t0
-    }})
+      i+=1
+    }
   }
   def isConverged = iteration >= maxIterations
 }
@@ -113,7 +118,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
     gradientAccumulator.l.tensorSet.zero()
     valueAccumulator.l.value = 0
     val startTime = System.currentTimeMillis
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
+    util.Threading.parForeach(examples.toSeq, nThreads)(_.accumulateValueAndGradient(valueAccumulator, gradientAccumulator))
     val ellapsedTime = System.currentTimeMillis - startTime
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.l.tensorSet.oneNorm, valueAccumulator.l.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.l.value)
@@ -124,13 +129,13 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
 // This parallel batch trainer keeps a per-thread gradient to which examples add weights.
 // It is useful when there is a very large number of examples, processing each example is
 // fast, and the weights are not too big, as it has to keep one copy of the weights per thread.
-class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
+class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, numThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer with FastLogging {
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal(new LocalWeightsMapAccumulator(weightsSet.blankDenseMap))
     val valueAccumulator = new ThreadLocal(new LocalDoubleAccumulator)
     val startTime = System.currentTimeMillis
-    examples.par.foreach(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
+    util.Threading.parForeach(examples, numThreads)(example => example.accumulateValueAndGradient(valueAccumulator.get, gradientAccumulator.get))
     val grad = gradientAccumulator.instances.reduce((l, r) => { l.combine(r); l }).tensorSet
     val value = valueAccumulator.instances.reduce((l, r) => { l.combine(r); l }).value
     val ellapsedTime = System.currentTimeMillis - startTime
@@ -180,7 +185,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     accumulatedValue = 0.0
     if (logEveryN == -1) logEveryN = math.max(100, examples.size / 10)
     iteration += 1
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
 
   def isConverged = iteration >= maxIterations
@@ -225,6 +230,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
 
   private class LockingTensor1(val base: Tensor1) extends Tensor1 with LockingTensor {
     def dim1 = base.dim1
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor2(val base: Tensor2) extends Tensor2 with LockingTensor {
     def dim1 = base.dim1
@@ -232,6 +238,8 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     override def *(other: Tensor1) = lock.withReadLock(base * other)
+    override def leftMultiply(other: Tensor1) = lock.withReadLock(base leftMultiply other)
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor3(val base: Tensor3) extends Tensor3 with LockingTensor {
     def dim1 = base.dim1
@@ -240,6 +248,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain1 = lock.withReadLock(base.activeDomain1)
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     def activeDomain3 = lock.withReadLock(base.activeDomain3)
+    override def copy = lock.withReadLock { base.copy }
   }
   private class LockingTensor4(val base: Tensor4) extends Tensor4 with LockingTensor {
     def dim1 = base.dim1
@@ -250,6 +259,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     def activeDomain2 = lock.withReadLock(base.activeDomain2)
     def activeDomain3 = lock.withReadLock(base.activeDomain3)
     def activeDomain4 = lock.withReadLock(base.activeDomain4)
+    override def copy = lock.withReadLock { base.copy }
   }
 }
 
@@ -289,7 +299,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
     t0 = System.currentTimeMillis()
     examplesProcessed = 0
     accumulatedValue = 0.0
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
   def isConverged = iteration >= maxIterations
 }
@@ -336,44 +346,19 @@ class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimize
     t0 = System.currentTimeMillis()
     examplesProcessed = 0
     accumulatedValue = 0.0
-    TrainerHelpers.parForeach(examples.toSeq, nThreads)(processExample(_))
+    util.Threading.parForeach(examples.toSeq, nThreads)(processExample(_))
   }
   def isConverged = iteration >= maxIterations
 }
 
 
 object TrainerHelpers {
-  import scala.collection.JavaConversions._
-
   def getTimeString(ms: Long): String =
     if (ms > 120000) f"${ms/60000}%d minutes" else if (ms> 5000) f"${ms/1000}%d seconds" else s"$ms milliseconds"
   def getBatchTrainerStatus(gradNorm: => Double, value: => Double, ms: => Long) =
     f"GradientNorm: $gradNorm%-10g  value $value%-10g ${getTimeString(ms)}%s"
   def getOnlineTrainerStatus(examplesProcessed: Int, logEveryN: Int, accumulatedTime: Long, accumulatedValue: Double) =
     f"$examplesProcessed%20s examples at ${1000.0*logEveryN/accumulatedTime}%5.2f examples/sec. Average objective: ${accumulatedValue / logEveryN}%5.5f"
-
-  def parForeach[In](xs: Iterable[In], numThreads: Int)(body: In => Unit): Unit = withThreadPool(numThreads)(p => parForeach(xs, p)(body))
-  def parForeach[In](xs: Iterable[In], pool: ExecutorService)(body: In => Unit): Unit = {
-    val futures = xs.map(x => javaAction(body(x)))
-    pool.invokeAll(futures).toSeq
-  }
-
-  def parMap[In, Out](xs: Iterable[In], numThreads: Int)(body: In => Out): Iterable[Out] = withThreadPool(numThreads)(p => parMap(xs, p)(body))
-  def parMap[In, Out](xs: Iterable[In], pool: ExecutorService)(body: In => Out): Iterable[Out] = {
-    val futures = xs.map(x => javaClosure(body(x)))
-    pool.invokeAll(futures).toSeq.map(_.get())
-  }
-
-  def javaAction(in: => Unit): Callable[Object] = new Callable[Object] { def call(): Object = {in; null} }
-  def javaClosure[A](in: => A): Callable[A] = new Callable[A] { def call(): A = in }
-
-  def newFixedThreadPool(numThreads: Int) = Executors.newFixedThreadPool(numThreads)
-  def withThreadPool[A](numThreads: Int)(body: ExecutorService => A) = {
-    val pool = newFixedThreadPool(numThreads)
-    val res = body(pool)
-    pool.shutdown()
-    res
-  }
 }
 
 object Trainer {
@@ -390,13 +375,7 @@ object Trainer {
    */
   def train(parameters: WeightsSet, examples: Seq[Example], maxIterations: Int, evaluate: () => Unit, optimizer: GradientOptimizer, useParallelTrainer: Boolean, useOnlineTrainer: Boolean, logEveryN: Int = -1, nThreads: Int = Runtime.getRuntime.availableProcessors(), miniBatch: Int)(implicit random: scala.util.Random) {
     parameters.keys.foreach(_.value) // make sure we initialize the values in a single thread
-    optimizer match {
-      case o: AdaGradRDA if !o.initialized => o.initializeWeights(parameters)
-      case o: ParameterAveraging => o.unSetWeightsToAverage(parameters)
-      case o: L2RegularizedConstantRate if !o.initialized => o.initializeWeights(parameters)
-      case o: Pegasos if !o.initialized => o.initializeWeights(parameters)
-      case _ =>
-    }
+    optimizer.initializeWeights(parameters)
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
@@ -412,10 +391,7 @@ object Trainer {
       }
     } finally {
       trainer match { case t: ParallelOnlineTrainer => t.removeLocks(); case _ => }
-      optimizer match {
-        case o: ParameterAveraging => o.setWeightsToAverage(parameters)
-        case _ =>
-      }
+      optimizer.finalizeWeights(parameters)
     }
   }
 

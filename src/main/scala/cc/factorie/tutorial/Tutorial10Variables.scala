@@ -9,6 +9,7 @@ package cc.factorie.tutorial
 
 import org.junit.Assert._
 import cc.factorie._
+import cc.factorie.variable._
 
 object TutorialVariables {
   def main(args:Array[String]): Unit = {
@@ -38,16 +39,19 @@ object TutorialVariables {
     assert(i === j)
     assert(!(i == j))
 
+    // The Scala type of a variable's value is represented by the variable class' inner type `Value`....
+
+
     // We can also track changes with a DiffList and undo them. // TODO Move this material about DiffLists to a separate Tutorial file.
     val d = new DiffList
     i.set(3)(d) // This method will create a Diff object and append it to the DiffList d.
     println("After i.set(2), variable i has value "+i.value)
     assertEquals(3, i.value)
-    d.undo
+    d.undo()
     println("After DiffList.undo, variable i has value "+i.value)
     assertEquals(2, i.value)
     // A Diff and a DiffList can be re-done also
-    d.redo
+    d.redo()
     println("After DiffList.redo, variable i has value "+i.value)
     assertEquals(3, i.value)
     
@@ -100,7 +104,7 @@ object TutorialVariables {
      **/
 
     // cc.factorie.Var* are traits that capture various abstractions.
-    val mv: MutableVar[String] = s // All MutableVar have a set() method and a := method.
+    val mv: MutableVar = s // All MutableVar have a set() method and a := method.
     //val cv: VarWithConstantValue = s // This would cause a compilation error.
     
     // cc.factorie.Variable* are classes, all of which are mutable
@@ -220,7 +224,7 @@ object TutorialVariables {
     println("bv integer value is "+bv.intValue)
     
     // TODO FeatureVectors
-    val fvd = new CategoricalTensorDomain[String] { def dimensionsDomain = cd }
+    val fvd = new CategoricalVectorDomain[String] { def dimensionsDomain = cd }
     class MyFeatureVector extends BinaryFeatureVectorVariable[String] { def domain = fvd }  
 
     /*&
@@ -289,8 +293,8 @@ object TutorialVariables {
     
     // While a Variable objects holds a value, values for variable may also be stored in an Assignment.
     val as = new HashMapAssignment
-    as(i) = 55
-    as(j) = 66
+    as.update[IntegerVariable](i, 55)
+    as.update[IntegerVariable](j,  66)
     // This allows some code to consider different values for a variable which changing the "global" value stored in the variable.
     //  (Helpful for multi-threaded code, among other reasons.)
     

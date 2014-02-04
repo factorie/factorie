@@ -4,12 +4,13 @@ import java.io.{PrintWriter, PrintStream}
 import cc.factorie._
 import cc.factorie.util.Cubbie
 import collection.mutable.ArrayBuffer
+import cc.factorie.variable.{CategoricalVectorDomain, CategoricalDomain}
 
 
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require
 // preexisting tensors to be passed in.. Currently this is quite slow. -luke
 class LabelListCubbie(
-  featuresDomain: CategoricalTensorDomain[String],
+  featuresDomain: CategoricalVectorDomain[String],
   labelDomain: CategoricalDomain[String],
   isBinary: Boolean)
   extends Cubbie {
@@ -63,7 +64,7 @@ object Serialize {
       out.append(labelStr)
     }
   }
-  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalTensorDomain[String], labelDomain: CategoricalDomain[String]): ArrayBuffer[Label] = {
+  def readInstancesSVMLight(instancesString: String, featuresDomain: CategoricalVectorDomain[String], labelDomain: CategoricalDomain[String]): ArrayBuffer[Label] = {
     val instances = new ArrayBuffer[Label]()
     var i = 0
     for (rawInstStr <- instancesString.split("(\r\n)|\n")) {

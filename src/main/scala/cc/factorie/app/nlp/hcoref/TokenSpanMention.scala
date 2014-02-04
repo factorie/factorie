@@ -20,6 +20,8 @@ import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
 
 trait TokenSpanMention extends TokenSpan with Entity
+
+
 abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
   // Unfortunately we can't inherit from both TokenSpanCubbie and EntityCubbie
   val entityRef = RefSlot("entityRef", () => newEntityCubbie)

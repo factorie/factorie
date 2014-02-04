@@ -5,6 +5,7 @@ import org.junit.Assert._
 import cc.factorie._
 import la._
 import optimize.OnlineTrainer
+import cc.factorie.variable.DiscreteDomain
 
 /**
  * User: apassos
@@ -23,6 +24,7 @@ class TestWSabie {
     n += 2
     val e = new WSabie.WSabieExample(m, q, p, n)
     val trainer = new OnlineTrainer(m.parameters)
+    trainer.optimizer.initializeWeights(m.parameters)
     while (!trainer.isConverged) {
       trainer.processExamples(Seq(e))
     }

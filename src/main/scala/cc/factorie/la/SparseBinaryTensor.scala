@@ -64,8 +64,8 @@ trait ArraySparseBinaryTensor extends SparseBinaryTensor with cc.factorie.util.P
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
   // TODO: can we add efficient dot against other sparse binary tensors? -luke
   override def dot(v: DoubleSeq): Double = v match {
-    case t: SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
-    case t: SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
+    case t: SingletonBinaryTensor => if (contains(t.singleIndex)) 1.0 else 0.0
+    case t: SingletonTensor => if (contains(t.singleIndex)) t.singleValue else 0.0
     // TODO Any other special cases here?
     case ds: DenseTensor => {
       val len = activeDomainSize

@@ -14,35 +14,24 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
+import cc.factorie.infer._
+import cc.factorie.variable.{Var, DiscreteVar, DiscreteVariable}
+import cc.factorie.model.Model
 
 /** The expectation-maximization method of inference.
     maximizing is the collection of variables that will be maximized.   
     meanField contains the variables for which to get expectations.
     You can provide your own Maximizer; other wise an instance of the default MaximizeSuite is provided. */
-class EMInferencer[V <: Var, W <: DiscreteVar,M<:Model](val maximizing: Iterable[V], val marginalizing: Iterable[W], val infer: Infer[Iterable[W],M], val model: M, val maximizer: Maximize[Iterable[V],(M,Summary)]) {
+class EMInferencer[V<:Var,W<:DiscreteVar,M<:Model](val maximizing:Iterable[V], val marginalizing:Iterable[W], val model:M, val expecter:Infer[Iterable[W],M], val maximizer:Infer[Iterable[V],M]) {
   var summary: Summary = null
-  def eStep: Unit = summary = infer.infer(marginalizing.toSeq, model)
+  def eStep(): Unit = summary = expecter.infer(marginalizing.toSeq, model)
   // The "foreach and Seq(v)" below reflect the fact that in EM we maximize the variables independently of each other 
-  def mStep: Unit = maximizing.foreach(v => maximizer.infer(Seq(v), (model,summary)).setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
+  def mStep(): Unit = maximizing.foreach(v => maximizer.infer(Seq(v), model, summary).setToMaximize(null)) // This "get" will fail if the Maximizer was unable to handle the request
   def process(iterations:Int): Unit = for (i <- 0 until iterations) { eStep; mStep } // TODO Which should come first?  mStep or eStep?
-  def process: Unit = process(100) // TODO Make a reasonable convergence criteria
+  def process(): Unit = process(100) // TODO Make a reasonable convergence criteria
 }
 
 object EMInferencer {
-  def apply[V <: Var](maximizing: Iterable[V], varying: Iterable[DiscreteVariable], model: Model, maximizer: Maximize[Iterable[V],(Model,Summary)] = Maximize, infer: Infer[Iterable[DiscreteVar],Model] = InferByBPTreeSum) =
-    new EMInferencer(maximizing, varying, infer, model, maximizer)
-}
-
-object InferByEM extends Infer[(Iterable[DiscreteVar],Iterable[DiscreteVar]),Model] {
-  def infer(variables:(Iterable[DiscreteVar],Iterable[DiscreteVar]), model:Model) = {
-    val inferencer = new EMInferencer[DiscreteVar,DiscreteVar,Model](variables._1, variables._2, InferByBPTreeSum, model, Maximize)
-    inferencer.process
-    inferencer.summary
-  }
-  def apply(maximize: Iterable[Var], varying: Iterable[DiscreteVariable], model: Model, maximizer: Maximize[Iterable[Var],(Model,Summary)]): Summary = {
-    val inferencer = new EMInferencer(maximize, varying, InferByBPTreeSum, model, maximizer)
-    inferencer.process
-    inferencer.summary
-  }
+  def apply[V<:Var](maximizing:Iterable[V], varying:Iterable[DiscreteVariable], model:Model, maximizer:Maximize[Iterable[V],Model] = Maximize, infer:Infer[Iterable[DiscreteVar],Model] = InferByBPTree) =
+    new EMInferencer(maximizing, varying, model, infer, maximizer)
 }

@@ -15,6 +15,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
+import cc.factorie.variable.DoubleVar
 
 // TODO Consider creating PostiveDouble, and then Gamma extends 
 

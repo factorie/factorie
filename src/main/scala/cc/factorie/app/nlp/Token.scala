@@ -16,13 +16,18 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
-// TODO Why are stringStart and stringEnd "var" instead of "val"? -akm
 
-class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
+/** A word in a document, covering a substring of the Document.
+    A Token is also a ChainLink in a Chain sequence; thus Tokens have "next" and "prev" methods returning neighboring Tokens.
+    Token constructors that include a Section automatically add the Token to the Section (which is the Chain).
+    Token constructors that include a Sentence automatically add the Token to the Sentence and its Section.
+    Token constructors that include a tokenString automatically append the tokenString to the Document's string. */
+class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
   /** Create a Token and also append it to the list of Tokens in the Section.
       There must not already be Tokens in the document with higher stringStart indices.
@@ -32,24 +37,21 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     assert(sec ne null)
     assert(sec.document ne null)
     assert(sec.document.annotators ne null)
-    if (!sec.document.annotators.contains(classOf[Token]))
-      sec.document.annotators(classOf[Token]) = null
+    // if (!sec.document.annotators.contains(classOf[Token])) sec.document.annotators(classOf[Token]) = null // Is this really necessary?  Can we remove it for efficiency? -akm
     sec += this
   }
   /** Token constructions that defaults to placing it in the special Section that encompasses the whole Document. */
   def this(doc:Document, s:Int, e:Int) = this(doc.asSection, s, e)
   def this(sentence:Sentence, s:Int, e:Int) = {
-    this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
+    this(sentence.section, s, e)
     if (sentence.section.sentences.last ne sentence) throw new Error("Can only append Token to the last Sentence of the Document.")
-    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator
+    if (!sentence.document.annotators.contains(classOf[Token])) sentence.document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     _sentence = sentence
-    // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
     this(doc.asSection, doc.stringLength, doc.stringLength + tokenString.length)
     doc.appendString(tokenString)
-    //doc.appendString(" ") // TODO Make this configurable
   }
   def this(s:Sentence, tokenString:String) = {
     this(s.document, tokenString)
@@ -57,10 +59,11 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }
-  /** Just an alias for this.chain */
+  /** Just an alias for the "chain" method. */
   def section: Section = chain
+  /** The Document containing this Token's Section. */
   def document: Document = chain.document
-  /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
+  /** Return the substring of the original Document string covered by the character indices stringStart to stringEnd.
       This may be different than the String returned by this.string if the TokenString attribute has been set. 
       (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
   def docSubstring = document.string.substring(stringStart, stringEnd)
@@ -78,8 +81,8 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
 
   // Common attributes, will return null if not present
-  def posLabel = attr[cc.factorie.app.nlp.pos.PTBPosLabel]
-  def nerLabel = attr[cc.factorie.app.nlp.ner.BioConllNerLabel]
+  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag]
+  def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
@@ -94,47 +97,60 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(positionInSentence, label.intValue)
   
   // Sentence methods
-  private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
-  def sentence = {
-    if (_sentence eq null) _sentence = document.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
+  private[nlp] var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
+  def sentence: Sentence = {
+    if (_sentence eq null) _sentence = section.sentences.find(_.contains(this)).getOrElse(null) // TODO Make this search more efficient
     _sentence
   }
-  def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
+  def sentenceHasNext: Boolean = (sentence ne null) && position+1 < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
   def sentencePrev: Token = if (sentenceHasPrev) prev else null
   def isInSentence: Boolean = sentence ne null
   def isSentenceStart: Boolean = (sentence ne null) && sentence.start == position
-  def isSentenceEnd: Boolean = (sentence ne null) && sentence.end == position
+  def isSentenceEnd: Boolean = (sentence ne null) && sentence.end-1 == position
   
-
-  // Span methods
-  def inSpan: Boolean = chain.hasSpanContaining(position) 
-  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
-  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
-  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
-  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
-  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
-  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
-  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
-  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
-  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
+  // Span methods.  Don't delete these yet.  Still small chance may have a canonical "SpanList" in Section.
+//  def inSpan: Boolean = chain.hasSpanContaining(position) 
+//  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
+//  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
+//  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
+//  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
+//  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
+//  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
+//  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
-  def matches(t2:Token): Boolean = string == t2.string
-  /** Return true if the first  character of the word is upper case. */
+  def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"
+  /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\{Punct}")
+  /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
+  /** Return true if any character of the word is upper case. */
+  def containsUpperCase: Boolean = string.exists(c => java.lang.Character.isUpperCase(c))
   /* Return true if the word contains only digits. */
   def isDigits: Boolean = string.matches("\\d+")
-  /* Return true if the word contains at least one digit. */
+  /** Return true if the word contains at least one digit. */
   def containsDigit: Boolean = string.matches(".*\\d.*")
   /** Return a string that captures the generic "shape" of the original word, 
       mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
       Skip more than 'maxRepetitions' of the same character class. */
-  def wordShape(maxRepetitions:Int): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
+  def wordShape(maxRepetitions:Int = 2): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
+  /** Return all the word's character subsequences of lengths between min and max. */
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
+  /** Return true if the character immediately preceding the start of this token is a whitespace character (such as space, newline, tab, etc) */
+  def hasPrecedingWhitespace: Boolean = stringStart == 0 || java.lang.Character.isWhitespace(document.string(stringStart-1))
+  /** Return true if the character immediately following the end of this token is a whitespace character (such as space, newline, tab, etc) */
+  def hasFollowingWhitespace: Boolean = stringEnd == document.stringLength || java.lang.Character.isWhitespace(document.string(stringEnd))
+  /** Return true if the character immediately preceding the start of this token is a newline.  The beginning of the document counts as a newline. */
+  def followsNewline: Boolean = stringStart == 0 || document.string(stringStart-1) == '\n'
+  /** Return true if the character immediately following the end of this token is a newline.  The end of the document counts as a newline. */
+  def precedesNewline: Boolean = stringEnd == document.stringLength || document.string(stringEnd) == '\n'
+  /** Returns a string representation of this Token object, including the prefix "Token(" and its starting character offset.
+      If instead you want the string contents of the token use the method "string". */
   override def toString = "Token("+stringStart+":"+string+")"
 
 }
@@ -175,12 +191,12 @@ trait TokenStringCubbieSlot extends TokenCubbie {
   // No postFetchToken necessary because "string" isn't needed for Token initialization
 }
 
-trait TokenNerLabelCubbie extends TokenCubbie {
+trait TokenIobConllNerTagCubbie extends TokenCubbie {
   val ner = StringSlot("ner")
-  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.BioConllNerLabel
+  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.IobConllNerTag
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
-    ner := t.nerLabel.categoryValue
+    ner := t.nerTag.categoryValue
     this
   }
   override def fetchToken: Token = {
@@ -190,12 +206,12 @@ trait TokenNerLabelCubbie extends TokenCubbie {
   }
 }
 
-trait TokenPTBPosLabelCubbie extends TokenCubbie {
+trait TokenPennPosTagCubbie extends TokenCubbie {
   val pos = StringSlot("pos")
-  def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PTBPosLabel
+  def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PennPosTag
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
-    pos:= t.posLabel.categoryValue
+    pos:= t.posTag.categoryValue
     this
   }
   override def fetchToken: Token = {
@@ -204,22 +220,3 @@ trait TokenPTBPosLabelCubbie extends TokenCubbie {
     t
   }
 }
-
-
-
-
-
-
-  /** Given some String features read from raw data, in which the first feature is always the word String itself, add some more features.  */
-/*
-  def standardFeatureFunction(inFeatures:Seq[String]): Seq[String] = {
-    val result = new scala.collection.mutable.ArrayBuffer[String]
-    // Assume the first feature is the word
-    result += "W="+inFeatures(0)
-    result += "SHAPE="+wordShape(inFeatures(0), 2)
-    result ++= charNGrams(inFeatures(0), 2, 5)
-    result ++= inFeatures.drop(1)
-    result
-  }
-*/
-

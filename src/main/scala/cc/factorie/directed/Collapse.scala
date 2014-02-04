@@ -16,6 +16,8 @@ package cc.factorie.directed
 
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.model.{Family, Factor}
+import cc.factorie.variable.{Var, ProportionsVar, SortedSparseCountsProportions1, DenseProportions1}
 
 /* Contains various recipes that "collapse" variables
    by setting the value of variables to an internal state 
@@ -51,7 +53,7 @@ object DenseCountsProportionsCollapser extends Collapser {
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
           case f:Dirichlet.Factor => p.value match {
             case pt:DenseProportions1 => pt.masses.+=(f._2.value)
-            case pt:SortedSparseCountsProportions1 if (model.parentFactor(p) eq f) => pt.prior = f._2.value
+            case pt:SortedSparseCountsProportions1 if model.parentFactor(p) eq f => pt.prior = f._2.value
           }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
         }

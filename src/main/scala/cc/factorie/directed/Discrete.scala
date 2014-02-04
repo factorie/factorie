@@ -17,6 +17,10 @@ package cc.factorie.directed
 import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
+import cc.factorie.variable._
+import cc.factorie.model.Model
+import scala.Some
+import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}
 
 
 trait DiscreteGeneratingFactor extends DirectedFactor {
@@ -61,7 +65,8 @@ object MaximizeGeneratedDiscrete extends Maximize[Iterable[DiscreteVariable],Mod
       case _ => None
     }
   }
-  def infer(variables:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+  def infer(variables:Iterable[DiscreteVariable], model:Model, marginalizing:Summary): DiscreteSummary1[DiscreteVariable] = {
+    if (marginalizing ne null) throw new Error("Multivariate case yet implemented.")
     val result = new DiscreteSummary1[DiscreteVariable]
     for (v <- variables) infer(v, model).foreach(result += _)
     result

@@ -22,8 +22,8 @@ class TestTensor extends cc.factorie.util.FastLogging {
     val ts = Seq(new DenseTensor1(dim), new SparseTensor1(dim))
     val r = new Random
     for (i <- 0 until 10) {
-      val index = math.abs(r.nextInt) % dim
-      val value = r.nextDouble
+      val index = math.abs(r.nextInt()) % dim
+      val value = r.nextDouble()
       logger.debug("index="+index+" value="+value)
       ts.foreach(_.+=(index, value))
     }
@@ -31,6 +31,19 @@ class TestTensor extends cc.factorie.util.FastLogging {
     //println(ts.last.toSeq)
     for (i <- 0 until 20) assertEquals(ts.head(i), ts.last(i), 0.001)
     // assert(ts.head.toSeq == ts.last.toSeq)
+  }
+
+  @Test def testOuter(): Unit = {
+    val t1 = new SparseIndexedTensor1(10)
+    val t2 = new SparseIndexedTensor1(10)
+    val t3 = new SparseIndexedTensor1(10)
+
+    t1 += (1, 2.0)
+    t2 += (2, 1.0)
+    t3 += (3, 4.0)
+
+    assert(((t1 outer t2 outer t3) dot (t1 outer t2 outer t3)) == 64)
+    assert(((t1 outer (t2 outer t3)) dot (t1 outer (t2 outer t3))) == 64)
   }
 
   @Test def testBinary(): Unit = {
@@ -73,7 +86,7 @@ class TestTensor extends cc.factorie.util.FastLogging {
     testPairwise(fill) { (t1, t2) =>
       t1 += t2
       t1.zero()
-      assert(t1.forall((0.0).==), "Failed zero check at %s, %s" format (t1.getClass.getName, t2.getClass))
+      assert(t1.forall(0.0.==), "Failed zero check at %s, %s" format (t1.getClass.getName, t2.getClass))
       val t3 = t1.blankCopy
       t3 += t1
       t3 += t2
@@ -85,8 +98,8 @@ class TestTensor extends cc.factorie.util.FastLogging {
     for (c1 <- creators; c2 <- creators) {
       val t1 = fill(c1)
       val t2 = fill(c2)
-      if ((!(t1.isInstanceOf[Tensor2] && t2.isInstanceOf[Tensor3]) &&
-           !(t1.isInstanceOf[Tensor3] && t2.isInstanceOf[Tensor2])))
+      if (!(t1.isInstanceOf[Tensor2] && t2.isInstanceOf[Tensor3]) &&
+          !(t1.isInstanceOf[Tensor3] && t2.isInstanceOf[Tensor2]))
         test(t1, t2)
     }
   }
@@ -96,7 +109,7 @@ class TestTensor extends cc.factorie.util.FastLogging {
     val random = new scala.util.Random(0)
     val dense = new DenseTensor2(dim1, dim2)
     val sparse = new DenseLayeredTensor2(dim1, dim2, new SparseIndexedTensor1(_))
-    for (i <- 0 until 1000) dense(random.nextInt(dim1*dim2)) = random.nextDouble
+    for (i <- 0 until 1000) dense(random.nextInt(dim1*dim2)) = random.nextDouble()
     sparse += dense
     val features = new SparseBinaryTensor1(dim2)
     for (i <- 0 until 20) features.+=(random.nextInt(dim2))

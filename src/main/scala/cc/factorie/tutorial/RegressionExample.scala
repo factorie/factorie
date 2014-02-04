@@ -5,9 +5,9 @@ import java.io.File
 import collection.mutable
 import io.Source
 
-import cc.factorie.{DiffList, TensorVariable, CategoricalTensorDomain, BinaryFeatureVectorVariable}
 import cc.factorie.app.regress.LinearRegressionTrainer
 import cc.factorie.la.{DenseTensor1, Tensor1}
+import cc.factorie.variable.{TensorVariable, BinaryFeatureVectorVariable, DiffList, CategoricalVectorDomain}
 
 /**
  * An example of Linear Regression.  Tries to predict the hash value
@@ -15,7 +15,7 @@ import cc.factorie.la.{DenseTensor1, Tensor1}
 object RegressionExample {
 
   // input features
-  object InputDomain extends CategoricalTensorDomain[String]
+  object InputDomain extends CategoricalVectorDomain[String]
   class Input(file: File) extends BinaryFeatureVectorVariable[String] {
     def domain = InputDomain
 
@@ -37,20 +37,13 @@ object RegressionExample {
     /** Load documents **/
     var outputs = mutable.ArrayBuffer[Output]()
     for ((directory, i) <- args.zipWithIndex) {
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
-//        println("Loading " + file.getName)
+      for (file <- new File(directory).listFiles; if file.isFile) {
         outputs += new Output(new Input(file), (2 * i - 1) + math.random * 0.001)
       }
     }
-    // println("Loaded " + outputs.length + " files")
 
     /** Run regression **/
     val regressor = LinearRegressionTrainer.train[Input, Output](outputs, {f => f.input}, 0.0)
-    val predictions: Seq[Double] = regressor.regressions(outputs).map(_.dependantValue(0))
-    val truth: Seq[Double] = outputs.map(_.value(0))
-    val error = truth.zip(predictions).map{case (t, p) => (t - p) * (t-p) }.sum
-    // println("Prediction error: " + error)
-    // println("Predictions/Truth:" + predictions.zip(truth))
   }
 
 }

@@ -6,11 +6,6 @@ import org.junit.Test
 import java.io.File
 import collection.mutable.ArrayBuffer
 
-/**
- * @author Luke Vilnis
- * @date 5/10/2012
- */
-
 class TestBibtexParser extends JUnitSuite with cc.factorie.util.FastLogging {
 
   def testMichaelsStuff(): Unit = {
@@ -29,7 +24,7 @@ Error on file: "%s"
 Error text: "%s" """ format (name, err)),
           _ =>
             Right("""
-Success on file: "%s" """ format (name)))
+Success on file: "%s" """ format name))
     }
 
     val (failures, successes) = (new ArrayBuffer[String], new ArrayBuffer[String])
@@ -406,60 +401,60 @@ Success on file: "%s" """ format (name)))
     }
     """, print = true)
 
-    expect(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo\\~ao", "", "Graca", "")))
+    expectResult(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo\\~ao", "", "Graca", "")))
 
-    expect(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
-    expect(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
-    expect(NameParser.stringToNames("Jones, Jr., John-Paul"))(List(Name("John Paul", "", "Jones", "Jr.")))
-    expect(NameParser.stringToNames("John Paul Jones"))(List(Name("John Paul", "", "Jones", "")))
+    expectResult(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
+    expectResult(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
+    expectResult(NameParser.stringToNames("Jones, Jr., John-Paul"))(List(Name("John Paul", "", "Jones", "Jr.")))
+    expectResult(NameParser.stringToNames("John Paul Jones"))(List(Name("John Paul", "", "Jones", "")))
 
-    expect(NameParser.stringToNames("John Paul Jones and Jones, John Paul"))(
+    expectResult(NameParser.stringToNames("John Paul Jones and Jones, John Paul"))(
       List(Name("John Paul", "", "Jones", ""), Name("John Paul", "", "Jones", "")))
-    expect(NameParser.stringToNames("John Paul Jones and Ludwig von Beethoven"))(
+    expectResult(NameParser.stringToNames("John Paul Jones and Ludwig von Beethoven"))(
       List(Name("John Paul", "", "Jones", ""), Name("Ludwig", "von", "Beethoven", "")))
 
-    expect(NameParser.stringToNames("Charles Louis Xavier Joseph de la Vallee Poussin"))(
+    expectResult(NameParser.stringToNames("Charles Louis Xavier Joseph de la Vallee Poussin"))(
       List(Name("Charles Louis Xavier Joseph", "de la", "Vallee Poussin", "")))
 
-    expect(NameParser.stringToNames("{Barnes} {and} {Noble} {Inc.}"))(List(Name("Barnes", "and", "Noble Inc.", "")))
+    expectResult(NameParser.stringToNames("{Barnes} {and} {Noble} {Inc.}"))(List(Name("Barnes", "and", "Noble Inc.", "")))
 
-    expect(NameParser.stringToNames("Ralph Alpher and Bethe, Hans and George Gamow"))(
+    expectResult(NameParser.stringToNames("Ralph Alpher and Bethe, Hans and George Gamow"))(
       List(Name("Ralph", "", "Alpher", ""), Name("Hans", "", "Bethe", ""), Name("George", "", "Gamow", "")))
-    expect(NameParser.stringToNames("K.S.Narendra"))(List(Name("K. S.", "", "Narendra", "")))
+    expectResult(NameParser.stringToNames("K.S.Narendra"))(List(Name("K. S.", "", "Narendra", "")))
 
-    expect(NameParser.stringToNames("{\\e'}cole"))(List(Name("", "", "{\\e'}cole", "")))
+    expectResult(NameParser.stringToNames("{\\e'}cole"))(List(Name("", "", "{\\e'}cole", "")))
 
-    expect(NameParser.stringToNames("John-Paul Jones and Bill Thompson"))(
+    expectResult(NameParser.stringToNames("John-Paul Jones and Bill Thompson"))(
       List(Name("John Paul", "", "Jones", ""), Name("Bill", "", "Thompson", "")))
 
-    expect(NameParser.stringToNames("{\\e'}col{\\e'}"))(List(Name("", "", "{\\e'}col{\\e'}", "")))
+    expectResult(NameParser.stringToNames("{\\e'}col{\\e'}"))(List(Name("", "", "{\\e'}col{\\e'}", "")))
 
-    expect(NameParser.stringToNames("{hey ho lotsa stu\\}ff}"))(List(Name("", "", "hey ho lotsa stu\\}ff", "")))
-    expect(NameParser.stringToNames("{Jean} {de la Fontaine du} {Bois Joli}"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
-    expect(NameParser.stringToNames("Jean de la Fontaine du Bois Joli"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
+    expectResult(NameParser.stringToNames("{hey ho lotsa stu\\}ff}"))(List(Name("", "", "hey ho lotsa stu\\}ff", "")))
+    expectResult(NameParser.stringToNames("{Jean} {de la Fontaine du} {Bois Joli}"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
+    expectResult(NameParser.stringToNames("Jean de la Fontaine du Bois Joli"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
 
     val clx1 = NameParser.stringToNames("Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin").head
-    expect(clx1)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    expectResult(clx1)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx2 = Dom.stringToDom("@thing{asdf, author = \"Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin\"}")
       .right.get.entries.head._2.authors.get.head
-    expect(clx2)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    expectResult(clx2)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx3 = Dom.stringToDom("@thing{asdf, author = {Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin}}")
       .right.get.entries.head._2.authors.get.head
-    expect(clx3)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    expectResult(clx3)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
 
     assert(clx1 == clx2 && clx2 == clx3, (clx1, clx2, clx3))
 
     val ksn1 = NameParser.stringToNames("K.S.Narendra").head
-    expect(ksn1)(Name("K. S.", "", "Narendra", ""))
+    expectResult(ksn1)(Name("K. S.", "", "Narendra", ""))
     val ksn2 = Dom.stringToDom("@thing{asdf, author = \"K.S.Narendra\"}")
       .right.get.entries.head._2.authors.get.head
-    expect(ksn2)(Name("K. S.", "", "Narendra", ""))
+    expectResult(ksn2)(Name("K. S.", "", "Narendra", ""))
     val ksn3 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra}}")
       .right.get.entries.head._2.authors.get.head
-    expect(ksn3)(Name("K. S.", "", "Narendra", ""))
+    expectResult(ksn3)(Name("K. S.", "", "Narendra", ""))
     val ksn4 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra and Hugh Jass}}")
       .right.get.entries.head._2.authors.get.head
-    expect(ksn4)(Name("K. S.", "", "Narendra", ""))
+    expectResult(ksn4)(Name("K. S.", "", "Narendra", ""))
 
     assert(ksn1 == ksn2 && ksn2 == ksn3 && ksn3 == ksn4, (ksn1, ksn2, ksn3, ksn4))
 

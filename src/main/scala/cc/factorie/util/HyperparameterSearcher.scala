@@ -1,10 +1,11 @@
 package cc.factorie.util
 
-import scala.util.{Try, Random}
+import scala.util.Random
 import scala.concurrent._
 import akka.actor._
-import cc.factorie.Proportions
 import java.text.SimpleDateFormat
+import java.io.{FileOutputStream, OutputStreamWriter}
+import cc.factorie.variable.Proportions
 
 /**
  * User: apassos
@@ -14,25 +15,25 @@ import java.text.SimpleDateFormat
 
 trait ParameterSampler[T] {
   def sample(rng: scala.util.Random): T
-  def buckets: Array[(T,Double,Double,Int)]
+  def buckets: Array[(T,Double,Double,Double,Int)]
   def valueToBucket(v: T): Int
   def accumulate(value: T, d: Double) {
     val v = math.max(0, math.min(valueToBucket(value), buckets.length-1))
-    val (_, sum, sumSq, count) = buckets(v)
-    buckets(v) = (value, sum+d, sumSq+d*d, count+1)
+    val (_, sum, sumSq, max, count) = buckets(v)
+    buckets(v) = (value, sum+d, sumSq+d*d, math.max(max, d), count+1)
   }
 }
 
 // Samples uniformly one of the values in the sequence.
 class SampleFromSeq[T](seq: Seq[T]) extends ParameterSampler[T] {
-  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
-  def valueToBucket(v: T) = buckets.indexOf(v)
+  val buckets = seq.map(s => (s,0.0,0.0,0.0,0)).toArray
+  def valueToBucket(v: T) = buckets.toSeq.map(_._1).indexOf(v)
   def sample(rng: Random) = seq(rng.nextInt(seq.length))
 }
 
 // Samples non-uniformly one of the values in the sequence.
 class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends ParameterSampler[T] {
-  val buckets = seq.map(s => (s,0.0,0.0,0)).toArray
+  val buckets = seq.map(s => (s,0.0,0.0,0.0,0)).toArray
   def valueToBucket(v: T) = (0 until buckets.length).filter(i => buckets(i)._1 == v).head
   def sample(rng: Random) = seq(prop.sampleIndex(rng))
 }
@@ -40,7 +41,7 @@ class SampleFromProportions[T](seq: Seq[T], prop: Proportions) extends Parameter
 // Samples uniformly a Double in the range
 class UniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
   val dif = upper - lower
-  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0.0,0)).toArray
   def valueToBucket(d: Double) = (numBuckets*(d - lower)/dif).toInt
   def sample(rng: Random) = rng.nextDouble()*dif + lower
 }
@@ -51,7 +52,7 @@ class UniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) e
 class LogUniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10) extends ParameterSampler[Double] {
   val inner = new UniformDoubleSampler(math.log(lower), math.log(upper), numBuckets)
   def valueToBucket(v: Double) = inner.valueToBucket(math.log(v))
-  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0)).toArray
+  val buckets = (0 to numBuckets).map(i => (0.0, 0.0, 0.0, 0.0, 0)).toArray
   def sample(rng: Random) = math.exp(inner.sample(rng))
 }
 
@@ -65,12 +66,12 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
   def accumulate(objective: Double) { sampler.accumulate(option.value, objective) }
   def report() {
     println("Parameter " + option.name + "      mean   stddev  count")
-    for ((value, sum, sumSq, count) <- sampler.buckets) {
+    for ((value, sum, sumSq, max, count) <- sampler.buckets) {
       val mean = sum/count
       val stdDev = math.sqrt(sumSq/count - mean*mean)
       value match {
-        case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f  ($count)")
-        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f  ($count)")
+        case v: Double => println(f"${v.toDouble}%2.15f  $mean%2.4f  $stdDev%2.4f max $max ($count)")
+        case _ => println(f"${value.toString}%20s $mean%2.2f $stdDev%2.2f max $max ($count)")
       }
     }
     println()
@@ -149,7 +150,7 @@ trait HyperparameterMain {
  * Base class for executors which run their own JVMs.
  */
 trait Executor {
-  def serializeArgs(args: Array[String]) = args.map(s => s.substring(2,s.length)).mkString("::")
+  def serializeArgs(args: Array[String]) = args.mkString("::")
   val classpath =
     ClassLoader.getSystemClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs.map(_.getFile).mkString(":")
   def execute(args: Array[String]): Future[Double]
@@ -168,7 +169,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
    */
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val prefix = s"hyper-search-$date/"
+  val prefix = s"hyper-search-$date"
   println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
@@ -178,12 +179,15 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
     import scala.concurrent.ExecutionContext.Implicits.global
     future {
       import sys.process._
-      val thisPrefix = s"$prefix-job-$thisId"
+      val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       new java.io.File(thisPrefix).getParentFile.mkdirs()
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
       val cmdFile = thisPrefix+"-cmd.sh"
-      (("echo " + jvmCommand) #> new java.io.File(cmdFile)).!
+      val s = new OutputStreamWriter(new FileOutputStream(cmdFile))
+      s.write(jvmCommand + "\n")
+      s.close()
+      Thread.sleep(1000)
       blocking { try { runJob(cmdFile, thisPrefix+"-log.txt") } catch { case c: RuntimeException => () } }
       var done = false
       var tries = 0
@@ -226,13 +230,17 @@ object QSubExecutor {
     opts.parse(args)
     val cls = Class.forName(opts.className.value)
     val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").map("--" + _).toArray
+    val argsArray = opts.classArgs.value.split("::").toArray
     println("Using args \n" + argsArray.mkString("\n"))
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
     println("---- END OF JOB -----")
     println("Result was: " + result)
-    import sys.process._
-    (("echo " + result.toString) #> new java.io.File(opts.outFile.value)).!
+    //import sys.process._
+    //(("echo " + result.toString) #> new java.io.File(opts.outFile.value)).!
+    val resFile = new OutputStreamWriter(new FileOutputStream(opts.outFile.value))
+    resFile.write(result.toString + "\n")
+    resFile.write("END OF RESULTS\n")
+    resFile.close()
     println(s"Done, file ${opts.outFile.value} written")
   }
 }
@@ -304,7 +312,7 @@ object SSHExecutor {
     opts.parse(args)
     val cls = Class.forName(opts.className.value)
     val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").map("--" + _).toArray
+    val argsArray = opts.classArgs.value.split("::").toArray
     println("Using args \n" + argsArray.mkString("\n"))
     val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
     println("----- END OF JOB -----")

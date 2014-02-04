@@ -6,6 +6,9 @@ import org.junit.Assert._
 import scala.util.Random
 import cc.factorie.la._
 import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
+import cc.factorie.infer.InferByBPTree
 
 /**
  * @author sameer
@@ -16,7 +19,7 @@ class TestLearning {
 
   object LabelDomain extends CategoricalDomain[String]
 
-  object FeatureDomain extends CategoricalTensorDomain[String]
+  object FeatureDomain extends CategoricalVectorDomain[String]
 
   class Features(val label: Label) extends BinaryFeatureVectorVariable[String] {
     def domain = FeatureDomain
@@ -71,7 +74,7 @@ class TestLearning {
     val plgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
     val plvalue = new LocalDoubleAccumulator(0.0)
 
-    val llExamples = data.map(d => new LikelihoodExample(Seq(d), model, InferByBPTreeSum))
+    val llExamples = data.map(d => new LikelihoodExample(Seq(d), model, InferByBPTree))
     val llgrad = new LocalWeightsMapAccumulator(model.parameters.blankDenseMap)
     val llvalue = new LocalDoubleAccumulator(0.0)
 
@@ -93,7 +96,7 @@ class TestLearning {
         val plt = localPLgrad.tensorSet(a)
         assertEquals("local tensor size for " + a + " does not match", plt.size, llt.size)
         for (i <- 0 until llt.size) {
-          assertEquals("local tensor value for " + a + "(" + i + ") does not match " + plt.mkString(",") + " " + llt.mkString(",") + " " + data(0).targetIntValue, plt(i), llt(i), 1.0e-7)
+          assertEquals(plt(i), llt(i), 1.0e-7)
         }
       }
     }

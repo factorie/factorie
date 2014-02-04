@@ -17,6 +17,9 @@ import scala.util.Random
 import cc.factorie.util.CubbieConversions
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import cc.factorie.model.{IterableSingleFactor, Factor}
+import cc.factorie.variable.TensorVar
+import scala.reflect.runtime.universe._
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -26,8 +29,8 @@ package object factorie extends CubbieConversions {
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f
 
   implicit class AnyExtras[T](val a: T) extends AnyVal {
-    def cast[U](implicit m: ClassTag[U]): Option[U] = if (m >:> ClassTag(a.getClass)) Some(a.asInstanceOf[U]) else None
-    def toNotNull: Option[T] = if (a != null) Some(a) else None
+    def cast[U](implicit u : TypeTag[U], t:TypeTag[T]): Option[U] = if (typeOf[U] <:< typeOf[T]) Some(a.asInstanceOf[U]) else None
+    def toNotNull: Option[T] = Option(a)
   }
 
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
@@ -35,4 +38,48 @@ package object factorie extends CubbieConversions {
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
 
   def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
+  def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")
+
+  type DenseTensor1 = cc.factorie.la.DenseTensor1
+  type DenseTensor2 = cc.factorie.la.DenseTensor2
+  type DenseTensor3 = cc.factorie.la.DenseTensor3
+  type DenseTensor4 = cc.factorie.la.DenseTensor4
+
+  type Tensor1 = cc.factorie.la.Tensor1
+  type Tensor2 = cc.factorie.la.Tensor2
+  type Tensor3 = cc.factorie.la.Tensor3
+  type Tensor4 = cc.factorie.la.Tensor4
+
+  type Var = variable.Var
+
+  type Assignment = variable.Assignment
+  type HashMapAssignment = variable.HashMapAssignment
+
+  type BooleanVariable = variable.BooleanVariable
+
+  type Diff = variable.Diff
+  type DiffList = variable.DiffList
+
+  type DiscreteDomain = variable.DiscreteDomain
+
+  type DiscreteVariable = variable.DiscreteVariable
+
+  type HashFeatureVectorVariable = variable.HashFeatureVectorVariable
+
+  type RealVariable = variable.RealVariable
+
+  type Cubbie = util.Cubbie
+
+  type GlobalLogging = util.GlobalLogging
+
+  type Example = optimize.Example
+
+  type Factor = model.Factor
+
+  type Model = model.Model
+  type CombinedModel = model.CombinedModel
+  type TemplateModel = model.TemplateModel
+  type Parameters = model.Parameters
+
+  type GibbsSampler = infer.GibbsSampler
 }

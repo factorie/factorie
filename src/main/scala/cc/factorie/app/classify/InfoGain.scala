@@ -16,12 +16,13 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.util.TopN
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.variable._
 
 /** Calculate the information gain between all features of Instances and the Instances' labels.
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DenseDoubleSeq {
+class InfoGain[L<:DiscreteVar,F<:VectorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DenseDoubleSeq {
   def apply(i:Int): Double = infogains(i)
   def length = infogains.length
   val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain
@@ -42,7 +43,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
     val featureCount = new Array[Double](numFeatures)
     val targetProportions = new DenseProportions1(numLabels)
     for (label <- labels) {
-      val instance: DiscreteTensorVar = f(label)
+      val instance: VectorVar = f(label)
       assert(instance.domain == instanceDomain)
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue
@@ -50,7 +51,7 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
       //println("InfoGain "+instance.activeDomain.toSeq)
       //for (featureIndex <- instance.activeDomain.asSeq)
       //println("InfoGain "+instance.tensor.asInstanceOf[cc.factorie.la.GrowableSparseBinaryTensor1].toIntArray.toSeq)
-      assert(instance.value.activeDomain.toSeq.distinct.length == instance.value.activeDomain.toSeq.length, instance.value.activeDomain.toSeq.toString)
+      assert(instance.value.activeDomain.toSeq.distinct.length == instance.value.activeDomain.toSeq.length, instance.value.activeDomain.toSeq.toString())
       instance.value.activeDomain.foreach(featureIndex => {
         featureTargetProportions(featureIndex).masses.+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1

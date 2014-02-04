@@ -4,14 +4,20 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.OntonotesNerDomain
 import cc.factorie.util.BinarySerializer
-import cc.factorie.optimize._
 import java.io._
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
 
+object MentionEntityTypeDomain extends CategoricalDomain[String]{
+  this ++= OntonotesNerDomain.categories
+  this += "MISC"
+}
 class MentionEntityType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNerDomain
+    def domain =  MentionEntityTypeDomain
 }
 
 class MentionEntityTypeLabeler extends DocumentAnnotator {
@@ -19,16 +25,16 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
   
-  object FeatureDomain extends CategoricalTensorDomain[String]
+  object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable extends BinaryFeatureVectorVariable[String] {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMultiClassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionSize)
+  lazy val model = new LinearMulticlassClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
   
   def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
-    var tokens = mention.span.tokens.toSeq
+    var tokens = mention.tokens.toSeq
     if (tokens.head.string == "the") tokens = tokens.drop(1)
     if (tokens.length > 0 && tokens.last.string == "'s") tokens = tokens.dropRight(1)
     if (tokens.length == 0) return features // TODO Complain further here? 
@@ -36,9 +42,9 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     features ++= words
     features += "HEAD="+mention.headToken.string
     features += "LAST="+words.last
-    features += "FIRST="+words.last
-    mention.span.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
-    mention.span.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
+    features += "FIRST="+words.head
+    mention.head.prevWindow(3).foreach(token => features += "PREV="+token.string)
+    mention.last.nextWindow(3).foreach(token => features += "NEXT="+token.string)
     for (lexicon <- lexicons) {
       if (lexicon.contains(tokens)) features += "LEX="+lexicon.name
       if (lexicon.containsWord(mention.headToken.string)) features += "HEADLEX="+lexicon.name
@@ -66,22 +72,25 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Mention): Int = {
-    if (PersonLexicon.contains(mention.span) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) MentionEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processMention(mention: Mention): Unit = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O")) := entityTypeIndex(mention)
-  def process1(document:Document): Document = {
+  def processMention(mention: Mention): Unit = {
+    val label = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O"))
+    label.set(entityTypeIndex(mention))(null)
+  }
+  def process(document:Document): Document = {
     for (mention <- document.attr[MentionList]) processMention(mention)
     document
   }
 
-  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.span.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
+  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
  
   def filterTrainingMentions(mentions:Seq[Mention]): Iterable[Mention] = 
-    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention.span))
+    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
@@ -90,12 +99,12 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[MentionList])) yield
-      new LinearMultiClassExample(model.weights, features(mention).value, mention.attr[MentionEntityType].intValue, LinearObjectives.hingeMultiClass)
+      new PredictorExample(model, features(mention).value, mention.attr[MentionEntityType].intValue, OptimizableObjectives.hingeMulticlass)
     val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
-      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
-      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, OntonotesNerDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
+      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
+      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= testMentions.map(_.attr[MentionEntityType])).toString)
     }
     Trainer.onlineTrain(model.parameters, examples.toSeq, maxIterations=3, evaluate = evaluate)
   }
@@ -114,16 +123,16 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     val sparseEvidenceWeights = new la.DenseLayeredTensor2(model.weights.value.dim1, model.weights.value.dim2, new la.SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
-    val dstream = new java.io.DataOutputStream(stream)
+    val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(FeatureDomain.dimensionDomain, dstream)
     BinarySerializer.serialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
   def deserialize(stream: java.io.InputStream): Unit = {
     import cc.factorie.util.CubbieConversions._
-    val dstream = new java.io.DataInputStream(stream)
+    val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
-    model.weights.set(new la.DenseLayeredTensor2(PTBPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, MentionEntityTypeDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
@@ -140,12 +149,12 @@ object MentionEntityTypeLabelerTrainer {
     trainDocs = trainDocs.dropRight(20)
     val labeler = new MentionEntityTypeLabeler
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
-      println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.span.phrase))
+      println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.phrase))
 
     labeler.train(trainDocs, testDocs)
-    (trainDocs ++ testDocs).foreach(labeler.process1(_))
+    (trainDocs ++ testDocs).foreach(labeler.process(_))
     for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
-      println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.span.phrase))
+      println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
     
@@ -158,16 +167,16 @@ object MentionEntityTypeLabelerTrainer {
 //todo: this is a candidate for deletion
 object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
   import MentionEntityTypeAnnotator1Util._
-  def process1(document:Document): Document = {
+  def process(document:Document): Document = {
     document.attr[MentionList].foreach(predictMentionEntityType(_))
     document
   }
   def predictMentionEntityType(m: Mention): Unit = {
-    val prediction = classifyUsingRules(m.span.tokens.map(_.lemmaString))
+    val prediction = classifyUsingRules(m.tokens.map(_.lemmaString))
     m.attr += new MentionEntityType(m,prediction)
   }
   override def tokenAnnotationString(token:Token): String = {
-    token.document.attr[MentionList].filter(mention => mention.span.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.span.indexOf(token)).mkString(","); case _ => "_" }
+    token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.indexOf(token)).mkString(","); case _ => "_" }
   }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
@@ -193,19 +202,19 @@ object MentionEntityTypeAnnotator1Util {
     val onlyOne =  Seq(isPerson, isPlace, isEvent,  isOrganization).count(y => y) == 1
 
     if(onlyOne){
-      if(isPerson) return "PERSON"
-      else if(isPlace) return "GPE"
-      else if(isEvent) return "EVENT"
-      else if(isOrganization) return "ORG"
+      if(isPerson) "PERSON"
+      else if(isPlace) "GPE"
+      else if(isEvent) "EVENT"
+      else if(isOrganization) "ORG"
       else
-        return "O"
+        "O"
     }else{
       if(isPlace && isOrganization) //the place lexicon is mostly contained in the organization lexicon, so you need to treat it carefully.
-        return "GPE"
+        "GPE"
       else if(isPlace && isPerson)
-        return "GPE"
+        "GPE"
       else
-        return "O"
+        "O"
     }
   }
 

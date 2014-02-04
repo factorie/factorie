@@ -107,7 +107,7 @@ class CmdOptions {
       var invoked = false
       val optsIter = opts.valuesIterator
       while (optsIter.hasNext && !invoked) {
-        val opt = optsIter.next
+        val opt = optsIter.next()
         index = opt.parse(args, index)
         invoked = index != origIndex
         assert(invoked || index == origIndex)
@@ -141,7 +141,7 @@ class CmdOptions {
       this.defaultValue = defaultValue
     }
     /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, defaultValue, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
+      this(name, defaultValue, { val fields = m.runtimeClass.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
     }*/
     def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, defaultValue, valueName, helpMsg)
@@ -155,19 +155,19 @@ class CmdOptions {
     // TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
     var shortName: Char = ' ' // space char indicates no shortName
     val valueManifest: Manifest[T] = m
-    def valueClass: Class[_] = m.erasure
+    def valueClass: Class[_] = m.runtimeClass
     var valueName: String = null
     var defaultValue: T = _
     var value: T = _
     var invokedCount = 0
     def required = false
     def setValue(v: T) { value = v }
-    def hasValue = valueClass != noValueClass
-    def noValueClass = classOf[Any] // This is the value of m.erasure if no type is specified for T in CmdOption[T].
+    def hasValue = valueClass != noClass
+    def noClass = classOf[Any] // This is the value of m.runtimeClass if no type is specified for T in CmdOption[T].
     /** Attempt to match and process command-line option at position 'index' in 'args'.  
         Return the index of the next position to be processed. */
     def parse(args:Seq[String], index:Int): Int = {
-      if (valueClass == noValueClass && args(index) == "--"+name || args(index) == "-"+shortName) {
+      if (valueClass == noClass && args(index) == "--"+name || args(index) == "-"+shortName) {
         // support options like --help or -h (i.e. no arguments to option)
         invoke
         invokedCount += 1
@@ -193,7 +193,7 @@ class CmdOptions {
       } else index
     }
     /** Called after this CmdOption has been matched and value has been parsed. */
-    def invoke: Unit = {}
+    def invoke(): Unit = {}
     /** After we have found a match, request that argument(s) to command-line option be parsed. 
         Return the index position that should be processed next. 
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
@@ -204,9 +204,9 @@ class CmdOptions {
       //println("CmdOption == "+(valueManifest == listIntManifest))
       //println("typeArgs     "+(valueManifest.typeArguments))
       //println("typeArgs1 == "+((valueClass eq classOf[List[_]])))
-      //if (valueManifest.typeArguments.size > 0) println("typeArgs2 == "+((valueManifest.typeArguments(0).erasure eq classOf[Int])))
-      //println("typeArgs ==  "+((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Int])))
-      if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[String])) {
+      //if (valueManifest.typeArguments.size > 0) println("typeArgs2 == "+((valueManifest.typeArguments(0).runtimeClass eq classOf[Int])))
+      //println("typeArgs ==  "+((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Int])))
+      if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[String])) {
         // Handle CmdOpt whose value is a List[String]
         if (args(index).contains(',')) {
           // Handle the case in which the list is comma-separated
@@ -224,7 +224,7 @@ class CmdOptions {
           value = listValue.toList.asInstanceOf[T]
           i
         }
-      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Int])) {
+      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Int])) {
         // Handle CmdOpt whose value is a List[String]
         if (args(index).contains(',')) {
           // Handle the case in which the list is comma-separated
@@ -242,7 +242,7 @@ class CmdOptions {
           value = listValue.toList.asInstanceOf[T]
           i
         }
-      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Double])) {
+      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Double])) {
         // Handle CmdOpt whose value is a List[String]
         if (args(index).contains(',')) {
           // Handle the case in which the list is comma-separated
@@ -285,7 +285,7 @@ class CmdOptions {
     // TODO Format long help messages more nicely.
     def helpString: String = {
       val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
-      if (valueClass != noValueClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
+      if (valueClass != noClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
       else "--%-15s %s\n".format(name, helpMsg)
     }
   }

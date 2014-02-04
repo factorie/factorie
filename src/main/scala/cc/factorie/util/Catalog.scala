@@ -17,6 +17,7 @@
 package cc.factorie.util
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.reflect.ClassTag
 
 
 /** Classes that mix in the trait "Catalog" have available a IndexedSeq list of all instances ever created. 
@@ -37,9 +38,9 @@ object Catalog {
   /** Add elt to the catalog for class A. */
   def +=[A<:Catalog](elt:A): Unit = cache(elt.getClass) += elt
   /** Return the sequence of catalog entries of class A. */
-  def apply[A<:Catalog](implicit m:Manifest[A]): Seq[A] = cache(m.erasure).asInstanceOf[Seq[A]]
+  def apply[A<:Catalog](implicit m:ClassTag[A]): Seq[A] = cache(m.runtimeClass).asInstanceOf[Seq[A]]
   /** Return the index'th catalog entry of class A. */
-  def apply[A<:Catalog](index:Int)(implicit m:Manifest[A]): A = cache(m.erasure).apply(index).asInstanceOf[A]
+  def apply[A<:Catalog](index:Int)(implicit m:ClassTag[A]): A = cache(m.runtimeClass).apply(index).asInstanceOf[A]
   /** Return the sequence of catalog entries of class A. */
   def get[A<:Catalog](c:Class[_]): Seq[A] = cache(c).asInstanceOf[Seq[A]]
   /** Return the index'th catalog entry of class A. */
@@ -48,7 +49,7 @@ object Catalog {
   def indexOf[A<:Catalog](elt:A): Int = cache(elt.getClass).indexOf(elt)
   //def indexOf[A<:Catalog](elt:A, c:Class[_]): Int = cache(c).indexOf(elt)
   /** Return the number of catalog entries of class A. */
-  def size[A<:Catalog](implicit m:Manifest[A]): Int = cache(m.erasure).size
+  def size[A<:Catalog](implicit m:ClassTag[A]): Int = cache(m.runtimeClass).size
   /** Return the number of catalog entries of class A. */
   def size(c:Class[_]): Int = cache(c).size
   /** Make c2 also act as a key for looking up the catalog for class c1.

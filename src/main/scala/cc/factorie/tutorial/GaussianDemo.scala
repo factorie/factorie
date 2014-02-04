@@ -4,6 +4,8 @@ import cc.factorie._
 import cc.factorie.directed._
 import la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
 import cc.factorie.directed.{MaximizeMultivariateGaussianCovariance, MaximizeMultivariateGaussianMean, MultivariateGaussian, Gaussian}
+import cc.factorie.variable.{TensorVariable, DoubleVariable}
+import cc.factorie.infer.Maximize
 
 object GaussianDemo {
   def main(args: Array[String]): Unit = {
@@ -20,8 +22,8 @@ object GaussianDemo {
     // println("Original mean=" + origMean)
     // println("Original variance=" + origVariance)
 
-    Maximize(Seq(mean), model)
-    Maximize(Seq(variance), model)
+    Maximize(mean)
+    Maximize(variance)
     // Or alternatively:
     //MaximizeGaussianMean(mean, model)
     //MaximizeGaussianVariance(variance, model)

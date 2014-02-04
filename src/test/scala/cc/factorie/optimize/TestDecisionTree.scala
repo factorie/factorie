@@ -8,6 +8,8 @@ import cc.factorie.traversableExtras
 import cc.factorie.la.{SingletonTensor1, Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
+import cc.factorie.variable.{VectorDomain, DiscreteDomain}
+import cc.factorie.app.classify.backend._
 
 class TestDecisionTree extends JUnitSuite {
   @Test def testRegression(): Unit = {
@@ -47,7 +49,7 @@ class TestDecisionTree extends JUnitSuite {
   }
   @Test def testClassification(): Unit = {
     implicit val random = new scala.util.Random(0)
-    object featuresDomain extends DiscreteTensorDomain {
+    object featuresDomain extends VectorDomain {
       val dimensionDomain = new DiscreteDomain(100)
     }
     object labelDomain extends DiscreteDomain(2)
@@ -71,24 +73,24 @@ class TestDecisionTree extends JUnitSuite {
 //    posExampleTensors.foreach(t => t += (100, 1.0))
     val (trainSet, testSet) = (posExampleTensors.map(p => (p, 1)) ++ negExampleTensors.map(n => (n, 0))).shuffle.split(0.5)
     val trainers = Seq(
-      new BoostingMultiClassTrainer(100),
-      new OnlineLinearMultiClassTrainer,
-      new RandomForestMultiClassTrainer(100, 100, 100),
-      new DecisionTreeMultiClassTrainer(new C45DecisionTreeTrainer))
+      new BoostingMulticlassTrainer(100),
+      new OnlineLinearMulticlassTrainer,
+      new RandomForestMulticlassTrainer(100, 100, 100),
+      new DecisionTreeMulticlassTrainer(new C45DecisionTreeTrainer))
 
     val trainFeatures = trainSet.map(_._1)
     val trainLabels = trainSet.map(_._2)
     val testFeatures = testSet.map(_._1)
     val testLabels = testSet.map(_._2)
-    def calcAccuracy(c: MultiClassClassifier[Tensor1]): Double =
+    def calcAccuracy(c: MulticlassClassifier[Tensor1]): Double =
       testFeatures.map(i => c.classification(i).bestLabelIndex)
         .zip(testLabels).count(i => i._1 == i._2).toDouble/testLabels.length
-    val evaluate = (c: MultiClassClassifier[Tensor1]) => {
+    val evaluate = (c: MulticlassClassifier[Tensor1]) => {
       val accuracy = calcAccuracy(c)
       println(f"Test accuracy: $accuracy%1.4f")
       assert(accuracy > 0.66)
     }
-    val evaluate2 = (c1: MultiClassClassifier[Tensor1], c2: MultiClassClassifier[Tensor1]) => {
+    val evaluate2 = (c1: MulticlassClassifier[Tensor1], c2: MulticlassClassifier[Tensor1]) => {
       val accuracy1 = calcAccuracy(c1)
       val accuracy2 = calcAccuracy(c2)
       println(f"Test accuracy: $accuracy1%1.4f")
@@ -103,15 +105,15 @@ class TestDecisionTree extends JUnitSuite {
 
     println("Testing deserialized:")
 
-    val rfc = new RandomForestMultiClassTrainer(100, 100, 100).simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), _ => {})
+    val rfc = new RandomForestMulticlassTrainer(100, 100, 100).simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), _ => {})
     BinarySerializer.serialize(rfc, file)
-    val rfc2 = BinarySerializer.deserialize[RandomForestMultiClassClassifier](file)
+    val rfc2 = BinarySerializer.deserialize[RandomForestMulticlassClassifier](file)
 
     evaluate2(rfc, rfc2)
 
-    val bc = new BoostingMultiClassTrainer(100).simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), _ => {})
+    val bc = new BoostingMulticlassTrainer(100).simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), _ => {})
     BinarySerializer.serialize(bc, file)
-    val bc2 = BinarySerializer.deserialize[BoostedMultiClassClassifier](file)
+    val bc2 = BinarySerializer.deserialize[BoostedMulticlassClassifier](file)
 
     evaluate2(bc, bc2)
   }

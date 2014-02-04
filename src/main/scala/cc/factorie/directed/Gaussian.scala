@@ -16,12 +16,15 @@ package cc.factorie.directed
 
 import cc.factorie._
 import cc.factorie.util.DoubleSeq
+import cc.factorie.variable.{MutableDoubleVar, DoubleVar, DiscreteVar, HashMapAssignment}
+import cc.factorie.model.Factor
+import cc.factorie.infer._
 
 object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
       val diff = value - mean
-      return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
+      - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
   def sampledValue(mean:Double, variance:Double)(implicit random: scala.util.Random): Double = maths.nextGaussian(mean, variance)(random)
@@ -41,7 +44,7 @@ object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
 
 
 
-object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(DirectedModel,Summary)] {
+object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
   def maxMean(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary): Double = {
     var mean = 0.0
@@ -76,17 +79,20 @@ object MaximizeGaussianMean extends Maximize[Iterable[MutableDoubleVar],(Directe
   def apply(meanVar:MutableDoubleVar, model:DirectedModel, summary:Summary = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
-  override def infer(variables:Iterable[MutableDoubleVar], m:(DirectedModel,Summary)): AssignmentSummary = {
-    val (model,dSummary) = m
+  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     val assignment = new HashMapAssignment
-    for (v <- variables) { val m = maxMean(v, model, dSummary); assignment.update(v, m) }
+    for (v <- variables) { val m = maxMean(v, model, marginalizing); assignment.update[MutableDoubleVar](v, m) }
     new AssignmentSummary(assignment)
   }
 }
 
-object MaximizeGaussianMeanNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
-  def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
-}
+//object MaximizeGaussianMeansNoSummary extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
+//  def infer(variables: Iterable[MutableDoubleVar], model: DirectedModel) = MaximizeGaussianMean.infer(variables, (model,new DiscreteSummary1[DiscreteVar]))
+//}
+//
+//object MaximizeGaussianMeanNoSummary extends Maximize[MutableDoubleVar,DirectedModel] {
+//  def infer(variable: MutableDoubleVar, model: DirectedModel) = MaximizeGaussianMean.infer(Seq(variable), (model,new DiscreteSummary1[DiscreteVar]))
+//}
 
 object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],DirectedModel] {
   var debug = false
@@ -97,8 +103,8 @@ object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],Dire
     val factors = model.extendedChildFactors(varianceVar)
     if (factors.size < minSamplesForVarianceEstimate) return 1.0
     for (factor <- factors) factor match {
-      case g:Gaussian.Factor if (g._3 == varianceVar) => { mean += g._1.doubleValue; sum += 1.0 }
-      case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
+      case g:Gaussian.Factor if g._3 == varianceVar => { mean += g._1.doubleValue; sum += 1.0 }
+      case gm:GaussianMixture.Factor if gm._3.contains(varianceVar) => {
         val gate = gm._4
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
@@ -117,8 +123,8 @@ object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],Dire
     var v = 0.0 // accumulates the variance
     sum = 0.0
     for (factor <- factors) factor match {
-      case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff; sum += 1 }
-      case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
+      case g:Gaussian.Factor if g._3 == varianceVar => { val diff = mean - g._1.doubleValue; v += diff * diff; sum += 1 }
+      case gm:GaussianMixture.Factor if gm._3.contains(varianceVar) => {
         val gate = gm._4
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal(gate) 
         val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
@@ -138,10 +144,9 @@ object MaximizeGaussianVariance extends Maximize[Iterable[MutableDoubleVar],Dire
   def apply(varianceVar:MutableDoubleVar, model:DirectedModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
-  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel): AssignmentSummary = {
-    val dSummary = new DiscreteSummary1[DiscreteVar]()
+  def infer(variables:Iterable[MutableDoubleVar], model:DirectedModel, marginalizing:Summary): AssignmentSummary = {
     lazy val assignment = new HashMapAssignment
-    for (v <- variables) { val va = maxVariance(v, model, dSummary); assignment.update[MutableDoubleVar, MutableDoubleVar#Value](v, va) }
+    for (v <- variables) { val va = maxVariance(v, model, marginalizing.asInstanceOf[DiscreteSummary1[DiscreteVar]]); assignment.update[MutableDoubleVar](v, va) }
     new AssignmentSummary(assignment)
   }
 }

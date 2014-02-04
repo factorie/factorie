@@ -1,25 +1,33 @@
 package cc.factorie.util
-import java.io.IOException
-import java.net.URLConnection
-import java.net.URLStreamHandler
-import java.net.URLStreamHandlerFactory
-import java.io.File
-import java.io.InputStream
 import scala.language.existentials
-import java.lang.Error
 import scala.Error
 
 object ClasspathURL {
   def fromDirectory[C](suffix:String)(implicit m: Manifest[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
-      case Some(url) => new java.net.URL(url + suffix)
-      case None => m.runtimeClass.getResource(suffix)
+      case Some(url) =>
+        try { new java.net.URL(url + "/"+ suffix) }
+        catch {
+          case t: java.net.MalformedURLException => throw new Error(s"System property ${m.runtimeClass.getName} contains malformed url ${url+suffix}. Either fix the URL or unset the system property to open a file from the classpath.", t)
+        }
+      case None =>
+        m.runtimeClass.getResource(suffix) match {
+          case null => throw new Error(s"No file named $suffix found in classpath for class ${m.runtimeClass.getName}, and no value found in system property ${m.runtimeClass.getName}. To fix this either add a file with the right name to the classpath or set the system property to point to a directory containing the file.")
+          case a: java.net.URL => a
+        }
+
     }
   }
   def apply[C](suffix:String)(implicit m: Manifest[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
-      case Some(url) => new java.net.URL(url)
-      case None => m.runtimeClass.getResource(m.runtimeClass.getSimpleName+suffix)
+      case Some(url) => try { new java.net.URL(url) }
+        catch {
+          case t: java.net.MalformedURLException => throw new Error(s"System property ${m.runtimeClass.getName} contains malformed url ${url+suffix}. Either fix the URL or unset the system property to open a file from the classpath.", t)
+        }
+      case None => m.runtimeClass.getResource(m.runtimeClass.getSimpleName+suffix) match {
+        case null => throw new Error(s"No file named ${m.runtimeClass.getSimpleName + suffix} found in classpath for class ${m.runtimeClass.getName}, and no value found in system property ${m.runtimeClass.getName}. To fix this either add a file with the right name to the classpath or set the system property to point to a directory containing the file.")
+        case a: java.net.URL => a
+      }
     }
   }
 }

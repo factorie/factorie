@@ -4,6 +4,7 @@ import cc.factorie.directed._
 import cc.factorie.util.DoubleSeq
 import scala.Array
 import cc.factorie.directed.{DirectedModel, PlatedCategoricalMixture, DiscreteMixtureCounts}
+import cc.factorie.variable.{ProportionsVar, DiscreteSeqVariable, DiscreteDomain, CategoricalDomain}
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,
@@ -12,7 +13,8 @@ class SparseLDAInferencer(
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
     model:DirectedModel,
-    random: scala.util.Random)
+    random: scala.util.Random,
+    val localPhiCounts: DiscreteMixtureCounts[String] = null)
 {
   var verbosity = 0
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
@@ -33,9 +35,23 @@ class SparseLDAInferencer(
 
   private var _topicDocCounts: Array[Array[Int]] = null
   def topicDocCounts = _topicDocCounts
-
   // Initialize alphas, beta1, smoothingMass and cachedCoefficients; must be done after phiCounts initialized
   resetSmoothing(initialAlphas, initialBeta1)
+
+  def resetCached():Unit = {
+    smoothingMass = 0
+
+    var t = 0
+    while(t < numTopics){
+      cachedDenominators(t) = 1.0 / (phiCounts.mixtureCounts(t) + betaSum)
+      val topicSmoothing = alphas(t) * cachedDenominators(t)
+      cachedCoefficients(t) = topicSmoothing
+      cachedSmoothing(t) = topicSmoothing
+      smoothingMass += topicSmoothing
+      t += 1
+    }
+    smoothingMass *= beta1
+  }
 
   def resetSmoothing(newAlphas:DoubleSeq, newBeta1:Double): Unit = {
     require(numTopics == newAlphas.length)
@@ -47,18 +63,7 @@ class SparseLDAInferencer(
     //smoothingMass = recalcSmoothingMass
     // The first term in the per-topic summand for q, just missing *n_{w|t}  [Mimno "Sparse LDA"]
 
-    smoothingMass = 0
-    var t = 0
-    while(t < numTopics){
-      cachedDenominators(t) = 1.0 / (phiCounts.mixtureCounts(t) + betaSum)
-      val topicSmoothing = alphas(t) * cachedDenominators(t)
-      cachedCoefficients(t) = topicSmoothing
-      cachedSmoothing(t) = topicSmoothing
-      smoothingMass += topicSmoothing
-      t += 1
-    }
-
-    smoothingMass *= beta1
+    resetCached()
     assert(smoothingMass > 0.0, smoothingMass)
   }
 
@@ -74,10 +79,12 @@ class SparseLDAInferencer(
     sm
   }
 
-  def export(phis:Seq[ProportionsVar]): Unit = {
+  def export(phis:Seq[ProportionsVar], beta1:Double = 0.0, numTopics: Int=0): Unit = {
     phis.foreach(_.value.zero())
-    for (wi <- 0 until wordDomain.size)
+    for (wi <- 0 until wordDomain.size)  {
+      (0 until numTopics).foreach(ti => phis(ti).value.masses.+=(wi, beta1))
       phiCounts(wi).forCounts((ti,count) => phis(ti).value.masses.+=(wi, count))
+    }
   }
 
   def exportThetas(docs:Iterable[Doc]): Unit = {
@@ -252,8 +259,8 @@ class SparseLDAInferencer(
         //println("ti="+newTi)
         localTopicCounts(ti) -= 1
         if (localTopicCounts(ti) == 0) {
-					denseIndex = 0;
-					while (localTopicIndex(denseIndex) != ti)
+					denseIndex = 0
+          while (localTopicIndex(denseIndex) != ti)
 						denseIndex += 1
 
 					while (denseIndex < nonZeroTopics) {
@@ -268,9 +275,9 @@ class SparseLDAInferencer(
 
         localTopicCounts(newTi) += 1
         if (localTopicCounts(newTi) == 1) {
-				  denseIndex = nonZeroTopics;
+				  denseIndex = nonZeroTopics
 
-				  while (denseIndex > 0 && localTopicIndex(denseIndex - 1) > newTi) {
+          while (denseIndex > 0 && localTopicIndex(denseIndex - 1) > newTi) {
 					 localTopicIndex(denseIndex) = localTopicIndex(denseIndex - 1)
 					 denseIndex -= 1
 				  }
@@ -283,9 +290,15 @@ class SparseLDAInferencer(
           // We've sampled from the topicTermMass
           phiCounts.incrementCountsAtPositions(wi, ti, -1, phiCountsWiTiPosition, newTi, 1, newPosition)
         } else {
-          phiCounts.increment(wi, ti, -1) //ANTON: decrement the previous
+          phiCounts(wi).incrementCountAtPosition(phiCountsWiTiPosition, -1) //ANTON: decrement the previous
           phiCounts.increment(wi, newTi, 1)
         }
+
+        if (localPhiCounts != null) {
+          localPhiCounts.increment(wi, ti, -1)
+          localPhiCounts.increment(wi, newTi, 1)
+        }
+
         val newNt = phiCounts.mixtureCounts(newTi)
         val newNtd = localTopicCounts(newTi) // n_{t|d}
         smoothingMass -= cachedSmoothing(newTi) * beta1

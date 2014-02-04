@@ -9,16 +9,18 @@ import cc.factorie.app.nlp
 import cc.factorie.util.{TensorCubbie, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.ner.NerLabel
+import cc.factorie.app.nlp.ner.NerTag
+import cc.factorie.variable._
+import cc.factorie.model._
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
- class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalTensorDomain[String])
+ class MyChainNerFeatures(val token: nlp.Token, override val domain: CategoricalVectorDomain[String])
    extends BinaryFeatureVectorVariable[String] {
    override def skipNonCategories = true
  }
 
- class OntoNerLabel(val token: nlp.Token, ta: String, val domain: CategoricalDomain[String]) extends NerLabel(ta) {
+ class OntoNerLabel(token: nlp.Token, ta: String, val domain: CategoricalDomain[String]) extends NerTag(token, ta) {
    type ContainedVariableType = this.type
  }
 
@@ -41,20 +43,20 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
   @Test def testOutOfOrderDomainSerialization(): Unit = {
     val random = new scala.util.Random(0)
     val file = java.io.File.createTempFile("foo", "multi")
-      object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+      object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
       MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
       object OntoNerLabelDomain extends CategoricalDomain[String]
       OntoNerLabelDomain ++= Seq("Hello","GoodBye")
 
       val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-      model.bias.weights.value := (Array.fill[Double](model.bias.weights.value.length)(random.nextDouble()))
-      model.obs.weights.value := (Array.fill[Double](model.obs.weights.value.length)(random.nextDouble()))
-      model.markov.weights.value := (Array.fill[Double](model.markov.weights.value.length)(random.nextDouble()))
+      model.bias.weights.value := Array.fill[Double](model.bias.weights.value.length)(random.nextDouble())
+      model.obs.weights.value := Array.fill[Double](model.obs.weights.value.length)(random.nextDouble())
+      model.markov.weights.value := Array.fill[Double](model.markov.weights.value.length)(random.nextDouble())
 
       BinarySerializer.serialize(model, MyChainNerFeaturesDomain, OntoNerLabelDomain, file)
 
-      object featDomain2 extends CategoricalTensorDomain[String]
+      object featDomain2 extends CategoricalVectorDomain[String]
       object labelDomain2 extends CategoricalDomain[String]
       val model2 = makeModel(featDomain2, labelDomain2)
 
@@ -67,24 +69,30 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  @Test def testChainModelSerialization(): Unit = {
    val random = new scala.util.Random(0)
 
-   val modelFile = java.io.File.createTempFile("FactorieTestFile", "serialize-chain-model").getAbsolutePath
+   val f = File.createTempFile("FactorieTestFile", "serialize-chain-model")
+   val modelFileOutput = new FileOutputStream(f)
 
    logger.debug("creating toy model with random weights")
 
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
    object OntoNerLabelDomain extends CategoricalDomain[String]
    OntoNerLabelDomain ++= Seq("Hello","GoodBye")
 
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-   model.bias.weights.value:=(Array.fill[Double](model.bias.weights.value.length)(random.nextDouble()))
-   model.obs.weights.value:=(Array.fill[Double](model.obs.weights.value.length)(random.nextDouble()))
-   model.markov.weights.value:=(Array.fill[Double](model.markov.weights.value.length)(random.nextDouble()))
+   model.bias.weights.value:= Array.fill[Double](model.bias.weights.value.length)(random.nextDouble())
+   model.obs.weights.value:= Array.fill[Double](model.obs.weights.value.length)(random.nextDouble())
+   model.markov.weights.value:= Array.fill[Double](model.markov.weights.value.length)(random.nextDouble())
    logger.debug("serializing chain model")
-   model.serialize(modelFile)
+   model.serialize(modelFileOutput)
+   modelFileOutput.flush()
+   modelFileOutput.close()
 
-   val deserialized = deserializeChainModel(modelFile)
+
+   val modelFileInput = new FileInputStream(f)
+
+   val deserialized = deserializeChainModel(modelFileInput)
 
    assertSameWeights(model, deserialized)
 
@@ -109,7 +117,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    }
  }
 
- def makeModel(featuresDomain: CategoricalTensorDomain[String],
+ def makeModel(featuresDomain: CategoricalVectorDomain[String],
    labelDomain: CategoricalDomain[String]): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
    object model extends ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token](
      labelDomain, featuresDomain, l => l.token.attr[MyChainNerFeatures], l => l.token, t => t.attr[OntoNerLabel])
@@ -117,11 +125,11 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    model
  }
 
- def deserializeChainModel(fileName: String): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+ def deserializeChainModel(iStream: InputStream): ChainModel[OntoNerLabel, MyChainNerFeatures, nlp.Token] = {
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    object OntoNerLabelDomain extends CategoricalDomain[String]
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-   model.deSerialize(fileName)
+   model.deserialize(iStream)
    model
  }
 
@@ -135,7 +143,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
        val weights = Weights(new DenseTensor1(d.length))
      }
      def families: Seq[DotFamily] = Seq(family1)
-     def factors(v: Var) = Nil
+     def factors(v: Iterable[Var]) = Nil
    }
    val model = new Model1(domain1)
    model.family1.weights.value(6) = 12
@@ -167,20 +175,20 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  @Test def testMultipleSerialization(): Unit = {
    val random = new scala.util.Random(0)
    val file = java.io.File.createTempFile("foo", "multi")
-   object MyChainNerFeaturesDomain extends CategoricalTensorDomain[String]
+   object MyChainNerFeaturesDomain extends CategoricalVectorDomain[String]
    MyChainNerFeaturesDomain.dimensionDomain ++= Seq("A","B","C")
 
    object OntoNerLabelDomain extends CategoricalDomain[String]
    OntoNerLabelDomain ++= Seq("Hello","GoodBye")
 
    val model = makeModel(MyChainNerFeaturesDomain, OntoNerLabelDomain)
-   model.bias.weights.value := (Array.fill[Double](model.bias.weights.value.length)(random.nextDouble()))
-   model.obs.weights.value := (Array.fill[Double](model.obs.weights.value.length)(random.nextDouble()))
-   model.markov.weights.value := (Array.fill[Double](model.markov.weights.value.length)(random.nextDouble()))
+   model.bias.weights.value := Array.fill[Double](model.bias.weights.value.length)(random.nextDouble())
+   model.obs.weights.value := Array.fill[Double](model.obs.weights.value.length)(random.nextDouble())
+   model.markov.weights.value := Array.fill[Double](model.markov.weights.value.length)(random.nextDouble())
 
    BinarySerializer.serialize(MyChainNerFeaturesDomain, OntoNerLabelDomain, model, file)
 
-   object featDomain2 extends CategoricalTensorDomain[String]
+   object featDomain2 extends CategoricalVectorDomain[String]
    object labelDomain2 extends CategoricalDomain[String]
    val model2 = makeModel(featDomain2, labelDomain2)
 
@@ -192,13 +200,13 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  // NOTE: this is a hack to get around broken Manifest <:< for singleton types
  // this is fixed in 2.10 so once we upgrade we can remove this hack (that assumes all params are covariant!)
  def checkCompat(m1: Manifest[_], m2: Manifest[_]): Boolean =
-   m2.erasure.isAssignableFrom(m1.erasure) && (m1.typeArguments.zip(m2.typeArguments).forall({case (l,r) => checkCompat(l, r)}))
+   m2.runtimeClass.isAssignableFrom(m1.runtimeClass) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
 
  @Test def testClassifierPosSerialization() {
-   val model = new app.nlp.pos.POS1
+   val model = new app.nlp.pos.ForwardPosTagger
    val fileName = java.io.File.createTempFile("FactorieTestFile", "classifier-pos").getAbsolutePath
    model.serialize(fileName)
-   val otherModel = new app.nlp.pos.POS1(new File(fileName))
+   val otherModel = new app.nlp.pos.ForwardPosTagger(new File(fileName))
  }
 
  @Test def testInstanceSerialize(): Unit = {
@@ -207,7 +215,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    val fileName = java.io.File.createTempFile("FactorieTestFile", "serialize-instances").getAbsolutePath
    val ll = new ArrayBuffer[app.classify.Label]()
    val labelDomain = new CategoricalDomain[String] { }
-   val featuresDomain = new CategoricalTensorDomain[String] { }
+   val featuresDomain = new CategoricalVectorDomain[String] { }
    for (i <- 1 to 100) {
      val labelName = (i % 2).toString
      val features = new BinaryFeatures(labelName, i.toString, featuresDomain, labelDomain)
@@ -265,7 +273,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    val domainFile = new File(fileName2)
 
-   BinarySerializer.serialize(new CategoricalTensorDomainCubbie(TokenDomain), domainFile)
+   BinarySerializer.serialize(new CategoricalVectorDomainCubbie(TokenDomain), domainFile)
 
    logger.debug("Original model family weightsSet: ")
    getWeights(model).foreach(s => logger.debug(s.toString))
@@ -277,8 +285,8 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
    logger.debug("Original domain:")
    logger.debug(TokenDomain.dimensionDomain.toSeq.mkString(","))
    logger.debug("Deserialized domain:")
-   val newDomain = new CategoricalTensorDomain[String] { }
-   val cubbie = new CategoricalTensorDomainCubbie(newDomain)
+   val newDomain = new CategoricalVectorDomain[String] { }
+   val cubbie = new CategoricalVectorDomainCubbie(newDomain)
    BinarySerializer.deserialize(cubbie, domainFile)
    logger.debug(newDomain.dimensionDomain.toSeq.mkString(","))
 
@@ -286,7 +294,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
 
  class Label(b: Boolean, val token: Token) extends LabeledBooleanVariable(b)
- object TokenDomain extends CategoricalTensorDomain[String]
+ object TokenDomain extends CategoricalVectorDomain[String]
  class Token(val char: Char, isWordStart: Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token, Sentence] {
    def domain = TokenDomain
    val label = new Label(isWordStart, this)
@@ -295,7 +303,7 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
  }
  class Sentence extends Chain[Sentence, Token]
 
- class SegmenterModel extends ModelWithContext[Seq[Label]] with Parameters {
+ class SegmenterModel extends Model with Parameters {
    val bias = new DotFamilyWithStatistics1[Label] {
      factorName = "Label"
      val weights = Weights(new la.DenseTensor1(BooleanDomain.size))
@@ -304,10 +312,9 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
      factorName = "Label,Token"
      val weights = Weights(new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize))
    }
-   def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
+   def factors(label: Iterable[Var]): Iterable[Factor] = {
      Seq.empty[Factor]
    }
-   def factors(v:Var) = throw new Error("Not yet implemented.")
  }
 
  val data = Array(

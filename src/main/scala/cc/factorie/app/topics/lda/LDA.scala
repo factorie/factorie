@@ -20,6 +20,9 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
 import cc.factorie.directed._
+import cc.factorie.optimize.TrainerHelpers
+import java.util.concurrent.Executors
+import cc.factorie.variable._
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
@@ -118,7 +121,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val startIterationTime = System.currentTimeMillis
       for (doc <- documents) sampler.process(doc.zs.asInstanceOf[Zs], timeToEstAlpha)
       val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
-      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
+      if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush()
       if (i % diagnosticInterval == 0) {
         println ("\n"+diagnosticName+"\nIteration "+i)
         sampler.export(phis)
@@ -137,35 +140,79 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         sampler.initializeHistograms(maxDocSize)
         //println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }
-    } 
+    }
     //println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     // Set original uncollapsed parameters to mean of collapsed parameters
-    sampler.export(phis)
+    sampler.export(phis, beta1, numTopics)
     sampler.exportThetas(documents)
   }
-  
+
   // Not finished
   def inferTopicsMultithreaded(numThreads:Int, iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     if (fitAlphaInterval != Int.MaxValue) throw new Error("LDA.inferTopicsMultithreaded.fitAlphaInterval not yet implemented.")
     val docSubsets = documents.grouped(documents.size/numThreads + 1).toSeq
-    //println("Subsets = "+docSubsets.size)
-    for (i <- 1 to iterations) {
-      docSubsets.par.foreach(docSubset => {
-        val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.value, beta1, model)
-        for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
+
+    //Get global Nt and Nw,t for all the documents
+    val phiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
+    for (doc <- documents) phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
+    val numTypes = wordDomain.length
+
+    val phiCountsArray = new Array[DiscreteMixtureCounts[String]](numThreads)
+    val samplersArray = new Array[SparseLDAInferencer](numThreads)
+
+    //Copy the counts to each thread
+    val pool = Executors.newFixedThreadPool(numThreads)
+    try {
+      util.Threading.parForeach(0 until numThreads, pool)(threadID => {
+        phiCountsArray(threadID) = new DiscreteMixtureCounts(wordDomain, ZDomain)
+        val localPhiCounts = new DiscreteMixtureCounts(wordDomain, ZDomain)
+        for (w <- 0 until numTypes) phiCounts(w).forCounts((t,c) => phiCountsArray(threadID).increment(w, t, c))
+
+        for (doc <- docSubsets(threadID)) localPhiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
+        samplersArray(threadID) = new SparseLDAInferencer(ZDomain, wordDomain, phiCountsArray(threadID),  alphas.value, beta1, model, random, localPhiCounts)
       })
-      if (i % diagnosticInterval == 0) {
-        println ("Iteration "+i)
-        maximizePhisAndThetas
-        if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
+
+      for (iteration <- 1 to iterations) {
+        val startIterationTime = System.currentTimeMillis
+
+        util.Threading.parForeach(0 until numThreads, pool)(threadID => {
+          samplersArray(threadID).resetCached()
+          for (doc <- docSubsets(threadID)) samplersArray(threadID).process(doc.zs.asInstanceOf[Zs])
+        })
+
+        //Sum per thread counts
+        java.util.Arrays.fill(phiCounts.mixtureCounts, 0)
+        (0 until numTopics).par.foreach(t => {
+          for (threadID <- 0 until numThreads) phiCounts.mixtureCounts(t) += samplersArray(threadID).localPhiCounts.mixtureCounts(t)
+        })
+        (0 until numTypes).par.foreach(w => {
+            phiCounts(w).clear()
+            for (threadID <- 0 until numThreads) samplersArray(threadID).localPhiCounts(w).forCounts((t, c) => phiCounts(w).incrementCountAtIndex(t, c))
+        })
+
+        //Copy global counts to per thread counts
+        util.Threading.parForeach(0 until numThreads, pool) (threadID => {
+          System.arraycopy(phiCounts.mixtureCounts, 0, phiCountsArray(threadID).mixtureCounts, 0, numTopics)
+          for (w <- 0 until numTypes) phiCountsArray(threadID)(w).copyBuffer(phiCounts(w))
+        })
+
+
+        if (iteration % diagnosticInterval == 0) {
+          println ("Iteration "+iteration)
+          maximizePhisAndThetas
+          if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
+        }
+
+        val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
+        if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush()
       }
-    }
+    } finally pool.shutdown()
     maximizePhisAndThetas
   }
   
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).value.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).value.massTotal.toInt, alphas.value(topicIndex))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, topicWords(topicIndex, numWords).mkString(" "), phis(topicIndex).value.massTotal.toInt, alphas.value(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
   def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
@@ -182,7 +229,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     sb.toString
   }
   
-  def maximizePhisAndThetas: Unit = {
+  def maximizePhisAndThetas(): Unit = {
     phis.foreach(_.value.zero())
     // TODO What about the priors on phis and theta?? -akm
     for (doc <- documents) {
@@ -211,12 +258,12 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val alphasString = reader.readLine(); alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
       reader.readLine() // consume delimiting newline
       println("Read alphas "+alphas.value.mkString(" "))
-    } else reader.reset // Put the reader back to the read position when reader.mark was called
+    } else reader.reset() // Put the reader back to the read position when reader.mark was called
     breakable { while (true) {
       val doc = new Document(wordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
       doc.zs = new Zs(Nil)
       val numWords = doc.readNameWordsZs(reader)
-      if (numWords < 0) break
+      if (numWords < 0) break()
       else if (numWords >= minDocLength) addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
       //else System.err.println("addDocumentsFromWordZs skipping document %s: only %d words found.".format(doc.name, numWords))
     }}
@@ -284,8 +331,8 @@ class LDACmd {
       for (directory <- opts.readDirs.value) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading files from directory " + directory)
-        breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
-          if (lda.documents.size == opts.maxNumDocs.value) break
+        breakable { for (file <- new File(directory).listFiles; if file.isFile) {
+          if (lda.documents.size == opts.maxNumDocs.value) break()
           val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           if (doc.length >= minDocLength) lda.addDocument(doc, random)
           if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
@@ -298,7 +345,7 @@ class LDACmd {
       val source = if (opts.readLines.value == "-") scala.io.Source.stdin else scala.io.Source.fromFile(new File(opts.readLines.value))
       var count = 0
       breakable { for (line <- source.getLines()) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val text: String = 
           if (!opts.readLinesRegex.wasInvoked) line 
           else {
@@ -328,13 +375,13 @@ class LDACmd {
         val alphasString = reader.readLine(); lda.alphas.value := alphasString.split(" ").map(_.toDouble) // set lda.alphas
         reader.readLine() // consume delimiting newline
         println("Read alphas "+lda.alphas.value.mkString(" "))
-      } else reader.reset // Put the reader back to the read position when reader.mark was called
+      } else reader.reset() // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
-        if (numWords < 0) break
+        if (numWords < 0) break()
         else if (numWords >= minDocLength) lda.addDocument(doc, random) // Skip documents that have only one word because inference can't handle them
         else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
@@ -351,11 +398,11 @@ class LDACmd {
       reader.readLine() // consume delimiting newline
       println("Read alphas "+lda.alphas.value.mkString(" "))
       breakable { while (true) {
-        if (lda.documents.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break()
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
-        if (numWords < 0) break
+        if (numWords < 0) break()
         else if (numWords >= minDocLength) {
           val len = doc.ws.length
           var i = 0
@@ -406,7 +453,7 @@ class LDACmd {
       //println(lda.topicsPhraseCounts.topicsPhrasesSummary(opts.printPhrases.value))
 
     if (opts.thetaServer.wasInvoked) {
-      lda.wordSeqDomain.elementDomain.freeze
+      lda.wordSeqDomain.elementDomain.freeze()
       val reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in))
       println("Reading documents, one per line.  To end, close by Control-D")
       var line = reader.readLine

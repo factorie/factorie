@@ -16,6 +16,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.util.FastLogging
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * A conjugate gradient optimizer. Should not be used unless you know you want it.
@@ -47,6 +48,9 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
     xi = null
     _isConverged = false
   }
+
+  def initializeWeights(weights: WeightsSet): Unit = { }
+  def finalizeWeights(weights: WeightsSet): Unit = { }
 
   def step(weights:WeightsSet, gradient:WeightsMap, value:Double): Unit = {
     if (_isConverged) return

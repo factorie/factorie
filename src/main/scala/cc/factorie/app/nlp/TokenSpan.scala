@@ -15,14 +15,13 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
-
-// TODO Consider removing the implicit DiffList from the arguments to the TokenSpan constructor.
+import cc.factorie.variable._
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
-class TokenSpan(sec:Section, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Section,Token](sec, initialStart, initialLength) with Attr {
+class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
   final def section = chain  // Just a convenient alias
   final def document = chain.document
-  final def tokens = value
+  final def tokens = this.toIndexedSeq //value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
   def phrase: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
@@ -37,18 +36,21 @@ class TokenSpan(sec:Section, initialStart:Int, initialLength:Int)(implicit d:Dif
         if (span.tokens(j).string != tokens(i2)) result = false
         j += 1; i2 += 1
       }
-      if (result == true) return true 
+      if (result) return true
     }
-    return false
+    false
   }
-  override def toString = "TokenSpan("+start+":"+this.phrase+")"
+  override def toString = "TokenSpan("+start+","+end+":"+this.phrase+")"
+  // TODO This seems unsafe.  Can we delete it? -akm
   /** A short name for this span */
   def name: String = attr.values.head match {
     case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
     case x => x.toString
   }
-  
 }
+
+/** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
+class TokenSpanList[S<:TokenSpan] extends SpanVarList[S, Section, Token]
 
 object TokenSpan {
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {
@@ -56,7 +58,8 @@ object TokenSpan {
     for (section <- document.sections; token <- section.tokens) {
       val len = lexicon.startsAt(token) 
       if (len > 0) {
-        val span = new TokenSpan(section, token.position, len)(null)
+        throw new Error("Not yet implemented.")  // To what SpanList should these tokens be added? -akm
+        val span = new TokenSpan(section, token.position, len)
         span.attr += lexicon
         spanCount += 1
       }
@@ -79,7 +82,7 @@ class TokenSpanCubbie extends Cubbie {
   }
   def finishStoreTokenSpan(ts:TokenSpan): Unit = {}
   def fetchTokenSpan(section:Section): TokenSpan = {
-    val ts = new TokenSpan(section, start.value, length.value)(null)
+    val ts = new TokenSpan(section, start.value, length.value)
     finishFetchTokenSpan(ts)
     ts
   }
@@ -103,18 +106,18 @@ trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubb
   }
   def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
     throw new Error("Not yet implemented")
-    val ts = new TokenSpan(null, start.value, length.value)(null)
+    val ts = new TokenSpan(null, start.value, length.value)
     finishFetchTokenSpan(ts)
     ts
   }
 }
 
 trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
-  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerLabel
+  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerSpanLabel
   val ner = StringSlot("ner")
   override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
     super.finishStoreTokenSpan(ts)
-    ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
+    ner := ts.attr[cc.factorie.app.nlp.ner.NerSpanLabel].categoryValue
   }
   override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
     super.finishFetchTokenSpan(ts)

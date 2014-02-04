@@ -5,6 +5,8 @@ import cc.factorie.la._
 import optimize._
 import java.io.File
 import util.DoubleAccumulator
+import cc.factorie.model.{Weights2, Weights1, WeightsSet, Parameters}
+import cc.factorie.variable.TensorVar
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 
 
@@ -35,7 +37,7 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   linearRegressor =>
 
   def regression(x: A) = {
-    val result = (weights * dependant2Explanatory(x).value.asInstanceOf[Tensor1]).reshape(x.value.dimensions)
+    val result = weights.leftMultiply(dependant2Explanatory(x).value.asInstanceOf[Tensor1]).reshape(x.value.dimensions)
     new Regression[A] {
       def dependant = x
       def dependantValue = result.asInstanceOf[A#Value]
@@ -44,9 +46,10 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   }
 }
 
-trait MultivariateModel extends Parameters {
+trait MultivariateModel extends Parameters with app.classify.backend.OptimizablePredictor[Tensor1,Tensor1] {
   val weights: Weights2
-  def predict(feats: Tensor1): Tensor1 = weights.value * feats
+  def predict(feats: Tensor1): Tensor1 = weights.value.leftMultiply(feats)
+  def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1, weight: Double) = accumulator.accumulate(weights, features outer gradient, weight)
 }
 
 trait UnivariateModel extends Parameters {
@@ -55,14 +58,14 @@ trait UnivariateModel extends Parameters {
 }
 
 class LinearRegressionModel(nFeatures: Int, nLabel: Int) extends MultivariateModel {
-  val weights = Weights(new DenseTensor2(nLabel, nFeatures))
+  val weights = Weights(new DenseTensor2(nFeatures, nLabel))
 }
 
 object LinearRegressionTrainer {
   // Assumes variables are set to their target values
   def train[E <: TensorVar, A <: TensorVar](
     examples: Iterable[A], dependant2Explanatory: A => E, l2: Double,
-    objective: MultivariateLinearObjective[Tensor1] = LinearObjectives.squaredMultivariate): LinearRegressor[E, A] = {
+    objective: MultivariateOptimizableObjective[Tensor1] = OptimizableObjectives.squaredMultivariate): LinearRegressor[E, A] = {
     val optimizer = new cc.factorie.optimize.LBFGS() with cc.factorie.optimize.L2Regularization
     optimizer.variance = 1.0/l2
     val trainer: WeightsSet => Trainer = m => new BatchTrainer(m, optimizer)
@@ -72,14 +75,14 @@ object LinearRegressionTrainer {
   def trainCustom[E <: TensorVar, A <: TensorVar](
     examples: Iterable[A], dependant2Explanatory: A => E,
     trainerMaker: WeightsSet => Trainer,
-    objective: MultivariateLinearObjective[Tensor1] = LinearObjectives.squaredMultivariate): LinearRegressor[E, A] = {
+    objective: MultivariateOptimizableObjective[Tensor1] = OptimizableObjectives.squaredMultivariate): LinearRegressor[E, A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)
     val dependentSize = exampleDependent.value.dimensions.product
     val explanatorySize = exampleExplanatory.value.dimensions.product
     val model = new LinearRegressionModel(explanatorySize, dependentSize)
     val trainer = trainerMaker(model.parameters)
-    val trainingExamples = examples.map(e => new LinearMultivariateExample[Tensor1](model.weights, dependant2Explanatory(e).value.asInstanceOf[Tensor1], e.value.asInstanceOf[Tensor1], objective))
+    val trainingExamples = examples.map(e => new PredictorExample(model, dependant2Explanatory(e).value.asInstanceOf[Tensor1], e.value.asInstanceOf[Tensor1], objective))
     while (!trainer.isConverged) {
       trainer.processExamples(trainingExamples)
     }

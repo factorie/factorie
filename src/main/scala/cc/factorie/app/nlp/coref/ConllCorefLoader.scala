@@ -1,15 +1,7 @@
 package cc.factorie.app.nlp.coref
 
-/**
- * Created with IntelliJ IDEA.
- * User: belanger
- * Date: 5/31/13
- * Time: 10:24 AM
- * To change this template use File | Settings | File Templates.
- */
-
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PTBPosDomain, PTBPosLabel}
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import mention.{MentionEntityType, MentionList, Mention, Entity}
 import scala.collection.mutable.{ ArrayBuffer, Map, Stack }
 import scala.collection.mutable
@@ -17,7 +9,7 @@ import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
-
+// TODO This should be moved to app.nlp.LoadConll2011 -akm
 object ConllCorefLoader {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader
@@ -27,13 +19,13 @@ object ConllCorefLoader {
   // to be used with test-with-gold-mention-boundaries
   val autoFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("auto_conll")
+      file.getName.endsWith("auto_conll")
   }
 
   // to be used with test-key
   val goldFileFilter = new java.io.FileFilter() {
     override def accept(file: java.io.File): Boolean =
-      file.getName().endsWith("gold_conll")
+      file.getName.endsWith("gold_conll")
   }
 
 
@@ -55,7 +47,7 @@ object ConllCorefLoader {
   def filterMention(phrase: String,parentPhrase: String,prevPhrase: String,prevWord: String): Boolean = {
     assert(phrase == "NP")
     val apposition = (prevPhrase == "NP") && (parentPhrase == "NP") && (prevWord == ",")
-    val copular = (parentPhrase == "VP") && (copularVerbs.contains(prevWord))  //todo: prevWord has been properly case-normalized, right?
+    val copular = (parentPhrase == "VP") && copularVerbs.contains(prevWord)  //todo: prevWord has been properly case-normalized, right?
     apposition || copular
   }
 
@@ -96,9 +88,11 @@ object ConllCorefLoader {
 
     breakable { for (l <- source.getLines()) {
       if (l.startsWith("#begin document ")) {
-        if (docs.length == limitNumDocuments) break
+        if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+        currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
         currDoc.attr += new MentionList
@@ -129,8 +123,8 @@ object ConllCorefLoader {
           prevWord = ""
         }
         val token = new Token(currSent, word)
-        PTBPosDomain.unfreeze()     //todo: factorie PTBPosDomain currently contains all of the ontonotes tags. Might want to freeze this up for thread safety
-        token.attr += new PTBPosLabel(token,fields(4))
+        PennPosDomain.unfreeze()     //todo: factorie PennPosDomain currently contains all of the ontonotes tags. Might want to freeze this up for thread safety
+        token.attr += new PennPosTag(token,fields(4))
         tokenId += 1
         if (tokId == 0) sentenceId += 1
 
@@ -181,12 +175,12 @@ object ConllCorefLoader {
             val (phrase, start) = parseStack.pop()
             val parentPhrase = if(!parseStack.isEmpty) parseStack(0)._1 else ""
             if (phrase == "NP" && !filterMention(phrase,parentPhrase,prevPhrase,prevWord)) {
-              val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)(null)
-              val m = Mention(span,getHeadToken(span))
+              val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
+              val m = new Mention(span, getHeadToken(span))
               currDoc.attr[MentionList] += m
               numMentions += 1
 
-              if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
+              if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
                 val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
                 if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
                   m.attr += new MentionEntityType(m,currentEntityTypeStr)
@@ -227,10 +221,10 @@ object ConllCorefLoader {
         }
         //this makes mentions for the ground truth mentions that weren't NPs
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
-          val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)(null)
-          val m = Mention(span, getHeadToken(span))
+          val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
+          val m = new Mention(span, getHeadToken(span))
           currDoc.attr[MentionList] += m
-          if((currentlyUnresolvedClosedEntityTypeBracket) && (entityTypeStart >= start)){
+          if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
               m.attr += new MentionEntityType(m,currentEntityTypeStr)
@@ -271,11 +265,11 @@ object ConllCorefLoader {
 
   //this is a span-level offset. Since we don't have a dep parse, we just take the final noun in the span
   def getHeadToken(span: TokenSpan): Int = {
-    val toReturn = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+    val toReturn = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
     if(toReturn == -1){
-      return span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
+      span.length - 1   //todo: is it really true that sometimes in the annotation, annotated mentions won't have a noun in them
     }else{
-      return toReturn
+      toReturn
     }
   }
 

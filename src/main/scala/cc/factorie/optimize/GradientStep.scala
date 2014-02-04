@@ -14,8 +14,8 @@
 
 package cc.factorie.optimize
 
-import cc.factorie._
 import cc.factorie.la._
+import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
  * Base trait for optimizers whose operational form can be described as
@@ -77,6 +77,10 @@ trait GradientStep extends GradientOptimizer {
    * To override if you want to reset internal state.
    */
   def reset(): Unit = { it = 0 }
+
+  def initializeWeights(weights: WeightsSet): Unit = { }
+
+  def finalizeWeights(weights: WeightsSet): Unit = { }
 }
 
 /**
@@ -84,15 +88,30 @@ trait GradientStep extends GradientOptimizer {
  */
 trait ParameterAveraging extends GradientStep {
   var wTmp: WeightsMap = null
+  var isSetToAverage = false
   override def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = {
-    if (wTmp eq null) wTmp = weights.blankDenseMap
     super.doGradStep(weights, gradient, rate)
+    if (wTmp == null) wTmp = weights.blankDenseMap
     wTmp += (gradient, rate*it)
   }
-
-  def setWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,-1.0/it)
-  def unSetWeightsToAverage(weights: WeightsSet): Unit = if (wTmp ne null) weights += (wTmp,1.0/it)
+  def setWeightsToAverage(weights: WeightsSet): Unit = if (!isSetToAverage && (wTmp ne null)) {
+    weights += (wTmp,-1.0/it)
+    isSetToAverage = true
+  }
+  def unSetWeightsToAverage(weights: WeightsSet): Unit = if (isSetToAverage && (wTmp ne null)) {
+    weights += (wTmp,1.0/it)
+    isSetToAverage = false
+  }
   override def reset(): Unit = { super.reset(); wTmp = null }
+  override def initializeWeights(weights: WeightsSet): Unit = {
+    super.initializeWeights(weights)
+    if (wTmp eq null) wTmp = weights.blankDenseMap
+    unSetWeightsToAverage(weights)
+  }
+  override def finalizeWeights(weights: WeightsSet): Unit = {
+    super.finalizeWeights(weights)
+    setWeightsToAverage(weights)
+  }
 }
 
 /**
@@ -113,11 +132,19 @@ trait AdaptiveLearningRate extends GradientStep {
   val delta: Double = 0.1
   private var HSq: WeightsMap = null
   var printed = false
+  override def initializeWeights(weights: WeightsSet) {
+    super.initializeWeights(weights)
+    if (HSq == null) HSq = weights.blankDenseMap
+  }
+  override def reset(): Unit = {
+    super.reset()
+    HSq = null
+  }
   override def processGradient(weights: WeightsSet, gradient: WeightsMap): Unit = {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weightsSet, -l2)
-    if (HSq == null) { HSq = weights.blankDenseMap }
+    if(HSq == null) HSq =  weights.blankDenseMap
     for (template <- gradient.keys) {
       gradient(template) match {
         case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense =>
@@ -200,10 +227,6 @@ trait AdaptiveLearningRate extends GradientStep {
             i += 1
           }
       }
-  }
-  override def reset(): Unit = {
-    super.reset()
-    HSq = null
   }
 }
 

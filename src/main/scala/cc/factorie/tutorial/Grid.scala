@@ -2,12 +2,15 @@ package cc.factorie.tutorial
 
 import collection.mutable.{Buffer, ArrayBuffer}
 import cc.factorie._
+import cc.factorie.variable.{HammingTemplate, LabeledCategoricalVariable, DoubleVariable, BooleanDomain}
+import cc.factorie.model.{TupleTemplateWithStatistics2, CombinedModel}
+import cc.factorie.infer.{VariableSettingsSampler, SamplingMaximizer}
+
 //import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
 
 /**
  * Example of synthetic Ising Grid models
  * @author sameer
- * @date 4/19/12
  */
 
 object Grid {
@@ -20,7 +23,7 @@ object Grid {
 
     val observed = new Observed(score)
 
-    def setUsingObserved = this.setCategory(observed.doubleValue > 0.0)(null)
+    def setUsingObserved() = this.setCategory(observed.doubleValue > 0.0)(null)
   }
 
   def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = Pair(10.0, 10.0), random: scala.util.Random = new scala.util.Random(0)): Seq[Seq[Pixel]] = {
@@ -79,7 +82,7 @@ object Grid {
       for (j: Int <- 0 until img(i).length) {
         if (img(i)(j).categoryValue) print("W") else print(" ")
       }
-      println
+      println()
     }
 
 
@@ -88,29 +91,12 @@ object Grid {
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
     val objective = new HammingTemplate[Pixel]
-    // println("True accuracy: " + objective.accuracy(pixels))
-    /// printImage(image)
-    pixels.foreach(_.setUsingObserved)
-    // println("Local accuracy: " + objective.accuracy(pixels))
-    // printImage(image)
+    pixels.foreach(_.setUsingObserved())
     implicit val random = new scala.util.Random(0)
     pixels.foreach(_.setRandomly)
     //*
     val sampler = new SamplingMaximizer[Pixel](new VariableSettingsSampler(gridModel))
     sampler.maximize(pixels, iterations=10, rounds=10)
-    //sampler.iterations = 10
-    //sampler.rounds = 10
-    //sampler.infer(pixels)
-    //*/
-    /*
-    val lattice = new LatticeBP(gridModel, pixels.toSet) with MaxProductLattice
-    val bp = new InferencerBPWorker(lattice)
-    bp.inferLoopyBP(2)
-    lattice.finalPass = true
-    bp.inferLoopyBP(1)
-    lattice.setToMaxMarginal()
-    */
     println("Accuracy: %f".format(objective.accuracy(pixels)))
-    // printImage(image)
   }
 }

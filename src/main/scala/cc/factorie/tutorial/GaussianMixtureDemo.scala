@@ -18,6 +18,9 @@ import cc.factorie._
 import cc.factorie.directed._
 import cc.factorie.la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
 import cc.factorie.directed._
+import cc.factorie.variable._
+import cc.factorie.infer.InferByMeanField
+import cc.factorie.directed.DirectedTypeHelpers.{MutableTensorVarTensor2, MutableTensorVarTensor1}
 
 
 object GaussianMixtureDemo {
@@ -41,22 +44,16 @@ object GaussianMixtureDemo {
     val zs = data.map(z(_))
 
     // Show a little example data
-    // data.take(50).foreach(x => println(x+"  z="+z(x).intValue))
-    val origMeans = meanComponents.map(_.doubleValue)
 
     // Now randomly re-assign variable values so we can do the work of re-estimating them
     zs.foreach(_.set(random.nextInt(numComponents))(null))
-    meanComponents.foreach(_.set(random.nextDouble)(null))
+    meanComponents.foreach(_.set(random.nextDouble())(null))
 
     // Estimate means and zs by EM
-    val em = new EMInferencer(meanComponents, zs, InferByMeanField, model, MaximizeGaussianMean)
+    val em = new EMInferencer(meanComponents, zs, model, InferByMeanField, MaximizeGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
-      // println("Estimated means at iteration "+i)
-      // meanComponents.foreach(m => println(m.doubleValue))
     }
-    // println("\nOriginal means")
-    // origMeans.foreach(println(_))
   }
 }  
 
@@ -68,8 +65,8 @@ object MultivariateGaussianMixtureDemo {
     implicit val model = DirectedModel()
     object ZDomain extends DiscreteDomain(numComponents)
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
-    val meanComponents = Mixture[MutableTensorVar[Tensor1]](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
-    val varianceComponents = Mixture[MutableTensorVar[Tensor2]](numComponents)(new TensorVariable[Tensor2](
+    val meanComponents = Mixture[MutableTensorVarTensor1](numComponents)(new TensorVariable[Tensor1](new DenseTensor1(10, random.nextDouble() * 10)))
+    val varianceComponents = Mixture[MutableTensorVarTensor2](numComponents)(new TensorVariable[Tensor2](
       new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 10.0 else random.nextDouble() * 0.5))))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
     // Generate some data
@@ -78,12 +75,11 @@ object MultivariateGaussianMixtureDemo {
       new TensorVariable[Tensor1] :~ MultivariateGaussianMixture(meanComponents, varianceComponents, z)
     }
     // A convenience function for getting the Z for a particular DoubleVar data variable x
-    def z(x: MutableTensorVar[Tensor1]): Z = model.parentFactor(x).asInstanceOf[MultivariateGaussianMixture.Factor]._4.asInstanceOf[Z]
+    def z(x: MutableTensorVarTensor1): Z = model.parentFactor(x).asInstanceOf[MultivariateGaussianMixture.Factor]._4.asInstanceOf[Z]
     // Get the list of Z variables, so we can pass it into the EMInferencer
     val zs = data.map(z(_))
 
     // Show a little example data
-    // data.take(50).foreach(x => println(x + "  z=" + z(x).intValue))
     val origMeans = meanComponents.map(_.value)
 
     // Now randomly re-assign variable values so we can do the work of re-estimating them
@@ -92,16 +88,10 @@ object MultivariateGaussianMixtureDemo {
     varianceComponents.foreach(_.set(new DenseTensor2(Array.tabulate(10, 10)((i, j) => if (i == j) 10.0 else random.nextDouble() * 0.5)))(null))
 
     // Estimate means and zs by EM
-    val em = new EMInferencer(meanComponents.toIterable, zs, InferByMeanField, model, MaximizeMultivariateGaussianMean)
+    val em = new EMInferencer(meanComponents.toIterable, zs, model, InferByMeanField, MaximizeMultivariateGaussianMean)
     for (i <- 1 to 10) {
       em.process(1)
-//      println("Estimated means at iteration " + i)
-//      meanComponents.foreach(m => println(m.value))
-//      println("Estimated z's at iteration" + i)
-//      zs.foreach(z => println(z.proportions(model)))
     }
-//    println("\nOriginal means")
-//    origMeans.foreach(println(_))
 
     meanComponents.foreach(m1 => assert(origMeans.exists(m2 => (m1.value - m2).twoNorm / m2.twoNorm < .1), "Inferred means were not within tolerance of true means!"))
   }

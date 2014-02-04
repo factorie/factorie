@@ -5,7 +5,7 @@ import collection.mutable.{Queue,LinkedList,HashSet, HashMap, LinkedHashMap, Arr
 import cc.factorie.db.mongo.{LazyCubbieConverter, MutableCubbieCollection, AbstractCubbieCollection, MongoCubbieCollection}
 import cc.factorie.util.Cubbie
 import experiments.{PaperModelOptions, AuthorModelOptions, ExperimentOptions}
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 import java.io.File
 import scala.Some
 import collection.mutable
@@ -87,7 +87,7 @@ object BibKB{
     } else args=argsIn
     opts.parse(args)
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
-    val mongo = new Mongo(opts.server.value,opts.port.value)
+    val mongo = new MongoClient(opts.server.value,opts.port.value)
     val knowledgebase = new MongoBibKB(mongo,opts.database.value)
 
     //if(1+1==2){
@@ -114,7 +114,7 @@ object BibKB{
           println("  -number not corefed: "+knowledgebase.numNotCoref)
         }
       }
-      knowledgebase.mostCited
+      knowledgebase.mostCited()
       //val papers = RexaCitationLoader.loadFromList(new File(opts.rexaFileList.value))
       //BibFeatures.decorate(papers,ldaOpt)
       //if(knowledgebase.paperColl.cubbieCollection.size==0)knowledgebase.addMentionsColdStartCoref(papers)
@@ -139,11 +139,11 @@ abstract class BibKB extends BibKBAccessPatterns{
   protected var numNotCoref=0
   def authorColl:BibKBAuthorCollection
   def paperColl:BibKBPaperCollection
-  def isPaperSufficientForInsert(paper:PaperEntity):Boolean= (paper.title.value!=null && paper.title.value.length>0 && FeatureUtils.paperHash(paper).length>=1)
+  def isPaperSufficientForInsert(paper:PaperEntity):Boolean= paper.title.value != null && paper.title.value.length > 0 && FeatureUtils.paperHash(paper).length >= 1
   def selectCanonical(papers:Seq[PaperEntity]):PaperEntity = papers.head
   //def addFeatures(paper:PaperEntity):Unit
   //def addFeatures(author:AuthorEntity):Unit
-  def mostCited:Unit ={
+  def mostCited(): Unit = {
     val id2cubbie = new HashMap[String,PaperCubbie]
     val aid2cubbie = new HashMap[String,AuthorCubbie]
     val citedMentions = new ArrayBuffer[PaperCubbie]
@@ -178,10 +178,10 @@ abstract class BibKB extends BibKBAccessPatterns{
       if(count % 1000==0)print(".");if(count % 50000==0)println(count)
     }
     while(allAuthors.size>0){
-      val author = allAuthors.dequeue
+      val author = allAuthors.dequeue()
       if(author.isMention.value)pid2authors.getOrElseUpdate(author.pid.value.toString,new ArrayBuffer[AuthorCubbie]) += author
       aid2cubbie += author.id.toString -> author
-      if(author.isMention.value==true)authorMentions += author
+      if(author.isMention.value)authorMentions += author
     }
     count=0
     for(paper <- paperColl.cubbieCollection){
@@ -213,7 +213,7 @@ abstract class BibKB extends BibKBAccessPatterns{
       val paperRoot = getRoot[PaperCubbie](paper,id2cubbie)
       aid2papers.getOrElseUpdate(root.id.toString,new ArrayBuffer[PaperCubbie]) += id2cubbie(paperRoot.pid.value.toString)
     }
-    val sortedAuthors = aid2papers.toSeq.sortBy(((idpapers):Pair[String,ArrayBuffer[PaperCubbie]]) => {citationCount(idpapers._2)})
+    val sortedAuthors = aid2papers.toSeq.sortBy((idpapers: Pair[String, ArrayBuffer[PaperCubbie]]) => {citationCount(idpapers._2)})
     for((aid,papers)<-sortedAuthors){
       val author = aid2cubbie(aid)
       println("Name: "+author.firstName.value+" "+author.middleName.value+" "+author.lastName.value)
@@ -321,12 +321,12 @@ object BibKBUtils{
   def getPromoted(paper:PaperCubbie)(implicit bibkb:BibKB):PaperCubbie ={
     if(paper.parentRef.isDefined)throw new Exception("Error, only root level entities have promoted mentions.")
     if(paper.isMention.value)paper
-    else bibkb.paperColl.cubbieCollection.findById(paper.pid.value).next
+    else bibkb.paperColl.cubbieCollection.findById(paper.pid.value).next()
   }
   def root(paper:PaperCubbie)(implicit bibkb:BibKB):PaperCubbie ={
     var result = paper
     while(result.parentRef.isDefined){
-      val parent = bibkb.paperColl.cubbieCollection.findById(result.parentRef.value).next
+      val parent = bibkb.paperColl.cubbieCollection.findById(result.parentRef.value).next()
       result = parent
     }
     result
@@ -334,19 +334,19 @@ object BibKBUtils{
   def root(author:AuthorCubbie)(implicit bibkb:BibKB):AuthorCubbie ={
     var result = author
     while(result.parentRef.isDefined){
-      val parent = bibkb.authorColl.cubbieCollection.findById(result.parentRef.value).next
+      val parent = bibkb.authorColl.cubbieCollection.findById(result.parentRef.value).next()
       result = parent
     }
     result
   }
   def citedBy(authorMention:AuthorCubbie)(implicit bibkb:BibKB):Option[PaperCubbie] ={
     assert(authorMention.isMention.value)
-    val paper = bibkb.paperColl.cubbieCollection.findById(authorMention.pid.value).next
+    val paper = bibkb.paperColl.cubbieCollection.findById(authorMention.pid.value).next()
     citedIn(paper)
   }
   def citedIn(paperMention:PaperCubbie)(implicit bibkb:BibKB):Option[PaperCubbie] ={
     assert(paperMention.isMention.value)
-    if(paperMention.citedBy.isDefined)Some(bibkb.paperColl.cubbieCollection.findById(paperMention.citedBy.value).next) else None
+    if(paperMention.citedBy.isDefined)Some(bibkb.paperColl.cubbieCollection.findById(paperMention.citedBy.value).next()) else None
   }
   def getPaperMention(authorMention:AuthorCubbie)(implicit bibkb:BibKB):Option[PaperCubbie] ={
     assert(authorMention.isMention.value)
@@ -397,11 +397,11 @@ object BibKBUtils{
       count +=1;if(count % 1000==0)print(".");if(count % 50000==0)println(count)
     }
     for((id,compId) <- ids2compressed)pwCompress.println(id+" "+compId)
-    pwCompress.flush
-    pwNodes.close
-    pwEdges.close
-    pwCompress.close
-    ids2compressed.clear
+    pwCompress.flush()
+    pwNodes.close()
+    pwEdges.close()
+    pwCompress.close()
+    ids2compressed.clear()
     idCount=0
   }
 
@@ -416,7 +416,7 @@ object BibKBUtils{
     if(rootAuthorCubbie.lastName.isDefined)sb.append(" "+rootAuthorCubbie.lastName.value)
     val line = sb.toString.replaceAll(" +"," ").trim
     pw.println(line)
-    pw.flush
+    pw.flush()
   }
   def incEdgeCount(citer:AuthorCubbie,cited:AuthorCubbie,pw:java.io.PrintWriter):Unit ={
     var idCiter=citer.id.toString
@@ -428,6 +428,6 @@ object BibKBUtils{
     //val idCiter = ids2compressed.getOrElseUpdate(citer.id.toString,{idCount+=1;idCount})
     //val idCited = ids2compressed.getOrElseUpdate(cited.id.toString,{idCount+=1;idCount})
     pw.println(idCiter+" "+idCited)
-    pw.flush
+    pw.flush()
   }
 }

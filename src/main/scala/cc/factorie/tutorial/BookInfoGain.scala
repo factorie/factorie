@@ -1,15 +1,14 @@
 package cc.factorie.tutorial
-import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
 import app.classify
-import classify._
-import la.Tensor
-import cc.factorie.optimize.OnlineLinearMultiClassTrainer
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify.backend.OnlineLinearMulticlassTrainer
 
+/** Demonstration of calculating class-word information gain where data coming from book-length */
 object BookInfoGain {
-  object DocumentDomain extends CategoricalTensorDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(labelString: String, words:Seq[String]) extends BinaryFeatureVectorVariable[String](words) {
     def domain = DocumentDomain
     var label = new Label(labelString, this)
@@ -51,7 +50,7 @@ object BookInfoGain {
     val trainLabels = new collection.mutable.ArrayBuffer[Label] ++= trainSet
     val testLabels = new collection.mutable.ArrayBuffer[Label] ++= testSet
 
-    val trainer = new OnlineLinearMultiClassTrainer()
+    val trainer = new OnlineLinearMulticlassTrainer()
     val classifier = trainer.train(trainLabels, trainLabels.map(_.document))
     val testTrial = new classify.Trial[Label,Document#Value](classifier, trainLabels.head.domain, _.document.value)
     testTrial ++= testLabels

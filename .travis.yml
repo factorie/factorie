@@ -1,0 +1,6 @@
+language: scala
+scala:
+         - 2.10.1
+script:
+        - "sudo apt-get install libgfortran3"
+        - "sbt test"

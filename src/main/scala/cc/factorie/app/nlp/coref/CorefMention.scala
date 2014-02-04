@@ -5,7 +5,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
-import cc.factorie.app.nlp.morph.MorphologicalAnalyzer1
+import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 
 /**
  * User: apassos
@@ -29,14 +29,14 @@ object CorefMention{
         throw new IllegalStateException("the constructor expects headTokenIndex to be an offset from the beginning of the span, not the document")
       }
       if(headTokenIndex == -1){
-        val idx = span.value.lastIndexWhere(_.posLabel.categoryValue.startsWith("NN"))
+        val idx = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
         //assert(idx != -1, "failed to find a noun in the span") //todo: put this back in
         if(idx < 0)  span.length -1 else idx      //todo: this handles the case where it didn't find an NN anywhere. Should that be happening?
       }else
         headTokenIndex
     }
 
-    val docMention = new Mention(span,headInd)
+    val docMention = new Mention(span, headInd)
     docMention.attr += new MentionType(docMention,mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
@@ -50,20 +50,21 @@ object CorefMention{
   val posSet = Seq("POS")
 }
 
+// TODO I think "Mention" should become "NounChunk", and then this "CorefMention" should become "Mention extends NounChunk".
 //basically, this is a wrapper around factorie Mention, with some extra stuff
 class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
-  val _head =  mention.span.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
+  val _head =  mention.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
   def parentEntity = mention.attr[Entity]
-  def mType = headToken.posLabel.categoryValue
-  def span = mention.span
+  def mType = headToken.posTag.categoryValue
+  def span = mention
   def entityType: String = mention.attr[MentionEntityType].categoryValue
   def document = mention.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
-  val isProper = CorefMention.properSet.contains(mention.headToken.posLabel.categoryValue)
-  val isNoun = CorefMention.nounSet.contains(mention.headToken.posLabel.categoryValue)
-  val isPossessive = CorefMention.posSet.contains(mention.headToken.posLabel.categoryValue)
+  val isProper = CorefMention.properSet.contains(mention.headToken.posTag.categoryValue)
+  val isNoun = CorefMention.nounSet.contains(mention.headToken.posTag.categoryValue)
+  val isPossessive = CorefMention.posSet.contains(mention.headToken.posTag.categoryValue)
 
   def isAppositionOf(m : CorefMention) : Boolean = {
     val isAppo = headToken.parseLabel.categoryValue == "appos"
@@ -93,22 +94,22 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def wnHypernyms = cache.wnHypernyms
   def wnAntonyms = cache.wnAntonyms
 
-  def printInfo : String = Seq[String]("gender",gender.toString,"number",number.toString,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
+  def printInfo : String = Seq[String]("gender", gender,"number", number,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
 }
 
 class MentionCache(m: CorefMention) {
   import cc.factorie.app.nlp.lexicon
-  lazy val hasSpeakWord = m.mention.span.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val hasSpeakWord = m.mention.exists(s => lexicon.iesl.Say.contains(s.string))
   lazy val wnLemma = WordNet.lemma(m.headToken.string, "n")
   lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
   lazy val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
   lazy val nounWords: Set[String] =
-      m.span.tokens.filter(_.posLabel.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
+      m.span.tokens.filter(_.posTag.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
   lazy val lowerCaseHead: String = m.span.phrase.toLowerCase
   lazy val headPhraseTrim: String = m.span.phrase.trim
   lazy val nonDeterminerWords: Seq[String] =
-    m.span.tokens.filterNot(_.posLabel.categoryValue == "DT").map(t => t.string.toLowerCase)
+    m.span.tokens.filterNot(_.posTag.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
   lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
@@ -116,7 +117,7 @@ class MentionCache(m: CorefMention) {
 
   lazy val capitalization: Char = {
       if (m.span.length == 1 && m.span.head.positionInSentence == 0) 'u' // mention is the first word in sentence
-          val s = m.span.value.filter(_.posLabel.categoryValue.startsWith("N")).map(_.string.trim)
+          val s = m.span.value.filter(_.posTag.categoryValue.startsWith("N")).map(_.string.trim)
           if (s.forall(_.forall(_.isUpper))) 'a'
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
@@ -198,7 +199,7 @@ object CorefFeatures {
   // val cache = scala.collection.mutable.Map[String, Char]()
   import cc.factorie.app.nlp.lexicon
   def namGender(m: Mention): Char = {
-    val fullhead = m.span.phrase.trim.toLowerCase
+    val fullhead = m.phrase.trim.toLowerCase
     var g = 'u'
     val words = fullhead.split("\\s")
     if (words.length == 0) return g
@@ -249,7 +250,7 @@ object CorefFeatures {
   }
 
   def nomGender(m: Mention, wn: WordNet): Char = {
-    val fullhead = m.span.phrase.toLowerCase
+    val fullhead = m.phrase.toLowerCase
     if (wn.isHypernymOf("male", fullhead))
       'm'
     else if (wn.isHypernymOf("female", fullhead))
@@ -264,7 +265,7 @@ object CorefFeatures {
 
 
   def proGender(m: Mention): Char = {
-    val pronoun = m.span.phrase.toLowerCase
+    val pronoun = m.phrase.toLowerCase
     if (malePron.contains(pronoun))
       'm'
     else if (femalePron.contains(pronoun))

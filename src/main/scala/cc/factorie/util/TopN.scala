@@ -1,7 +1,7 @@
 package cc.factorie.util
 
 class TopEntry[A<:AnyRef](val index:Int, val score:Double, val category:A) {
-  override def toString = category.toString+" "+score
+  override def toString = (if (category eq null) "(null)" else category.toString)+" "+score
 }
 
 /** For gathering a sorted list of at most N indexed entries, sorted by a floating-point score. */
@@ -40,7 +40,7 @@ class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
   def iterator: Iterator[TopEntry[A]] = new Iterator[TopEntry[A]] {
     var i = 0
     def hasNext = i < _length
-    def next = { i += 1; _seq(i-1) }
+    def next() = { i += 1; _seq(i-1) }
   }
   def +=(index:Int, pr:Double, category:A = null.asInstanceOf[A]): Unit = {
     if (_length < maxLength || (pr > _seq(_length-1).score && pr > 0.0)) {
@@ -56,6 +56,6 @@ class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
     }
   }
   
-  override def toString: String = mkString(", ") 
+  override def toString(): String = mkString(", ")
   
 }

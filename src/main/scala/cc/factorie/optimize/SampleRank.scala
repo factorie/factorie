@@ -17,8 +17,9 @@
 package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
-import collection.mutable.HashMap
 import util.DoubleAccumulator
+import cc.factorie.model.{WeightsSet, Parameters, Model, DotFamily}
+import cc.factorie.infer.ProposalSampler
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {
@@ -32,13 +33,13 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     val bestObjectiveScore = proposals.map(_.objectiveScore).max
     if (bestModel.objectiveScore != bestObjectiveScore) {
       val bestObjective = proposals.filter(_.objectiveScore == bestObjectiveScore).maxByDouble(_.modelScore)
-      bestObjective.diff.redo
+      bestObjective.diff.redo()
       sampler.model.factorsOfFamilyClass[DotFamily](bestObjective.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-      bestObjective.diff.undo
+      bestObjective.diff.undo()
       sampler.model.factorsOfFamilyClass[DotFamily](bestObjective.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel.diff.redo
+      bestModel.diff.redo()
       sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-      bestModel.diff.undo
+      bestModel.diff.undo()
       sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
       value.accumulate(bestObjective.modelScore - bestModel.modelScore - learningMargin)
     } else {
@@ -46,13 +47,13 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       if (diffProposals.nonEmpty) {
         val bestModel2 = diffProposals.maxByDouble(_.modelScore)
         if (bestModel.modelScore - bestModel2.modelScore < learningMargin) {
-          bestModel.diff.redo
+          bestModel.diff.redo()
           sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
-          bestModel.diff.undo
+          bestModel.diff.undo()
           sampler.model.factorsOfFamilyClass[DotFamily](bestModel.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-          bestModel2.diff.redo
+          bestModel2.diff.redo()
           sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics, -1.0))
-          bestModel2.diff.undo
+          bestModel2.diff.undo()
           sampler.model.factorsOfFamilyClass[DotFamily](bestModel2.diff).foreach(f => gradient.accumulate(f.family.weights, f.currentStatistics))
           value.accumulate(bestModel.modelScore - bestModel2.modelScore - learningMargin)
         }

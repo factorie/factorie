@@ -33,7 +33,7 @@ package cc.factorie.util
 */
 
 
-import scala.collection.mutable._;
+import scala.collection.mutable._
 
 /**
  * Class that mimics Java's string indexer, but for anything.
@@ -54,7 +54,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   private var _indices = Map[T, Int]()
  
   /** Wipe the Index clean */
-  def reset: Unit = {
+  def reset(): Unit = {
     _frozen = false
     _objects = new ArrayBuffer[T]
     _indices = Map[T,Int]()
@@ -72,7 +72,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   def frozen = _frozen
 
   // NOTE This used to be just "freeze", but I ran into troubles overriding freeze in DiscreteDomain
-  def freeze0: Unit = _frozen = true
+  def freeze0(): Unit = _frozen = true
 
   // NOTE This used to be just "allocSize", but I ran into troubles overriding freeze in DiscreteDomain  
   /**The size others might want to allocate to hold data relevant to this Index.  If maxSize is set can be bigger than size. */
@@ -102,11 +102,11 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
     def nextMax = {
       val m = _objects.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      _objects += entry;
+      _objects += entry
       m
     }
     if (_frozen) _indices.getOrElse(entry, -1)
-    else _indices.getOrElseUpdate(entry, nextMax);
+    else _indices.getOrElseUpdate(entry, nextMax)
   }
  
   /** Like index, but throw an exception if the entry is not already there. */
@@ -119,45 +119,45 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   def clear() = {_indices.clear(); _objects.clear(); }
 
   // These accessors are kept separate to preserve collection subtype
-  def indexAll(c: Iterator[T]) = c map index;
-  def indexAll(c: List[T]) = c map index;
-  def indexAll(c: Array[T]) = c map index;
-  def indexAll(c: Set[T]) = c map index;
+  def indexAll(c: Iterator[T]) = c map index
+  def indexAll(c: List[T]) = c map index
+  def indexAll(c: Array[T]) = c map index
+  def indexAll(c: Set[T]) = c map index
 
   def indexKeys[V](c: scala.collection.Map[T, V]) = Map[T, V]() ++ c.map {case (a, b) => (index(a), b)}
 
   def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
 
-  def getAll(c: Iterator[Int]) = c map get;
-  def getAll(c: List[Int]) = c map get;
-  def getAll(c: Array[Int]) = c map get;
-  def getAll(c: Set[Int]) = c map get;
+  def getAll(c: Iterator[Int]) = c map get
+  def getAll(c: List[Int]) = c map get
+  def getAll(c: Array[Int]) = c map get
+  def getAll(c: Set[Int]) = c map get
 
   // Index views.
 
   /**Returns an immutable view of the index. */
   def immutable: Index[T] = {
-    val outer = this;
+    val outer = this
     new Index[T] {
-      override def iterator = outer.iterator;
-      override def size0 = outer.size0;
-      override def get(pos: Int) = outer.get(pos);
-      override def index(t: T) = outer._indices.getOrElse(t, -1);
-      override def clear = {};
+      override def iterator = outer.iterator
+      override def size0 = outer.size0
+      override def get(pos: Int) = outer.get(pos)
+      override def index(t: T) = outer._indices.getOrElse(t, -1)
+      override def clear() = {}
     }
   }
 
   /**Returns a synchronized view of the index. */
   def synchronized: Index[T] = {
-    val outer = this;
+    val outer = this
     new Index[T] {
-      override def iterator = outer.iterator;
-      override def size0 = outer.size0;
+      override def iterator = outer.iterator
+      override def size0 = outer.size0
       override def get(pos: Int) = synchronized {outer.get(pos); }
 
       override def index(t: T) = synchronized {outer.index(t); }
 
-      override def clear = synchronized {outer.clear; }
+      override def clear() = synchronized {outer.clear(); }
     }
   }
 }
@@ -167,26 +167,26 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
  */
 object Index extends Index[Any] {
   /**Constructs an empty index. */
-  def apply[T](): Index[T] = new Index[T] {};
+  def apply[T](): Index[T] = new Index[T] {}
 
   /**Constructs an Index from some elements. */
   def apply[T](elements: Iterator[T]): Index[T] = {
-    val index = new Index[T] {};
+    val index = new Index[T] {}
     // read through all elements now -- don't lazily defer evaluation
     for (element <- elements) {
-      index.index(element);
+      index.index(element)
     }
-    return index;
+    index
   }
 
   /**Constructs an Index from some elements. */
   def apply[T](iterable: Iterable[T]): Index[T] = {
-    val index = new Index[T] {};
+    val index = new Index[T] {}
     // read through all elements now -- don't lazily defer evaluation
     for (element <- iterable) {
-      index.index(element);
+      index.index(element)
     }
-    return index;
+    index
   }
 
   /**
@@ -195,6 +195,6 @@ object Index extends Index[Any] {
    */
   import scala.language.reflectiveCalls
   def load(source: {def getLines: Iterator[String]}): Index[String] = {
-    apply(source.getLines.map(_.stripLineEnd));
+    apply(source.getLines.map(_.stripLineEnd))
   }
 }

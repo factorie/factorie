@@ -1,7 +1,7 @@
 package cc.factorie.la
 
 import cc.factorie.util.{DoubleAccumulator, LocalDoubleAccumulator, Accumulator}
-import cc.factorie.{WeightsMap, TensorSet, Weights}
+import cc.factorie.model.{Weights, WeightsMap}
 
 // TODO why doesn't this implement Accumulator[WeightsMap]? -luke
 // answer: it's hard - contravariance on the method arguments
@@ -36,10 +36,6 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
       case SINGLE_TENSOR =>
         val newTensor = map(key) match {
           case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense => new DenseTensor2(t.dim1, t.dim2)
-          case t: DenseTensor1 => new DenseTensor1(t.dim1)
-          case t: DenseTensor2 => new DenseTensor2(t.dim1, t.dim2)
-          case t: DenseTensor3 => new DenseTensor3(t.dim1, t.dim2, t.dim3)
-          case t: DenseTensor4 => new DenseTensor4(t.dim1, t.dim2, t.dim3, t.dim3)
           case t: Tensor1 => new SparseIndexedTensor1(t.dim1)
           case t: Tensor2 => new SparseIndexedTensor2(t.dim1, t.dim2)
           case t: Tensor3 => new SparseIndexedTensor3(t.dim1, t.dim2, t.dim3)
@@ -51,20 +47,42 @@ class SmartGradientAccumulator extends WeightsMapAccumulator {
         map(key) = newTensor
         stateMap(key) = ACCUMULATOR
       case EMPTY =>
-        stateMap(key) = SINGLE_TENSOR
         t match {
           case t: SparseTensor if !t.isInstanceOf[SparseIndexedTensor] =>
+            stateMap(key) = SINGLE_TENSOR
             // This again suggests we really want more tensors supporting *=
             val newT = Tensor.newSparse(t)
             newT += (t,d)
             map(key) = newT
           case t: Singleton2BinaryLayeredTensor3 =>
+            stateMap(key) = ACCUMULATOR
             val newT = Tensor.newSparse(t)
             newT += (t,d)
             map(key) = newT
-          case t: Tensor =>
+          case t: DenseTensor =>
+            stateMap(key) = ACCUMULATOR
+            val t2 = t.copy
+            t2 *= d
+            map(key) = t2
+          case t: SparseTensor =>
+            stateMap(key) = ACCUMULATOR
+            val t2 = t.copy
+            t2 *= d
+            map(key) = t2
+          case t: Outer2Tensor =>
+            stateMap(key) = SINGLE_TENSOR
             t *= d
             map(key) = t
+          case t: ReadOnlyTensor =>
+            stateMap(key) = ACCUMULATOR
+            val t2 = Tensor.newSparse(t)
+            t2 += (t,d)
+            map(key) = t2
+          case t: Tensor =>
+            stateMap(key) = ACCUMULATOR
+            val t2 = Tensor.newDense(t)
+            t2 += (t,d)
+            map(key) = t2
         }
     }
   }

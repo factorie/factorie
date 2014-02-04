@@ -5,13 +5,16 @@ import java.io._
 import collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import java.text.DateFormat
 import cc.factorie.util.{CmdOption, DefaultCmdOptions}
-import com.mongodb.Mongo
+import com.mongodb.{MongoClient, Mongo}
 import cc.factorie._
 import app.nlp.hcoref._
 import io.Source
 import scala.util.Random
 import cc.factorie.util.{Attr,Cubbie}
 import Utils.random
+import cc.factorie.variable.DiffList
+import cc.factorie.model.{TemplateModel, Model}
+import cc.factorie.infer.Proposal
 
 class DebugDiffList extends DiffList{
   override def scoreAndUndo(model:Model): Double = {
@@ -27,7 +30,7 @@ class DebugDiffList extends DiffList{
     var s = model.currentScore(this)
     println("  next: "+ s)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
-    this.undo
+    this.undo()
     // We need to re-calculate the Factors list because the structure may have changed
     println("----CURRENT WORLD----")
     val s2 = model.currentScore(this)
@@ -50,7 +53,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
   val labeledData = initialDB.filter(_.groundTruth != None)
   def snapshotInterval = 10000
   var batchCount = 0
-  var mentionCount = labeledData.filter(_.isObserved).size
+  var mentionCount = labeledData.count(_.isObserved)
   var gtEntityCount = labeledData.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
   var curScore:Double = 0.0
   var maxScore:Double = 0.0
@@ -96,8 +99,8 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
       }
       println("  About to sample for "+stepsPerBatch + " steps.")
       //for(mention <- evidenceBatch)println(EntityUtils.prettyPrintAuthor(mention))
-      checkEntities
-      mentionCount += evidenceBatch.filter(_.isObserved).size
+      checkEntities()
+      mentionCount += evidenceBatch.count(_.isObserved)
       gtEntityCount = entities.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
       process(stepsPerBatch)
       //this.performMaintenance(this.entities)
@@ -197,7 +200,7 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
     } else println("  Passed test 3.")
   }
   */
-  override def proposalHook(proposal:Proposal) ={
+  override def proposalHook(proposal:Proposal[Null]) ={
     super.proposalHook(proposal)
     curScore += proposal.modelScore
     if(curScore>maxScore)maxScore=curScore
@@ -208,12 +211,12 @@ class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], evBatche
   }
   def snapshot(time:Long,numSamples:Int,numAccepted:Int,scores:Iterable[Double]):Unit ={
     for(pw <- pwOption){
-      val line = ((System.currentTimeMillis - time)/1000L + " "+numSamples+" "+numAccepted+" "+scores.mkString(" ")+" "+batchCount+" "+mentionCount+" "+gtEntityCount+" "+currentBatchName+" "+curScore+" "+maxScore)
+      val line = (System.currentTimeMillis - time) / 1000L + " " + numSamples + " " + numAccepted + " " + scores.mkString(" ") + " " + batchCount + " " + mentionCount + " " + gtEntityCount + " " + currentBatchName + " " + curScore + " " + maxScore
       pw.println(line)
       pw.flush()
     }
   }
-  def checkEntities:Unit ={
+  def checkEntities(): Unit = {
     val eids = new HashSet[String]
     eids ++= entities.map(_.id.toString)
     if(eids.size!=entities.size){
@@ -226,7 +229,7 @@ class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity
   var averageReliability = new UserReliabilityVariable
   var users:Seq[UserReliabilityVariable]=null
   var averageCorrect:Double = 0.0
-  override def reset = {averageReliability = new UserReliabilityVariable;super.reset}
+  override def reset() = {averageReliability = new UserReliabilityVariable;super.reset()}
   def setUsers(us:Seq[UserReliabilityVariable]):Unit ={
     this.users = us
     for(user<-users){
@@ -285,18 +288,18 @@ class AuthorSamplerWriterWithReliability(model:Model, initialDB:Seq[AuthorEntity
       urv.updateValue(null)
       urv.set(urv.percentImpactful/averageReliability.percentImpactful)(null)
     }
-    println("Average REL: pct-correct:"+(averageReliability.percentImpactful)+" num-correct: "+averageReliability.totalImpactfulEdits+" total: "+averageReliability.totalEdits)
+    println("Average REL: pct-correct:"+ averageReliability.percentImpactful +" num-correct: "+averageReliability.totalImpactfulEdits+" total: "+averageReliability.totalEdits)
     for(user <- users){
-      println("REL: truth: "+user.truth+" adjusted: "+user.doubleValue+" pct-correct: "+(user.percentImpactful)+" num-correct: "+user.totalImpactfulEdits+" total: "+user.totalEdits)
+      println("REL: truth: "+user.truth+" adjusted: "+user.doubleValue+" pct-correct: "+ user.percentImpactful +" num-correct: "+user.totalImpactfulEdits+" total: "+user.totalEdits)
     }
-    printRelAcc
+    printRelAcc()
     /* PRINT STATEMENTS FOR DEBUGGING */
     //for(edit <- evidence.filter(_.isEdit)){
     //  println("Edit is correct? " + edit.memberOfEdit.get.isCorrect+" score? "+edit.memberOfEdit.get.score+" owner reliability: "+edit.attr[UserReliabilityVariable].doubleValue)
     //}
     //for (edit <- evidence) println("Edit Owner Reliability: " + edit.attr[UserReliabilityVariable].totalImpactfulEdits / edit.attr[UserReliabilityVariable].totalEdits)
   }
-  def printRelAcc:Unit ={
+  def printRelAcc(): Unit = {
     //this code assumes urv.doubleValue is adjusted by the average
     var relXrel=0.0
     var relXunr=0.0
@@ -392,15 +395,15 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     parse(args)
     //writeOptions(new File(this.metaDir.value+experimentName.value))
     if(ldaModel.wasInvoked)Coref.ldaFileOpt = Some(ldaModel.value)
-    for(i<-0 until advanceSeed.value)random.nextInt
+    for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
-      val mongoConn = new Mongo(server.value,port.value.toInt)
+      val mongoConn = new MongoClient(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
-      mongoDB.getCollection("authors").drop
-      mongoDB.getCollection("papers").drop
-      mongoDB.getCollection("venues").drop
-      mongoConn.close
+      mongoDB.getCollection("authors").drop()
+      mongoDB.getCollection("papers").drop()
+      mongoDB.getCollection("venues").drop()
+      mongoConn.close()
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
     def opts = this
@@ -480,18 +483,18 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     evidenceBatches = HumanEditExperiments.edits2evidenceBatches(random.shuffle(edits),opts.heNumBatches.value)
     evidenceBatches = random.shuffle(evidenceBatches)
     //print statistics
-    println("InitialDB size. Num nodes:"+initialDB.size+" num entities: "+initialDB.filter(_.isEntity.booleanValue).size+".")
+    println("InitialDB size. Num nodes:"+initialDB.size+" num entities: "+initialDB.count(_.isEntity.booleanValue)+".")
     if(opts.heReliabilityUsers.value != 0){
       println("Users")
       println("  -number of author users: "+userNames.size)
-      println("  -number of greedy users: "+numGreedyUsers+"  ("+(numGreedyUsers.toDouble/(userNames.size.toDouble))+"%)")
+      println("  -number of greedy users: "+numGreedyUsers+"  ("+(numGreedyUsers.toDouble/ userNames.size.toDouble)+"%)")
     }
     println("Edits")
     println("  -total: "+edits.size)
     println("  -corrective: "+corrective.size)
-    println("  -corruptive: "+edits.filter(!_.isCorrect).size)
-    println("  -snl: "+edits.filter(_.isInstanceOf[HumanEditExperiments.ExpMergeEdit[AuthorEntity]]).size)
-    println("  -sl: "+edits.filter(_.isInstanceOf[HumanEditExperiments.ExpSplitEdit[AuthorEntity]]).size)
+    println("  -corruptive: "+edits.count(!_.isCorrect))
+    println("  -snl: "+edits.count(_.isInstanceOf[HumanEditExperiments.ExpMergeEdit[AuthorEntity]]))
+    println("  -sl: "+edits.count(_.isInstanceOf[HumanEditExperiments.ExpSplitEdit[AuthorEntity]]))
     //write baselines
     HumanEditExperiments.baseline1(initialDB,evidenceBatches,pwbl1)
     HumanEditExperiments.baseline2(initialDB,evidenceBatches,pwbl2)
@@ -508,10 +511,10 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
     }
     sampler.processExperiment(pw)
     initialDB = sampler.getEntities
-    pw.flush;pw.close
-    pwbl1.flush;pwbl1.close
-    pwbl2.flush;pwbl2.close
-    ExperimentsEditTracker.endStats
+    pw.flush();pw.close()
+    pwbl1.flush();pwbl1.close()
+    pwbl2.flush();pwbl2.close()
+    ExperimentsEditTracker.endStats()
   }
 }
 trait EDBExpOpts extends ExperimentOptions{
@@ -546,15 +549,15 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     parse(args)
     //writeOptions(new File(this.metaDir.value+experimentName.value))
     if(ldaModel.wasInvoked)Coref.ldaFileOpt = Some(ldaModel.value)
-    for(i<-0 until advanceSeed.value)random.nextInt
+    for(i<-0 until advanceSeed.value)random.nextInt()
     if(dropDB.value){
       println("Dropping database.")
-      val mongoConn = new Mongo(server.value,port.value.toInt)
+      val mongoConn = new MongoClient(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
-      mongoDB.getCollection("authors").drop
-      mongoDB.getCollection("papers").drop
-      mongoDB.getCollection("venues").drop
-      mongoConn.close
+      mongoDB.getCollection("authors").drop()
+      mongoDB.getCollection("papers").drop()
+      mongoDB.getCollection("venues").drop()
+      mongoConn.close()
     }
     println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
     def opts = this
@@ -611,7 +614,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     println("Evidence stream: "+evidenceStreamType.value)
     if(!evidenceStreamType.wasInvoked)throw new Exception("Remember to specify the type of evidence you want to stream.")
     if(evidenceStreamType.value=="human-edits"){
-      for(i<-0 until heAdvanceSeed.value)random.nextInt
+      for(i<-0 until heAdvanceSeed.value)random.nextInt()
       ExperimentsEditTracker.beginStats(outputFile.value)
       //do human edit experiment
       //val humanEditTemplate = new HumanEditTemplate(opts.heShouldLinkReward.value,opts.heShouldNotLinkPenalty.value)
@@ -671,10 +674,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             }
             println("Num Edits: " + edits.length)
             for (idx  <- 0 until numUsers) {
-              println("idx: "+idx+" num with idx: "+edits.filter(_.owner == idx).size)
+              println("idx: "+idx+" num with idx: "+edits.count(_.owner == idx))
               //users(idx).truth = edits.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / edits.filter(_.owner == idx).length.toDouble
-              users(idx).truthCorrect = edits.filter(_.owner == idx).filter(_.isCorrect).length.toDouble
-              users(idx).truthTotal = edits.filter(_.owner == idx).length.toDouble
+              users(idx).truthCorrect = edits.filter(_.owner == idx).count(_.isCorrect).toDouble
+              users(idx).truthTotal = edits.count(_.owner == idx).toDouble
             }
             for (user <- users) println("Users with reliability: " + user.truth)
             //compute reliabilities
@@ -699,9 +702,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
               urv.updateValue(null)
               urv.set(urv.percentImpactful/averageReliability.percentImpactful)(null)
             }
-            println("Average REL: pct-correct:"+(averageReliability.percentImpactful)+" num-correct: "+averageReliability.totalImpactfulEdits+" total: "+averageReliability.totalEdits)
+            println("Average REL: pct-correct:"+ averageReliability.percentImpactful +" num-correct: "+averageReliability.totalImpactfulEdits+" total: "+averageReliability.totalEdits)
             for(user <- users){
-              println("REL: truth: "+user.truth+" adjusted: "+user.doubleValue+" pct-correct: "+(user.percentImpactful)+" num-correct: "+user.totalImpactfulEdits+" total: "+user.totalEdits)
+              println("REL: truth: "+user.truth+" adjusted: "+user.doubleValue+" pct-correct: "+ user.percentImpactful +" num-correct: "+user.totalImpactfulEdits+" total: "+user.totalEdits)
             }
             val newAuthors2 = sampler.getEntities
             val (relAccuracy,relVandalized) = HumanEditExperiments.evaluateInferredAccuracy(newAuthors2,vandalizedFirst,vandalizedMiddle,true)
@@ -784,9 +787,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           /* Assign each edit to a user and then calculate reliabilities */
           println("Num Edits: " + editsUsed.length)
           for (idx  <- 0 until numUsers) {
-            println("idx: "+idx+" num with idx: "+editsUsed.filter(_.owner == idx).size)
-            users(idx).truthCorrect = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble
-            users(idx).truthTotal = editsUsed.filter(_.owner == idx).length.toDouble
+            println("idx: "+idx+" num with idx: "+editsUsed.count(_.owner == idx))
+            users(idx).truthCorrect = editsUsed.filter(_.owner == idx).count(_.isCorrect).toDouble
+            users(idx).truthTotal = editsUsed.count(_.owner == idx).toDouble
             //users(idx).truth = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / editsUsed.filter(_.owner == idx).length.toDouble
           }
           for (user <- users) println("Users with reliability: " + user.truth)
@@ -861,8 +864,8 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
           println("Num Edits: " + editsUsed.length)
           for (idx  <- 0 until numUsers){
             //users(idx).truth = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / edits.filter(_.owner == idx).length.toDouble
-            users(idx).truthCorrect = editsUsed.filter(_.owner == idx).filter(_.isCorrect).length.toDouble
-            users(idx).truthTotal = editsUsed.filter(_.owner == idx).length.toDouble
+            users(idx).truthCorrect = editsUsed.filter(_.owner == idx).count(_.isCorrect).toDouble
+            users(idx).truthTotal = editsUsed.count(_.owner == idx).toDouble
           }
           /* PRINT STATEMENTS FOR DEBUGGING */
           for (user <- users) println("Users with reliability: " + user.truth+" initial reliability: "+user.doubleValue)
@@ -1171,10 +1174,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
               /* Assign each edit to a user and then calculate reliabilities */
               println("Num Edits: " + edits.length)
               for (idx  <- 0 until numUsers) {
-                println("idx: "+idx+" num with idx: "+edits.filter(_.owner == idx).size)
+                println("idx: "+idx+" num with idx: "+edits.count(_.owner == idx))
                 //users(idx).truth = edits.filter(_.owner == idx).filter(_.isCorrect).length.toDouble / edits.filter(_.owner == idx).length.toDouble
-                users(idx).truthCorrect = edits.filter(_.owner == idx).filter(_.isCorrect).length.toDouble
-                users(idx).truthTotal = edits.filter(_.owner == idx).length.toDouble
+                users(idx).truthCorrect = edits.filter(_.owner == idx).count(_.isCorrect).toDouble
+                users(idx).truthTotal = edits.count(_.owner == idx).toDouble
               }
               for (user <- users) println("Users with reliability: " + user.truth)
               println("Num Correct: " + correctEdits.length.toString)
@@ -1196,9 +1199,9 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
             initialDB = sampler.getEntities
           }
           System.out.println("Finished MIXED experiment (warning, may not have implemented w/o reliability case)... exiting.")
-          pw.flush;pw.close
-          pwbl1.flush;pwbl1.close
-          pwbl2.flush;pwbl2.close
+          pw.flush();pw.close()
+          pwbl1.flush();pwbl1.close()
+          pwbl2.flush();pwbl2.close()
           System.exit(0)
         }
         case _ => throw new Exception("Human edit experiment type "+opts.heExperimentType.value + " not implemented.")
@@ -1255,10 +1258,10 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
     else println("unrecognized evidence stream: "+evidenceStreamType.value)
     val sampler = new AuthorSamplerWriter(authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value,initInstructionsOpt){temperature = 0.001}
     sampler.processExperiment(new PrintWriter(new File(outputFile.value)))
-    ExperimentsEditTracker.endStats
+    ExperimentsEditTracker.endStats()
   }
   def split[T](seq:Seq[T],numFolds:Int,fold:Int):(Seq[T],Seq[T]) = {
-    val folds = randomEqualPartitioning(seq,(scala.math.ceil(seq.size.toDouble/numFolds.toDouble)).toInt)
+    val folds = randomEqualPartitioning(seq, scala.math.ceil(seq.size.toDouble / numFolds.toDouble).toInt)
     val other = new ArrayBuffer[T]
     for(i<-0 until folds.size)if(i!=fold)other ++= folds(i)
     (folds(fold),other)
@@ -1295,7 +1298,7 @@ trait ExperimentOptions extends DefaultCmdOptions{
     //if(!file.exists)file.mkDirs
     val pw = new PrintWriter(file)
     writeOptions(pw)
-    pw.close
+    pw.close()
   }
   def writeOptions(pw:PrintWriter):Unit ={
     //pw.println("Experiment Parameters: "+DateFormat.getDateInstance(DateFormat.SHORT).format(now))

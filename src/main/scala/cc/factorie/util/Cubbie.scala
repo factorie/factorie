@@ -31,6 +31,8 @@ import cc.factorie.la.Tensor
 class Cubbie {
   thisCubbie =>
 
+  def version: String = "1.0"
+  def cubbieName: String = getClass.getName
 
   //  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
@@ -270,9 +272,9 @@ class Cubbie {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
 
-    //todo: this is probably very slow, as I need access the manifest, erasure, create new object etc.
+    //todo: this is probably very slow, as I need access the manifest, runtimeClass, create new object etc.
     def value2(implicit cache: collection.Map[(Class[Cubbie], String, Any), Iterable[Cubbie]]) = {
-      val foreignCubbie = m.erasure.newInstance().asInstanceOf[A]
+      val foreignCubbie = m.runtimeClass.newInstance().asInstanceOf[A]
       val foreignSlot = slot(foreignCubbie)
       cache((foreignCubbie.cubbieClass, foreignSlot.name, cubbie.id)).asInstanceOf[Iterable[A]]
     }
@@ -343,7 +345,7 @@ class Cubbie {
      * @param opt the option to use.
      */
     def :=(opt: Option[T]) {
-      for (value <- opt) this := (value)
+      for (value <- opt) this := value
     }
 
     /**
@@ -520,7 +522,7 @@ class Cubbie {
     def slot = (a: A) => a.Id
 
     def :=(ref: Any) {
-      if (ref.isInstanceOf[Cubbie]) throw new Error("Use ::= to set RefSlot by a Cubbie");
+      if (ref.isInstanceOf[Cubbie]) throw new Error("Use ::= to set RefSlot by a Cubbie")
       _map.update(name, ref)
     }
 

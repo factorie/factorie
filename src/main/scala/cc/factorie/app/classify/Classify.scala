@@ -21,8 +21,12 @@ import java.io._
 import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.optimize.{LinearMultiClassClassifier, LinearMultiClassClassifierCubbie, MultiClassClassifier, MultiClassTrainerBase}
 import cc.factorie.la.Tensor1
+import scala.Some
+import cc.factorie.variable._
+import scala.Some
+import cc.factorie.app.classify.backend._
+import scala.Some
 
 // Feature and Label classes
 
@@ -30,17 +34,17 @@ class Label(val labelName: String, val features: Features, val domain: Categoric
   override def toString = "instance=%s label=%s" format (features.instanceName, categoryValue)
   override val skipNonCategories = true
 }
-trait Features extends DiscreteTensorVar {
-  this: CategoricalTensorVariable[String] =>
+trait Features extends VectorVar {
+  this: CategoricalVectorVariable[String] =>
   def labelName: String
   def instanceName: String
-  def domain: CategoricalTensorDomain[String]
+  def domain: CategoricalVectorDomain[String]
   def labelDomain: CategoricalDomain[String]
   var label = new Label(labelName, this, labelDomain)
 }
-class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalVectorDomain[String], val labelDomain: CategoricalDomain[String])
   extends BinaryFeatureVectorVariable[String] with Features { override val skipNonCategories = true }
-class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalVectorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features { override val skipNonCategories = true }
 
 // A TUI for training, running and diagnosing classifiers
@@ -111,7 +115,7 @@ object Classify {
       val validationPortion = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
       val localRandomSeed = new CmdOption("random-seed", 0, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
-      val trainer = new CmdOption("trainer", "new SVMMultiClassTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
+      val trainer = new CmdOption("trainer", "new SVMMulticlassClassifierTrainer", "code", "Scala code to construct a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
       val crossValidation = new CmdOption("cross-validation", 0, "N", "The number of folds for cross-validation (DEFAULT=0)")
 
@@ -121,7 +125,7 @@ object Classify {
     }
     opts.parse(args)
 
-    object FeaturesDomain extends CategoricalTensorDomain[String]
+    object FeaturesDomain extends CategoricalVectorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
 
     // set local random seed
@@ -157,7 +161,7 @@ object Classify {
     val testingLabels = new ArrayBuffer[Label]()
 
     // Helper functions
-    def textIntoFeatures(text: String, features: CategoricalTensorVariable[String]): Unit = {
+    def textIntoFeatures(text: String, features: CategoricalVectorVariable[String]): Unit = {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
       val text2 = if (opts.readTextSkipHeader.value) Some(text.indexOf("\n\n"))
           .filter(-1 !=).orElse(Some(text.indexOf("\r\n\r\n")))
@@ -204,7 +208,7 @@ object Classify {
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        for (file <- new File(directory).listFiles; if file.isFile) {
           //println ("Directory " + directory + " File " + file + " documents.size " + documents.size)
           val labelName = directoryFile.getName
           val instanceName = labelName + "-" + file.getName
@@ -240,7 +244,7 @@ object Classify {
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifierFile = new File(opts.readClassifier.value)
-      val cubbie = new cc.factorie.optimize.LinearMultiClassClassifierCubbie
+      val cubbie = new LinearMulticlassClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
       val classifications = labels.map(l => classifier.classification(l.features.value))
@@ -260,7 +264,7 @@ object Classify {
       if (opts.readTestingInstances.wasInvoked) testingLabels ++= readInstancesFromFile(opts.readTestingInstances.value)
     } else {
       val (trainSet, testAndValidationSet) =
-        if (opts.trainingPortion == 1.0) (labels, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
+        if (opts.trainingPortion.value == 1.0) (labels.shuffle, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
       val (valSet, testSet) =
         if (opts.validationPortion.value == 0.0) (Seq(): Seq[Label], testAndValidationSet)
         else testAndValidationSet.split(opts.validationPortion.value / (1 - opts.trainingPortion.value))
@@ -282,7 +286,7 @@ object Classify {
       writeInstances(bigll, instancesFile)
     }
 
-    val classifierTrainer = ScriptingUtils.eval[MultiClassTrainerBase[MultiClassClassifier[Tensor1]]](
+    val classifierTrainer = ScriptingUtils.eval[MulticlassClassifierTrainer[LinearMulticlassClassifier]](
       "{ implicit val rng = new scala.util.Random(0); " + opts.trainer.value + "}", Seq("cc.factorie.app.classify._", "cc.factorie.optimize._"))
 
     val start = System.currentTimeMillis
@@ -294,8 +298,8 @@ object Classify {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       classifier match {
-        case model: LinearMultiClassClassifier =>
-          val mc = new LinearMultiClassClassifierCubbie
+        case model: LinearMulticlassClassifier =>
+          val mc = new LinearMulticlassClassifierCubbie
           mc.store(model)
           BinarySerializer.serialize(mc, classifierFile)
       }
@@ -307,19 +311,19 @@ object Classify {
           val trainTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           trainTrial ++= trainingLabels
           println("== Training Evaluation ==")
-          println(trainTrial.toString)
+          println(trainTrial.toString())
         }
         if (testingLabels.length > 0) {
           val testTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           testTrial ++= testingLabels
           println("== Testing Evaluation ==")
-          println(testTrial.toString)
+          println(testTrial.toString())
         }
         if (validationLabels.length > 0) {
           val validationTrial = new classify.Trial[Label, Tensor1](classifier, trainingLabels.head.domain, _.features.value)
           validationTrial ++= validationLabels
           println("== Validation Evaluation ==")
-          println(validationTrial.toString)
+          println(validationTrial.toString())
         }
     }
   }
