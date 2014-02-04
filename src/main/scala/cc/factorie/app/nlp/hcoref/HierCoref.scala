@@ -656,9 +656,9 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String
   protected val _members:SparseBagOfWords = {
     val result = new SparseBagOfWords(initialWords)
     if(initialMap!=null)for((k,v) <- initialMap)result += (k,v)
+    result.variable = this
     result
   }
-  _members.variable = this
   def members: SparseBagOfWords = _members
   def iterator = _members.iterator
   override def size = _members.size
