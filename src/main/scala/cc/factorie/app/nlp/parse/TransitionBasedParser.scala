@@ -619,8 +619,8 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing test files.")
   val devDir = new CmdOption("devDir", "", "FILENAME", "Directory containing dev files.")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
-  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
-  val wsj = new CmdOption("wsj", false, "BOOLEAN", "Whether data are in WSJ format or otherwise")
+  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "Whether data are in Ontonotes format or otherwise (WSJ or CoNLL)")
+  val wsj = new CmdOption("wsj", false, "BOOLEAN", "Whether data are in WSJ format or otherwise (Ontonotes or CoNLL)")
   val cutoff    = new CmdOption("cutoff", 0, "", "")
   val loadModel = new CmdOption("load", "", "", "")
   val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use during training.")
@@ -648,14 +648,14 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       var fileList = Seq.empty[String]
       if (listOpt.wasInvoked) fileList = listOpt.value.toSeq
       if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value)
-      fileList.flatMap(fname => (
+      fileList.flatMap(fname => {
         if(opts.wsj.value)
-          load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO)
+          load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else if (opts.ontonotes.value)
-          load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO)
+          load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else
-          load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq
-      )
+          load.LoadConll2008.fromFilename(fname).head.sentences.toSeq 
+      })
     }
 
     val sentencesFull = loadSentences(opts.trainFiles, opts.trainDir)
@@ -762,7 +762,12 @@ object TransitionBasedParserTester {
     val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
   
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head)
+	val testDocs =  testFileList.map(fname => {
+	  if(opts.wsj.value)
+	    load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head
+	  else
+	    load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head
+	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 

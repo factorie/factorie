@@ -353,7 +353,10 @@ class ForwardPosTagger extends DocumentAnnotator {
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    println("POS1.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    
+    /* Print out some features (for debugging) */
+    //println("ForwardPosTagger.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    
     def evaluate() {
       exampleSetsToPrediction = doBootstrap
       printAccuracy(trainSentences, "Training: ")
@@ -430,7 +433,10 @@ object ForwardPosTester {
     }
   
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(if(opts.wsj.value) load.LoadWSJMalt.fromFilename(_).head else load.LoadOntonotes5.fromFilename(_).head)
+	val testDocs = testFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
@@ -464,8 +470,14 @@ object ForwardPosTrainer extends HyperparameterMain {
       testFileList =  opts.testFiles.value.split(",")
     }
     
-    val trainDocs = trainFileList.map(load.LoadOntonotes5.fromFilename(_).head)
-    val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+    val trainDocs = trainFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
+    val testDocs = testFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
 
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens from %d files.".format(trainDocs.map(_.tokenCount).sum, trainDocs.size))

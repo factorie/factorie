@@ -60,10 +60,10 @@ object LoadWSJMalt {
         val word = fields(1)
         
         val goldLemma = fields(2)
-        //val autoLemma = fields(3)
+        val autoLemma = fields(3)
         
-        val goldPartOfSpeech = fields(3)
-        val autoPartOfSpeech = fields(4) 
+        val goldPartOfSpeech = fields(4)
+        val autoPartOfSpeech = fields(5) 
         
         // OFF BY 1!
         val autoParentIdx = fields(7).toInt - 1 

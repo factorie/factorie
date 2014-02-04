@@ -103,7 +103,7 @@ object LoadOntonotes5 {
     if ((sentence != null) && (loadParse != AnnotationTypes.NONE)) addDepInfo(sentence, depInfoSeq)
     if (nerBilou) convertBioBilou(document.asSection)
 
-    println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
+    println("LoadOntonotes5: Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
     Seq(document)
   }
 
