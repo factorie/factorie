@@ -91,7 +91,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].label(positionInSentence)
   def parseChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].children(positionInSentence)
   def parseLeftChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(positionInSentence)
-  def parseRightChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(positionInSentence)
+  def parseRightChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildren(positionInSentence)
   def parseChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].childrenLabeled(positionInSentence, label.intValue)
   def parseLeftChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildrenLabeled(positionInSentence, label.intValue)
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(positionInSentence, label.intValue)
@@ -126,7 +126,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"
   /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
-  def isPunctuation: Boolean = string.matches("\\{Punct}")
+  def isPunctuation: Boolean = string.matches("\\p{Punct}+")
   /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
   /** Return true if any character of the word is upper case. */
