@@ -1,4 +1,4 @@
-package cc.factorie.app.nlp.segment
+package com.oskarsinger.code
 
 import scala.collection.mutable.{Map, ArrayBuffer}
 import java.io._
@@ -12,7 +12,7 @@ import cc.factorie.app.chain.ChainModel
 
 /** A linear-chain CRF model for Chinese word segmentation.
     @author Henry Oskar Singer  */
-class CRFChineseWordSegmenter(
+class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain, 
   useOnline: Boolean = false
 ) extends DocumentAnnotator {
@@ -154,13 +154,15 @@ class CRFChineseWordSegmenter(
     ).toList.mkString.split(delimiter)
   }
 
-  def segment(document: Document): IndexedSeq[SegmentationLabel] = {
+  def segment(filePath: String): IndexedSeq[SegmentationLabel] = segment(getSegmentables(new File(filePath)))
+  def segment(document: Document): IndexedSeq[SegmentationLabel] = segment(getSegmentables(document))
+  def segment(segmentables: IndexedSeq[Segmentable]): IndexedSeq[SegmentationLabel] = {
 
-    val segmentables = getSegmentables(document).map( _.links.map( _.label ) )
+    val labelSeqs = segmentables.map( _.links.map( _.label ) )
 
-    segmentables.foreach( segmentable => model.maximize(segmentable)(null) )
+    labelSeqs.foreach( labelSeq => model.maximize(labelSeq)(null) )
 
-    segmentables.flatten
+    labelSeqs.flatten
   }
 
   def getSegmentables(corpus: File): IndexedSeq[Segmentable] = {
@@ -169,14 +171,12 @@ class CRFChineseWordSegmenter(
 
     getSegmentables(labeledCharacters)
   }
-
   def getSegmentables(document: Document): IndexedSeq[Segmentable] = {
 
     val labeledCharacters = labelDomain.getLabeledCharacters(document)
 
     getSegmentables(labeledCharacters)
   }
-
   def getSegmentables(labeledCharacters: IndexedSeq[(String, String)]): IndexedSeq[Segmentable] = {
 
     val numChars = labeledCharacters.size
