@@ -653,7 +653,7 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String
   type Value = SparseBagOfWords
   def value = _members
   def clear() = _members.clear
-  private val _members:SparseBagOfWords = {
+  protected val _members:SparseBagOfWords = {
     val result = new SparseBagOfWords(initialWords)
     if(initialMap!=null)for((k,v) <- initialMap)result += (k,v)
     result
