@@ -13,12 +13,12 @@ import java.io.PrintWriter
    @author Brian Martin, Andrew McCallum
   1   token ID
   2   word form
-  3   auto lemma
-  4   gold lemma
-  5   auto POS tag
-  6   gold POS tag
-  7   auto feats
-  8	  gold feats
+  3   gold lemma
+  4   auto lemma
+  5   gold POS tag
+  6   auto POS tag
+  7   gold feats
+  8	  auto feats
   9   auto head ID				
   10  gold head ID
   11  auto dependency label		
@@ -27,22 +27,16 @@ import java.io.PrintWriter
   14  gold semantic arguments
   15  gold named entity tags
   16  gold coreference
-
  */
-object AnnotationTypes{
-  val NONE = 0
-  val GOLD = 1
-  val AUTO = 2
-}
 
-object LoadOntonotes5 {
+object LoadWSJMalt {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     //assert(depInfoSeq.map(_._1) == Seq.tabulate(depInfoSeq.length)(i => i), "Token indices: "+depInfoSeq.map(_._1).mkString(" ")) // Assert that we have an entry for each token index, in order
     val tree = new ParseTree(s, depInfoSeq.map(_._2), depInfoSeq.map(_._3))
     s.attr += tree
   }
 
-  def fromLines(lines:Iterator[String], filename:String = "?UNKNOWN?", loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = true): Seq[Document] = {
+  def fromLines(lines:Iterator[String], filename:String = "?UNKNOWN?", loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
     val document: Document = new Document().setName("Ontonotes499/" + filename)
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
@@ -65,20 +59,20 @@ object LoadOntonotes5 {
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
         
-        val autoLemma = fields(2)
-        val goldLemma = fields(3)
+        val goldLemma = fields(2)
+        val autoLemma = fields(3)
         
-        val autoPartOfSpeech = fields(4)
-        val goldPartOfSpeech = fields(5)
+        val goldPartOfSpeech = fields(4)
+        val autoPartOfSpeech = fields(5) 
         
         // OFF BY 1!
-        val autoParentIdx = fields(8).toInt - 1 
-        val goldParentIdx = fields(9).toInt - 1
+        val autoParentIdx = fields(7).toInt - 1 
+        val goldParentIdx = fields(8).toInt - 1
         
-        val autoDepLabel = fields(10)
-        val goldDepLabel = fields(11)
+        val autoDepLabel = fields(9)
+        val goldDepLabel = fields(10)
         
-        var ner = fields(14); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
+        var ner = fields(13); if (ner == "_") ner = "O"  // If we wanted to distinguish "unnamed entities" from background, we wouldn't have this.
         
         document.appendString(" ")
         val token = new Token(sentence, word)
@@ -89,7 +83,7 @@ object LoadOntonotes5 {
         }
         loadLemma match{
 	      case AnnotationTypes.GOLD => {token.attr += new TokenLemma(token, goldLemma)}
-	      case AnnotationTypes.AUTO => {token.attr += new TokenLemma(token, autoLemma)}
+	      case AnnotationTypes.AUTO => {token.attr += new TokenLemma(token, goldLemma)}//{token.attr += new TokenLemma(token, autoLemma)}
 	      case AnnotationTypes.NONE => {/* do nothing */}
         }
         loadParse match{
@@ -107,7 +101,7 @@ object LoadOntonotes5 {
     Seq(document)
   }
 
-  def fromFilename(filename:String, loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = true): Seq[Document] = {
+  def fromFilename(filename:String, loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
     fromLines(Source.fromFile(filename).getLines(), filename, loadLemma, loadPos, loadParse, loadNer, nerBilou)
   }
 

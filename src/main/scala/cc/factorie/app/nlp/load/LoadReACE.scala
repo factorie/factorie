@@ -13,6 +13,7 @@ import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Array.fallbackCanBuildFrom
+import scala.collection.mutable.ListBuffer
 
 trait ReACEMentionIdentifiers {
   val mId: Option[String]
@@ -103,7 +104,7 @@ object LoadReACE {
   }
 
   private def lookupEntityMention(doc: Document, id: String): Option[PairwiseMention] = {
-    val opt = doc.attr[ner.ConllNerSpanList].find {
+    val opt = doc.attr[ner.ConllNerSpanBuffer].find {
       s => {
         val a = s.attr[ReACEMentionIdentifiers]
         (a ne null) && a.mId.get == id
@@ -114,7 +115,7 @@ object LoadReACE {
   }
 
   def addNrm(doc: Document, xml: String): Document = {
-    val spanList = doc.attr[ner.ConllNerSpanList]
+    val spanList = doc.attr[ner.ConllNerSpanBuffer]
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -151,7 +152,6 @@ object LoadReACE {
       // set the head of the mention
       m.attr[ReACEMentionIdentifiers].headEnd.foreach(he => m._head = doc.asSection(he))
     }
-
 
     // Add relations
     xmlText = XML.loadFile(xml + ".nrm.xml") // is there a way to avoid rereading?
@@ -191,7 +191,7 @@ object LoadReACE {
   def main(args: Array[String]): Unit = {
     val docs = fromDirectory(args(0))
     for (d <- docs)
-      d.attr[ner.ConllNerSpanList].foreach(s => println(s))
+      d.attr[ner.ConllNerSpanBuffer].foreach(s => println(s))
   }
 
 }

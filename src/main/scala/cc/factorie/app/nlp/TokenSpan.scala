@@ -48,9 +48,14 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     case x => x.toString
   }
 }
+trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
 
-/** A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanList[S<:TokenSpan] extends SpanVarList[S, Section, Token]
+
+/** An immutable collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
+class TokenSpanList[S<:TokenSpan](spans:Iterable[S]) extends SpanVarList[S, Section, Token](spans) with TokenSpanCollection[S]
+
+/** A mutable collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
+class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] with TokenSpanCollection[S]
 
 object TokenSpan {
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {

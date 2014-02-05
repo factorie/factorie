@@ -58,7 +58,7 @@ class LabeledConllNerTag(token:Token, initialCategory:String) extends ConllNerTa
 
 class ConllNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = ConllNerDomain }
 class ConllNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new ConllNerSpanLabel(this, category) }
-class ConllNerSpanList extends TokenSpanList[ConllNerSpan]
+class ConllNerSpanBuffer extends TokenSpanBuffer[ConllNerSpan]
 //class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
 
 
@@ -75,9 +75,9 @@ object BioConllNerDomain extends CategoricalDomain[String] {
    "I-MISC"
   )
   freeze()
-  def spanList(section:Section): ConllNerSpanList = {
+  def spanList(section:Section): ConllNerSpanBuffer = {
     val boundaries = iobBoundaries(section.tokens.map(_.attr[BioConllNerTag].categoryValue))
-    new ConllNerSpanList ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
+    new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
 class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioConllNerDomain }
@@ -109,9 +109,9 @@ object BilouConllNerDomain extends CategoricalDomain[String] {
    "U-MISC"
   )  
   freeze()
-  def spanList(section:Section): ConllNerSpanList = {
+  def spanList(section:Section): ConllNerSpanBuffer = {
     val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouConllNerTag].categoryValue))
-    new ConllNerSpanList ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
+    new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
 class BilouConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouConllNerDomain }
@@ -149,7 +149,7 @@ class LabeledOntonotesNerTag(token:Token, initialCategory:String) extends Ontono
 
 class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = OntonotesNerDomain }
 class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new OntonotesNerSpanLabel(this, category) }
-class OntonotesNerSpanList extends TokenSpanList[OntonotesNerSpan]
+class OntonotesNerSpanBuffer(spans:Iterable[OntonotesNerSpan]) extends TokenSpanBuffer[OntonotesNerSpan]
 //class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }
 
 
@@ -280,9 +280,9 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
   // Convert from an intValue in this domain to an intValue in the OntonotesNerDomain
   def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
   freeze()
-  def spanList(section:Section): OntonotesNerSpanList = {
+  def spanList(section:Section): OntonotesNerSpanBuffer = {
     val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouOntonotesNerTag].categoryValue))
-    new OntonotesNerSpanList ++= boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3))
+    new OntonotesNerSpanBuffer(boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3)))
   } 
 }
 class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
