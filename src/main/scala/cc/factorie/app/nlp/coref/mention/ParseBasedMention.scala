@@ -7,7 +7,6 @@ import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
-import cc.factorie.app.nlp.coref.mention.{MentionType, MentionList, Mention}
 
 
 class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
@@ -41,7 +40,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
 
   private def nerSpans(doc: Document): Seq[Mention] = {
-    (for (span <- doc.attr[ConllNerSpanList]) yield
+    (for (span <- doc.attr[ConllNerSpanBuffer]) yield
       new Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }

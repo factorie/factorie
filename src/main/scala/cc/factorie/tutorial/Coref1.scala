@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 object Coref1 {
   
   class SpanMention(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) with TokenSpanMention
-  class SpanMentionList(spans:Iterable[SpanMention]) extends TokenSpanList[SpanMention](spans)
+  class SpanMentionBuffer extends TokenSpanBuffer[SpanMention]
 
   abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
     override def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
@@ -109,20 +109,18 @@ object Coref1 {
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {
-    val spanList = new ListBuffer[SpanMention]
+    val spanList = doc.attr += new SpanMentionBuffer
     val section = doc.asSection
     for (token <- section.tokens) {
       // Make a mention for simple pronouns
-      //Is this an okay change to enable the use of immutable span list?
-      if (token.string.matches("[Hh]e|[Ss]he|[Ii]t") && !spanList.contains(token)) spanList += new SpanMention(section, token.position, 1)
+      if (token.string.matches("[Hh]e|[Ss]he|[Ii]t") && spanList.spansContaining(token).length == 0) spanList += new SpanMention(section, token.position, 1)
       // Make a mention for sequences of capitalized words
-      if (token.isCapitalized && !spanList.contains(token)) {
+      if (token.isCapitalized && spanList.spansContaining(token).length == 0) {
         var len = 1
         while (token.position + len < section.length && section(token.position+len).isCapitalized) len += 1
         spanList += new SpanMention(section, token.position, len)
       }
     }
-    doc.attr += new SpanMentionList(spanList)
   }
 
 //  object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))(new scala.util.Random(0))
@@ -133,7 +131,7 @@ object Coref1 {
   def corefInit(doc:Document): Unit = {
     //val entities = new ArrayBuffer[Entity]
     // Make each Mention its own Entity
-    for (mention <- doc.attr[SpanMentionList]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
+    for (mention <- doc.attr[SpanMentionBuffer]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
     // Assign each mention to its closest previous non-pronoun mention
     /*for (mention <- doc.orderedSpansOfClass[Mention]) {
       val prevMention = mention.document.spanOfClassPreceeding[Mention](mention.start)
@@ -149,7 +147,7 @@ object Coref1 {
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
-      for (antecedant <- mention.document.attr[SpanMentionList].spansPreceeding(mention.head))
+      for (antecedant <- mention.document.attr[SpanMentionBuffer].spansPreceeding(mention.head))
         changes += {(d:DiffList) => entityRef.set(antecedant)(d)}
       var i = 0
       def hasNext = i < changes.length
@@ -175,7 +173,7 @@ object Coref1 {
   }
 
   def coref(doc:Document): Unit = {
-    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
+    for (mention <- doc.attr[SpanMentionBuffer].orderedSpans) {
       EntityRefSampler.process(mention.parentEntityRef)
     }
   }
@@ -188,7 +186,7 @@ object Coref1 {
     corefInit(doc)
     coref(doc)
     // Print the results
-    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
+    for (mention <- doc.attr[SpanMentionBuffer].orderedSpans) {
       println(mention+" => "+mention.parentEntity+"\n")
     }
   }

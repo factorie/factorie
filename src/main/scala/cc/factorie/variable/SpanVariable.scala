@@ -159,13 +159,13 @@ class SpanList[S<:Span[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer
 }
 
 /** An abstract collection of SpanVars, with various methods for retrieving subsets. */
-trait SpanVarCollection[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Seq[S] {
-  def spansOfClass[A<:S](c:Class[A]): Seq[A] = this.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def spansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.runtimeClass.asInstanceOf[Class[A]])
+trait SpanVarCollection[+S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Seq[S] {
+  def spansOfClass[A<:SpanVar[C,E]](c:Class[A]): Seq[A] = this.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClass[A<:SpanVar[C,E]](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.runtimeClass.asInstanceOf[Class[A]])
   // Spans sorted by their start position
   def orderedSpans: Seq[S] = this.toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
-  def orderedSpansOfClass[A<:S](c:Class[A]): Seq[A] = spansOfClass(c).toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
-  def orderedSpansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = orderedSpansOfClass(m.runtimeClass.asInstanceOf[Class[A]])
+  def orderedSpansOfClass[A<:SpanVar[C,E]](c:Class[A]): Seq[A] = spansOfClass(c).toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
+  def orderedSpansOfClass[A<:SpanVar[C,E]](implicit m:Manifest[A]): Seq[A] = orderedSpansOfClass(m.runtimeClass.asInstanceOf[Class[A]])
   // Spans in relation to a ChainLink element
   def spansContaining(e:E): Seq[S] = this.filter(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length)
   def hasSpansContaining(e:E): Boolean = this.exists(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length)
@@ -174,23 +174,23 @@ trait SpanVarCollection[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends
   def spansFollowing(e:E): Seq[S] = this.filter(s => (s.chain eq e.chain) && s.start > e.position)
   def spansPreceeding(e:E): Seq[S] = this.filter(s => (s.chain eq e.chain) && s.start + s.length - 1 < e.position)
 
-  def spansOfClassContaining[A<:S](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def hasSpansOfClassContaining[A<:S](c:Class[A], e:E): Boolean = this.exists(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length && c.isAssignableFrom(s.getClass))
-  def spansOfClassStartingAt[A<:S](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start == e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def spansOfClassEndingAt[A<:S](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start + s.length - 1 == e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def spansOfClassFollowing[A<:S](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start > e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def spansOfClassPreceeding[A<:S](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start + s.length - 1 < e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassContaining[A<:SpanVar[C,E]](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def hasSpansOfClassContaining[A<:SpanVar[C,E]](c:Class[A], e:E): Boolean = this.exists(s => (s.chain eq e.chain) && s.start <= e.position && e.position < s.start + s.length && c.isAssignableFrom(s.getClass))
+  def spansOfClassStartingAt[A<:SpanVar[C,E]](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start == e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassEndingAt[A<:SpanVar[C,E]](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start + s.length - 1 == e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassFollowing[A<:SpanVar[C,E]](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start > e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassPreceeding[A<:SpanVar[C,E]](c:Class[A], e:E): Seq[A] = this.filter(s => (s.chain eq e.chain) && s.start + s.length - 1 < e.position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
 
-  def spansOfClassContaining[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassContaining[A](m.runtimeClass.asInstanceOf[Class[A]], e)
-  def hasSpansOfClassContaining[A<:S](e:E)(implicit m:Manifest[A]): Boolean = hasSpansOfClassContaining(m.runtimeClass.asInstanceOf[Class[A]], e)
-  def spansOfClassStartingAt[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassStartingAt(m.runtimeClass.asInstanceOf[Class[A]], e)
-  def spansOfClassEndingAt[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassEndingAt(m.runtimeClass.asInstanceOf[Class[A]], e)
-  def spansOfClassFollowing[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassFollowing(m.runtimeClass.asInstanceOf[Class[A]], e)
-  def spansOfClassPreceeding[A<:S](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassPreceeding(m.runtimeClass.asInstanceOf[Class[A]], e)
+  def spansOfClassContaining[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassContaining[A](m.runtimeClass.asInstanceOf[Class[A]], e)
+  def hasSpansOfClassContaining[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Boolean = hasSpansOfClassContaining(m.runtimeClass.asInstanceOf[Class[A]], e)
+  def spansOfClassStartingAt[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassStartingAt(m.runtimeClass.asInstanceOf[Class[A]], e)
+  def spansOfClassEndingAt[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassEndingAt(m.runtimeClass.asInstanceOf[Class[A]], e)
+  def spansOfClassFollowing[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassFollowing(m.runtimeClass.asInstanceOf[Class[A]], e)
+  def spansOfClassPreceeding[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassPreceeding(m.runtimeClass.asInstanceOf[Class[A]], e)
 }
 
 /** An immutable concrete collection of SpanVars. */
-class SpanVarList[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]](spans:Iterable[S]) extends SubclassableVector[S](spans) with SpanVarCollection[S,C,E]
+class SpanVarList[+S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]](spans:Iterable[S]) extends SubclassableVector[S](spans) with SpanVarCollection[S,C,E]
 
 /** A mutable concrete collection of SpanVars, with various methods for tracking additions and removals via DiffLists. */
 class SpanVarBuffer[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] with SpanVarCollection[S,C,E] {
