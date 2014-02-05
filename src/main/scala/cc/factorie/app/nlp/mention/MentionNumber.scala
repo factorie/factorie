@@ -1,14 +1,13 @@
 package cc.factorie.app.nlp.mention
-import cc.factorie._
+
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
-import org.jblas.Singular
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import cc.factorie.app.nlp.coref.mention.{MentionList, Mention}
 
 object MentionNumberDomain extends EnumDomain {
-  val UNKNOWN,     // uncertain 
+  val UNKNOWN,     // uncertain
   SINGULAR,        // known to be non-person
   PLURAL = Value   // person, but uncertain about gender
 }

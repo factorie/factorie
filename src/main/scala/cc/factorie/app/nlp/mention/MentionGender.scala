@@ -5,7 +5,7 @@ import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import cc.factorie.app.nlp.coref.mention.{MentionList, Mention}
 
 object MentionGenderDomain extends EnumDomain {
-  val UNKNOWN,     // uncertain 
+  val UNKNOWN,     // uncertain
   NEUTER,          // known to be non-person
   PERSON,          // person, but uncertain about gender
   MALE,            // male person

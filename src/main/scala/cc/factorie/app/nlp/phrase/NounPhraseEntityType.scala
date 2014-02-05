@@ -19,6 +19,7 @@ import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVari
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp.coref.mention.Entity
+import cc.factorie.app.nlp.load.LoadConll2011
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
 class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
@@ -151,7 +152,7 @@ object NounPhraseEntityTypeLabeler extends NounPhraseEntityTypeLabeler(cc.factor
 object NounPhraseEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
     if (args.length == 0) println("usage: trainfile [modelfile]")
-    var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
+    var trainDocs = LoadConll2011.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
     trainDocs = trainDocs.dropRight(20)
     val labeler = new NounPhraseEntityTypeLabeler

@@ -86,7 +86,6 @@ object LoadConll2011 {
         currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
-        //currDoc.attr += new MentionList
       } else if (l.startsWith("#end document")) {
         currDoc.attr += new MentionList(mentionList.toList)
         mentionList.clear()
