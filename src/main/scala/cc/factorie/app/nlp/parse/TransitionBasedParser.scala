@@ -755,8 +755,14 @@ object TransitionBasedParserTester {
 	opts.parse(args)
 	assert(opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
 	  
-	// load model from file if given, else use default model
-	val parser = if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value)) else OntonotesTransitionBasedParser
+	// load model from file if given,
+	// else if the wsj command line param was specified use wsj model,
+	// otherwise ontonotes model
+	val parser = {
+	  if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value))
+	  else if(opts.wsj.value) WSJTransitionBasedParser
+	  else OntonotesTransitionBasedParser
+	}
 	
 	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
