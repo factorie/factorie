@@ -21,11 +21,11 @@ class ChainChineseWordSegmenter(
     this()
     deserialize(filePath)
   }
-
   def this(dataStream: InputStream) {
     this()
     deserialize(dataStream)
   }
+  def this(url: java.net.URL) = this(url.openConnection().getInputStream)
 
   def process(document: Document): Document = {
 
@@ -62,7 +62,6 @@ class ChainChineseWordSegmenter(
   } 
 
   def serialize(filePath: String): Unit = serialize(new FileOutputStream(new File(filePath)))
-
   def serialize(stream: OutputStream): Unit = {
     
     val dataStream = new DataOutputStream(new BufferedOutputStream(stream)) 
@@ -73,7 +72,6 @@ class ChainChineseWordSegmenter(
   }
 
   def deserialize(filePath: String): Unit = deserialize(new FileInputStream(new File(filePath)))
-
   def deserialize(stream: InputStream): Unit = {
     
     val dataStream = new DataInputStream(new BufferedInputStream(stream))
