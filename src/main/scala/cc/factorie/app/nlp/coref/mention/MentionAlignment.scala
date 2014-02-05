@@ -1,16 +1,15 @@
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Token, Document}
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.mention._
 import cc.factorie.app.nlp.pos.PennPosTag
 import collection.mutable.{ArrayBuffer, HashMap}
-import java.io.PrintWriter
 import cc.factorie.app.nlp.parse.ParseTree
 import scala.Some
+import cc.factorie.app.nlp.load.LoadConll2011
+import cc.factorie.app.nlp.coref.Coref1Options
 
 /**
  * User: apassos
@@ -21,11 +20,11 @@ import scala.Some
 object MentionAlignment {
   def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
-    val documentsAll = ConllCorefLoader.loadWithParse(f)
+    val documentsAll = LoadConll2011.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
 
     //make copies of the documents with no annotation
-    val documentsToBeProcessedAll =  ConllCorefLoader.loadWithParse(f)
+    val documentsToBeProcessedAll =  LoadConll2011.loadWithParse(f)
     val documentsToBeProcessed =  documentsToBeProcessedAll.take((documentsToBeProcessedAll.length*portion).toInt)
     //make sure that they have the same names, i.e. they were loaded in the same order and subspampled consistently
     documents.zip(documentsToBeProcessed).foreach(dd => assert(dd._1.name == dd._2.name))
@@ -154,7 +153,7 @@ object MentionAlignment {
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
-    cc.factorie.app.nlp.mention.ParseBasedMentionFinding.FILTER_APPOS = true
+    cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding.FILTER_APPOS = true
     DocumentAnnotatorPipeline[MentionList](annotatorMap).process(d)
   }
 
