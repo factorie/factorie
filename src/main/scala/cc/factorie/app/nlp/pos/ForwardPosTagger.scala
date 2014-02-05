@@ -13,7 +13,13 @@ class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
-  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  def this(url:java.net.URL) = {
+    this()
+    val stream = url.openConnection.getInputStream
+    if (stream.available <= 0) throw new Error("Could not open "+url)
+    println("ForwardPosTagger loading from "+url)
+    deserialize(stream)
+  }
   
   object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable(t:Tensor1) extends BinaryFeatureVectorVariable[String] { def domain = FeatureDomain; set(t)(null) } // Only used for printing diagnostics
