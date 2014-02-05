@@ -7,7 +7,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.app.nlp.coref.mention._
-import cc.factorie.app.nlp.phrase.{NounPhraseNumberLabeler, NounPhraseGenderLabeler}
+import cc.factorie.app.nlp.phrase.{MentionGenderLabeler,MentionNumberLabeler}
 import cc.factorie.app.nlp.load.LoadConll2011
 
 /**
@@ -139,9 +139,9 @@ object ForwardCorefTrainer extends HyperparameterMain{
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
-      trainDocs.foreach(d => { NounPhraseGenderLabeler.process(d); NounPhraseNumberLabeler.process(d) } )
+      trainDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
-    testDocs.foreach(d => { NounPhraseGenderLabeler.process(d); NounPhraseNumberLabeler.process(d) } )
+    testDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){

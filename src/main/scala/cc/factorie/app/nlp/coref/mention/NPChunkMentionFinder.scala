@@ -3,8 +3,6 @@ package cc.factorie.app.nlp.coref.mention
 import cc.factorie.app.nlp._
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
-import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionType, MentionList, Mention}
-
 
 /**
  * User: cellier

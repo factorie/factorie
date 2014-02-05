@@ -66,8 +66,10 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
     classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     classOf[coref.mention.ParseBasedMentionList] -> (() => coref.mention.ParseBasedMentionFinding),
-    classOf[mention.MentionGenderLabel] -> (() => mention.MentionGenderLabeler),
-    classOf[mention.MentionNumberLabel] -> (() => mention.MentionNumberLabeler),
+    classOf[phrase.GenderLabel[coref.mention.Mention]] -> (() => phrase.MentionGenderLabeler),
+    classOf[phrase.GenderLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseGenderLabeler),
+    classOf[phrase.NumberLabel[coref.mention.Mention]] -> (() => phrase.MentionNumberLabeler),
+    classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
     classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
     classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
   )

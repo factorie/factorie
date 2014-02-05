@@ -7,6 +7,7 @@ import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
 import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionType, MentionList, Mention}
+import cc.factorie.app.nlp.phrase.{MentionNumberLabeler, NumberLabel, GenderLabel, MentionGenderLabeler}
 
 /**
  * User: apassos
@@ -69,7 +70,7 @@ class TestDocumentAnnotatorMap {
     map += parseBasedMentionFinding
     object coref1 extends DocumentAnnotator {
       def tokenAnnotationString(token: Token) = ""
-      def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+      def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
       def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
       def process(document: Document) = document
     }

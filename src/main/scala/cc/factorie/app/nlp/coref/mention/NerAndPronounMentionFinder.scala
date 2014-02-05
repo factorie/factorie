@@ -5,7 +5,6 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.ner._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Span
-import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionType, MentionList, Mention}
 
 /**
  * User: apassos
