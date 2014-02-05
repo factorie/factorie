@@ -1,4 +1,5 @@
-package cc.factorie.app.nlp.mention
+package cc.factorie.app.nlp.coref.mention
+
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
@@ -8,6 +9,7 @@ import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.app.nlp.load.LoadConll2011
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -144,7 +146,7 @@ object MentionEntityTypeLabeler extends MentionEntityTypeLabeler(cc.factorie.uti
 object MentionEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
     if (args.length == 0) println("usage: trainfile [modelfile]")
-    var trainDocs = coref.ConllCorefLoader.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
+    var trainDocs = LoadConll2011.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
     trainDocs = trainDocs.dropRight(20)
     val labeler = new MentionEntityTypeLabeler

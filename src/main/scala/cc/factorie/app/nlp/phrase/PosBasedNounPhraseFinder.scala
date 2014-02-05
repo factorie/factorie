@@ -1,10 +1,11 @@
 package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
+import scala.collection.mutable.ListBuffer
 
 /** Find noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
 object PosBasedNounPhraseFinder extends DocumentAnnotator {
   def process(document:Document): Document = {
-    val phrases = new NounPhraseList
+    val phrases = new ListBuffer[NounPhrase]()
     var tempSpan: NounPhrase = null
     for (section <- document.sections; token <- section.tokens) {
       // Put a span around contiguous sequences of NN or PR part-of-speech prefixes
@@ -17,7 +18,7 @@ object PosBasedNounPhraseFinder extends DocumentAnnotator {
         else { phrases += tempSpan; tempSpan = null}
       }
     }
-    document.attr += phrases
+    document.attr += new NounPhraseList(phrases)
     document
   }
   override def tokenAnnotationString(token:Token): String = {

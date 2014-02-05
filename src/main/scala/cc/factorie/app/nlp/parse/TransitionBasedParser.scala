@@ -31,22 +31,35 @@ class TransitionBasedParser extends DocumentAnnotator {
 
   case class ParseDecision(action: String) {
     val Array(lrnS, srpS, label) = action.split(" ")
-    val leftOrRightOrNo = lrnS.toInt
-    val shiftOrReduceOrPass = srpS.toInt
+    val leftOrRightOrNo = lrnS.toInt 		// leftarc-rightarc-noarc
+    val shiftOrReduceOrPass = srpS.toInt	// shift-reduce-pass
   }
+  
   object labelDomain extends CategoricalDomain[String]
   val defaultCategory = "-1 -1 N"
   labelDomain += defaultCategory
   class ParseDecisionVariable(targetDecision: ParseDecision, val state: ParseState) extends LabeledCategoricalVariable(targetDecision.action) {
     def domain = labelDomain
     val features = new NonProjDependencyParserFeatures(this)
-    featureGenerators.foreach(f => features += f.apply(state))
+    
+    /* Include <NULL>s */
+//    featureGenerators.foreach(f => features += f.apply(state))
+    
+    /* DO NOT include <NULL>s */
+    // TODO if we want to keep this in here, change implementation to use Option instead of <NULL> string?
+    featureGenerators.foreach(f => {
+      val featString = f.apply(state)
+      if("<NULL>".r.findAllIn(featString).length-1 != "\\|".r.findAllIn(featString).length) features += featString
+    })
   }
+  
   object featuresDomain extends CategoricalVectorDomain[String]
   class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
     def domain = featuresDomain
     override def skipNonCategories = domain.dimensionDomain.frozen
-    this += "BIAS"
+    
+    /* remove bias for now */
+    //this += "BIAS"
   }
   
   // Serialization
@@ -98,16 +111,17 @@ class TransitionBasedParser extends DocumentAnnotator {
   
   def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
     featuresDomain.dimensionDomain.gatherCounts = true
-    var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, 0, nThreads)
+    var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, ParserConstants.TRAINING, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
     println("TransitionBasedParser.train first 20 feature counts: "+featuresDomain.dimensionDomain.counts.toSeq.take(20))
     featuresDomain.dimensionDomain.trimBelowCount(5) // Every feature is actually counted twice, so this removes features that were seen 2 times or less
     featuresDomain.freeze()
     println("After pruning # features " + featuresDomain.dimensionSize)
-    trainingVars = generateDecisions(trainSentences, 0, nThreads)
-    featuresDomain.freeze()
+    trainingVars = generateDecisions(trainSentences, ParserConstants.TRAINING, nThreads)
+    
     val numTrainSentences = trainSentences.size
     val optimizer = new AdaGradRDA(1.0, 0.1, l1Factor / numTrainSentences, l2Factor / numTrainSentences)
+    
     trainDecisions(trainingVars, optimizer, trainSentences, testSentences)
     trainingVars = null // Allow them to be GC'ed
     for (i <- 0 until numBootstrappingIterations) {
@@ -118,7 +132,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   
   def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
     def evaluate(c: LinearMulticlassClassifier) {
-      // println(model.weights.value.toSeq.count(x => x == 0).toFloat/model.weights.value.length +" sparsity")
+      println(model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length +" sparsity")
       println(" TRAIN "+testString(trainSentences))
       println(" TEST  "+testString(testSentences))
     }
@@ -132,7 +146,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   
   def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
     val t0 = System.currentTimeMillis()
-    testSentences.foreach(process)
+    testSentences.par.foreach(process)
     val totalTime = System.currentTimeMillis() - t0
     val totalTokens = testSentences.map(_.tokens.length).sum
     val totalSentences = testSentences.size
@@ -145,19 +159,38 @@ class TransitionBasedParser extends DocumentAnnotator {
   lazy val featureGenerators: Seq[DependencyFeatures.DependencyFeatureGenerator] = DependencyFeatures.fromJSON(testFeatureSpec)
 
   object ParserConstants {
-    val SHIFT  = 0
-    val REDUCE = 1
-    val PASS   = 2
-
-    val LEFT  = 0
-    val RIGHT = 1
-    val NO    = 2
-
     val ROOT_ID = 0
+    
+    val SHIFT  = 1
+    val REDUCE = 2
+    val PASS   = 3
 
-    val TRAINING   = 0
-    val PREDICTING = 1
-    val BOOSTING   = 2
+    val LEFT  = 4
+    val RIGHT = 5
+    val NO    = 6
+
+    val TRAINING   = 7
+    val PREDICTING = 8
+    val BOOSTING   = 9
+    
+    def getString(constantVal: Int): String = constantVal match {
+      
+      case ParserConstants.SHIFT => "shift"
+      case ParserConstants.REDUCE => "reduce"
+      case ParserConstants.PASS => "pass"
+        
+      case ParserConstants.LEFT => "left"
+      case ParserConstants.RIGHT => "right"
+      case ParserConstants.NO => "no"
+          
+      case ParserConstants.TRAINING => "training"
+      case ParserConstants.PREDICTING => "predicting"
+      case ParserConstants.BOOSTING => "boosting"
+        
+      case ParserConstants.ROOT_ID => "root id"
+      
+      case _ => throw new Error(s"Integer value $constantVal is not defined in ParserConstants")
+    }
   }
 
   def generateDecisions(ss: Iterable[Sentence], mode: Int, nThreads: Int): Iterable[ParseDecisionVariable] = {
@@ -194,30 +227,44 @@ class TransitionBasedParser extends DocumentAnnotator {
     })
     s
   }
+  
+  /* Takes features and turns them into a parse decision using predict(ParseDecisionVariable => ParseDecision) */
   val defaultDecision = ParseDecision(defaultCategory)
   class NonProjectiveShiftReduce(val predict: ParseDecisionVariable => ParseDecision) {
     import ParserConstants._
     def parse(s: Sentence) = {
+      // ParseState(lambda, beta, reduceID, sentence)
       val state = new ParseState(0, 1, collection.mutable.HashSet[Int](), s)
+      
       while(state.input < state.sentenceTokens.length) {
         if (state.stack < 0)
           noShift(state)
         else {
-          val label = predict(new ParseDecisionVariable(defaultDecision, state))
+          val decision = new ParseDecisionVariable(defaultDecision, state)
+          val label = predict(decision)
+          val beta = state.inputToken(0)
+          val lambda = state.stackToken(0)
+          
+          /* Debugging output */
+//          println(s"${ParserConstants.getString(label.leftOrRightOrNo)} ${ParserConstants.getString(label.shiftOrReduceOrPass)} ${label.label}, lambda: ${lambda.form}, beta: ${beta.form}")
+//          println(s"lambda: form=${lambda.form}, head=${if (lambda.hasHead) lambda.head.depToken.form else "<NULL>"}, head2=${if (lambda.hasGrandHead) lambda.grandHead.depToken.form else "<NULL>"}, lmd=${if (lambda.form != "<NULL>") lambda.leftmostDependent.form else "<NULL>"}, lmd2=${if (lambda.form != "<NULL>") lambda.leftmostDependent2.form else "<NULL>"}, rmd=${if (lambda.form != "<NULL>") lambda.rightmostDependent.form else "<NULL>"}, rmd2=${if (lambda.form != "<NULL>") lambda.rightmostDependent2.form else "<NULL>"}")
+//          println(s"beta: form=${beta.form}, head=${if (beta.hasHead) beta.head.depToken.form else "<NULL>"}, head2=${if (beta.hasGrandHead) beta.grandHead.depToken.form else "<NULL>"}, lmd=${if (beta.form != "<NULL>") beta.leftmostDependent.form else "<NULL>"}, lmd2=${if (beta.form != "<NULL>") beta.leftmostDependent2.form else "<NULL>"}, rmd=${if (beta.form != "<NULL>") beta.rightmostDependent.form else "<NULL>"}, rmd2=${if (beta.form != "<NULL>") beta.rightmostDependent2.form else "<NULL>"}") 
+//          println()
+          
           if (label.leftOrRightOrNo == LEFT) {
             if (state.stack == ROOT_ID) noShift(state)
-            else if (state.inputToken(0).isDescendentOf(state.stackToken(0))) noPass(state)
+            else if (beta.isDescendentOf(lambda)) noPass(state)
             else if (label.shiftOrReduceOrPass == REDUCE) leftReduce(label.label, state)
             else leftPass(label.label, state)
           }
           else if (label.leftOrRightOrNo == RIGHT) {
-              if (state.stackToken(0).isDescendentOf(state.inputToken(0))) noPass(state)
+              if (lambda.isDescendentOf(beta)) noPass(state)
               else if (label.shiftOrReduceOrPass == SHIFT) rightShift(label.label, state)
               else rightPass(label.label, state)
           }
           else {
               if (label.shiftOrReduceOrPass == SHIFT) noShift(state)
-              else if (label.shiftOrReduceOrPass == REDUCE && state.stackToken(0).hasHead) noReduce(state)
+              else if (label.shiftOrReduceOrPass == REDUCE && lambda.hasHead) noReduce(state)
               else noPass(state)
           }
         }
@@ -305,7 +352,6 @@ class TransitionBasedParser extends DocumentAnnotator {
       for (i <- (state.input + 1) until state.sentenceTokens.length)
         if (goldHeads(i)._1 == state.stack)
           return false
-
       true
     }
   }
@@ -349,23 +395,43 @@ class TransitionBasedParser extends DocumentAnnotator {
       "b"   -> ((offset: Int) => (state: ParseState) => state.inputToken(offset)),
       "l"   -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset)),
       "s"   -> ((offset: Int) => (state: ParseState) => state.stackToken(offset)),
-      "l_h" -> ((_: Int) => (state: ParseState) => state.lambdaToken(0)),
+      "l_h" -> ((_: Int) => (state: ParseState) => if (state.lambdaToken(0).hasHead) state.lambdaToken(0).head.depToken else null),
       "l_lmd" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).leftmostDependent),
+      "l_rmd" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).rightmostDependent),
       "b_lmd" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).leftmostDependent),
-      "l_lmd" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).rightmostDependent),
-      "b_lmd" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).rightmostDependent)
+      "b_rmd" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).rightmostDependent),
+      
+      // left-nearest sibling of stack
+      "l_lns" -> ((offset: Int) => (state: ParseState) =>  state.lambdaToken(offset).leftNearestSibling),
+      
+      /* 3rd order features */
+      
+      // grand-head of lambda
+      "l_h2" -> ((_: Int) => (state: ParseState) => if (state.lambdaToken(0).hasGrandHead) state.lambdaToken(0).grandHead.depToken else null),
+      
+      // 2nd left-most dependent of lambda
+      "l_lmd2" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).leftmostDependent2),
+      
+      // 2nd right-most dependent of lambda
+      "l_rmd2" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).rightmostDependent2),
+      
+      // 2nd left-most dependent of beta
+      "b_lmd2" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).leftmostDependent2)
     )
 
+    // TODO make this nicer
     val formFns = HashMap(
-      "f"   -> ((t: DepToken) => t.form),
-      "m"   -> ((t: DepToken) => t.lemma),
-      "p"   -> ((t: DepToken) => t.pos),
-      "d"   -> ((t: DepToken) => if (!t.hasHead) "null" else t.head.label),
-      "b0"  -> ((t: DepToken) => if (t.thisIdx == -1) "null" else (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString),
-      "b1"  -> ((t: DepToken) => (t.state.stackToken(0) eq t.state.sentenceTokens.last).toString),
-      "b2"  -> ((t: DepToken) => (t.state.input - t.state.stack == 1).toString)
+      "f"   -> ((t: DepToken) => "f:" + (if (t != null) t.form else "<NULL>")),
+      "m"   -> ((t: DepToken) => "m:" + (if (t != null) t.lemma else "<NULL>")),
+      "p"   -> ((t: DepToken) => "p:" + (if (t != null) t.pos else "<NULL>")),
+      "d"   -> ((t: DepToken) => "d:" + (if (t != null && t.hasHead) t.head.label else "<NULL>")),
+      "b0"  -> ((t: DepToken) => "lFirst:" + (if (t != null && t.thisIdx != -1) t.state.lambdaToken(0) eq t.state.sentenceTokens(1) else false).toString),
+      "b1"  -> ((t: DepToken) => "bLast:" + (if (t != null) t.state.stackToken(0) eq t.state.sentenceTokens.last else false).toString),
+      "b2"  -> ((t: DepToken) => "adjacent:" + (if (t != null) t.state.input - t.state.stack == 1 else false).toString)
     )
 
+    /* Takes a string definition of a feature template and applies it to a ParseState to get
+     * the string feature for the given ParseState */
     def generators(locationOffsetAndForm: String): (ParseState => String) = {
       val LocationOffsetAndForm = """([a-z_]*)[+]?([-0-9]*):([a-z]*[0-9]?)""".r
       locationOffsetAndForm match {
@@ -402,23 +468,93 @@ class TransitionBasedParser extends DocumentAnnotator {
 
   class DepToken(val form: String, val lemma: String, val pos: String, val thisIdx: Int, val state: ParseState) {
     var head: DepArc = null
-    def hasHead: Boolean = head ne null
+    def grandHead: DepArc = if(hasHead) head.depToken.head else null
+    def hasHead: Boolean = head != null
+    def hasGrandHead: Boolean = grandHead != null
 
     def setHead(headToken: DepToken, label: String) {
-      head = new DepArc(headToken, label)
-      if (thisIdx < head.depToken.thisIdx) state.leftmostDeps(head.depToken.thisIdx) = thisIdx
-      else state.rightmostDeps(head.depToken.thisIdx) = thisIdx
+      head = new DepArc(headToken, label) 
+      
+      if(head.depToken.thisIdx != -1){
+        // set left and rightmost dependencies
+        if (thisIdx < head.depToken.thisIdx)
+          state.leftmostDeps(head.depToken.thisIdx) = thisIdx
+        else
+          state.rightmostDeps(head.depToken.thisIdx) = thisIdx
+      }
     }
-    def leftmostDependent: DepToken = {
-      val i = state.leftmostDeps(thisIdx)
-      if (i == -1) state.nullToken
-      else state.sentenceTokens(i)
+    
+    def leftmostDependent: DepToken = {      
+      if (thisIdx == -1) state.nullToken
+      else{
+        val i = state.leftmostDeps(thisIdx)
+        if (i == -1) state.nullToken
+        else state.sentenceTokens(i)
+      }
     }
+    
     def rightmostDependent: DepToken = {
-      val i = state.rightmostDeps(thisIdx)
-      if (i == -1) state.nullToken
-      else state.sentenceTokens(i)
+      if (thisIdx == -1) state.nullToken
+      else{
+		val i = state.rightmostDeps(thisIdx)
+	    if (i == -1) state.nullToken
+	    else state.sentenceTokens(i)
+      }
     }
+    
+    def leftmostDependent2: DepToken = {
+      if (thisIdx == -1) state.nullToken
+      else{
+        val i = state.leftmostDeps(thisIdx)
+        if (i == -1) state.nullToken
+        else{
+          val j = state.leftmostDeps(i)
+          if (j == -1) state.nullToken
+          else state.sentenceTokens(j)
+        }
+      }
+    }
+    def rightmostDependent2: DepToken = {
+      if (thisIdx == -1) state.nullToken
+      else{
+        val i = state.rightmostDeps(thisIdx)
+        if (i == -1) state.nullToken
+        else{
+          val j = state.rightmostDeps(i)
+          if (j == -1) state.nullToken
+          else state.sentenceTokens(j)
+        }
+      }
+    }
+    
+    def leftNearestSibling: DepToken = {
+      if(hasHead){
+        var i = thisIdx - 1
+        var sib = state.nullToken
+        while(i >= 0 && sib == state.nullToken){
+          if (state.sentenceTokens(i).hasHead && state.sentenceTokens(i).head.depToken == head.depToken)
+            sib = state.sentenceTokens(i)
+          i -= 1
+        }
+        sib
+      }
+      else state.nullToken
+    }
+    
+    def rightNearestSibling: DepToken = {
+      if(hasHead){
+        var i = thisIdx + 1
+        var sib = state.nullToken
+        while(i < state.sentenceTokens.size && sib == state.nullToken){
+          if (state.sentenceTokens(i).hasHead && state.sentenceTokens(i).head.depToken == head.depToken)
+            sib = state.sentenceTokens(i)
+          i += 1
+        }
+        sib
+      }
+      else state.nullToken
+    }
+    
     @tailrec final def isDescendentOf(that: DepToken): Boolean = {
       if (!hasHead) false
       else if (this.head.depToken == that) true
@@ -430,10 +566,11 @@ class TransitionBasedParser extends DocumentAnnotator {
 
   class ParseState(var stack: Int, var input: Int, val reducedIds: collection.mutable.HashSet[Int], sentence: Sentence) {
     private def depToken(token: Token, idx: Int, state: ParseState) = new DepToken(form = token.string, lemma = token.lemmaString, pos = token.posTag.categoryValue, thisIdx=idx, state=state)
-    val rootToken = new DepToken(form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p", thisIdx = 0, state=this)
-    val nullToken = new DepToken(form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p", thisIdx = -1, state=this)
+    val rootToken = new DepToken(form = "<ROOT>",  lemma = "<ROOT>", pos = "<ROOT>", thisIdx = 0, state=this)
+    val nullToken = new DepToken(form = "<NULL>",  lemma = "<NULL>", pos = "<NULL>", thisIdx = -1, state=this)
+    
     val sentenceTokens = (Seq(rootToken) ++ sentence.tokens.zipWithIndex.map(t => depToken(t._1, t._2+1, this))).toArray
-
+    
     val leftmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
     val rightmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
 
@@ -475,8 +612,6 @@ object WSJTransitionBasedParser extends WSJTransitionBasedParser(cc.factorie.uti
 class OntonotesTransitionBasedParser(url:java.net.URL) extends TransitionBasedParser(url)
 object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.factorie.util.ClasspathURL[OntonotesTransitionBasedParser](".factorie"))
 
-
-
 class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
@@ -484,40 +619,20 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing test files.")
   val devDir = new CmdOption("devDir", "", "FILENAME", "Directory containing dev files.")
   val devFiles =   new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
-  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "")
+  val ontonotes = new CmdOption("onto", true, "BOOLEAN", "Whether data are in Ontonotes format or otherwise (WSJ or CoNLL)")
+  val wsj = new CmdOption("wsj", false, "BOOLEAN", "Whether data are in WSJ format or otherwise (Ontonotes or CoNLL)")
   val cutoff    = new CmdOption("cutoff", 0, "", "")
   val loadModel = new CmdOption("load", "", "", "")
   val nThreads =  new CmdOption("nThreads", 1, "INT", "How many threads to use during training.")
-  val useSVM =    new CmdOption("use-svm", true, "BOOL", "Whether to use SVMs to train")
+  val useSVM =    new CmdOption("use-svm", false, "BOOL", "Whether to use SVMs to train")
   val modelDir =  new CmdOption("model", "model", "FILENAME", "File in which to save the trained model.")
   val bootstrapping = new CmdOption("bootstrap", 0, "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
-  val saveModel = new CmdOption("save-model",true,"BOOLEAN","whether to write out a model file or not")
+  val saveModel = new CmdOption("save-model", true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
   val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
   val maxIters = new CmdOption("max-iterations", 5, "INT", "iterations of training per round")
   val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
-}
-
-object TransitionBasedParserTester {
-  def main(args: Array[String]) {
-	val opts = new TransitionBasedParserArgs
-	opts.parse(args)
-	assert(opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
-	  
-	// load model from file if given, else use default model
-	val parser = if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value)) else OntonotesTransitionBasedParser
-	
-	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
-    val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
-  
-	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
-    val testSentencesFull = testDocs.flatMap(_.sentences)
-    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
-
-    println(parser.testString(testSentences))
-  }
 }
 
 object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
@@ -530,11 +645,17 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
     
     // Load the sentences
     def loadSentences(listOpt: opts.CmdOption[List[String]], dirOpt: opts.CmdOption[String]): Seq[Sentence] = {
-      var fileExt = if (opts.ontonotes.value) ".dep.pmd" else ""
       var fileList = Seq.empty[String]
       if (listOpt.wasInvoked) fileList = listOpt.value.toSeq
-      if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value, fileExt)
-      fileList.flatMap(fname => (if (opts.ontonotes.value) load.LoadOntonotes5.fromFilename(fname) else load.LoadConll2008.fromFilename(fname)).head.sentences.toSeq)
+      if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value)
+      fileList.flatMap(fname => {
+        if(opts.wsj.value)
+          load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
+        else if (opts.ontonotes.value)
+          load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
+        else
+          load.LoadConll2008.fromFilename(fname).head.sentences.toSeq 
+      })
     }
 
     val sentencesFull = loadSentences(opts.trainFiles, opts.trainDir)
@@ -569,38 +690,94 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
     val l1 = 2*opts.l1.value / sentences.length
     val l2 = 2*opts.l2.value / sentences.length
     val optimizer = new AdaGradRDA(opts.rate.value, opts.delta.value, l1, l2)
+    println(s"Initializing trainer (${opts.nThreads.value} threads)")
     val trainer = if (opts.useSVM.value) new SVMMulticlassTrainer(opts.nThreads.value)
-      else new OnlineLinearMulticlassTrainer(optimizer=optimizer, useParallel=true, nThreads=opts.nThreads.value, objective=OptimizableObjectives.hingeMulticlass, maxIterations=opts.maxIters.value)
+      else new OnlineLinearMulticlassTrainer(optimizer=optimizer, useParallel=if (opts.nThreads.value > 1) true else false, nThreads=opts.nThreads.value, objective=OptimizableObjectives.hingeMulticlass, maxIterations=opts.maxIters.value)
     def evaluate(cls: LinearMulticlassClassifier) {
       println(cls.weights.value.toSeq.count(x => x == 0).toFloat/cls.weights.value.length +" sparsity")
       testAll(c, "iteration ")
     }
     c.featuresDomain.dimensionDomain.gatherCounts = true
-    c.generateDecisions(sentences, 0, opts.nThreads.value)
+    println("Generating decisions...")
+    c.generateDecisions(sentences, c.ParserConstants.TRAINING, opts.nThreads.value)
+    
     println("Before pruning # features " + c.featuresDomain.dimensionDomain.size)
     c.featuresDomain.dimensionDomain.trimBelowCount(2*opts.cutoff.value)
     c.featuresDomain.freeze()
     c.featuresDomain.dimensionDomain.gatherCounts = false
     println("After pruning # features " + c.featuresDomain.dimensionDomain.size)
-    var trainingVs = c.generateDecisions(sentences, 0, opts.nThreads.value)
+    println("Training...")
+    
+    var trainingVs = c.generateDecisions(sentences, c.ParserConstants.TRAINING, opts.nThreads.value)
+    
+    /* Print out features */
+//    sentences.take(5).foreach(s => {
+//      println(s"Sentence: ${s.tokens.map(_.string).mkString(" ")}")
+//      val trainingVariables = c.generateDecisions(Seq(s), c.ParserConstants.TRAINING, opts.nThreads.value)
+//      trainingVariables.foreach(tv => {
+//        println(s"Training decision: ${
+//          val transition = tv.categoryValue.split(" ")
+//          transition.take(2).map(x => c.ParserConstants.getString(x.toInt)).mkString(" ") + " " + transition(2)
+//        }; features: ${
+//          tv.features.domain.dimensionDomain.categories.zip(tv.features.value.toSeq).filter(_._2 == 1.0).map(_._1).mkString(" ")
+//        }")
+//      })
+//      println()
+//    })
+    
     c.trainFromVariables(trainingVs, trainer, evaluate)
+    
     trainingVs = null // GC the old training labels
     for (i <- 0 until numBootstrappingIterations) {
       println("Boosting iteration " + i)
       c.boosting(sentences, nThreads=opts.nThreads.value, trainer=trainer, evaluate=evaluate)
     }
+    
     testSentences.par.foreach(c.process)
+    
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
       val d = new TransitionBasedParser
       d.deserialize(new java.io.File(modelUrl))
-      testSingle(c, testSentences, "Post serialization accuracy ")
+      testSingle(d, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(testLAS,opts.targetAccuracy.value.toDouble)
 
     testLAS
+  }
+}
+
+object TransitionBasedParserTester {
+  def main(args: Array[String]) {
+	val opts = new TransitionBasedParserArgs
+	opts.parse(args)
+	assert(opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+	  
+	// load model from file if given,
+	// else if the wsj command line param was specified use wsj model,
+	// otherwise ontonotes model
+	val parser = {
+	  if(opts.modelDir.wasInvoked) new TransitionBasedParser(new File(opts.modelDir.value))
+	  else if(opts.wsj.value) WSJTransitionBasedParser
+	  else OntonotesTransitionBasedParser
+	}
+	
+	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    val testFileList = if(opts.testDir.wasInvoked) FileUtils.getFileListFromDir(opts.testDir.value) else opts.testFiles.value.toSeq
+  
+	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+	val testDocs =  testFileList.map(fname => {
+	  if(opts.wsj.value)
+	    load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head
+	  else
+	    load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head
+	})
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+    println(parser.testString(testSentences))
   }
 }
 
@@ -615,7 +792,7 @@ object TransitionBasedParserOptimizer {
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
     val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
-    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 10)))
+    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 8)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -624,14 +801,14 @@ object TransitionBasedParserOptimizer {
       "cc.factorie.app.nlp.parse.TransitionBasedParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
+    val qs = new cc.factorie.util.QSubExecutor(32, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     opts.saveModel.setValue(true)
     println("Running best configuration...")
     import scala.concurrent.duration._
-    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 2.hours)
     println("Done")
   }
 }

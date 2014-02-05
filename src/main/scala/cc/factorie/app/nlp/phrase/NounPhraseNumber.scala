@@ -6,19 +6,22 @@ import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 import org.jblas.Singular
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import scala.reflect.ClassTag
+import cc.factorie.app.nlp.coref.mention.{MentionList, Mention}
 
-object NounPhraseNumberDomain extends EnumDomain {
+object NumberDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 
   SINGULAR,        // known to be non-person
   PLURAL = Value   // person, but uncertain about gender
 }
-class NounPhraseNumberLabel(val phrase:NounPhrase, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  def this(m:NounPhrase, initialIntValue:Int) = this(m, NounPhraseNumberDomain(initialIntValue).category.asInstanceOf[String])
-  def domain = NounPhraseNumberDomain
+
+class NumberLabel[P <: Phrase](val phrase: P, initialCategory:String) extends CategoricalVariable(initialCategory) {
+  def this(m:P, initialIntValue:Int) = this(m, NumberDomain(initialIntValue).category.asInstanceOf[String])
+  def domain = NumberDomain
 }
 
 /** Cheap number predictor based on rules and lexicons.  Really this should use a real morphological analyzer. */
-class NounPhraseNumberLabeler extends DocumentAnnotator {
+class NumberLabeler[P <: Phrase, PL <: TokenSpanList[P]](implicit ctList:ClassTag[PL], ctPhrase:ClassTag[P])  extends DocumentAnnotator {
   val singularPronoun = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
   val pluralPronoun = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
   val singularDeterminer = Set("a", "an", "this")
@@ -27,9 +30,9 @@ class NounPhraseNumberLabeler extends DocumentAnnotator {
   def isNoun(pos:String): Boolean = pos(0) == 'N'
   def isPossessive(pos:String): Boolean = pos == "POS"
   def process(document:Document): Document = {
-    import NounPhraseNumberDomain._
-    for (phrase <- document.attr[NounPhraseList]) {
-      val number = new NounPhraseNumberLabel(phrase, UNKNOWN)
+    import NumberDomain._
+    for (phrase <- document.attr()(ctList)) {
+      val number = new NumberLabel(phrase, UNKNOWN)
       phrase.attr += number
       if (phrase.length > 0) {
         val firstWord = phrase(0).string.toLowerCase
@@ -47,10 +50,11 @@ class NounPhraseNumberLabeler extends DocumentAnnotator {
     }
     document
   }
-  override def tokenAnnotationString(token:Token): String = { val phrases = token.document.attr[NounPhraseList].filter(_.contains(token)); phrases.map(_.attr[NounPhraseNumberLabel].categoryValue).mkString(",") }
-  override def phraseAnnotationString(phrase:Phrase): String = { val t = phrase.attr[NounPhraseNumberLabel]; if (t ne null) t.categoryValue else "_" }
+  override def tokenAnnotationString(token:Token): String = { val phrases = token.document.attr()(ctList).filter(_.contains(token)); phrases.map(_.attr[NumberLabel[P]].categoryValue).mkString(",") }
+  override def phraseAnnotationString(phrase:Phrase): String = { val t = phrase.attr[NumberLabel[P]]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag], classOf[NounPhrase])
-  def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseNumberLabel])
+  def postAttrs: Iterable[Class[_]] = List(classOf[NumberLabel[P]])
 }
 
-object NounPhraseNumberLabeler extends NounPhraseNumberLabeler
+object NounPhraseNumberLabeler extends NumberLabeler[NounPhrase,NounPhraseList]
+object MentionNumberLabeler extends NumberLabeler[Mention,MentionList]

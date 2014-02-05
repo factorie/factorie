@@ -1,11 +1,11 @@
-package cc.factorie.app.nlp.coref
+package cc.factorie.app.nlp.coref.mention
 
-import cc.factorie.app.nlp.mention._
+import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
-import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
+import cc.factorie.app.nlp.phrase.{NumberLabel, GenderLabel}
 
 /**
  * User: apassos
@@ -122,8 +122,8 @@ class MentionCache(m: CorefMention) {
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
     }
-  lazy val gender = m.mention.attr[MentionGenderLabel].intValue.toString
-  lazy val number = m.mention.attr[MentionNumberLabel].intValue.toString
+  lazy val gender = m.mention.attr[GenderLabel[Mention]].intValue.toString
+  lazy val number = m.mention.attr[NumberLabel[Mention]].intValue.toString
   lazy val acronym: Set[String] = {
     if (m.span.length == 1)
         Set.empty

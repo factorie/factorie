@@ -13,7 +13,13 @@ class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
-  def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+  def this(url:java.net.URL) = {
+    this()
+    val stream = url.openConnection.getInputStream
+    if (stream.available <= 0) throw new Error("Could not open "+url)
+    println("ForwardPosTagger loading from "+url)
+    deserialize(stream)
+  }
   
   object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable(t:Tensor1) extends BinaryFeatureVectorVariable[String] { def domain = FeatureDomain; set(t)(null) } // Only used for printing diagnostics
@@ -353,7 +359,10 @@ class ForwardPosTagger extends DocumentAnnotator {
     FeatureDomain.dimensionDomain.trimBelowCount(cutoff)
     FeatureDomain.freeze()
     println("After pruning using %d features.".format(FeatureDomain.dimensionDomain.size))
-    println("POS1.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    
+    /* Print out some features (for debugging) */
+    //println("ForwardPosTagger.train\n"+trainSentences(3).tokens.map(_.string).zip(features(trainSentences(3).tokens).map(t => new FeatureVariable(t).toString)).mkString("\n"))
+    
     def evaluate() {
       exampleSetsToPrediction = doBootstrap
       printAccuracy(trainSentences, "Training: ")
@@ -409,6 +418,7 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
+  val wsj = new CmdOption("wsj", false, "BOOL", "Whether the data is WSJ or otherwise (Ontonotes)")
 }
 
 object ForwardPosTester {
@@ -416,9 +426,15 @@ object ForwardPosTester {
 	val opts = new ForwardPosOptions
 	opts.parse(args)
 	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
-	  
-	// load model from file if given, else use default model
-	val pos = if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value)) else OntonotesForwardPosTagger
+	  	
+	// load model from file if given,
+	// else if the wsj command line param was specified use wsj model,
+	// otherwise ontonotes model
+	val pos = {
+	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
+	  else if(opts.wsj.value) WSJForwardPosTagger
+	  else OntonotesForwardPosTagger
+	}
 	
 	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     var testFileList = Seq(opts.testFile.value)
@@ -429,7 +445,10 @@ object ForwardPosTester {
     }
   
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+	val testDocs = testFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
 
@@ -463,8 +482,14 @@ object ForwardPosTrainer extends HyperparameterMain {
       testFileList =  opts.testFiles.value.split(",")
     }
     
-    val trainDocs = trainFileList.map(load.LoadOntonotes5.fromFilename(_).head)
-    val testDocs =  testFileList.map(load.LoadOntonotes5.fromFilename(_).head)
+    val trainDocs = trainFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
+    val testDocs = testFileList.map(fname => {
+	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  else load.LoadOntonotes5.fromFilename(fname).head
+	})
 
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens from %d files.".format(trainDocs.map(_.tokenCount).sum, trainDocs.size))

@@ -571,7 +571,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
     if (document.tokenCount > 0) {
       val doc = super.process(document)
       // Add and populated NerSpanList attr to the document 
-      doc.attr.+=(new ner.ConllNerSpanList ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
+      doc.attr.+=(new ner.ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
       doc
     } else document
   }

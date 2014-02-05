@@ -9,6 +9,7 @@ import ner.NerSpan
 import xml.{XML, NodeSeq}
 import java.io.File
 import relation.RelationVariables.{RelationMention, RelationMentions}
+import scala.collection.mutable.ListBuffer
 
 // TODO: consider moving this info into variables.
 case class ACEEntityIdentifiers(eId: String, eType: String, eSubtype: String, eClass: String)
@@ -22,7 +23,7 @@ case class ACEFileIdentifier(fileId: String)
 class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention with PairwiseMention {
   override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
 }
-class ACEMentionSpanList extends TokenSpanList[ACEMentionSpan]
+class ACEMentionSpanList(spans:Iterable[ACEMentionSpan]) extends TokenSpanList[ACEMentionSpan](spans)
 
 object LoadACE {
 
@@ -69,7 +70,7 @@ object LoadACE {
   }
 
   def addMentionsFromApf(apf: NodeSeq, doc: Document): Unit = {
-    val spanList = doc.attr += new ACEMentionSpanList
+    val spanList = new ListBuffer[ACEMentionSpan]
     for (entity <- apf \\ "entity") {
       val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
       e.attr += ACEEntityIdentifiers(eId = getAttr(entity, "ID"), eType = getAttr(entity, "TYPE"), eSubtype = getAttr(entity, "SUBTYPE"), eClass = getAttr(entity, "CLASS"))
@@ -102,6 +103,7 @@ object LoadACE {
         }
       }
     }
+    doc.attr += new ACEMentionSpanList(spanList)
   }
 
   private def lookupEntityMention(id: String, doc: Document): PairwiseMention =

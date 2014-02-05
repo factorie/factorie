@@ -138,7 +138,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   def rightChildren(parentIndex:Int): Seq[Token] = {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = parentIndex+1
-    while (i > _parents.length) {
+    while (i < _parents.length) {
       if (_parents(i) == parentIndex) result += sentence.tokens(i)
       i += 1
     }
@@ -168,7 +168,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
   def rightChildrenLabeled(parentIndex:Int, labelIntValue:Int): Seq[Token] = {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = parentIndex+1
-    while (i > _parents.length) {
+    while (i < _parents.length) {
       if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence.tokens(i)
       i += 1
     }
