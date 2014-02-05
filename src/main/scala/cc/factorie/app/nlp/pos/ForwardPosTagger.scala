@@ -420,9 +420,15 @@ object ForwardPosTester {
 	val opts = new ForwardPosOptions
 	opts.parse(args)
 	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
-	  
-	// load model from file if given, else use default model
-	val pos = if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value)) else OntonotesForwardPosTagger
+	  	
+	// load model from file if given,
+	// else if the wsj command line param was specified use wsj model,
+	// otherwise ontonotes model
+	val pos = {
+	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
+	  else if(opts.wsj.value) WSJForwardPosTagger
+	  else OntonotesForwardPosTagger
+	}
 	
 	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
     var testFileList = Seq(opts.testFile.value)
