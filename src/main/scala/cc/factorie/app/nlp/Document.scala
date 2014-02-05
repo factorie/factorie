@@ -40,12 +40,15 @@ trait DocumentSubstring {
     Sentences and other TokenSpans which may be annotated.
     
     Documents may be constructed with their full string contents, or they may
-    have their string contents added to by the appendString method.
+    have their string contents augmented by the appendString method.
     
     Documents also have an optional "name" which can be set by Document.setName.
+    This is typically used to hold a filename in the file system, or some other similar identifier.
     
     The Document.stringLength method may be a faster alternative to Document.string.length
-    when you are in the middle of multiple appendString calls.
+    when you are in the middle of multiple appendString calls because it will 
+    efficiently use the underlying string buffer length, rather than flushing the buffer
+    to create a string.
     
     The canonical sequence of Sections in the Document is available through 
     the Document.sections method.
@@ -57,26 +60,32 @@ trait DocumentSubstring {
     
     Even though Tokens, Sentences and TokenSpans are really stored in the Sections,
     Document has basic convenience methods for obtaining iterable collections of these
-    by concatenating them from the canonical sequence of Sections.  If, for example,
-    you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
+    by concatenating them from the canonical sequence of Sections.  These iterable
+    collections are of type Iterable[Token], not Seq[Token], however.
+    If you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
     more advanced queries for TokenSpan types, you should use methods on a Section,
     not on the Document.  In this case typical processing looks like:
-    "for (section <- document.sections) ...".  
+    "for (section <- document.sections) section.tokens.someMethodOnSeq()...".  
     
     @author Andrew McCallum */
 class Document extends DocumentSubstring with Attr {
+  /** Create a new Document, initializing it to have contents given by the argument. */
   def this(stringContents:String) = { this(); _string = stringContents }
+  /** Return the "name" assigned to this Document by the 'setName' method.
+      This may be any String, but is typically a filename or other similar identifier. */
   def name: String = { val dn = this.attr[DocumentName]; if (dn ne null) dn.string else null }
-  /** Set DocumentName attr on Document.  If String argument is null, remove DocumentName attr if present. */
+  /** Set the value that will be returned by the 'name' method.
+      It accomplishes this by setting the DocumentName attr on Document.  
+      If the String argument is null, it will remove DocumentName attr if present. */
   def setName(s:String): this.type = { if (s ne null) this.attr += DocumentName(s) else this.attr.remove[DocumentName]; this }
   
-  // One of the following two is always null, the other non-null
+  // One of the following two is always null, the other non-null.  The later is used while multiple appendString() method calls are made.
   private var _string: String = ""
   private var _stringbuf: StringBuffer = null
   
   /** Append the string 's' to this Document.
       @return the length of the Document's string before string 's' was appended. */
-  def appendString(s:String): Int = {
+  def appendString(s:String): Int = this.synchronized {
     if (_stringbuf eq null) _stringbuf = new StringBuffer(_string)
     val result = _stringbuf.length
     _stringbuf.append(s)
@@ -95,7 +104,7 @@ class Document extends DocumentSubstring with Attr {
       Use this instead of Document.string.length because it is more efficient when the Document's string is growing with appendString. */
   def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
 
-  // For DocumentSubstring
+  // For the DocumentSubstring trait
   /** A method required by the DocumentSubstring trait, which in this case simply returns this Document itself. */
   def document: Document = this
   /** A method required by the DocumentSubstring trait, which in this case simply returns 0. */
@@ -105,7 +114,7 @@ class Document extends DocumentSubstring with Attr {
   
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
   /** A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.
-      If the user does not explicitly add Sections to the document, this Section is returned by the "sections" method. */
+      If the user does not explicitly add Sections to the document, this Section is the only one returned by the "sections" method. */
   val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
   private var _sections: mutable.Buffer[Section] = new ArrayBuffer[Section]
   /** The canonical list of Sections containing the tokens of the document.  
@@ -116,14 +125,17 @@ class Document extends DocumentSubstring with Attr {
   def sections: Seq[Section] = if (_sections.length == 0) Seq(asSection) else _sections
   /** Add a new Section to this Document's canonical list of Sections. */
   def +=(s: Section) = _sections += s
-  /** Remove a Section to this Document's canonical list of Sections. */
+  /** Remove a Section from this Document's canonical list of Sections. */
   def -=(s: Section) = _sections -= s
-  /** Remove all Section to this Document's canonical list of Sections. */
+  /** Remove all Section from this Document's canonical list of Sections. */
   def clearSections(): Unit = _sections.clear()
 
   // A few iterators that combine the results from the Sections
+  /** Return an Iterable collection of all Tokens in all canonical Sections of this Document. */
   def tokens: Iterable[Token] = if (sections.length == 1) sections.head.tokens else new Iterable[Token] { def iterator = for (section <- sections.iterator; token <- section.tokens.iterator) yield token }
-  def sentences: Iterable[Sentence] = if (sections.length == 1) sections.head.sentences else new Iterable[Sentence] { def iterator = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence } 
+  /** Return an Iterable collection of all Sentences in all canonical Sections of this Document. */
+  def sentences: Iterable[Sentence] = if (sections.length == 1) sections.head.sentences else new Iterable[Sentence] { def iterator = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence }
+  // Spans no longer have a canonical storage location in a Document
   //def spans: Iterator[TokenSpan] = for (section <- sections.iterator; span <- section.spans.iterator) yield span
   //def spans: Iterable[TokenSpan] = if (sections.length == 1) sections.head.spans else new Iterable[TokenSpan] { def iterator = for (section <- sections.iterator; span <- section.spans.iterator) yield span }
   
@@ -136,13 +148,14 @@ class Document extends DocumentSubstring with Attr {
     
   /** The collection of DocumentAnnotators that have been run on this Document,
       For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.  
-      A Map from the annotation class to the DocumentAnnotator that produced it.
+      A Map from the annotation class to the DocumentAnnotator that produced it,
+      for example from classOf[cc.factorie.app.nlp.pos.PennPos] to classOf[cc.factorie.app.nlp.pos.ChainPosTagger].
       Note that this map records annotations placed not just on the Document itself, but also its constituents,
-      such as TokenSpan, Token, Sentence, etc. */
+      such as NounPhraseNumberLabel on NounPhrase, PennPos on Token, ParseTree on Sentence, etc. */
   val annotators = new collection.mutable.LinkedHashMap[Class[_], Class[_]]
-  /** Has an annotation of class 'c' been placed somewhere within this Document? */
+  /** Return true if an annotation of class 'c' been placed somewhere within this Document. */
   def hasAnnotation(c:Class[_]): Boolean = annotators.keys.exists(k => c.isAssignableFrom(k))
-  /** Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If  */
+  /** Optionally return the DocumentAnnotator that produced the annotation of class 'c' within this Document. */
   def annotatorFor(c:Class[_]): Option[Class[_]] = annotators.keys.find(k => c.isAssignableFrom(k)).collect({case k:Class[_] => annotators(k)})
   
 //  /** Return a String containing the Token strings in the document, with sentence and span boundaries indicated with SGML. */
@@ -159,8 +172,8 @@ class Document extends DocumentSubstring with Attr {
 //    buf.toString
 //  }
   
-  /** Return a String containing the Token strings in the document, with one-word-per-line 
-      and various tab-separated attributes appended on each line. */
+  /** Return a String containing the Token strings in the document, formatted with one-word-per-line 
+      and various tab-separated attributes appended on each line, generated as specified by the argument. */
   def owplString(attributes:Iterable[(Token)=>Any]): String = {
     val buf = new StringBuffer
     for (section <- sections; token <- section.tokens) {
@@ -180,6 +193,8 @@ class Document extends DocumentSubstring with Attr {
     }
     buf.toString
   }
+  /** Return a String containing the Token strings in the document, formatted with one-word-per-line 
+      and various tab-separated attributes appended on each line, generated from the 'annotator.tokenAnnotationString' method. */
   def owplString(annotator:DocumentAnnotator): String = annotator match {
     case pipeline:DocumentAnnotationPipeline => owplString(pipeline.annotators.map(a => a.tokenAnnotationString(_)))
     case annotator:DocumentAnnotator => owplString(Seq(annotator.tokenAnnotationString(_)))
@@ -192,6 +207,9 @@ case class DocumentName(string:String) {
   override def toString: String = string
 }
 
+
+// TODO Consider removing DocumentCubbie because this implementation is inefficient, 
+// and it isn't sensible that everyone would want the same selection of saved items.
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. 
     Note that it does not yet serialize Sections, and relies on Document.asSection being the only Section. */

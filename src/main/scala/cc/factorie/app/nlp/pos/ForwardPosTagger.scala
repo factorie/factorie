@@ -9,6 +9,11 @@ import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomai
 import cc.factorie.optimize.Trainer
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
+/** A part-of-speech tagger that predicts by greedily labeling each word in sequence.
+    Although it does not use Viterbi, it is surprisingly accurate.  It is also fast.
+    
+    For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
+    @author Andrew McCallum, */
 class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
