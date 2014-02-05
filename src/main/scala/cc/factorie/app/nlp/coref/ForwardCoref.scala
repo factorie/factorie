@@ -2,13 +2,14 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
-import cc.factorie.app.nlp.mention._
 import cc.factorie.util.coref.{CorefEvaluator, GenericEntityMap}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
 import java.io._
 import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.coref.mention._
+import cc.factorie.app.nlp.phrase.{NumberLabel, GenderLabel}
 
 /**
  * User: apassos
@@ -20,7 +21,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   val options = new Coref1Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
@@ -454,13 +455,13 @@ class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
 }
 
 object ForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
   deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
 }
 
 // This should only be used when using the NerAndPronounMentionFinder to find mentions
 class NerForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[MentionGenderLabel], classOf[MentionNumberLabel])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
 }
 object NerForwardCoref extends NerForwardCoref {
   deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))

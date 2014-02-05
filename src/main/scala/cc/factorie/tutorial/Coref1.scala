@@ -5,11 +5,12 @@ import cc.factorie.app.nlp.hcoref._
 import cc.factorie.variable._
 import cc.factorie.model._
 import cc.factorie.infer.SettingsSampler
+import scala.collection.mutable.ListBuffer
 
 object Coref1 {
   
   class SpanMention(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) with TokenSpanMention
-  class SpanMentionList extends TokenSpanList[SpanMention]
+  class SpanMentionBuffer extends TokenSpanBuffer[SpanMention]
 
   abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
     override def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
@@ -108,7 +109,7 @@ object Coref1 {
 
 
   def brainDeadMentionExtraction(doc:Document): Unit = {
-    val spanList = doc.attr += new SpanMentionList
+    val spanList = doc.attr += new SpanMentionBuffer
     val section = doc.asSection
     for (token <- section.tokens) {
       // Make a mention for simple pronouns
@@ -130,7 +131,7 @@ object Coref1 {
   def corefInit(doc:Document): Unit = {
     //val entities = new ArrayBuffer[Entity]
     // Make each Mention its own Entity
-    for (mention <- doc.attr[SpanMentionList]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
+    for (mention <- doc.attr[SpanMentionBuffer]) mention.attr += new EntityRef(mention, new EntityVariable("NULL"))
     // Assign each mention to its closest previous non-pronoun mention
     /*for (mention <- doc.orderedSpansOfClass[Mention]) {
       val prevMention = mention.document.spanOfClassPreceeding[Mention](mention.start)
@@ -146,7 +147,7 @@ object Coref1 {
       // The "no change" proposal
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
-      for (antecedant <- mention.document.attr[SpanMentionList].spansPreceeding(mention.head))
+      for (antecedant <- mention.document.attr[SpanMentionBuffer].spansPreceeding(mention.head))
         changes += {(d:DiffList) => entityRef.set(antecedant)(d)}
       var i = 0
       def hasNext = i < changes.length
@@ -172,7 +173,7 @@ object Coref1 {
   }
 
   def coref(doc:Document): Unit = {
-    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
+    for (mention <- doc.attr[SpanMentionBuffer].orderedSpans) {
       EntityRefSampler.process(mention.parentEntityRef)
     }
   }
@@ -185,7 +186,7 @@ object Coref1 {
     corefInit(doc)
     coref(doc)
     // Print the results
-    for (mention <- doc.attr[SpanMentionList].orderedSpans) {
+    for (mention <- doc.attr[SpanMentionBuffer].orderedSpans) {
       println(mention+" => "+mention.parentEntity+"\n")
     }
   }

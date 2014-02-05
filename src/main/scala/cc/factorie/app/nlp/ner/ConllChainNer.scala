@@ -49,7 +49,7 @@ class ConllChainNer extends DocumentAnnotator {
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
       // Add and populated NerSpanList attr to the document 
-      document.attr.+=(new ner.ConllNerSpanList ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
+      document.attr.+=(new ner.ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
     }
     document
   }

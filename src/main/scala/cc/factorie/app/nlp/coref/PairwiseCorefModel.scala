@@ -6,10 +6,10 @@ import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, 
 import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io._
 import cc.factorie.util.BinarySerializer
-import cc.factorie.app.nlp.mention.Mention
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
+import cc.factorie.app.nlp.coref.mention.{Entity, Mention}
 
 /**
  * User: apassos
@@ -57,7 +57,7 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
   def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
     val trueMap = new GenericEntityMap[Mention]
     mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
-    val entities = mentions.groupBy(_.attr[cc.factorie.app.nlp.mention.Entity])
+    val entities = mentions.groupBy(_.attr[Entity])
     entities.flatMap(_._2.sliding(2)).foreach(p => {
       if (p.size == 2) trueMap.addCoreferentPair(p(0), p(1))
     })

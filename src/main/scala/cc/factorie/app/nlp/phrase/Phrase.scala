@@ -11,17 +11,17 @@ class Phrase(section:Section, start:Int, length:Int, val headTokenOffset: Int = 
   assert(headTokenOffset == -1 || headTokenOffset >= 0 && headTokenOffset < length, "Offset from beginning of span, headTokenOffset="+headTokenOffset+", but span only has length "+length)
   def headToken: Token = this.apply(headTokenOffset)
 }
-class PhraseList extends TokenSpanList[Phrase]
+class PhraseList(spans:Iterable[Phrase]) extends TokenSpanList[Phrase](spans)
 
 /** A simple subclass of Chunk reserved for verb phrases. */
 class VerbPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length)
-class VerbPhraseList extends TokenSpanList[VerbPhrase]
+class VerbPhraseList(spans:Iterable[VerbPhrase]) extends TokenSpanList[VerbPhrase](spans)
 
 
 /** A simple subclass of Chunk reserved for noun phrases.
     A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further cleaned up). */
 class NounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length)
-class NounPhraseList extends TokenSpanList[NounPhrase]
+class NounPhraseList(spans:Iterable[NounPhrase]) extends TokenSpanList[NounPhrase](spans)
 
 
 /** Categorical variable indicating whether the noun phrase is a pronoun, nominal or proper noun. */

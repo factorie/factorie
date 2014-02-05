@@ -1,4 +1,4 @@
-package cc.factorie.app.nlp.mention
+package cc.factorie.app.nlp.coref.mention
 
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
@@ -9,7 +9,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
 
 
-class ParseBasedMentionList extends MentionList
+class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
 //class NerSpanList extends TokenSpanList[NerSpan]
 
 object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
@@ -40,7 +40,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
 
   private def nerSpans(doc: Document): Seq[Mention] = {
-    (for (span <- doc.attr[ConllNerSpanList]) yield
+    (for (span <- doc.attr[ConllNerSpanBuffer]) yield
       new Mention(span.section, span.start, span.length, span.length - 1) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
@@ -154,8 +154,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList() ++= dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq)
-
+    doc.attr += (new MentionList(dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq))
     doc
   }
 
