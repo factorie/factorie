@@ -1,4 +1,4 @@
-package com.oskarsinger.code
+package cc.factorie.app.nlp.segment
 
 import scala.collection.mutable.{Map, ArrayBuffer}
 import java.io._
