@@ -1,7 +1,7 @@
-/*& Tutorial 6: Optimization and Learning */
+/*& Learning and Optimization */
 
 /*&
- * Optimization and Learning Tutorial
+ * Learning and Optimization Tutorial
  * ================
  *
  * In this tutorial we set up a simple linear chain CRF, such as the one used for part-of-speech tagging,

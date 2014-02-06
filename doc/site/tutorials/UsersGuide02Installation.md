@@ -1,5 +1,10 @@
-/*& Installation */
-/*&
+---
+title: "Installation"
+layout: default
+group: usersguide
+weight: 10
+---
+
 
 # Installation
 
@@ -176,4 +181,3 @@ http://davetron5000.github.com/scala-style/index.html
 
 For indentation use two spaces rather than tabs.
 
- */

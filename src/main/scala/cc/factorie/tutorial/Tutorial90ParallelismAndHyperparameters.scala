@@ -1,4 +1,4 @@
-/*& Tutorial 9: Parallelism */
+/*& Parallelism */
 
 /*&
  * Parallelism and Hyperparameter Optimization Tutorial

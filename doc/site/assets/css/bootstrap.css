@@ -4101,7 +4101,7 @@ textarea.input-group-sm > .input-group-btn > .btn {
 .nav > li > a {
   position: relative;
   display: block;
-  padding: 10px 15px;
+  padding: 5px 10px;
 }
 
 .nav > li > a:hover,
@@ -4131,9 +4131,23 @@ textarea.input-group-sm > .input-group-btn > .btn {
 
 .nav .nav-divider {
   height: 1px;
-  margin: 9px 0;
+  margin: 5px 0;
   overflow: hidden;
   background-color: #e5e5e5;
+}
+
+.nav .nav-header {
+  position: relative;
+  display: block;
+  font-size: 18px;
+  line-height: 20px;
+  padding-top: 10px;
+}
+
+.nav .nav-noindent {
+  position: relative;
+  display: block;
+  margin-left: -10px;
 }
 
 .nav > li > a > img {
@@ -4489,6 +4503,13 @@ textarea.input-group-sm > .input-group-btn > .btn {
 .navbar-brand {
   float: left;
   padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+
+.navbar-img {
+  float: left;
+  padding: 5px 15px;
   font-size: 18px;
   line-height: 20px;
 }

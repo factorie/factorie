@@ -1,4 +1,4 @@
-/*& Tutorial 1.1: Domain */
+/*& Domain */
 /*&
  * Domains Tutorial
  * ================

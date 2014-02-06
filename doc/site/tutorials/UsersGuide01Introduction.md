@@ -1,5 +1,10 @@
-/*& Introduction */
-/*&
+---
+title: "Introduction"
+layout: default
+group: usersguide
+weight: 10
+---
+
 
 # FACTORIE User's Guide
 
@@ -184,4 +189,3 @@ while VW works by streaming things from disk. Factorie is also more
 flexible when it comes to how the parameters are stored and how
 learning is made, though it also supports VW-style feature hashing.
 
-*/

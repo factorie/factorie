@@ -1,5 +1,10 @@
-/*& Inference */
-/*&
+---
+title: "Inference"
+layout: default
+group: usersguide
+weight: 10
+---
+
 
 # Inference
 
@@ -99,4 +104,3 @@ uses dual coordinate ascent on the LP relaxation of inference.
 Finally EM and Dual Decomposition are implemented outside of the inference
 API, by the EMInferencer and DualDecomposition classes.
 
- */

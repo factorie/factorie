@@ -1,5 +1,10 @@
-/*& Learning and Optimization */
-/*&
+---
+title: "Learning and Optimization"
+layout: default
+group: usersguide
+weight: 10
+---
+
 
 # Optimization
 
@@ -109,5 +114,4 @@ which performs parameter updates while the variables are being sampled. To
 use SampleRank simply create SampleRankExamples and pass them on to a
 Trainer, or use the SampleRankTrainer directly.
 
- */
 

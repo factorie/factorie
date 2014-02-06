@@ -1,9 +1,15 @@
-/*& Family */
-/*&
- * Family Tutorial
- * ===============
- **/
+---
+title: "Family"
+layout: default
+group: tutorials
+weight: 10
+---
 
+Family Tutorial
+===============
+
+
+```scala
 package cc.factorie.tutorial
 object TutorialFamily extends App{
   import cc.factorie._ 
@@ -21,3 +27,4 @@ object TutorialFamily extends App{
 // TODO Consider giving a Family to singleton Factors, to support learning on them. 
   
 }
+```

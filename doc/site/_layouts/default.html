@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -7,37 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="shortcut icon" href="assets/ico/favicon.png">
+    <link rel="shortcut icon" href="{% if page.weight >= 10 %}../{% endif %}assets/ico/favicon.png">
     
     <title>FACTORIE: Installation</title>
     
     <!-- Bootstrap core CSS -->
-    <link href="{% if page.weight == 2 %}../{% endif %}assets/css/bootstrap.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/bootstrap.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
-    <link href="{% if page.weight == 2 %}../{% endif %}assets/css/jumbotron.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/jumbotron.css" rel="stylesheet">
     
     <!-- For Pygments syntax highlighting -->
-    <link href="{% if page.weight == 2 %}../{% endif %}assets/css/pygments/github.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/pygments/github.css" rel="stylesheet">
     
   </head>
   {% include navbar.html %}
   <div class="container">
 	<div class="row">
-	  <div class="col-sm-3">
-	    {% include sidenav.html %}
-	  </div> <!--col-sm-3-->
-	  <div class="col-sm-9">
-	    {{ content }}
-	  </div>
-    </div>
-      {% include footer.html %}
+	  <div class="col-md-2"> {% include sidenav.html %} </div>
+	  <div class="col-md-9 pull-right"> {{ content }} </div>
+	</div> <!-- /row -->
+  {% include footer.html %}
   </div> <!-- /container -->
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-    <script src="{% if page.weight == 2 %}../{% endif %}assets/js/bootstrap.js"></script>
+    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/bootstrap.js"></script>
 	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script>
 	  $(document).ready(function() {

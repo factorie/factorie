@@ -1,9 +1,15 @@
-/*& Template */
+---
+title: "Template"
+layout: default
+group: tutorials
+weight: 10
+---
 
-/*& 
- * Templates Tutorial 
- * ==================
- */
+
+Templates Tutorial
+==================
+
+```scala
 package cc.factorie.tutorial
 object TutorialTemplate extends App{
   
@@ -13,3 +19,4 @@ object TutorialTemplate extends App{
   
 
 }
+```

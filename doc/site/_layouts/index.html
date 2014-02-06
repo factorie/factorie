@@ -22,9 +22,21 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
       <div class="container">
-        <h1>FACTORIE</h1>
+        <img src="assets/images/factorie-logo-small.png"/><h1>FACTORIE</h1>
         <p>is a toolkit for deployable probabilistic modeling, implemented as a software library in Scala. It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.</p>
-        <p><a class="btn btn-primary btn-lg" href="/tutorials/UsersGuide01Introduction.html" role="button">Learn more &raquo;</a></p>
+        <div class="container">
+          <div class="row">
+            <div class="col-md-2">
+              <p><a class="btn btn-success btn-lg" href="/download.html" role="button">Download &raquo;</a></p>
+            </div>
+            <div class="col-md-2">
+              <p><a class="btn btn-warning btn-lg" href="/quickstart.html" role="button">Quick Start &raquo;</a></p>
+            </div>
+            <div class="col-md-2">
+              <p><a class="btn btn-primary btn-lg" href="/tutorials/UsersGuide01Introduction.html" role="button">Learn more &raquo;</a></p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -34,15 +46,15 @@
         <div class="col-md-4">
           <h2>Inference</h2>
           <p>The basic use of a graphical model is to perform inference: making predictions about the values of unobserved variables, conditioned on the values of observed variables and the parameters. FACTORIE has implementations of many common inference algorithms.</p>
-          <p><a class="btn btn-default" href="/tutorials/UsersGuide06Inference.html" role="button">Learn more &raquo;</a></p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide06Inference.html" role="button">Tutorial &raquo;</a></p>
         </div>
         <div class="col-md-4">
           <h2>Learning</h2>
           <p>Much of modern machine learning finds parameters by setting up an optimization problem trading off having low error on the training data with having a simple predictor which should generalize well. FACTORIE includes an optimization package directly designed to solve optimization problems of this kind.</p>
-          <p><a class="btn btn-default" href="/tutorials/UsersGuide07LearningAndOptimization.html" role="button">Learn more &raquo;</a></p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide07LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
        </div>
         <div class="col-md-4">
-          <h2>Natural language processing</h2>
+          <h2>Natural language tools</h2>
           <p>FACTORIE has been successfully applied to various tasks in natural language processing and information integration, including named entity recognition, entity resolution, relation extraction, parsing, and latent-variable generative models, including latent Dirichlet allocation.</p>
           <p><a class="btn btn-default" href="/tutorials/UsersGuide09NaturalLanguagePipeline.scala.html" role="button">Learn more &raquo;</a></p>
         </div>

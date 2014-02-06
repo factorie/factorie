@@ -1,10 +1,3 @@
----
-title: "Changelog"
-layout: default
-weight: 1
-group: suffix
----
-
 Changelog
 ===
 
