@@ -10,8 +10,35 @@ import cc.factorie.app.nlp._
 import cc.factorie.optimize.{LikelihoodExample, BatchTrainer, OnlineTrainer}
 import cc.factorie.app.chain.ChainModel
 
-/** A linear-chain CRF model for Chinese word segmentation.
+/** A linear-chain CRF model for Chinese word segmentation with four companion 
+    objects, each pre-trained on a different corpus that corresponds to a 
+    different variety of written Mandarin. 
     @author Henry Oskar Singer  */
+
+//Academia-Sinica-corpus-trained model (Taiwan)
+class ASChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object ASChainChineseWordSegmenter
+  extends ASChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[ASChainChineseWordSegmenter](".factorie"))
+
+//Microsoft-Research-Asia-corpus-trained model (Beijing)
+class MSRChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object MSRChainChineseWordSegmenter
+  extends MSRChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[MSRChainChineseWordSegmenter](".factorie"))
+
+//Peiking-University-corpus-trained model (Beijing)
+class PKUChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object PKUChainChineseWordSegmenter
+  extends PKUChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[PKUChainChineseWordSegmenter](".factorie"))
+
+//City-University-of-Hong-Kong-corpus-trained model (Hong Kong)
+class CUHChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object CUHChainChineseWordSegmenter
+  extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie"))
+
 class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain, 
   useOnline: Boolean = false
