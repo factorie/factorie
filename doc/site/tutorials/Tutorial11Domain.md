@@ -1,8 +1,8 @@
 ---
 title: "Domain"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 21
 ---
 
 Domains Tutorial

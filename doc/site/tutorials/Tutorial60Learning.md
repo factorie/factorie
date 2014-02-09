@@ -1,8 +1,8 @@
 ---
 title: "Learning and Optimization"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 70
 ---
 
 
@@ -103,7 +103,8 @@ The most commonly used Infer objects are those in the BP package.
 ```scala
   val summary = InferByBPChain.infer(document.tokens.toSeq.map(_.attr[Label]), model)
   assertStringEquals(summary.logZ, "6.931471805599453")
-  assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.49999999999999994,0.49999999999999994)")
+  assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, 
+		  			 "Proportions(0.49999999999999994,0.49999999999999994)")
 
 ```
 
@@ -203,7 +204,8 @@ For more information see the java docs of the cc.factorie.optimize package.
   // Now we can run inference and see that we have learned
   val summary2 = InferByBPChain(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
   assertStringEquals(summary2.logZ, "48.63607808729122")
-  assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897892,6.913211020966629E-5)")
+  assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, 
+		  			 "Proportions(0.9999308678897892,6.913211020966629E-5)")
 
 ```
 

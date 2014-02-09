@@ -1,8 +1,8 @@
 ---
 title: "Factor"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 30
 ---
 
 
@@ -52,7 +52,7 @@ It must return a Double.
 NegInfinity indicates "impossible values on neighbors".
 More positive scores indicate higher likelihood.
 In terms of probabilities these scores can be interpreted as "unnormalized log-probabilities".
-If you do have a normalized probability for a factor, the score should be math.log(probability).
+If you do have a normalized probability for a factor, the score should be `math.log(probability)`.
     
 
 ```scala
@@ -226,9 +226,7 @@ Here only the "statistics" and "weightsSet" methods are abstract.
       override def statistics(lv1:Label#Value, lv2:Label#Value, lv3:Label#Value, fv2:BooleanValue): Tensor = 
         if (flag1.booleanValue) lv1 outer lv2 else lv1 outer lv3
     }
-    
-
-    
+   
     // Naturally, we can define a class of Factors all sharing the same "score" method
     class MyFactor(n1:IntegerVariable, n2:IntegerVariable) extends Factor2(n1, n2) {
       def score(i:Int, j:Int) = if (i == j) 1.0 else -1.0

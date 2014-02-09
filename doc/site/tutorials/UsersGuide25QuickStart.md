@@ -1,8 +1,8 @@
 ---
-title: Quick Start
+title: "Quick Start"
 layout: default
-weight: 1
-group: doc
+group: usersguide
+weight: 35
 ---
 
 ## First Examples
@@ -60,7 +60,7 @@ which then produces the output:
 14      3       his             PRP$    5       poss    O
 15      4       Australian      JJ      5       amod    U-MISC
 16      5       wife            NN      6       nsubj   O
-17      6       moved           VBD     0       root    O
+17      6       moved           VBD     0       rooat    O
 18      7       from            IN      6       prep    O
 19      8       New             NNP     9       nn      B-LOC
 20      9       South           NNP     10      nn      I-LOC
@@ -112,30 +112,43 @@ object ExampleLinearChainCRF extends App {
   class Token(str:String) extends CategoricalVariable(str) { def domain = TokenDomain }
   // A domain and variable type for storing part-of-speech tags
   object LabelDomain extends CategoricalDomain[String]
-  class Label(str:String, val token:Token) extends LabeledCategoricalVariable(str) { def domain = LabelDomain }
+  class Label(str:String, val token:Token) extends LabeledCategoricalVariable(str){
+    def domain = LabelDomain
+  }
   class LabelSeq extends scala.collection.mutable.ArrayBuffer[Label]
-  // Create random variable instances from data
-  val data = List("See/V Spot/N run/V", "Spot/N is/V a/DET big/J dog/N", "He/N is/V fast/J") // Just a toy amount of data for this example
-  val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => { val a = s.split("/"); new Label(a(1), new Token(a(0)))})
+  // Create random variable instances from data (a toy amount of data for this example)
+  val data = List("See/V Spot/N run/V", "Spot/N is/V a/DET big/J dog/N", "He/N is/V fast/J") 
+  val labelSequences = for (sentence <- data) yield new LabelSeq ++= sentence.split(" ").map(s => {
+   val a = s.split("/")
+   new Label(a(1), new Token(a(0)))
+  })
   // Define a model structure
   val model = new Model with Parameters {
-    // Two families of factors, where factor scores are dot-products of sufficient statistics and weights.  (The weights will set in training below.)
-    val markov = new DotFamilyWithStatistics2[Label,Label] { val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size)) }
-    val observ = new DotFamilyWithStatistics2[Label,Token] { val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.size)) }
+    // Two families of factors, where factor scores are dot-products of sufficient statistics and weights.
+    // (The weights will set in training below.)
+    val markov = new DotFamilyWithStatistics2[Label,Label] { 
+      val weights = Weights(new la.DenseTensor2(LabelDomain.size, LabelDomain.size))
+    }
+    val observ = new DotFamilyWithStatistics2[Label,Token] {
+      val weights = Weights(new la.DenseTensor2(LabelDomain.size, TokenDomain.size))
+    }
     // Given some variables, return the collection of factors that neighbor them.
     def factors(labels:Iterable[Var]) = labels match {
-      case labels:LabelSeq => labels.map(label => new observ.Factor(label, label.token)) ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
+      case labels:LabelSeq => 
+        labels.map(label => new observ.Factor(label, label.token))
+        ++ labels.sliding(2).map(window => new markov.Factor(window.head, window.last))
     }
   }
   // Learn parameters
   val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
   trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
-  // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
+  // but here instead we specify that is should use max-product belief propagation
+  // specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
   // Print the learned parameters on the Markov factors.
   println(model.markov.weights)
   // Print the inferred tags
-  labelSequences.foreach(_.foreach(l => println("Token: " + l.token.value + " Label: " + l.value)))
+  labelSequences.foreach(_.foreach(l => println(s"Token: ${l.token.value} Label: ${l.value}")))
 }
 ```

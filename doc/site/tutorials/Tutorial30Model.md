@@ -1,8 +1,8 @@
 ---
 title: "Model"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 40
 ---
 
 

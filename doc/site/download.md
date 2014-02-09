@@ -16,7 +16,7 @@ The latest release of Factorie is 1.0.0-RC1.
 Or, you can can clone the latest snapshot version from GitHub:
 
 ```
-git clone https://github.com/factorie/factorie
+$ git clone https://github.com/factorie/factorie
 ```
 
 See [Installation](tutorials/UsersGuide02Installation.html) for details.

@@ -91,7 +91,8 @@ object Tutorial60Learning extends App {
 
   val summary = InferByBPChain.infer(document.tokens.toSeq.map(_.attr[Label]), model)
   assertStringEquals(summary.logZ, "6.931471805599453")
-  assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.49999999999999994,0.49999999999999994)")
+  assertStringEquals(summary.marginal(document.tokens.head.attr[Label]).proportions, 
+		  			 "Proportions(0.49999999999999994,0.49999999999999994)")
 
   /*&
    * Aside from InferByBPChainSum, which knows how to run forward-backward on chain models
@@ -180,7 +181,8 @@ object Tutorial60Learning extends App {
   // Now we can run inference and see that we have learned
   val summary2 = InferByBPChain(document.tokens.map(_.attr[Label]).toIndexedSeq, model)
   assertStringEquals(summary2.logZ, "48.63607808729122")
-  assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, "Proportions(0.9999308678897892,6.913211020966629E-5)")
+  assertStringEquals(summary2.marginal(document.tokens.head.attr[Label]).proportions, 
+		  			 "Proportions(0.9999308678897892,6.913211020966629E-5)")
 
   /*&
    * Factorie also has support for more efficient learning algorithms than traditional

@@ -2,7 +2,6 @@
       <div class="container">
       {% if page.url == '/index.html' %}
       <a href="https://github.com/factorie/factorie"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
-      <!-- ORANGE GitHub ribbon <a href="https://github.com/factorie/factorie"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a> -->
       {% endif %}
         <div class="navbar-header">
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -15,14 +14,15 @@
         </div>
         <div class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
-				{% assign pages_list = site.pages %}
   				{% assign group = 'prefix' %}
   				{% include pages_list %}
 					<li class="dropdown">
 		              <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
 		              <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/UsersGuide02Installation.html">Installation</a></li>
-		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/UsersGuide01Introduction.html">Users Guide</a></li>
+		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/UsersGuide20Installation.html">Installation</a></li>
+		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/UsersGuide25QuickStart.html">Quick Start</a></li>
+		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/UsersGuide10Introduction.html">Users Guide</a></li>
+		                <li role="presentation"><a role="menuitem" tabindex="-1" href="/tutorials/Tutorial10Variables.html">Tutorials</a></li>
 		                <li role="presentation"><a role="menuitem" tabindex="-1" href="{% if page.weight >= 10 %}../{% endif %}faqs.html">FAQs</a></li>  
  		                <li role="presentation" class="divider"></li>
 		                <li role="presentation"><a role="menuitem" tabindex="-1" href="scaladocs/#cc.factorie.package">Scaladocs</a></li>
@@ -30,5 +30,5 @@
 		           </li>
 				</ul>			
 			</div><!-- /.nav-collapse -->
-      </div><!-- /.container -->
-    </div><!-- /.navbar -->
+  </div><!-- /.container -->
+</div><!-- /.navbar -->

@@ -11,7 +11,7 @@
     <title>FACTORIE: Home</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-custom.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
     <link href="assets/css/jumbotron.css" rel="stylesheet">
@@ -30,10 +30,10 @@
               <p><a class="btn btn-success btn-lg" href="/download.html" role="button">Download &raquo;</a></p>
             </div>
             <div class="col-md-2">
-              <p><a class="btn btn-warning btn-lg" href="/quickstart.html" role="button">Quick Start &raquo;</a></p>
+              <p><a class="btn btn-warning btn-lg" href="/tutorials/UsersGuide25QuickStart.html" role="button">Quick start &raquo;</a></p>
             </div>
             <div class="col-md-2">
-              <p><a class="btn btn-primary btn-lg" href="/tutorials/UsersGuide01Introduction.html" role="button">Learn more &raquo;</a></p>
+              <p><a class="btn btn-primary btn-lg" href="/tutorials/UsersGuide10Introduction.html" role="button">Learn more &raquo;</a></p>
             </div>
           </div>
         </div>
@@ -43,20 +43,25 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <h2>Inference</h2>
-          <p>The basic use of a graphical model is to perform inference: making predictions about the values of unobserved variables, conditioned on the values of observed variables and the parameters. FACTORIE has implementations of many common inference algorithms.</p>
-          <p><a class="btn btn-default" href="/tutorials/UsersGuide06Inference.html" role="button">Tutorial &raquo;</a></p>
+          <p>The basic use of a graphical model is to perform inference: making predictions about the values of unobserved variables, conditioned on the values of observed variables and the parameters. FACTORIE has implementations of many common inference algorithms based on both belief propagation and MCMC.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide60Inference.html" role="button">Tutorial &raquo;</a></p>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <h2>Learning</h2>
-          <p>Much of modern machine learning finds parameters by setting up an optimization problem trading off having low error on the training data with having a simple predictor which should generalize well. FACTORIE includes an optimization package directly designed to solve optimization problems of this kind.</p>
-          <p><a class="btn btn-default" href="/tutorials/UsersGuide07LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
+          <p>Through a modular specification of inference, optimization, and learning objectives, FACTORIE supports various paradigms for parameter learning for structured prediction and classification tasks. These include maximum likelihood learning, maximum margin learning, learning with approximate inference, SampleRank, pseudo-likelihood, etc.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide70LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
        </div>
-        <div class="col-md-4">
-          <h2>Natural language tools</h2>
-          <p>FACTORIE has been successfully applied to various tasks in natural language processing and information integration, including named entity recognition, entity resolution, relation extraction, parsing, and latent-variable generative models, including latent Dirichlet allocation.</p>
-          <p><a class="btn btn-default" href="/tutorials/UsersGuide09NaturalLanguagePipeline.scala.html" role="button">Learn more &raquo;</a></p>
+       <div class="col-md-3">
+          <h2>Optimization</h2>
+          <p>Many learning problems are posed as minimizing a sum of losses per training example plus a regularization term. The FACTORIE optimization package provides a modular framework for specifying per-example losses, regularization, online vs. batch optimization, parameter averaging, and parallel processing patterns. It also includes special-case implementations for modern composite minimization and adaptive step size algorithms.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide70LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
+       </div>
+        <div class="col-md-3">
+          <h2>Natural Language Processing</h2>
+          <p>FACTORIE supplies out-of-the-box tools for natural language processing and information integration such as segmentation, tokenization, part-of-speech tagging, named entity recognition, dependency parsing, mention finding, coreference, lexicon-matching, and latent Dirichlet allocation. The package provides state-of-the-art pre-trained models for many of these tasks.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide25QuickStart.html" role="button">Get Started &raquo;</a></p>
         </div>
       </div>
 

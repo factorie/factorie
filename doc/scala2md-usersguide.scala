@@ -13,33 +13,38 @@ val outputPathName = s"$filePrefix/html/"
 val tutorialsDirName = s"$filePrefix/../src/main/scala/cc/factorie/tutorial/"
 val tutorialsPattern = "(UsersGuide.*)|(Tutorial.*)"
 val tutorialsDir = new File(tutorialsDirName)
-val tutorialFileNames = tutorialsDir.listFiles.filter(_.getName.matches(tutorialsPattern)).map(_.getName)
+val fileNames = tutorialsDir.listFiles.map(_.getName)
 	
-tutorialFileNames.foreach(tutorialFile => {
-  val outputFileName = s"$outputPathName${tutorialFile.replace(".scala", ".md")}"
-  val outputFile = new File(outputFileName)
-  val outputFileWriter = new PrintWriter(new BufferedWriter(new FileWriter(outputFile)))
+fileNames.foreach(fileName => {
+  val fileNamePattern = "(Tutorial|UsersGuide)([0-9]+).*".r
+  fileName match {
+    case fileNamePattern(tutorialType, num) => {
+      val group = if(tutorialType == "Tutorial") "tutorial" else "usersguide"
+      val weight = Integer.parseInt(num) + 10
+      val outputFileName = s"$outputPathName${fileName.replace(".scala", ".md")}"
+      val outputFile = new File(outputFileName)
+      val outputFileWriter = new PrintWriter(new BufferedWriter(new FileWriter(outputFile)))
     
-  val lines = Source.fromFile(s"$tutorialsDirName$tutorialFile").getLines
+      val lines = Source.fromFile(s"$tutorialsDirName$fileName").getLines
   
-  println(s"Processing file ${tutorialFile} -> ${outputFileName}")
+      println(s"Processing file ${fileName} -> ${outputFileName}")
   
-  /* Write top matter for Jekyll */
-  outputFileWriter.println("---")
-  outputFileWriter.println("title: \"" + lines.toSeq.head.trim.drop(3).dropRight(2).trim + "\"")
-  outputFileWriter.println("layout: default")
-  outputFileWriter.println("group: " + {if(tutorialFile.matches("^T.*")) "tutorials" else "usersguide"})
-  outputFileWriter.println("weight: 10")
-  outputFileWriter.println("---")
+      /* Write top matter for Jekyll */
+      outputFileWriter.println("---")
+      outputFileWriter.println("title: \"" + lines.toSeq.head.trim.drop(3).dropRight(2).trim + "\"")
+      outputFileWriter.println("layout: default")
+      outputFileWriter.println(s"group: ${group}")
+      outputFileWriter.println(s"weight: ${weight}")
+      outputFileWriter.println("---")
   
-  val singleLineComment = "\\p{Space}*/\\*&\\p{Space}*(.*)\\*/\\p{Space}*".r
-  val startComment = "\\p{Space}*/\\*&\\p{Space}*(.*)".r
-  val inComment = "\\p{Space}*\\*(?!\\*)\\p{Space}*(.*)".r
-  val endComment1 = "\\p{Space}*(.*)\\*/\\p{Space}*".r
-  val endComment2 = "\\p{Space}*(.*)\\*\\*/\\p{Space}*".r
+      val singleLineComment = "\\p{Space}*/\\*&\\p{Space}*(.*)\\*/\\p{Space}*".r
+      val startComment = "\\p{Space}*/\\*&\\p{Space}*(.*)".r
+      val inComment = "\\p{Space}*\\*(?!\\*)\\p{Space}*(.*)".r
+      val endComment1 = "\\p{Space}*(.*)\\*/\\p{Space}*".r
+      val endComment2 = "\\p{Space}*(.*)\\*\\*/\\p{Space}*".r
 
-  var state = 0;
-  lines.foreach(line => {
+      var state = 0;
+      lines.foreach(line => {
 		line.trim match{
 		  case singleLineComment(m) => { if(state != 0 && state != 3) outputFileWriter.println("```"); outputFileWriter.println(m); state = 3 }
 		  case startComment(m) => { if(state != 0 && state != 3) outputFileWriter.println("```"); outputFileWriter.println(m); state = 2 }
@@ -50,5 +55,9 @@ tutorialFileNames.foreach(tutorialFile => {
 	  }
 	})
 	if (state == 1) outputFileWriter.println("```")
-	outputFileWriter.close
+	  outputFileWriter.close
+    }
+    case _ => { /* File wasn't a tutorial/usersguide file */ }
+  }
+  
 })

@@ -11,10 +11,12 @@
     <title>FACTORIE: Installation</title>
     
     <!-- Bootstrap core CSS -->
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/bootstrap.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/bootstrap-custom.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
     <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/jumbotron.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/offcanvas.css" rel="stylesheet">
+    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/affix.css" rel="stylesheet">
     
     <!-- For Pygments syntax highlighting -->
     <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/pygments/github.css" rel="stylesheet">
@@ -22,9 +24,18 @@
   </head>
   {% include navbar.html %}
   <div class="container">
-	<div class="row">
-	  <div class="col-md-2"> {% include sidenav.html %} </div>
-	  <div class="col-md-9 pull-right"> {{ content }} </div>
+	 <div class="row row-offcanvas row-offcanvas-left">
+     <div class="col-xs-12 col-sm-9">
+       <p class="pull-left visible-xs">
+         <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Toggle nav</button>
+       </p>
+     </div>
+	 <div class="col-xs-1 col-sm-3 col-md-2 bs-sidebar sidebar-offcanvas affix" id="sidebar" role="navigation"> 
+	 {% include sidenav.html %} 
+	 </div>
+	 <div class="col-xs-11 col-sm-9 col-md-9 pull-right" id="main" role="content">
+	 {{ content }}
+	 </div>
 	</div> <!-- /row -->
   {% include footer.html %}
   </div> <!-- /container -->
@@ -33,7 +44,9 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/bootstrap.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/offcanvas.js"></script>
+    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/affix.js"></script>
+	  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script>
 	  $(document).ready(function() {
 	

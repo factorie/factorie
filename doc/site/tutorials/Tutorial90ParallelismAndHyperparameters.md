@@ -1,8 +1,8 @@
 ---
 title: "Parallelism"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 100
 ---
 
 

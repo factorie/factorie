@@ -1,8 +1,8 @@
 ---
 title: "Family"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 31
 ---
 
 Family Tutorial

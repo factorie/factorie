@@ -1,8 +1,8 @@
 ---
 title: "Variable"
 layout: default
-group: tutorials
-weight: 10
+group: tutorial
+weight: 20
 ---
 
 Variable Tutorial
@@ -34,16 +34,26 @@ object TutorialVariables extends App {
   println("After i := 2, variable i has value " + i.value)
   assertEquals(i.value, 2)
 
-  // === tests equality of Variable values.  == tests Variable object identity
+  // === tests equality of Variable values. == tests Variable object identity
   val j = new IntegerVariable(2)
-  if (i === j) println("Variables i and j have equal values.") else println("Variables i and j have unequal values.")
-  if (i == j) println("i and j are the same Variable.") else println("i and j are not the same Variable")
+  if (i === j)
+    println("Variables i and j have equal values.")
+  else 
+    println("Variables i and j have unequal values.")
+  if (i == j) 
+    println("i and j are the same Variable.")
+  else 
+    println("i and j are not the same Variable")
   assert(i === j)
   assert(!(i == j))
 
-  // The Scala type of a variable's value is represented by the variable class' inner type `Value`....
+```
+The Scala type of a variable's value is represented by the variable class' inner type `Value`.... 
 
-  // We can also track changes with a DiffList and undo them. // TODO Move this material about DiffLists to a separate Tutorial file.
+
+```scala
+  // We can also track changes with a DiffList and undo them.
+  // TODO Move this material about DiffLists to a separate Tutorial file.
   val d = new DiffList
   i.set(3)(d) // This method will create a Diff object and append it to the DiffList d.
   println("After i.set(2), variable i has value " + i.value)
@@ -90,7 +100,8 @@ There are many types of Variables holding different types of values.
   r := j
   // Variable whose value is a Tuple2 of Scala pointers
   val e = new EdgeVariable(i, j)
-  // Variable whose value is a Tuple2 of Scala pointers, but you can only change the second of the pair
+  // Variable whose value is a Tuple2 of Scala pointers, 
+  // but you can only change the second of the pair
   val a = new ArrowVariable(i, j)
   // Variable whose value is a Set of Scala objects
   val set = new SetVariable[IntegerVariable]
@@ -115,7 +126,8 @@ cc.factorie.Variable is the root of all variable classes.
   //val cv: VarWithConstantValue = s // This would cause a compilation error.
 
   // cc.factorie.Variable* are classes, all of which are mutable
-  // They have have Var* super types, many of which do not commit to mutability or to a particular storage mechanism for their value
+  // They have have Var* super types, many of which do not commit to mutability
+  // or to a particular storage mechanism for their value
   val sv: StringVar = s
   val msv: MutableStringVar = s
 ```
@@ -131,16 +143,19 @@ There are many subclasses of Tensor in order to efficiently support various spec
 
 ```scala
   import cc.factorie.la._
-  val dt = new DenseTensor1(5) // Creates a vector of length 5, internally stored as an Array[Double]
+  // Creates a vector of length 5, internally stored as an Array[Double]
+  val dt = new DenseTensor1(5) 
   dt(0) = 1.2
   println("Tensor dt is " + dt)
-  val st = new SparseTensor1(999999) // Creates a vector of length 999999, but which efficiently stores only its non-zero values
+  // Creates a vector of length 999999, but which efficiently stores only its non-zero values
+  val st = new SparseTensor1(999999) 
   st(555) = 2.3
   println("Tensor st oneNorm is " + st.oneNorm)
   assertEquals(st.oneNorm, 2.3, 0.01)
-  val ut = new UniformTensor1(33, 0.1) // A vector of length 33, in which all values are 0.1
-  // WeightsMap of ranks 1 through 4 are available
-  val dt4 = new DenseTensor4(3, 4, 5, 2) // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
+  // A vector of length 33, in which all values are 0.1
+  val ut = new UniformTensor1(33, 0.1) 
+  // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
+  val dt4 = new DenseTensor4(3, 4, 5, 2) 
   println("dt4 value at indices (2,3,4,1) is " + dt4(2, 3, 4, 1))
 
 ```
@@ -155,7 +170,6 @@ WeightsMap have many useful methods, including:
 - twoNorm
 - etc.
 
-See Tutorial*WeightsMap for more information
 
 WeightsMap are important because some important special cases of Factors require variables with Tensor values
 because the Factors calculate their scores as dot-products between these Tensor values and a "weight" parameter Tensor.
@@ -171,8 +185,11 @@ In particular it is a RealValue which inherits from ScalarTensor, which is a Ten
   val rvv: RealValue = rv.value
   // TODO Tensor.equals should test equality of all values in the Tensor, but it does not yet. 
 
-  // A widely used type of Tensor is SingletonBinaryTensor1, which is a "one-hot" Tensor with value 1.0 in its one-hot position.
-  val sbt = new SingletonBinaryTensor1(999, 3) // A vector of length 999, with all zeros, except a 1.0 at index 3.
+  // A widely used type of Tensor is SingletonBinaryTensor1, which is a "one-hot" Tensor
+  // with value 1.0 in its one-hot position.
+  
+  // A vector of length 999, with all zeros, except a 1.0 at index 3.
+  val sbt = new SingletonBinaryTensor1(999, 3) 
   println("Tensor sbt is " + sbt)
 
 ```
@@ -189,7 +206,8 @@ DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They ar
   val dd = new DiscreteDomain(10)
   // Unlike all the Variables discussed below, DiscreteVariable does not have its "domain" method pre-defined; users must define it.
   class MyDiscrete(v: Int) extends DiscreteVariable(v) { def domain = dd }
-  val md = new MyDiscrete(4) // A DiscreteVariable, initialized to a one-hot vector with 1.0 at index 4.
+  // A DiscreteVariable, initialized to a one-hot vector with 1.0 at index 4.
+  val md = new MyDiscrete(4) 
   println("md value is " + md.value)
   println("md integer value is " + md.intValue)
   assertEquals(4, md.intValue)
@@ -210,11 +228,13 @@ DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They ar
   assertEquals(0, cd.index("apple"))
   println("The category of index 2 is " + cd.category(2))
   assertEquals("kiwi", cd.category(2))
-  // Clearly, CategoricalDomains are useful for mapping from Strings to integers and back, and heavily used in NLP.
-  // They are also typically used for class label in tasks such as document classification.
+  // Clearly, CategoricalDomains are useful for mapping from Strings to integers and back,
+  // and heavily used in NLP. They are also typically used for class label in tasks
+  // such as document classification.
 
   // We can make a CategoricalVariable with this domain.
-  // Similarly to DiscreteVariable, we must make a subclass of CategoricalVariable in which we specify the domain.
+  // Similarly to DiscreteVariable, we must make a subclass of CategoricalVariable
+  // in which we specify the domain.
   class MyCategorical(s: String) extends CategoricalVariable(s) { def domain = cd }
   val cv1 = new MyCategorical("peach")
   val cv2 = new MyCategorical("plum")
@@ -226,10 +246,12 @@ DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They ar
   // The domain grew automatically to accomodate the new category values
   println("The cd CategoricalDomain size is now " + cd.size)
   assertEquals(5, cd.size)
-  // You cannot create CategoricalValue or DiscreteValue yourself.  They are only created automatically inside their Domains.
+  // You cannot create CategoricalValue or DiscreteValue yourself.
+  // They are only created automatically inside their Domains.
 
   // BooleanVar is a subtype of CategoricalVar whose category is of type Boolean.
-  // Its value is a BooleanValue, which inherits from CategoricalValue[Boolean], which in turn is a one-hot Tensor.
+  // Its value is a BooleanValue, which inherits from CategoricalValue[Boolean],
+  // which in turn is a one-hot Tensor.
   val bv = new BooleanVariable(true)
   println("bv value is " + bv.value)
   println("bv boolean value is " + bv.booleanValue)
@@ -292,13 +314,13 @@ i.e. trait Variable { type Value <: Any }
 Some Var* traits bound the value, others set it.
 For example
 
-- ``DiscreteVar[A<:DiscreteValue]`` bounds it, but ``DiscreteVariable[A<:DiscreteValue]`` sets it.
-- ``CategoricalVar[A<:CategoricalValue[C],C]`` bounds it, but ``CategoricalVariable[A<:CategoricalValue[C],C]]`` sets it.
-- ``MutableVar[A<:Any]`` sets it.
+- `DiscreteVar[A<:DiscreteValue]` bounds it, but `DiscreteVariable[A<:DiscreteValue]` sets it.
+- `CategoricalVar[A<:CategoricalValue[C],C]` bounds it, but `CategoricalVariable[A<:CategoricalValue[C],C]]` sets it.
+- `MutableVar[A<:Any]` sets it.
 
 Whenever we define method that expects a parameter of type Variable#Value, the Value must be set, not merely bounded.
 
-This is why MutableVar[] (which defines ``set(v:Value):Unit`` sets ``Value``, and why all *Variable classes have the Value type set.
+This is why MutableVar[] (which defines `set(v:Value):Unit` sets `Value`, and why all *Variable classes have the Value type set.
 
 The standard way to bound the Value type is to inherit from ValueBound[A], which bounds the Value <: A.
 The standard way to set the Value type is to inherit from the trait Var[A], which sets the Value to A.
@@ -311,7 +333,7 @@ The standard way to set the Value type is to inherit from the trait Var[A], whic
   val as = new HashMapAssignment
   as.update[IntegerVariable](i, 55)
   as.update[IntegerVariable](j, 66)
-  // This allows some code to consider different values for a variable which changing the "global" value stored in the variable.
-  //  (Helpful for multi-threaded code, among other reasons.)
+  // This allows some code to consider different values for a variable which changing the
+  // "global" value stored in the variable. (Helpful for multi-threaded code, among other reasons.)
 }
 ```

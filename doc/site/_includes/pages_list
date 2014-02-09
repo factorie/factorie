@@ -1,4 +1,4 @@
-{% for weight in (1..10) %}{% for node in pages_list %}
+{% for weight in (1..10) %}{% for node in site.pages %}
       {% if weight == node.weight and group == node.group %}
          {% if page.url == node.url %}
             <li class="active"><a href="{% if weight >= 10 %}..{% endif %}{{node.url}}">{{node.title}}</a></li>
