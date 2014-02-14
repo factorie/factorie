@@ -19,25 +19,41 @@ import cc.factorie.app.chain.ChainModel
 class ASChainChineseWordSegmenter(url: java.net.URL)
   extends ChainChineseWordSegmenter(url)
 object ASChainChineseWordSegmenter
-  extends ASChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[ASChainChineseWordSegmenter](".factorie"))
+  extends ASChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[ASChainChineseWordSegmenter](".factorie")){
+  def main(args: Array[String]): Unit = {
+    println(getF1Score(args(0)))
+  }
+}
 
 //Microsoft-Research-Asia-corpus-trained model (Beijing)
 class MSRChainChineseWordSegmenter(url: java.net.URL)
   extends ChainChineseWordSegmenter(url)
 object MSRChainChineseWordSegmenter
-  extends MSRChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[MSRChainChineseWordSegmenter](".factorie"))
+  extends MSRChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[MSRChainChineseWordSegmenter](".factorie")){
+  def main(args: Array[String]): Unit = {
+    println(getF1Score(args(0)))
+  } 
+}
 
 //Peiking-University-corpus-trained model (Beijing)
 class PKUChainChineseWordSegmenter(url: java.net.URL)
   extends ChainChineseWordSegmenter(url)
 object PKUChainChineseWordSegmenter
-  extends PKUChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[PKUChainChineseWordSegmenter](".factorie"))
+  extends PKUChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[PKUChainChineseWordSegmenter](".factorie")){
+  def main(args: Array[String]): Unit = {
+    println(getF1Score(args(0)))
+  } 
+}
 
 //City-University-of-Hong-Kong-corpus-trained model (Hong Kong)
 class CUHChainChineseWordSegmenter(url: java.net.URL)
   extends ChainChineseWordSegmenter(url)
 object CUHChainChineseWordSegmenter
-  extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie"))
+  extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie")){
+  def main(args: Array[String]): Unit = {
+    println(getF1Score(args(0)))
+  } 
+}
 
 class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain, 
