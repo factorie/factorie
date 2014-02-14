@@ -167,16 +167,24 @@ class ChainChineseWordSegmenter(
     character => character.label
   )
 
-  def getOrderedWordList(document: Document, delimiter: Char = '|'): IndexedSeq[String] = {
-    
-    val labeledText = segment(document).map( label => (label.character.string, label.categoryValue) )
+  def getF1Score(filePath: String): Double = {
 
-    (for( (character, label) <- labeledText )
-       yield {
-         if(labelDomain.indicatesSegmentStart(label)) delimiter + character
-         else character
-       }
-    ).toList.mkString.split(delimiter)
+    val labelSeq = segment(filePath)
+    val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]
+    val numTrueWords = labelSeq.count( label => labelDomain.indicatesSegmentStart(label.trueValue) )
+    
+    labelSeq.foreach{ label => 
+      if(labelDomain.indicatesSegmentStart(label.categoryValue))
+        words += new ArrayBuffer[SegmentationLabel] :+ label
+      else
+        words(words.size - 1) += label
+    }
+    
+    val numCorrect: Double = myWords.count( word => word.forall( label => label.valueIsTarget ) )
+    val precision = numCorrect / myWords.size
+    val recall = numCorrect / numTrueWords
+
+    (precision * recall)/(precision + recall)
   }
 
   def segment(filePath: String): IndexedSeq[SegmentationLabel] = segment(getSegmentables(new File(filePath)))
