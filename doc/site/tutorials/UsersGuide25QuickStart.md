@@ -13,17 +13,21 @@ Here are three examples providing a brief sense of FACTORIE usage.
 
 FACTORIE comes with a pre-built implementation of the [latent Dirichlet allocation (LDA)](https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation) topic model. 
 If "mytextdir" is a directory name containing many plain text documents each in its own file, then typing 
+
 ```
 $ bin/fac lda --read-dirs mytextdir --num-topics 20 --num-iterations 100
 ```
+
 will run 100 iterations of a sparse collapsed Gibbs sampling on all the documents, and print out the results every 10 iterations. 
 FACTORIE's LDA implementation is faster than [MALLET](http://mallet.cs.umass.edu)'s.
 
 You can also train a document classifier. 
 If "sportsdir" and "politicsdir" are each directories that contain plan text files in the categories sports and politics, then typing
+
 ```
 $ bin/fac classify --read-text-dirs sportsdir politicsdir --write-classifier mymodel.factorie
 ```
+
 will train a log-linear classifier by maximum likelihood (same as maximum entropy) and save it in the file "mymodel.factorie".
 
 If you also have the Maven-supplied factorie-nlp-resources JAR in your classpath, you can run many natural language processing tools.  For example,

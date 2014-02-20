@@ -19,7 +19,7 @@ Or, you can can clone the latest snapshot version from GitHub:
 $ git clone https://github.com/factorie/factorie
 ```
 
-See [Installation](tutorials/UsersGuide02Installation.html) for details.
+See [Installation](tutorials/UsersGuide20Installation.html) for details.
 
 Earlier Versions
 ---
