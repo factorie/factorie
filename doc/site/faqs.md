@@ -72,9 +72,11 @@ You probably have some SSL certificate issues. Try the following steps (Thanks, 
 2. go to Tools->"Page Info" then go the the tab "Security", click on "View Certificate" go to tab "Details" and click "Export..."
 3. save the resulting certificate file somewhere on your computer
 4. in a terminal, paste the following (some of the paths will be different for your machine):
-`
-sudo /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre/bin/keytool -import -alias factorie_key_store-1 -file /path/to/certificate -keystore /etc/pki/java/cacerts
-`
+
+```
+$ sudo /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre/bin/keytool -import -alias factorie_key_store-1 -file /path/to/certificate -keystore /etc/pki/java/cacerts
+```
+
 5. the default password for the keystore is "changeit" and to the question "Trust this certificate?" answer "yes"
 For the points 4 to 5 above, use the Option 1 of http://stufftohelpyouout.blogspot.co.uk/2008/10/unable-to-find-valid-certification-path.html
  

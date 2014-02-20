@@ -6,20 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="shortcut icon" href="{% if page.weight >= 10 %}../{% endif %}assets/ico/favicon.png">
+    <link rel="shortcut icon" href="/assets/ico/favicon.png">
     
-    <title>FACTORIE: Installation</title>
+    <title>FACTORIE: {{page.title}}</title>
     
     <!-- Bootstrap core CSS -->
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/bootstrap-custom.css" rel="stylesheet">
+    <link href="/assets/css/bootstrap-custom.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/jumbotron.css" rel="stylesheet">
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/offcanvas.css" rel="stylesheet">
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/affix.css" rel="stylesheet">
+    <link href="/assets/css/jumbotron.css" rel="stylesheet">
+    <link href="/assets/css/offcanvas.css" rel="stylesheet">
+    <link href="/assets/css/affix.css" rel="stylesheet">
     
     <!-- For Pygments syntax highlighting -->
-    <link href="{% if page.weight >= 10 %}../{% endif %}assets/css/pygments/github.css" rel="stylesheet">
+    <link href="/assets/css/pygments/github.css" rel="stylesheet">
     
   </head>
   {% include navbar.html %}
@@ -43,9 +43,9 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/bootstrap.js"></script>
-    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/offcanvas.js"></script>
-    <script src="{% if page.weight >= 10 %}../{% endif %}assets/js/affix.js"></script>
+    <script src="/assets/js/bootstrap.js"></script>
+    <script src="/assets/js/offcanvas.js"></script>
+    <script src="/assets/js/affix.js"></script>
 	  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script>
 	  $(document).ready(function() {
