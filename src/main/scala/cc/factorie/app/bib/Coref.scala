@@ -228,6 +228,8 @@ object Coref{
       val saveDB = new CmdOption("save",true,"FILE","Creates a new DB by destroying the old one.")
       val inferenceType = new CmdOption("inference-type","default","FILE","Indicates the type of entity to perform coreference on, options are: paper, author, venue, trained-authors.")
       val trainingSamples = new CmdOption("training-samples",100000,"FILE","Number of samples to train")
+      val tokenizeVenues = new CmdOption("tokenize-venues",false,"FILE","If true, adds the tokens of the venue in addition to the acronym.")
+
       //val checkDBIntegrity = new CmdOption("check-integrity",false,"BOOL","If true then check the integrity of all entities in the DB")
       //inference options
       val numEpochs = new CmdOption("epochs",1,"FILE","Number of inference round-trips to DB.")
@@ -256,6 +258,7 @@ object Coref{
       println("Done copying, exiting.")
       System.exit(0)
     }
+    def getVenueBag(s:String) = {if(opts.tokenizeVenues.value)FeatureUtils.venueBag(s) else FeatureUtils.venueBagAcrOnly(s)}
     for(i<-0 until opts.advanceSeed.value)random.nextInt()
     if(opts.saveOptions.wasInvoked)opts.writeOptions(new File(opts.saveOptions.value))
     if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
@@ -341,33 +344,33 @@ object Coref{
       val bibDirFile = new File(opts.bibDirectory.value)
       if(bibDirFile.isDirectory){
         for(file <- bibDirFile.listFiles.par)
-          epiDB.insertMentionsFromBibFile(file,opts.bibUseKeysAsIds.value,opts.bibSplitOnAt.value)
-      } else epiDB.insertMentionsFromBibFile(new File(opts.bibDirectory.value),opts.bibUseKeysAsIds.value,opts.bibSplitOnAt.value)
+          epiDB.insertMentionsFromBibFile(file,getVenueBag(_),opts.bibUseKeysAsIds.value,opts.bibSplitOnAt.value)
+      } else epiDB.insertMentionsFromBibFile(new File(opts.bibDirectory.value),getVenueBag(_),opts.bibUseKeysAsIds.value,opts.bibSplitOnAt.value)
       //epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
     //epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
     }
     if(opts.rexaData.value.toLowerCase != "none"){
       println("Loading labeled data from: " + opts.rexaData.value)
-      epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value))
+      epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value),getVenueBag(_))
     }
     if(opts.rexaXMLDir.value.toLowerCase != "none"){
       println("LoadblpLocationding Rexa XML data from: "+opts.rexaXMLDir.value)
       val papers = RexaLabeledLoader.loadFromXMLDir(new File(opts.rexaXMLDir.value))
-      epiDB.add(papers)
+      epiDB.add(papers,getVenueBag(_))
     }
     if(opts.dblpLocation.value.toLowerCase != "none"){
       println("Loading DBLP data from: " + opts.dblpLocation.value)
-      epiDB.insertMentionsFromDBLP(opts.dblpLocation.value)
+      epiDB.insertMentionsFromDBLP(opts.dblpLocation.value,getVenueBag)
       println("done.")
     }
 
     if(opts.aclAnthologyFile.value.toLowerCase != "none"){
       val papers = AclAnthologyReader.loadAnnFile(new File(opts.aclAnthologyFile.value))
-      epiDB.add(papers)
+      epiDB.add(papers,getVenueBag(_))
     }
     if(opts.rexaFileList.value.toLowerCase != "none"){
       val papers = RexaCitationLoader.loadFromList(new File(opts.rexaFileList.value))
-      epiDB.add(papers)
+      epiDB.add(papers,getVenueBag(_))
     }
 
     if(opts.canopyFile.wasInvoked){
@@ -449,7 +452,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
     authorColl.drop
     paperColl.drop
   }
-
+  
   def processAuthorsFromCanopyFile(file:File,numPerRound:Int):Unit ={
     val canopies = scala.io.Source.fromFile(file).getLines().toSeq
     println("About to process "+canopies.size + " canopies.")
@@ -2223,7 +2226,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
       for((oldPromotedId,newPromotedId) <- promotionChanges)changePromoted(oldPromotedId,newPromotedId)
     }
   }
-  def add(papers:Iterable[PaperEntity]):Unit ={
+  def add(papers:Iterable[PaperEntity],getVenueBag:String=>Seq[String]):Unit ={
     val printOut:Boolean = papers.size >= 1000
     if(printOut)println("About to add papers to db.")
     //println("Authors: "+papers.flatMap(_.authors).size)
@@ -2231,7 +2234,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     papers.foreach(_.authors.foreach((a:AuthorEntity)=>EntityUtils.reExtractNames(a.fullName)))
     if(printOut)println(" done.")
     if(printOut)print("Adding features for papers..")
-    for(p <- papers)FeatureUtils.addFeatures(p)
+    for(p <- papers)FeatureUtils.addFeatures(p,getVenueBag)
     if(printOut)println(" done.")
     if(printOut)print("Inferring topics for papers....")
     for(lda<-Coref.ldaOpt)LDAUtils.inferTopicsForPapers(papers,lda)
@@ -2263,35 +2266,35 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   def createAuthorsFromPaper(p:PaperEntity):Unit ={
 
   }
-  def insertLabeledRexaMentions(rexaFile:File):Unit ={
+  def insertLabeledRexaMentions(rexaFile:File,getVenueBag:String=>Seq[String]):Unit ={
     val paperEntities = RexaLabeledLoader.load(rexaFile)
-    add(paperEntities)
+    add(paperEntities,getVenueBag(_))
   }
-  def insertMentionsFromBibDir(bibDir:File,useKeysAsIds:Boolean=false):Unit ={
-    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,useKeysAsIds)//println("Warning: "+bibDir + " is not a directory. Loading file instead.")
+  def insertMentionsFromBibDir(bibDir:File,getVenueBag:String=>Seq[String],useKeysAsIds:Boolean=false):Unit={
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,getVenueBag(_),useKeysAsIds)//println("Warning: "+bibDir + " is not a directory. Loading file instead.")
     println("Inserting mentions from bib directory: "+bibDir)
     val size = bibDir.listFiles.size
     var count = 0
     BibReader.skipped=0
     for(file <- bibDir.listFiles.filter(_.isFile)){
-      insertMentionsFromBibFile(file,useKeysAsIds)
+      insertMentionsFromBibFile(file,getVenueBag(_),useKeysAsIds)
       count += 1
       if(count % 10 == 0)print(".")
       if(count % 200 == 0 || count==size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ".")
     }
     BibReader.skipped=0
   }
-  def insertMentionsFromBibDirMultiThreaded(bibDir:File,useKeysAsIds:Boolean=false):Unit ={
-    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,useKeysAsIds)
+  def insertMentionsFromBibDirMultiThreaded(bibDir:File,getVenueBag:String=>Seq[String],useKeysAsIds:Boolean=false):Unit ={
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir,getVenueBag(_),useKeysAsIds)
     val papers = BibReader.loadBibTexDirMultiThreaded(bibDir,true,useKeysAsIds)
-    add(papers)
+    add(papers,getVenueBag(_))
   }
-  def insertMentionsFromBibFile(bibFile:File,useKeysAsIds:Boolean,bibSplitOnAt:Boolean=false,numEntries:Int = Integer.MAX_VALUE):Unit ={
+  def insertMentionsFromBibFile(bibFile:File,getVenueBag:String=>Seq[String],useKeysAsIds:Boolean,bibSplitOnAt:Boolean=false,numEntries:Int = Integer.MAX_VALUE):Unit ={
     println("insertMentionsFromBibFile: use keys as ids: "+useKeysAsIds)
     if(!bibSplitOnAt){
       val paperEntities = BibReader.loadBibTeXFile(bibFile,true,useKeysAsIds)
       println("Loaded "+paperEntities.size + " papers and "+paperEntities.flatMap(_.authors).size+" authors.")
-      add(paperEntities)
+      add(paperEntities,getVenueBag(_))
       println("Done.")
     }else{
       println("About to load file: "+bibFile.getName+" using the splitOnAt hack.")
@@ -2300,7 +2303,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
       for(s <- split){
         val result = new ArrayBuffer[PaperEntity]
         BibReader.loadBibTeXFileText("@"+s,bibFile,result,true,useKeysAsIds)
-        add(result)
+        add(result,getVenueBag(_))
       }
     }
     //for(ids <- idsToRetain)paperEntities = paperEntities.filter((p:PaperEntity)=>ids.contains(p.id))
@@ -2312,9 +2315,9 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     //}
     //println("Done.")
   }
-  def insertMentionsFromDBLP(location:String):Unit ={
+  def insertMentionsFromDBLP(location:String,getVenueBag:String=>Seq[String]):Unit ={
     val paperEntities = DBLPLoader.loadDBLPData(location)
-    add(paperEntities)
+    add(paperEntities,getVenueBag(_))
   }
   def splitFirst(firstName:String) : (String,String) ={
     var first:String = ""

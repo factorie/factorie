@@ -444,7 +444,7 @@ object UserEditExperiments extends MongoOptions with DataOptions with InferenceO
       println("  total papers: "+papers.size)
     }
     println("About to add "+papers.size+" papers.")
-    epiDB.add(papers)
+    epiDB.add(papers,FeatureUtils.venueBag(_))
     println("Finished adding papers.")
     var authors:Seq[AuthorEntity] = random.shuffle(epiDB.authorColl.loadLabeledAndCanopies)
     //fill these in below
@@ -599,7 +599,7 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       println("  total papers: "+papers.size)
     }
     println("About to add "+papers.size+" papers.")
-    epiDB.add(papers)
+    epiDB.add(papers,FeatureUtils.venueBag(_))
     println("Finished adding papers.")
     var authors:Seq[AuthorEntity] = random.shuffle(epiDB.authorColl.loadLabeledAndCanopies)
     var initialDB:Seq[AuthorEntity] = null
