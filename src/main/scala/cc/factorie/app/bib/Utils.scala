@@ -922,7 +922,8 @@ object LDAUtils{
       val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
       if(doc.ws.length>0){
         lda.inferDocumentTheta(doc,50)
-        doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.05}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1)(null)})
+	val z = doc.theta.value.oneNorm
+        doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.05}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1/z)(null)})
         //doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.001}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1)(null)})
         //println("PAPER: " + DEFAULT_DOCUMENT_GENERATOR(paper)+"\n  topics: "+doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.0}).mkString(" "))
         count += 1
