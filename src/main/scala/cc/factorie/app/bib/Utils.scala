@@ -164,8 +164,8 @@ object FeatureUtils{
   }
   def normalizeName(name:String) = deAccent(name).replaceAll("[~\\.]"," ").replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ").trim()
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
-  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
-  //def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  def venueBagAcrOnly(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
+  def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
   def deAccent(s:String):String = java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+","")
   def filterOnToken(s:String,stopWordsRegEx:String):String = s.split(" ").filter(!_.matches(stopWordsRegEx)).mkString(" ")
   def tokenizeVenuesForAuthors(s:String):Seq[String] ={
@@ -314,7 +314,7 @@ object FeatureUtils{
     }else println("Warning: paper is null for author with id "+author.id+" cannot compute features.")
     //for(bag <- author.attr[BagOfWordsVariable])bag.clear
   }
-  def addFeatures(paper:PaperEntity):Unit ={
+  def addFeatures(paper:PaperEntity,getVenueBags:String=>Seq[String]):Unit ={
     //for(author <- paper.authors)
     //  paper.bagOfAuthors += filterFieldNameForMongo(FeatureUtils.firstInitialLastName(author))
     if(paper.venueName!=null && paper.venueName.value.length>0){
