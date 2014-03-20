@@ -17,7 +17,7 @@ package cc.factorie.variable
 import scala.collection.mutable
 import java.io._
 import java.util.zip.{GZIPOutputStream, GZIPInputStream}
-import cc.factorie.util.Cubbie
+import cc.factorie.util.{JavaHashMap, Cubbie}
 import cc.factorie.{variable, util}
 
 // For single categorical values
@@ -58,7 +58,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   type Value <: CategoricalValue
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
-  private val __indices: mutable.HashMap[C, Value] = new mutable.HashMap[C, Value]
+  private val __indices: mutable.Map[C, Value] = JavaHashMap[C, Value]()
   def _indices = __indices
   private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;

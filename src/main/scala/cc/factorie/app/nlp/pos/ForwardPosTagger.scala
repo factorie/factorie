@@ -2,9 +2,8 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.la._
-import cc.factorie.util.{BinarySerializer, CubbieConversions, DoubleAccumulator, FileUtils}
+import cc.factorie.util._
 import java.io._
-import cc.factorie.util.HyperparameterMain
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
@@ -43,14 +42,15 @@ class ForwardPosTagger extends DocumentAnnotator {
     def docFreqLc(i:Int): String = if (i < 0 || i > length-1 || !WordData.docWordCounts.contains(innerlc(i))) null else innerlc(i)
   }
   protected def lemmas(tokens:Seq[Token]) = new Lemmas(tokens)
-  
+
+// This should not be a singleton object, global mutable state is bad -luke
 /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
       Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger.
       The key into the ambiguityClasses is app.strings.replaceDigits().toLowerCase */
   object WordData {
-    val ambiguityClasses = collection.mutable.HashMap[String,String]()
-    val sureTokens = collection.mutable.HashMap[String,Int]()
-    var docWordCounts = collection.mutable.HashMap[String,Int]()
+    val ambiguityClasses = JavaHashMap[String,String]()
+    val sureTokens = JavaHashMap[String,Int]()
+    var docWordCounts = JavaHashMap[String,Int]()
     val ambiguityClassThreshold = 0.4
     val wordInclusionThreshold = 1
     val sureTokenThreshold = -1		// -1 means don't consider any tokens "sure"
