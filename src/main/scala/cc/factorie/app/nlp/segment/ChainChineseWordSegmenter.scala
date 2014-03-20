@@ -27,6 +27,19 @@ class CUHChainChineseWordSegmenter(url: java.net.URL)
 object CUHChainChineseWordSegmenter
   extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie"))
 
+class GlobalChainChineseWordSegmenter
+  extends ChainChineseWordSegmenter
+object GlobalChainChineseWordSegmenter
+  extends GlobalChainChineseWordSegmenter {
+  def main(args: List[String]): Unit = {
+    train(args.slice(1,5))
+    val f1Scores = args.slice(5,args.size).map( 
+                     trainPath => getF1Score(trainPath) 
+                   ).mkString("\t")
+    println(f1Scores)
+  }
+}
+
 class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain
 ) extends DocumentAnnotator {
@@ -95,12 +108,14 @@ class ChainChineseWordSegmenter(
     dataStream.close
   }
 
-  def train(filePath: String): Unit = {
+  def train(filePaths: List[String]): Unit = {
 
     println("Training In Progress")
     println("\tFeature Extraction In Progress")
 
-    val trainingSegmentables = getSegmentables(new File(filePath))
+    val trainingSegmentables = filePaths.map( 
+                                 filePath => getSegmentables(new File(filePath)) 
+                               ).flatten
     SegmentationFeaturesDomain.freeze
     
     println("\tFeature Extraction Completed")
