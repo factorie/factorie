@@ -31,9 +31,9 @@ class GlobalChainChineseWordSegmenter
   extends ChainChineseWordSegmenter
 object GlobalChainChineseWordSegmenter
   extends GlobalChainChineseWordSegmenter {
-  def main(args: List[String]): Unit = {
-    train(args.slice(1,5))
-    val f1Scores = args.slice(5,args.size).map( 
+  def main(args: Array[String]): Unit = {
+    train(args.toList.slice(0,4))
+    val f1Scores = args.toList.slice(4,args.size).map( 
                      trainPath => getF1Score(trainPath) 
                    ).mkString("\t")
     println(f1Scores)
@@ -271,36 +271,25 @@ class ChainChineseWordSegmenter(
 
     //Add unigram character identity features
     features ++= Seq(
-                   cneg2 + cneg2label, 
-                   cneg1 + cneg1label, 
-                   c0    + c0label, 
-                   cpos1 + cpos1label, 
-                   cpos2 + cpos2label
+                   cneg2 + cneg2label,
+                   cneg1 + cneg1label,
+                   c0    + c0label,
+                   cpos1 + cpos1label
                  )
 
     //Add bigram character identity features
     features ++= Seq(
                    cneg2 + cneg1 + cneg2label + cneg1label,
-                   cneg2 + c0    + cneg2label + c0label,
-                   cneg2 + cpos1 + cneg2label + cpos1label,
-                   cneg2 + cpos2 + cneg2label + cpos2label,
                    cneg1 + c0    + cneg1label + c0label,
                    cneg1 + cpos1 + cneg1label + cpos1label,
-                   cneg1 + cpos2 + cneg1label + cpos2label,
                    c0    + cpos1 + c0label    + cpos1label,
-                   c0    + cpos2 + c0label    + cpos2label,
-                   cpos1 + cpos2 + cpos1label + cpos2label
+                   c0    + cpos2 + c0label    + cpos2label
                  )
 
     //Add reduplication features
     features ++= Seq(
-                   if(cneg2 equals cneg1) "R" + cneg2label + cneg1label else defaultFeature,
-                   if(cneg2 equals c0)    "R" + cneg2label + c0label    else defaultFeature,
                    if(cneg1 equals c0)    "R" + cneg1label + c0label    else defaultFeature,
-                   if(cneg1 equals cpos1) "R" + cneg1label + cpos1label else defaultFeature,
-                   if(c0 equals cpos1)    "R" + c0label    + cpos1label else defaultFeature,
-                   if(c0 equals cpos2)    "R" + c0label    + cpos2label else defaultFeature,
-                   if(cpos1 equals cpos2) "R" + cpos1label + cpos2label else defaultFeature
+                   if(cneg1 equals cpos1) "R" + cneg1label + cpos1label else defaultFeature
                  )
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
