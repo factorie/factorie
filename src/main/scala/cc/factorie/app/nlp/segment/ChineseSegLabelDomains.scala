@@ -27,6 +27,8 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
     segmentStarts.exists( segStart => segStart equals label )
   }
 
+  def isSolitary(label: String): Boolean = label equals "O"
+
   def getLabeledCharacter(i: Int, line: String): (String, String) = {
 
     val label =
@@ -42,6 +44,8 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
 trait SegmentedCorpusLabeling {
 
   def indicatesSegmentStart(label: String): Boolean
+
+  def isSolitary(label: String): Boolean
   
   //Labels a pre-segmented training set based on this tag set: 
   //B (beginning) I (inner) O (solitary) P (punctuation)
