@@ -172,7 +172,7 @@ class ChainChineseWordSegmenter(
 
   def getAffixes(labeledCorpus: IndexedSeq[(String, String)]): (List[String], List[String]) = {
 
-    val words = getWords(labeledCorpus) 
+    val words = getWords(labeledCorpus).filter( word => word.size > 1 )
     println("Number of Words: " + words.size)
     val tempDomain = new CategoricalDomain[String]
     
