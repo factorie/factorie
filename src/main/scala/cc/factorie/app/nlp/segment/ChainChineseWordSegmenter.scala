@@ -44,6 +44,11 @@ class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain
 ) extends DocumentAnnotator {
 
+  val singleCharTable = new CategoricalDomain[String]
+  val bigramTable = new CategoricalDomain[String]
+  val prefixTable = new CategoricalDomain[String]
+  val suffixTable = new CategoricalDomain[String]
+
   def this(filePath: String) {
     this()
     deserialize(filePath)
@@ -93,6 +98,10 @@ class ChainChineseWordSegmenter(
     
     val dataStream = new DataOutputStream(new BufferedOutputStream(stream)) 
 
+    BinarySerializer.serialize(singleCharWordTable.dimensionDomain, dataStream)
+    BinarySerializer.serialize(bigramTable.dimensionDomain, dataStream)
+    BinarySerializer.serialize(prefixTable.dimensionDomain, dataStream)
+    BinarySerializer.serialize(suffixTable.dimensionDomain, dataStream)
     BinarySerializer.serialize(SegmentationFeaturesDomain.dimensionDomain, dataStream)
     BinarySerializer.serialize(model, dataStream)
     dataStream.close
@@ -103,6 +112,10 @@ class ChainChineseWordSegmenter(
     
     val dataStream = new DataInputStream(new BufferedInputStream(stream))
 
+    BinarySerializer.deserialize(singleCharWordTable.dimensionDomain, dataStream)
+    BinarySerializer.deserialize(bigramTable.dimensionDomain, dataStream)
+    BinarySerializer.deserialize(prefixTable.dimensionDomain, dataStream)
+    BinarySerializer.deserialize(suffixTable.dimensionDomain, dataStream)
     BinarySerializer.deserialize(SegmentationFeaturesDomain.dimensionDomain, dataStream)
     BinarySerializer.deserialize(model, dataStream)
     dataStream.close
@@ -112,6 +125,12 @@ class ChainChineseWordSegmenter(
 
     println("Training In Progress")
     println("\tFeature Extraction In Progress")
+
+    val labeledCorpuses = filePaths.map(
+                            filePath => labelDomain.getLabeledCharacters(new File(filePath))
+                          ).flatten
+
+    populateFeatureTables(labeledCorpus)
 
     val trainingSegmentables = filePaths.map( 
                                  filePath => getSegmentables(new File(filePath)) 
@@ -129,6 +148,94 @@ class ChainChineseWordSegmenter(
     trainer.trainFromExamples(examples)
 
     println("Training Complete\n")
+  }
+
+  def populateFeatureTables(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
+
+    populateSingleCharWordTable(labeledCorpus)
+    populateBigramTable(labeledCorpus)
+    populateAffixTables(labeledCorpus)
+  }
+
+  def populateAffixTables(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
+    
+    val (prefixes, suffixes) = getAffixes(labeledCorpus)
+
+    prefixTable.clear
+    prefixes.foreach( prefix => prefixTable.index(prefix) )
+    prefixTable.freeze
+
+    suffixTable.clear
+    suffixes.foreach( suffix => suffixTable.index(suffix) )
+    suffixTable.freeze
+  }
+
+  def getAffixes(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
+
+    val words = getWords(labeledCorpus) 
+    val tempDomain = CategoricalDomain[String]
+    
+    tempDomain.gatherCounts = true 
+    words.foreach( word => tempDomain.index(word) )
+    tempDomain.trimAboveCount(rareWordThreshold)
+
+    val rareWords = tempDomain.categories.toList
+    val prefixes = rareWords.map( word => word.slice(0,1) )
+    val suffixes = rareWords.map( word => word.slice(word.size-1, word.size) )
+
+    (prefixes, suffixes)
+  }
+
+  def getWords(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
+
+    val delimiter = "|"
+    
+    (for( (character,label) <- labeledCorpus ) yield {
+       if ( labelDomain.indicatesSegmentStart(label) && !label equals "P" )
+         delimiter + character
+       else if ( !label equals "P" )
+         character
+       else
+         ""
+     }
+    ).mkString.split(delimiter)
+  }
+
+  def populateBigramTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
+
+    val bigrams = getBigrams(labeledCorpus)
+
+    bigramTable.clear
+    bigrams.foreach( bigram => bigramTable.index(bigram) )
+    bigramTable.freeze
+  }
+
+  def getBigrams(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
+    
+    val charsOnly = labeledCorpus.map( pair => pair._1 )
+    val bigramZip = (charsOnly :+ "0").zip(charsOnly +: "0").slice(1, charsOnly.size)
+
+    bigramZip.map( pair => pair._1 + pair._2 )
+  }
+
+  def populateSingleCharWordTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
+    
+    val onlySingleCharWords = getOnlySingeCharWords(labeledCorpus)
+
+    singleCharTable.clear
+    onlySingleCharWords.foreach( char => singleCharTable.index(char) )
+    singleCharTable.freeze
+  }
+
+  def getOnlySingleCharWords(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
+
+    val (singleInstances, nonSingleInstances) = labeledCorpuses.partition( 
+      pair => labelDomain.isSolitary(pair._2) 
+    )
+    val singleChars = singleInstances.map( pair => pair._1 ).toSet
+    val nonSingleChars = nonSingleInstances.map( pair => pair._1 ).toSet
+                             
+    (singeChars -- (singleChars & nonSingleChars)).toList
   }
 
   object SegmentationFeaturesDomain extends CategoricalVectorDomain[String]
@@ -271,27 +378,44 @@ class ChainChineseWordSegmenter(
 
     //Add unigram character identity features
     features ++= Seq(
-                   cneg2 + cneg2label,
-                   cneg1 + cneg1label,
-                   c0    + c0label,
-                   cpos1 + cpos1label
-                 )
+      cneg2 + cneg2label,
+      cneg1 + cneg1label,
+      c0    + c0label,
+      cpos1 + cpos1label
+    )
 
     //Add bigram character identity features
     features ++= Seq(
-                   cneg2 + cneg1 + cneg2label + cneg1label,
-                   cneg1 + c0    + cneg1label + c0label,
-                   cneg1 + cpos1 + cneg1label + cpos1label,
-                   c0    + cpos1 + c0label    + cpos1label,
-                   c0    + cpos2 + c0label    + cpos2label
-                 )
+      cneg2 + cneg1 + cneg2label + cneg1label,
+      cneg1 + c0    + cneg1label + c0label,
+      cneg1 + cpos1 + cneg1label + cpos1label,
+      c0    + cpos1 + c0label    + cpos1label,
+      c0    + cpos2 + c0label    + cpos2label
+    )
 
-    //Add reduplication features
-    features ++= Seq(
-                   if(cneg1 equals c0)    "R" + cneg1label + c0label    else defaultFeature,
-                   if(cneg1 equals cpos1) "R" + cneg1label + cpos1label else defaultFeature
-                 )
+    //Add feature functions including reduplication, known bigram, 
+    //solitary character, prefix and affix
+    features ++= List(
+      (cneg1 equals c0,                       "RE"+ cneg1label + c0label),
+      (cneg1 equals cpos1,                    "RE"+ cneg1label + cpos1label),
+      (tableContains(bigramTable, cneg1+c0),  "BI"+ cneg1      + c0),
+      (tableContains(singleCharTable, cneg1), "UN"+ cneg1),
+      (tableContains(singleCharTable, c0),    "UN"+ c0),
+      (tableContains(singleCharTable, cpos1), "UN"+ cpos1),
+      (tableContains(prefixTable, cneg1),     "PR"+ cneg1),
+      (tableContains(suffixTable, c0),        "SU"+ c0)
+    ).filter( pair => pair._1 ).map( pair => pair._2 )
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
+  }
+
+  def tableContains(domain: CategoricalDomain[String], element: String): Boolean = {
+
+    try {
+      domain.getIndex(element)
+      true
+    } catch {
+      case Exception => false
+    }
   }
 }
