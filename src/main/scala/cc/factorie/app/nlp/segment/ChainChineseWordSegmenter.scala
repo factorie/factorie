@@ -208,7 +208,6 @@ class ChainChineseWordSegmenter(
 
     val bigrams = getBigrams(labeledCorpus)
     println("Number of Bigrams: " + bigrams.size)
-
     bigramTable.clear
     bigrams.foreach( bigram => bigramTable.index(bigram) )
     bigramTable.freeze
@@ -217,7 +216,9 @@ class ChainChineseWordSegmenter(
   def getBigrams(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
     
     val charsOnly = labeledCorpus.map( pair => pair._1 )
+    println("Chars Only Size: " + charsOnly.size)
     val bigramZip = (charsOnly :+ "0").zip(charsOnly +: "0").slice(1, charsOnly.size)
+    println("Bigram Zip Size: " + bigramZip.size)
 
     bigramZip.map( pair => pair._1 + pair._2 ).toList
   }
@@ -417,9 +418,9 @@ class ChainChineseWordSegmenter(
 
     try {
       domain.getIndex(element)
-      true
+      return true
     } catch {
-      case e: Exception => {false}
+      case e: Exception => {return false}
     }
   }
 }
