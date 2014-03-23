@@ -133,9 +133,8 @@ class ChainChineseWordSegmenter(
 
     populateFeatureTables(labeledCorpuses)
 
-    val trainingSegmentables = filePaths.map( 
-                                 filePath => getSegmentables(new File(filePath)) 
-                               ).flatten
+    val trainingSegmentables = getSegmentables(labelesCorpuses)
+
     SegmentationFeaturesDomain.freeze
     
     println("\tFeature Extraction Completed")
@@ -174,6 +173,7 @@ class ChainChineseWordSegmenter(
   def getAffixes(labeledCorpus: IndexedSeq[(String, String)]): (List[String], List[String]) = {
 
     val words = getWords(labeledCorpus) 
+    println("Number of Words: " + words.size)
     val tempDomain = new CategoricalDomain[String]
     
     tempDomain.gatherCounts = true 
@@ -181,8 +181,10 @@ class ChainChineseWordSegmenter(
     tempDomain.trimAboveCount(rareWordThreshold)
 
     val rareWords = tempDomain.categories.toList
+    println("Number of Rare Words: " + rareWords.size)
     val prefixes = rareWords.map( word => word.slice(0,1) )
     val suffixes = rareWords.map( word => word.slice(word.size-1, word.size) )
+    println("Number of Prefixes: " + prefixes.size + "\tNumber of Suffixes: " + suffixes.size)
 
     (prefixes, suffixes)
   }
@@ -205,6 +207,7 @@ class ChainChineseWordSegmenter(
   def populateBigramTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
 
     val bigrams = getBigrams(labeledCorpus)
+    println("Number of Bigrams: " + bigrams.size)
 
     bigramTable.clear
     bigrams.foreach( bigram => bigramTable.index(bigram) )
@@ -416,7 +419,7 @@ class ChainChineseWordSegmenter(
       domain.getIndex(element)
       true
     } catch {
-      case Exception => false
+      case e: Exception => {false}
     }
   }
 }
