@@ -133,7 +133,7 @@ class ChainChineseWordSegmenter(
 
     populateFeatureTables(labeledCorpuses)
 
-    val trainingSegmentables = getSegmentables(labelesCorpuses)
+    val trainingSegmentables = getSegmentables(labeledCorpuses)
 
     SegmentationFeaturesDomain.freeze
     
