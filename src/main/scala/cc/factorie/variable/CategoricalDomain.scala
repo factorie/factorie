@@ -182,7 +182,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       if (_apply(i) <= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
     _clear()
     freeze()
-    origEntries.size = size
+    origEntries.size - size
   }
   /** Returns the count threshold below which entries were discarded. */
   def trimBelowSize(target:Int): Int = {
