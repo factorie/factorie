@@ -48,6 +48,7 @@ class ChainChineseWordSegmenter(
   val bigramTable = new CategoricalDomain[String]
   val prefixTable = new CategoricalDomain[String]
   val suffixTable = new CategoricalDomain[String]
+  val rareWordThreshold = 5
 
   def this(filePath: String) {
     this()
@@ -128,7 +129,7 @@ class ChainChineseWordSegmenter(
 
     val labeledCorpuses = filePaths.map(
                             filePath => labelDomain.getLabeledCharacters(new File(filePath))
-                          ).flatten
+                          ).flatten.toIndexedSeq
 
     populateFeatureTables(labeledCorpuses)
 
@@ -198,7 +199,7 @@ class ChainChineseWordSegmenter(
        else
          ""
      }
-    ).mkString.split(delimiter)
+    ).mkString.split(delimiter).toList
   }
 
   def populateBigramTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
@@ -220,7 +221,7 @@ class ChainChineseWordSegmenter(
 
   def populateSingleCharWordTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
     
-    val onlySingleCharWords = getOnlySingeCharWords(labeledCorpus)
+    val onlySingleCharWords = getOnlySingleCharWords(labeledCorpus)
 
     singleCharWordTable.clear
     onlySingleCharWords.foreach( char => singleCharWordTable.index(char) )
