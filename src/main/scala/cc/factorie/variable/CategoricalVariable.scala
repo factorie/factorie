@@ -29,11 +29,21 @@ trait CategoricalVar[C] extends DiscreteVar with CategoricalVectorVar[C] with Va
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + ")"
 }
 
+/** An immutable CategoricalVar.
+    @author Andrew McCallum */
+abstract class CategoricalConstant[C] extends CategoricalVar[C] {
+  type Value = CategoricalValue[C]
+  private var __value: Int = -1
+  override def intValue: Int = __value
+  def this(intValue:Int) = { this(); __value = intValue }
+  def this(categoricalValue:C) = { this(); __value = domain.index(categoricalValue) }
+  def value: Value = domain.apply(intValue).asInstanceOf[Value]
+}
+
 /** An abstract variable whose values are CategoricalValues, 
     each corresponding to an integer 0...domain.size, and each associated with a category of type C (usually a String).
     @author Andrew McCallum */
 trait MutableCategoricalVar[C] extends CategoricalVar[C] with MutableDiscreteVar {
-  def domain: CategoricalDomain[C]
   def setCategory(newCategory:C)(implicit d: DiffList): Unit = {
     val i = domain.index(newCategory)
     if (i >= 0) set(i)(d)

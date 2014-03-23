@@ -1,6 +1,8 @@
 package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.coref.{PhraseMention,PhraseMentionList}
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
 
@@ -35,21 +37,22 @@ object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
 class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence],m.runtimeClass)
   def postAttrs = Seq(classOf[MentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
 
   def process(document: Document) = {
     val mentions = addChunkMentions(document)
-    document.attr += new MentionList(mentions.sortBy(m => (m.head.stringStart, m.length)))
+    document.attr += new MentionList(mentions.sortBy(m => (m.phrase.head.stringStart, m.phrase.length)))
     document
   }
 
   //Sets mention entity type to empty in case an entity type labeler is not run on the mentions retrieved
-  def addChunkMentions(document: Document): Seq[Mention] = {
+  def addChunkMentions(document: Document): Seq[PhraseMention] = {
     getMentionSpans(document).map{labelSpan =>
       val s = labelSpan
-      val m = new Mention(s, s.length-1)
+      val p = new Phrase(s, s.length-1)
+      val m = new PhraseMention(p)
       m.attr += new MentionEntityType(m,"")
       m
     }

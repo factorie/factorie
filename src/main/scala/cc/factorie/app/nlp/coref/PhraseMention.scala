@@ -32,7 +32,7 @@ class MentionList(mentions:Iterable[Mention]) extends IndexedSeq[Mention] {
 }
 class PhraseMentionList(mentions:Iterable[PhraseMention]) extends MentionList(mentions) with IndexedSeq[PhraseMention] {
   override protected val _mentions = mentions.toVector
-  def apply(index:Int): PhraseMention = _mentions(index)
+  override def apply(index:Int): PhraseMention = _mentions(index)
 }
 
 class EntityId(string:String) extends NodeId(string)

@@ -9,7 +9,7 @@ import java.io._
 import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.coref.mention._
-import cc.factorie.app.nlp.phrase.{NumberLabel, GenderLabel}
+import cc.factorie.app.nlp.phrase.{PhraseNumber, PhraseGender}
 
 /**
  * User: apassos
@@ -21,17 +21,17 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   val options = new Coref1Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
-  def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
+  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+  def postAttrs = Seq(classOf[GenericEntityMap[PhraseMention]])
   def process(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
     else document.attr += processDocumentOneModel(document)
     document
   }
   def tokenAnnotationString(token:Token): String = {
-    val emap = token.document.attr[GenericEntityMap[Mention]]
-    token.document.attr[MentionList].filter(mention => mention.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+    val emap = token.document.attr[GenericEntityMap[PhraseMention]]
+    token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match {
+      case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
@@ -76,11 +76,11 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
 
-  def generateTrainingInstances(d: Document, map: GenericEntityMap[Mention]): Seq[MentionPairLabel] = {
-    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
+  def generateTrainingInstances(d: Document, map: GenericEntityMap[PhraseMention]): Seq[MentionPairLabel] = {
+    generateMentionPairLabels(d.attr[PhraseMentionList].map(CorefMention.mentionToCorefMention), map)
   }
 
-  protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
+  protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[PhraseMention] = null): Seq[MentionPairLabel] = {
     val labels = new ArrayBuffer[MentionPairLabel]
     for (i <- 0 until mentions.size){
       if(!options.usePronounRules || !mentions(i).isPRO)
@@ -90,7 +90,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
     labels
   }
 
-  protected def generateMentionPairLabelsForOneAnaphor(orderedMentions: Seq[CorefMention], anaphorIndex: Int, map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
+  protected def generateMentionPairLabelsForOneAnaphor(orderedMentions: Seq[CorefMention], anaphorIndex: Int, map: GenericEntityMap[PhraseMention] = null): Seq[MentionPairLabel] = {
     val labels = new ArrayBuffer[MentionPairLabel]
     val m1 = orderedMentions(anaphorIndex)
     var numAntecedent = 0
@@ -131,7 +131,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
     labels
   }
 
-  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, trainTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService, miniBatchSize: Int = 1)
+  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, trainTrueMaps: Map[String, GenericEntityMap[PhraseMention]], val pool: ExecutorService, miniBatchSize: Int = 1)
     extends CorefParallelHelper[Seq[Example]] {
     def map(d: Document): Seq[Example] = MiniBatchExample(miniBatchSize,
       generateTrainingInstances(d, trainTrueMaps(d.name)).map(i => model.getExample(i, options.slackRescale)))
@@ -143,8 +143,8 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
     }
   }
 
-  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
-    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
+  def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[PhraseMention]], testTrueMaps: Map[String, GenericEntityMap[PhraseMention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
+    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[PhraseMentionList])).toMap
     val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
@@ -178,9 +178,9 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
     }
   }
 
-  abstract class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService)
+  abstract class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[PhraseMention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[PhraseMention]], val pool: ExecutorService)
     extends CorefParallelHelper[Null] {
-    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention]
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[PhraseMention]
     def reduce(states: Iterable[Null]) { }
     def map(doc: Document): Null = {
       val fId = doc.name
@@ -214,7 +214,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
       mergeables.take(1).diff(mergeLeft).foreach(l.features ++= _.features.mergeableAllFeatures.map("NBRR_" + _))
     }
   }
-  def assertSorted(ments: Seq[Mention]): Unit = {
+  def assertSorted(ments: Seq[PhraseMention]): Unit = {
      val len = ments.length
      var i = 1
      while(i < len){
@@ -223,16 +223,16 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
      }
   }
 
-  def processDocumentOneModel(doc: Document): GenericEntityMap[Mention] = {
-    val ments = doc.attr[MentionList]
+  def processDocumentOneModel(doc: Document): GenericEntityMap[PhraseMention] = {
+    val ments = doc.attr[PhraseMentionList]
     assertSorted(ments)
     val corefMentions = ments.map(CorefMention.mentionToCorefMention)
     val map = processDocumentOneModelFromMentions(corefMentions)
     map
   }
 
-  def processDocumentOneModelFromMentions(ments: Seq[CorefMention]): GenericEntityMap[Mention] = {
-    val predMap = new GenericEntityMap[Mention]
+  def processDocumentOneModelFromMentions(ments: Seq[CorefMention]): GenericEntityMap[PhraseMention] = {
+    val predMap = new GenericEntityMap[PhraseMention]
     assertSorted(ments.map(_.mention))
     ments.foreach(m => predMap.addMention(m.mention, predMap.numMentions.toLong))
     for (i <- 0 until ments.size) {
@@ -245,11 +245,11 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
     predMap
   }
 
-  def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[Mention] = {
-    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.tokens.head.stringStart, mention.length)))
+  def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[PhraseMention] = {
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[PhraseMentionList].sortBy(mention => (mention.phrase.tokens.head.stringStart, mention.phrase.length)))
   }
 
-  def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[Mention]): GenericEntityMap[Mention] = {
+  def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[PhraseMention]): GenericEntityMap[PhraseMention] = {
 
     val allMents = inputMentions.map(CorefMention.mentionToCorefMention)
     val ments = if(options.usePronounRules) allMents.filter(!_.isPRO) else allMents
@@ -272,7 +272,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
       doCorefOnPronounsUsingRules(predMap,allMents)
 
     // we need to convert it into an entity Map of Mentions, rather than CorefMentions
-    val predMap2 = new GenericEntityMap[Mention]
+    val predMap2 = new GenericEntityMap[PhraseMention]
     predMap2.entities ++= predMap.entities.map(kv => (kv._1,kv._2.map(m => m.mention)))
     predMap2.reverseMap ++= predMap.reverseMap.map(kv => (kv._1.mention,kv._2))
     predMap2
@@ -307,7 +307,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
 
-  def processOneMention(orderedMentions: Seq[CorefMention], mentionIndex: Int, predMap: GenericEntityMap[Mention]): CorefMention = {
+  def processOneMention(orderedMentions: Seq[CorefMention], mentionIndex: Int, predMap: GenericEntityMap[PhraseMention]): CorefMention = {
     val m1 = orderedMentions(mentionIndex)
     val candLabels = ArrayBuffer[MentionPairFeatures]()
     var bestCand: CorefMention = null
@@ -417,17 +417,17 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
   trait LeftRightTester {
-    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention] =
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[PhraseMention] =
       processDocumentOneModel(doc)
   }
 
   trait LeftRightTesterFromEntities {
-    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention] =
+    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[PhraseMention] =
       processDocumentOneModelFromEntities(doc)
   }
 
-  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[Mention]], name: String): Double = {
-    val scorer = new CorefScorer[Mention]
+  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[PhraseMention]], name: String): Double = {
+    val scorer = new CorefScorer[PhraseMention]
     object ScorerMutex
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     var accuracy = 0.0
@@ -455,13 +455,13 @@ class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
 }
 
 object ForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
   deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
 }
 
 // This should only be used when using the NerAndPronounMentionFinder to find mentions
 class NerForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[GenderLabel[Mention]], classOf[NumberLabel[Mention]])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
 }
 object NerForwardCoref extends NerForwardCoref {
   deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))

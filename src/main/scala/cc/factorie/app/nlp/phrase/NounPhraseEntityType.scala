@@ -12,26 +12,23 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.ner.OntonotesNerDomain
+import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
-import cc.factorie.app.nlp.coref.mention.Entity
+//import cc.factorie.app.nlp.coref.mention.Entity
 import cc.factorie.app.nlp.load.LoadConll2011
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
-class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-  def domain = OntonotesNounPhraseEntityTypeDomain
+class EntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = OntonotesEntityTypeDomain
 }
-object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
-  this ++= ner.OntonotesNerDomain.categories
-  this += "MISC"
-}
+class PhraseEntityType(val phrase:NounPhrase, targetValue:String) extends EntityType(targetValue)
 
 
-class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
+class PhraseEntityTypeLabeler extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
@@ -41,7 +38,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     def domain = FeatureDomain
     override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
-  lazy val model = new LinearMulticlassClassifier(OntonotesNerDomain.size, FeatureDomain.dimensionDomain.size)
+  lazy val model = new LinearMulticlassClassifier(OntonotesEntityTypeDomain.size, FeatureDomain.dimensionDomain.size)
   
   def features(mention:NounPhrase): FeatureVariable = {
     val features = new FeatureVariable
@@ -83,22 +80,25 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
   val PersonLexicon = new lexicon.UnionLexicon("NounPhraseEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:NounPhrase): Int = {
-    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesNerDomain.index("PERSON")
+    if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processNounPhrase(mention: NounPhrase): Unit = mention.attr.getOrElseUpdate(new NounPhraseEntityType(mention, "O")) := entityTypeIndex(mention)
+  def processNounPhrase(mention: NounPhrase): Unit = mention.attr.getOrElseUpdate(new PhraseEntityType(mention, "O")) := entityTypeIndex(mention)
   def process(document:Document): Document = {
     for (mention <- document.attr[NounPhraseList]) processNounPhrase(mention)
     document
   }
 
-  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[NounPhraseList].filter(_.contains(token)); mentions.map(_.attr[NounPhraseEntityType].categoryValue).mkString(",") }
-  override def phraseAnnotationString(mention:Phrase): String = { val t = mention.attr[NounPhraseEntityType]; if (t ne null) t.categoryValue else "_" }
+  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[NounPhraseList].filter(_.contains(token)); mentions.map(_.attr[PhraseEntityType].categoryValue).mkString(",") }
+  override def phraseAnnotationString(mention:Phrase): String = { val t = mention.attr[PhraseEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[NounPhraseList])
-  def postAttrs: Iterable[Class[_]] = List(classOf[NounPhraseEntityType])
+  def postAttrs: Iterable[Class[_]] = List(classOf[PhraseEntityType])
  
-  def filterTrainingNounPhrases(mentions:Seq[NounPhrase]): Iterable[NounPhrase] = 
-    mentions.groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention))
+  def filterTrainingNounPhrases(phrases:Seq[NounPhrase]): Iterable[NounPhrase] =
+    // TODO This used to filter out phrases corresponding to entities with only one mention, but now we need the Mention to do this. 
+    // How important is this filter? -akm
+    // mentions.groupBy(m => m.entity).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention)) 
+    phrases.filter(phrase => !PersonLexicon.contains(phrase))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
@@ -107,12 +107,12 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
     trainNounPhrases.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
     val examples = for (doc <- trainDocs; mention <- filterTrainingNounPhrases(doc.attr[NounPhraseList])) yield
-      new PredictorExample(model, features(mention).value, mention.attr[NounPhraseEntityType].intValue, OptimizableObjectives.hingeMulticlass)
+      new PredictorExample(model, features(mention).value, mention.attr[PhraseEntityType].intValue, OptimizableObjectives.hingeMulticlass)
     val testNounPhrases = testDocs.flatMap(doc => filterTrainingNounPhrases(doc.attr[NounPhraseList]))
     println("Training ")
     def evaluate(): Unit = {
-      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[NounPhraseEntityType,la.Tensor1](model, OntonotesNerDomain, (t:NounPhraseEntityType) => features(t.phrase).value) ++= trainNounPhrases.map(_.attr[NounPhraseEntityType])).toString)
-      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[NounPhraseEntityType,la.Tensor1](model, OntonotesNerDomain, (t:NounPhraseEntityType) => features(t.phrase).value) ++= testNounPhrases.map(_.attr[NounPhraseEntityType])).toString)
+      println("TRAIN\n"+(new cc.factorie.app.classify.Trial[PhraseEntityType,la.Tensor1](model, OntonotesEntityTypeDomain, (t:PhraseEntityType) => features(t.phrase).value) ++= trainNounPhrases.map(_.attr[PhraseEntityType])).toString)
+      println("\nTEST\n"+(new cc.factorie.app.classify.Trial[PhraseEntityType,la.Tensor1](model, OntonotesEntityTypeDomain, (t:PhraseEntityType) => features(t.phrase).value) ++= testNounPhrases.map(_.attr[PhraseEntityType])).toString)
     }
     Trainer.onlineTrain(model.parameters, examples.toSeq, maxIterations=3, evaluate = evaluate)
   }
@@ -147,7 +147,7 @@ class NounPhraseEntityTypeLabeler extends DocumentAnnotator {
 
 }
 
-object NounPhraseEntityTypeLabeler extends NounPhraseEntityTypeLabeler(cc.factorie.util.ClasspathURL[NounPhraseEntityTypeLabeler](".factorie"))
+object NounPhraseEntityTypeLabeler extends PhraseEntityTypeLabeler(cc.factorie.util.ClasspathURL[PhraseEntityTypeLabeler](".factorie"))
 
 object NounPhraseEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
@@ -155,14 +155,14 @@ object NounPhraseEntityTypeLabelerTrainer {
     var trainDocs = LoadConll2011.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
     trainDocs = trainDocs.dropRight(20)
-    val labeler = new NounPhraseEntityTypeLabeler
+    val labeler = new PhraseEntityTypeLabeler
     for (mention <- labeler.filterTrainingNounPhrases(testDocs.flatMap(_.attr[NounPhraseList])))
-      println("%20s  %s".format(mention.attr[NounPhraseEntityType].target.categoryValue, mention.phrase))
+      println("%20s  %s".format(mention.attr[PhraseEntityType].target.categoryValue, mention.phrase))
 
     labeler.train(trainDocs, testDocs)
     (trainDocs ++ testDocs).foreach(labeler.process(_))
     for (mention <- labeler.filterTrainingNounPhrases(testDocs.flatMap(_.attr[NounPhraseList])))
-      println("%20s %-20s %-20s  %s".format(mention.attr[NounPhraseEntityType].target.categoryValue, mention.attr[NounPhraseEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.phrase))
+      println("%20s %-20s %-20s  %s".format(mention.attr[PhraseEntityType].target.categoryValue, mention.attr[PhraseEntityType].categoryValue, labeler.isWordNetPerson(mention.headToken).toString, mention.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
     

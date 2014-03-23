@@ -1,11 +1,12 @@
 package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
-import cc.factorie.app.nlp.phrase.{NumberLabel, GenderLabel}
+import cc.factorie.app.nlp.phrase.{Number, Gender}
 
 /**
  * User: apassos
@@ -13,8 +14,8 @@ import cc.factorie.app.nlp.phrase.{NumberLabel, GenderLabel}
  * Time: 12:23 PM
  */
 object CorefMention{
-  def mentionToCorefMention(m: Mention): CorefMention = {
-    val cm = new CorefMention(m,m.start,m.sentence.indexInSection)
+  def mentionToCorefMention(m: PhraseMention): CorefMention = {
+    val cm = new CorefMention(m, m.phrase.start, m.phrase.sentence.indexInSection)
     cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
     cm
   }
@@ -36,8 +37,8 @@ object CorefMention{
         headTokenIndex
     }
 
-    val docMention = new Mention(span, headInd)
-    docMention.attr += new MentionType(docMention,mentionType)
+    val docMention = new PhraseMention(new Phrase(span, headInd))
+    docMention.attr += new MentionType(docMention, mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
 
@@ -52,19 +53,19 @@ object CorefMention{
 
 // TODO I think "Mention" should become "NounChunk", and then this "CorefMention" should become "Mention extends NounChunk".
 //basically, this is a wrapper around factorie Mention, with some extra stuff
-class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
-  val _head =  mention.tokens(mention.headTokenIndex)  //here, the head token index is an offset into the span, not the document
+class CorefMention(val mention: PhraseMention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
+  val _head =  mention.phrase.tokens(mention.phrase.headTokenOffset)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
-  def parentEntity = mention.attr[Entity]
+  def parentEntity = mention.entity // TODO Get rid of this method, and just use "entity" method -akm
   def mType = headToken.posTag.categoryValue
-  def span = mention
+  def span = mention.phrase
   def entityType: String = mention.attr[MentionEntityType].categoryValue
-  def document = mention.document
+  def document = mention.phrase.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
-  val isProper = CorefMention.properSet.contains(mention.headToken.posTag.categoryValue)
-  val isNoun = CorefMention.nounSet.contains(mention.headToken.posTag.categoryValue)
-  val isPossessive = CorefMention.posSet.contains(mention.headToken.posTag.categoryValue)
+  val isProper = CorefMention.properSet.contains(mention.phrase.headToken.posTag.categoryValue)
+  val isNoun = CorefMention.nounSet.contains(mention.phrase.headToken.posTag.categoryValue)
+  val isPossessive = CorefMention.posSet.contains(mention.phrase.headToken.posTag.categoryValue)
 
   def isAppositionOf(m : CorefMention) : Boolean = {
     val isAppo = headToken.parseLabel.categoryValue == "appos"
@@ -99,7 +100,7 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
 
 class MentionCache(m: CorefMention) {
   import cc.factorie.app.nlp.lexicon
-  lazy val hasSpeakWord = m.mention.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val hasSpeakWord = m.mention.phrase.exists(s => lexicon.iesl.Say.contains(s.string))
   lazy val wnLemma = WordNet.lemma(m.headToken.string, "n")
   lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
@@ -122,8 +123,8 @@ class MentionCache(m: CorefMention) {
           else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
           else 'f'
     }
-  lazy val gender = m.mention.attr[GenderLabel[Mention]].intValue.toString
-  lazy val number = m.mention.attr[NumberLabel[Mention]].intValue.toString
+  lazy val gender = m.mention.attr[Gender].intValue.toString // TODO Why work in terms of String instead of Int? -akm
+  lazy val number = m.mention.attr[Number].intValue.toString
   lazy val acronym: Set[String] = {
     if (m.span.length == 1)
         Set.empty
@@ -198,8 +199,8 @@ object CorefFeatures {
   // TODO: this cache is not thread safe if we start making GenderMatch not local
   // val cache = scala.collection.mutable.Map[String, Char]()
   import cc.factorie.app.nlp.lexicon
-  def namGender(m: Mention): Char = {
-    val fullhead = m.phrase.trim.toLowerCase
+  def namGender(m: PhraseMention): Char = {
+    val fullhead = m.phrase.string.trim.toLowerCase // TODO Is this change with "string" correct? -akm 2/28/2014
     var g = 'u'
     val words = fullhead.split("\\s")
     if (words.length == 0) return g
@@ -249,8 +250,8 @@ object CorefFeatures {
     g
   }
 
-  def nomGender(m: Mention, wn: WordNet): Char = {
-    val fullhead = m.phrase.toLowerCase
+  def nomGender(m: PhraseMention, wn: WordNet): Char = {
+    val fullhead = m.phrase.string.toLowerCase
     if (wn.isHypernymOf("male", fullhead))
       'm'
     else if (wn.isHypernymOf("female", fullhead))
@@ -264,8 +265,8 @@ object CorefFeatures {
   }
 
 
-  def proGender(m: Mention): Char = {
-    val pronoun = m.phrase.toLowerCase
+  def proGender(m: PhraseMention): Char = {
+    val pronoun = m.phrase.string.toLowerCase
     if (malePron.contains(pronoun))
       'm'
     else if (femalePron.contains(pronoun))

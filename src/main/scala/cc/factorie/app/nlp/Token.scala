@@ -75,9 +75,10 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   def normalizedString[C<:TokenString](attrClass:Class[C]): String = { val ts = attr(attrClass); if (ts ne null) ts.value else docSubstring }
   /** Return the lemma of the string contents of the Token, either from its attr[TokenLemma] variable or,if unset, from token.string.  */
   def lemmaString: String = { val tl = attr[cc.factorie.app.nlp.lemma.TokenLemma]; if (tl ne null) tl.value else string }
-  /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
+  /** Return the 0-start index of this token in its Section. */
   def positionInSection: Int = position
   // TODO The ClearSegmenter should set Token._sentence, so the "sentence" method doesn't have to search for it. -akm
+  /** Return the 0-start index of this token in its Sentence.  If not part of a sentence, return -1. */
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
 
   // Common attributes, will return null if not present

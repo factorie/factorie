@@ -23,7 +23,9 @@ class VerbPhraseList(spans:Iterable[VerbPhrase]) extends TokenSpanList[VerbPhras
 
 /** A simple subclass of Chunk reserved for noun phrases.
     A Mention (used in coreference) inherits from this; (or rather should after FACTORIE NLP is further cleaned up). */
-class NounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length)
+class NounPhrase(section:Section, start:Int, length:Int, headTokenOffset: Int = -1) extends Phrase(section, start, length) {
+  def this(span:TokenSpan, headTokenOffset:Int) = this(span.section, span.start, span.length, headTokenOffset)
+}
 
 /** A collection of NounPhrases.  Typically used as an attribute of a Section or a Document. */
 class NounPhraseList(spans:Iterable[NounPhrase]) extends TokenSpanList[NounPhrase](spans)

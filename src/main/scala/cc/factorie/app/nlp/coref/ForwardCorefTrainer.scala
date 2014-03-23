@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.app.nlp.coref.mention._
-import cc.factorie.app.nlp.phrase.{MentionGenderLabeler,MentionNumberLabeler}
+import cc.factorie.app.nlp.phrase.{MentionPhraseGenderLabeler,MentionPhraseNumberLabeler}
 import cc.factorie.app.nlp.load.LoadConll2011
 
 /**
@@ -51,12 +51,12 @@ trait ForwardCorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc
 
 object ForwardCorefTrainer extends HyperparameterMain{
 
-  def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
-    val mappedMentions = doc.attr[MentionList]
-    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.length == 1)
-    val beginningTokMap = multiTokMents.groupBy(_.head)
-    val endingTokMap = multiTokMents.groupBy(_.last)
-    val singleTokMap = singleTokMents.groupBy(_.head)
+  def printConll2011Format(doc: Document, map: GenericEntityMap[PhraseMention], out: java.io.PrintStream) {
+    val mappedMentions = doc.attr[PhraseMentionList]
+    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
+    val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
+    val endingTokMap = multiTokMents.groupBy(_.phrase.last)
+    val singleTokMap = singleTokMents.groupBy(_.phrase.head)
     val fId = doc.name
     val docName = fId.substring(0, fId.length() - 4)
     val partNum = fId.takeRight(3)
@@ -138,9 +138,9 @@ object ForwardCorefTrainer extends HyperparameterMain{
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
-      trainDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
+      trainDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
-    testDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
+    testDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
@@ -185,33 +185,33 @@ object ForwardCorefTrainer extends HyperparameterMain{
     accuracy
   }
 
-  def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]]) = {
 
     var trainDocs: Seq[Document] = null
-    var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[Mention]] = null
+    var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[PhraseMention]] = null
     if (loadTrain){
       val allTrainDocs = LoadConll2011.loadWithParse(trainFile)
       trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
-      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
-      trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
+      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[PhraseMentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
+      trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[PhraseMentionList])).toSeq: _*)
     }
     val allTestDocs  =  LoadConll2011.loadWithParse(testFile)
     val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
-    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[MentionList].length).sum.toFloat / testDocs.length + " mention/doc")
-    val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
+    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[PhraseMentionList].length).sum.toFloat / testDocs.length + " mention/doc")
+    val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[PhraseMentionList])).toSeq: _*)
 
 
     (trainDocs,trainEntityMaps,testDocs,testEntityMaps)
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]]) = {
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
-      map(classOf[MentionList]) = () => NerAndPronounMentionFinder
+      map(classOf[PhraseMentionList]) = () => NerAndPronounMentionFinder
       map(classOf[NerTag]) = () => ConllChainNer
     } else {
-      map(classOf[MentionList]) = () => ParseBasedMentionFinding
+      map(classOf[PhraseMentionList]) = () => ParseBasedMentionFinding
     }
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, map.toMap) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, map.toMap)

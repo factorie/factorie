@@ -141,9 +141,16 @@ object OntonotesNerDomain extends CategoricalDomain[String] {
       "TIME",
       "WORK_OF_ART"
   )
-
   freeze()
 }
+
+/** Entity types used in coreference.
+    @author Andrew McCallum */
+object OntonotesEntityTypeDomain extends CategoricalDomain[String] {
+  this ++= OntonotesNerDomain.categories
+  this += "MISC"
+}
+
 class OntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = OntonotesNerDomain }
 class LabeledOntonotesNerTag(token:Token, initialCategory:String) extends OntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 

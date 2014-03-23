@@ -24,7 +24,7 @@ import scala.Some
 /** The result of inference: a collection of Marginal objects.
     @author Andrew McCallum */
 trait Summary {
-  /** The collection of all Marginals available in this Summary */
+  /** The collection of all univariate Marginals available in this Summary */
   def marginals: Iterable[Marginal1]
   /** All the variables for which this Summary has a univariate Marginal. */
   def variables: Iterable[Var] = marginals.map(_._1)

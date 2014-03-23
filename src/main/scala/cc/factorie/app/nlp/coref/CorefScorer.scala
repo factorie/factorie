@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.util.coref.{GenericEntityMap, CorefEvaluator}
 import cc.factorie.app.nlp.{Document, TokenSpan}
-import cc.factorie.app.nlp.coref.mention.Mention
+import cc.factorie.app.nlp.coref.PhraseMention
 
 /**
  * User: apassos
@@ -31,19 +31,19 @@ class CorefScorer[T] {
     } else s1 - s2
   }
 
-  def beforeInTextualOrder(m1: Mention, m2: Mention): Boolean = {
-    val o = textualOrder(m1, m2)
-    if (o == 0) textualOrder(m1, m2) < 0
+  def beforeInTextualOrder(m1: PhraseMention, m2: PhraseMention): Boolean = {
+    val o = textualOrder(m1.phrase, m2.phrase)
+    if (o == 0) textualOrder(m1.phrase, m2.phrase) < 0
     else o < 0
   }
 
 
-  def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
+  def printConll2011Format(doc: Document, map: GenericEntityMap[PhraseMention], out: java.io.PrintStream) {
     val mappedMentions = map.entities.filterNot(_._2.size == 1).toSeq.flatMap(_._2).sortWith((s, t) => beforeInTextualOrder(s, t))
-    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.length == 1)
-    val beginningTokMap = multiTokMents.groupBy(_.head)
-    val endingTokMap = multiTokMents.groupBy(_.last)
-    val singleTokMap = singleTokMents.groupBy(_.head)
+    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
+    val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
+    val endingTokMap = multiTokMents.groupBy(_.phrase.last)
+    val singleTokMap = singleTokMents.groupBy(_.phrase.head)
     val fId = doc.name
     val docName = fId.substring(0, fId.length() - 4)
     val partNum = fId.takeRight(3)

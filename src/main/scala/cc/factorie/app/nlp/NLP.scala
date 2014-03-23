@@ -3,7 +3,9 @@ package cc.factorie.app.nlp
 import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
-import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, NerAndPronounMentionFinder, ParseBasedMentionFinding, MentionList}
+import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, NerAndPronounMentionFinder, ParseBasedMentionFinding}
+import cc.factorie.app.nlp.coref.PhraseMentionList
+import cc.factorie.app.nlp.phrase._
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -39,8 +41,8 @@ object NLP {
       val graphparser = new CmdOption[String]("graph-based-parser", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesProjectiveGraphBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesProjectiveGraphBasedParser } }
       val forwardcoref = new CmdOption[String]("forward-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke() = { annotators += coref.mention.MentionEntityTypeLabeler ; if (value ne null) System.setProperty(classOf[coref.ForwardCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ForwardCoref } }
       val nerforwardcoref = new CmdOption[String]("ner-forward-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.ForwardCoref].getName, value); annotators += coref.NerForwardCoref} }
-      val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.GenderLabeler[coref.mention.Mention,coref.mention.MentionList]].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionGenderLabeler } }
-      val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.NumberLabeler[coref.mention.Mention,coref.mention.MentionList]].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionNumberLabeler } }
+      val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.MentionPhraseNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionPhraseGenderLabeler } }
+      val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.MentionPhraseNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionPhraseNumberLabeler } }
       val mentionEntitytype = new CmdOption[String]("mention-entity-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke() = { if (value ne null) System.setProperty(classOf[MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.coref.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
@@ -73,7 +75,7 @@ object NLP {
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
-      val mentions = document.attr[MentionList]
+      val mentions = document.attr[PhraseMentionList]
       if (mentions ne null) {
         out.println("Mentions:")
         for (mention <- mentions) {
