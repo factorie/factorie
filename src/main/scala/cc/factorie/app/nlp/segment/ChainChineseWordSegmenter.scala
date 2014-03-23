@@ -216,8 +216,8 @@ class ChainChineseWordSegmenter(
   def getBigrams(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
     
     val charsOnly = labeledCorpus.map( pair => pair._1 )
-    println((charsOnly +: "0") + "\t" + (charsOnly :+ "0").size)
-    val bigramZip = (charsOnly +: "0").zip(charsOnly :+ "0").slice(1, charsOnly.size)
+    val bigramZip = ("0" +: charsOnly).zip(charsOnly :+ "0").slice(1, charsOnly.size)
+    println("BIGRAM ZIP SIZE: " + bigramZip.size)
 
     bigramZip.map( pair => pair._1 + pair._2 ).toList
   }
