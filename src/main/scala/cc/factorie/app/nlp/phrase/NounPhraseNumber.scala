@@ -52,7 +52,7 @@ class NumberLabeler[P <: Phrase, PL <: TokenSpanList[P]](implicit ctList:ClassTa
   }
   override def tokenAnnotationString(token:Token): String = { val phrases = token.document.attr()(ctList).filter(_.contains(token)); phrases.map(_.attr[NumberLabel[P]].categoryValue).mkString(",") }
   override def phraseAnnotationString(phrase:Phrase): String = { val t = phrase.attr[NumberLabel[P]]; if (t ne null) t.categoryValue else "_" }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag], classOf[NounPhrase])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag], ctList.runtimeClass) //Require some TokenSpanList containing subclass of Phrase elements
   def postAttrs: Iterable[Class[_]] = List(classOf[NumberLabel[P]])
 }
 
