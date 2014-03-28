@@ -13,29 +13,33 @@ abstract class SegmentationLabelDomain
 object BIOSegmentationDomain extends SegmentationLabelDomain {
 
   this ++= Vector(
-    "B",
-    "I",
-    "O",
-    "P"
+    "RR",
+    "LR",
+    "LL",
+    "MM",
+    "PP"
   )
   
   freeze
 
   def indicatesSegmentStart(label: String): Boolean = {
-    val segmentStarts = List( "P", "O", "B" )
+    val segmentStarts = List( "PP", "LL", "LR" )
 
     segmentStarts.exists( segStart => segStart equals label )
   }
 
-  def isSolitary(label: String): Boolean = label equals "O"
+  def isSolitary(label: String): Boolean = label equals "LR"
+
+  def isPunctTag(label: String): Boolean = label equals "PP"
 
   def getLabeledCharacter(i: Int, line: String): (String, String) = {
 
     val label =
-      if(isPunctuation(line(i))) "P"
-      else if(isFirst(i, line) && isLast(i, line)) "O"
-      else if(isFirst(i, line)) "B"
-      else "I"
+      if(isPunctuation(line(i))) "PP"
+      else if(isFirst(i, line) && isLast(i, line)) "LR"
+      else if(isFirst(i, line)) "LL"
+      else if(isLast(i, line)) "RR"
+      else "MM"
 
     (line.slice(i, i+1), label)
   }
@@ -46,6 +50,8 @@ trait SegmentedCorpusLabeling {
   def indicatesSegmentStart(label: String): Boolean
 
   def isSolitary(label: String): Boolean
+
+  def isPunctTag(label: String): Boolean
   
   //Labels a pre-segmented training set based on this tag set: 
   //B (beginning) I (inner) O (solitary) P (punctuation)
@@ -102,21 +108,32 @@ trait SegmentedCorpusLabeling {
   def isPunctuation(character: Char): Boolean = {
 
     val punctuationChars = 
-      List( (0x3000, 0x303F), (0x2400, 0x243F), (0xFF00, 0xFF04), 
-            (0xFF06, 0xFF0D), (0xFF1A, 0xFFEF), (0x2000, 0x206F), 
-            (0x0021, 0x002C), (0x002E, 0x002F), (0x003A, 0x0040), 
-            (0x005B, 0x0060), (0x007B, 0x007E) )
+      List( (0x3000, 0x303F), 
+            (0x2400, 0x243F), 
+            (0xFF00, 0xFF04), 
+            (0xFF06, 0xFF0D), 
+            (0xFF1A, 0xFFEF), 
+            (0x2000, 0x206F), 
+            (0x0021, 0x002C), 
+            (0x002E, 0x002F), 
+            (0x003A, 0x0040), 
+            (0x005B, 0x0060), 
+            (0x007B, 0x007E) )
     
     punctuationChars.exists( range => character >= range._1 && character <= range._2 )
   }
 
   def isEndOfSentence(character: String): Boolean = {
     
-    val EOSChars = List( 0x3002, 0xFF0C, 0x002C, 0x002E ) 
+    val EOSChars = List( 0x3002, 0xFF0C, 0x002C, 0x002E , 0xFF01, 0xFF1F, 0xFF1B , 0xFF61 )
 
     EOSChars.exists( punct => character equals punct.toString )
   }
 
   def isWhiteSpace(character: Char): Boolean = 
-    List( (0x0000, 0x0020), (0x0085, 0x0085), (0x2028, 0x2029) ).exists( range => character >= range._1 && character <= range._2)
+    List( (0x0000, 0x0020), 
+          (0x0085, 0x0085), 
+          (0x2000, 0x200F),
+          (0x2028, 0x2029) 
+    ).exists( range => character >= range._1 && character <= range._2)
 }

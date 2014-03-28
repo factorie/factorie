@@ -1,9 +1,10 @@
 package cc.factorie.app.nlp.segment
 
 import scala.collection.mutable.{Map, ArrayBuffer}
+import scala.util.Random
 import java.io._
 import cc.factorie._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{BinarySerializer, HyperparameterMain}
 import cc.factorie.util.CubbieConversions._
 import cc.factorie.variable._
 import cc.factorie.app.nlp._
@@ -32,8 +33,8 @@ class GlobalChainChineseWordSegmenter
 object GlobalChainChineseWordSegmenter
   extends GlobalChainChineseWordSegmenter {
   def main(args: Array[String]): Unit = {
-    train(args.toList.slice(0,4))
-    val f1Scores = args.toList.slice(4,args.size).map( 
+    train(args.toList.slice(2,args.size).take(args(0).toInt))
+    val f1Scores = args.toList.slice(args(0).toInt+2,args.size).map( 
                      trainPath => getF1Score(trainPath) 
                    ).mkString("\t")
     println(f1Scores)
@@ -48,7 +49,7 @@ class ChainChineseWordSegmenter(
   val bigramTable = new CategoricalDomain[String]
   val prefixTable = new CategoricalDomain[String]
   val suffixTable = new CategoricalDomain[String]
-  val rareWordThreshold = 5
+  val rareWordThreshold = 3
 
   def this(filePath: String) {
     this()
@@ -142,10 +143,14 @@ class ChainChineseWordSegmenter(
     val examples = 
       trainingSegmentables.map( segmentable =>
         new model.ChainLikelihoodExample(segmentable.links.map( _.label ))
-      ).toSeq
+      ).toList
+
+    Random.setSeed(0)
+
+    val shuffledExamples = Random.shuffle(examples)
     val trainer = new OnlineTrainer(model.parameters)
 
-    trainer.trainFromExamples(examples)
+    trainer.trainFromExamples(shuffledExamples)
 
     println("Training Complete\n")
   }
@@ -194,11 +199,12 @@ class ChainChineseWordSegmenter(
     val delimiter = "|"
     
     (for( (character,label) <- labeledCorpus ) yield {
-       if ( labelDomain.indicatesSegmentStart(label) && !(label equals "P") )
-         delimiter + character
-       else if ( !(label equals "P") )
-         character
-       else
+       if ( !(label equals "P") ){
+         if ( labelDomain.indicatesSegmentStart(label) )
+           delimiter + character
+         else 
+           character
+       } else
          ""
      }
     ).mkString.split(delimiter).toList
@@ -217,7 +223,6 @@ class ChainChineseWordSegmenter(
     
     val charsOnly = labeledCorpus.map( pair => pair._1 )
     val bigramZip = ("0" +: charsOnly).zip(charsOnly :+ "0").slice(1, charsOnly.size)
-    println("BIGRAM ZIP SIZE: " + bigramZip.size)
 
     bigramZip.map( pair => pair._1 + pair._2 ).toList
   }
@@ -281,17 +286,42 @@ class ChainChineseWordSegmenter(
   def getF1Score(filePath: String): Double = {
 
     val labelSeq = segment(filePath)
-    val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]()
-    val numTrueWords: Double = labelSeq.count( label => labelDomain.indicatesSegmentStart(label.target.categoryValue) )
-    
-    labelSeq.foreach{ label => 
-      if(!labelDomain.indicatesSegmentStart(label.categoryValue) && myWords.size > 0) 
-        myWords(myWords.size - 1) += label
-      else
-        myWords += (new ArrayBuffer[SegmentationLabel] :+ label)
+    val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]
+    val numTrueWords: Double = labelSeq.count{ 
+      label => labelDomain.indicatesSegmentStart(label.target.categoryValue) && 
+               !labelDomain.isPunctTag(label.target.categoryValue)
     }
     
-    val numCorrect: Double = myWords.count( word => word.forall( label => label.valueIsTarget ) )
+    labelSeq.foreach{ label => 
+      if( !labelDomain.isPunctTag(label.categoryValue) ){
+        if ( !labelDomain.indicatesSegmentStart(label.categoryValue) && myWords.size > 0 )
+          myWords(myWords.size - 1) += label
+        else
+          myWords += (new ArrayBuffer[SegmentationLabel] :+ label)
+      }
+    }
+
+    val pad = new ArrayBuffer[SegmentationLabel]
+    val wordZip = (pad +: myWords).zip(myWords :+ pad).slice(1, myWords.size)
+    val numCorrect: Double = wordZip.count{ 
+      wordPair => wordPair._1.forall( label => label.valueIsTarget ) && 
+                  labelDomain.indicatesSegmentStart(wordPair._2(0).target.categoryValue)
+    }
+
+    assert(myWords.size <= labelSeq.size)
+
+    val printer = new PrintWriter(new BufferedWriter(new FileWriter("logFile.txt", true)))
+    val printString: String = myWords.filter( word => 
+      word.exists( label => !label.valueIsTarget ) 
+    ).map( 
+      word => word.map( label => label.character.string ).reduceLeft(_+_)
+    ).reduceLeft( 
+      (x,y) => x + "\n" + y 
+    )
+
+    printer.write(printString)
+    printer.close
+    
     val precision = numCorrect / myWords.size
     val recall = numCorrect / numTrueWords
 
@@ -335,7 +365,7 @@ class ChainChineseWordSegmenter(
 
       characterBuffer += currentChar
 
-      if(currentChar._2 equals "P"){
+      if( labelDomain.isEndOfSentence(currentChar._1) ){
         currentSegmentable ++= ( 0 until characterBuffer.size ).map( j =>
             new Character(characterBuffer(j)._1, 
                           characterBuffer(j)._2, 
@@ -400,15 +430,15 @@ class ChainChineseWordSegmenter(
     //Add feature functions including reduplication, known bigram, 
     //solitary character, prefix and affix
     features ++= List(
-      (cneg1 equals c0,                           "RE"+ cneg1label + c0label),
-      (cneg1 equals cpos1,                        "RE"+ cneg1label + cpos1label),
-      (tableContains(bigramTable, cneg1+c0),      "BI"+ cneg1      + c0),
-      (tableContains(singleCharWordTable, cneg1), "UN"+ cneg1),
-      (tableContains(singleCharWordTable, c0),    "UN"+ c0),
-      (tableContains(singleCharWordTable, cpos1), "UN"+ cpos1),
-      (tableContains(prefixTable, cneg1),         "PR"+ cneg1),
-      (tableContains(suffixTable, c0),            "SU"+ c0)
-    ).filter( pair => pair._1 ).map( pair => pair._2 )
+      (cneg1 equals c0,                           "RE" + cneg1label + c0label),
+      (cneg1 equals cpos1,                        "RE" + cneg1label + cpos1label),
+      (tableContains(bigramTable, cneg1+c0),      "BI" + cneg1      + c0),
+      (tableContains(singleCharWordTable, cneg1), "UN" + cneg1),
+      (tableContains(singleCharWordTable, c0),    "UN" + c0),
+      (tableContains(singleCharWordTable, cpos1), "UN" + cpos1),
+      (tableContains(prefixTable, cneg1),         "PR" + cneg1),
+      (tableContains(suffixTable, c0),            "SU" + c0)
+    ).filter( pair => pair._1 ).map( pair => pair._2 ).toList
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
   }
@@ -419,7 +449,7 @@ class ChainChineseWordSegmenter(
       domain.getIndex(element)
       return true
     } catch {
-      case _ => return false
+      case _ : Throwable => return false
     }
   }
 }
