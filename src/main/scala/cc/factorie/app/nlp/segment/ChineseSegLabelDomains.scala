@@ -23,7 +23,7 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
   freeze
 
   def indicatesSegmentStart(label: String): Boolean = {
-    val segmentStarts = List( "PP", "LL", "LR" )
+    val segmentStarts = List( "LL", "LR" )
 
     segmentStarts.exists( segStart => segStart equals label )
   }
@@ -100,40 +100,73 @@ trait SegmentedCorpusLabeling {
   }
 
   //Checks if a character in a training set is first in a word
-  def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)))
+  def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
 
   //Checks if a character in a training set is last in a word
-  def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)))
+  def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
 
   def isPunctuation(character: Char): Boolean = {
 
     val punctuationChars = 
-      List( (0x3000, 0x303F), 
-            (0x2400, 0x243F), 
-            (0xFF00, 0xFF04), 
-            (0xFF06, 0xFF0D), 
-            (0xFF1A, 0xFFEF), 
-            (0x2000, 0x206F), 
-            (0x0021, 0x002C), 
-            (0x002E, 0x002F), 
+      List( (0x0021, 0x002F), 
             (0x003A, 0x0040), 
             (0x005B, 0x0060), 
-            (0x007B, 0x007E) )
+            (0x007B, 0x007E),
+            (0x2010, 0x2010),
+            (0x2012, 0x2013),
+            (0x2015, 0x2027),
+            (0x2030, 0x205E),
+            (0x2400, 0x243F), 
+            (0x3000, 0x303F), 
+            (0xFF00, 0xFF04), 
+            (0xFF06, 0xFF0D), 
+            (0xFF1A, 0xFFEF) )
+            
     
     punctuationChars.exists( range => character >= range._1 && character <= range._2 )
   }
 
-  def isEndOfSentence(character: String): Boolean = {
+  def isEndOfSentence(character: Char): Boolean = {
     
     val EOSChars = List( 0x3002, 0xFF0C, 0x002C, 0x002E , 0xFF01, 0xFF1F, 0xFF1B , 0xFF61 )
 
-    EOSChars.exists( punct => character equals punct.toString )
+    EOSChars.exists( punct => character == punct )
+  }
+
+  def isNumerical(character: Char): Boolean = {
+
+    List( (0x0030, 0x0039),
+          (0x4E00, 0x4E00),
+          (0x4E03, 0x4E03),
+          (0x4E07, 0x4E07),
+          (0x4E09, 0x4E09),
+          (0x4E5D, 0x4E5D),
+          (0x4E8C, 0x4E8C),
+          (0x4E94, 0x4E94),
+          (0x4EBF, 0x4EBF),
+          (0x5104, 0x5104),
+          (0x5146, 0x5146),
+          (0x516B, 0x516B),
+          (0x516D, 0x516D),
+          (0x5341, 0x5341),
+          (0x5343, 0x5343),
+          (0x56DB, 0x56DB),
+          (0x767E, 0x767E),
+          (0x842C, 0x842C),
+          (0x96F6, 0x96F6),
+          (0xFF10, 0xFF19)
+    ).exists(
+      range => character >= range._1 && character <= range._2
+    )
   }
 
   def isWhiteSpace(character: Char): Boolean = 
     List( (0x0000, 0x0020), 
           (0x0085, 0x0085), 
           (0x2000, 0x200F),
-          (0x2028, 0x2029) 
-    ).exists( range => character >= range._1 && character <= range._2)
+          (0x2028, 0x202F),
+          (0x205F, 0x206F)
+    ).exists( 
+      range => character >= range._1 && character <= range._2
+    )
 }

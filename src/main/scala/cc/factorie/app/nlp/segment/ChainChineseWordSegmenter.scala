@@ -16,27 +16,17 @@ import cc.factorie.app.chain.ChainModel
     different variety of written Mandarin. 
     @author Henry Oskar Singer  */
 
-//Microsoft-Research-Asia-corpus-trained model (Beijing)
-class MSRChainChineseWordSegmenter(url: java.net.URL)
-  extends ChainChineseWordSegmenter(url)
-object MSRChainChineseWordSegmenter
-  extends MSRChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[MSRChainChineseWordSegmenter](".factorie"))
-
-//City-University-of-Hong-Kong-corpus-trained model (Hong Kong)
-class CUHChainChineseWordSegmenter(url: java.net.URL)
-  extends ChainChineseWordSegmenter(url)
-object CUHChainChineseWordSegmenter
-  extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie"))
-
 class GlobalChainChineseWordSegmenter
   extends ChainChineseWordSegmenter
 object GlobalChainChineseWordSegmenter
   extends GlobalChainChineseWordSegmenter {
   def main(args: Array[String]): Unit = {
     train(args.toList.slice(2,args.size).take(args(0).toInt))
-    val f1Scores = args.toList.slice(args(0).toInt+2,args.size).map( 
-                     trainPath => getF1Score(trainPath) 
-                   ).mkString("\t")
+
+    val f1Scores = args.toList.slice(args(0).toInt+2,args.size).map(
+      trainPath => getF1Score(trainPath) 
+    ).mkString("\t")
+
     println(f1Scores)
   }
 }
@@ -49,7 +39,7 @@ class ChainChineseWordSegmenter(
   val bigramTable = new CategoricalDomain[String]
   val prefixTable = new CategoricalDomain[String]
   val suffixTable = new CategoricalDomain[String]
-  val rareWordThreshold = 3
+  val rareWordThreshold = 20
 
   def this(filePath: String) {
     this()
@@ -72,7 +62,7 @@ class ChainChineseWordSegmenter(
 
     ( 0 to segmentedText.size ).foreach{ i =>
 
-      if( i == 0 || labelDomain.isEndOfSentence(segmentedText(i - 1).character.string) )
+      if( i == 0 || labelDomain.isEndOfSentence(segmentedText(i - 1).character.string(0)) )
         new Sentence(document)
     
       if( i > 0 && (i == segmentedText.size || labelDomain.indicatesSegmentStart(segmentedText(i).categoryValue))){
@@ -177,8 +167,7 @@ class ChainChineseWordSegmenter(
 
   def getAffixes(labeledCorpus: IndexedSeq[(String, String)]): (List[String], List[String]) = {
 
-    val words = getWords(labeledCorpus).filter( word => word.size > 1 )
-    println("Number of Words: " + words.size)
+    val words = getWords(labeledCorpus).filter( word => word.length > 1 )
     val tempDomain = new CategoricalDomain[String]
     
     tempDomain.gatherCounts = true 
@@ -186,34 +175,38 @@ class ChainChineseWordSegmenter(
     tempDomain.trimAboveCount(rareWordThreshold)
 
     val rareWords = tempDomain.categories.toList
-    println("Number of Rare Words: " + rareWords.size)
-    val prefixes = rareWords.map( word => word.slice(0,1) )
-    val suffixes = rareWords.map( word => word.slice(word.size-1, word.size) )
-    println("Number of Prefixes: " + prefixes.size + "\tNumber of Suffixes: " + suffixes.size)
+    val prefixes = rareWords.map( 
+      word => word.slice(0,1) 
+    ).distinct
+    val suffixes = rareWords.map( 
+      word => word.slice(word.size-1, word.size) 
+    ).distinct
+    println("\t\tNumber of Prefixes: " + prefixes.size + 
+            "\tNumber of Suffixes: " + suffixes.size)
 
     (prefixes, suffixes)
   }
 
   def getWords(labeledCorpus: IndexedSeq[(String, String)]): List[String] = {
 
-    val delimiter = "|"
-    
-    (for( (character,label) <- labeledCorpus ) yield {
-       if ( !(label equals "P") ){
-         if ( labelDomain.indicatesSegmentStart(label) )
-           delimiter + character
-         else 
-           character
-       } else
-         ""
-     }
+    val delimiter = '|'
+
+    labeledCorpus.filter(
+      pair => !labelDomain.isPunctTag(pair._2)
+    ).map(
+      pair => {
+               if ( labelDomain.indicatesSegmentStart(pair._2) ) 
+                 delimiter+pair._1 
+               else 
+                 pair._1
+              }
     ).mkString.split(delimiter).toList
   }
 
   def populateBigramTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
 
     val bigrams = getBigrams(labeledCorpus)
-    println("Number of Bigrams: " + bigrams.size)
+
     bigramTable.clear
     bigrams.foreach( bigram => bigramTable.index(bigram) )
     bigramTable.freeze
@@ -224,7 +217,7 @@ class ChainChineseWordSegmenter(
     val charsOnly = labeledCorpus.map( pair => pair._1 )
     val bigramZip = ("0" +: charsOnly).zip(charsOnly :+ "0").slice(1, charsOnly.size)
 
-    bigramZip.map( pair => pair._1 + pair._2 ).toList
+    bigramZip.map( pair => pair._1 + pair._2 ).toList.distinct
   }
 
   def populateSingleCharWordTable(labeledCorpus: IndexedSeq[(String, String)]): Unit = {
@@ -365,12 +358,12 @@ class ChainChineseWordSegmenter(
 
       characterBuffer += currentChar
 
-      if( labelDomain.isEndOfSentence(currentChar._1) ){
+      if( labelDomain.isEndOfSentence(currentChar._1(0)) ) {
         currentSegmentable ++= ( 0 until characterBuffer.size ).map( j =>
-            new Character(characterBuffer(j)._1, 
-                          characterBuffer(j)._2, 
-                          characterToFeatures(j, characterBuffer)
-                         )
+          new Character(characterBuffer(j)._1,
+                        characterBuffer(j)._2,
+                        characterToFeatures(j, characterBuffer)
+                       )
         )
         segmentables += currentSegmentable
 
@@ -437,7 +430,8 @@ class ChainChineseWordSegmenter(
       (tableContains(singleCharWordTable, c0),    "UN" + c0),
       (tableContains(singleCharWordTable, cpos1), "UN" + cpos1),
       (tableContains(prefixTable, cneg1),         "PR" + cneg1),
-      (tableContains(suffixTable, c0),            "SU" + c0)
+      (tableContains(suffixTable, c0),            "SU" + c0),
+      (labelDomain.isNumerical(cneg1(0)),         "NU")
     ).filter( pair => pair._1 ).map( pair => pair._2 ).toList
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
