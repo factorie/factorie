@@ -53,8 +53,6 @@ trait SegmentedCorpusLabeling {
 
   def isPunctTag(label: String): Boolean
   
-  //Labels a pre-segmented training set based on this tag set: 
-  //B (beginning) I (inner) O (solitary) P (punctuation)
   def getLabeledCharacters(corpus: File): IndexedSeq[(String, String)] = {
 
     val labeledCorpus =
@@ -80,7 +78,6 @@ trait SegmentedCorpusLabeling {
     labeledCorpus
   }
 
-  //Returns a 2-tuple of an instance of character from a training set mapped to its tag
   def getLabeledCharacter(i: Int, line: String): (String, String)
 
   def getWhiteSpaceOffsets(content: String): IndexedSeq[Int] = {
@@ -99,38 +96,51 @@ trait SegmentedCorpusLabeling {
     offsets
   }
 
-  //Checks if a character in a training set is first in a word
   def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
 
-  //Checks if a character in a training set is last in a word
   def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
 
   def isPunctuation(character: Char): Boolean = {
 
-    val punctuationChars = 
-      List( (0x0021, 0x002F), 
-            (0x003A, 0x0040), 
-            (0x005B, 0x0060), 
-            (0x007B, 0x007E),
-            (0x2010, 0x2010),
-            (0x2012, 0x2013),
-            (0x2015, 0x2027),
-            (0x2030, 0x205E),
-            (0x2400, 0x243F), 
-            (0x3000, 0x303F), 
-            (0xFF00, 0xFF04), 
-            (0xFF06, 0xFF0D), 
-            (0xFF1A, 0xFFEF) )
-            
-    
-    punctuationChars.exists( range => character >= range._1 && character <= range._2 )
+    List( (0x0021, 0x002D), 
+          (0x002F, 0x002F),
+          (0x003A, 0x0040), 
+          (0x005B, 0x0060), 
+          (0x007B, 0x007E),
+          (0x2010, 0x2010),
+          (0x2015, 0x2027),
+          (0x2030, 0x205E),
+          (0x2400, 0x243F), 
+          (0x3001, 0x303F), 
+          (0xFE50, 0xFE57),
+          (0xFE59, 0xFE61),
+          (0xFE68, 0xFE68),
+          (0xFF00, 0xFF04), 
+          (0xFF06, 0xFF0D), 
+          (0xFF0F, 0xFF0F),
+          (0xFF1A, 0xFFEF) 
+    ).exists( 
+      range => character >= range._1 && character <= range._2 
+    )
   }
 
   def isEndOfSentence(character: Char): Boolean = {
     
-    val EOSChars = List( 0x3002, 0xFF0C, 0x002C, 0x002E , 0xFF01, 0xFF1F, 0xFF1B , 0xFF61 )
-
-    EOSChars.exists( punct => character == punct )
+    List( 0x002C, 
+          0x3002,
+          0xFE50,
+          0xFE52,
+          0xFE54,
+          0xFE56,
+          0xFE57,
+          0xFF01, 
+          0xFF0C, 
+          0xFF1B, 
+          0xFF1F, 
+          0xFF61
+    ).exists( 
+      punct => character == punct 
+    )
   }
 
   def isNumerical(character: Char): Boolean = {
@@ -165,7 +175,8 @@ trait SegmentedCorpusLabeling {
           (0x0085, 0x0085), 
           (0x2000, 0x200F),
           (0x2028, 0x202F),
-          (0x205F, 0x206F)
+          (0x205F, 0x206F),
+          (0x3000, 0x3000)
     ).exists( 
       range => character >= range._1 && character <= range._2
     )

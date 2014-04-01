@@ -21,10 +21,10 @@ class GlobalChainChineseWordSegmenter
 object GlobalChainChineseWordSegmenter
   extends GlobalChainChineseWordSegmenter {
   def main(args: Array[String]): Unit = {
-    train(args.toList.slice(2,args.size).take(args(0).toInt))
+    train(args.toList.slice(3,args.size).take(args(0).toInt))
 
-    val f1Scores = args.toList.slice(args(0).toInt+2,args.size).map(
-      trainPath => getF1Score(trainPath) 
+    val f1Scores = args.toList.slice(args(0).toInt+3,args.size).map(
+      trainPath => getF1Score(trainPath,args(2))
     ).mkString("\t")
 
     println(f1Scores)
@@ -39,7 +39,7 @@ class ChainChineseWordSegmenter(
   val bigramTable = new CategoricalDomain[String]
   val prefixTable = new CategoricalDomain[String]
   val suffixTable = new CategoricalDomain[String]
-  val rareWordThreshold = 20
+  val rareWordThreshold = 100
 
   def this(filePath: String) {
     this()
@@ -276,9 +276,9 @@ class ChainChineseWordSegmenter(
     character => character.label
   )
 
-  def getF1Score(filePath: String): Double = {
+  def getF1Score(trainingFilePath: String, errorLogPath: String): Double = {
 
-    val labelSeq = segment(filePath)
+    val labelSeq = segment(trainingFilePath)
     val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]
     val numTrueWords: Double = labelSeq.count{ 
       label => labelDomain.indicatesSegmentStart(label.target.categoryValue) && 
@@ -303,11 +303,15 @@ class ChainChineseWordSegmenter(
 
     assert(myWords.size <= labelSeq.size)
 
-    val printer = new PrintWriter(new BufferedWriter(new FileWriter("logFile.txt", true)))
+    val printer = new PrintWriter(new BufferedWriter(new FileWriter(errorLogPath)))
     val printString: String = myWords.filter( word => 
       word.exists( label => !label.valueIsTarget ) 
     ).map( 
-      word => word.map( label => label.character.string ).reduceLeft(_+_)
+      word => word.map( label => label.character.string + 
+                                 "/" + label.categoryValue + 
+                                 "/" + label.target.categoryValue +
+                                 "\t"
+              ).reduceLeft(_+_)
     ).reduceLeft( 
       (x,y) => x + "\n" + y 
     )
@@ -348,7 +352,6 @@ class ChainChineseWordSegmenter(
   def getSegmentables(labeledCharacters: IndexedSeq[(String, String)]): IndexedSeq[Segmentable] = {
 
     val numChars = labeledCharacters.size
-    val printNum = numChars/100
     val segmentables = new ArrayBuffer[Segmentable]
     var characterBuffer = new ArrayBuffer[(String, String)]
     var currentSegmentable = new Segmentable
@@ -358,7 +361,7 @@ class ChainChineseWordSegmenter(
 
       characterBuffer += currentChar
 
-      if( labelDomain.isEndOfSentence(currentChar._1(0)) ) {
+      if( labelDomain.isPunctTag(currentChar._2) ) {
         currentSegmentable ++= ( 0 until characterBuffer.size ).map( j =>
           new Character(characterBuffer(j)._1,
                         characterBuffer(j)._2,
@@ -430,8 +433,8 @@ class ChainChineseWordSegmenter(
       (tableContains(singleCharWordTable, c0),    "UN" + c0),
       (tableContains(singleCharWordTable, cpos1), "UN" + cpos1),
       (tableContains(prefixTable, cneg1),         "PR" + cneg1),
-      (tableContains(suffixTable, c0),            "SU" + c0),
-      (labelDomain.isNumerical(cneg1(0)),         "NU")
+      (tableContains(suffixTable, c0),            "SU" + c0)/*,
+      (labelDomain.isNumerical(cneg1(0)),         "NU" + cneg1label)*/
     ).filter( pair => pair._1 ).map( pair => pair._2 ).toList
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
