@@ -74,6 +74,9 @@ The following code declares data, model, inference and learning for a linear-cha
 
 
   import cc.factorie._            // The base library: variables, factors
+  import cc.factorie.variable._
+  import cc.factorie.model._
+  import cc.factorie.infer._
   import cc.factorie.la._         // Linear algebra
   import cc.factorie.optimize._   // Gradient-based optimization and training
   // Declare random variable types
@@ -99,7 +102,7 @@ The following code declares data, model, inference and learning for a linear-cha
   }
   // Learn parameters
   val trainer = new BatchTrainer(model, new ConjugateGradient)
-  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, InferByBPChainSum)))
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, InferByBPChain)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation specialized to a linear chain
   labelSequences.foreach(labels => BP.inferChainMax(labels, model))
