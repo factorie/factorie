@@ -11,7 +11,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
 
 
-class ParseBasedMentionList(spans:Iterable[PhraseMention]) extends PhraseMentionList(spans)
+class ParseBasedMentionList(spans:Iterable[PhraseMention]) extends MentionList(spans)
 //class NerSpanList extends TokenSpanList[NerSpan]
 
 object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
@@ -156,13 +156,13 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new PhraseMentionList(dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq))
+    doc.attr += (new MentionList(dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq))
     doc
   }
 
   def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.IobConllNerTag])
-  def postAttrs: Iterable[Class[_]] = Seq(classOf[PhraseMentionList])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
 
 }

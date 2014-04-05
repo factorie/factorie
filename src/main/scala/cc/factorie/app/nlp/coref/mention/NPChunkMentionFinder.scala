@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.app.nlp.coref.{PhraseMention,PhraseMentionList}
+import cc.factorie.app.nlp.coref.{PhraseMention,MentionList}
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
 
@@ -37,7 +37,7 @@ object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
 class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence],m.runtimeClass)
   def postAttrs = Seq(classOf[MentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
 

@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.PhraseMentionList
+import cc.factorie.app.nlp.coref.MentionList
 
 object GenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 
@@ -171,8 +171,8 @@ class PhraseGenderLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phrase]
 class NounPhraseGenderLabeler extends PhraseGenderLabeler[NounPhraseList](phrase=>phrase)
 object NounPhraseGenderLabeler extends NounPhraseGenderLabeler
 
-/** Gender label phrases of all Mentions in the Document's PhraseMentionList. */
-class MentionPhraseGenderLabeler extends PhraseGenderLabeler[PhraseMentionList](mentions => mentions.map(_.phrase))
+/** Gender label phrases of all Mentions in the Document's MentionList. */
+class MentionPhraseGenderLabeler extends PhraseGenderLabeler[MentionList](mentions => mentions.map(_.phrase))
 object MentionPhraseGenderLabeler extends MentionPhraseGenderLabeler
 
 // No reason to have this.  The label for a Mention should always go on its Phrase. -akm

@@ -4,7 +4,7 @@ import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
 import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, NerAndPronounMentionFinder, ParseBasedMentionFinding}
-import cc.factorie.app.nlp.coref.PhraseMentionList
+import cc.factorie.app.nlp.coref.MentionList
 import cc.factorie.app.nlp.phrase._
 
 /** A command-line driver for DocumentAnnotators.
@@ -75,7 +75,7 @@ object NLP {
       //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
       logStream.println("Processed %d tokens.".format(document.tokenCount))
       out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
-      val mentions = document.attr[PhraseMentionList]
+      val mentions = document.attr[MentionList]
       if (mentions ne null) {
         out.println("Mentions:")
         for (mention <- mentions) {

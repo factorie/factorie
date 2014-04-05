@@ -6,9 +6,9 @@ import cc.factorie.app.nlp.{TokenSpan, TokenSpanList, Section}
 import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
 import cc.factorie.app.nlp.phrase.{Phrase}
 
-class MentionList(spans:Iterable[Mention]) extends scala.collection.mutable.ArrayBuffer[Mention]{
-  this ++= spans
-}
+//class MentionList(spans:Iterable[AbstractMention]) extends scala.collection.mutable.ArrayBuffer[AbstractMention]{
+//  this ++= spans
+//}
 
 // TODO This class should be removed and replaced with something like:
 // trait Mention { def string: String } or whatever else we think would be common among all mentions, 
@@ -30,7 +30,7 @@ object OntonotesMentionTypeDomain extends CategoricalDomain(List("PRO", "NOM", "
 
 /** Categorical variable indicating whether the mention is a pronoun, nominal or proper noun.
     (Obviously different from MentionEntityType, which may indicate whether it is a person, location, organization, etc.) */
-class MentionType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class MentionType(val mention:AbstractMention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = OntonotesMentionTypeDomain
 }
 

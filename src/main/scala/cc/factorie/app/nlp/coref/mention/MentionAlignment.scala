@@ -65,8 +65,8 @@ object MentionAlignment {
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
   def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[PhraseMention]),PrecRecReport) = {
-    val groundTruthMentions = gtDoc.attr[PhraseMentionList]
-    val detectedMentions = detectedDoc.attr[PhraseMentionList]
+    val groundTruthMentions = gtDoc.attr[MentionList]
+    val detectedMentions = detectedDoc.attr[MentionList]
 
     val name = detectedDoc.name
 
@@ -112,7 +112,7 @@ object MentionAlignment {
     val entityMap = new GenericEntityMap[PhraseMention]
 
     val unAlignedGTMentions = gtAligned.filter(kv => !kv._2).map(_._1)
-    val allCorefMentions =  detectedDoc.attr[PhraseMentionList] ++ unAlignedGTMentions
+    val allCorefMentions =  detectedDoc.attr[MentionList] ++ unAlignedGTMentions
 
     allCorefMentions.foreach(m => entityMap.addMention(m, entityMap.numMentions.toLong))
 
@@ -156,7 +156,7 @@ object MentionAlignment {
 
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding.FILTER_APPOS = true
-    DocumentAnnotatorPipeline[PhraseMentionList](annotatorMap).process(d)
+    DocumentAnnotatorPipeline[MentionList](annotatorMap).process(d)
   }
 
   def assertParse(tokens: Seq[Token],parse: ParseTree): Unit = {

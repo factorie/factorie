@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.lemma.WordNetTokenLemma
 import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionType}
-import cc.factorie.app.nlp.coref.{PhraseMentionList, PhraseMention}
+import cc.factorie.app.nlp.coref.{MentionList, PhraseMention}
 import cc.factorie.app.nlp.phrase.{MentionPhraseNumberLabeler, PhraseNumber, PhraseGender, MentionPhraseGenderLabeler}
 
 /**
@@ -63,14 +63,14 @@ class TestDocumentAnnotatorMap {
     map += ner2
     object parseBasedMentionFinding extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = Seq(classOf[parse.ParseTree])
-      def postAttrs: Iterable[Class[_]] = Seq(classOf[PhraseMentionList])
-      override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+      def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
+      override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
       def process(d: Document) = d
     }
     map += parseBasedMentionFinding
     object coref1 extends DocumentAnnotator {
       def tokenAnnotationString(token: Token) = ""
-      def prereqAttrs = Seq(classOf[PhraseMentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+      def prereqAttrs = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
       def postAttrs = Seq(classOf[GenericEntityMap[PhraseMention]])
       def process(document: Document) = document
     }
@@ -78,8 +78,8 @@ class TestDocumentAnnotatorMap {
     map += MentionPhraseGenderLabeler
     map += MentionPhraseNumberLabeler
     object mentionEntityType extends DocumentAnnotator {
-      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[PhraseMentionList].filter(_.phrase.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
-      def prereqAttrs: Iterable[Class[_]] = List(classOf[PhraseMentionList])
+      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.phrase.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
+      def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
       def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
       def process(d: Document) = d
     }

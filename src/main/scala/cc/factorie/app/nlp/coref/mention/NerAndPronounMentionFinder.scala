@@ -14,12 +14,12 @@ import cc.factorie.variable.Span
  * Time: 3:34 PM
  */
 
-class NerMentionList(spans:Iterable[Mention]) extends MentionList(spans)
+class NerMentionList(spans:Iterable[PhraseMention]) extends MentionList(spans)
 
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosTag])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {

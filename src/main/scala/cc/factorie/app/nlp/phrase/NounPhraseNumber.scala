@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.coref.PhraseMentionList
+import cc.factorie.app.nlp.coref.MentionList
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import scala.reflect.ClassTag
@@ -63,7 +63,7 @@ class PhraseNumberLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phrase]
 class NounPhraseNumberLabeler extends PhraseNumberLabeler[NounPhraseList](phrases => phrases)
 object NounPhraseNumberLabeler
 
-class MentionPhraseNumberLabeler extends PhraseNumberLabeler[PhraseMentionList](_.map(_.phrase))
+class MentionPhraseNumberLabeler extends PhraseNumberLabeler[MentionList](_.map(_.phrase))
 object MentionPhraseNumberLabeler extends MentionPhraseNumberLabeler
 
 // No reason to have this.   Label should always go on Phrase, not mention. -akm

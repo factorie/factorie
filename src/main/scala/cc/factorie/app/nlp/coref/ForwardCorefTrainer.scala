@@ -52,7 +52,7 @@ trait ForwardCorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc
 object ForwardCorefTrainer extends HyperparameterMain{
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[PhraseMention], out: java.io.PrintStream) {
-    val mappedMentions = doc.attr[PhraseMentionList]
+    val mappedMentions = doc.attr[MentionList]
     val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
     val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
     val endingTokMap = multiTokMents.groupBy(_.phrase.last)
@@ -192,13 +192,13 @@ object ForwardCorefTrainer extends HyperparameterMain{
     if (loadTrain){
       val allTrainDocs = LoadConll2011.loadWithParse(trainFile)
       trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
-      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[PhraseMentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
-      trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[PhraseMentionList])).toSeq: _*)
+      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.attr[MentionList].length).sum.toFloat / trainDocs.length + " mentions/doc")
+      trainEntityMaps = collection.mutable.Map(trainDocs.map(d => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
     }
     val allTestDocs  =  LoadConll2011.loadWithParse(testFile)
     val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
-    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[PhraseMentionList].length).sum.toFloat / testDocs.length + " mention/doc")
-    val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[PhraseMentionList])).toSeq: _*)
+    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.attr[MentionList].length).sum.toFloat / testDocs.length + " mention/doc")
+    val testEntityMaps =  collection.mutable.Map(testDocs.map(d  => d.name -> (new BaseCorefModel).generateTrueMap(d.attr[MentionList])).toSeq: _*)
 
 
     (trainDocs,trainEntityMaps,testDocs,testEntityMaps)
@@ -208,10 +208,10 @@ object ForwardCorefTrainer extends HyperparameterMain{
   def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]]) = {
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
-      map(classOf[PhraseMentionList]) = () => NerAndPronounMentionFinder
+      map(classOf[MentionList]) = () => NerAndPronounMentionFinder
       map(classOf[NerTag]) = () => ConllChainNer
     } else {
-      map(classOf[PhraseMentionList]) = () => ParseBasedMentionFinding
+      map(classOf[MentionList]) = () => ParseBasedMentionFinding
     }
     val (trainDocs,trainMap) = if(loadTrain) MentionAlignment.makeLabeledData(trainFile,null,opts.portion.value,options.useEntityType, options, map.toMap) else (null,null)
     val (testDocs,testMap) = MentionAlignment.makeLabeledData(testFile,null,opts.portion.value,options.useEntityType, options, map.toMap)

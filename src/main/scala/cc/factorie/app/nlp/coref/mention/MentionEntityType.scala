@@ -10,7 +10,7 @@ import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVari
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp.load.LoadConll2011
-import cc.factorie.app.nlp.coref.{PhraseMention,PhraseMentionList}
+import cc.factorie.app.nlp.coref.{PhraseMention,MentionList}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -84,11 +84,11 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
     label.set(entityTypeIndex(mention))(null)
   }
   def process(document:Document): Document = {
-    for (mention <- document.attr[PhraseMentionList]) processMention(mention)
+    for (mention <- document.attr[MentionList]) processMention(mention)
     document
   }
 
-  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[PhraseMentionList].filter(_.phrase.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
+  override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.phrase.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
   override def mentionAnnotationString(mention:PhraseMention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
@@ -98,13 +98,13 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
     implicit val random = new scala.util.Random(0)
-    val trainMentions = trainDocs.flatMap(_.attr[PhraseMentionList])
+    val trainMentions = trainDocs.flatMap(_.attr[MentionList])
     FeatureDomain.dimensionDomain.gatherCounts = true
     trainMentions.foreach(features(_))
     FeatureDomain.dimensionDomain.trimBelowCount(3)
-    val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[PhraseMentionList])) yield
+    val examples = for (doc <- trainDocs; mention <- filterTrainingMentions(doc.attr[MentionList])) yield
       new PredictorExample(model, features(mention).value, mention.attr[MentionEntityType].intValue, OptimizableObjectives.hingeMulticlass)
-    val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[PhraseMentionList]))
+    val testMentions = testDocs.flatMap(doc => filterTrainingMentions(doc.attr[MentionList]))
     println("Training ")
     def evaluate(): Unit = {
       println("TRAIN\n"+(new cc.factorie.app.classify.Trial[MentionEntityType,la.Tensor1](model, MentionEntityTypeDomain, (t:MentionEntityType) => features(t.mention).value) ++= trainMentions.map(_.attr[MentionEntityType])).toString)
@@ -152,12 +152,12 @@ object MentionEntityTypeLabelerTrainer {
     val testDocs = trainDocs.takeRight(20)
     trainDocs = trainDocs.dropRight(20)
     val labeler = new MentionEntityTypeLabeler
-    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[PhraseMentionList])))
+    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.phrase))
 
     labeler.train(trainDocs, testDocs)
     (trainDocs ++ testDocs).foreach(labeler.process(_))
-    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[PhraseMentionList])))
+    for (mention <- labeler.filterTrainingMentions(testDocs.flatMap(_.attr[MentionList])))
       println("%20s %-20s %-20s  %s".format(mention.attr[MentionEntityType].target.categoryValue, mention.attr[MentionEntityType].categoryValue, labeler.isWordNetPerson(mention.phrase.headToken).toString, mention.phrase))
 
     if (args.length > 1) labeler.serialize(args(1))
@@ -172,7 +172,7 @@ object MentionEntityTypeLabelerTrainer {
 object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
   import MentionEntityTypeAnnotator1Util._
   def process(document:Document): Document = {
-    document.attr[PhraseMentionList].foreach(predictMentionEntityType(_))
+    document.attr[MentionList].foreach(predictMentionEntityType(_))
     document
   }
   def predictMentionEntityType(m: PhraseMention): Unit = {
@@ -180,7 +180,7 @@ object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
     m.attr += new MentionEntityType(m,prediction)
   }
   override def tokenAnnotationString(token:Token): String = {
-    token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+    token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.phrase.indexOf(token)).mkString(","); case _ => "_" }
   }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])

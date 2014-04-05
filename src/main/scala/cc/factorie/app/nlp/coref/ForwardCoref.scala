@@ -30,7 +30,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
   def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[PhraseMention]]
-    token.document.attr[PhraseMentionList].filter(mention => mention.phrase.contains(token)) match {
+    token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match {
       case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
@@ -77,7 +77,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
 
 
   def generateTrainingInstances(d: Document, map: GenericEntityMap[PhraseMention]): Seq[MentionPairLabel] = {
-    generateMentionPairLabels(d.attr[PhraseMentionList].map(CorefMention.mentionToCorefMention), map)
+    generateMentionPairLabels(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
   }
 
   protected def generateMentionPairLabels(mentions: Seq[CorefMention], map: GenericEntityMap[PhraseMention] = null): Seq[MentionPairLabel] = {
@@ -144,7 +144,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
   def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[PhraseMention]], testTrueMaps: Map[String, GenericEntityMap[PhraseMention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
-    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[PhraseMentionList])).toMap
+    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
     val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
     model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
@@ -224,7 +224,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
   def processDocumentOneModel(doc: Document): GenericEntityMap[PhraseMention] = {
-    val ments = doc.attr[PhraseMentionList]
+    val ments = doc.attr[MentionList]
     assertSorted(ments)
     val corefMentions = ments.map(CorefMention.mentionToCorefMention)
     val map = processDocumentOneModelFromMentions(corefMentions)
@@ -246,7 +246,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   }
 
   def processDocumentOneModelFromEntities(doc: Document): GenericEntityMap[PhraseMention] = {
-    processDocumentOneModelFromEntitiesFromMentions(doc.attr[PhraseMentionList].sortBy(mention => (mention.phrase.tokens.head.stringStart, mention.phrase.length)))
+    processDocumentOneModelFromEntitiesFromMentions(doc.attr[MentionList].sortBy(mention => (mention.phrase.tokens.head.stringStart, mention.phrase.length)))
   }
 
   def processDocumentOneModelFromEntitiesFromMentions(inputMentions: Seq[PhraseMention]): GenericEntityMap[PhraseMention] = {
