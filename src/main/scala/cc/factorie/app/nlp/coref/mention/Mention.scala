@@ -14,7 +14,7 @@ import cc.factorie.app.nlp.phrase.{Phrase}
 // trait Mention { def string: String } or whatever else we think would be common among all mentions, 
 // including those not coming from Document Phrases.
 // Many places that currently use Mention would be replaced by 
-// class PhraseMention(val phrase:NounPhrase, var entity:DocEntity)
+// class Mention(val phrase:NounPhrase, var entity:DocEntity)
 // -akm
 
 //See also CorefMention

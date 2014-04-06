@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.phrase.Phrase
 import cc.factorie.util.Threading
-import cc.factorie.app.nlp.coref.PhraseMention
+import cc.factorie.app.nlp.coref.Mention
 
 trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
@@ -34,7 +34,7 @@ trait DocumentAnnotator {
       If there is no document annotation, return the empty string.  Used in Document.owplString. */
   def documentAnnotationString(document:Document): String = ""
   def phraseAnnotationString(phrase:Phrase): String = ""
-  def mentionAnnotationString(mention:PhraseMention): String = ""
+  def mentionAnnotationString(mention:Mention): String = ""
 }
 
 /** Used as a stand-in dummy DocumentAnnotator in the DocumentAnnotatorMap when an annotation was added but not by a real DocumentAnnotator. */

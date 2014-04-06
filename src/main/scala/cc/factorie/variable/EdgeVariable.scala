@@ -75,5 +75,5 @@ class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
 }
 
 // TODO We should add an ArrowVariable in which the "src" is always "this"
-// I was thinking about this for PhraseMention
+// I was thinking about this for Mention
 

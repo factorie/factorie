@@ -3,8 +3,8 @@ package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 //import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionList, Mention, Entity}
-import cc.factorie.app.nlp.coref._ //{Mention,PhraseMention,MentionList,Entity}
-import cc.factorie.app.nlp.phrase.{Phrase,NounPhrase,PhraseEntityType}
+import cc.factorie.app.nlp.coref._ //{Mention,Mention,MentionList,Entity}
+import cc.factorie.app.nlp.phrase.{Phrase,PhraseEntityType}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, Map, Stack}
 import scala.collection.mutable
 import scala.util.control.Breaks._
@@ -55,7 +55,8 @@ object LoadConll2011 {
       entityTypeTokenizer.findAllIn(s).map(x => asteriskStripper.replaceAllIn(x,"")).toArray
     }
 
-    var mentionList = new ListBuffer[PhraseMention]()
+    var coref: WithinDocCoref = null
+    var mentionList = new ListBuffer[Mention]() // TODO By using WithinDocCoref this should no longer be necessary
     var currDoc: Document = null
     var currSent: Sentence = null
     var currEntId: Int = 0
@@ -83,6 +84,7 @@ object LoadConll2011 {
         if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        coref = currDoc.getTargetCoref // This also puts a newly created WithinDocCoref in currDoc.attr.
         currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
@@ -169,7 +171,7 @@ object LoadConll2011 {
             val parentPhrase = if(!parseStack.isEmpty) parseStack(0)._1 else ""
             if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-              val m = new PhraseMention(new NounPhrase(span, getHeadToken(span)))
+              val m = span.document.getCoref.mention(new Phrase(span, getHeadToken(span)))
               mentionList += m
               numMentions += 1
 
@@ -192,7 +194,8 @@ object LoadConll2011 {
                       found = true
                       val key = fields(0) + "-" + number
                       m.attr += new EntityKey(key)
-                      val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                      //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                      val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key)) // TODO I'm not sure that key is right argument here. -akm 
                       ent += m
                       closedEntities(i) = null
                     }
@@ -204,7 +207,8 @@ object LoadConll2011 {
                 numNegEntities += 1
                 val key = fields(0) + "-" + (-numNegEntities)
                 m.attr += new EntityKey(key)
-                val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
                 ent += m
               }
             }
@@ -214,7 +218,7 @@ object LoadConll2011 {
         //this makes mentions for the ground truth mentions that weren't NPs
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-          val m = new PhraseMention(new Phrase(span, getHeadToken(span)))
+          val m = coref.mention(new Phrase(span, getHeadToken(span)))
           mentionList += m
           if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
@@ -229,7 +233,7 @@ object LoadConll2011 {
           numMentions += 1
           val key = fields(0) + "-" + number
           m.attr += new EntityKey(key)
-          val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+          val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
           m.attr += ent
         }
         prevWord = word

@@ -54,8 +54,8 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
     BinarySerializer.serialize(this,stream)
   }
 
-  def generateTrueMap(mentions: Seq[PhraseMention]): GenericEntityMap[PhraseMention] = {
-    val trueMap = new GenericEntityMap[PhraseMention]
+  def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
+    val trueMap = new GenericEntityMap[Mention]
     mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
     val entities = mentions.groupBy(_.entity)
     entities.flatMap(_._2.sliding(2)).foreach(p => {

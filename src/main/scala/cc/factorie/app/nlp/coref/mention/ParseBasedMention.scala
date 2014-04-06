@@ -11,7 +11,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
 
 
-class ParseBasedMentionList(spans:Iterable[PhraseMention]) extends MentionList(spans)
+class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
 //class NerSpanList extends TokenSpanList[NerSpan]
 
 object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
@@ -41,13 +41,15 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
                             default behavior is that we do filter the appositives.   */
 
 
-  private def nerSpans(doc: Document): Seq[PhraseMention] = {
+  private def nerSpans(doc: Document): Seq[Mention] = {
+    val coref = doc.getCoref
     (for (span <- doc.attr[ConllNerSpanBuffer]) yield
-      new PhraseMention(new Phrase(span.section, span.start, span.length, span.length - 1)) //this sets the head token idx to be the last token in the span
+      coref.mention(new Phrase(span.section, span.start, span.length, span.length - 1)) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
 
-  private def NNPSpans(doc : Document) : Seq[PhraseMention] = {
+  private def NNPSpans(doc : Document) : Seq[Mention] = {
+    val coref = doc.getCoref
     val spans = ArrayBuffer[ArrayBuffer[Token]]()
     spans += ArrayBuffer[Token]()
     for(section <- doc.sections; sentence <- section.sentences; token <- sentence.tokens) {
@@ -56,18 +58,19 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     }
     if(spans.nonEmpty && spans.last.isEmpty) spans.remove(spans.length-1)
     (for(span <- spans) yield
-      new PhraseMention(new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection))).toSeq
+      coref.mention(new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection))).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
-  private def personalPronounSpans(doc: Document): Seq[PhraseMention] = {
+  private def personalPronounSpans(doc: Document): Seq[Mention] = {
+    val coref = doc.getCoref
     (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        new PhraseMention(new Phrase(section, s.start + i, 1,0))
+        coref.mention(new Phrase(section, s.start + i, 1,0))
       ).toSeq
   }
 
-  private def getHeadTokenIdx(m: PhraseMention): Int = {
+  private def getHeadTokenIdx(m: Mention): Int = {
    val tokenIdxInSection =  getHead(
       m.phrase.head.sentence.parse,
       m.phrase.start until (m.phrase.start + m.phrase.length) //these are section-level offsets
@@ -99,8 +102,9 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
   final val allowedChildLabels = Set("amod", "det", "nn", "num", "hmod", "hyph", "possessive", "poss", "predet", "nmod", "dep")
   final val disallowedChildLabels = Set("conj", "punct", "prep", "cc", "appos", "npadvmod", "advmod", "quantmod", "partmod", "rcmod", "dobj", "nsubj", "infmod", "ccomp", "advcl", "aux", "intj", "neg", "preconj", "prt", "meta", "parataxis", "complm", "mark")
 
-  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[PhraseMention] =  {
-    val mentions = ArrayBuffer[PhraseMention]()
+  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] =  {
+    val mentions = ArrayBuffer[Mention]()
+    val coref = doc.getCoref
     for (section <- doc.sections; s <- section.sentences; (t, si) <- s.tokens.zipWithIndex if nounFilter(t);
          label = s.parse.label(t.positionInSentence).categoryValue
          if label != "nn" && label != "hmod")  {
@@ -117,14 +121,14 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
       val sTokens = tokens.sortBy(_.positionInSection)
       val start = sTokens.head.positionInSection
       val end = sTokens.last.positionInSection
-      mentions += new PhraseMention(new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2))
+      mentions += coref.mention(new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2))
     }
     mentions
   }
 
 
-  private def dedup(mentions: Seq[PhraseMention]): Seq[PhraseMention] = {
-      def dedupOverlappingMentions(mentions: Seq[PhraseMention]): PhraseMention = {
+  private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
+      def dedupOverlappingMentions(mentions: Seq[Mention]): Mention = {
         if(mentions.length == 1){
           return mentions.head
         }else{
@@ -143,7 +147,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   def process(doc: Document): Document = {
 
-    var docMentions = new ArrayBuffer[PhraseMention]
+    var docMentions = new ArrayBuffer[Mention]
 
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
@@ -162,7 +166,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.IobConllNerTag])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
 
 }

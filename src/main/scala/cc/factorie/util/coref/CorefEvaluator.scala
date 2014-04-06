@@ -283,7 +283,7 @@ object CorefEvaluator {
       var wc = 0.0 // non-coreferent and reported as coreferent
       var wn = 0.0 // coreferent and reported as non-coreferent
       var rn = 0.0 // non-coreferent and reported as such
-      val totalMentions = pred.getMentionIds.union(truth.getMentionIds).toSeq
+      val totalMentions = pred.getMentionIds.union(truth.getMentionIds).toSeq // TODO This is unnecessary. -sameer
       for (i <- 0 until totalMentions.length; j <- 0 until i; mi = totalMentions(i); mj = totalMentions(j)) {
         val predicted = pred.contains(mi) && pred.contains(mj) && pred.getEntity(mi) == pred.getEntity(mj)
         val truthed = truth.contains(mi) && truth.contains(mj) && truth.getEntity(mi) == truth.getEntity(mj)

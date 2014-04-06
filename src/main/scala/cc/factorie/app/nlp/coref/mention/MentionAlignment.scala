@@ -11,7 +11,7 @@ import cc.factorie.app.nlp.parse.ParseTree
 import scala.Some
 import cc.factorie.app.nlp.load.LoadConll2011
 import cc.factorie.app.nlp.coref.Coref1Options
-import cc.factorie.app.nlp.coref.{PhraseMention,WithinDocEntity}
+import cc.factorie.app.nlp.coref.{Mention,WithinDocEntity}
 
 /**
  * User: apassos
@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.coref.{PhraseMention,WithinDocEntity}
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[PhraseMention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = LoadConll2011.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -48,7 +48,7 @@ object MentionAlignment {
     //align gold mentions to detected mentions in order to get labels for detected mentions
 
     val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,WordNet,useEntityTypes, options, shifts))
-    val entityMaps = new HashMap[String,GenericEntityMap[PhraseMention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
+    val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
     val prReports = alignmentInfo.map(_._2)
@@ -64,18 +64,18 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[PhraseMention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
     val groundTruthMentions = gtDoc.attr[MentionList]
     val detectedMentions = detectedDoc.attr[MentionList]
 
     val name = detectedDoc.name
 
-    val gtSpanHash = mutable.HashMap[(Int,Int),PhraseMention]()
+    val gtSpanHash = mutable.HashMap[(Int,Int),Mention]()
     gtSpanHash ++= groundTruthMentions.map(m => ((m.phrase.start, m.phrase.length), m))
-    val gtHeadHash = mutable.HashMap[Int,PhraseMention]()
+    val gtHeadHash = mutable.HashMap[Int,Mention]()
     gtHeadHash ++= groundTruthMentions.map(m => (getHeadTokenInDoc(m),m))
 
-    val gtAligned = mutable.HashMap[PhraseMention,Boolean]()
+    val gtAligned = mutable.HashMap[Mention,Boolean]()
     gtAligned ++= groundTruthMentions.map(m => (m,false))
     var exactMatches = 0
     var relevantExactMatches = 0
@@ -84,7 +84,7 @@ object MentionAlignment {
     //here, we create a bunch of new entity objects, that differ from the entities that the ground truth mentions point to
     //however, we index them by the same uIDs that the ground mentions use
     val entityHash = groundTruthMentions.groupBy(m => m.entity).toMap
-    val falsePositives1 = ArrayBuffer[PhraseMention]()
+    val falsePositives1 = ArrayBuffer[Mention]()
     detectedMentions.foreach(m => {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
       if(alignment.isDefined){
@@ -99,7 +99,8 @@ object MentionAlignment {
       }else{
         if(debug) println("not aligned: "  +  m.string + ":" + m.phrase.start)
         val entityUID = m.phrase.document.name + unAlignedEntityCount
-        val newEntity = new WithinDocEntity(m.phrase.document) // was: new Entity(entityUID)
+        // TODO We still have to examine all this carefully concerning which Mentions are created in the target and non-target WithinDocCoref. -akm
+        val newEntity = detectedDoc.getTargetCoref.entityFromUniqueId(entityUID) // was: new Entity(entityUID)
         m.attr += newEntity
        // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
        // m.attr += new MentionEntityType(m,predictedEntityType)
@@ -109,7 +110,7 @@ object MentionAlignment {
     })
 
     //now, we make a generic entity map
-    val entityMap = new GenericEntityMap[PhraseMention]
+    val entityMap = new GenericEntityMap[Mention]
 
     val unAlignedGTMentions = gtAligned.filter(kv => !kv._2).map(_._1)
     val allCorefMentions =  detectedDoc.attr[MentionList] ++ unAlignedGTMentions
@@ -126,10 +127,10 @@ object MentionAlignment {
     ((name,entityMap),new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length))
   }
 
-  def getHeadTokenInDoc(m: PhraseMention): Int = {
+  def getHeadTokenInDoc(m: Mention): Int = {
     m.phrase.start + m.phrase.headTokenOffset
   }
-  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),PhraseMention], headHash: mutable.HashMap[Int,PhraseMention] ,m: PhraseMention, options: Coref1Options, shifts: Seq[Int]): Option[PhraseMention] = {
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
     val start = m.phrase.start
     val length = m.phrase.length
     val headTokIdxInDoc = m.phrase.headTokenOffset + m.phrase.start

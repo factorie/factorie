@@ -3,7 +3,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.coref.MentionList
+import cc.factorie.app.nlp.coref.WithinDocCoref
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import scala.reflect.ClassTag
@@ -56,14 +56,14 @@ class PhraseNumberLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phrase]
   }
   override def tokenAnnotationString(token:Token): String = { val phrases = documentAttrToPhrases(token.document.attr[A]).filter(_.contains(token)); phrases.map(_.attr[Number].categoryValue).mkString(",") }
   override def phraseAnnotationString(phrase:Phrase): String = { val t = phrase.attr[Number]; if (t ne null) t.categoryValue else "_" }
-  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag], classOf[NounPhrase])
+  def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag], classOf[NounPhraseList])
   def postAttrs: Iterable[Class[_]] = List(classOf[PhraseNumber])
 }
 
 class NounPhraseNumberLabeler extends PhraseNumberLabeler[NounPhraseList](phrases => phrases)
 object NounPhraseNumberLabeler
 
-class MentionPhraseNumberLabeler extends PhraseNumberLabeler[MentionList](_.map(_.phrase))
+class MentionPhraseNumberLabeler extends PhraseNumberLabeler[WithinDocCoref](_.mentions.map(_.phrase))
 object MentionPhraseNumberLabeler extends MentionPhraseNumberLabeler
 
 // No reason to have this.   Label should always go on Phrase, not mention. -akm

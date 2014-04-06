@@ -14,7 +14,7 @@ import cc.factorie.app.nlp.phrase.{Number, Gender}
  * Time: 12:23 PM
  */
 object CorefMention{
-  def mentionToCorefMention(m: PhraseMention): CorefMention = {
+  def mentionToCorefMention(m: Mention): CorefMention = {
     val cm = new CorefMention(m, m.phrase.start, m.phrase.sentence.indexInSection)
     cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
     cm
@@ -36,8 +36,7 @@ object CorefMention{
       }else
         headTokenIndex
     }
-
-    val docMention = new PhraseMention(new Phrase(span, headInd))
+    val docMention = span.document.getCoref.mention(new Phrase(span, headInd))
     docMention.attr += new MentionType(docMention, mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
@@ -51,9 +50,9 @@ object CorefMention{
   val posSet = Seq("POS")
 }
 
-// TODO I think "Mention" should become "NounChunk", and then this "CorefMention" should become "Mention extends NounChunk".
-//basically, this is a wrapper around factorie Mention, with some extra stuff
-class CorefMention(val mention: PhraseMention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
+// TODO Most of these linguistic feature methods should get moved to Phrase.
+// If coref needs caching, they should be cached somewhere in coref code. -akm
+class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
   val _head =  mention.phrase.tokens(mention.phrase.headTokenOffset)  //here, the head token index is an offset into the span, not the document
   def headToken: Token = _head
   def parentEntity = mention.entity // TODO Get rid of this method, and just use "entity" method -akm
@@ -199,7 +198,7 @@ object CorefFeatures {
   // TODO: this cache is not thread safe if we start making GenderMatch not local
   // val cache = scala.collection.mutable.Map[String, Char]()
   import cc.factorie.app.nlp.lexicon
-  def namGender(m: PhraseMention): Char = {
+  def namGender(m: Mention): Char = {
     val fullhead = m.phrase.string.trim.toLowerCase // TODO Is this change with "string" correct? -akm 2/28/2014
     var g = 'u'
     val words = fullhead.split("\\s")
@@ -250,7 +249,7 @@ object CorefFeatures {
     g
   }
 
-  def nomGender(m: PhraseMention, wn: WordNet): Char = {
+  def nomGender(m: Mention, wn: WordNet): Char = {
     val fullhead = m.phrase.string.toLowerCase
     if (wn.isHypernymOf("male", fullhead))
       'm'
@@ -265,7 +264,7 @@ object CorefFeatures {
   }
 
 
-  def proGender(m: PhraseMention): Char = {
+  def proGender(m: Mention): Char = {
     val pronoun = m.phrase.string.toLowerCase
     if (malePron.contains(pronoun))
       'm'

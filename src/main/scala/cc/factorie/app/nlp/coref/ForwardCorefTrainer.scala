@@ -51,7 +51,7 @@ trait ForwardCorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc
 
 object ForwardCorefTrainer extends HyperparameterMain{
 
-  def printConll2011Format(doc: Document, map: GenericEntityMap[PhraseMention], out: java.io.PrintStream) {
+  def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
     val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
     val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
@@ -185,10 +185,10 @@ object ForwardCorefTrainer extends HyperparameterMain{
     accuracy
   }
 
-  def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]]) = {
+  def makeTrainTestData(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
 
     var trainDocs: Seq[Document] = null
-    var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[PhraseMention]] = null
+    var trainEntityMaps: collection.mutable.Map[String,GenericEntityMap[Mention]] = null
     if (loadTrain){
       val allTrainDocs = LoadConll2011.loadWithParse(trainFile)
       trainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
@@ -205,7 +205,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
   }
 
 
-  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[PhraseMention]]) = {
+  def makeTrainTestDataNonGold(trainFile: String, testFile: String, options: Coref1Options, loadTrain: Boolean, useNerMentions: Boolean): (Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]],Seq[Document],collection.mutable.Map[String,GenericEntityMap[Mention]]) = {
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     if (useNerMentions) {
       map(classOf[MentionList]) = () => NerAndPronounMentionFinder

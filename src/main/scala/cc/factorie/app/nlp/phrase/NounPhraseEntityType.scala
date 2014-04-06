@@ -25,7 +25,7 @@ import cc.factorie.app.nlp.load.LoadConll2011
 class EntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = OntonotesEntityTypeDomain
 }
-class PhraseEntityType(val phrase:NounPhrase, targetValue:String) extends EntityType(targetValue)
+class PhraseEntityType(val phrase:Phrase, targetValue:String) extends EntityType(targetValue)
 
 
 class PhraseEntityTypeLabeler extends DocumentAnnotator {
@@ -40,7 +40,7 @@ class PhraseEntityTypeLabeler extends DocumentAnnotator {
   }
   lazy val model = new LinearMulticlassClassifier(OntonotesEntityTypeDomain.size, FeatureDomain.dimensionDomain.size)
   
-  def features(mention:NounPhrase): FeatureVariable = {
+  def features(mention:Phrase): FeatureVariable = {
     val features = new FeatureVariable
     var tokens = mention.tokens.toSeq
     if (tokens.head.string == "the") tokens = tokens.drop(1)
@@ -79,11 +79,11 @@ class PhraseEntityTypeLabeler extends DocumentAnnotator {
   
   val PersonLexicon = new lexicon.UnionLexicon("NounPhraseEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
-  def entityTypeIndex(mention:NounPhrase): Int = {
+  def entityTypeIndex(mention:Phrase): Int = {
     if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processNounPhrase(mention: NounPhrase): Unit = mention.attr.getOrElseUpdate(new PhraseEntityType(mention, "O")) := entityTypeIndex(mention)
+  def processNounPhrase(mention: Phrase): Unit = mention.attr.getOrElseUpdate(new PhraseEntityType(mention, "O")) := entityTypeIndex(mention)
   def process(document:Document): Document = {
     for (mention <- document.attr[NounPhraseList]) processNounPhrase(mention)
     document
@@ -94,7 +94,7 @@ class PhraseEntityTypeLabeler extends DocumentAnnotator {
   def prereqAttrs: Iterable[Class[_]] = List(classOf[NounPhraseList])
   def postAttrs: Iterable[Class[_]] = List(classOf[PhraseEntityType])
  
-  def filterTrainingNounPhrases(phrases:Seq[NounPhrase]): Iterable[NounPhrase] =
+  def filterTrainingNounPhrases(phrases:Seq[Phrase]): Iterable[Phrase] =
     // TODO This used to filter out phrases corresponding to entities with only one mention, but now we need the Mention to do this. 
     // How important is this filter? -akm
     // mentions.groupBy(m => m.entity).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention)) 

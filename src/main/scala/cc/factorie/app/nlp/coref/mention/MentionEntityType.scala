@@ -10,7 +10,7 @@ import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVari
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp.load.LoadConll2011
-import cc.factorie.app.nlp.coref.{PhraseMention,MentionList}
+import cc.factorie.app.nlp.coref.{Mention,MentionList}
 
 //'Entity Type' is a misnomer that is used elsewhere in the literature, use it too. Really, this is a type associated with a mention, not an entity
 
@@ -19,7 +19,7 @@ object MentionEntityTypeDomain extends CategoricalDomain[String]{
   this ++= OntonotesNerDomain.categories
   this += "MISC"
 }
-class MentionEntityType(val mention:PhraseMention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class MentionEntityType(val mention:Mention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
     def domain =  MentionEntityTypeDomain
 }
 
@@ -36,7 +36,7 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   }
   lazy val model = new LinearMulticlassClassifier(MentionEntityTypeDomain.size, FeatureDomain.dimensionSize)
   
-  def features(mention:PhraseMention): FeatureVariable = {
+  def features(mention:Mention): FeatureVariable = {
     val features = new FeatureVariable
     var tokens = mention.phrase.tokens.toSeq
     if (tokens.head.string == "the") tokens = tokens.drop(1)
@@ -75,11 +75,11 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   
   val PersonLexicon = new lexicon.UnionLexicon("MentionEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
-  def entityTypeIndex(mention:PhraseMention): Int = {
+  def entityTypeIndex(mention:Mention): Int = {
     if (PersonLexicon.contains(mention.phrase) || isWordNetPerson(mention.phrase.headToken)) MentionEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-  def processMention(mention: PhraseMention): Unit = {
+  def processMention(mention: Mention): Unit = {
     val label = mention.attr.getOrElseUpdate(new MentionEntityType(mention, "O"))
     label.set(entityTypeIndex(mention))(null)
   }
@@ -89,11 +89,11 @@ class MentionEntityTypeLabeler extends DocumentAnnotator {
   }
 
   override def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.phrase.contains(token)); mentions.map(_.attr[MentionEntityType].categoryValue).mkString(",") }
-  override def mentionAnnotationString(mention:PhraseMention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
+  override def mentionAnnotationString(mention:Mention): String = { val t = mention.attr[MentionEntityType]; if (t ne null) t.categoryValue else "_" }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])
  
-  def filterTrainingMentions(mentions:Seq[PhraseMention]): Iterable[PhraseMention] = 
+  def filterTrainingMentions(mentions:Seq[Mention]): Iterable[Mention] = 
     mentions.groupBy(m => m.entity).filter(x => x._2.length > 1).map(x => x._2).flatten.filter(mention => !PersonLexicon.contains(mention.phrase))
 
   def train(trainDocs:Iterable[Document], testDocs:Iterable[Document]): Unit = {
@@ -175,12 +175,12 @@ object MentionEntityTypeAnnotator1 extends DocumentAnnotator {
     document.attr[MentionList].foreach(predictMentionEntityType(_))
     document
   }
-  def predictMentionEntityType(m: PhraseMention): Unit = {
+  def predictMentionEntityType(m: Mention): Unit = {
     val prediction = classifyUsingRules(m.phrase.tokens.map(_.lemmaString))
     m.attr += new MentionEntityType(m,prediction)
   }
   override def tokenAnnotationString(token:Token): String = {
-    token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+    token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionEntityType].categoryValue + ":" + m.phrase.indexOf(token)).mkString(","); case _ => "_" }
   }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
   def postAttrs: Iterable[Class[_]] = List(classOf[MentionEntityType])

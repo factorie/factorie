@@ -14,12 +14,12 @@ import cc.factorie.variable.Span
  * Time: 3:34 PM
  */
 
-class NerMentionList(spans:Iterable[PhraseMention]) extends MentionList(spans)
+class NerMentionList(spans:Iterable[Mention]) extends MentionList(spans)
 
 object NerAndPronounMentionFinder extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosTag])
   def postAttrs = Seq(classOf[NerMentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[PhraseMention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
   def getNerSpans(doc: Document): Seq[(String,TokenSpan)] = {
@@ -63,12 +63,13 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
        "O"
   }
 
-  def  getNerMentions(document: Document): Seq[PhraseMention] = {
+  def  getNerMentions(document: Document): Seq[Mention] = {
+    val coref = document.getCoref
     getNerSpans(document).map(labelSpan => {
       val label = labelSpan._1
       val mappedLabel = if(label == "PER") "PERSON" else label    //this is important if you do conll NER, since MentionEntityType expects Ontonotes NER Labels
       val s = labelSpan._2
-      val m = new PhraseMention(new Phrase(s, s.length-1))
+      val m = coref.mention(new Phrase(s, s.length-1))
       m.attr += new MentionType(m, "NAM")
       m.attr += new MentionEntityType(m,mappedLabel)
       m
@@ -77,8 +78,9 @@ object NerAndPronounMentionFinder extends DocumentAnnotator {
 
   def process(document: Document) = {
     val nerMentions = getNerMentions(document)
+    val coref = document.getCoref
     val pronounMentions = getPronounSpans(document).map(s => {
-      val m = new PhraseMention(new Phrase(s, 0))
+      val m = coref.mention(new Phrase(s, 0))
       val label = getMentionEntityTypeLabelForPronoun(m.phrase)
       m.attr += new MentionType(m, "PRO")
       m.attr += new MentionEntityType(m,label)
