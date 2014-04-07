@@ -10,11 +10,25 @@ import cc.factorie.app.nlp._
 import cc.factorie.optimize.{LikelihoodExample, BatchTrainer, OnlineTrainer}
 import cc.factorie.app.chain.ChainModel
 
-/** A linear-chain CRF model for Chinese word segmentation.
+/** A linear-chain CRF model for Chinese word segmentation with four companion 
+    objects, each pre-trained on a different corpus that corresponds to a 
+    different variety of written Mandarin. 
     @author Henry Oskar Singer  */
+
+//Microsoft-Research-Asia-corpus-trained model (Beijing)
+class MSRChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object MSRChainChineseWordSegmenter
+  extends MSRChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[MSRChainChineseWordSegmenter](".factorie"))
+
+//City-University-of-Hong-Kong-corpus-trained model (Hong Kong)
+class CUHChainChineseWordSegmenter(url: java.net.URL)
+  extends ChainChineseWordSegmenter(url)
+object CUHChainChineseWordSegmenter
+  extends CUHChainChineseWordSegmenter(cc.factorie.util.ClasspathURL[CUHChainChineseWordSegmenter](".factorie"))
+
 class ChainChineseWordSegmenter(
-  labelDomain: SegmentationLabelDomain = BIOSegmentationDomain, 
-  useOnline: Boolean = false
+  labelDomain: SegmentationLabelDomain = BIOSegmentationDomain
 ) extends DocumentAnnotator {
 
   def this(filePath: String) {
@@ -95,9 +109,7 @@ class ChainChineseWordSegmenter(
       trainingSegmentables.map( segmentable =>
         new model.ChainLikelihoodExample(segmentable.links.map( _.label ))
       ).toSeq
-    val trainer =
-      if(useOnline) new OnlineTrainer(model.parameters)
-      else new BatchTrainer(model.parameters)
+    val trainer = new OnlineTrainer(model.parameters)
 
     trainer.trainFromExamples(examples)
 
@@ -140,16 +152,25 @@ class ChainChineseWordSegmenter(
     character => character.label
   )
 
-  def getOrderedWordList(document: Document, delimiter: Char = '|'): IndexedSeq[String] = {
-    
-    val labeledText = segment(document).map( label => (label.character.string, label.categoryValue) )
+  def getF1Score(filePath: String): Double = {
 
-    (for( (character, label) <- labeledText )
-       yield {
-         if(labelDomain.indicatesSegmentStart(label)) delimiter + character
-         else character
-       }
-    ).toList.mkString.split(delimiter)
+    val labelSeq = segment(filePath)
+    val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]()
+    val numTrueWords: Double = labelSeq.count( label => labelDomain.indicatesSegmentStart(label.target.categoryValue) )
+    
+    labelSeq.foreach{ label => 
+      if(!labelDomain.indicatesSegmentStart(label.categoryValue) && myWords.size > 0) 
+        myWords(myWords.size - 1) += label
+      else
+        myWords += (new ArrayBuffer[SegmentationLabel] :+ label)
+    }
+    
+    val numCorrect: Double = myWords.count( word => word.forall( label => label.valueIsTarget ) )
+    val precision = numCorrect / myWords.size
+    val recall = numCorrect / numTrueWords
+
+    println("Precision: " + precision + "\tRecall: " + recall)
+    2 * (precision * recall)/(precision + recall)
   }
 
   def segment(filePath: String): IndexedSeq[SegmentationLabel] = segment(getSegmentables(new File(filePath)))
@@ -165,32 +186,35 @@ class ChainChineseWordSegmenter(
 
   def getSegmentables(corpus: File): IndexedSeq[Segmentable] = {
 
-    val labeledCharacters = labelDomain.getLabeledCharacters(corpus)
+    val labeledCharacters: IndexedSeq[(String, String)] = labelDomain.getLabeledCharacters(corpus)
 
     getSegmentables(labeledCharacters)
   }
   def getSegmentables(document: Document): IndexedSeq[Segmentable] = {
 
-    val labeledCharacters = labelDomain.getLabeledCharacters(document)
+    val labeledCharacters: IndexedSeq[(String, String)] = labelDomain.getLabeledCharacters(document)
 
     getSegmentables(labeledCharacters)
   }
   def getSegmentables(labeledCharacters: IndexedSeq[(String, String)]): IndexedSeq[Segmentable] = {
 
     val numChars = labeledCharacters.size
+    val printNum = numChars/100
     val segmentables = new ArrayBuffer[Segmentable]
     var characterBuffer = new ArrayBuffer[(String, String)]
     var currentSegmentable = new Segmentable
 
     ( 0 until numChars ).foreach{ i =>
-      characterBuffer += labeledCharacters(i)
+      val currentChar = labeledCharacters(i)
 
-      if(labeledCharacters(i)._2 equals "P"){
-        currentSegmentable ++= ( 0 until characterBuffer.size ).map( j => {
-            val (character, label) = characterBuffer(j)
+      characterBuffer += currentChar
 
-            new Character(character, label, characterToFeatures(j, characterBuffer))
-          }
+      if(currentChar._2 equals "P"){
+        currentSegmentable ++= ( 0 until characterBuffer.size ).map( j =>
+            new Character(characterBuffer(j)._1, 
+                          characterBuffer(j)._2, 
+                          characterToFeatures(j, characterBuffer)
+                         )
         )
         segmentables += currentSegmentable
 
@@ -198,6 +222,7 @@ class ChainChineseWordSegmenter(
         characterBuffer = new ArrayBuffer[(String, String)]
       }
     }
+    println("Segmentables Retrieved")
 
     segmentables
   }

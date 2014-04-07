@@ -3,7 +3,8 @@ import cc.factorie.la._
 
 /**
  * Abstract trait for any (sub)differentiable objective function used to train predictors.
- * More accurately, this defines a family of objective functions indexed by each possible output.
+ * More accurately, this defines a family of objective functions indexed by each possible label.
+ * Note that these are concave objective functions, not convex loss functions.
  * @tparam Prediction The type of the prediction: is it a tensor or a scalar?
  * @tparam Output The type of the output/label: is it integer or real-valued or tensor-valued?
  */
@@ -136,13 +137,32 @@ object OptimizableObjectives {
         (0.0, 0.0)
   }
 
-  class HingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) extends UnivariateOptimizableObjective[Int] {
+  class HingeScaledBinary(val posCost: Double = 1.0, val negCost: Double = 1.0) extends UnivariateOptimizableObjective[Int] {
     def valueAndGradient(prediction: Double, label: Int): (Double, Double) = {
-      val slackRescale = if (label == 1.0) negSlackRescale else posSlackRescale
+      val cost = if (label == 1.0) negCost else posCost
       if (prediction * label < 1.0)
-        (prediction * label * slackRescale - 1.0, label * slackRescale)
+        (prediction * label * cost - cost, label * cost)
       else
         (0.0, 0.0)
+    }
+  }
+  
+  class SmoothHingeBinary(val gamma: Double = 1.0, val margin: Double = 1.0, val posCost: Double = 1.0, val negCost: Double = 1.0)
+    extends UnivariateOptimizableObjective[Int] {
+    def valueAndGradient(score: Double, label: Int): (Double, Double) = {
+      val prediction = score * label
+      val cost = if (label == 1.0) negCost else posCost
+      if (prediction >= margin)
+        (0.0, 0.0)
+      else if (prediction < margin - gamma) {
+        val value = -cost * (margin - prediction - gamma / 2)
+        val grad = label * cost
+        (value, grad)
+      } else {
+        val value = -cost * (prediction - margin) * (prediction - margin) / (2 * gamma)
+        val grad = -label * cost * (prediction - margin) / gamma
+        (value, grad)
+      }
     }
   }
 
@@ -225,12 +245,22 @@ object OptimizableObjectives {
 
   /**
    * A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.
-   * @param posSlackRescale The cost of predicting positive when the label is negative
-   * @param negSlackRescale The cost of predicting negative when the label is positive
+   * @param posCost The cost of predicting positive when the label is negative
+   * @param negCost The cost of predicting negative when the label is positive
    * @return An objective function
    */
-  def hingeScaledBinary(posSlackRescale: Double = 1.0, negSlackRescale: Double = 1.0) = new HingeScaledBinary(posSlackRescale, negSlackRescale)
+  def hingeScaledBinary(posCost: Double = 1.0, negCost: Double = 1.0) = new HingeScaledBinary(posCost, negCost)
 
+  /**
+   * A smoothed (Lipschitz gradient) variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors and adjustable margin.
+   * @param gamma Adjusts how smoothly the hinge drops down to zero. Higher is more smooth, zero gives unsmoothed hinge.
+   * @param margin The number that you need to predict above to achieve the maximum objective score.
+   * @param posCost The cost of predicting positive when the label is negative.
+   * @param negCost The cost of predicting negative when the label is positive.
+   * @return An objective function
+   */
+  def smoothHingeBinary(gamma: Double = 1.0, margin: Double = 1.0, posCost: Double = 1.0, negCost: Double = 1.0) = new SmoothHingeBinary(gamma, margin, posCost, negCost)
+  
   /**
    * Log objective for binary classification
    */

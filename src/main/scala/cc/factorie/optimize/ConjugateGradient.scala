@@ -122,10 +122,3 @@ class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptim
   }
   }
 }
-
-class L2RegularizedConjugateGradient(var l2: Double = 0.1, val initialStep: Double = 1.0) extends ConjugateGradient(initialStep) {
-  override def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
-    gradient += (weights, -l2)
-    super.step(weights, gradient, value - l2 * (weights dot weights))
-  }
-}

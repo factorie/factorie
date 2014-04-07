@@ -55,8 +55,7 @@ trait SegmentedCorpusLabeling {
        } yield getLabeledCharacter(i, line)
       ).toList.foldRight(IndexedSeq[(String, String)]())(_+:_)
 
-    labeledCorpus
-  }
+    labeledCorpus }
 
   def getLabeledCharacters(document: Document): IndexedSeq[(String, String)] = {
 
@@ -99,7 +98,10 @@ trait SegmentedCorpusLabeling {
   def isPunctuation(character: Char): Boolean = {
 
     val punctuationChars = 
-      List( (0x3000, 0x303F), (0x2400, 0x243F), (0xFF00, 0xFF0F), (0xFF1A, 0xFFEF), (0x2000, 0x206F), (0x0021, 0x002F), (0x003A, 0x0040), (0x005B, 0x0060), (0x7B, 0x007E) )
+      List( (0x3000, 0x303F), (0x2400, 0x243F), (0xFF00, 0xFF04), 
+            (0xFF06, 0xFF0D), (0xFF1A, 0xFFEF), (0x2000, 0x206F), 
+            (0x0021, 0x002C), (0x002E, 0x002F), (0x003A, 0x0040), 
+            (0x005B, 0x0060), (0x007B, 0x007E) )
     
     punctuationChars.exists( range => character >= range._1 && character <= range._2 )
   }

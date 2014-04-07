@@ -51,6 +51,7 @@ CLASS=
 case $CMD in
 	nlp) CLASS=cc.factorie.app.nlp.NLP;;
 	lda) CLASS=cc.factorie.app.topics.lda.LDA;;
+	classify) CLASS=cc.factorie.app.classify.Classify;;
 	inter) CLASS=cc.factorie.util.Interpreter;;
 	run) CLASS=$1; shift;;
 	*) echo "Unrecognized command: $CMD"; help; exit 1;;

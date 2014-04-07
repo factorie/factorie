@@ -962,9 +962,9 @@ object DBLPLoader{
 }
 object BibFeatures{
   var totalPapers=0
-  def decorate(papers:Iterable[PaperEntity],ldaOpt:Option[LDA]):Unit ={
+  def decorate(papers:Iterable[PaperEntity],getVenueBag:String=>Seq[String],ldaOpt:Option[LDA]):Unit ={
     papers.foreach(_.authors.foreach((a:AuthorEntity)=>EntityUtils.reExtractNames(a.fullName)))
-    for(p <- papers)FeatureUtils.addFeatures(p)
+    for(p <- papers)FeatureUtils.addFeatures(p,getVenueBag(_))
     for(p <- papers){FeatureUtils.extractEmails(p);FeatureUtils.extractAffiliations(p)}
     totalPapers += papers.size
     println("Total papers: "+totalPapers)
